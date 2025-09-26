@@ -1,5 +1,5 @@
-import numpy as np
 import pandas as pd
+
 
 def add_storage_opf_settings(net, ppci, pm):
     # callback function to add storage settings. Must be called after initializing pm data structure since the
@@ -16,9 +16,14 @@ def add_storage_opf_settings(net, ppci, pm):
     bus_lookup = net._pd2pm_lookups["bus"]
 
     for idx in net["storage"].index:
-        energy = (net["storage"].at[idx, "soc_percent"] * 1e-2 *
-                  (net["storage"].at[idx, "max_e_mwh"] -
-                   net["storage"].at[idx, "min_e_mwh"]))
+        energy = (
+            net["storage"].at[idx, "soc_percent"]
+            * 1e-2
+            * (
+                net["storage"].at[idx, "max_e_mwh"]
+                - net["storage"].at[idx, "min_e_mwh"]
+            )
+        )
         qs = net["storage"].at[idx, "q_mvar"].item()
         ps = net["storage"].at[idx, "p_mw"].item()
         max_p_mw = ps
@@ -34,23 +39,25 @@ def add_storage_opf_settings(net, ppci, pm):
         pm["storage"][str(pm_idx)] = {
             "index": pm_idx,
             "storage_bus": bus_lookup[net["storage"].at[idx, "bus"]].item(),
-			"ps": ps, #* pm["baseMVA"],
-            "qs": qs, #* pm["baseMVA"],            
+            "ps": ps,  # * pm["baseMVA"],
+            "qs": qs,  # * pm["baseMVA"],
             "energy": energy,
-			"energy_rating": net["storage"].at[idx, "max_e_mwh"],
-			"charge_rating": max_p_mw,
-			"discharge_rating": max_p_mw,
-			"charge_efficiency": 1.,
-			"discharge_efficiency": 1.0,
-	        "thermal_rating": net["storage"].at[idx, "max_e_mwh"], # Todo: include in DataFrame?
+            "energy_rating": net["storage"].at[idx, "max_e_mwh"],
+            "charge_rating": max_p_mw,
+            "discharge_rating": max_p_mw,
+            "charge_efficiency": 1.0,
+            "discharge_efficiency": 1.0,
+            "thermal_rating": net["storage"].at[
+                idx, "max_e_mwh"
+            ],  # Todo: include in DataFrame?
             "qmax": max_q_mvar,
             "qmin": min_q_mvar,
             "r": 0.0,
-			"x": 0.,       
-			"p_loss":-1e-8,
-			"q_loss":-1e-8,			
-			"status": int(net["storage"].at[idx, "in_service"]),
-			"standby_loss": 0.
+            "x": 0.0,
+            "p_loss": -1e-8,
+            "q_loss": -1e-8,
+            "status": int(net["storage"].at[idx, "in_service"]),
+            "standby_loss": 0.0,
         }
 
 
@@ -60,17 +67,21 @@ def read_pm_storage_results(net):
     timesteps = list(net.res_ts_opt.keys())
     for idx in net.storage.index:
         # read storage results for each storage from power models to a dataframe with rows = timesteps
-        res_storage = pd.DataFrame(data=None,
-                                   index=timesteps,
-                                   columns=["p_mw", "q_mvar", "soc_mwh", "soc_percent"],
-                                   dtype=float)
+        res_storage = pd.DataFrame(
+            data=None,
+            index=timesteps,
+            columns=["p_mw", "q_mvar", "soc_mwh", "soc_percent"],
+            dtype=float,
+        )
         for t in timesteps:
             pm_storage = net.res_ts_opt[str(t)].res_storage
             res_storage.at[t, "p_mw"] = pm_storage["ps"]
             res_storage.at[t, "q_mvar"] = pm_storage["qs"]
             res_storage.at[t, "soc_percent"] = pm_storage["se"] * 1e2
-            res_storage.at[t, "soc_mwh"] = pm_storage["se"] * \
-                                           (net["storage"].at[idx, "max_e_mwh"] - net["storage"].at[idx, "min_e_mwh"])
+            res_storage.at[t, "soc_mwh"] = pm_storage["se"] * (
+                net["storage"].at[idx, "max_e_mwh"]
+                - net["storage"].at[idx, "min_e_mwh"]
+            )
 
         storage_results[idx] = res_storage
 

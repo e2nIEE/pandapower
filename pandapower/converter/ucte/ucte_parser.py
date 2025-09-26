@@ -27,7 +27,7 @@ class UCTEParser:
         self.ucte_elements = ["##C", "##N", "##L", "##T", "##R", "##TT", "##E"]
         self.data: Dict[str, pd.DataFrame] = dict()
         self.date: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
-        self.bus_ucte_countries : list = list()
+        self.bus_ucte_countries: list = list()
 
     def parse_file(self, path_ucte_file: str = None) -> bool:
         """
@@ -67,8 +67,13 @@ class UCTEParser:
                 row = row.strip()
                 if row.startswith("##N"):
                     is_in_N = True
-                elif any([row.startswith(other_ucte_element) for other_ucte_element in
-                          self.ucte_elements if other_ucte_element != "##N"]):
+                elif any(
+                    [
+                        row.startswith(other_ucte_element)
+                        for other_ucte_element in self.ucte_elements
+                        if other_ucte_element != "##N"
+                    ]
+                ):
                     is_in_N = False
                 if row in self.ucte_elements:
                     # the start of a new UCTE element type in the origin file
@@ -79,7 +84,9 @@ class UCTEParser:
                     raw_input_dict[current_element].append(row)
                 elif row.startswith("##"):
                     self.logger.debug("Skipping row %s" % row)
-                    ucte_country = row[3:] if row[2] == "Z" else row[2:] # usually country zones are marked by ##Z
+                    ucte_country = (
+                        row[3:] if row[2] == "Z" else row[2:]
+                    )  # usually country zones are marked by ##Z
                 else:
                     if is_in_N:
                         self.bus_ucte_countries.append(ucte_country)
@@ -94,9 +101,10 @@ class UCTEParser:
     def _parse_date_str(self, date_str: str):
         try:
             self.date = datetime.datetime.strptime(date_str, "%Y%m%d_%H%M")
-        except Exception as e:
+        except Exception:
             self.logger.info(
-                f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
+                f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'."
+            )
             self.date = datetime.datetime.utcnow()
 
     def _create_df_from_raw(self, raw_input_dict):

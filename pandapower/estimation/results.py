@@ -8,17 +8,28 @@ import numpy as np
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.pfsoln_numba import pfsoln
-from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se, init_results
+from pandapower.results import (
+    _copy_results_ppci_to_ppc,
+    _extract_results_se,
+    init_results,
+)
 from pandapower.auxiliary import get_values
 
 
 def _calc_power_flow(ppci, V):
     # store results for all elements
     # calculate branch results (in ppc_i)
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
-    Ybus, Yf, Yt = ppci['internal']['Ybus'], ppci['internal']['Yf'], ppci['internal']['Yt']
-    ppci['bus'], ppci['gen'], ppci['branch'] = \
-        pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, ref_gens = (
+        _get_pf_variables_from_ppci(ppci)
+    )
+    Ybus, Yf, Yt = (
+        ppci["internal"]["Ybus"],
+        ppci["internal"]["Yf"],
+        ppci["internal"]["Yt"],
+    )
+    ppci["bus"], ppci["gen"], ppci["branch"] = pfsoln(
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens
+    )
 
     # calculate bus power injections
     Sbus = np.multiply(V, np.conj(Ybus * V)) * baseMVA
@@ -40,38 +51,45 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
     # additionally, write bus power demand results (these are not written in _extract_results)
     mapping_table = net["_pd2ppc_lookups"]["bus"]
     net.res_bus_est.index = net.bus.index
-    net.res_bus_est.p_mw = get_values(ppc["bus"][:, 2], net.bus.index.values,
-                                      mapping_table)
-    net.res_bus_est.q_mvar = get_values(ppc["bus"][:, 3], net.bus.index.values,
-                                        mapping_table)
+    net.res_bus_est.p_mw = get_values(
+        ppc["bus"][:, 2], net.bus.index.values, mapping_table
+    )
+    net.res_bus_est.q_mvar = get_values(
+        ppc["bus"][:, 3], net.bus.index.values, mapping_table
+    )
     # overwrite power values for buses that were merged because they would not have the same power inj
     # as the bus they were merged to
     merged_bus = net["_pd2ppc_lookups"]["merged_bus"]
     merged_bus_idx = np.where(merged_bus == True)[0]
-    net.res_bus_est.loc[merged_bus_idx, 'p_mw'] = 0
+    net.res_bus_est.loc[merged_bus_idx, "p_mw"] = 0
     net.res_bus_est.loc[merged_bus_idx, "q_mvar"] = 0
     # add shunt power because the injection at the node computed via Ybus is only the extra injection on top of the shunt
     for element in ["shunt", "ward", "xward"]:
         if ~net[element].empty:
             bus = net[element].bus.values
             if element == "shunt":
-                Sn = 1j*(net[element].q_mvar.values)
+                Sn = 1j * (net[element].q_mvar.values)
                 Sn += net[element].p_mw.values
                 Sn *= net[element].step.values
-                Ysh = Sn / ((net[element].vn_kv.values)**2)
+                Ysh = Sn / ((net[element].vn_kv.values) ** 2)
             else:
-                Sn = 1j*(net[element].qz_mvar.values)
+                Sn = 1j * (net[element].qz_mvar.values)
                 Sn += net[element].pz_mw.values
-                Ysh = Sn / ((net.bus.loc[bus,"vn_kv"].values)**2)
-            V = net["res_bus_est"].loc[bus,"vm_pu"].values * net["bus"].loc[bus,"vn_kv"].values
-            Sinj = Ysh*(V**2)
-            net["res_bus_est"].loc[bus,"p_mw"] += Sinj.real
-            net["res_bus_est"].loc[bus,"q_mvar"] += Sinj.imag
+                Ysh = Sn / ((net.bus.loc[bus, "vn_kv"].values) ** 2)
+            V = (
+                net["res_bus_est"].loc[bus, "vm_pu"].values
+                * net["bus"].loc[bus, "vn_kv"].values
+            )
+            Sinj = Ysh * (V**2)
+            net["res_bus_est"].loc[bus, "p_mw"] += Sinj.real
+            net["res_bus_est"].loc[bus, "q_mvar"] += Sinj.imag
             if element == "shunt":
                 element_res_est = "res_" + element + "_est"
                 net[element_res_est]["p_mw"] = Sinj.real
                 net[element_res_est]["q_mvar"] = Sinj.imag
-                net[element_res_est]["vm_pu"] = net["res_bus_est"].loc[bus,"vm_pu"].values
+                net[element_res_est]["vm_pu"] = (
+                    net["res_bus_est"].loc[bus, "vm_pu"].values
+                )
     return net
 
 

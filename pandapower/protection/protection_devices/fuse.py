@@ -2,6 +2,7 @@ from pandapower import std_type_exists, load_std_type
 
 try:
     import matplotlib.pyplot as plt
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -47,8 +48,20 @@ class Fuse(ProtectionDevice):
         **name** (str, None) - name of the fuse. For example, name = "Line 2 Fuse"
     """
 
-    def __init__(self, net, switch_index, fuse_type="none", rated_i_a=0, characteristic_index=None, in_service=True,
-                 overwrite=False, curve_select=0, z_ohm=0.0001, name=None, **kwargs):
+    def __init__(
+        self,
+        net,
+        switch_index,
+        fuse_type="none",
+        rated_i_a=0,
+        characteristic_index=None,
+        in_service=True,
+        overwrite=False,
+        curve_select=0,
+        z_ohm=0.0001,
+        name=None,
+        **kwargs,
+    ):
         super().__init__(net, in_service=in_service, overwrite=overwrite, **kwargs)
         self.switch_index = switch_index
         self.fuse_type = fuse_type
@@ -57,13 +70,15 @@ class Fuse(ProtectionDevice):
         # create protection characteristic curve from std type
         if std_type_exists(net, fuse_type, element="fuse"):
             fuse_data = load_std_type(net=net, name=fuse_type, element="fuse")
-            self.rated_i_a = fuse_data['i_rated_a']
+            self.rated_i_a = fuse_data["i_rated_a"]
             if fuse_data["t_avg"] != 0:
                 self.create_characteristic(net, fuse_data["x_avg"], fuse_data["t_avg"])
             elif fuse_data["t_min"] != 0 and curve_select == 0:
                 self.create_characteristic(net, fuse_data["x_min"], fuse_data["t_min"])
             elif fuse_data["t_total"] != 0 and curve_select == 1:
-                self.create_characteristic(net, fuse_data["x_total"], fuse_data["t_total"])
+                self.create_characteristic(
+                    net, fuse_data["x_total"], fuse_data["t_total"]
+                )
             else:
                 raise ValueError("curve_select must equal 0 or 1")
         else:
@@ -75,15 +90,22 @@ class Fuse(ProtectionDevice):
         self.activation_parameter = "i_ka"
         self.tripped = False
         self.z_ohm = z_ohm
-        net.switch.at[self.switch_index, 'z_ohm'] = self.z_ohm
+        net.switch.at[self.switch_index, "z_ohm"] = self.z_ohm
 
-    def create_characteristic(self, net, x_values, y_values, interpolator_kind="Pchip", **kwargs):
+    def create_characteristic(
+        self, net, x_values, y_values, interpolator_kind="Pchip", **kwargs
+    ):
         """
         Create characteristic curve of fuse melting behavior using Piece Cubic Hermite Interpolating Polynomial (PCHIP)
         from scipy.interpolate
         """
-        c = LogSplineCharacteristic(net, x_values=x_values, y_values=y_values, interpolator_kind=interpolator_kind,
-                                    **kwargs)
+        c = LogSplineCharacteristic(
+            net,
+            x_values=x_values,
+            y_values=y_values,
+            interpolator_kind=interpolator_kind,
+            **kwargs,
+        )
         self.characteristic_index = c.index
         self.i_start_a = min(x_values)
         self.i_stop_a = max(x_values)
@@ -117,17 +139,25 @@ class Fuse(ProtectionDevice):
             self.tripped = True
             act_time_s = 0
 
-        protection_result = {"switch_id": self.switch_index,
-                             "protection_type": self.__class__.__name__,
-                             "trip_melt": self.has_tripped(),
-                             "activation_parameter": self.activation_parameter,
-                             "activation_parameter_value": i_ka,
-                             "trip_melt_time_s": act_time_s}
+        protection_result = {
+            "switch_id": self.switch_index,
+            "protection_type": self.__class__.__name__,
+            "trip_melt": self.has_tripped(),
+            "activation_parameter": self.activation_parameter,
+            "activation_parameter_value": i_ka,
+            "trip_melt_time_s": act_time_s,
+        }
 
         return protection_result
 
-    def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]",
-                                       title="Time-Current Characteristic of Fuse"):
+    def plot_protection_characteristic(
+        self,
+        net,
+        num=35,
+        xlabel="I [A]",
+        ylabel="time [s]",
+        title="Time-Current Characteristic of Fuse",
+    ):
         # plots protection characteristic for fuse
         start = min(net.characteristic.at[self.characteristic_index, "object"].x_vals)
         stop = max(net.characteristic.at[self.characteristic_index, "object"].x_vals)
@@ -138,12 +168,24 @@ class Fuse(ProtectionDevice):
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.xlim(10 ** np.floor(start), 10 ** np.ceil(stop))
-        plt.ylim(10 ** np.floor(min(net.characteristic.at[self.characteristic_index, "object"].y_vals)),
-                 10 ** np.floor(max(net.characteristic.at[self.characteristic_index, "object"].y_vals)))
+        plt.ylim(
+            10
+            ** np.floor(
+                min(net.characteristic.at[self.characteristic_index, "object"].y_vals)
+            ),
+            10
+            ** np.floor(
+                max(net.characteristic.at[self.characteristic_index, "object"].y_vals)
+            ),
+        )
         plt.title(title)
         plt.grid(True, which="both", ls="-")
 
     def __str__(self):  # display Fuse + name instead of Fuse
-        s = 'Protection Device: %s \nType: %s \nName: %s' % (self.__class__.__name__, self.fuse_type, self.name)
+        s = "Protection Device: %s \nType: %s \nName: %s" % (
+            self.__class__.__name__,
+            self.fuse_type,
+            self.name,
+        )
         self.characteristic_index = 1
         return s

@@ -8,11 +8,10 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-"""Updates bus, gen, branch data structures to match power flow soln.
-"""
+"""Updates bus, gen, branch data structures to match power flow soln."""
 
 from numpy import conj, zeros, complex128, abs, float64, sqrt, real, isin, arange
-from numpy import finfo, c_, flatnonzero as find, setdiff1d, r_, int64
+from numpy import finfo, c_, flatnonzero as find, setdiff1d, int64
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import PD, QD
@@ -26,15 +25,32 @@ from pandapower.auxiliary import version_check
 
 try:
     from numba import jit
-    version_check('numba')
+
+    version_check("numba")
 except ImportError:
     from pandapower.pf.no_numba import jit
 
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
-def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None,
-           limited_gens=None):
+def pfsoln(
+    baseMVA,
+    bus,
+    gen,
+    branch,
+    svc,
+    tcsc,
+    ssc,
+    vsc,
+    Ybus,
+    Yf,
+    Yt,
+    V,
+    ref,
+    ref_gens,
+    Ibus=None,
+    limited_gens=None,
+):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -67,8 +83,24 @@ def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref,
     return bus, gen, branch
 
 
-def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens,
-                             Ibus=None, limited_gens=None):
+def pf_solution_single_slack(
+    baseMVA,
+    bus,
+    gen,
+    branch,
+    svc,
+    tcsc,
+    ssc,
+    vsc,
+    Ybus,
+    Yf,
+    Yt,
+    V,
+    ref,
+    ref_gens,
+    Ibus=None,
+    limited_gens=None,
+):
     """
     faster version of pfsoln for a grid with a single slack bus
 
@@ -89,8 +121,15 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybu
     q_loss = branch[:, [QF, QT]].sum()
 
     # consider FACTS devices:
-    q_facts = svc[:, SVC_Q].sum() + tcsc[:, [TCSC_QF, TCSC_QT]].sum() + ssc[:, SSC_Q].sum() + vsc[:, VSC_Q].sum()
-    p_facts = tcsc[:, [TCSC_PF, TCSC_PT]].sum() + vsc[:, VSC_P].sum()  # now should all be 0 due to no losses
+    q_facts = (
+        svc[:, SVC_Q].sum()
+        + tcsc[:, [TCSC_QF, TCSC_QT]].sum()
+        + ssc[:, SSC_Q].sum()
+        + vsc[:, VSC_Q].sum()
+    )
+    p_facts = (
+        tcsc[:, [TCSC_PF, TCSC_PT]].sum() + vsc[:, VSC_P].sum()
+    )  # now should all be 0 due to no losses
 
     # slack p = sum of branch losses and p demand at all buses
     gen[:, PG] = p_loss.real + p_bus + p_facts  # branch p losses + p demand
@@ -103,16 +142,19 @@ def _update_branch_flows(Yf, Yt, V, baseMVA, branch):
     f_bus = real(branch[:, F_BUS]).astype(int64)
     t_bus = real(branch[:, T_BUS]).astype(int64)
     # complex power at "from" bus
-    Sf = calc_branch_flows(Yf.data, Yf.indptr, Yf.indices, V, baseMVA, Yf.shape[0], f_bus)
+    Sf = calc_branch_flows(
+        Yf.data, Yf.indptr, Yf.indices, V, baseMVA, Yf.shape[0], f_bus
+    )
     # complex power injected at "to" bus
-    St = calc_branch_flows(Yt.data, Yt.indptr, Yt.indices, V, baseMVA, Yt.shape[0], t_bus)
+    St = calc_branch_flows(
+        Yt.data, Yt.indptr, Yt.indices, V, baseMVA, Yt.shape[0], t_bus
+    )
     branch[:, [PF, QF, PT, QT]] = c_[Sf.real, Sf.imag, St.real, St.imag]
     return branch
 
 
 @jit(nopython=True, cache=False)
 def calc_branch_flows(Yy_x, Yy_p, Yy_j, v, baseMVA, dim_x, bus_ind):  # pragma: no cover
-
     Sx = zeros(dim_x, dtype=complex128)
 
     # iterate through sparse matrix and get Sx = conj(Y_kj* V[j])
@@ -127,7 +169,9 @@ def calc_branch_flows(Yy_x, Yy_p, Yy_j, v, baseMVA, dim_x, bus_ind):  # pragma: 
 
 
 @jit(nopython=True, cache=False)
-def calc_branch_flows_batch(Yy_x, Yy_p, Yy_j, V, baseMVA, dim_x, bus_ind, base_kv):  # pragma: no cover
+def calc_branch_flows_batch(
+    Yy_x, Yy_p, Yy_j, V, baseMVA, dim_x, bus_ind, base_kv
+):  # pragma: no cover
     """
     Function to get branch flows with a batch computation for the timeseries module
 

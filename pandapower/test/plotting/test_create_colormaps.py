@@ -7,7 +7,11 @@
 import numpy as np
 import pytest
 
-from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous, cmap_logarithmic
+from pandapower.plotting.colormaps import (
+    cmap_discrete,
+    cmap_continuous,
+    cmap_logarithmic,
+)
 
 
 def test_cmap_discrete():
@@ -29,8 +33,10 @@ def test_cmap_continuous():
 
     assert np.allclose(cmap(0.99), (0.984313725490196, 0.007873894655901603, 0.0, 1.0))
     assert np.allclose(cmap(1.02), (1.0, 0.0, 0.0, 1.0))
-    assert np.allclose([norm(0.97 + 0.01 * n) for n in range(7)],
-                       [0.16666666666666666 * n for n in range(7)])
+    assert np.allclose(
+        [norm(0.97 + 0.01 * n) for n in range(7)],
+        [0.16666666666666666 * n for n in range(7)],
+    )
 
 
 def test_cmap_logarithmic():
@@ -40,7 +46,7 @@ def test_cmap_logarithmic():
     assert np.allclose(cmap(0.1), (0.0, 0.09770172300400634, 0.8053598487029561, 1.0))
     assert np.allclose(cmap(0.5), (0.0, 0.5002328217805124, 0.003442425359135415, 1.0))
     assert np.allclose(cmap(0.8), (0.5970222233016451, 0.20227904085250753, 0.0, 1.0))
-    assert norm(1.) == 0
+    assert norm(1.0) == 0
     assert norm(1.03) == 1
     assert np.isclose(norm(1.01), 0.3366283509006011)
     assert np.isclose(norm(1.02), 0.669940112402371)

@@ -1,6 +1,6 @@
 from cmath import rect
 
-from numpy import real, vectorize, deg2rad, maximum, sqrt, empty, zeros, nan, int64
+from numpy import real, vectorize, deg2rad, maximum, sqrt, empty, nan, int64
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pf.pfsoln_numba import calc_branch_flows_batch
@@ -21,19 +21,21 @@ def get_batch_bus_results(net, vm, va):
     vm_full.fill(nan)
     va_full.fill(nan)
     # and fill it
-    vm_full[:, :vm.shape[1]] = vm.values
-    va_full[:, :va.shape[1]] = va.values
+    vm_full[:, : vm.shape[1]] = vm.values
+    va_full[:, : va.shape[1]] = va.values
     return vm_full[:, bus_idx], va_full[:, bus_idx]
 
 
 def get_batch_line_results(net, i_abs):
     f, t = net._pd2ppc_lookups["branch"]["line"]
     line_df = net["line"]
-    i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    i_max = (
+        line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    )
     i_ka = maximum(i_abs[0][:, f:t], i_abs[1][:, f:t])
     loading_percent = i_ka / i_max * 100
-    i_from_ka = i_abs[0][:, :len(net.line)]
-    i_to_ka = i_abs[1][:, :len(net.line)]
+    i_from_ka = i_abs[0][:, : len(net.line)]
+    i_to_ka = i_abs[1][:, : len(net.line)]
     return i_ka, i_from_ka, i_to_ka, loading_percent
 
 
@@ -51,17 +53,21 @@ def get_batch_trafo_results(net, i_abs, s_abs):
     if trafo_loading == "current":
         # get loading percent from rated current
         trafo_df = net["trafo"]
-        s_hv = i_abs[0][:, f:t] * trafo_df["vn_hv_kv"].values * sqrt(3) / sn_mva * 100.
-        s_lv = i_abs[1][:, f:t] * trafo_df["vn_lv_kv"].values * sqrt(3) / sn_mva * 100.
+        s_hv = i_abs[0][:, f:t] * trafo_df["vn_hv_kv"].values * sqrt(3) / sn_mva * 100.0
+        s_lv = i_abs[1][:, f:t] * trafo_df["vn_lv_kv"].values * sqrt(3) / sn_mva * 100.0
         ld_trafo = maximum(s_hv, s_lv)
     elif trafo_loading == "power":
         # get loading percent from rated power
-        ld_trafo = s_mva / sn_mva * 100.
+        ld_trafo = s_mva / sn_mva * 100.0
     else:
         raise ValueError(
-            "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+            "Unknown transformer loading parameter %s - choose 'current' or 'power'"
+            % trafo_loading
+        )
 
-    loading_percent = ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
+    loading_percent = (
+        ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
+    )
     i_hv_ka = i_abs[0][:, f:t]
     i_lv_ka = i_abs[1][:, f:t]
     return i_ka, i_hv_ka, i_lv_ka, s_mva, loading_percent
@@ -84,20 +90,28 @@ def get_batch_trafo3w_results(net, i_abs, s_abs):
         ld_l = i_l * t3["vn_lv_kv"].values * sqrt(3) / t3["sn_lv_mva"].values * 100
         ld_trafo = maximum(maximum(ld_h, ld_m), ld_l)
     elif trafo_loading == "power":
-        ld_h = s_abs[0][:, f:hv] / t3["sn_hv_mva"].values * 100.
-        ld_m = s_abs[1][:, hv:mv] / t3["sn_mv_mva"].values * 100.
-        ld_l = s_abs[1][:, mv:lv] / t3["sn_lv_mva"].values * 100.
+        ld_h = s_abs[0][:, f:hv] / t3["sn_hv_mva"].values * 100.0
+        ld_m = s_abs[1][:, hv:mv] / t3["sn_mv_mva"].values * 100.0
+        ld_l = s_abs[1][:, mv:lv] / t3["sn_lv_mva"].values * 100.0
         ld_trafo = maximum(maximum(ld_h, ld_m), ld_l)
     else:
         raise ValueError(
-            "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+            "Unknown transformer loading parameter %s - choose 'current' or 'power'"
+            % trafo_loading
+        )
 
     return i_h, i_m, i_l, ld_trafo
 
 
 def _get_empty_branch(ppc_branch_shape):
-    empties = (empty(ppc_branch_shape, dtype=complex), empty(ppc_branch_shape, dtype=complex),
-               empty(ppc_branch_shape), empty(ppc_branch_shape), empty(ppc_branch_shape), empty(ppc_branch_shape))
+    empties = (
+        empty(ppc_branch_shape, dtype=complex),
+        empty(ppc_branch_shape, dtype=complex),
+        empty(ppc_branch_shape),
+        empty(ppc_branch_shape),
+        empty(ppc_branch_shape),
+        empty(ppc_branch_shape),
+    )
     for e in empties:
         e.fill(nan)
     return empties
@@ -117,17 +131,21 @@ def v_to_i_s(net, vm, va):
     t_bus = real(branch[:, T_BUS]).astype(int64)
 
     # batch read
-    Sb_f, sf_abs, if_abs = calc_branch_flows_batch(Yf.data, Yf.indptr, Yf.indices, V, baseMVA, Yf.shape[0],
-                                                   f_bus, base_kv)
-    Sb_t, st_abs, it_abs = calc_branch_flows_batch(Yt.data, Yt.indptr, Yt.indices, V, baseMVA, Yt.shape[0],
-                                                   t_bus, base_kv)
+    Sb_f, sf_abs, if_abs = calc_branch_flows_batch(
+        Yf.data, Yf.indptr, Yf.indices, V, baseMVA, Yf.shape[0], f_bus, base_kv
+    )
+    Sb_t, st_abs, it_abs = calc_branch_flows_batch(
+        Yt.data, Yt.indptr, Yt.indices, V, baseMVA, Yt.shape[0], t_bus, base_kv
+    )
 
     # get ppc shaped values
     ppc = net["_ppc"]
     ppc_branch_shape = (V.shape[0], ppc["branch"].shape[0])
-    sb_f_ppc, sb_t_ppc, s_f_abs_ppc, s_t_abs_ppc, i_f_abs_ppc, i_t_abs_ppc = _get_empty_branch(ppc_branch_shape)
+    sb_f_ppc, sb_t_ppc, s_f_abs_ppc, s_t_abs_ppc, i_f_abs_ppc, i_t_abs_ppc = (
+        _get_empty_branch(ppc_branch_shape)
+    )
 
-    in_service = ppc["internal"]['branch_is']
+    in_service = ppc["internal"]["branch_is"]
     sb_f_ppc[:, in_service] = Sb_f
     sb_t_ppc[:, in_service] = Sb_t
     s_f_abs_ppc[:, in_service] = sf_abs

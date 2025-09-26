@@ -16,7 +16,7 @@ from pandapower.pypower.dSbus_dV import dSbus_dV_dense
 
 # @jit(Tuple((c16[:], c16[:]))(c16[:], i4[:], i4[:], c16[:], c16[:]), nopython=True, cache=False)
 @jit(nopython=True, cache=False)
-def dSbus_dV_numba_sparse(Yx, Yp, Yj, V, Vnorm, Ibus): # pragma: no cover
+def dSbus_dV_numba_sparse(Yx, Yp, Yj, V, Vnorm, Ibus):  # pragma: no cover
     """Computes partial derivatives of power injection w.r.t. voltage.
 
     Calculates faster with numba and sparse matrices.
@@ -78,9 +78,13 @@ def dSbus_dV(Ybus, V, I=None):
         # therefore it must be negative for numba version of dSbus_dV if it is not zeros anyways
         I = zeros(len(V), dtype=complex128) if I is None else -I
         # calculates sparse data
-        dS_dVm, dS_dVa = dSbus_dV_numba_sparse(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), I)
+        dS_dVm, dS_dVa = dSbus_dV_numba_sparse(
+            Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), I
+        )
         # generate sparse CSR matrices with computed data and return them
-        return sparse((dS_dVm, Ybus.indices, Ybus.indptr)), sparse((dS_dVa, Ybus.indices, Ybus.indptr))
+        return sparse((dS_dVm, Ybus.indices, Ybus.indptr)), sparse(
+            (dS_dVa, Ybus.indices, Ybus.indptr)
+        )
     else:
         I = zeros(len(V), dtype=complex128) if I is None else I
         return dSbus_dV_dense(Ybus, V, I)

@@ -15,5 +15,5 @@ columns 0-1
 """
 
 # define the indices
-AREA_I          = 0    # area number
-PRICE_REF_BUS   = 1    # price reference bus for this area
+AREA_I = 0  # area number
+PRICE_REF_BUS = 1  # price reference bus for this area

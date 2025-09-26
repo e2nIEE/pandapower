@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Runs the userfcn callbacks for a given stage.
-"""
+"""Runs the userfcn callbacks for a given stage."""
 
 
 def run_userfcn(userfcn, stage, *args2):
@@ -25,21 +24,21 @@ def run_userfcn(userfcn, stage, *args2):
     rv = args2[0]
     if (len(userfcn) > 0) and (stage in userfcn):
         for k in range(len(userfcn[stage])):
-            if 'args' in userfcn[stage][k]:
-                args = userfcn[stage][k]['args']
+            if "args" in userfcn[stage][k]:
+                args = userfcn[stage][k]["args"]
             else:
                 args = []
 
-            if stage in ['ext2int', 'formulation', 'int2ext']:
+            if stage in ["ext2int", "formulation", "int2ext"]:
                 # ppc     = userfcn_*_ext2int(ppc, args)
                 # om      = userfcn_*_formulation(om, args)
                 # results = userfcn_*_int2ext(results, args)
-                rv = userfcn[stage][k]['fcn'](rv, args)
-            elif stage in ['printpf', 'savecase']:
+                rv = userfcn[stage][k]["fcn"](rv, args)
+            elif stage in ["printpf", "savecase"]:
                 # results = userfcn_*_printpf(results, fd, ppopt, args)
                 # ppc     = userfcn_*_savecase(mpc, fd, prefix, args)
                 fdprint = args2[1]
                 ppoptprint = args2[2]
-                rv = userfcn[stage][k]['fcn'](rv, fdprint, ppoptprint, args)
+                rv = userfcn[stage][k]["fcn"](rv, fdprint, ppoptprint, args)
 
     return rv

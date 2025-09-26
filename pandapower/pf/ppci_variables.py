@@ -8,10 +8,11 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.pypower.bustypes import bustypes
 from numpy import flatnonzero as find, pi, exp, int64, hstack, zeros, float64
 
+
 def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     ## default arguments
     if ppci is None:
-        ValueError('ppci is empty')
+        ValueError("ppci is empty")
     # ppopt = ppoption(ppopt)
 
     # get data for calc
@@ -22,7 +23,12 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     branch = ppci["branch"]
     br_shape = branch.shape
     if br_shape[1] < branch_cols:
-        branch = hstack([branch, zeros(shape=(br_shape[0], branch_cols - br_shape[1]), dtype=float64)])
+        branch = hstack(
+            [
+                branch,
+                zeros(shape=(br_shape[0], branch_cols - br_shape[1]), dtype=float64),
+            ]
+        )
 
     ## get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen, vsc if vsc_ref else None)
@@ -33,12 +39,27 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
 
     ## initial state
     # V0    = ones(bus.shape[0])            ## flat start
-    V0 = bus[:, VM] * exp(1j * pi / 180. * bus[:, VA])
+    V0 = bus[:, VM] * exp(1j * pi / 180.0 * bus[:, VA])
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], vsc, \
-        ref, pv, pq, on, gbus, V0, ref_gens
+    return (
+        ppci["baseMVA"],
+        bus,
+        gen,
+        branch,
+        ppci["svc"],
+        ppci["tcsc"],
+        ppci["ssc"],
+        vsc,
+        ref,
+        pv,
+        pq,
+        on,
+        gbus,
+        V0,
+        ref_gens,
+    )
 
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):

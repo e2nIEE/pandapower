@@ -8,14 +8,26 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-"""Builds the bus admittance matrix and branch admittance matrices.
-"""
+"""Builds the bus admittance matrix and branch admittance matrices."""
 
 from numpy import ones, conj, nonzero, any, exp, pi, hstack, real, int64, errstate
 from scipy.sparse import csr_matrix
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, BR_STATUS, SHIFT, TAP, BR_R_ASYM, \
-    BR_X_ASYM, BR_G_ASYM, BR_B_ASYM
+from pandapower.pypower.idx_brch import (
+    F_BUS,
+    T_BUS,
+    BR_R,
+    BR_X,
+    BR_B,
+    BR_G,
+    BR_STATUS,
+    SHIFT,
+    TAP,
+    BR_R_ASYM,
+    BR_X_ASYM,
+    BR_G_ASYM,
+    BR_B_ASYM,
+)
 from pandapower.pypower.idx_bus import GS, BS
 
 
@@ -70,8 +82,7 @@ def makeYbus(baseMVA, bus, branch):
     # Yt = spdiags(Ytf, 0, nl, nl) * Cf + spdiags(Ytt, 0, nl, nl) * Ct
 
     ## build Ybus
-    Ybus = Cf.T * Yf + Ct.T * Yt + \
-           csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
+    Ybus = Cf.T * Yf + Ct.T * Yt + csr_matrix((Ysh, (range(nb), range(nb))), (nb, nb))
 
     # for canonical format
     for Y in (Ybus, Yf, Yt):
@@ -88,15 +99,21 @@ def branch_vectors(branch, nl):
     stat = branch[:, BR_STATUS]  # ones at in-service branches
     Ysf = stat / (branch[:, BR_R] + 1j * branch[:, BR_X])  # series admittance
     if any(branch[:, BR_R_ASYM]) or any(branch[:, BR_X_ASYM]):
-        Yst = stat / (branch[:, BR_R] + branch[:, BR_R_ASYM] +
-                      1j * (branch[:, BR_X] + branch[:, BR_X_ASYM]))
+        Yst = stat / (
+            branch[:, BR_R]
+            + branch[:, BR_R_ASYM]
+            + 1j * (branch[:, BR_X] + branch[:, BR_X_ASYM])
+        )
     else:
         Yst = Ysf
 
     Bcf = stat * (branch[:, BR_G] + 1j * branch[:, BR_B])  # branch charging admittance
     if any(branch[:, BR_G_ASYM]) or any(branch[:, BR_B_ASYM]):
-        Bct = stat * (branch[:, BR_G] + branch[:, BR_G_ASYM] +
-                      1j * (branch[:, BR_B] + branch[:, BR_B_ASYM]))
+        Bct = stat * (
+            branch[:, BR_G]
+            + branch[:, BR_G_ASYM]
+            + 1j * (branch[:, BR_B] + branch[:, BR_B_ASYM])
+        )
     else:
         Bct = Bcf
 
@@ -107,7 +124,6 @@ def branch_vectors(branch, nl):
 
     Ytt = Yst + Bct / 2
     Yff = (Ysf + Bcf / 2) / (tap * conj(tap))
-    Yft = - Ysf / conj(tap)
-    Ytf = - Yst / tap
+    Yft = -Ysf / conj(tap)
+    Ytf = -Yst / tap
     return Ytt, Yff, Yft, Ytf
-

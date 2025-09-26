@@ -19,17 +19,17 @@ from pandapower.auxiliary import version_check
 
 try:
     from numba import jit
-    version_check('numba')
-except ImportError: # pragma: no cover
+
+    version_check("numba")
+except ImportError:  # pragma: no cover
     from pandapower.pf.no_numba import jit
 
 
-
 @jit(nopython=True)
-def update_LODF_diag(LODF): # pragma: no cover
+def update_LODF_diag(LODF):  # pragma: no cover
     for ix in range(LODF.shape[0]):
         # To preserve the data type of diagnol elments
-        LODF[ix, ix] -= (LODF[ix, ix] + 1.)
+        LODF[ix, ix] -= LODF[ix, ix] + 1.0
 
 
 def makeLODF(branch, PTDF):
@@ -49,18 +49,19 @@ def makeLODF(branch, PTDF):
     nl, nb = PTDF.shape
     f = np.real(branch[:, F_BUS])
     t = np.real(branch[:, T_BUS])
-    Cft = sparse((r_[ones(nl), -ones(nl)],
-                      (r_[f, t], r_[arange(nl), arange(nl)])), (nb, nl))
+    Cft = sparse(
+        (r_[ones(nl), -ones(nl)], (r_[f, t], r_[arange(nl), arange(nl)])), (nb, nl)
+    )
 
     H = PTDF * Cft
     h = diag(H, 0)
     # Avoid zero division error
     # Implies a N-1 contingency (No backup branch)
-    den = (ones((nl, 1)) * h.T * -1 + 1.)
+    den = ones((nl, 1)) * h.T * -1 + 1.0
 
     # Silence warning caused by np.nan
-    with np.errstate(divide='ignore', invalid='ignore'):
-        LODF = (H / den)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        LODF = H / den
 
     # LODF = LODF - diag(diag(LODF)) - eye(nl, nl)
     update_LODF_diag(LODF)
@@ -172,12 +173,8 @@ def outage_results_OTDF(OTDF, Pbus, outage_branches):
     branch flows, which is typical in DC power flow models.
     """
     # get branch flows as an array first:
-    nminus1_otdf = (OTDF @ Pbus.reshape(-1, 1))
+    nminus1_otdf = OTDF @ Pbus.reshape(-1, 1)
     # reshape to a 2D array with rows relating to outage scenarios and columns to
     # the resulting branch power flows
     nminus1_otdf = nminus1_otdf.reshape(outage_branches.shape[0], -1)
     return nminus1_otdf
-
-
-
-

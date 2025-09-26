@@ -24,7 +24,7 @@ class BaseModel:
 
 
 class QVCurve:
-    """ Simple Q(V) controller. The characteristic curve is defined by 'vm_points_pu' and
+    """Simple Q(V) controller. The characteristic curve is defined by 'vm_points_pu' and
     'q_points_pu' (relative to sn_mva).
 
                                    - Q(Vm)/sn (underexcited)
@@ -47,6 +47,7 @@ class QVCurve:
                 ____/              |
                                    + Q(Vm)/sn (overexcited)
     """
+
     def __init__(self, vm_points_pu, q_points_pu):
         self.vm_points_pu = vm_points_pu
         self.q_points_pu = q_points_pu
@@ -56,7 +57,7 @@ class QVCurve:
 
 
 class CosphiVCurve:
-    """ Simple Q(V) controller. The characteristic curve is
+    """Simple Q(V) controller. The characteristic curve is
     defined by 'vm_points_pu' and 'cosphi_points' (pos. values -> overexcited, voltage increasing,
     neg. values -> underexcited, voltage decreasing).
 
@@ -80,6 +81,7 @@ class CosphiVCurve:
                 ____/              |
                                    + cosphi(Vm) (overexcited)
     """
+
     def __init__(self, vm_points_pu, cosphi_points):
         self.vm_points_pu = vm_points_pu
         self.cosphi_points = cosphi_points
@@ -91,7 +93,7 @@ class CosphiVCurve:
 
 
 class CosphiPCurve:
-    """ CosphiPCurve is a Q(P) controller, more precisely a cosphi(P) controller. The characteristic
+    """CosphiPCurve is a Q(P) controller, more precisely a cosphi(P) controller. The characteristic
     curve is defined by 'p_points_pu' and 'cosphi_points' (pos. values -> overexcited, voltage
     increasing, neg. values -> underexcited, voltage decreasing).
 
@@ -118,6 +120,7 @@ class CosphiPCurve:
         values lead to positive reactive power values (inductive/overexcited generator), negative
         values mean capactive/underexcited generator
     """
+
     def __init__(self, p_points_pu, cosphi_points):
         self.p_points_pu = np.array(p_points_pu)
         self.cosphi_points = np.array(cosphi_points)

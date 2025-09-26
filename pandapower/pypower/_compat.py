@@ -1,8 +1,8 @@
-
 """
 Compatibility helpers for older Python versions.
 
 """
+
 import sys
 
 

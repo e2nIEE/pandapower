@@ -16,8 +16,13 @@ from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_bus import VM, VA, NONE, BUS_TYPE
 from pandapower.run import _init_runpp_options
-from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_results, get_batch_trafo3w_results, \
-    get_batch_trafo_results, get_batch_bus_results
+from pandapower.timeseries.read_batch_results import (
+    v_to_i_s,
+    get_batch_line_results,
+    get_batch_trafo3w_results,
+    get_batch_trafo_results,
+    get_batch_bus_results,
+)
 
 try:
     import pandaplan.core.pplog as pplog
@@ -87,15 +92,26 @@ class OutputWriter(JSONSerializableClass):
 
     """
 
-    def __init__(self, net, time_steps=None, output_path=None, output_file_type=".p", write_time=None,
-                 log_variables=None, csv_separator=";"):
+    def __init__(
+        self,
+        net,
+        time_steps=None,
+        output_path=None,
+        output_file_type=".p",
+        write_time=None,
+        log_variables=None,
+        csv_separator=";",
+    ):
         super().__init__()
         self.output_path = output_path
         self.output_file_type = output_file_type
         self.write_time = write_time
         self.log_variables = log_variables
         # these are the default log variables which are added if log_variables is None
-        self.default_log_variables = [("res_bus", "vm_pu"), ("res_line", "loading_percent")]
+        self.default_log_variables = [
+            ("res_bus", "vm_pu"),
+            ("res_line", "loading_percent"),
+        ]
         self._add_log_defaults()
 
         self.csv_separator = csv_separator
@@ -141,6 +157,7 @@ class OutputWriter(JSONSerializableClass):
 
     def _monkey_patch(self, method, new):
         from types import MethodType
+
         setattr(self, method, MethodType(new, self))
 
     def _add_log_defaults(self):
@@ -148,7 +165,9 @@ class OutputWriter(JSONSerializableClass):
             self.log_variables = list()
             self.log_variables = copy.copy(self.default_log_variables)
         if not isinstance(self.log_variables, list):
-            raise TypeError("log_variables must be None or a list of tuples like [('res_bus', 'vm_pu')]")
+            raise TypeError(
+                "log_variables must be None or a list of tuples like [('res_bus', 'vm_pu')]"
+            )
 
     def init_log_variables(self, net):
         """
@@ -181,11 +200,18 @@ class OutputWriter(JSONSerializableClass):
     def _init_output(self):
         self.output = dict()
         # init parameters
-        self.output["Parameters"] = pd.DataFrame(data={
-            "time_step": self.time_steps,
-            "controller_unstable": np.full(len(self.time_steps), fill_value=False, dtype=bool),
-            "powerflow_failed": np.full(len(self.time_steps), fill_value=False, dtype=bool)
-        }, index=self.time_steps)
+        self.output["Parameters"] = pd.DataFrame(
+            data={
+                "time_step": self.time_steps,
+                "controller_unstable": np.full(
+                    len(self.time_steps), fill_value=False, dtype=bool
+                ),
+                "powerflow_failed": np.full(
+                    len(self.time_steps), fill_value=False, dtype=bool
+                ),
+            },
+            index=self.time_steps,
+        )
 
     def _init_np_results(self):
         # inits numpy array (contains results)
@@ -194,7 +220,6 @@ class OutputWriter(JSONSerializableClass):
             self._init_np_array(partial_func)
 
     def _save_separate(self, append):
-
         for partial in self.output_list:
             if isinstance(partial, tuple):
                 # if batch output is used
@@ -208,7 +233,12 @@ class OutputWriter(JSONSerializableClass):
                 file_path = os.path.join(self.output_path, table)
                 mkdirs_if_not_existent(file_path)
                 if append:
-                    file_name = str(variable) + "_" + str(self.cur_realtime) + self.output_file_type
+                    file_name = (
+                        str(variable)
+                        + "_"
+                        + str(self.cur_realtime)
+                        + self.output_file_type
+                    )
                 else:
                     file_name = str(variable) + self.output_file_type
                 file_path = os.path.join(file_path, file_name)
@@ -222,9 +252,11 @@ class OutputWriter(JSONSerializableClass):
                         data.to_excel(file_path)
                     except ValueError as e:
                         if data.shape[1] > 255:
-                            raise ValueError("pandas.to_excel() is not capable to handle large data" +
-                                             "with more than 255 columns. Please use other " +
-                                             "file_extensions instead, e.g. 'json'.")
+                            raise ValueError(
+                                "pandas.to_excel() is not capable to handle large data"
+                                + "with more than 255 columns. Please use other "
+                                + "file_extensions instead, e.g. 'json'."
+                            )
                         else:
                             raise ValueError(e)
                 elif "csv" in self.output_file_type.split("."):
@@ -251,7 +283,8 @@ class OutputWriter(JSONSerializableClass):
                     self._save_separate(append)
                 else:
                     raise UserWarning(
-                        "Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
+                        "Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending"
+                    )
                 if append:
                     self._init_output()
 
@@ -263,7 +296,9 @@ class OutputWriter(JSONSerializableClass):
         self.dump_to_file(net, append=append, recycle_options=recycle_options)
         self.cur_realtime = perf_counter()  # reset real time counter for next period
 
-    def save_results(self, net, time_step, pf_converged, ctrl_converged, recycle_options=None):
+    def save_results(
+        self, net, time_step, pf_converged, ctrl_converged, recycle_options=None
+    ):
         # Saves the results of the current time step to a matrix,
         # using the output functions in the self.output_list
 
@@ -295,9 +330,12 @@ class OutputWriter(JSONSerializableClass):
                 of()
             except:
                 import traceback
+
                 traceback.print_exc()
-                logger.error("Error in output function! Stored NaN for '%s' in time-step %i"
-                             % (of.__name__, self.time_step))
+                logger.error(
+                    "Error in output function! Stored NaN for '%s' in time-step %i"
+                    % (of.__name__, self.time_step)
+                )
                 self.save_nans_to_parameters()
 
     def save_nans_to_parameters(self):
@@ -320,15 +358,25 @@ class OutputWriter(JSONSerializableClass):
         """
         # remove variables from list
         if variable is not None:
-            self.output_list = [o for o in self.output_list if not (o.args[0] == table and o.args[1] == variable)]
-            self.log_variables = [o for o in self.log_variables if not (o[0] == table and o[1] == variable)]
+            self.output_list = [
+                o
+                for o in self.output_list
+                if not (o.args[0] == table and o.args[1] == variable)
+            ]
+            self.log_variables = [
+                o
+                for o in self.log_variables
+                if not (o[0] == table and o[1] == variable)
+            ]
         else:
             self.output_list = [o for o in self.output_list if not (o.args[0] == table)]
             self.log_variables = [o for o in self.log_variables if not (o[0] == table)]
         # init output container again
         self._init_np_results()
 
-    def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
+    def log_variable(
+        self, table, variable, index=None, eval_function=None, eval_name=None
+    ):
         """
         Adds a variable to log during simulation and appends it to output_list.
         INPUT:
@@ -367,9 +415,13 @@ class OutputWriter(JSONSerializableClass):
         # check if new log_variable is already in log_variables. If so either append or delete
         for i, log_args in enumerate(self.log_variables):
             if len(log_args) > 4 and eval_name is not None and log_args[4] == eval_name:
-                logger.warning("eval_name '{}' already exists for table '{}' and variable '{}'. "
-                                 "Please choose a unique eval_name. "
-                               "I'll use the default instead.".format(eval_name, log_args[0], log_args[1]))
+                logger.warning(
+                    "eval_name '{}' already exists for table '{}' and variable '{}'. "
+                    "Please choose a unique eval_name. "
+                    "I'll use the default instead.".format(
+                        eval_name, log_args[0], log_args[1]
+                    )
+                )
                 eval_name = None
             if log_args[0] == table and log_args[1] == variable:
                 # table and variable exist in log_variables
@@ -380,7 +432,11 @@ class OutputWriter(JSONSerializableClass):
                     # everything from table / variable is logged
                     append = False
                     continue
-                if log_args[2] is not None and index is not None and eval_function is None:
+                if (
+                    log_args[2] is not None
+                    and index is not None
+                    and eval_function is None
+                ):
                     # if index is given and an index was given before extend the index and get unique
                     log_args[2] = set(log_args[2].extend(index))
                 else:
@@ -393,62 +449,100 @@ class OutputWriter(JSONSerializableClass):
         for log_arg in append_args:
             self.log_variables.append(log_arg)
         if append:
-            self.log_variables.append((table, variable, index, eval_function, eval_name))
+            self.log_variables.append(
+                (table, variable, index, eval_function, eval_name)
+            )
 
     def _init_ppc_logging(self, table, variable, net, eval_function, eval_name):
         var_name = self._get_output_name(table, variable)
         ppc = net["_ppc"]
         if ppc is None:
             # if no ppc is in net-> create one
-            options = dict(algorithm='nr', calculate_voltage_angles=True, init="auto",
-                           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
-                           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
-                           voltage_depend_loads=True, consider_line_temperature=False)
+            options = dict(
+                algorithm="nr",
+                calculate_voltage_angles=True,
+                init="auto",
+                max_iteration="auto",
+                tolerance_mva=1e-8,
+                trafo_model="t",
+                trafo_loading="current",
+                enforce_q_lims=False,
+                check_connectivity=True,
+                voltage_depend_loads=True,
+                consider_line_temperature=False,
+            )
             _init_runpp_options(net, **options)
             ppc, _ = _pd2ppc(net)
             net["_ppc"] = ppc
-        index = list(range(sum(ppc['bus'][:, BUS_TYPE] != NONE)))
-        self._append_output_list(table, variable, net, index, eval_function, eval_name, var_name, func=self._log_ppc)
+        index = list(range(sum(ppc["bus"][:, BUS_TYPE] != NONE)))
+        self._append_output_list(
+            table,
+            variable,
+            net,
+            index,
+            eval_function,
+            eval_name,
+            var_name,
+            func=self._log_ppc,
+        )
         return index
 
-    def _init_log_variable(self, net, table, variable, index=None, eval_function=None, eval_name=None):
+    def _init_log_variable(
+        self, net, table, variable, index=None, eval_function=None, eval_name=None
+    ):
         if "ppc" in table:
-            index = self._init_ppc_logging(table, variable, net, eval_function, eval_name)
+            index = self._init_ppc_logging(
+                table, variable, net, eval_function, eval_name
+            )
 
         if np.any(pd.isnull(index)):
             # check how many elements there are in net
             index = net[table.split("res_")[-1].replace("_3ph", "")].index
-        if not hasattr(index, '__iter__'):
+        if not hasattr(index, "__iter__"):
             index = [index]
         if isinstance(index, (np.ndarray, pd.Index, pd.Series)):
             index = index.tolist()
         if eval_function is not None and eval_name is None:
-            eval_name = "%s.%s.%s.%s" % (table, variable, str(index), eval_function.__name__)
+            eval_name = "%s.%s.%s.%s" % (
+                table,
+                variable,
+                str(index),
+                eval_function.__name__,
+            )
         if eval_function is None and eval_name is not None:
-            logger.info("'eval_name' is to give a name in case of evaluation functions. Since " +
-                        "no function is given for eval_name '%s', " % eval_name +
-                        "eval_name is neglected.")
+            logger.info(
+                "'eval_name' is to give a name in case of evaluation functions. Since "
+                + "no function is given for eval_name '%s', " % eval_name
+                + "eval_name is neglected."
+            )
             eval_name = None
         if eval_name is not None and eval_function is not None:
             if isinstance(eval_function, FunctionType):
                 if "n_columns" in eval_function.__code__.co_varnames:
-                    logger.info("'eval_name' is to give a name in case of single value evaluation functions. Since " +
-                                "n_columns is given as a parameter of the evaluation function, the given for eval_name "
-                                "'%s', " % eval_name + "eval_name is neglected.")
+                    logger.info(
+                        "'eval_name' is to give a name in case of single value evaluation functions. Since "
+                        + "n_columns is given as a parameter of the evaluation function, the given for eval_name "
+                        "'%s', " % eval_name + "eval_name is neglected."
+                    )
                     eval_name = None
 
         # var_name = self._get_hash((table, variable, index, eval_function))
         var_name = self._get_output_name(table, variable)
-        idx = self._get_same_log_variable_partial_func_idx(table, variable, eval_function,
-                                                           eval_name)
+        idx = self._get_same_log_variable_partial_func_idx(
+            table, variable, eval_function, eval_name
+        )
         if idx is not None:
             self._append_existing_log_variable_partial_func(idx, index)
         else:
-            self._append_output_list(table, variable, net, index, eval_function, eval_name, var_name)
+            self._append_output_list(
+                table, variable, net, index, eval_function, eval_name, var_name
+            )
 
-    def _get_same_log_variable_partial_func_idx(self, table, variable, eval_function, eval_name):
-        """ Returns the position index in self.output_list of partial_func which has the same table
-        and variable and no evaluation function. """
+    def _get_same_log_variable_partial_func_idx(
+        self, table, variable, eval_function, eval_name
+    ):
+        """Returns the position index in self.output_list of partial_func which has the same table
+        and variable and no evaluation function."""
         if eval_function is None and eval_name is None:
             for i, partial_func in enumerate(self.output_list):
                 partial_args = partial_func.args
@@ -458,15 +552,19 @@ class OutputWriter(JSONSerializableClass):
                     return i
 
     def _append_existing_log_variable_partial_func(self, idx, index):
-        """ Appends the index of existing, same partial_func in output_list. """
+        """Appends the index of existing, same partial_func in output_list."""
         for i in index:
             if i not in self.output_list[idx].args[3]:
                 self.output_list[idx].args[3].append(i)
 
-    def _append_output_list(self, table, variable, net, index, eval_function, eval_name, var_name, func=None):
-        """ Appends the output_list by an additional partial_func. """
+    def _append_output_list(
+        self, table, variable, net, index, eval_function, eval_name, var_name, func=None
+    ):
+        """Appends the output_list by an additional partial_func."""
         func = self._log if func is None else func
-        partial_func = functools.partial(func, table, variable, net, index, eval_function, eval_name)
+        partial_func = functools.partial(
+            func, table, variable, net, index, eval_function, eval_name
+        )
         partial_func.__name__ = var_name
         self.output_list.append(partial_func)
         if self.time_steps is not None:
@@ -487,11 +585,15 @@ class OutputWriter(JSONSerializableClass):
 
             # save results to numpy array
             time_step_idx = self.time_step_lookup[self.time_step]
-            hash_name = self._get_np_name((table, variable, net, index, eval_function, eval_name))
+            hash_name = self._get_np_name(
+                (table, variable, net, index, eval_function, eval_name)
+            )
             self.np_results[hash_name][time_step_idx, :] = result
 
         except Exception as e:
-            logger.error("Error at index %s for %s[%s]: %s" % (index, table, variable, e))
+            logger.error(
+                "Error at index %s for %s[%s]: %s" % (index, table, variable, e)
+            )
 
     def _log_ppc(self, table, variable, net, index, eval_function=None, eval_name=None):
         # custom log function fo ppc results
@@ -508,7 +610,9 @@ class OutputWriter(JSONSerializableClass):
 
         # save results to numpy array
         time_step_idx = self.time_step_lookup[self.time_step]
-        hash_name = self._get_np_name((table, variable, net, index, eval_function, eval_name))
+        hash_name = self._get_np_name(
+            (table, variable, net, index, eval_function, eval_name)
+        )
         self.np_results[hash_name][time_step_idx, :] = result
 
     def _np_to_pd(self):
@@ -528,14 +632,19 @@ class OutputWriter(JSONSerializableClass):
                 else:
                     columns = [eval_name]
 
-            res_df = pd.DataFrame(self.np_results[np_name], index=self.time_steps, columns=columns)
+            res_df = pd.DataFrame(
+                self.np_results[np_name], index=self.time_steps, columns=columns
+            )
             if res_name in self.output and eval_name is not None:
                 try:
-                    self.output[res_name] = pd.concat([self.output[res_name], res_df], axis=1,
-                                                      sort=False)
+                    self.output[res_name] = pd.concat(
+                        [self.output[res_name], res_df], axis=1, sort=False
+                    )
                 except TypeError:
                     # pandas legacy < 0.21
-                    self.output[res_name] = pd.concat([self.output[res_name], res_df], axis=1)
+                    self.output[res_name] = pd.concat(
+                        [self.output[res_name], res_df], axis=1
+                    )
             else:
                 # new dataframe
                 self.output[res_name] = res_df
@@ -574,7 +683,9 @@ class OutputWriter(JSONSerializableClass):
     def get_batch_outputs(self, net, recycle_options):
         # read the results in batch from vm, va (ppci values)
 
-        if isinstance(recycle_options["batch_read"], list) and len(recycle_options["batch_read"]):
+        if isinstance(recycle_options["batch_read"], list) and len(
+            recycle_options["batch_read"]
+        ):
             # vm, va is without out of service elements
             vm, va = self.output["ppc_bus.vm"], self.output["ppc_bus.va"]
             _, s_abs, i_abs = v_to_i_s(net, vm, va)
@@ -582,16 +693,32 @@ class OutputWriter(JSONSerializableClass):
             new_output_list = list()
             for table, variable in recycle_options["batch_read"]:
                 if table == "res_line" and "res_line" not in results:
-                    i_ka, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(net, i_abs)
-                    results["res_line"] = dict(i_ka=i_ka, i_from_ka=i_from_ka, i_to_ka=i_to_ka,
-                                               loading_percent=loading_percent)
+                    i_ka, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(
+                        net, i_abs
+                    )
+                    results["res_line"] = dict(
+                        i_ka=i_ka,
+                        i_from_ka=i_from_ka,
+                        i_to_ka=i_to_ka,
+                        loading_percent=loading_percent,
+                    )
                 elif table == "res_trafo" and "res_trafo" not in results:
-                    i_ka, i_hv_ka, i_lv_ka, s_mva, loading_percent = get_batch_trafo_results(net, i_abs, s_abs)
-                    results["res_trafo"] = dict(i_ka=i_ka, i_hv_ka=i_hv_ka, i_lv_ka=i_lv_ka,
-                                                loading_percent=loading_percent)
+                    i_ka, i_hv_ka, i_lv_ka, s_mva, loading_percent = (
+                        get_batch_trafo_results(net, i_abs, s_abs)
+                    )
+                    results["res_trafo"] = dict(
+                        i_ka=i_ka,
+                        i_hv_ka=i_hv_ka,
+                        i_lv_ka=i_lv_ka,
+                        loading_percent=loading_percent,
+                    )
                 elif table == "res_trafo3w":
-                    i_h, i_m, i_l, loading_percent = get_batch_trafo3w_results(net, i_abs, s_abs)
-                    results["res_trafo3w"] = dict(i_h=i_h, i_m=i_m, i_l=i_l, loading_percent=loading_percent)
+                    i_h, i_m, i_l, loading_percent = get_batch_trafo3w_results(
+                        net, i_abs, s_abs
+                    )
+                    results["res_trafo3w"] = dict(
+                        i_h=i_h, i_m=i_m, i_l=i_l, loading_percent=loading_percent
+                    )
                 elif table == "res_bus" and "res_bus" not in results:
                     vm_full, va_full = get_batch_bus_results(net, vm, va)
                     results["res_bus"] = dict(vm_pu=vm_full, va_degree=va_full)
@@ -599,6 +726,8 @@ class OutputWriter(JSONSerializableClass):
                     raise ValueError("Something went wrong")
                 output_name = "%s.%s" % (table, variable)
                 # convert to dataframe
-                self.output[output_name] = pd.DataFrame(data=results[table][variable], index=self.time_steps)
+                self.output[output_name] = pd.DataFrame(
+                    data=results[table][variable], index=self.time_steps
+                )
                 new_output_list.append((table, variable))
             self.output_list = new_output_list

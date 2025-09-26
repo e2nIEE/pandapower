@@ -5,7 +5,12 @@
 
 from numpy import nan_to_num, array, allclose, int64, concatenate
 
-from pandapower.auxiliary import LoadflowNotConverged, AlgorithmUnknown, _clean_up, _add_auxiliary_elements
+from pandapower.auxiliary import (
+    LoadflowNotConverged,
+    AlgorithmUnknown,
+    _clean_up,
+    _add_auxiliary_elements,
+)
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
 from pandapower.build_gen import _build_gen_ppc
 from pandapower.pd2ppc import _pd2ppc, _calc_pq_elements_and_add_on_ppc, _ppc2ppci
@@ -18,8 +23,14 @@ from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, init_results, \
-    verify_results, _ppci_bus_to_ppc, _ppci_other_to_ppc
+from pandapower.results import (
+    _extract_results,
+    _copy_results_ppci_to_ppc,
+    init_results,
+    verify_results,
+    _ppci_bus_to_ppc,
+    _ppci_other_to_ppc,
+)
 
 import logging
 
@@ -37,23 +48,56 @@ def _powerflow(net, **kwargs):
 
     net["converged"] = False
     net["OPF_converged"] = False
-    _add_auxiliary_elements(net)  # create gen elements for start and end buses of dcline
+    _add_auxiliary_elements(
+        net
+    )  # create gen elements for start and end buses of dcline
 
     if not ac or net["_options"]["init_results"]:
         verify_results(net)
     else:
         init_results(net)
 
-    if net["_options"]["voltage_depend_loads"] and algorithm not in ['nr', 'bfsw'] and not (
-            allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0) and
-            allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0)):
-        logger.error(("pandapower powerflow does not support voltage depend loads for algorithm "
-                      "'%s'!") % algorithm)
+    if (
+        net["_options"]["voltage_depend_loads"]
+        and algorithm not in ["nr", "bfsw"]
+        and not (
+            allclose(
+                concatenate(
+                    (
+                        net.load.const_z_p_percent.values,
+                        net.load.const_z_q_percent.values,
+                    )
+                ),
+                0,
+            )
+            and allclose(
+                concatenate(
+                    (
+                        net.load.const_z_p_percent.values,
+                        net.load.const_z_q_percent.values,
+                    )
+                ),
+                0,
+            )
+        )
+    ):
+        logger.error(
+            (
+                "pandapower powerflow does not support voltage depend loads for algorithm "
+                "'%s'!"
+            )
+            % algorithm
+        )
 
     # clear lookups
-    net._pd2ppc_lookups = {"bus": array([], dtype=int64), "bus_dc": array([], dtype=int64),
-                           "ext_grid": array([], dtype=int64), "gen": array([], dtype=int64),
-                           "branch": array([], dtype=int64), "branch_dc": array([], dtype=int64)}
+    net._pd2ppc_lookups = {
+        "bus": array([], dtype=int64),
+        "bus_dc": array([], dtype=int64),
+        "ext_grid": array([], dtype=int64),
+        "gen": array([], dtype=int64),
+        "branch": array([], dtype=int64),
+        "branch_dc": array([], dtype=int64),
+    }
 
     # convert pandapower net to ppc
     ppc, ppci = _pd2ppc(net, **kwargs)
@@ -78,20 +122,23 @@ def _recycled_powerflow(net, **kwargs):
     algorithm = options["algorithm"]
     ac = options["ac"]
     recycle = options["recycle"]
-    ppci = {"bus": net["_ppc"]["internal"]["bus"],
-            "gen": net["_ppc"]["internal"]["gen"],
-            "branch": net["_ppc"]["internal"]["branch"],
-            "baseMVA": net["_ppc"]["internal"]["baseMVA"],
-            "internal": net["_ppc"]["internal"],
-            }
-    if algorithm not in ['nr', 'iwamoto_nr'] and ac:
-        raise ValueError("recycle is only available with Newton-Raphson power flow. Choose "
-                         "algorithm='nr'")
+    ppci = {
+        "bus": net["_ppc"]["internal"]["bus"],
+        "gen": net["_ppc"]["internal"]["gen"],
+        "branch": net["_ppc"]["internal"]["branch"],
+        "baseMVA": net["_ppc"]["internal"]["baseMVA"],
+        "internal": net["_ppc"]["internal"],
+    }
+    if algorithm not in ["nr", "iwamoto_nr"] and ac:
+        raise ValueError(
+            "recycle is only available with Newton-Raphson power flow. Choose "
+            "algorithm='nr'"
+        )
 
     ppc = net["_ppc"]
     ppc["success"] = False
-    ppc["iterations"] = 0.
-    ppc["et"] = 0.
+    ppc["iterations"] = 0.0
+    ppc["et"] = 0.0
 
     if "bus_pq" in recycle and recycle["bus_pq"]:
         # update pq values in bus
@@ -101,7 +148,10 @@ def _recycled_powerflow(net, **kwargs):
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
-            _calc_trafo_parameter(net, ppc,)
+            _calc_trafo_parameter(
+                net,
+                ppc,
+            )
         if "trafo3w" in lookup:
             _calc_trafo3w_parameter(net, ppc)
 
@@ -140,15 +190,22 @@ def _run_pf_algorithm(ppci, options, **kwargs):
     if ac:
         _, pv, pq = bustypes(ppci["bus"], ppci["gen"])
         # ----- run the powerflow -----
-        if pq.shape[0] == 0 and pv.shape[0] == 0 and not options['distributed_slack'] \
-                and len(ppci["svc"]) == 0 and len(ppci["tcsc"]) == 0 and len(ppci["ssc"]) == 0 and len(ppci["vsc"]) == 0:
+        if (
+            pq.shape[0] == 0
+            and pv.shape[0] == 0
+            and not options["distributed_slack"]
+            and len(ppci["svc"]) == 0
+            and len(ppci["tcsc"]) == 0
+            and len(ppci["ssc"]) == 0
+            and len(ppci["vsc"]) == 0
+        ):
             # ommission not correct if distributed slack is used or facts devices are present
             result = _bypass_pf_and_set_results(ppci, options)
-        elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
+        elif algorithm == "bfsw":  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)
-        elif algorithm in ['nr', 'iwamoto_nr']:
+        elif algorithm in ["nr", "iwamoto_nr"]:
             result = _run_newton_raphson_pf(ppci, options)
-        elif algorithm in ['fdbx', 'fdxb', 'gs']:  # algorithms existing within pypower
+        elif algorithm in ["fdbx", "fdxb", "gs"]:  # algorithms existing within pypower
             result = _runpf_pypower(ppci, options, **kwargs)[0]
         else:
             raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
@@ -171,8 +228,11 @@ def _ppci_to_net(result, net):
         _clean_up(net, res=False)
         algorithm = net["_options"]["algorithm"]
         max_iteration = net["_options"]["max_iteration"]
-        raise LoadflowNotConverged("Power Flow {0} did not converge after "
-                                   "{1} iterations!".format(algorithm, max_iteration))
+        raise LoadflowNotConverged(
+            "Power Flow {0} did not converge after {1} iterations!".format(
+                algorithm, max_iteration
+            )
+        )
     else:
         net["_ppc"] = result
         net["converged"] = True
@@ -183,9 +243,13 @@ def _ppci_to_net(result, net):
 
 def _bypass_pf_and_set_results(ppci, options):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, _, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, _, pq, *_, V0, ref_gens = (
+        _get_pf_variables_from_ppci(ppci)
+    )
     V = ppci["bus"][:, VM]
-    bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens)
+    bus, gen, branch = pfsoln_pypower(
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens
+    )
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
     ppci["success"] = True
     ppci["iterations"] = 1

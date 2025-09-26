@@ -43,7 +43,9 @@ def _calc_rx(net, ppci, bus_idx):
 def _calc_ybus(ppci):
     Ybus, Yf, Yt = makeYbus(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     if np.isnan(Ybus.data).any():
-        raise ValueError("nan value detected in Ybus matrix - check calculation parameters for nan values")
+        raise ValueError(
+            "nan value detected in Ybus matrix - check calculation parameters for nan values"
+        )
     ppci["internal"]["Yf"] = Yf
     ppci["internal"]["Yt"] = Yt
     ppci["internal"]["Ybus"] = Ybus
@@ -52,7 +54,7 @@ def _calc_ybus(ppci):
 def _calc_zbus(net, ppci):
     try:
         Ybus = ppci["internal"]["Ybus"]
-        sparsity = Ybus.nnz / Ybus.shape[0]**2
+        sparsity = Ybus.nnz / Ybus.shape[0] ** 2
         if sparsity < 0.002:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")

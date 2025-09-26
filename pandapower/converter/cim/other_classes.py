@@ -4,6 +4,7 @@
 
 @author: mrichter
 """
+
 from __future__ import annotations
 import datetime
 import enum
@@ -39,10 +40,10 @@ class ReportCode(enum.Enum):
 
 
 class LogLevel(enum.Enum):
-    INFO = 'INFO'
-    WARNING = 'WARNING'
-    ERROR = 'ERROR'
-    EXCEPTION = 'EXCEPTION'
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    EXCEPTION = "EXCEPTION"
 
     @classmethod
     def from_value(cls, value):
@@ -53,7 +54,13 @@ class LogLevel(enum.Enum):
 
 
 class Report:
-    def __init__(self, message: str, code: ReportCode, level: LogLevel, timestamp: datetime.datetime = None):
+    def __init__(
+        self,
+        message: str,
+        code: ReportCode,
+        level: LogLevel,
+        timestamp: datetime.datetime = None,
+    ):
         self.timestamp = datetime.datetime.now()
         if timestamp is not None:
             self.timestamp = timestamp
@@ -66,7 +73,7 @@ class Report:
             "timestamp": self.timestamp.isoformat(),
             "message": self.message,
             "code": self.code.value,
-            "level": self.level.value
+            "level": self.level.value,
         }
 
 
@@ -76,7 +83,7 @@ class ReportContainer(interfaces.ReportContainer):
             self.logs = logs
         else:
             self.logs = []
-    
+
     def add_log(self, log: Report):
         self.logs.append(log)
 
@@ -87,5 +94,5 @@ class ReportContainer(interfaces.ReportContainer):
         self.logs.extend(report_container.get_logs())
 
     def serialize(self, path_to_disk: str):
-        with open(path_to_disk, 'w', encoding='UTF-8') as file:
+        with open(path_to_disk, "w", encoding="UTF-8") as file:
             json.dump(obj=[log.to_dict() for log in self.logs], fp=file, indent=2)

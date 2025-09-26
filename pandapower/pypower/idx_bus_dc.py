@@ -45,16 +45,16 @@ DC_P = 2
 DC_NONE = 3
 
 # define the indices
-DC_BUS_I = 0    # DC bus number (1 to 29997)
-DC_BUS_TYPE: int = 1    # DC bus type
-DC_PD = 2    # Pd, real power demand (MW)
-DC_GS = 3    # Gs, shunt conductance (MW at V = 1.0 p.u.)
-DC_BUS_AREA = 4    # area number, 1-100
-DC_VM = 5    # Vm, voltage magnitude (p.u.)
-DC_BASE_KV = 6    # baseKV, base voltage (kV)
-DC_ZONE = 7   # zone, loss zone (1-999)
-DC_VMAX = 8   # maxVm, maximum voltage magnitude (p.u.)
-DC_VMIN = 9   # minVm, minimum voltage magnitude (p.u.)
-DC_SL_FAC = 10   # scaling factor for special purposes
+DC_BUS_I = 0  # DC bus number (1 to 29997)
+DC_BUS_TYPE: int = 1  # DC bus type
+DC_PD = 2  # Pd, real power demand (MW)
+DC_GS = 3  # Gs, shunt conductance (MW at V = 1.0 p.u.)
+DC_BUS_AREA = 4  # area number, 1-100
+DC_VM = 5  # Vm, voltage magnitude (p.u.)
+DC_BASE_KV = 6  # baseKV, base voltage (kV)
+DC_ZONE = 7  # zone, loss zone (1-999)
+DC_VMAX = 8  # maxVm, maximum voltage magnitude (p.u.)
+DC_VMIN = 9  # minVm, minimum voltage magnitude (p.u.)
+DC_SL_FAC = 10  # scaling factor for special purposes
 
 dc_bus_cols = 11

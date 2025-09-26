@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Splits the gencost variable into two pieces if costs are given for Qg.
-"""
+"""Splits the gencost variable into two pieces if costs are given for Qg."""
 
 from sys import stderr
 
@@ -32,6 +31,6 @@ def pqcost(gencost, ng, on=None):
         pcost = gencost[on, :]
         qcost = gencost[on + ng, :]
     else:
-        stderr.write('pqcost: gencost has wrong number of rows\n')
+        stderr.write("pqcost: gencost has wrong number of rows\n")
 
     return pcost, qcost

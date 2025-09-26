@@ -58,7 +58,11 @@ def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
     array-like
         Admittance values of the SVCs in per-unit.
     """
-    y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu)
+    y_svc = (
+        2 * (np.pi - x_control)
+        + np.sin(2 * x_control)
+        + np.pi * svc_x_l_pu / svc_x_cvar_pu
+    ) / (np.pi * svc_x_l_pu)
     return y_svc
 
 
@@ -86,7 +90,9 @@ def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
         The admittance matrix for the SVCs.
     """
     Y_SVC = -1j * calc_y_svc_pu(x_control_svc, svc_x_l_pu, svc_x_cvar_pu)
-    Ybus_svc = csr_matrix((Y_SVC, (svc_buses, svc_buses)), shape=Ybus.shape, dtype=np.complex128)
+    Ybus_svc = csr_matrix(
+        (Y_SVC, (svc_buses, svc_buses)), shape=Ybus.shape, dtype=np.complex128
+    )
     return Ybus_svc
 
 
@@ -119,7 +125,9 @@ def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tc
     return Ybus_tcsc
 
 
-def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu):
+def makeYft_tcsc(
+    Ybus_tcsc, tcsc_fb, tcsc_tb, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu
+):
     """
     Constructs the 'from' and 'to' admittance matrices for the TCSC (Thyristor Controlled Series Capacitor).
 
@@ -180,12 +188,18 @@ def makeYbus_ssc_vsc(Ybus, internal_y_pu, fb, tb, controllable):
         if not np.any(flag):
             Ybus_matrices.append(csr_matrix(Ybus.shape, dtype=np.complex128))
             continue
-        Ybus_flag = make_Ybus_facts(fb[flag], tb[flag], internal_y_pu[flag], Ybus.shape[0])
+        Ybus_flag = make_Ybus_facts(
+            fb[flag], tb[flag], internal_y_pu[flag], Ybus.shape[0]
+        )
         Ybus_matrices.append(Ybus_flag)
 
     Ybus_not_controllable, Ybus_controllable = Ybus_matrices[0], Ybus_matrices[1]
 
-    return Ybus_not_controllable, Ybus_controllable, Ybus_not_controllable + Ybus_controllable
+    return (
+        Ybus_not_controllable,
+        Ybus_controllable,
+        Ybus_not_controllable + Ybus_controllable,
+    )
 
 
 def make_Ybus_facts(from_bus, to_bus, y_pu, n, ysf_pu=0, yst_pu=0, dtype=np.complex128):
@@ -215,7 +229,9 @@ def make_Ybus_facts(from_bus, to_bus, y_pu, n, ysf_pu=0, yst_pu=0, dtype=np.comp
     data = np.concatenate([y_pu + ysf_pu, y_pu + yst_pu, -y_pu, -y_pu])
 
     # Create and return the Ybus matrix using the compressed sparse row format
-    Ybus_facts = csr_matrix((data, (row_indices, col_indices)), shape=(n, n), dtype=dtype)
+    Ybus_facts = csr_matrix(
+        (data, (row_indices, col_indices)), shape=(n, n), dtype=dtype
+    )
     return Ybus_facts
 
 
@@ -250,7 +266,13 @@ def make_Yft_facts(from_bus, to_bus, y_pu, n, ysf_pu=0, yst_pu=0):
     col_indices = np.concatenate([from_bus, to_bus])
 
     # Construct Yf and Yt matrices using the CSR format
-    Yf = csr_matrix((np.concatenate([y_pu + ysf_pu, -y_pu]), (row_indices, col_indices)), shape=(nl, n))
-    Yt = csr_matrix((np.concatenate([-y_pu, y_pu + yst_pu]), (row_indices, col_indices)), shape=(nl, n))
+    Yf = csr_matrix(
+        (np.concatenate([y_pu + ysf_pu, -y_pu]), (row_indices, col_indices)),
+        shape=(nl, n),
+    )
+    Yt = csr_matrix(
+        (np.concatenate([-y_pu, y_pu + yst_pu]), (row_indices, col_indices)),
+        shape=(nl, n),
+    )
 
     return Yf, Yt

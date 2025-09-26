@@ -15,8 +15,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 from functools import partial
-from pandapower.auxiliary import (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged,
-                                  NetCalculationNotConverged)
+from pandapower.auxiliary import (
+    LoadflowNotConverged,
+    OPFNotConverged,
+    ControllerNotConverged,
+    NetCalculationNotConverged,
+)
 from pandapower.run import runpp
 from pandapower.toolbox import get_connected_elements, replace_xward_by_ward
 from pandapower.diagnostic_reports import diagnostic_report
@@ -24,12 +28,28 @@ from pandapower.diagnostic_reports import diagnostic_report
 # separator between log messages
 log_message_sep = "\n --------\n"
 
-expected_exceptions = (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged, NetCalculationNotConverged)
+expected_exceptions = (
+    LoadflowNotConverged,
+    OPFNotConverged,
+    ControllerNotConverged,
+    NetCalculationNotConverged,
+)
 
 
-def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
-               overload_scaling_factor=0.001, min_r_ohm=0.001, min_x_ohm=0.001, max_r_ohm=100,
-               max_x_ohm=100, nom_voltage_tolerance=0.3, numba_tolerance=1e-05, **kwargs):
+def diagnostic(
+    net,
+    report_style="detailed",
+    warnings_only=False,
+    return_result_dict=True,
+    overload_scaling_factor=0.001,
+    min_r_ohm=0.001,
+    min_x_ohm=0.001,
+    max_r_ohm=100,
+    max_x_ohm=100,
+    nom_voltage_tolerance=0.3,
+    numba_tolerance=1e-05,
+    **kwargs,
+):
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -87,8 +107,16 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         (missing_bus_indices, {}),
         (disconnected_elements, {}),
         (different_voltage_levels_connected, {}),
-        (implausible_impedance_values, {"min_r_ohm": min_r_ohm, "min_x_ohm": min_x_ohm, "max_r_ohm": max_r_ohm,
-                                          "max_x_ohm": max_x_ohm, **kwargs}),
+        (
+            implausible_impedance_values,
+            {
+                "min_r_ohm": min_r_ohm,
+                "min_x_ohm": min_x_ohm,
+                "max_r_ohm": max_r_ohm,
+                "max_x_ohm": max_x_ohm,
+                **kwargs,
+            },
+        ),
         (nominal_voltages_dont_match, {"nom_voltage_tolerance": nom_voltage_tolerance}),
         (invalid_values, {}),
         (overload, {"overload_scaling_factor": overload_scaling_factor, **kwargs}),
@@ -119,42 +147,53 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         "min_r_pu": max_r_ohm,
         "min_x_pu": max_x_ohm,
         "nom_voltage_tolerance": nom_voltage_tolerance,
-        "numba_tolerance": numba_tolerance
+        "numba_tolerance": numba_tolerance,
     }
 
-    if report_style == 'detailed':
-        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=False,
-                          warnings_only=warnings_only)
-    elif report_style == 'compact':
-        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=True,
-                          warnings_only=warnings_only)
+    if report_style == "detailed":
+        diagnostic_report(
+            net,
+            diag_results,
+            diag_errors,
+            diag_params,
+            compact_report=False,
+            warnings_only=warnings_only,
+        )
+    elif report_style == "compact":
+        diagnostic_report(
+            net,
+            diag_results,
+            diag_errors,
+            diag_params,
+            compact_report=True,
+            warnings_only=warnings_only,
+        )
     if return_result_dict:
         return diag_results
 
 
 def check_greater_zero(element, element_index, column):
     """
-     functions that check, if a certain input type restriction for attribute values of a pandapower
-     elements are fulfilled. Exemplary description for all type check functions.
+    functions that check, if a certain input type restriction for attribute values of a pandapower
+    elements are fulfilled. Exemplary description for all type check functions.
 
-     INPUT:
-        **element (pandas.Series)** - pandapower element instance (e.g. net.bus.loc[1])
+    INPUT:
+       **element (pandas.Series)** - pandapower element instance (e.g. net.bus.loc[1])
 
-        **element_index (int)**     - index of the element instance
+       **element_index (int)**     - index of the element instance
 
-        **column (string)**         - element attribute (e.g. 'vn_kv')
+       **column (string)**         - element attribute (e.g. 'vn_kv')
 
 
-     OUTPUT:
-        **element_index (index)**   - index of element instance, if input type restriction is not
-                                      fulfilled
+    OUTPUT:
+       **element_index (index)**   - index of element instance, if input type restriction is not
+                                     fulfilled
 
 
     """
 
     if check_number(element, element_index, column) is None:
-
-        if (element[column] <= 0):
+        if element[column] <= 0:
             return element_index
 
     else:
@@ -163,8 +202,7 @@ def check_greater_zero(element, element_index, column):
 
 def check_greater_equal_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
-        if (element[column] < 0):
+        if element[column] < 0:
             return element_index
 
     else:
@@ -173,8 +211,7 @@ def check_greater_equal_zero(element, element_index, column):
 
 def check_less_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
-        if (element[column] >= 0):
+        if element[column] >= 0:
             return element_index
 
     else:
@@ -183,7 +220,6 @@ def check_less_zero(element, element_index, column):
 
 def check_less_15(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
         if element[column] >= 15:
             return element_index
 
@@ -193,8 +229,7 @@ def check_less_15(element, element_index, column):
 
 def check_less_equal_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
-        if (element[column] > 0):
+        if element[column] > 0:
             return element_index
 
     else:
@@ -227,7 +262,6 @@ def check_number(element, element_index, column):
 
 def check_greater_zero_less_equal_one(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
         if not (0 < element[column] <= 1):
             return element_index
 
@@ -236,7 +270,7 @@ def check_greater_zero_less_equal_one(element, element_index, column):
 
 
 def check_switch_type(element, element_index, column):
-    valid_values = ['b', 'l', 't', 't3']
+    valid_values = ["b", "l", "t", "t3"]
     if element[column] not in valid_values:
         return element_index
 
@@ -266,55 +300,105 @@ def invalid_values(net):
     # for each attribute according to pandapower data structure documantation
     # (see also type_checks function)
 
-    important_values = {'bus': [('vn_kv', '>0'), ('in_service', 'boolean')],
-                        'line': [('from_bus', 'positive_integer'),
-                                 ('to_bus', 'positive_integer'),
-                                 ('length_km', '>0'), ('r_ohm_per_km', '>=0'),
-                                 ('x_ohm_per_km', '>=0'), ('c_nf_per_km', '>=0'),
-                                 ('max_i_ka', '>0'), ('df', '0<x<=1'), ('in_service', 'boolean')],
-                        'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
-                                  ('sn_mva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
-                                  ('vkr_percent', '>=0'), ('vk_percent', '>0'),
-                                  ('vkr_percent', '<15'), ('vk_percent', '<15'),
-                                  ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
-                                  ('in_service', 'boolean')],
-                        'trafo3w': [('hv_bus', 'positive_integer'), ('mv_bus', 'positive_integer'),
-                                    ('lv_bus', 'positive_integer'),
-                                    ('sn_hv_mva', '>0'), ('sn_mv_mva', '>0'), ('sn_lv_mva', '>0'),
-                                    ('vn_hv_kv', '>0'), ('vn_mv_kv', '>0'), ('vn_lv_kv', '>0'),
-                                    ('vkr_hv_percent', '>=0'), ('vkr_mv_percent', '>=0'),
-                                    ('vkr_lv_percent', '>=0'), ('vk_hv_percent', '>0'),
-                                    ('vk_mv_percent', '>0'), ('vk_lv_percent', '>0'),
-                                    ('vkr_hv_percent', '<15'), ('vkr_mv_percent', '<15'),
-                                    ('vkr_lv_percent', '<15'), ('vk_hv_percent', '<15'),
-                                    ('vk_mv_percent', '<15'), ('vk_lv_percent', '<15'),
-                                    ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
-                                    ('in_service', 'boolean')],
-                        'load': [('bus', 'positive_integer'), ('p_mw', 'number'),
-                                 ('q_mvar', 'number'),
-                                 ('scaling', '>=0'), ('in_service', 'boolean')],
-                        'sgen': [('bus', 'positive_integer'), ('p_mw', 'number'),
-                                 ('q_mvar', 'number'),
-                                 ('scaling', '>=0'), ('in_service', 'boolean')],
-                        'gen': [('bus', 'positive_integer'), ('p_mw', 'number'),
-                                ('scaling', '>=0'), ('in_service', 'boolean')],
-                        'ext_grid': [('bus', 'positive_integer'), ('vm_pu', '>0'),
-                                     ('va_degree', 'number')],
-                        'switch': [('bus', 'positive_integer'), ('element', 'positive_integer'),
-                                   ('et', 'switch_type'), ('closed', 'boolean')]}
+    important_values = {
+        "bus": [("vn_kv", ">0"), ("in_service", "boolean")],
+        "line": [
+            ("from_bus", "positive_integer"),
+            ("to_bus", "positive_integer"),
+            ("length_km", ">0"),
+            ("r_ohm_per_km", ">=0"),
+            ("x_ohm_per_km", ">=0"),
+            ("c_nf_per_km", ">=0"),
+            ("max_i_ka", ">0"),
+            ("df", "0<x<=1"),
+            ("in_service", "boolean"),
+        ],
+        "trafo": [
+            ("hv_bus", "positive_integer"),
+            ("lv_bus", "positive_integer"),
+            ("sn_mva", ">0"),
+            ("vn_hv_kv", ">0"),
+            ("vn_lv_kv", ">0"),
+            ("vkr_percent", ">=0"),
+            ("vk_percent", ">0"),
+            ("vkr_percent", "<15"),
+            ("vk_percent", "<15"),
+            ("pfe_kw", ">=0"),
+            ("i0_percent", ">=0"),
+            ("in_service", "boolean"),
+        ],
+        "trafo3w": [
+            ("hv_bus", "positive_integer"),
+            ("mv_bus", "positive_integer"),
+            ("lv_bus", "positive_integer"),
+            ("sn_hv_mva", ">0"),
+            ("sn_mv_mva", ">0"),
+            ("sn_lv_mva", ">0"),
+            ("vn_hv_kv", ">0"),
+            ("vn_mv_kv", ">0"),
+            ("vn_lv_kv", ">0"),
+            ("vkr_hv_percent", ">=0"),
+            ("vkr_mv_percent", ">=0"),
+            ("vkr_lv_percent", ">=0"),
+            ("vk_hv_percent", ">0"),
+            ("vk_mv_percent", ">0"),
+            ("vk_lv_percent", ">0"),
+            ("vkr_hv_percent", "<15"),
+            ("vkr_mv_percent", "<15"),
+            ("vkr_lv_percent", "<15"),
+            ("vk_hv_percent", "<15"),
+            ("vk_mv_percent", "<15"),
+            ("vk_lv_percent", "<15"),
+            ("pfe_kw", ">=0"),
+            ("i0_percent", ">=0"),
+            ("in_service", "boolean"),
+        ],
+        "load": [
+            ("bus", "positive_integer"),
+            ("p_mw", "number"),
+            ("q_mvar", "number"),
+            ("scaling", ">=0"),
+            ("in_service", "boolean"),
+        ],
+        "sgen": [
+            ("bus", "positive_integer"),
+            ("p_mw", "number"),
+            ("q_mvar", "number"),
+            ("scaling", ">=0"),
+            ("in_service", "boolean"),
+        ],
+        "gen": [
+            ("bus", "positive_integer"),
+            ("p_mw", "number"),
+            ("scaling", ">=0"),
+            ("in_service", "boolean"),
+        ],
+        "ext_grid": [
+            ("bus", "positive_integer"),
+            ("vm_pu", ">0"),
+            ("va_degree", "number"),
+        ],
+        "switch": [
+            ("bus", "positive_integer"),
+            ("element", "positive_integer"),
+            ("et", "switch_type"),
+            ("closed", "boolean"),
+        ],
+    }
 
     # matches a check function to each single input type restriction
-    type_checks = {'>0': check_greater_zero,
-                   '>=0': check_greater_equal_zero,
-                   '<0': check_less_zero,
-                   '<15': check_less_15,
-                   '<=0': check_less_equal_zero,
-                   'boolean': check_boolean,
-                   'positive_integer': check_pos_int,
-                   'number': check_number,
-                   '0<x<=1': check_greater_zero_less_equal_one,
-                   'switch_type': check_switch_type
-                   }
+    type_checks = {
+        ">0": check_greater_zero,
+        ">=0": check_greater_equal_zero,
+        "<0": check_less_zero,
+        "<15": check_less_15,
+        "<=0": check_less_equal_zero,
+        "boolean": check_boolean,
+        "positive_integer": check_pos_int,
+        "number": check_number,
+        "0<x<=1": check_greater_zero_less_equal_one,
+        "switch_type": check_switch_type,
+    }
 
     for key in important_values:
         if len(net[key]) > 0:
@@ -327,11 +411,13 @@ def invalid_values(net):
                         # converts np.nan to str for easier usage of assert in pytest
                         nan_check = pd.isnull(net[key][value[0]].at[i])
                         if nan_check:
-                            check_results[key].append((i, value[0],
-                                                       str(net[key][value[0]].at[i]), value[1]))
+                            check_results[key].append(
+                                (i, value[0], str(net[key][value[0]].at[i]), value[1])
+                            )
                         else:
-                            check_results[key].append((i, value[0],
-                                                       net[key][value[0]].at[i], value[1]))
+                            check_results[key].append(
+                                (i, value[0], net[key][value[0]].at[i], value[1])
+                            )
     if check_results:
         return check_results
 
@@ -367,12 +453,16 @@ def multiple_voltage_controlling_elements_per_bus(net):
 
     """
     check_results = {}
-    buses_with_mult_ext_grids = list(net.ext_grid.groupby("bus").count().query("vm_pu > 1").index)
+    buses_with_mult_ext_grids = list(
+        net.ext_grid.groupby("bus").count().query("vm_pu > 1").index
+    )
     if buses_with_mult_ext_grids:
-        check_results['buses_with_mult_ext_grids'] = buses_with_mult_ext_grids
+        check_results["buses_with_mult_ext_grids"] = buses_with_mult_ext_grids
     buses_with_gens_and_ext_grids = set(net.ext_grid.bus).intersection(set(net.gen.bus))
     if buses_with_gens_and_ext_grids:
-        check_results['buses_with_gens_and_ext_grids'] = list(buses_with_gens_and_ext_grids)
+        check_results["buses_with_gens_and_ext_grids"] = list(
+            buses_with_gens_and_ext_grids
+        )
 
     if check_results:
         return check_results
@@ -406,19 +496,19 @@ def overload(net, overload_scaling_factor, **kwargs):
     try:
         run(net)
     except expected_exceptions:
-        check_result['load'] = False
-        check_result['generation'] = False
+        check_result["load"] = False
+        check_result["generation"] = False
         try:
             net.load.scaling = overload_scaling_factor
             run(net)
-            check_result['load'] = True
+            check_result["load"] = True
         except expected_exceptions:
             net.load.scaling = load_scaling
             try:
                 net.gen.scaling = overload_scaling_factor
                 net.sgen.scaling = overload_scaling_factor
                 run(net)
-                check_result['generation'] = True
+                check_result["generation"] = True
             except expected_exceptions:
                 net.sgen.scaling = sgen_scaling
                 net.gen.scaling = gen_scaling
@@ -427,8 +517,8 @@ def overload(net, overload_scaling_factor, **kwargs):
                     net.gen.scaling = overload_scaling_factor
                     net.sgen.scaling = overload_scaling_factor
                     run(net)
-                    check_result['generation'] = True
-                    check_result['load'] = True
+                    check_result["generation"] = True
+                    check_result["load"] = True
                 except expected_exceptions:
                     logger.debug("Overload check did not help")
         net.sgen.scaling = sgen_scaling
@@ -474,29 +564,40 @@ def wrong_switch_configuration(net, **kwargs):
 
 def missing_bus_indices(net):
     """
-        Checks for missing bus indices.
+    Checks for missing bus indices.
 
-         INPUT:
-            **net** (PandapowerNet)    - pandapower network
+     INPUT:
+        **net** (PandapowerNet)    - pandapower network
 
 
-         OUTPUT:
-            **check_results** (list)   - List of tuples each containing missing bus indices.
-                                         Format:
-                                         [(element_index, bus_name (e.g. "from_bus"),  bus_index]
+     OUTPUT:
+        **check_results** (list)   - List of tuples each containing missing bus indices.
+                                     Format:
+                                     [(element_index, bus_name (e.g. "from_bus"),  bus_index]
 
     """
     check_results = {}
     bus_indices = set(net.bus.index)
-    element_bus_names = {"ext_grid": ["bus"], "load": ["bus"], "gen": ["bus"], "sgen": ["bus"],
-                         "trafo": ["lv_bus", "hv_bus"], "trafo3w": ["lv_bus", "mv_bus", "hv_bus"],
-                         "switch": ["bus", "element"], "line": ["from_bus", "to_bus"]}
+    element_bus_names = {
+        "ext_grid": ["bus"],
+        "load": ["bus"],
+        "gen": ["bus"],
+        "sgen": ["bus"],
+        "trafo": ["lv_bus", "hv_bus"],
+        "trafo3w": ["lv_bus", "mv_bus", "hv_bus"],
+        "switch": ["bus", "element"],
+        "line": ["from_bus", "to_bus"],
+    }
     for element in element_bus_names.keys():
         element_check = []
         for i, row in net[element].iterrows():
             for bus_name in element_bus_names[element]:
                 if row[bus_name] not in bus_indices:
-                    if not ((element == "switch") and (bus_name == "element") and (row.et in ['l', 't', 't3'])):
+                    if not (
+                        (element == "switch")
+                        and (bus_name == "element")
+                        and (row.et in ["l", "t", "t3"])
+                    ):
                         element_check.append((i, bus_name, row[bus_name]))
         if element_check:
             check_results[element] = element_check
@@ -532,14 +633,16 @@ def different_voltage_levels_connected(net):
             inconsistent_switches.append(i)
 
     if inconsistent_lines:
-        check_results['lines'] = inconsistent_lines
+        check_results["lines"] = inconsistent_lines
     if inconsistent_switches:
-        check_results['switches'] = inconsistent_switches
+        check_results["switches"] = inconsistent_switches
     if check_results:
         return check_results
 
 
-def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm, **kwargs):
+def implausible_impedance_values(
+    net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm, **kwargs
+):
     """
     Checks, if there are lines, xwards or impedances with an impedance value close to zero.
 
@@ -560,66 +663,153 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
     check_results = []
     implausible_elements = {}
 
-    line = net.line.loc[((net.line.r_ohm_per_km * net.line.length_km >= max_r_ohm) |
-                         (net.line.r_ohm_per_km * net.line.length_km <= min_r_ohm) |
-                         (net.line.x_ohm_per_km * net.line.length_km >= max_x_ohm) |
-                         (net.line.x_ohm_per_km * net.line.length_km <= min_x_ohm)) &
-                        net.line.in_service].index
+    line = net.line.loc[
+        (
+            (net.line.r_ohm_per_km * net.line.length_km >= max_r_ohm)
+            | (net.line.r_ohm_per_km * net.line.length_km <= min_r_ohm)
+            | (net.line.x_ohm_per_km * net.line.length_km >= max_x_ohm)
+            | (net.line.x_ohm_per_km * net.line.length_km <= min_x_ohm)
+        )
+        & net.line.in_service
+    ].index
 
-    xward = net.xward.loc[((net.xward.r_ohm.abs() >= max_r_ohm) |
-                           (net.xward.r_ohm.abs() <= min_r_ohm) |
-                           (net.xward.x_ohm.abs() >= max_x_ohm) |
-                           (net.xward.x_ohm.abs() <= min_x_ohm)) &
-                          net.xward.in_service].index
+    xward = net.xward.loc[
+        (
+            (net.xward.r_ohm.abs() >= max_r_ohm)
+            | (net.xward.r_ohm.abs() <= min_r_ohm)
+            | (net.xward.x_ohm.abs() >= max_x_ohm)
+            | (net.xward.x_ohm.abs() <= min_x_ohm)
+        )
+        & net.xward.in_service
+    ].index
 
-    zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values) / net.impedance.sn_mva
-    zb_t_ohm = np.square(net.bus.loc[net.impedance.to_bus.values, "vn_kv"].values) / net.impedance.sn_mva
-    impedance = net.impedance.loc[((np.abs(net.impedance.rft_pu) >= max_r_ohm / zb_f_ohm) |
-                                   (np.abs(net.impedance.rft_pu) <= min_r_ohm / zb_f_ohm) |
-                                   (np.abs(net.impedance.xft_pu) >= max_x_ohm / zb_f_ohm) |
-                                   (np.abs(net.impedance.xft_pu) <= min_x_ohm / zb_f_ohm) |
-                                   (np.abs(net.impedance.rtf_pu) >= max_r_ohm / zb_t_ohm) |
-                                   (np.abs(net.impedance.rtf_pu) <= min_r_ohm / zb_t_ohm) |
-                                   (np.abs(net.impedance.xtf_pu) >= max_x_ohm / zb_t_ohm) |
-                                   (np.abs(net.impedance.xtf_pu) <= min_x_ohm / zb_t_ohm)) &
-                                  net.impedance.in_service].index
+    zb_f_ohm = (
+        np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values)
+        / net.impedance.sn_mva
+    )
+    zb_t_ohm = (
+        np.square(net.bus.loc[net.impedance.to_bus.values, "vn_kv"].values)
+        / net.impedance.sn_mva
+    )
+    impedance = net.impedance.loc[
+        (
+            (np.abs(net.impedance.rft_pu) >= max_r_ohm / zb_f_ohm)
+            | (np.abs(net.impedance.rft_pu) <= min_r_ohm / zb_f_ohm)
+            | (np.abs(net.impedance.xft_pu) >= max_x_ohm / zb_f_ohm)
+            | (np.abs(net.impedance.xft_pu) <= min_x_ohm / zb_f_ohm)
+            | (np.abs(net.impedance.rtf_pu) >= max_r_ohm / zb_t_ohm)
+            | (np.abs(net.impedance.rtf_pu) <= min_r_ohm / zb_t_ohm)
+            | (np.abs(net.impedance.xtf_pu) >= max_x_ohm / zb_t_ohm)
+            | (np.abs(net.impedance.xtf_pu) <= min_x_ohm / zb_t_ohm)
+        )
+        & net.impedance.in_service
+    ].index
 
     trafo = net.trafo.loc[
-        (((net.trafo.vk_percent / 100 * np.square(net.trafo.vn_hv_kv) / net.trafo.sn_mva >= max_x_ohm) |
-          (net.trafo.vk_percent / 100 * np.square(net.trafo.vn_lv_kv) / net.trafo.sn_mva <= min_x_ohm)) &
-         net.trafo.in_service)].index
+        (
+            (
+                (
+                    net.trafo.vk_percent
+                    / 100
+                    * np.square(net.trafo.vn_hv_kv)
+                    / net.trafo.sn_mva
+                    >= max_x_ohm
+                )
+                | (
+                    net.trafo.vk_percent
+                    / 100
+                    * np.square(net.trafo.vn_lv_kv)
+                    / net.trafo.sn_mva
+                    <= min_x_ohm
+                )
+            )
+            & net.trafo.in_service
+        )
+    ].index
 
     trafo3w = net.trafo3w.loc[
-        (((net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_hv_mva >= max_x_ohm) |
-          (net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_hv_mva <= min_x_ohm) |
-          (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_mv_mva >= max_x_ohm) |
-          (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_mv_mva <= min_x_ohm) |
-          (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_lv_mva >= max_x_ohm) |
-          (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_lv_mva <= min_x_ohm)) &
-         net.trafo3w.in_service)].index
-    vsc = net.vsc.loc[((net.vsc.r_ohm <= min_r_ohm)
-                       | (net.vsc.x_ohm <= min_x_ohm)
-                       | (net.vsc.r_dc_ohm <= min_r_ohm)) & net.vsc.in_service].index
+        (
+            (
+                (
+                    net.trafo3w.vk_hv_percent
+                    / 100
+                    * np.square(net.trafo3w.vn_hv_kv)
+                    / net.trafo3w.sn_hv_mva
+                    >= max_x_ohm
+                )
+                | (
+                    net.trafo3w.vk_hv_percent
+                    / 100
+                    * np.square(net.trafo3w.vn_mv_kv)
+                    / net.trafo3w.sn_hv_mva
+                    <= min_x_ohm
+                )
+                | (
+                    net.trafo3w.vk_mv_percent
+                    / 100
+                    * np.square(net.trafo3w.vn_mv_kv)
+                    / net.trafo3w.sn_mv_mva
+                    >= max_x_ohm
+                )
+                | (
+                    net.trafo3w.vk_mv_percent
+                    / 100
+                    * np.square(net.trafo3w.vn_lv_kv)
+                    / net.trafo3w.sn_mv_mva
+                    <= min_x_ohm
+                )
+                | (
+                    net.trafo3w.vk_lv_percent
+                    / 100
+                    * np.square(net.trafo3w.vn_hv_kv)
+                    / net.trafo3w.sn_lv_mva
+                    >= max_x_ohm
+                )
+                | (
+                    net.trafo3w.vk_lv_percent
+                    / 100
+                    * np.square(net.trafo3w.vn_lv_kv)
+                    / net.trafo3w.sn_lv_mva
+                    <= min_x_ohm
+                )
+            )
+            & net.trafo3w.in_service
+        )
+    ].index
+    vsc = net.vsc.loc[
+        (
+            (net.vsc.r_ohm <= min_r_ohm)
+            | (net.vsc.x_ohm <= min_x_ohm)
+            | (net.vsc.r_dc_ohm <= min_r_ohm)
+        )
+        & net.vsc.in_service
+    ].index
 
-    line_dc = net.line_dc.loc[((net.line_dc.r_ohm_per_km * net.line_dc.length_km) <= min_r_ohm) &
-                              net.line_dc.in_service].index
+    line_dc = net.line_dc.loc[
+        ((net.line_dc.r_ohm_per_km * net.line_dc.length_km) <= min_r_ohm)
+        & net.line_dc.in_service
+    ].index
     if len(line) > 0:
-        implausible_elements['line'] = list(line)
+        implausible_elements["line"] = list(line)
     if len(xward) > 0:
-        implausible_elements['xward'] = list(xward)
+        implausible_elements["xward"] = list(xward)
     if len(impedance) > 0:
-        implausible_elements['impedance'] = list(impedance)
+        implausible_elements["impedance"] = list(impedance)
     if len(trafo) > 0:
-        implausible_elements['trafo'] = list(trafo)
+        implausible_elements["trafo"] = list(trafo)
     if len(trafo3w) > 0:
-        implausible_elements['trafo3w'] = list(trafo3w)
+        implausible_elements["trafo3w"] = list(trafo3w)
     if len(vsc) > 0:
-        implausible_elements['vsc'] = list(vsc)
+        implausible_elements["vsc"] = list(vsc)
     if len(line_dc) > 0:
-        implausible_elements['line_dc'] = list(line_dc)
+        implausible_elements["line_dc"] = list(line_dc)
     check_results.append(implausible_elements)
     # checks if loadflow converges when implausible lines or impedances are replaced by switches
-    if ("line" in implausible_elements) or ("impedance" in implausible_elements) or ("xward" in implausible_elements):
+    if (
+        ("line" in implausible_elements)
+        or ("impedance" in implausible_elements)
+        or ("xward" in implausible_elements)
+    ):
         switch_copy = copy.deepcopy(net.switch)
         line_copy = copy.deepcopy(net.line)
         impedance_copy = copy.deepcopy(net.impedance)
@@ -635,35 +825,66 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
             try:
                 for key in implausible_elements:
                     implausible_idx = implausible_elements[key]
-                    if key == 'vsc':
+                    if key == "vsc":
                         net.vsc.x_ohm = np.fmax(net.vsc.x_ohm, 0.5)
                         net.vsc.r_dc_ohm = np.fmax(net.vsc.r_dc_ohm, 0.5)
-                    if key == 'line_dc':
+                    if key == "line_dc":
                         net.line_dc.length_km = np.fmax(net.line_dc.length_km, 0.5)
                         net.line_dc.r_dc_ohm = np.fmax(net.line_dc.r_dc_ohm, 0.5)
                     net[key].loc[implausible_idx, "in_service"] = False
-                    if key == 'xward':
+                    if key == "xward":
                         replace_xward_by_ward(net, implausible_idx)
-                    elif key == 'trafo':
+                    elif key == "trafo":
                         for idx in implausible_idx:
-                            create_impedance(net, net.trafo.at[idx, "hv_bus"], net.trafo.at[idx, "lv_bus"],
-                                                0, 0.01, 100)
-                    elif key == 'trafo3w':
+                            create_impedance(
+                                net,
+                                net.trafo.at[idx, "hv_bus"],
+                                net.trafo.at[idx, "lv_bus"],
+                                0,
+                                0.01,
+                                100,
+                            )
+                    elif key == "trafo3w":
                         for idx in implausible_idx:
-                            create_impedance(net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "mv_bus"],
-                                                0, 0.01, 100)
-                            create_impedance(net, net.trafo3w.at[idx, "mv_bus"], net.trafo3w.at[idx, "lv_bus"],
-                                                0, 0.01, 100)
-                            create_impedance(net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "lv_bus"],
-                                                0, 0.01, 100)
+                            create_impedance(
+                                net,
+                                net.trafo3w.at[idx, "hv_bus"],
+                                net.trafo3w.at[idx, "mv_bus"],
+                                0,
+                                0.01,
+                                100,
+                            )
+                            create_impedance(
+                                net,
+                                net.trafo3w.at[idx, "mv_bus"],
+                                net.trafo3w.at[idx, "lv_bus"],
+                                0,
+                                0.01,
+                                100,
+                            )
+                            create_impedance(
+                                net,
+                                net.trafo3w.at[idx, "hv_bus"],
+                                net.trafo3w.at[idx, "lv_bus"],
+                                0,
+                                0.01,
+                                100,
+                            )
                     else:
                         for idx in implausible_idx:
-                            create_switch(net, net[key].from_bus.at[idx], net[key].to_bus.at[idx], et="b")
+                            create_switch(
+                                net,
+                                net[key].from_bus.at[idx],
+                                net[key].to_bus.at[idx],
+                                et="b",
+                            )
                 run(net)
                 switch_replacement = True
             except expected_exceptions:
                 switch_replacement = False
-            check_results.append({"loadflow_converges_with_switch_replacement": switch_replacement})
+            check_results.append(
+                {"loadflow_converges_with_switch_replacement": switch_replacement}
+            )
         except Exception as e:
             logger.error(f"Impedance values check failed: {str(e)}")
         net.switch = switch_copy
@@ -733,7 +954,10 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
             bus_voltages = np.array([hv_bus_vn_kv, lv_bus_vn_kv])
             trafo_voltages.sort()
             bus_voltages.sort()
-            if all((abs(trafo_voltages - bus_voltages) / bus_voltages) < (nom_voltage_tolerance)):
+            if all(
+                (abs(trafo_voltages - bus_voltages) / bus_voltages)
+                < (nom_voltage_tolerance)
+            ):
                 connectors_swapped = True
 
         if connectors_swapped:
@@ -745,13 +969,13 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
                 lv_bus.append(i)
 
     if hv_bus:
-        trafo_results['hv_bus'] = hv_bus
+        trafo_results["hv_bus"] = hv_bus
     if lv_bus:
-        trafo_results['lv_bus'] = lv_bus
+        trafo_results["lv_bus"] = lv_bus
     if hv_lv_swapped:
-        trafo_results['hv_lv_swapped'] = hv_lv_swapped
+        trafo_results["hv_lv_swapped"] = hv_lv_swapped
     if trafo_results:
-        results['trafo'] = trafo_results
+        results["trafo"] = trafo_results
 
     for i, trafo3w in net.trafo3w.iterrows():
         hv_bus_violation = False
@@ -769,11 +993,16 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
         if abs(1 - (trafo3w.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
             lv_bus_violation = True
         if hv_bus_violation and mv_bus_violation and lv_bus_violation:
-            trafo_voltages = np.array(([trafo3w.vn_hv_kv, trafo3w.vn_mv_kv, trafo3w.vn_lv_kv]))
+            trafo_voltages = np.array(
+                ([trafo3w.vn_hv_kv, trafo3w.vn_mv_kv, trafo3w.vn_lv_kv])
+            )
             bus_voltages = np.array([hv_bus_vn_kv, mv_bus_vn_kv, lv_bus_vn_kv])
             trafo_voltages.sort()
             bus_voltages.sort()
-            if all((abs(trafo_voltages - bus_voltages) / bus_voltages) < (nom_voltage_tolerance)):
+            if all(
+                (abs(trafo_voltages - bus_voltages) / bus_voltages)
+                < (nom_voltage_tolerance)
+            ):
                 connectors_swapped = True
 
         if connectors_swapped:
@@ -787,15 +1016,15 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
                 lv_bus_3w.append(i)
 
     if hv_bus_3w:
-        trafo3w_results['hv_bus'] = hv_bus_3w
+        trafo3w_results["hv_bus"] = hv_bus_3w
     if mv_bus_3w:
-        trafo3w_results['mv_bus'] = mv_bus_3w
+        trafo3w_results["mv_bus"] = mv_bus_3w
     if lv_bus_3w:
-        trafo3w_results['lv_bus'] = lv_bus_3w
+        trafo3w_results["lv_bus"] = lv_bus_3w
     if connectors_swapped_3w:
-        trafo3w_results['connectors_swapped_3w'] = connectors_swapped_3w
+        trafo3w_results["connectors_swapped_3w"] = connectors_swapped_3w
     if trafo3w_results:
-        results['trafo3w'] = trafo3w_results
+        results["trafo3w"] = trafo3w_results
 
     if len(results) > 0:
         return results
@@ -826,6 +1055,7 @@ def disconnected_elements(net):
 
     """
     from pandapower.topology import create_nxgraph, connected_components
+
     mg = create_nxgraph(net)
     sections = connected_components(mg)
     disc_elements = []
@@ -834,55 +1064,90 @@ def disconnected_elements(net):
         section_dict = {}
 
         if not section & set(net.ext_grid.bus[net.ext_grid.in_service]).union(
-                net.gen.bus[net.gen.slack & net.gen.in_service]) and any(
-                net.bus.in_service.loc[list(section)]):
-            section_buses = list(net.bus[net.bus.index.isin(section) & net.bus.in_service].index)
-            section_switches = list(net.switch[net.switch.bus.isin(section_buses)].index)
-            section_lines = list(get_connected_elements(net, 'line', section_buses,
-                                                        respect_switches=True,
-                                                        respect_in_service=True))
-            section_trafos = list(get_connected_elements(net, 'trafo', section_buses,
-                                                         respect_switches=True,
-                                                         respect_in_service=True))
+            net.gen.bus[net.gen.slack & net.gen.in_service]
+        ) and any(net.bus.in_service.loc[list(section)]):
+            section_buses = list(
+                net.bus[net.bus.index.isin(section) & net.bus.in_service].index
+            )
+            section_switches = list(
+                net.switch[net.switch.bus.isin(section_buses)].index
+            )
+            section_lines = list(
+                get_connected_elements(
+                    net,
+                    "line",
+                    section_buses,
+                    respect_switches=True,
+                    respect_in_service=True,
+                )
+            )
+            section_trafos = list(
+                get_connected_elements(
+                    net,
+                    "trafo",
+                    section_buses,
+                    respect_switches=True,
+                    respect_in_service=True,
+                )
+            )
 
-            section_trafos3w = list(get_connected_elements(net, 'trafo3w', section_buses,
-                                                           respect_switches=True,
-                                                           respect_in_service=True))
-            section_gens = list(net.gen[net.gen.bus.isin(section) & net.gen.in_service].index)
-            section_sgens = list(net.sgen[net.sgen.bus.isin(section) & net.sgen.in_service].index)
-            section_loads = list(net.load[net.load.bus.isin(section) & net.load.in_service].index)
+            section_trafos3w = list(
+                get_connected_elements(
+                    net,
+                    "trafo3w",
+                    section_buses,
+                    respect_switches=True,
+                    respect_in_service=True,
+                )
+            )
+            section_gens = list(
+                net.gen[net.gen.bus.isin(section) & net.gen.in_service].index
+            )
+            section_sgens = list(
+                net.sgen[net.sgen.bus.isin(section) & net.sgen.in_service].index
+            )
+            section_loads = list(
+                net.load[net.load.bus.isin(section) & net.load.in_service].index
+            )
 
             if section_buses:
-                section_dict['buses'] = section_buses
+                section_dict["buses"] = section_buses
             if section_switches:
-                section_dict['switches'] = section_switches
+                section_dict["switches"] = section_switches
             if section_lines:
-                section_dict['lines'] = section_lines
+                section_dict["lines"] = section_lines
             if section_trafos:
-                section_dict['trafos'] = section_trafos
+                section_dict["trafos"] = section_trafos
             if section_trafos3w:
-                section_dict['trafos3w'] = section_trafos3w
+                section_dict["trafos3w"] = section_trafos3w
             if section_loads:
-                section_dict['loads'] = section_loads
+                section_dict["loads"] = section_loads
             if section_gens:
-                section_dict['gens'] = section_gens
+                section_dict["gens"] = section_gens
             if section_sgens:
-                section_dict['sgens'] = section_sgens
+                section_dict["sgens"] = section_sgens
 
             if any(section_dict.values()):
                 disc_elements.append(section_dict)
 
-    open_trafo_switches = net.switch[(net.switch.et == 't') & (net.switch.closed == 0)]
+    open_trafo_switches = net.switch[(net.switch.et == "t") & (net.switch.closed == 0)]
     isolated_trafos = set(
-        (open_trafo_switches.groupby("element").count().query("bus > 1").index))
-    isolated_trafos_is = isolated_trafos.intersection((set(net.trafo[net.trafo.in_service].index)))
+        (open_trafo_switches.groupby("element").count().query("bus > 1").index)
+    )
+    isolated_trafos_is = isolated_trafos.intersection(
+        (set(net.trafo[net.trafo.in_service].index))
+    )
     if isolated_trafos_is:
-        disc_elements.append({'isolated_trafos': list(isolated_trafos_is)})
+        disc_elements.append({"isolated_trafos": list(isolated_trafos_is)})
 
-    isolated_trafos3w = set(open_trafo_switches.groupby("element").count().query("bus > 2").index)
-    isolated_trafos3w_is = isolated_trafos3w.intersection(set(net.trafo[net.trafo.in_service].index))
+    isolated_trafos3w = set(
+        open_trafo_switches.groupby("element").count().query("bus > 2").index
+    )
+    isolated_trafos3w_is = isolated_trafos3w.intersection(
+        set(net.trafo[net.trafo.in_service].index)
+    )
     if isolated_trafos3w_is:
-        disc_elements.append({'isolated_trafos3w': list(isolated_trafos3w_is)})
+        disc_elements.append({"isolated_trafos3w": list(isolated_trafos3w_is)})
 
     if disc_elements:
         return disc_elements
@@ -908,11 +1173,11 @@ def wrong_reference_system(net):
     neg_sgens = list(net.sgen[net.sgen.p_mw < 0].index)
 
     if neg_loads:
-        check_results['loads'] = neg_loads
+        check_results["loads"] = neg_loads
     if neg_gens:
-        check_results['gens'] = neg_gens
+        check_results["gens"] = neg_gens
     if neg_sgens:
-        check_results['sgens'] = neg_sgens
+        check_results["sgens"] = neg_sgens
 
     if check_results:
         return check_results
@@ -920,17 +1185,17 @@ def wrong_reference_system(net):
 
 def numba_comparison(net, numba_tolerance, **kwargs):
     """
-        Compares the results of loadflows with numba=True vs. numba=False.
+    Compares the results of loadflows with numba=True vs. numba=False.
 
-         INPUT:
-            **net** (pandapowerNet)    - pandapower network
-            **numba_tolerance** (float) - Maximum absolute deviation allowed between
-                                          numba=True/False results.
-         OPTIONAL:
-            **kwargs** - Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-                         is replaced by the function kwargs["run"]
-         OUTPUT:
-            **check_result** (dict)    - Absolute deviations between numba=True/False results.
+     INPUT:
+        **net** (pandapowerNet)    - pandapower network
+        **numba_tolerance** (float) - Maximum absolute deviation allowed between
+                                      numba=True/False results.
+     OPTIONAL:
+        **kwargs** - Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+                     is replaced by the function kwargs["run"]
+     OUTPUT:
+        **check_result** (dict)    - Absolute deviations between numba=True/False results.
     """
     run = partial(kwargs.pop("run", runpp), **kwargs)
     check_results = {}
@@ -938,17 +1203,31 @@ def numba_comparison(net, numba_tolerance, **kwargs):
     result_numba_true = copy.deepcopy(net)
     run(net, numba=False)
     result_numba_false = copy.deepcopy(net)
-    res_keys = [key for key in result_numba_true.keys() if
-                (key in ['res_bus', 'res_ext_grid',
-                         'res_gen', 'res_impedance',
-                         'res_line', 'res_load',
-                         'res_sgen', 'res_shunt',
-                         'res_trafo', 'res_trafo3w',
-                         'res_ward', 'res_xward'])]
+    res_keys = [
+        key
+        for key in result_numba_true.keys()
+        if (
+            key
+            in [
+                "res_bus",
+                "res_ext_grid",
+                "res_gen",
+                "res_impedance",
+                "res_line",
+                "res_load",
+                "res_sgen",
+                "res_shunt",
+                "res_trafo",
+                "res_trafo3w",
+                "res_ward",
+                "res_xward",
+            ]
+        )
+    ]
     for key in res_keys:
         diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
         if any(diffs.any()):
-            if (key not in check_results.keys()):
+            if key not in check_results.keys():
                 check_results[key] = {}
             for col in diffs.columns:
                 if (col not in check_results[key].keys()) and (diffs.any()[col]):
@@ -963,17 +1242,17 @@ def numba_comparison(net, numba_tolerance, **kwargs):
 
 def deviation_from_std_type(net):
     """
-        Checks, if element parameters match the values in the standard type library.
+    Checks, if element parameters match the values in the standard type library.
 
-         INPUT:
-            **net** (pandapowerNet)    - pandapower network
+     INPUT:
+        **net** (pandapowerNet)    - pandapower network
 
 
-         OUTPUT:
-            **check_results** (dict)   - All elements, that don't match the values in the
-                                         standard type library
+     OUTPUT:
+        **check_results** (dict)   - All elements, that don't match the values in the
+                                     standard type library
 
-                                         Format: (element_type, element_index, parameter)
+                                     Format: (element_type, element_index, parameter)
 
 
     """
@@ -989,20 +1268,26 @@ def deviation_from_std_type(net):
                             continue
                         if param in net[key].columns:
                             try:
-                                isclose = np.isclose(element[param], std_type_values[param],
-                                                     equal_nan=True)
+                                isclose = np.isclose(
+                                    element[param],
+                                    std_type_values[param],
+                                    equal_nan=True,
+                                )
                             except TypeError:
                                 isclose = element[param] == std_type_values[param]
                             if not isclose:
                                 if key not in check_results.keys():
                                     check_results[key] = {}
-                                check_results[key][i] = {'param': param, 'e_value': element[param],
-                                                         'std_type_value': std_type_values[param],
-                                                         'std_type_in_lib': True}
+                                check_results[key][i] = {
+                                    "param": param,
+                                    "e_value": element[param],
+                                    "std_type_value": std_type_values[param],
+                                    "std_type_in_lib": True,
+                                }
                 elif std_type is not None:
                     if key not in check_results.keys():
                         check_results[key] = {}
-                    check_results[key][i] = {'std_type_in_lib': False}
+                    check_results[key][i] = {"std_type_in_lib": False}
 
     if check_results:
         return check_results
@@ -1019,10 +1304,13 @@ def parallel_switches(net):
         **parallel_switches** (list)   - List of tuples each containing parallel switches.
     """
     parallel_switches = []
-    compare_parameters = ['bus', 'element', 'et']
+    compare_parameters = ["bus", "element", "et"]
     parallels_bus_and_element = list(
-        net.switch.groupby(compare_parameters).count().query('closed > 1').index)
+        net.switch.groupby(compare_parameters).count().query("closed > 1").index
+    )
     for bus, element, et in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch.query('bus==@bus & element==@element & et==@et').index))
+        parallel_switches.append(
+            list(net.switch.query("bus==@bus & element==@element & et==@et").index)
+        )
     if parallel_switches:
         return parallel_switches

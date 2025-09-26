@@ -2,8 +2,15 @@ from copy import deepcopy
 
 from numpy import append, ceil
 
-from pandapower.create import create_load, create_buses, create_line, create_empty_network, create_bus, \
-    create_ext_grid, create_transformer
+from pandapower.create import (
+    create_load,
+    create_buses,
+    create_line,
+    create_empty_network,
+    create_bus,
+    create_ext_grid,
+    create_transformer,
+)
 from pandapower.std_types import change_std_type, create_std_type
 from pandapower.toolbox.element_selection import get_connected_elements
 from pandapower.toolbox.power_factor import pq_from_cosphi
@@ -19,13 +26,15 @@ def _change_to_ohl(net, idx_busbar, new_lines, n_cable):
     last_con_lines = list(con_lines)
 
     while len(cable_lines) < n_cable:
-        con_lines = sorted(get_connected_elements(
-            net, "line", net.line.to_bus.loc[last_con_lines]) & new_lines - cable_lines)
+        con_lines = sorted(
+            get_connected_elements(net, "line", net.line.to_bus.loc[last_con_lines])
+            & new_lines - cable_lines
+        )
         last_con_lines = deepcopy(con_lines)
         while len(con_lines) > 0:
             cable_lines.add(con_lines.pop(0))
     for idx_line in list(new_lines - cable_lines):
-        change_std_type(net, idx_line, 'NFA2X 4x70', element="line")
+        change_std_type(net, idx_line, "NFA2X 4x70", element="line")
 
 
 def _create_loads_with_coincidence(net, buses):
@@ -44,7 +53,7 @@ def _create_loads_with_coincidence(net, buses):
     n_buses = len(buses)
     c = c_inf + (1 - c_inf) * n_buses ** (-1 / 2)
     p_mw = c * P_max1
-    p_mw, q_mvar = pq_from_cosphi(p_mw, powerfactor, qmode='underexcited', pmode="load")
+    p_mw, q_mvar = pq_from_cosphi(p_mw, powerfactor, qmode="underexcited", pmode="load")
 
     # create loads
     for i in buses:
@@ -59,8 +68,9 @@ def _create_feeder(net, net_data, branching, idx_busbar, linetype, lv_vn_kv):
     """
     n_DP = net_data[1]
     d_DP = net_data[0]
-    buses = create_buses(net, int(n_DP), lv_vn_kv, zone='Feeder B' + str(branching),
-                         type='m')
+    buses = create_buses(
+        net, int(n_DP), lv_vn_kv, zone="Feeder B" + str(branching), type="m"
+    )
     from_bus = append(idx_busbar, buses[:-1])
     # branch consideration
     if branching == 1:
@@ -107,24 +117,35 @@ def _create_feeder(net, net_data, branching, idx_busbar, linetype, lv_vn_kv):
         from_bus[idx_B2] = buses[2 * n_LS - 1]
         from_bus[idx_B3] = buses[n_LS - 1]
     elif branching != 0:
-        raise ValueError("branching must be in (0, 1, 2, 3), but is %s" % str(branching))
+        raise ValueError(
+            "branching must be in (0, 1, 2, 3), but is %s" % str(branching)
+        )
 
     # create lines
     new_lines = set()
     for i, f_bus in enumerate(from_bus):
-        new_lines.add(create_line(net, f_bus, buses[i], length_km=d_DP * 1e-3,
-                                  std_type='NAYY 4x150 SE'))
+        new_lines.add(
+            create_line(
+                net, f_bus, buses[i], length_km=d_DP * 1e-3, std_type="NAYY 4x150 SE"
+            )
+        )
 
     # line type consideration
-    if linetype == 'C&OHL':
+    if linetype == "C&OHL":
         _change_to_ohl(net, idx_busbar, new_lines, round(len(new_lines) * 0.4))
 
     # create loads
     _create_loads_with_coincidence(net, buses)
 
 
-def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype='cable',
-                              customer='single', case='good'):
+def create_dickert_lv_feeders(
+    net,
+    busbar_index,
+    feeders_range="short",
+    linetype="cable",
+    customer="single",
+    case="good",
+):
     """
     This function creates LV feeders from J. Dickert, M. Domagk and P. Schegner. "Benchmark \
     low voltage distribution networks based on cluster analysis of actual grid properties". \
@@ -162,37 +183,78 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
         >>> create_dickert_lv_feeders(net, busbar_index=1, customer='multiple')
     """
     # --- paper data - TABLE III and IV
-    parameters = {'short': {'cable': {'single': {'good': [60, 1, False, False, False],
-                                                 'average': [120, 1, False, False, False],
-                                                 'worse': [80, 2, False, False, False]},
-                                      'multiple': {'good': [80, 3, True, False, False],
-                                                   'average': [50, 6, True, False, False],
-                                                   'worse': [40, 10, True, False, False]}}},
-                  'middle': {'cable': {'multiple': {'good': [40, 15, True, True, False],
-                                                    'average': [35, 20, True, True, False],
-                                                    'worse': [30, 25, True, True, False]}},
-                             'C&OHL': {'multiple': {'good': [50, 10, True, True, False],
-                                                    'average': [45, 13, True, True, False],
-                                                    'worse': [40, 16, True, True, False]}}},
-                  'long': {'cable': {'multiple': {'good': [30, 30, False, True, True],
-                                                  'average': [30, 40, False, True, True],
-                                                  'worse': [30, 50, False, True, True]}},
-                           'C&OHL': {'multiple': {'good': [40, 20, False, True, True],
-                                                  'average': [40, 30, False, True, True],
-                                                  'worse': [40, 40, False, True, True]}}}}
+    parameters = {
+        "short": {
+            "cable": {
+                "single": {
+                    "good": [60, 1, False, False, False],
+                    "average": [120, 1, False, False, False],
+                    "worse": [80, 2, False, False, False],
+                },
+                "multiple": {
+                    "good": [80, 3, True, False, False],
+                    "average": [50, 6, True, False, False],
+                    "worse": [40, 10, True, False, False],
+                },
+            }
+        },
+        "middle": {
+            "cable": {
+                "multiple": {
+                    "good": [40, 15, True, True, False],
+                    "average": [35, 20, True, True, False],
+                    "worse": [30, 25, True, True, False],
+                }
+            },
+            "C&OHL": {
+                "multiple": {
+                    "good": [50, 10, True, True, False],
+                    "average": [45, 13, True, True, False],
+                    "worse": [40, 16, True, True, False],
+                }
+            },
+        },
+        "long": {
+            "cable": {
+                "multiple": {
+                    "good": [30, 30, False, True, True],
+                    "average": [30, 40, False, True, True],
+                    "worse": [30, 50, False, True, True],
+                }
+            },
+            "C&OHL": {
+                "multiple": {
+                    "good": [40, 20, False, True, True],
+                    "average": [40, 30, False, True, True],
+                    "worse": [40, 40, False, True, True],
+                }
+            },
+        },
+    }
     # process network choosing input data
     try:
         case = case if case != "bad" else "worse"
         net_data = parameters[feeders_range][linetype][customer][case]
     except KeyError:
-        raise ValueError("This combination of 'feeders_range', 'linetype', 'customer' and 'case' "
-                         "is no dickert network.")
+        raise ValueError(
+            "This combination of 'feeders_range', 'linetype', 'customer' and 'case' "
+            "is no dickert network."
+        )
 
     # add missing line types
-    if 'NFA2X 4x70' not in net.std_types['line'].keys():
-        create_std_type(net, {"c_nf_per_km": 12.8, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.07,
-                              "max_i_ka": 0.205, "type": "ol"}, name='NFA2X 4x70',
-                        element="line")
+    if "NFA2X 4x70" not in net.std_types["line"].keys():
+        create_std_type(
+            net,
+            {
+                "c_nf_per_km": 12.8,
+                "r_ohm_per_km": 0.443,
+                "x_ohm_per_km": 0.07,
+                "max_i_ka": 0.205,
+                "type": "ol",
+            },
+            name="NFA2X 4x70",
+            element="line",
+        )
     # determine low voltage vn_kv
     lv_vn_kv = net.bus.vn_kv.at[busbar_index]
 
@@ -209,9 +271,14 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
         _create_feeder(net, net_data, 3, busbar_index, linetype, lv_vn_kv)
 
 
-def create_dickert_lv_network(feeders_range='short', linetype='cable', customer='single',
-                              case='good', trafo_type_name='0.4 MVA 20/0.4 kV',
-                              trafo_type_data=None):
+def create_dickert_lv_network(
+    feeders_range="short",
+    linetype="cable",
+    customer="single",
+    case="good",
+    trafo_type_name="0.4 MVA 20/0.4 kV",
+    trafo_type_data=None,
+):
     """
     This function creates a LV network from J. Dickert, M. Domagk and P. Schegner. "Benchmark \
     low voltage distribution networks based on cluster analysis of actual grid properties". \
@@ -259,40 +326,58 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
         >>> net = create_dickert_lv_network()
     """
     # --- create network
-    net = create_empty_network(name='dickert_lv_network with' + feeders_range +
-                                    '-range feeders, ' + linetype + 'and ' + customer +
-                                    'customers in ' + case + 'case')
+    net = create_empty_network(
+        name="dickert_lv_network with"
+        + feeders_range
+        + "-range feeders, "
+        + linetype
+        + "and "
+        + customer
+        + "customers in "
+        + case
+        + "case"
+    )
     # assumptions
     mv_vn_kv = 20
     lv_vn_kv = 0.4
 
     # create mv connection
-    mv_bus = create_bus(net, mv_vn_kv, name='mv bus')
-    busbar_index = create_bus(net, lv_vn_kv, name='busbar')
+    mv_bus = create_bus(net, mv_vn_kv, name="mv bus")
+    busbar_index = create_bus(net, lv_vn_kv, name="busbar")
     create_ext_grid(net, mv_bus)
-    if trafo_type_name not in net.std_types['trafo'].keys():
+    if trafo_type_name not in net.std_types["trafo"].keys():
         create_std_type(net, trafo_type_data, name=trafo_type_name, element="trafo")
     create_transformer(net, mv_bus, busbar_index, std_type=trafo_type_name)
 
     # create feeders
-    create_dickert_lv_feeders(net=net, busbar_index=busbar_index, feeders_range=feeders_range,
-                              linetype=linetype, customer=customer, case=case)
+    create_dickert_lv_feeders(
+        net=net,
+        busbar_index=busbar_index,
+        feeders_range=feeders_range,
+        linetype=linetype,
+        customer=customer,
+        case=case,
+    )
 
     return net
 
 
 if __name__ == "__main__":
     if 0:
-        feeders_range = 'middle'
-        linetype = 'C&OHL'
-        customer = 'multiple'
-        case = 'bad'
-        trafo_type_name = '0.4 MVA 20/0.4 kV'
+        feeders_range = "middle"
+        linetype = "C&OHL"
+        customer = "multiple"
+        case = "bad"
+        trafo_type_name = "0.4 MVA 20/0.4 kV"
         trafo_type_data = None
-        net = create_dickert_lv_network(feeders_range=feeders_range, linetype=linetype,
-                                        customer=customer, case=case,
-                                        trafo_type_name=trafo_type_name,
-                                        trafo_type_data=trafo_type_data)
+        net = create_dickert_lv_network(
+            feeders_range=feeders_range,
+            linetype=linetype,
+            customer=customer,
+            case=case,
+            trafo_type_name=trafo_type_name,
+            trafo_type_data=trafo_type_data,
+        )
         from pandapower.plotting import simple_plot
 
         simple_plot(net)

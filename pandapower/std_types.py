@@ -16,15 +16,37 @@ def required_std_type_parameters(element="line"):
     if element == "line":
         required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
     elif element == "line_dc":
-        required = ["r_ohm_per_km","max_i_ka"]
+        required = ["r_ohm_per_km", "max_i_ka"]
     elif element == "trafo":
-        required = ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent", "vkr_percent",
-                    "pfe_kw", "i0_percent", "shift_degree"]
+        required = [
+            "sn_mva",
+            "vn_hv_kv",
+            "vn_lv_kv",
+            "vk_percent",
+            "vkr_percent",
+            "pfe_kw",
+            "i0_percent",
+            "shift_degree",
+        ]
     elif element == "trafo3w":
-        required = ["sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
-                    "vk_hv_percent", "vk_mv_percent", "vk_lv_percent", "vkr_hv_percent",
-                    "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent", "shift_mv_degree",
-                    "shift_lv_degree"]
+        required = [
+            "sn_hv_mva",
+            "sn_mv_mva",
+            "sn_lv_mva",
+            "vn_hv_kv",
+            "vn_mv_kv",
+            "vn_lv_kv",
+            "vk_hv_percent",
+            "vk_mv_percent",
+            "vk_lv_percent",
+            "vkr_hv_percent",
+            "vkr_mv_percent",
+            "vkr_lv_percent",
+            "pfe_kw",
+            "i0_percent",
+            "shift_mv_degree",
+            "shift_lv_degree",
+        ]
     elif element == "fuse":
         required = ["fuse_type", "i_rated_a"]
     else:
@@ -32,7 +54,9 @@ def required_std_type_parameters(element="line"):
     return required
 
 
-def create_std_type(net, data, name, element="line", overwrite=True, check_required=True):
+def create_std_type(
+    net, data, name, element="line", overwrite=True, check_required=True
+):
     """
     Creates type data in the type database. The parameters that are used for
     the loadflow have to be at least contained in data. These parameters are:
@@ -96,11 +120,15 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
         raise UserWarning("type data has to be given as a dictionary of parameters")
 
     if check_required:
-        missing = [par for par in required_std_type_parameters(element) if par not in data]
+        missing = [
+            par for par in required_std_type_parameters(element) if par not in data
+        ]
         if len(missing):
-            raise UserWarning("%s are required as %s type parameters." % (missing, element))
+            raise UserWarning(
+                "%s are required as %s type parameters." % (missing, element)
+            )
     library = net.std_types[element]
-    if overwrite or not (name in library):
+    if overwrite or name not in library:
         library.update({name: data})
 
 
@@ -122,8 +150,14 @@ def create_std_types(net, data, element="line", overwrite=True, check_required=T
 
     """
     for name, typdata in data.items():
-        create_std_type(net, data=typdata, name=name, element=element, overwrite=overwrite,
-                        check_required=check_required)
+        create_std_type(
+            net,
+            data=typdata,
+            name=name,
+            element=element,
+            overwrite=overwrite,
+            check_required=check_required,
+        )
 
 
 def copy_std_types(to_net, from_net, element="line", overwrite=True):
@@ -310,7 +344,7 @@ def change_std_type(net, eid, name, element="line"):
     table.at[eid, "std_type"] = name
 
 
-def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
+def find_std_type_by_parameter(net, data, element="line", epsilon=0.0):
     """
     Searches for a std_type that fits all values given in the data dictionary with the margin of
     epsilon.
@@ -341,25 +375,27 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
     return fitting_types
 
 
-def find_std_type_alternative(net, data, element = "line", voltage_rating = "", epsilon = 0.):
+def find_std_type_alternative(
+    net, data, element="line", voltage_rating="", epsilon=0.0
+):
     """
-        Searches for a std_type that fits all values given in the standard types library with the margin of
-        epsilon.
+    Searches for a std_type that fits all values given in the standard types library with the margin of
+    epsilon.
 
-        INPUT:
-            **net** - pandapower network
+    INPUT:
+        **net** - pandapower network
 
-            **data** - dictionary of standard type parameters
+        **data** - dictionary of standard type parameters
 
-            **element** - type of element ("line" or "trafo")
+        **element** - type of element ("line" or "trafo")
 
-            **voltage_rating** - voltage rating of the cable ("HV" or "MV" or "LV")
+        **voltage_rating** - voltage rating of the cable ("HV" or "MV" or "LV")
 
-            **epsilon** - tolerance margin for parameter comparison
+        **epsilon** - tolerance margin for parameter comparison
 
-        OUTPUT:
-            **fitting_types** - list of fitting types or empty list
-        """
+    OUTPUT:
+        **fitting_types** - list of fitting types or empty list
+    """
 
     assert epsilon >= 0
     linetypes = basic_line_std_types()
@@ -409,14 +445,14 @@ def add_zero_impedance_parameters(net):
     parameter_from_std_type(net, "endtemp_degree")
 
     # add zero seq. parameters for ext_grid and apply standard values
-    if 's_sc_max_mva' not in net.ext_grid.columns:
-        net.ext_grid['s_sc_max_mva'] = 1000
-    if 'rx_max' not in net.ext_grid.columns:
-        net.ext_grid['rx_max'] = 0.1
-    if 'x0x_max' not in net.ext_grid.columns:
-        net.ext_grid['x0x_max'] = 1
-    if 'r0x0_max' not in net.ext_grid.columns:
-        net.ext_grid['r0x0_max'] = 0.1
+    if "s_sc_max_mva" not in net.ext_grid.columns:
+        net.ext_grid["s_sc_max_mva"] = 1000
+    if "rx_max" not in net.ext_grid.columns:
+        net.ext_grid["rx_max"] = 0.1
+    if "x0x_max" not in net.ext_grid.columns:
+        net.ext_grid["x0x_max"] = 1
+    if "r0x0_max" not in net.ext_grid.columns:
+        net.ext_grid["r0x0_max"] = 0.1
 
 
 def add_temperature_coefficient(net, fill=None):
@@ -428,11 +464,10 @@ def add_temperature_coefficient(net, fill=None):
 
     """
     parameter_from_std_type(net, "alpha", fill=fill)
-    parameter_from_std_type(net, "alpha", fill=fill,element="line_dc")
+    parameter_from_std_type(net, "alpha", fill=fill, element="line_dc")
 
 
 def basic_line_std_types():
-
     alpha_al = 4.03e-3
     alpha_cu = 3.93e-3
 
@@ -440,552 +475,599 @@ def basic_line_std_types():
         # Cables, all from S.744, Heuck: Elektrische Energieversorgung - Vierweg+Teubner 2013
         # additional MV cables from Werth: Netzberechnung mit Erzeugungsporfilen (Dreiecksverlegung)
         # Low Voltage
-        "NAYY 4x50 SE":
-        {"c_nf_per_km": 210,
+        "NAYY 4x50 SE": {
+            "c_nf_per_km": 210,
             "r_ohm_per_km": 0.642,
             "x_ohm_per_km": 0.083,
             "max_i_ka": 0.142,
             "type": "cs",
             "q_mm2": 50,
             "alpha": alpha_al,
-            "voltage_rating": "LV"},
-        "NAYY 4x120 SE":
-        {"c_nf_per_km": 264,
+            "voltage_rating": "LV",
+        },
+        "NAYY 4x120 SE": {
+            "c_nf_per_km": 264,
             "r_ohm_per_km": 0.225,
             "x_ohm_per_km": 0.080,
             "max_i_ka": 0.242,
             "type": "cs",
             "q_mm2": 120,
             "alpha": alpha_al,
-         "voltage_rating": "LV"},
-        "NAYY 4x150 SE":
-        {"c_nf_per_km": 261,
+            "voltage_rating": "LV",
+        },
+        "NAYY 4x150 SE": {
+            "c_nf_per_km": 261,
             "r_ohm_per_km": 0.208,
             "x_ohm_per_km": 0.080,
             "max_i_ka": 0.270,
             "type": "cs",
             "q_mm2": 150,
             "alpha": alpha_al,
-         "voltage_rating": "LV"},
-
+            "voltage_rating": "LV",
+        },
         # Medium Voltage
-        "NA2XS2Y 1x95 RM/25 12/20 kV":
-        {"c_nf_per_km": 216,
+        "NA2XS2Y 1x95 RM/25 12/20 kV": {
+            "c_nf_per_km": 216,
             "r_ohm_per_km": 0.313,
             "x_ohm_per_km": 0.132,
             "max_i_ka": 0.252,
             "type": "cs",
             "q_mm2": 95,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x185 RM/25 12/20 kV":
-        {"c_nf_per_km": 273,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x185 RM/25 12/20 kV": {
+            "c_nf_per_km": 273,
             "r_ohm_per_km": 0.161,
             "x_ohm_per_km": 0.117,
             "max_i_ka": 0.362,
             "type": "cs",
             "q_mm2": 185,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x240 RM/25 12/20 kV":
-        {"c_nf_per_km": 304,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x240 RM/25 12/20 kV": {
+            "c_nf_per_km": 304,
             "r_ohm_per_km": 0.122,
             "x_ohm_per_km": 0.112,
             "max_i_ka": 0.421,
             "type": "cs",
             "q_mm2": 240,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x95 RM/25 6/10 kV":
-        {"c_nf_per_km": 315,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x95 RM/25 6/10 kV": {
+            "c_nf_per_km": 315,
             "r_ohm_per_km": 0.313,
             "x_ohm_per_km": 0.123,
             "max_i_ka": 0.249,
             "type": "cs",
             "q_mm2": 95,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x185 RM/25 6/10 kV":
-        {"c_nf_per_km": 406,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x185 RM/25 6/10 kV": {
+            "c_nf_per_km": 406,
             "r_ohm_per_km": 0.161,
             "x_ohm_per_km": 0.110,
             "max_i_ka": 0.358,
             "type": "cs",
             "q_mm2": 185,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x240 RM/25 6/10 kV":
-        {"c_nf_per_km": 456,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x240 RM/25 6/10 kV": {
+            "c_nf_per_km": 456,
             "r_ohm_per_km": 0.122,
             "x_ohm_per_km": 0.105,
             "max_i_ka": 0.416,
             "type": "cs",
             "q_mm2": 240,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
+            "voltage_rating": "MV",
+        },
         # additional MV cables
-        "NA2XS2Y 1x150 RM/25 12/20 kV":
-        {"c_nf_per_km": 250,
+        "NA2XS2Y 1x150 RM/25 12/20 kV": {
+            "c_nf_per_km": 250,
             "r_ohm_per_km": 0.206,
             "x_ohm_per_km": 0.116,
             "max_i_ka": 0.319,
             "type": "cs",
             "q_mm2": 150,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x120 RM/25 12/20 kV":
-        {"c_nf_per_km": 230,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x120 RM/25 12/20 kV": {
+            "c_nf_per_km": 230,
             "r_ohm_per_km": 0.253,
             "x_ohm_per_km": 0.119,
             "max_i_ka": 0.283,
             "type": "cs",
             "q_mm2": 120,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x70 RM/25 12/20 kV":
-        {"c_nf_per_km": 190,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x70 RM/25 12/20 kV": {
+            "c_nf_per_km": 190,
             "r_ohm_per_km": 0.443,
             "x_ohm_per_km": 0.132,
             "max_i_ka": 0.220,
             "type": "cs",
             "q_mm2": 70,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x150 RM/25 6/10 kV":
-        {"c_nf_per_km": 360,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x150 RM/25 6/10 kV": {
+            "c_nf_per_km": 360,
             "r_ohm_per_km": 0.206,
             "x_ohm_per_km": 0.110,
             "max_i_ka": 0.315,
             "type": "cs",
             "q_mm2": 150,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x120 RM/25 6/10 kV":
-        {"c_nf_per_km": 340,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x120 RM/25 6/10 kV": {
+            "c_nf_per_km": 340,
             "r_ohm_per_km": 0.253,
             "x_ohm_per_km": 0.113,
             "max_i_ka": 0.280,
             "type": "cs",
             "q_mm2": 120,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "NA2XS2Y 1x70 RM/25 6/10 kV":
-        {"c_nf_per_km": 280,
+            "voltage_rating": "MV",
+        },
+        "NA2XS2Y 1x70 RM/25 6/10 kV": {
+            "c_nf_per_km": 280,
             "r_ohm_per_km": 0.443,
             "x_ohm_per_km": 0.123,
             "max_i_ka": 0.217,
             "type": "cs",
             "q_mm2": 70,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-
+            "voltage_rating": "MV",
+        },
         # High Voltage
-        "N2XS(FL)2Y 1x120 RM/35 64/110 kV":
-        {"c_nf_per_km": 112,
+        "N2XS(FL)2Y 1x120 RM/35 64/110 kV": {
+            "c_nf_per_km": 112,
             "r_ohm_per_km": 0.153,
             "x_ohm_per_km": 0.166,
             "max_i_ka": 0.366,
             "type": "cs",
             "q_mm2": 120,
             "alpha": alpha_cu,
-         "voltage_rating": "HV"},
-        "N2XS(FL)2Y 1x185 RM/35 64/110 kV":
-        {"c_nf_per_km": 125,
+            "voltage_rating": "HV",
+        },
+        "N2XS(FL)2Y 1x185 RM/35 64/110 kV": {
+            "c_nf_per_km": 125,
             "r_ohm_per_km": 0.099,
             "x_ohm_per_km": 0.156,
             "max_i_ka": 0.457,
             "type": "cs",
             "q_mm2": 185,
             "alpha": alpha_cu,
-         "voltage_rating": "HV"},
-        "N2XS(FL)2Y 1x240 RM/35 64/110 kV":
-        {"c_nf_per_km": 135,
+            "voltage_rating": "HV",
+        },
+        "N2XS(FL)2Y 1x240 RM/35 64/110 kV": {
+            "c_nf_per_km": 135,
             "r_ohm_per_km": 0.075,
             "x_ohm_per_km": 0.149,
             "max_i_ka": 0.526,
             "type": "cs",
             "q_mm2": 240,
             "alpha": alpha_cu,
-         "voltage_rating": "HV"},
-        "N2XS(FL)2Y 1x300 RM/35 64/110 kV":
-        {"c_nf_per_km": 144,
+            "voltage_rating": "HV",
+        },
+        "N2XS(FL)2Y 1x300 RM/35 64/110 kV": {
+            "c_nf_per_km": 144,
             "r_ohm_per_km": 0.060,
             "x_ohm_per_km": 0.144,
             "max_i_ka": 0.588,
             "type": "cs",
             "q_mm2": 300,
             "alpha": alpha_cu,
-         "voltage_rating": "HV"},
-
+            "voltage_rating": "HV",
+        },
         # Overhead Lines, all from S.742f, Heuck: Elektrische Energieversorgung -
         # Vierweg+Teubner 2013
         # 679/86 110 from S. 362, Flosdorff, Hilgarth: Elektrische Energieverteilung - Teubner 2005
-
         # Low Voltage
-        "15-AL1/3-ST1A 0.4":
-        {"c_nf_per_km": 11,
+        "15-AL1/3-ST1A 0.4": {
+            "c_nf_per_km": 11,
             "r_ohm_per_km": 1.8769,
             "x_ohm_per_km": 0.35,
             "max_i_ka": 0.105,
             "type": "ol",
             "q_mm2": 16,
             "alpha": alpha_al,
-         "voltage_rating": "LV"},
-        "24-AL1/4-ST1A 0.4":
-        {"c_nf_per_km": 11.25,
+            "voltage_rating": "LV",
+        },
+        "24-AL1/4-ST1A 0.4": {
+            "c_nf_per_km": 11.25,
             "r_ohm_per_km": 1.2012,
             "x_ohm_per_km": 0.335,
             "max_i_ka": 0.140,
             "type": "ol",
             "q_mm2": 24,
             "alpha": alpha_al,
-         "voltage_rating": "LV"},
-        "48-AL1/8-ST1A 0.4":
-        {"c_nf_per_km": 12.2,
+            "voltage_rating": "LV",
+        },
+        "48-AL1/8-ST1A 0.4": {
+            "c_nf_per_km": 12.2,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.3,
-            "max_i_ka": .210,
+            "max_i_ka": 0.210,
             "type": "ol",
             "q_mm2": 48,
             "alpha": alpha_al,
-         "voltage_rating": "LV"},
-        "94-AL1/15-ST1A 0.4":
-        {"c_nf_per_km": 13.2,
+            "voltage_rating": "LV",
+        },
+        "94-AL1/15-ST1A 0.4": {
+            "c_nf_per_km": 13.2,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.29,
             "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94,
             "alpha": alpha_al,
-         "voltage_rating": "LV"},
-
+            "voltage_rating": "LV",
+        },
         # Medium Voltage
-        "34-AL1/6-ST1A 10.0":
-        {"c_nf_per_km": 9.7,
+        "34-AL1/6-ST1A 10.0": {
+            "c_nf_per_km": 9.7,
             "r_ohm_per_km": 0.8342,
             "x_ohm_per_km": 0.36,
             "max_i_ka": 0.170,
             "type": "ol",
             "q_mm2": 34,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "48-AL1/8-ST1A 10.0":
-        {"c_nf_per_km": 10.1,
+            "voltage_rating": "MV",
+        },
+        "48-AL1/8-ST1A 10.0": {
+            "c_nf_per_km": 10.1,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.35,
             "max_i_ka": 0.210,
             "type": "ol",
             "q_mm2": 48,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "70-AL1/11-ST1A 10.0":
-        {"c_nf_per_km": 10.4,
+            "voltage_rating": "MV",
+        },
+        "70-AL1/11-ST1A 10.0": {
+            "c_nf_per_km": 10.4,
             "r_ohm_per_km": 0.4132,
             "x_ohm_per_km": 0.339,
             "max_i_ka": 0.290,
             "type": "ol",
             "q_mm2": 70,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "94-AL1/15-ST1A 10.0":
-        {"c_nf_per_km": 10.75,
+            "voltage_rating": "MV",
+        },
+        "94-AL1/15-ST1A 10.0": {
+            "c_nf_per_km": 10.75,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.33,
             "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "122-AL1/20-ST1A 10.0":
-        {"c_nf_per_km": 11.1,
+            "voltage_rating": "MV",
+        },
+        "122-AL1/20-ST1A 10.0": {
+            "c_nf_per_km": 11.1,
             "r_ohm_per_km": 0.2376,
             "x_ohm_per_km": 0.323,
             "max_i_ka": 0.410,
             "type": "ol",
             "q_mm2": 122,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "149-AL1/24-ST1A 10.0":
-        {"c_nf_per_km": 11.25,
+            "voltage_rating": "MV",
+        },
+        "149-AL1/24-ST1A 10.0": {
+            "c_nf_per_km": 11.25,
             "r_ohm_per_km": 0.1940,
             "x_ohm_per_km": 0.315,
             "max_i_ka": 0.470,
             "type": "ol",
             "q_mm2": 149,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "34-AL1/6-ST1A 20.0":
-        {"c_nf_per_km": 9.15,
+            "voltage_rating": "MV",
+        },
+        "34-AL1/6-ST1A 20.0": {
+            "c_nf_per_km": 9.15,
             "r_ohm_per_km": 0.8342,
             "x_ohm_per_km": 0.382,
             "max_i_ka": 0.170,
             "type": "ol",
             "q_mm2": 34,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "48-AL1/8-ST1A 20.0":
-        {"c_nf_per_km": 9.5,
+            "voltage_rating": "MV",
+        },
+        "48-AL1/8-ST1A 20.0": {
+            "c_nf_per_km": 9.5,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.372,
             "max_i_ka": 0.210,
             "type": "ol",
             "q_mm2": 48,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "70-AL1/11-ST1A 20.0":
-        {"c_nf_per_km": 9.7,
+            "voltage_rating": "MV",
+        },
+        "70-AL1/11-ST1A 20.0": {
+            "c_nf_per_km": 9.7,
             "r_ohm_per_km": 0.4132,
             "x_ohm_per_km": 0.36,
             "max_i_ka": 0.290,
             "type": "ol",
             "q_mm2": 70,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "94-AL1/15-ST1A 20.0":
-        {"c_nf_per_km": 10,
+            "voltage_rating": "MV",
+        },
+        "94-AL1/15-ST1A 20.0": {
+            "c_nf_per_km": 10,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.35,
             "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "122-AL1/20-ST1A 20.0":
-        {"c_nf_per_km": 10.3,
+            "voltage_rating": "MV",
+        },
+        "122-AL1/20-ST1A 20.0": {
+            "c_nf_per_km": 10.3,
             "r_ohm_per_km": 0.2376,
             "x_ohm_per_km": 0.344,
             "max_i_ka": 0.410,
             "type": "ol",
             "q_mm2": 122,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "149-AL1/24-ST1A 20.0":
-        {"c_nf_per_km": 10.5,
+            "voltage_rating": "MV",
+        },
+        "149-AL1/24-ST1A 20.0": {
+            "c_nf_per_km": 10.5,
             "r_ohm_per_km": 0.1940,
             "x_ohm_per_km": 0.337,
             "max_i_ka": 0.470,
             "type": "ol",
             "q_mm2": 149,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "184-AL1/30-ST1A 20.0":
-        {"c_nf_per_km": 10.75,
+            "voltage_rating": "MV",
+        },
+        "184-AL1/30-ST1A 20.0": {
+            "c_nf_per_km": 10.75,
             "r_ohm_per_km": 0.1571,
             "x_ohm_per_km": 0.33,
             "max_i_ka": 0.535,
             "type": "ol",
             "q_mm2": 184,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-        "243-AL1/39-ST1A 20.0":
-        {"c_nf_per_km": 11,
+            "voltage_rating": "MV",
+        },
+        "243-AL1/39-ST1A 20.0": {
+            "c_nf_per_km": 11,
             "r_ohm_per_km": 0.1188,
             "x_ohm_per_km": 0.32,
             "max_i_ka": 0.645,
             "type": "ol",
             "q_mm2": 243,
             "alpha": alpha_al,
-         "voltage_rating": "MV"},
-
+            "voltage_rating": "MV",
+        },
         # High Voltage
         # c acd x values are estimated for 4 m conductor distance, single bundle and "Donaumast"
-        "48-AL1/8-ST1A 110.0":
-        {"c_nf_per_km": 8,
+        "48-AL1/8-ST1A 110.0": {
+            "c_nf_per_km": 8,
             "r_ohm_per_km": 0.5939,
             "x_ohm_per_km": 0.46,
             "max_i_ka": 0.210,
             "type": "ol",
             "q_mm2": 48,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "70-AL1/11-ST1A 110.0":
-        {"c_nf_per_km": 8.4,
+            "voltage_rating": "HV",
+        },
+        "70-AL1/11-ST1A 110.0": {
+            "c_nf_per_km": 8.4,
             "r_ohm_per_km": 0.4132,
             "x_ohm_per_km": 0.45,
             "max_i_ka": 0.290,
             "type": "ol",
             "q_mm2": 70,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "94-AL1/15-ST1A 110.0":
-        {"c_nf_per_km": 8.65,
+            "voltage_rating": "HV",
+        },
+        "94-AL1/15-ST1A 110.0": {
+            "c_nf_per_km": 8.65,
             "r_ohm_per_km": 0.3060,
             "x_ohm_per_km": 0.44,
             "max_i_ka": 0.350,
             "type": "ol",
             "q_mm2": 94,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "122-AL1/20-ST1A 110.0":
-        {"c_nf_per_km": 8.5,
+            "voltage_rating": "HV",
+        },
+        "122-AL1/20-ST1A 110.0": {
+            "c_nf_per_km": 8.5,
             "r_ohm_per_km": 0.2376,
             "x_ohm_per_km": 0.43,
             "max_i_ka": 0.410,
             "type": "ol",
             "q_mm2": 122,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "149-AL1/24-ST1A 110.0":
-        {"c_nf_per_km": 8.75,
+            "voltage_rating": "HV",
+        },
+        "149-AL1/24-ST1A 110.0": {
+            "c_nf_per_km": 8.75,
             "r_ohm_per_km": 0.1940,
             "x_ohm_per_km": 0.41,
             "max_i_ka": 0.470,
             "type": "ol",
             "q_mm2": 149,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "184-AL1/30-ST1A 110.0":
-        {"c_nf_per_km": 8.8,
+            "voltage_rating": "HV",
+        },
+        "184-AL1/30-ST1A 110.0": {
+            "c_nf_per_km": 8.8,
             "r_ohm_per_km": 0.1571,
             "x_ohm_per_km": 0.4,
             "max_i_ka": 0.535,
             "type": "ol",
             "q_mm2": 184,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "243-AL1/39-ST1A 110.0":
-        {"c_nf_per_km": 9,
+            "voltage_rating": "HV",
+        },
+        "243-AL1/39-ST1A 110.0": {
+            "c_nf_per_km": 9,
             "r_ohm_per_km": 0.1188,
             "x_ohm_per_km": 0.39,
             "max_i_ka": 0.645,
             "type": "ol",
             "q_mm2": 243,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "305-AL1/39-ST1A 110.0":
-        {"c_nf_per_km": 9.2,
+            "voltage_rating": "HV",
+        },
+        "305-AL1/39-ST1A 110.0": {
+            "c_nf_per_km": 9.2,
             "r_ohm_per_km": 0.0949,
             "x_ohm_per_km": 0.38,
             "max_i_ka": 0.74,
             "type": "ol",
             "q_mm2": 305,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "490-AL1/64-ST1A 110.0":
-        {"c_nf_per_km": 9.75,
+            "voltage_rating": "HV",
+        },
+        "490-AL1/64-ST1A 110.0": {
+            "c_nf_per_km": 9.75,
             "r_ohm_per_km": 0.059,
             "x_ohm_per_km": 0.37,
             "max_i_ka": 0.960,
             "type": "ol",
             "q_mm2": 490,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "679-AL1/86-ST1A 110.0":
-        {"c_nf_per_km": 9.95,
+            "voltage_rating": "HV",
+        },
+        "679-AL1/86-ST1A 110.0": {
+            "c_nf_per_km": 9.95,
             "r_ohm_per_km": 0.042,
             "x_ohm_per_km": 0.36,
             "max_i_ka": 1.150,
             "type": "ol",
             "q_mm2": 679,
             "alpha": alpha_al,
-         "voltage_rating": "HV"},
-
+            "voltage_rating": "HV",
+        },
         # Transmission System
         # The following values of c and x depend on the geometries of the  overhead line
         # Here it is assumed that for x the 220kV line uses twin conductors and the 380kV line uses
         # quad bundle conductor. The c values are estimated.
-        "490-AL1/64-ST1A 220.0":
-        {"c_nf_per_km": 10,
-         "r_ohm_per_km": 0.059,
-         "x_ohm_per_km": 0.285,
-         "max_i_ka": 0.96,
-         "type": "ol",
-         "q_mm2": 490,
-         "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "679-AL1/86-ST1A 220.0":
-        {"c_nf_per_km": 11.7,
-         "r_ohm_per_km": 0.042,
-         "x_ohm_per_km": 0.275,
-         "max_i_ka": 1.150,
-         "type": "ol",
-         "q_mm2": 679,
-         "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "490-AL1/64-ST1A 380.0":
-        {"c_nf_per_km": 11,
-         "r_ohm_per_km": 0.059,
-         "x_ohm_per_km": 0.253,
-         "max_i_ka": 0.96,
-         "type": "ol",
-         "q_mm2": 490,
-         "alpha": alpha_al,
-         "voltage_rating": "HV"},
-        "679-AL1/86-ST1A 380.0":
-        {"c_nf_per_km": 14.6,
-         "r_ohm_per_km": 0.042,
-         "x_ohm_per_km": 0.25,
-         "max_i_ka": 1.150,
-         "type": "ol",
-         "q_mm2": 679,
-         "alpha": alpha_al,
-         "voltage_rating": "HV"}
+        "490-AL1/64-ST1A 220.0": {
+            "c_nf_per_km": 10,
+            "r_ohm_per_km": 0.059,
+            "x_ohm_per_km": 0.285,
+            "max_i_ka": 0.96,
+            "type": "ol",
+            "q_mm2": 490,
+            "alpha": alpha_al,
+            "voltage_rating": "HV",
+        },
+        "679-AL1/86-ST1A 220.0": {
+            "c_nf_per_km": 11.7,
+            "r_ohm_per_km": 0.042,
+            "x_ohm_per_km": 0.275,
+            "max_i_ka": 1.150,
+            "type": "ol",
+            "q_mm2": 679,
+            "alpha": alpha_al,
+            "voltage_rating": "HV",
+        },
+        "490-AL1/64-ST1A 380.0": {
+            "c_nf_per_km": 11,
+            "r_ohm_per_km": 0.059,
+            "x_ohm_per_km": 0.253,
+            "max_i_ka": 0.96,
+            "type": "ol",
+            "q_mm2": 490,
+            "alpha": alpha_al,
+            "voltage_rating": "HV",
+        },
+        "679-AL1/86-ST1A 380.0": {
+            "c_nf_per_km": 14.6,
+            "r_ohm_per_km": 0.042,
+            "x_ohm_per_km": 0.25,
+            "max_i_ka": 1.150,
+            "type": "ol",
+            "q_mm2": 679,
+            "alpha": alpha_al,
+            "voltage_rating": "HV",
+        },
     }
     return linetypes
 
 
 def basic_line_dc_std_types():
-
     alpha_al = 4.03e-3
     alpha_cu = 3.93e-3
 
     linedctypes = {
         # Cables, all from ABB-HVDC-Light--High-Voltage-Direct-Current--Cable-Catalogue.pdf
         # at the catalogue there are Land and submarine hvdc cables
-
         # High Voltage Submarine DC Bipolar Cupper Cables
-
-         "95-CU":
-        {"r_ohm_per_km": 0.193,
+        "95-CU": {
+            "r_ohm_per_km": 0.193,
             "max_i_ka": 0.404,
             "type": "cs",
             "q_mm2": 95,
-            "alpha": alpha_cu},
-        "400-CU":
-        {"r_ohm_per_km": 0.0470,
+            "alpha": alpha_cu,
+        },
+        "400-CU": {
+            "r_ohm_per_km": 0.0470,
             "max_i_ka": 0.922,
             "type": "cs",
             "q_mm2": 400,
-            "alpha": alpha_cu},
-        "1200-CU":
-        {"r_ohm_per_km": 0.0151 ,
+            "alpha": alpha_cu,
+        },
+        "1200-CU": {
+            "r_ohm_per_km": 0.0151,
             "max_i_ka": 1.791,
             "type": "cs",
             "q_mm2": 1200,
-            "alpha": alpha_cu},
-        "2400-CU":
-        {"r_ohm_per_km": 0.0073,
+            "alpha": alpha_cu,
+        },
+        "2400-CU": {
+            "r_ohm_per_km": 0.0073,
             "max_i_ka": 2.678,
             "type": "cs",
             "q_mm2": 2400,
-            "alpha": alpha_cu},
-
+            "alpha": alpha_cu,
+        },
         # High Voltage Land DC Bipolar Aluminium Cables
-
-        "95-AL":
-            {"r_ohm_per_km": 0.32,
-             "max_i_ka": 0.310,
-             "type": "cs",
-             "q_mm2": 95,
-             "alpha": alpha_al},
-        "400-AL":
-            {"r_ohm_per_km": 0.0778,
-             "max_i_ka": 0.705,
-             "type": "cs",
-             "q_mm2": 400,
-             "alpha": alpha_al},
-        "1200-AL":
-            {"r_ohm_per_km": 0.0247,
-             "max_i_ka": 1.371,
-             "type": "cs",
-             "q_mm2": 1200,
-             "alpha": alpha_al},
-        "2400-AL":
-            {"r_ohm_per_km": 0.0121,
-             "max_i_ka": 2.066,
-             "type": "cs",
-             "q_mm2": 2400,
-             "alpha": alpha_al},
+        "95-AL": {
+            "r_ohm_per_km": 0.32,
+            "max_i_ka": 0.310,
+            "type": "cs",
+            "q_mm2": 95,
+            "alpha": alpha_al,
+        },
+        "400-AL": {
+            "r_ohm_per_km": 0.0778,
+            "max_i_ka": 0.705,
+            "type": "cs",
+            "q_mm2": 400,
+            "alpha": alpha_al,
+        },
+        "1200-AL": {
+            "r_ohm_per_km": 0.0247,
+            "max_i_ka": 1.371,
+            "type": "cs",
+            "q_mm2": 1200,
+            "alpha": alpha_al,
+        },
+        "2400-AL": {
+            "r_ohm_per_km": 0.0121,
+            "max_i_ka": 2.066,
+            "type": "cs",
+            "q_mm2": 2400,
+            "alpha": alpha_al,
+        },
     }
     return linedctypes
 
@@ -995,8 +1077,8 @@ def basic_trafo_std_types():
         # derived from Oswald - Transformatoren - Vorlesungsskript Elektrische Energieversorgung I
         # another recommendable references for distribution transformers is Werth:
         # Netzberechnung mit Erzeugungsprofilen
-        "160 MVA 380/110 kV":
-        {"i0_percent": 0.06,
+        "160 MVA 380/110 kV": {
+            "i0_percent": 0.06,
             "pfe_kw": 60,
             "vkr_percent": 0.25,
             "sn_mva": 160,
@@ -1012,9 +1094,10 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
-        "100 MVA 220/110 kV":
-        {"i0_percent": 0.06,
+            "trafo_characteristic_table": False,
+        },
+        "100 MVA 220/110 kV": {
+            "i0_percent": 0.06,
             "pfe_kw": 55,
             "vkr_percent": 0.26,
             "sn_mva": 100,
@@ -1030,11 +1113,11 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
-
+            "trafo_characteristic_table": False,
+        },
         # compare to IFT Ingenieurbüro data and Schlabbach book
-        "63 MVA 110/20 kV":
-        {"i0_percent": 0.04,
+        "63 MVA 110/20 kV": {
+            "i0_percent": 0.04,
             "pfe_kw": 22,
             "vkr_percent": 0.32,
             "sn_mva": 63,
@@ -1050,9 +1133,10 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
-        "40 MVA 110/20 kV":
-        {"i0_percent": 0.05,
+            "trafo_characteristic_table": False,
+        },
+        "40 MVA 110/20 kV": {
+            "i0_percent": 0.05,
             "pfe_kw": 18,
             "vkr_percent": 0.34,
             "sn_mva": 40,
@@ -1068,9 +1152,10 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
-        "25 MVA 110/20 kV":
-        {"i0_percent": 0.07,
+            "trafo_characteristic_table": False,
+        },
+        "25 MVA 110/20 kV": {
+            "i0_percent": 0.07,
             "pfe_kw": 14,
             "vkr_percent": 0.41,
             "sn_mva": 25,
@@ -1086,9 +1171,10 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
-        "63 MVA 110/10 kV":
-        {"sn_mva": 63,
+            "trafo_characteristic_table": False,
+        },
+        "63 MVA 110/10 kV": {
+            "sn_mva": 63,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vk_percent": 18,
@@ -1104,9 +1190,10 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
-        "40 MVA 110/10 kV":
-        {"sn_mva": 40,
+            "trafo_characteristic_table": False,
+        },
+        "40 MVA 110/10 kV": {
+            "sn_mva": 40,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vk_percent": 16.2,
@@ -1122,9 +1209,10 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
-        "25 MVA 110/10 kV":
-        {"sn_mva": 25,
+            "trafo_characteristic_table": False,
+        },
+        "25 MVA 110/10 kV": {
+            "sn_mva": 25,
             "vn_hv_kv": 110,
             "vn_lv_kv": 10,
             "vk_percent": 12,
@@ -1140,11 +1228,12 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 1.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
+            "trafo_characteristic_table": False,
+        },
         # Trafo 20/0.4
         # 0.25 MVA 20/0.4 kV 0.45 Trafo Union
-        "0.25 MVA 20/0.4 kV":
-        {"sn_mva": 0.25,
+        "0.25 MVA 20/0.4 kV": {
+            "sn_mva": 0.25,
             "vn_hv_kv": 20,
             "vn_lv_kv": 0.4,
             "vk_percent": 6,
@@ -1160,10 +1249,13 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
+            "trafo_characteristic_table": False,
+        },
         # 0.4 MVA 20/0.4 kV Trafo Union
-        "0.4 MVA 20/0.4 kV":
-        {"sn_mva": 0.4, "vn_hv_kv": 20, "vn_lv_kv": 0.4,
+        "0.4 MVA 20/0.4 kV": {
+            "sn_mva": 0.4,
+            "vn_hv_kv": 20,
+            "vn_lv_kv": 0.4,
             "vk_percent": 6,
             "vkr_percent": 1.425,
             "pfe_kw": 1.35,
@@ -1177,10 +1269,11 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
+            "trafo_characteristic_table": False,
+        },
         # 0.63 MVA 20/0.4 kV Trafo Union
-        "0.63 MVA 20/0.4 kV":
-        {"sn_mva": 0.63,
+        "0.63 MVA 20/0.4 kV": {
+            "sn_mva": 0.63,
             "vn_hv_kv": 20,
             "vn_lv_kv": 0.4,
             "vk_percent": 6,
@@ -1196,11 +1289,12 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
+            "trafo_characteristic_table": False,
+        },
         # Trafo 10/0.4:
         # 0.25 MVA 10/0.4 kV 0.4 Trafo Union wnr
-        "0.25 MVA 10/0.4 kV":
-        {"sn_mva": 0.25,
+        "0.25 MVA 10/0.4 kV": {
+            "sn_mva": 0.25,
             "vn_hv_kv": 10,
             "vn_lv_kv": 0.4,
             "vk_percent": 4,
@@ -1216,10 +1310,11 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
+            "trafo_characteristic_table": False,
+        },
         # 0.4 MVA 10/0.4 kV Trafo Union wnr
-        "0.4 MVA 10/0.4 kV":
-        {"sn_mva": 0.4,
+        "0.4 MVA 10/0.4 kV": {
+            "sn_mva": 0.4,
             "vn_hv_kv": 10,
             "vn_lv_kv": 0.4,
             "vk_percent": 4,
@@ -1235,10 +1330,11 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
+            "trafo_characteristic_table": False,
+        },
         # 0.63 MVA 10/0.4 kV Trafo Union wnr
-        "0.63 MVA 10/0.4 kV":
-        {"sn_mva": 0.63,
+        "0.63 MVA 10/0.4 kV": {
+            "sn_mva": 0.63,
             "vn_hv_kv": 10,
             "vn_lv_kv": 0.4,
             "vk_percent": 4,
@@ -1254,7 +1350,8 @@ def basic_trafo_std_types():
             "tap_step_degree": 0,
             "tap_step_percent": 2.5,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
+            "trafo_characteristic_table": False,
+        },
     }
     return trafotypes
 
@@ -1262,8 +1359,8 @@ def basic_trafo_std_types():
 def basic_trafo3w_std_types():
     trafo3wtypes = {
         # generic trafo3w
-        "63/25/38 MVA 110/20/10 kV":
-        {"sn_hv_mva": 63,
+        "63/25/38 MVA 110/20/10 kV": {
+            "sn_hv_mva": 63,
             "sn_mv_mva": 25,
             "sn_lv_mva": 38,
             "vn_hv_kv": 110,
@@ -1286,9 +1383,10 @@ def basic_trafo3w_std_types():
             "tap_max": 10,
             "tap_step_percent": 1.2,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False},
-        "63/25/38 MVA 110/10/10 kV":
-        {"sn_hv_mva": 63,
+            "trafo_characteristic_table": False,
+        },
+        "63/25/38 MVA 110/10/10 kV": {
+            "sn_hv_mva": 63,
             "sn_mv_mva": 25,
             "sn_lv_mva": 38,
             "vn_hv_kv": 110,
@@ -1311,272 +1409,344 @@ def basic_trafo3w_std_types():
             "tap_max": 10,
             "tap_step_percent": 1.2,
             "tap_changer_type": "Ratio",
-            "trafo_characteristic_table": False}
+            "trafo_characteristic_table": False,
+        },
     }
     return trafo3wtypes
 
 
 def basic_fuse_std_types():
     fusetypes = {
-        'HV 100A': {'fuse_type': 'HV 100A',
-                'i_rated_a': 100.0,
-                't_avg': 0,
-                't_min': [10.0, 3.64, 0.854, 0.281, 0.1, 0.0531, 0.022, 0.01],
-                't_total': [10.0, 4.267, 1.21, 0.403, 0.1, 0.058, 0.022, 0.01],
-                'x_avg': 0,
-                'x_min': [300.0, 350.0, 450.0, 550.0, 700.0, 850.0, 1200.0, 1752.0],
-                'x_total': [600.0, 700.0, 900.0, 1150.0, 1665.0, 2000.0, 3000.0, 4313.0]},
-        'HV 10A': {'fuse_type': 'HV 10A',
-                'i_rated_a': 10.0,
-                't_avg': 0,
-                't_min': [10.0, 1675.0, 0.344, 0.156, 0.1, 0.0417, 0.0171, 0.01],
-                't_total': [10.0, 1.3, 0.3, 0.155, 0.1, 0.0555, 0.023, 0.01],
-                'x_avg': 0,
-                'x_min': [30.0, 32.0, 35.0, 37.0, 39.0, 50.0, 70.0, 88.0],
-                'x_total': [60.0, 70.0, 80.0, 87.0, 94.0, 110.0, 150.0, 216.0]},
-        'HV 125A': {'fuse_type': 'HV 125A',
-                 'i_rated_a': 125.0,
-                 't_avg': 0,
-                 't_min': [10.0, 1.82, 0.344, 0.1, 0.0467, 0.0269, 0.01],
-                 't_total': [10.0, 2.478, 0.426, 0.1, 0.0427, 0.0211, 0.01],
-                 'x_avg': 0,
-                 'x_min': [375.0, 500.0, 700.0, 925.0, 1200.0, 1500.0, 2341.0],
-                 'x_total': [750.0, 1000.0, 1500.0, 2200.0, 3000.0, 4000.0, 5765.0]},
-        'HV 160A': {'fuse_type': 'HV 160A',
-                 'i_rated_a': 160.0,
-                 't_avg': 0,
-                 't_min': [10.0, 4.15, 1.03, 0.198, 0.1, 0.051, 0.0172, 0.01],
-                 't_total': [10.0, 2.3, 0.734, 0.274, 0.1, 0.046, 0.0177, 0.01],
-                 'x_avg': 0,
-                 'x_min': [480.0, 550.0, 700.0, 1000.0, 1260.0, 1600.0, 2500.0, 3227.0],
-                 'x_total': [960.0, 1300.0, 1700.0, 2200.0, 2996.0, 4000.0, 6000.0, 7946.0]},
-        'HV 16A': {'fuse_type': 'HV 16A',
-                'i_rated_a': 16.0,
-                't_avg': 0,
-                't_min': [10.0, 0.352, 0.164, 0.1, 0.0649, 0.0342, 0.01],
-                't_total': [10.0, 2.34, 0.722, 0.181, 0.1, 0.055, 0.0296, 0.01],
-                'x_avg': 0,
-                'x_min': [48.0, 60.0, 65.0, 71.0, 80.0, 100.0, 162.0],
-                'x_total': [96.0, 110.0, 125.0, 150.0, 168.0, 200.0, 250.0, 398.0]},
-        'HV 200A': {'fuse_type': 'HV 200A',
-                 'i_rated_a': 200.0,
-                 't_avg': 0,
-                 't_min': [10.0, 4.267, 1.21, 0.403, 0.1, 0.058, 0.022, 0.01],
-                 't_total': [10.0, 3.73, 1.654, 0.328, 0.1, 0.0531, 0.019, 0.01],
-                 'x_avg': 0,
-                 'x_min': [600.0, 700.0, 900.0, 1150.0, 1665.0, 2000.0, 3000.0, 4313.0],
-                 'x_total': [1200.0, 1500.0, 1800.0, 2700.0, 3960.0, 5000.0, 7500.0, 10620.0]},
-        'HV 20A': {'fuse_type': 'HV 20A',
-                'i_rated_a': 20.0,
-                't_avg': 0,
-                't_min': [10.0, 1.3, 0.3, 0.155, 0.1, 0.0555, 0.023, 0.01],
-                't_total': [10.0, 1.3, 0.161, 0.1, 0.0611, 0.0399, 0.0141, 0.01],
-                'x_avg': 0,
-                'x_min': [60.0, 70.0, 80.0, 87.0, 94.0, 110.0, 150.0, 216.0],
-                'x_total': [120.0, 150.0, 200.0, 223.0, 260.0, 300.0, 450.0, 532.0]},
-        'HV 25A': {'fuse_type': 'HV 25A',
-                'i_rated_a': 25.0,
-                't_avg': 0,
-                't_min': [10.0, 2.512, 0.833, 0.299, 0.1, 0.0372, 0.0223, 0.01],
-                't_total': [10.0, 3.125, 0.597, 0.198, 0.1, 0.0378, 0.022, 0.01],
-                'x_avg': 0,
-                'x_min': [75.0, 82.0, 90.0, 100.0, 124.0, 170.0, 200.0, 289.0],
-                'x_total': [150.0, 170.0, 210.0, 250.0, 294.0, 400.0, 500.0, 711.0]},
-        'HV 31.5A': {'fuse_type': 'HV 31.5A',
-                  'i_rated_a': 31.5,
-                  't_avg': 0,
-                  't_min': [10.0, 2.34, 0.722, 0.181, 0.1, 0.055, 0.0296, 0.01],
-                  't_total': [10.0, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01],
-                  'x_avg': 0,
-                  'x_min': [95.0, 110.0, 125.0, 150.0, 165.0, 200.0, 250.0, 390.0],
-                  'x_total': [189.0, 220.0, 300.0, 350.0, 393.0, 450.0, 530.0, 700.0, 960.0]},
-        'HV 40A': {'fuse_type': 'HV 40A',
-                'i_rated_a': 40.0,
-                't_avg': 0,
-                't_min': [10.0, 1.3, 0.161, 0.1, 0.0611, 0.0399, 0.0141, 0.01],
-                't_total': [10.0, 2.05, 0.369, 0.198, 0.1, 0.051, 0.0298, 0.01],
-                'x_avg': 0,
-                'x_min': [120.0, 150.0, 200.0, 223.0, 260.0, 300.0, 450.0, 532.0],
-                'x_total': [240.0, 300.0, 400.0, 450.0, 530.0, 650.0, 800.0, 1311.0]},
-        'HV 50A': {'fuse_type': 'HV 50A',
-                'i_rated_a': 50.0,
-                't_avg': 0,
-                't_min': [10.0, 3.215, 0.597, 0.198, 0.1, 0.0378, 0.022, 0.01],
-                't_total': [10.0, 3.64, 0.854, 0.281, 0.1, 0.0531, 0.022, 0.01],
-                'x_avg': 0,
-                'x_min': [150.0, 170.0, 210.0, 250.0, 294.0, 400.0, 500.0, 711.0],
-                'x_total': [300.0, 350.0, 450.0, 550.0, 700.0, 850.0, 1200.0, 1752.0]},
-        'HV 6.3A': {'fuse_type': 'HV 6.3A',
-                 'i_rated_a': 6.3,
-                 't_avg': 0,
-                 't_min': [10.0, 1.39, 0.344, 0.168, 0.1, 0.056, 0.0263, 0.01],
-                 't_total': [10.0, 1.711, 0.516, 0.198, 0.1, 0.0634, 0.0303, 0.01],
-                 'x_avg': 0,
-                 'x_min': [19.0, 19.5, 20.4, 20.8, 22.0, 25.0, 32.0, 48.0],
-                 'x_total': [38.0, 40.0, 43.0, 48.0, 53.0, 60.0, 75.0, 118.0]},
-        'HV 63A': {'fuse_type': 'HV 63A',
-                'i_rated_a': 63.0,
-                't_avg': 0,
-                't_min': [10.0, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01],
-                't_total': [10.0, 1.82, 0.344, 0.1, 0.0467, 0.0269, 0.01],
-                'x_avg': 0,
-                'x_min': [189.0, 220.0, 300.0, 350.0, 393.0, 450.0, 530.0, 700.0, 961.0],
-                'x_total': [378.0, 500.0, 700.0, 934.0, 1200.0, 1500.0, 2366.0]},
-        'HV 80A': {'fuse_type': 'HV 80A',
-                'i_rated_a': 80.0,
-                't_avg': 0,
-                't_min': [10.0, 2.05, 0.369, 0.198, 0.1, 0.051, 0.0298, 0.01],
-                't_total': [10.0, 4.15, 1.03, 0.198, 0.1, 0.051, 0.0172, 0.01],
-                'x_avg': 0,
-                'x_min': [240.0, 300.0, 400.0, 450.0, 530.0, 650.0, 800.0, 1311.0],
-                'x_total': [480.0, 550.0, 700.0, 1000.0, 1260.0, 1600.0, 2500.0, 3227.0]},
-        'Siemens NH-1-100': {'fuse_type': 'Siemens NH-1-100',
-                'i_rated_a': 100.0,
-                't_avg': [5400.0, 2000.0, 400.0, 20.0, 1.0, 0.2, 0.012, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [150.0, 190.0, 250.0, 430.0, 900.0, 1250.0, 2700.0, 3600.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-125': {'fuse_type': 'Siemens NH-1-125',
-                'i_rated_a': 125.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [180.0, 400.0, 740.0, 2000.0, 4250.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-16': {'fuse_type': 'Siemens NH-1-16',
-                 'i_rated_a': 16.0,
-                 't_avg': [4000.0, 400.0, 2.0, 0.1, 0.04, 0.01],
-                 't_min': 0,
-                 't_total': 0,
-                 'x_avg': [26.0, 35.0, 75.0, 150.0, 200.0, 300.0],
-                 'x_min': 0,
-                 'x_total': 0},
-        'Siemens NH-1-160': {'fuse_type': 'Siemens NH-1-160',
-                'i_rated_a': 160.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [210.0, 500.0, 900.0, 2300.0, 5000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-25': {'fuse_type': 'Siemens NH-1-25',
-                'i_rated_a': 25.0,
-                't_avg': [4000.0, 1000.0, 10.0, 0.2, 0.02, 0.01],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [40.0, 50.0, 100.0, 210.0, 400.0, 500.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-50': {'fuse_type': 'Siemens NH-1-50',
-                'i_rated_a': 50.0,
-                't_avg': [4000.0, 40.0, 4.0, 1.0, 0.02, 0.01],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [86.0, 200.0, 300.0, 400.0, 1000.0, 1280.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-63': {'fuse_type': 'Siemens NH-1-63',
-                 'i_rated_a': 63.0,
-                 't_avg': [4000.0, 100.0, 10.0, 2.0, 0.04, 0.01],
-                 't_min': 0,
-                 't_total': 0,
-                 'x_avg': [100.0, 200.0, 300.0, 400.0, 1000.0, 1500.0],
-                 'x_min': 0,
-                 'x_total': 0},
-        'Siemens NH-1-80': {'fuse_type': 'Siemens NH-1-80',
-                'i_rated_a': 80.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.01],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [150.58, 250.0, 450.0, 1150.0, 2470.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-1000': {'fuse_type': 'Siemens NH-2-1000',
-                'i_rated_a': 1000.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [1900.0, 3500.0, 8400.0, 24000.0, 52000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-200': {'fuse_type': 'Siemens NH-2-200',
-                'i_rated_a': 200.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [280.0, 650.0, 1200.0, 3000.0, 7000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-224': {'fuse_type': 'Siemens NH-2-224',
-                'i_rated_a': 224.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.2, 0.04, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [400.0, 750.0, 1453.0, 3025.0, 4315.0, 7600.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-250': {'fuse_type': 'Siemens NH-2-250',
-                'i_rated_a': 250.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [450.0, 800.0, 1650.0, 4000.0, 8500.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-315': {'fuse_type': 'Siemens NH-2-315',
-                'i_rated_a': 315.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [550.0, 920.0, 1900.0, 5000.0, 11000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-355': {'fuse_type': 'Siemens NH-2-355',
-                'i_rated_a': 355.0,
-                't_avg': [4800.0, 120.0, 6.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [650.0, 1116.27, 2350.0, 5840.0, 12790.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-400': {'fuse_type': 'Siemens NH-2-400',
-                'i_rated_a': 400.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [720.0, 1350.0, 2800.0, 6500.0, 15000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-425': {'fuse_type': 'Siemens NH-2-425',
-                'i_rated_a': 425.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [850.0, 1500.0, 3050.0, 7500.0, 16500.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-630': {'fuse_type': 'Siemens NH-2-630',
-                'i_rated_a': 630.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [1200.0, 2000.0, 4800.0, 12000.0, 26000.0],
-                'x_min': 0,
-                'x_total': 0}
+        "HV 100A": {
+            "fuse_type": "HV 100A",
+            "i_rated_a": 100.0,
+            "t_avg": 0,
+            "t_min": [10.0, 3.64, 0.854, 0.281, 0.1, 0.0531, 0.022, 0.01],
+            "t_total": [10.0, 4.267, 1.21, 0.403, 0.1, 0.058, 0.022, 0.01],
+            "x_avg": 0,
+            "x_min": [300.0, 350.0, 450.0, 550.0, 700.0, 850.0, 1200.0, 1752.0],
+            "x_total": [600.0, 700.0, 900.0, 1150.0, 1665.0, 2000.0, 3000.0, 4313.0],
+        },
+        "HV 10A": {
+            "fuse_type": "HV 10A",
+            "i_rated_a": 10.0,
+            "t_avg": 0,
+            "t_min": [10.0, 1675.0, 0.344, 0.156, 0.1, 0.0417, 0.0171, 0.01],
+            "t_total": [10.0, 1.3, 0.3, 0.155, 0.1, 0.0555, 0.023, 0.01],
+            "x_avg": 0,
+            "x_min": [30.0, 32.0, 35.0, 37.0, 39.0, 50.0, 70.0, 88.0],
+            "x_total": [60.0, 70.0, 80.0, 87.0, 94.0, 110.0, 150.0, 216.0],
+        },
+        "HV 125A": {
+            "fuse_type": "HV 125A",
+            "i_rated_a": 125.0,
+            "t_avg": 0,
+            "t_min": [10.0, 1.82, 0.344, 0.1, 0.0467, 0.0269, 0.01],
+            "t_total": [10.0, 2.478, 0.426, 0.1, 0.0427, 0.0211, 0.01],
+            "x_avg": 0,
+            "x_min": [375.0, 500.0, 700.0, 925.0, 1200.0, 1500.0, 2341.0],
+            "x_total": [750.0, 1000.0, 1500.0, 2200.0, 3000.0, 4000.0, 5765.0],
+        },
+        "HV 160A": {
+            "fuse_type": "HV 160A",
+            "i_rated_a": 160.0,
+            "t_avg": 0,
+            "t_min": [10.0, 4.15, 1.03, 0.198, 0.1, 0.051, 0.0172, 0.01],
+            "t_total": [10.0, 2.3, 0.734, 0.274, 0.1, 0.046, 0.0177, 0.01],
+            "x_avg": 0,
+            "x_min": [480.0, 550.0, 700.0, 1000.0, 1260.0, 1600.0, 2500.0, 3227.0],
+            "x_total": [960.0, 1300.0, 1700.0, 2200.0, 2996.0, 4000.0, 6000.0, 7946.0],
+        },
+        "HV 16A": {
+            "fuse_type": "HV 16A",
+            "i_rated_a": 16.0,
+            "t_avg": 0,
+            "t_min": [10.0, 0.352, 0.164, 0.1, 0.0649, 0.0342, 0.01],
+            "t_total": [10.0, 2.34, 0.722, 0.181, 0.1, 0.055, 0.0296, 0.01],
+            "x_avg": 0,
+            "x_min": [48.0, 60.0, 65.0, 71.0, 80.0, 100.0, 162.0],
+            "x_total": [96.0, 110.0, 125.0, 150.0, 168.0, 200.0, 250.0, 398.0],
+        },
+        "HV 200A": {
+            "fuse_type": "HV 200A",
+            "i_rated_a": 200.0,
+            "t_avg": 0,
+            "t_min": [10.0, 4.267, 1.21, 0.403, 0.1, 0.058, 0.022, 0.01],
+            "t_total": [10.0, 3.73, 1.654, 0.328, 0.1, 0.0531, 0.019, 0.01],
+            "x_avg": 0,
+            "x_min": [600.0, 700.0, 900.0, 1150.0, 1665.0, 2000.0, 3000.0, 4313.0],
+            "x_total": [
+                1200.0,
+                1500.0,
+                1800.0,
+                2700.0,
+                3960.0,
+                5000.0,
+                7500.0,
+                10620.0,
+            ],
+        },
+        "HV 20A": {
+            "fuse_type": "HV 20A",
+            "i_rated_a": 20.0,
+            "t_avg": 0,
+            "t_min": [10.0, 1.3, 0.3, 0.155, 0.1, 0.0555, 0.023, 0.01],
+            "t_total": [10.0, 1.3, 0.161, 0.1, 0.0611, 0.0399, 0.0141, 0.01],
+            "x_avg": 0,
+            "x_min": [60.0, 70.0, 80.0, 87.0, 94.0, 110.0, 150.0, 216.0],
+            "x_total": [120.0, 150.0, 200.0, 223.0, 260.0, 300.0, 450.0, 532.0],
+        },
+        "HV 25A": {
+            "fuse_type": "HV 25A",
+            "i_rated_a": 25.0,
+            "t_avg": 0,
+            "t_min": [10.0, 2.512, 0.833, 0.299, 0.1, 0.0372, 0.0223, 0.01],
+            "t_total": [10.0, 3.125, 0.597, 0.198, 0.1, 0.0378, 0.022, 0.01],
+            "x_avg": 0,
+            "x_min": [75.0, 82.0, 90.0, 100.0, 124.0, 170.0, 200.0, 289.0],
+            "x_total": [150.0, 170.0, 210.0, 250.0, 294.0, 400.0, 500.0, 711.0],
+        },
+        "HV 31.5A": {
+            "fuse_type": "HV 31.5A",
+            "i_rated_a": 31.5,
+            "t_avg": 0,
+            "t_min": [10.0, 2.34, 0.722, 0.181, 0.1, 0.055, 0.0296, 0.01],
+            "t_total": [10.0, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01],
+            "x_avg": 0,
+            "x_min": [95.0, 110.0, 125.0, 150.0, 165.0, 200.0, 250.0, 390.0],
+            "x_total": [189.0, 220.0, 300.0, 350.0, 393.0, 450.0, 530.0, 700.0, 960.0],
+        },
+        "HV 40A": {
+            "fuse_type": "HV 40A",
+            "i_rated_a": 40.0,
+            "t_avg": 0,
+            "t_min": [10.0, 1.3, 0.161, 0.1, 0.0611, 0.0399, 0.0141, 0.01],
+            "t_total": [10.0, 2.05, 0.369, 0.198, 0.1, 0.051, 0.0298, 0.01],
+            "x_avg": 0,
+            "x_min": [120.0, 150.0, 200.0, 223.0, 260.0, 300.0, 450.0, 532.0],
+            "x_total": [240.0, 300.0, 400.0, 450.0, 530.0, 650.0, 800.0, 1311.0],
+        },
+        "HV 50A": {
+            "fuse_type": "HV 50A",
+            "i_rated_a": 50.0,
+            "t_avg": 0,
+            "t_min": [10.0, 3.215, 0.597, 0.198, 0.1, 0.0378, 0.022, 0.01],
+            "t_total": [10.0, 3.64, 0.854, 0.281, 0.1, 0.0531, 0.022, 0.01],
+            "x_avg": 0,
+            "x_min": [150.0, 170.0, 210.0, 250.0, 294.0, 400.0, 500.0, 711.0],
+            "x_total": [300.0, 350.0, 450.0, 550.0, 700.0, 850.0, 1200.0, 1752.0],
+        },
+        "HV 6.3A": {
+            "fuse_type": "HV 6.3A",
+            "i_rated_a": 6.3,
+            "t_avg": 0,
+            "t_min": [10.0, 1.39, 0.344, 0.168, 0.1, 0.056, 0.0263, 0.01],
+            "t_total": [10.0, 1.711, 0.516, 0.198, 0.1, 0.0634, 0.0303, 0.01],
+            "x_avg": 0,
+            "x_min": [19.0, 19.5, 20.4, 20.8, 22.0, 25.0, 32.0, 48.0],
+            "x_total": [38.0, 40.0, 43.0, 48.0, 53.0, 60.0, 75.0, 118.0],
+        },
+        "HV 63A": {
+            "fuse_type": "HV 63A",
+            "i_rated_a": 63.0,
+            "t_avg": 0,
+            "t_min": [10.0, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01],
+            "t_total": [10.0, 1.82, 0.344, 0.1, 0.0467, 0.0269, 0.01],
+            "x_avg": 0,
+            "x_min": [189.0, 220.0, 300.0, 350.0, 393.0, 450.0, 530.0, 700.0, 961.0],
+            "x_total": [378.0, 500.0, 700.0, 934.0, 1200.0, 1500.0, 2366.0],
+        },
+        "HV 80A": {
+            "fuse_type": "HV 80A",
+            "i_rated_a": 80.0,
+            "t_avg": 0,
+            "t_min": [10.0, 2.05, 0.369, 0.198, 0.1, 0.051, 0.0298, 0.01],
+            "t_total": [10.0, 4.15, 1.03, 0.198, 0.1, 0.051, 0.0172, 0.01],
+            "x_avg": 0,
+            "x_min": [240.0, 300.0, 400.0, 450.0, 530.0, 650.0, 800.0, 1311.0],
+            "x_total": [480.0, 550.0, 700.0, 1000.0, 1260.0, 1600.0, 2500.0, 3227.0],
+        },
+        "Siemens NH-1-100": {
+            "fuse_type": "Siemens NH-1-100",
+            "i_rated_a": 100.0,
+            "t_avg": [5400.0, 2000.0, 400.0, 20.0, 1.0, 0.2, 0.012, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [150.0, 190.0, 250.0, 430.0, 900.0, 1250.0, 2700.0, 3600.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-1-125": {
+            "fuse_type": "Siemens NH-1-125",
+            "i_rated_a": 125.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [180.0, 400.0, 740.0, 2000.0, 4250.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-1-16": {
+            "fuse_type": "Siemens NH-1-16",
+            "i_rated_a": 16.0,
+            "t_avg": [4000.0, 400.0, 2.0, 0.1, 0.04, 0.01],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [26.0, 35.0, 75.0, 150.0, 200.0, 300.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-1-160": {
+            "fuse_type": "Siemens NH-1-160",
+            "i_rated_a": 160.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [210.0, 500.0, 900.0, 2300.0, 5000.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-1-25": {
+            "fuse_type": "Siemens NH-1-25",
+            "i_rated_a": 25.0,
+            "t_avg": [4000.0, 1000.0, 10.0, 0.2, 0.02, 0.01],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [40.0, 50.0, 100.0, 210.0, 400.0, 500.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-1-50": {
+            "fuse_type": "Siemens NH-1-50",
+            "i_rated_a": 50.0,
+            "t_avg": [4000.0, 40.0, 4.0, 1.0, 0.02, 0.01],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [86.0, 200.0, 300.0, 400.0, 1000.0, 1280.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-1-63": {
+            "fuse_type": "Siemens NH-1-63",
+            "i_rated_a": 63.0,
+            "t_avg": [4000.0, 100.0, 10.0, 2.0, 0.04, 0.01],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [100.0, 200.0, 300.0, 400.0, 1000.0, 1500.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-1-80": {
+            "fuse_type": "Siemens NH-1-80",
+            "i_rated_a": 80.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.01],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [150.58, 250.0, 450.0, 1150.0, 2470.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-1000": {
+            "fuse_type": "Siemens NH-2-1000",
+            "i_rated_a": 1000.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [1900.0, 3500.0, 8400.0, 24000.0, 52000.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-200": {
+            "fuse_type": "Siemens NH-2-200",
+            "i_rated_a": 200.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [280.0, 650.0, 1200.0, 3000.0, 7000.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-224": {
+            "fuse_type": "Siemens NH-2-224",
+            "i_rated_a": 224.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.2, 0.04, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [400.0, 750.0, 1453.0, 3025.0, 4315.0, 7600.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-250": {
+            "fuse_type": "Siemens NH-2-250",
+            "i_rated_a": 250.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [450.0, 800.0, 1650.0, 4000.0, 8500.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-315": {
+            "fuse_type": "Siemens NH-2-315",
+            "i_rated_a": 315.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [550.0, 920.0, 1900.0, 5000.0, 11000.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-355": {
+            "fuse_type": "Siemens NH-2-355",
+            "i_rated_a": 355.0,
+            "t_avg": [4800.0, 120.0, 6.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [650.0, 1116.27, 2350.0, 5840.0, 12790.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-400": {
+            "fuse_type": "Siemens NH-2-400",
+            "i_rated_a": 400.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [720.0, 1350.0, 2800.0, 6500.0, 15000.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-425": {
+            "fuse_type": "Siemens NH-2-425",
+            "i_rated_a": 425.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [850.0, 1500.0, 3050.0, 7500.0, 16500.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
+        "Siemens NH-2-630": {
+            "fuse_type": "Siemens NH-2-630",
+            "i_rated_a": 630.0,
+            "t_avg": [4800.0, 120.0, 7.0, 0.1, 0.004],
+            "t_min": 0,
+            "t_total": 0,
+            "x_avg": [1200.0, 2000.0, 4800.0, 12000.0, 26000.0],
+            "x_min": 0,
+            "x_total": 0,
+        },
     }
     return fusetypes
 
 
 def basic_std_types():
     return {
-        "line"   : basic_line_std_types(),
-        "line_dc"   : basic_line_dc_std_types(),
-        "trafo"  : basic_trafo_std_types(),
+        "line": basic_line_std_types(),
+        "line_dc": basic_line_dc_std_types(),
+        "trafo": basic_trafo_std_types(),
         "trafo3w": basic_trafo3w_std_types(),
-        "fuse"   : basic_fuse_std_types()
+        "fuse": basic_fuse_std_types(),
     }
 
 
@@ -1597,7 +1767,13 @@ def add_basic_std_types(net):
     """
 
     if "std_types" not in net:
-        net.std_types = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
+        net.std_types = {
+            "line": {},
+            "line_dc": {},
+            "trafo": {},
+            "trafo3w": {},
+            "fuse": {},
+        }
 
     linetypes = basic_line_std_types()
     linedctypes = basic_line_dc_std_types()

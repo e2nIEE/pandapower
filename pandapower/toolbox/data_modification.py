@@ -19,8 +19,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None,
-                                     verbose=True):
+def add_column_from_node_to_elements(
+    net, column, replace, elements=None, branch_bus=None, verbose=True
+):
     """
     Adds column data to elements, inferring them from the column data of buses they are
     connected to.
@@ -45,38 +46,68 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
         raise ValueError("%s is not in net.bus.columns" % column)
-    elements = elements if elements is not None else pp_elements(bus=False, other_elements=False)
-    elements_to_replace = elements if replace else [
-        el for el in elements if column not in net[el].columns or net[el][column].isnull().all()]
+    elements = (
+        elements
+        if elements is not None
+        else pp_elements(bus=False, other_elements=False)
+    )
+    elements_to_replace = (
+        elements
+        if replace
+        else [
+            el
+            for el in elements
+            if column not in net[el].columns or net[el][column].isnull().all()
+        ]
+    )
     # bus elements
-    for element, bus_type in element_bus_tuples(bus_elements=True, branch_elements=False):
+    for element, bus_type in element_bus_tuples(
+        bus_elements=True, branch_elements=False
+    ):
         if element in elements_to_replace:
             net[element][column] = net["bus"][column].loc[net[element][bus_type]].values
     # branch elements
     to_validate = {}
-    for element, bus_type in element_bus_tuples(bus_elements=False, branch_elements=True):
+    for element, bus_type in element_bus_tuples(
+        bus_elements=False, branch_elements=True
+    ):
         if element in elements_to_replace:
-            if bus_type in (branch_bus + ["bus"]):  # copy data, append branch_bus for switch.bus
-                net[element][column] = net["bus"][column].loc[net[element][bus_type]].values
+            if bus_type in (
+                branch_bus + ["bus"]
+            ):  # copy data, append branch_bus for switch.bus
+                net[element][column] = (
+                    net["bus"][column].loc[net[element][bus_type]].values
+                )
             else:  # save data for validation
-                to_validate[element] = net["bus"][column].loc[net[element][bus_type]].values
+                to_validate[element] = (
+                    net["bus"][column].loc[net[element][bus_type]].values
+                )
     # validate branch elements, but do not validate double and switches at all
     already_validated = ["switch"]
-    for element, bus_type in element_bus_tuples(bus_elements=False, branch_elements=True):
+    for element, bus_type in element_bus_tuples(
+        bus_elements=False, branch_elements=True
+    ):
         if (element in elements_to_replace) & (element not in already_validated):
             already_validated += [element]
-            crossing = sum(~compare_arrays(net[element][column].values, to_validate[element]))
+            crossing = sum(
+                ~compare_arrays(net[element][column].values, to_validate[element])
+            )
             if crossing > 0:
                 if verbose:
-                    logger.warning("There have been %i %ss with different " % (crossing, element) +
-                                   "%s data at from-/hv- and to-/lv-bus" % column)
+                    logger.warning(
+                        "There have been %i %ss with different " % (crossing, element)
+                        + "%s data at from-/hv- and to-/lv-bus" % column
+                    )
                 else:
-                    logger.debug("There have been %i %ss with different " % (crossing, element) +
-                                 "%s data at from-/hv- and to-/lv-bus" % column)
+                    logger.debug(
+                        "There have been %i %ss with different " % (crossing, element)
+                        + "%s data at from-/hv- and to-/lv-bus" % column
+                    )
 
 
-def add_column_from_element_to_elements(net, column, replace, elements=None,
-                                        continue_on_missing_column=True):
+def add_column_from_element_to_elements(
+    net, column, replace, elements=None, continue_on_missing_column=True
+):
     """
     Adds column data to elements, inferring them from the column data of the elements linked by the
     columns "element" and "element_type" or "et".
@@ -111,29 +142,48 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
         >>> print(net.measurement.name.values, net.switch.name.values)
     """
     elements = elements if elements is not None else pp_elements()
-    elements_with_el_and_et_column = [el for el in elements if "element" in net[el].columns and (
-            "element_type" in net[el].columns or "et" in net[el].columns)]
-    elements_to_replace = elements_with_el_and_et_column if replace else [
-        el for el in elements_with_el_and_et_column if column not in net[el].columns or net[el][
-            column].isnull().all()]
+    elements_with_el_and_et_column = [
+        el
+        for el in elements
+        if "element" in net[el].columns
+        and ("element_type" in net[el].columns or "et" in net[el].columns)
+    ]
+    elements_to_replace = (
+        elements_with_el_and_et_column
+        if replace
+        else [
+            el
+            for el in elements_with_el_and_et_column
+            if column not in net[el].columns or net[el][column].isnull().all()
+        ]
+    )
     for el in elements_to_replace:
         et_col = "element_type" if "element_type" in net[el].columns else "et"
         element_type = net[el][et_col]
-        for short, complete in [("t", "trafo"), ("t3", "trafo3w"), ("l", "line"), ("s", "switch"),
-                                ("b", "bus")]:
+        for short, complete in [
+            ("t", "trafo"),
+            ("t3", "trafo3w"),
+            ("l", "line"),
+            ("s", "switch"),
+            ("b", "bus"),
+        ]:
             element_type.loc[element_type == short] = complete
-        element_types_without_column = [et for et in set(element_type) if column not in
-                                        net[et].columns]
+        element_types_without_column = [
+            et for et in set(element_type) if column not in net[et].columns
+        ]
         if len(element_types_without_column):
             message = "%s is not in net[et].columns with et in " % column + str(
-                element_types_without_column)
+                element_types_without_column
+            )
             if not continue_on_missing_column:
                 raise KeyError(message)
             else:
                 logger.debug(message)
         for et in list(set(element_type) - set(element_types_without_column)):
             idx_et = element_type.index[element_type == et]
-            net[el].loc[idx_et, column] = net[et][column].loc[net[el].element[idx_et]].values
+            net[el].loc[idx_et, column] = (
+                net[et][column].loc[net[el].element[idx_et]].values
+            )
 
 
 def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
@@ -141,7 +191,9 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     Adds zones to elements, inferring them from the zones of buses they are connected to.
     """
     elements = pp_elements(bus=False) if elements is None else elements
-    add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
+    add_column_from_node_to_elements(
+        net, "zone", replace=replace, elements=elements, **kwargs
+    )
 
 
 def reindex_buses(net, bus_lookup):
@@ -156,8 +208,10 @@ def reindex_buses(net, bus_lookup):
     """
     not_fitting_bus_lookup_keys = set(bus_lookup.keys()) - set(net.bus.index)
     if len(not_fitting_bus_lookup_keys):
-        logger.error("These bus indices are unknown to net. Thus, they cannot be reindexed: " +
-                     str(not_fitting_bus_lookup_keys))
+        logger.error(
+            "These bus indices are unknown to net. Thus, they cannot be reindexed: "
+            + str(not_fitting_bus_lookup_keys)
+        )
 
     missing_bus_indices = sorted(set(net.bus.index) - set(bus_lookup.keys()))
     if len(missing_bus_indices):
@@ -173,26 +227,35 @@ def reindex_buses(net, bus_lookup):
     for element, value in element_bus_tuples():
         net[element][value] = get_indices(net[element][value], bus_lookup)
     if "bus_geodata" in net:
-        net["bus_geodata"].set_index(get_indices(net["bus_geodata"].index, bus_lookup), inplace=True)
+        net["bus_geodata"].set_index(
+            get_indices(net["bus_geodata"].index, bus_lookup), inplace=True
+        )
 
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
-            (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
+            (net.group.element_type == "bus").values
+            & net.group.reference_column.isnull().values
+        ]:
             net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
-                get_indices(net.group.element_index.iat[row], bus_lookup))
+                get_indices(net.group.element_index.iat[row], bus_lookup)
+            )
 
     # --- adapt measurement link
     bus_meas = net.measurement.element_type == "bus"
-    net.measurement.loc[bus_meas, "element"] = get_indices(net.measurement.loc[bus_meas, "element"],
-                                                           bus_lookup)
+    net.measurement.loc[bus_meas, "element"] = get_indices(
+        net.measurement.loc[bus_meas, "element"], bus_lookup
+    )
     side_meas = pd.to_numeric(net.measurement.side, errors="coerce").notnull()
-    net.measurement.loc[side_meas, "side"] = get_indices(net.measurement.loc[side_meas, "side"],
-                                                         bus_lookup)
+    net.measurement.loc[side_meas, "side"] = get_indices(
+        net.measurement.loc[side_meas, "side"], bus_lookup
+    )
 
     # --- adapt switch link
     bb_switches = net.switch[net.switch.et == "b"]
-    net.switch.loc[bb_switches.index, "element"] = get_indices(bb_switches.element, bus_lookup)
+    net.switch.loc[bb_switches.index, "element"] = get_indices(
+        bb_switches.element, bus_lookup
+    )
 
     return bus_lookup
 
@@ -222,7 +285,9 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     return bus_lookup
 
 
-def reindex_elements(net, element_type, new_indices=None, old_indices=None, lookup=None):
+def reindex_elements(
+    net, element_type, new_indices=None, old_indices=None, lookup=None
+):
     """
     Changes the index of the DataFrame net[element_type].
 
@@ -269,12 +334,18 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         raise ValueError("Either new_indices or lookup must be given.")
     elif new_indices is not None and lookup is not None:
         raise ValueError("Only one can be considered, new_indices or lookup.")
-    if new_indices is not None and not len(new_indices) or lookup is not None and not len(
-            lookup.keys()):
+    if (
+        new_indices is not None
+        and not len(new_indices)
+        or lookup is not None
+        and not len(lookup.keys())
+    ):
         return
 
     if new_indices is not None:
-        old_indices = old_indices if old_indices is not None else net[element_type].index
+        old_indices = (
+            old_indices if old_indices is not None else net[element_type].index
+        )
         assert len(new_indices) == len(old_indices)
         lookup = dict(zip(old_indices, new_indices))
     elif old_indices is None:
@@ -289,57 +360,83 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
     if element_type != "group":
         new_index.loc[old_indices] = get_indices(old_indices, lookup)
     else:
-        new_index.loc[old_indices] = get_indices(new_index.loc[old_indices].values, lookup)
+        new_index.loc[old_indices] = get_indices(
+            new_index.loc[old_indices].values, lookup
+        )
     net[element_type].set_index(pd.Index(new_index.values), inplace=True)
 
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
-            (net.group.element_type == element_type).values & \
-            net.group.reference_column.isnull().values]:
+            (net.group.element_type == element_type).values
+            & net.group.reference_column.isnull().values
+        ]:
             net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
-                get_indices(net.group.element_index.iat[row], lookup))
+                get_indices(net.group.element_index.iat[row], lookup)
+            )
 
     # --- adapt measurement link
     if element_type in ["line", "trafo", "trafo3w"]:
-        affected = net.measurement[(net.measurement.element_type == element_type) &
-                                   (net.measurement.element.isin(old_indices))]
+        affected = net.measurement[
+            (net.measurement.element_type == element_type)
+            & (net.measurement.element.isin(old_indices))
+        ]
         if len(affected):
-            net.measurement.loc[affected.index, "element"] = get_indices(affected.element, lookup)
+            net.measurement.loc[affected.index, "element"] = get_indices(
+                affected.element, lookup
+            )
 
     # --- adapt switch link
     if element_type in ["line", "trafo"]:
-        affected = net.switch[(net.switch.et == element_type[0]) &
-                              (net.switch.element.isin(old_indices))]
+        affected = net.switch[
+            (net.switch.et == element_type[0]) & (net.switch.element.isin(old_indices))
+        ]
         if len(affected):
-            net.switch.loc[affected.index, "element"] = get_indices(affected.element, lookup)
+            net.switch.loc[affected.index, "element"] = get_indices(
+                affected.element, lookup
+            )
 
     # --- adapt line_geodata index
-    if element_type == "line" and "line_geodata" in net and net["line_geodata"].shape[0]:
+    if (
+        element_type == "line"
+        and "line_geodata" in net
+        and net["line_geodata"].shape[0]
+    ):
         idx_name = net.line_geodata.index.name
         place_holder = uuid.uuid4()
         net["line_geodata"][place_holder] = net["line_geodata"].index
-        net["line_geodata"].loc[old_indices.intersection(net.line_geodata.index), place_holder] = (
-            get_indices(old_indices.intersection(net.line_geodata.index), lookup))
+        net["line_geodata"].loc[
+            old_indices.intersection(net.line_geodata.index), place_holder
+        ] = get_indices(old_indices.intersection(net.line_geodata.index), lookup)
         net["line_geodata"] = net["line_geodata"].set_index(place_holder)
         net["line_geodata"].index.name = idx_name
 
     # --- adapt index in cost dataframes
     for cost_df in ["pwl_cost", "poly_cost"]:
-        element_in_cost_df = (net[cost_df].et == element_type) & net[cost_df].element.isin(old_indices)
+        element_in_cost_df = (net[cost_df].et == element_type) & net[
+            cost_df
+        ].element.isin(old_indices)
         if sum(element_in_cost_df):
-            net[cost_df].loc[element_in_cost_df, "element"] = get_indices(net[cost_df].element[
-                                                                              element_in_cost_df], lookup)
+            net[cost_df].loc[element_in_cost_df, "element"] = get_indices(
+                net[cost_df].element[element_in_cost_df], lookup
+            )
 
     # --- adapt tap_characteristic
-    if "trafo_characteristic_table" in net and "id_characteristic" in net["trafo_characteristic_table"]:
+    if (
+        "trafo_characteristic_table" in net
+        and "id_characteristic" in net["trafo_characteristic_table"]
+    ):
         if element_type == "trafo_characteristic_table":
-            net["trafo_characteristic_table"]["id_characteristic"] = (
-                net["trafo_characteristic_table"]["id_characteristic"].map(lookup))
-            net["trafo"]["id_characteristic_table"] = (
-                net["trafo"]["id_characteristic_table"].map(lookup))
-            net["trafo3w"]["id_characteristic_table"] = (
-                net["trafo3w"]["id_characteristic_table"].map(lookup))
+            net["trafo_characteristic_table"]["id_characteristic"] = net[
+                "trafo_characteristic_table"
+            ]["id_characteristic"].map(lookup)
+            net["trafo"]["id_characteristic_table"] = net["trafo"][
+                "id_characteristic_table"
+            ].map(lookup)
+            net["trafo3w"]["id_characteristic_table"] = net["trafo3w"][
+                "id_characteristic_table"
+            ].map(lookup)
+
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
@@ -376,13 +473,19 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
         if et == "trafo_characteristic_table":
             ids = net[et].id_characteristic.dropna().unique()
             reindex_lookup = {
-                old_id: new_id for old_id, new_id in zip(sorted(ids), range(0, len(ids)))
+                old_id: new_id
+                for old_id, new_id in zip(sorted(ids), range(0, len(ids)))
             }
-            reindex_elements(net, et, lookup = reindex_lookup)
+            reindex_elements(net, et, lookup=reindex_lookup)
         elif et in net and isinstance(net[et], pd.DataFrame):
             if et in ["bus_geodata", "line_geodata"]:
-                logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
-                            "already included by et=='" + et.split("_")[0] + "'.")
+                logger.info(
+                    et
+                    + " don't need to be included to 'add_df_to_reindex'. It is "
+                    + "already included by et=='"
+                    + et.split("_")[0]
+                    + "'."
+                )
             else:
                 reindex_elements(net, et, new_index)
         else:
@@ -402,13 +505,14 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
     :param scale_sgen:
     """
     if not isinstance(scalings, dict):
-        raise UserWarning("The parameter scaling has to be a dictionary, "
-                          "see docstring")
+        raise UserWarning("The parameter scaling has to be a dictionary, see docstring")
 
     def scaleit(what):
         et = net[what]
-        et["scaling"] = [scale[t] if scale[t] is not None else s for t, s in
-                         zip(et.type.values, et.scaling.values)]
+        et["scaling"] = [
+            scale[t] if scale[t] is not None else s
+            for t, s in zip(et.type.values, et.scaling.values)
+        ]
 
     scale = defaultdict(lambda: None, scalings)
     if scale_load:
@@ -440,5 +544,6 @@ def set_data_type_of_columns_to_default(net):
                         continue
                     if set(item.columns) == set(new_net[key]):
                         net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                    net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                         errors="ignore")
+                    net[key][col] = net[key][col].astype(
+                        new_net[key][col].dtype, errors="ignore"
+                    )

@@ -14,9 +14,12 @@ import logging
 logger = logging.getLogger(__name__)
 try:
     import lightsim2grid
+
     v = Version(lightsim2grid.__version__)
     if v < Version("0.9.0"):
-        logger.warning("Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid")
+        logger.warning(
+            "Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid"
+        )
         raise ImportError
 
     from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
@@ -37,8 +40,15 @@ except ImportError:
 from pandapower.run import runpp
 
 
-def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None, write_to_net=True,
-                    contingency_evaluation_function=runpp, **kwargs):
+def run_contingency(
+    net,
+    nminus1_cases,
+    pf_options=None,
+    pf_options_nminus1=None,
+    write_to_net=True,
+    contingency_evaluation_function=runpp,
+    **kwargs,
+):
     """
     Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
     The variable `temperature_degree_celsius` can be used in addition to `loading_percent` to obtain max. temperature.
@@ -73,26 +83,50 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     if pf_options is None:
         pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
     if pf_options_nminus1 is None:
-        pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
+        pf_options_nminus1 = net.user_pf_options.get(
+            "pf_options_nminus1", net.user_pf_options
+        )
     if kwargs is not None:
         # avoid duplicate passing keys to contingency_evaluation_function()
-        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
-        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in
-                              kwargs.keys()}
+        pf_options = {
+            key: val for key, val in pf_options.items() if key not in kwargs.keys()
+        }
+        pf_options_nminus1 = {
+            key: val
+            for key, val in pf_options_nminus1.items()
+            if key not in kwargs.keys()
+        }
 
-    contingency_results = {element: {"index": net[element].index.values}
-                           for element in ("bus", "line", "trafo", "trafo3w") if len(net[element]) > 0}
+    contingency_results = {
+        element: {"index": net[element].index.values}
+        for element in ("bus", "line", "trafo", "trafo3w")
+        if len(net[element]) > 0
+    }
     for element in contingency_results.keys():
         if element == "bus":
             continue
         contingency_results[element].update(
-            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
-             "cause_element": np.empty_like(net[element].index.values, dtype=object),
-             "cause_index": np.empty_like(net[element].index.values, dtype=np.int64)})
-    result_variables = {**{"bus": ["vm_pu"]},
-                        **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
-    if len(net.line) > 0 and (net.get("_options", {}).get("tdpf", False) or
-                              pf_options.get("tdpf", False) or pf_options_nminus1.get("tdpf", False)):
+            {
+                "causes_overloading": np.zeros_like(
+                    net[element].index.values, dtype=bool
+                ),
+                "cause_element": np.empty_like(net[element].index.values, dtype=object),
+                "cause_index": np.empty_like(net[element].index.values, dtype=np.int64),
+            }
+        )
+    result_variables = {
+        **{"bus": ["vm_pu"]},
+        **{
+            key: ["loading_percent"]
+            for key in ("line", "trafo", "trafo3w")
+            if len(net[key]) > 0
+        },
+    }
+    if len(net.line) > 0 and (
+        net.get("_options", {}).get("tdpf", False)
+        or pf_options.get("tdpf", False)
+        or pf_options_nminus1.get("tdpf", False)
+    ):
         result_variables["line"].append("temperature_degree_celsius")
 
     # for n-1
@@ -100,21 +134,29 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
         for i in val["index"]:
             if not net[element].at[i, "in_service"]:
                 continue
-            net[element].at[i, 'in_service'] = False
+            net[element].at[i, "in_service"] = False
             try:
                 contingency_evaluation_function(net, **pf_options_nminus1, **kwargs)
-                _update_contingency_results(net, contingency_results, result_variables, nminus1=True,
-                                            cause_element=element, cause_index=i)
+                _update_contingency_results(
+                    net,
+                    contingency_results,
+                    result_variables,
+                    nminus1=True,
+                    cause_element=element,
+                    cause_index=i,
+                )
             except Exception as err:
                 logger.error(f"{element} {i} causes {err}")
                 if raise_errors:
                     raise err
             finally:
-                net[element].at[i, 'in_service'] = True
+                net[element].at[i, "in_service"] = True
 
     # for n-0
     contingency_evaluation_function(net, **pf_options, **kwargs)
-    _update_contingency_results(net, contingency_results, result_variables, nminus1=False)
+    _update_contingency_results(
+        net, contingency_results, result_variables, nminus1=False
+    )
 
     if write_to_net:
         for element, element_results in contingency_results.items():
@@ -127,7 +169,9 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     return contingency_results
 
 
-def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=runpp, **kwargs):
+def run_contingency_ls2g(
+    net, nminus1_cases, contingency_evaluation_function=runpp, **kwargs
+):
     """
     Execute contingency analysis using the lightsim2grid library. This works much faster than using
     pandapower.
@@ -162,14 +206,22 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     :param callable contingency_evaluation_function: function to use for power flow calculation, default pp.runpp (but only relevant for N-0 case)
     """
     if not lightsim2grid_installed:
-        raise UserWarning("lightsim2grid package not installed. "
-                          "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt.")
+        raise UserWarning(
+            "lightsim2grid package not installed. "
+            "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt."
+        )
     # check for continuous bus index starting with 0:
     n_bus = len(net.bus)
     last_bus = net.bus.index[-1]
-    if net.bus.index[0] != 0 or last_bus != n_bus - 1 or sum(net.bus.index) != last_bus * n_bus / 2:
-        raise UserWarning("bus index must be continuous and start with 0 "
-                          "(use pandapower.create_continuous_bus_index)")
+    if (
+        net.bus.index[0] != 0
+        or last_bus != n_bus - 1
+        or sum(net.bus.index) != last_bus * n_bus / 2
+    ):
+        raise UserWarning(
+            "bus index must be continuous and start with 0 "
+            "(use pandapower.create_continuous_bus_index)"
+        )
     contingency_evaluation_function(net, **kwargs)
 
     tps_flag = False
@@ -178,7 +230,8 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
         if np.any(net.trafo.tap_phase_shifter):
             tps_flag = True
             tps, tps_tap_pos, tps_shift_degree = _convert_trafo_phase_shifter(
-                net, "trafo", "tap_phase_shifter")
+                net, "trafo", "tap_phase_shifter"
+            )
 
     tct2w_flag = False
     tct2w, tct2w_tap_pos, tct2w_shift_degree = None, None, None
@@ -188,27 +241,35 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
         if np.any(net.trafo.tap_changer_type == "Ideal"):
             tct2w_flag = True
             tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(
-                net, "trafo", "tap_changer_type")
+                net, "trafo", "tap_changer_type"
+            )
     if "tap_changer_type" in net.trafo3w.columns:
         if np.any(net.trafo3w.tap_changer_type == "Ideal"):
             tct3w_flag = True
             tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(
-                    net, "trafo3w", "tap_changer_type")
+                net, "trafo3w", "tap_changer_type"
+            )
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):
         slack_backup = net.gen.slack.copy()
-        net.gen.loc[net.gen.slack_weight != 0, 'slack'] = True
-        msg = "LightSim cannot handle multiple slack bus at the moment. Only the first " \
-              "slack bus of pandapower will be used."
+        net.gen.loc[net.gen.slack_weight != 0, "slack"] = True
+        msg = (
+            "LightSim cannot handle multiple slack bus at the moment. Only the first "
+            "slack bus of pandapower will be used."
+        )
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", msg)
             lightsim_grid_model = init_ls2g(net)
-        net.gen['slack'] = slack_backup
+        net.gen["slack"] = slack_backup
         solver_type = SolverType.KLU if KLU_solver_available else SolverType.SparseLU
     else:
         lightsim_grid_model = init_ls2g(net)
-        solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
+        solver_type = (
+            SolverType.KLUSingleSlack
+            if KLU_solver_available
+            else SolverType.SparseLUSingleSlack
+        )
 
     if tps_flag:
         net.trafo.tap_phase_shifter = tps
@@ -234,10 +295,14 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
 
     map_index = {}
     for element, values in nminus1_cases.items():
-        index = np.array(_get_iloc_index(net[element].index.values, values["index"]), dtype=np.int64)
+        index = np.array(
+            _get_iloc_index(net[element].index.values, values["index"]), dtype=np.int64
+        )
         map_index[element] = index.copy()  # copy() because += n_lines happens later
         if element == "trafo3w":
-            raise NotImplementedError("trafo3w not implemented for lightsim2grid contingency analysis")
+            raise NotImplementedError(
+                "trafo3w not implemented for lightsim2grid contingency analysis"
+            )
         elif element == "trafo":
             index += n_lines
         s.add_multiple_n1(index)
@@ -254,17 +319,29 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     net.res_bus["min_vm_pu"] = np.nanmin(vm_pu, axis=0)
 
     max_i_ka_limit_all = np.r_[
-        net.line.max_i_ka.values, net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3))]
-    max_loading_limit_all = np.r_[net.line["max_loading_percent_nminus1"]
-    if "max_loading_percent_nminus1" in net.line.columns
-    else net.line["max_loading_percent"] if n_lines > 0 else [],
-    net.trafo["max_loading_percent_nminus1"]
-    if "max_loading_percent_nminus1" in net.trafo.columns
-    else net.trafo["max_loading_percent"] if n_trafos > 0 else []]
-    voltage_all = np.r_[net.bus.loc[net.line.from_bus.values, "vn_kv"].values if n_lines > 0 else [],
-    net.trafo.vn_hv_kv if n_trafos > 0 else []]
+        net.line.max_i_ka.values,
+        net.trafo.sn_mva.values / (net.trafo.vn_hv_kv.values * np.sqrt(3)),
+    ]
+    max_loading_limit_all = np.r_[
+        net.line["max_loading_percent_nminus1"]
+        if "max_loading_percent_nminus1" in net.line.columns
+        else net.line["max_loading_percent"]
+        if n_lines > 0
+        else [],
+        net.trafo["max_loading_percent_nminus1"]
+        if "max_loading_percent_nminus1" in net.trafo.columns
+        else net.trafo["max_loading_percent"]
+        if n_trafos > 0
+        else [],
+    ]
+    voltage_all = np.r_[
+        net.bus.loc[net.line.from_bus.values, "vn_kv"].values if n_lines > 0 else [],
+        net.trafo.vn_hv_kv if n_trafos > 0 else [],
+    ]
     flows_all_mva = np.nan_to_num(kamps_all * voltage_all * np.sqrt(3))
-    flows_limit_all = np.nan_to_num(max_loading_limit_all / 100 * max_i_ka_limit_all * voltage_all * np.sqrt(3))
+    flows_limit_all = np.nan_to_num(
+        max_loading_limit_all / 100 * max_i_ka_limit_all * voltage_all * np.sqrt(3)
+    )
 
     big_number = 1e6
     for element in ("line", "trafo"):
@@ -276,32 +353,45 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
             flows_element_mva = flows_all_mva[0:n_lines_cases, :]
             max_i_ka_limit = max_i_ka_limit_all[0:n_lines]
         else:
-            kamps_element = kamps_all[:, n_lines:n_lines + n_trafos]
-            kamps_element_cause = kamps_all[n_lines_cases:n_lines_cases + n_trafos_cases, :]
-            flows_element_mva = flows_all_mva[n_lines_cases:n_lines_cases + n_trafos_cases, :]
-            max_i_ka_limit = max_i_ka_limit_all[n_lines:n_lines + n_trafos]
+            kamps_element = kamps_all[:, n_lines : n_lines + n_trafos]
+            kamps_element_cause = kamps_all[
+                n_lines_cases : n_lines_cases + n_trafos_cases, :
+            ]
+            flows_element_mva = flows_all_mva[
+                n_lines_cases : n_lines_cases + n_trafos_cases, :
+            ]
+            max_i_ka_limit = max_i_ka_limit_all[n_lines : n_lines + n_trafos]
         # max_i_ka = np.nanmax(kamps_line, where=~np.isnan(kamps_line), axis=0, initial=0)
         cause_index = np.nanargmax(kamps_element, axis=0)
         cause_element = np.where(cause_index < n_lines_cases, "line", "trafo")
         max_i_ka = np.nanmax(kamps_element, axis=0)
         net[f"res_{element}"]["max_loading_percent"] = max_i_ka / max_i_ka_limit * 100
-        min_i_ka = np.nanmin(kamps_element, axis=0, where=kamps_element != 0,
-                             initial=big_number)  # this is quite daring tbh
+        min_i_ka = np.nanmin(
+            kamps_element, axis=0, where=kamps_element != 0, initial=big_number
+        )  # this is quite daring tbh
         min_i_ka[min_i_ka == big_number] = 0
         # min_i_ka = np.nanmin(kamps_line, axis=0)
         net[f"res_{element}"]["min_loading_percent"] = min_i_ka / max_i_ka_limit * 100
-        causes_overloading = np.any(kamps_element_cause > max_loading_limit_all * max_i_ka_limit_all / 100, axis=1)
+        causes_overloading = np.any(
+            kamps_element_cause > max_loading_limit_all * max_i_ka_limit_all / 100,
+            axis=1,
+        )
         net[f"res_{element}"]["causes_overloading"] = False
         if element in nminus1_cases:
             # order of n-1 cases is always sorted, so "vertical" sorting is different than "horizontal"
-            net[f"res_{element}"].loc[net[element].index.values[
-                np.sort(map_index[element])], "causes_overloading"] = causes_overloading
+            net[f"res_{element}"].loc[
+                net[element].index.values[np.sort(map_index[element])],
+                "causes_overloading",
+            ] = causes_overloading
         cause_mask = cause_element == "line"
         if "line" in map_index:
-            cause_index[cause_mask] = net.line.index.values[np.sort(map_index["line"])[cause_index[cause_mask]]]
+            cause_index[cause_mask] = net.line.index.values[
+                np.sort(map_index["line"])[cause_index[cause_mask]]
+            ]
         if "trafo" in map_index:
             cause_index[~cause_mask] = net.trafo.index.values[
-                np.sort(map_index["trafo"])[cause_index[~cause_mask] - n_lines_cases]]
+                np.sort(map_index["trafo"])[cause_index[~cause_mask] - n_lines_cases]
+            ]
         net[f"res_{element}"]["cause_index"] = cause_index
         net[f"res_{element}"]["cause_element"] = cause_element
 
@@ -310,8 +400,10 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
         congestion_caused = congestion_mva.sum(axis=1)
         if element in nminus1_cases:
             # order of n-1 cases is always sorted, so "vertical" sorting is different than "horizontal"
-            net[f"res_{element}"].loc[net[element].index.values[
-                np.sort(map_index[element])], "congestion_caused_mva"] = congestion_caused
+            net[f"res_{element}"].loc[
+                net[element].index.values[np.sort(map_index[element])],
+                "congestion_caused_mva",
+            ] = congestion_caused
 
 
 def _convert_trafo_phase_shifter(net, trafotable="trafo", tap_param="tap_changer_type"):
@@ -328,11 +420,14 @@ def _convert_trafo_phase_shifter(net, trafotable="trafo", tap_param="tap_changer
     tap_step_degree = net[trafotable].tap_step_degree.values.copy()
 
     if tap_param == "tap_changer_type":
-        net.trafo.loc[tap_changer == "Ideal", 'shift_degree'] += (tap_diff[tap_changer == "Ideal"] *
-                                                                  tap_step_degree[tap_changer == "Ideal"])
+        net.trafo.loc[tap_changer == "Ideal", "shift_degree"] += (
+            tap_diff[tap_changer == "Ideal"] * tap_step_degree[tap_changer == "Ideal"]
+        )
         net[trafotable][tap_param] = None
     elif tap_param == "tap_phase_shifter":
-        net.trafo.loc[tap_changer, 'shift_degree'] += tap_diff[tap_changer] * tap_step_degree[tap_changer]
+        net.trafo.loc[tap_changer, "shift_degree"] += (
+            tap_diff[tap_changer] * tap_step_degree[tap_changer]
+        )
         net[trafotable][tap_param] = False
     else:
         raise ValueError("tap_param argument not recognized")
@@ -342,32 +437,55 @@ def _convert_trafo_phase_shifter(net, trafotable="trafo", tap_param="tap_changer
     return tap_changer, tap_pos, shift_degree
 
 
-def _update_contingency_results(net, contingency_results, result_variables, nminus1, cause_element=None,
-                                cause_index=None):
+def _update_contingency_results(
+    net,
+    contingency_results,
+    result_variables,
+    nminus1,
+    cause_element=None,
+    cause_index=None,
+):
     for element, vars in result_variables.items():
         for var in vars:
             val = net[f"res_{element}"][var].values
             if nminus1:
                 if var == "loading_percent":
-                    s = 'max_loading_percent_nminus1' \
-                        if 'max_loading_percent_nminus1' in net[element].columns \
-                        else 'max_loading_percent'
+                    s = (
+                        "max_loading_percent_nminus1"
+                        if "max_loading_percent_nminus1" in net[element].columns
+                        else "max_loading_percent"
+                    )
                     # this part with cause_mask and max_mask is not very efficient nor orderly
-                    loading_limit = net[element].loc[contingency_results[element]["index"], s].values
+                    loading_limit = (
+                        net[element]
+                        .loc[contingency_results[element]["index"], s]
+                        .values
+                    )
                     cause_mask = val > loading_limit
                     if np.any(cause_mask):
                         contingency_results[cause_element]["causes_overloading"][
-                            contingency_results[cause_element]["index"] == cause_index] = True
-                    max_mask = val > contingency_results[element].get("max_loading_percent", np.full_like(val, -1))
+                            contingency_results[cause_element]["index"] == cause_index
+                        ] = True
+                    max_mask = val > contingency_results[element].get(
+                        "max_loading_percent", np.full_like(val, -1)
+                    )
                     if np.any(max_mask):
-                        contingency_results[element]["cause_index"][max_mask] = cause_index
-                        contingency_results[element]["cause_element"][max_mask] = cause_element
+                        contingency_results[element]["cause_index"][max_mask] = (
+                            cause_index
+                        )
+                        contingency_results[element]["cause_element"][max_mask] = (
+                            cause_element
+                        )
                 for func, min_max in ((np.fmax, "max"), (np.fmin, "min")):
                     key = f"{min_max}_{var}"
-                    func(val,
-                         contingency_results[element].setdefault(key, np.full_like(val, np.nan, dtype=np.float64)),
-                         out=contingency_results[element][key],
-                         where=net[element]["in_service"].values & ~np.isnan(val))
+                    func(
+                        val,
+                        contingency_results[element].setdefault(
+                            key, np.full_like(val, np.nan, dtype=np.float64)
+                        ),
+                        out=contingency_results[element][key],
+                        where=net[element]["in_service"].values & ~np.isnan(val),
+                    )
             else:
                 contingency_results[element][var] = val
 
@@ -384,59 +502,99 @@ def get_element_limits(net):
     element_limits = {}
     if "max_vm_pu" in net.bus and "min_vm_pu" in net.bus:
         fill_val = np.full_like(net.bus.index, np.nan, np.float64)
-        bus_index = net.bus.loc[~pd.isnull(net.bus.get("max_vm_pu", fill_val)) &
-                                ~pd.isnull(net.bus.get("min_vm_pu", fill_val))].index.values
+        bus_index = net.bus.loc[
+            ~pd.isnull(net.bus.get("max_vm_pu", fill_val))
+            & ~pd.isnull(net.bus.get("min_vm_pu", fill_val))
+        ].index.values
         if len(bus_index) != 0:
-            element_limits.update({"bus": {
-                "index": bus_index,
-                "max_limit": net.bus.loc[bus_index, "max_vm_pu"].values,
-                "min_limit": net.bus.loc[bus_index, "min_vm_pu"].values,
-                "max_limit_nminus1":
-                    net.bus.loc[bus_index, "max_vm_nminus1_pu"].values
-                    if "max_vm_nminus1_pu" in net.bus.columns
-                    else net.bus.loc[bus_index, "max_vm_pu"].values,
-                "min_limit_nminus1":
-                    net.bus.loc[bus_index, "min_vm_nminus1_pu"].values
-                    if "min_vm_nminus1_pu" in net.bus.columns
-                    else net.bus.loc[bus_index, "min_vm_pu"].values}})
+            element_limits.update(
+                {
+                    "bus": {
+                        "index": bus_index,
+                        "max_limit": net.bus.loc[bus_index, "max_vm_pu"].values,
+                        "min_limit": net.bus.loc[bus_index, "min_vm_pu"].values,
+                        "max_limit_nminus1": net.bus.loc[
+                            bus_index, "max_vm_nminus1_pu"
+                        ].values
+                        if "max_vm_nminus1_pu" in net.bus.columns
+                        else net.bus.loc[bus_index, "max_vm_pu"].values,
+                        "min_limit_nminus1": net.bus.loc[
+                            bus_index, "min_vm_nminus1_pu"
+                        ].values
+                        if "min_vm_nminus1_pu" in net.bus.columns
+                        else net.bus.loc[bus_index, "min_vm_pu"].values,
+                    }
+                }
+            )
 
     for element in ("line", "trafo", "trafo3w"):
-        if net[element].empty or ("max_loading_percent" not in net[element] and
-                                  "max_temperature_degree_celsius" not in net[element]):
+        if net[element].empty or (
+            "max_loading_percent" not in net[element]
+            and "max_temperature_degree_celsius" not in net[element]
+        ):
             continue
 
         fill_val = np.full_like(net[element].index, np.nan, np.float64)
-        element_index = net[element].loc[
-            ~pd.isnull(net[element].get("max_loading_percent", fill_val)) |
-            ~pd.isnull(net[element].get("max_temperature_degree_celsius", fill_val))].index.values
+        element_index = (
+            net[element]
+            .loc[
+                ~pd.isnull(net[element].get("max_loading_percent", fill_val))
+                | ~pd.isnull(
+                    net[element].get("max_temperature_degree_celsius", fill_val)
+                )
+            ]
+            .index.values
+        )
         if len(element_index) == 0:
             continue
 
         d = {element: {"index": element_index}}
 
         if "max_loading_percent" in net[element].columns:
-            d[element].update({
-                "max_limit": net[element].loc[element_index, "max_loading_percent"].values,
-                "min_limit": -net[element].loc[element_index, "max_loading_percent"].values,
-                "max_limit_nminus1":
-                    net[element].loc[element_index, "max_loading_nminus1_percent"].values
+            d[element].update(
+                {
+                    "max_limit": net[element]
+                    .loc[element_index, "max_loading_percent"]
+                    .values,
+                    "min_limit": -net[element]
+                    .loc[element_index, "max_loading_percent"]
+                    .values,
+                    "max_limit_nminus1": net[element]
+                    .loc[element_index, "max_loading_nminus1_percent"]
+                    .values
                     if "max_loading_nminus1_percent" in net[element].columns
                     else net[element].loc[element_index, "max_loading_percent"].values,
-                "min_limit_nminus1":
-                    -net[element].loc[element_index, "max_loading_nminus1_percent"].values
+                    "min_limit_nminus1": -net[element]
+                    .loc[element_index, "max_loading_nminus1_percent"]
+                    .values
                     if "max_loading_nminus1_percent" in net[element].columns
-                    else - net[element].loc[element_index, "max_loading_percent"].values})
+                    else -net[element].loc[element_index, "max_loading_percent"].values,
+                }
+            )
 
-        if element == "line" and "max_temperature_degree_celsius" in net[element].columns:
+        if (
+            element == "line"
+            and "max_temperature_degree_celsius" in net[element].columns
+        ):
             col = "max_temperature_degree_celsius"
-            d[element].update({"max_temperature_degree_celsius": net.line.loc[element_index, col].values,
-                               "min_temperature_degree_celsius": -net.line.loc[element_index, col].values})
+            d[element].update(
+                {
+                    "max_temperature_degree_celsius": net.line.loc[
+                        element_index, col
+                    ].values,
+                    "min_temperature_degree_celsius": -net.line.loc[
+                        element_index, col
+                    ].values,
+                }
+            )
 
         element_limits.update(d)
     return element_limits
 
 
-def check_elements_within_limits(element_limits, contingency_results, nminus1=False, branch_tol=1e-3, bus_tol=1e-6):
+def check_elements_within_limits(
+    element_limits, contingency_results, nminus1=False, branch_tol=1e-3, bus_tol=1e-6
+):
     """
     Check if elements are within limits
 
@@ -451,25 +609,38 @@ def check_elements_within_limits(element_limits, contingency_results, nminus1=Fa
     """
     for element, values in contingency_results.items():
         limit = element_limits[element]
-        if 'max_temperature_degree_celsius' in limit and 'temperature_degree_celsius' in values:
-            if np.any(values['temperature_degree_celsius'] > limit['max_temperature_degree_celsius'] + branch_tol):
+        if (
+            "max_temperature_degree_celsius" in limit
+            and "temperature_degree_celsius" in values
+        ):
+            if np.any(
+                values["temperature_degree_celsius"]
+                > limit["max_temperature_degree_celsius"] + branch_tol
+            ):
                 return False
-            if nminus1 and np.any(values['max_temperature_degree_celsius'] >
-                                  limit['max_temperature_degree_celsius'] + branch_tol):
+            if nminus1 and np.any(
+                values["max_temperature_degree_celsius"]
+                > limit["max_temperature_degree_celsius"] + branch_tol
+            ):
                 return False
         if "max_limit" not in limit:
             continue
         if element == "bus":
-            if np.any(values["vm_pu"] > limit["max_limit"] + bus_tol) or \
-                    np.any(values["vm_pu"] < limit["min_limit"] - bus_tol):
+            if np.any(values["vm_pu"] > limit["max_limit"] + bus_tol) or np.any(
+                values["vm_pu"] < limit["min_limit"] - bus_tol
+            ):
                 return False
-            if nminus1 and (np.any(values["max_vm_pu"] > limit["max_limit_nminus1"] + bus_tol) or
-                            np.any(values["min_vm_pu"] < limit["min_limit_nminus1"] - bus_tol)):
+            if nminus1 and (
+                np.any(values["max_vm_pu"] > limit["max_limit_nminus1"] + bus_tol)
+                or np.any(values["min_vm_pu"] < limit["min_limit_nminus1"] - bus_tol)
+            ):
                 return False
             continue
-        if np.any(values['loading_percent'] > limit["max_limit"] + branch_tol):
+        if np.any(values["loading_percent"] > limit["max_limit"] + branch_tol):
             return False
-        if nminus1 and np.any(values['max_loading_percent'] > limit["max_limit_nminus1"] + branch_tol):
+        if nminus1 and np.any(
+            values["max_loading_percent"] > limit["max_limit_nminus1"] + branch_tol
+        ):
             return False
     return True
 
@@ -490,12 +661,16 @@ def _get_iloc_index(index, sub_index):
 
 def _log_violation(element, var, val, limit_index, mask):
     if np.any(mask):
-        s = ' (N-1)' if 'max' in var else ''
+        s = " (N-1)" if "max" in var else ""
         with np.printoptions(precision=3, suppress=True):
-            logger.info(f"{element}: {var}{s} violation at index {limit_index[mask]} ({val[mask]})")
+            logger.info(
+                f"{element}: {var}{s} violation at index {limit_index[mask]} ({val[mask]})"
+            )
 
 
-def report_contingency_results(element_limits, contingency_results, branch_tol=1e-3, bus_tol=1e-6):
+def report_contingency_results(
+    element_limits, contingency_results, branch_tol=1e-3, bus_tol=1e-6
+):
     """
     Print log messages for elements with violations of limits
 
@@ -512,15 +687,15 @@ def report_contingency_results(element_limits, contingency_results, branch_tol=1
             if var == "index":
                 continue
             if "min" in var:
-                mask = val[index] < limit['min_limit_nminus1'] - tol
+                mask = val[index] < limit["min_limit_nminus1"] - tol
                 _log_violation(element, var, val[index], limit["index"], mask)
             elif "max" in var:
-                mask = val[index] > limit['max_limit_nminus1'] + tol
+                mask = val[index] > limit["max_limit_nminus1"] + tol
                 _log_violation(element, var, val[index], limit["index"], mask)
             elif "cause" in var:
                 continue
             else:
-                mask_max = val[index] > limit['max_limit'] + tol
+                mask_max = val[index] > limit["max_limit"] + tol
                 _log_violation(element, var, val[index], limit["index"], mask_max)
-                mask_min = val[index] < limit['min_limit'] - tol
+                mask_min = val[index] < limit["min_limit"] - tol
                 _log_violation(element, var, val[index], limit["index"], mask_min)

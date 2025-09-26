@@ -8,11 +8,23 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-"""Python Interior Point Solver (PIPS).
-"""
+"""Python Interior Point Solver (PIPS)."""
 
-from numpy import array, inf, any, isnan, ones, r_, finfo, \
-    zeros, dot, absolute, log, flatnonzero as find, full
+from numpy import (
+    array,
+    inf,
+    any,
+    isnan,
+    ones,
+    r_,
+    finfo,
+    zeros,
+    dot,
+    absolute,
+    log,
+    flatnonzero as find,
+    full,
+)
 from numpy.linalg import norm
 from pandapower.pypower.pipsver import pipsver
 from scipy.sparse import vstack, hstack, eye, csr_matrix as sparse
@@ -22,8 +34,18 @@ from scipy.sparse.linalg import spsolve
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
-def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
-         gh_fcn=None, hess_fcn=None, opt=None):
+def pips(
+    f_fcn,
+    x0=None,
+    A=None,
+    l=None,
+    u=None,
+    xmin=None,
+    xmax=None,
+    gh_fcn=None,
+    hess_fcn=None,
+    opt=None,
+):
     """Primal-dual interior point method for NLP (nonlinear programming).
     Minimize a function F(X) beginning from a starting point M{x0}, subject to
     optional linear and nonlinear constraints and variable bounds::
@@ -175,25 +197,37 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     """
     if isinstance(f_fcn, dict):  ## problem dict
         p = f_fcn
-        f_fcn = p['f_fcn']
-        x0 = p['x0']
-        if 'opt' in p: opt = p['opt']
-        if 'hess_fcn' in p: hess_fcn = p['hess_fcn']
-        if 'gh_fcn' in p: gh_fcn = p['gh_fcn']
-        if 'xmax' in p: xmax = p['xmax']
-        if 'xmin' in p: xmin = p['xmin']
-        if 'u' in p: u = p['u']
-        if 'l' in p: l = p['l']
-        if 'A' in p: A = p['A']
+        f_fcn = p["f_fcn"]
+        x0 = p["x0"]
+        if "opt" in p:
+            opt = p["opt"]
+        if "hess_fcn" in p:
+            hess_fcn = p["hess_fcn"]
+        if "gh_fcn" in p:
+            gh_fcn = p["gh_fcn"]
+        if "xmax" in p:
+            xmax = p["xmax"]
+        if "xmin" in p:
+            xmin = p["xmin"]
+        if "u" in p:
+            u = p["u"]
+        if "l" in p:
+            l = p["l"]
+        if "A" in p:
+            A = p["A"]
 
-    nx = x0.shape[0]                        # number of variables
-    nA = A.shape[0] if A is not None else 0 # number of original linear constr
+    nx = x0.shape[0]  # number of variables
+    nA = A.shape[0] if A is not None else 0  # number of original linear constr
 
     # default argument values
-    if l is None or len(l) == 0: l = full(nA, -inf)
-    if u is None or len(u) == 0: u =  full(nA, inf)
-    if xmin is None or len(xmin) == 0: xmin = full(x0.shape[0], -inf)
-    if xmax is None or len(xmax) == 0: xmax = full(x0.shape[0], inf)
+    if l is None or len(l) == 0:
+        l = full(nA, -inf)
+    if u is None or len(u) == 0:
+        u = full(nA, inf)
+    if xmin is None or len(xmin) == 0:
+        xmin = full(x0.shape[0], -inf)
+    if xmax is None or len(xmax) == 0:
+        xmax = full(x0.shape[0], inf)
     if gh_fcn is None:
         nonlinear = False
         gn = array([])
@@ -201,7 +235,8 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     else:
         nonlinear = True
 
-    if opt is None: opt = {}
+    if opt is None:
+        opt = {}
     # options
     if "feastol" not in opt:
         opt["feastol"] = 1e-06
@@ -235,9 +270,9 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     mu_threshold = 1e-5
 
     # initialize
-    i = 0                       # iteration counter
-    converged = False           # flag
-    eflag = False               # exit flag
+    i = 0  # iteration counter
+    converged = False  # flag
+    eflag = False  # exit flag
 
     # add var limits to linear constraints
     eyex = eye(nx, nx, format="csr")
@@ -246,15 +281,15 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     uu = r_[xmax, u]
 
     # split up linear constraints
-    ieq = find( absolute(uu - ll) <= EPS )
-    igt = find( (uu >=  1e10) & (ll > -1e10) )
-    ilt = find( (ll <= -1e10) & (uu <  1e10) )
-    ibx = find( (absolute(uu - ll) > EPS) & (uu < 1e10) & (ll > -1e10) )
+    ieq = find(absolute(uu - ll) <= EPS)
+    igt = find((uu >= 1e10) & (ll > -1e10))
+    ilt = find((ll <= -1e10) & (uu < 1e10))
+    ibx = find((absolute(uu - ll) > EPS) & (uu < 1e10) & (ll > -1e10))
     # zero-sized sparse matrices unsupported
     Ae = AA[ieq, :] if len(ieq) else None
     if len(ilt) or len(igt) or len(ibx):
         idxs = [(1, ilt), (-1, igt), (1, ibx), (-1, ibx)]
-        Ai = vstack([sig * AA[idx, :] for sig, idx in idxs if len(idx)], 'csr')
+        Ai = vstack([sig * AA[idx, :] for sig, idx in idxs if len(idx)], "csr")
     else:
         Ai = None
     be = uu[ieq]
@@ -262,13 +297,22 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
     # evaluate cost f(x0) and constraints g(x0), h(x0)
     x = x0
-    f, df = f_fcn(x)                 # cost
+    f, df = f_fcn(x)  # cost
     f = f * opt["cost_mult"]
     df = df * opt["cost_mult"]
     if nonlinear:
-        hn, gn, dhn, dgn = gh_fcn(x)        # nonlinear constraints
-        h = hn if Ai is None else r_[hn.reshape(len(hn),), Ai * x - bi] # inequality constraints
-        g = gn if Ae is None else r_[gn, Ae * x - be] # equality constraints
+        hn, gn, dhn, dgn = gh_fcn(x)  # nonlinear constraints
+        h = (
+            hn
+            if Ai is None
+            else r_[
+                hn.reshape(
+                    len(hn),
+                ),
+                Ai * x - bi,
+            ]
+        )  # inequality constraints
+        g = gn if Ae is None else r_[gn, Ae * x - be]  # equality constraints
 
         if (dhn is None) and (Ai is None):
             dh = None
@@ -288,22 +332,22 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         else:
             dg = hstack([dgn, Ae.T])
     else:
-        h = -bi if Ai is None else Ai * x - bi        # inequality constraints
-        g = -be if Ae is None else Ae * x - be        # equality constraints
-        dh = None if Ai is None else Ai.T     # 1st derivative of inequalities
-        dg = None if Ae is None else Ae.T     # 1st derivative of equalities
+        h = -bi if Ai is None else Ai * x - bi  # inequality constraints
+        g = -be if Ae is None else Ae * x - be  # equality constraints
+        dh = None if Ai is None else Ai.T  # 1st derivative of inequalities
+        dg = None if Ae is None else Ae.T  # 1st derivative of equalities
 
     # some dimensions
-    neq = g.shape[0]           # number of equality constraints
-    niq = h.shape[0]           # number of inequality constraints
-    neqnln = gn.shape[0]       # number of nonlinear equality constraints
-    niqnln = hn.shape[0]       # number of nonlinear inequality constraints
-    nlt = len(ilt)             # number of upper bounded linear inequalities
-    ngt = len(igt)             # number of lower bounded linear inequalities
-    nbx = len(ibx)             # number of doubly bounded linear inequalities
+    neq = g.shape[0]  # number of equality constraints
+    niq = h.shape[0]  # number of inequality constraints
+    neqnln = gn.shape[0]  # number of nonlinear equality constraints
+    niqnln = hn.shape[0]  # number of nonlinear inequality constraints
+    nlt = len(ilt)  # number of upper bounded linear inequalities
+    ngt = len(igt)  # number of lower bounded linear inequalities
+    nbx = len(ibx)  # number of doubly bounded linear inequalities
 
     # initialize gamma, lam, mu, z, e
-    gamma = 1                  # barrier coefficient
+    gamma = 1  # barrier coefficient
     lam = zeros(neq)
     z = z0 * ones(niq)
     mu = z0 * ones(niq)
@@ -320,7 +364,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
 
     Lx = df.copy()
     Lx = Lx + dg * lam if dg is not None else Lx
-    Lx = Lx + dh * mu  if dh is not None else Lx
+    Lx = Lx + dh * mu if dh is not None else Lx
 
     maxh = zeros(1) if len(h) == 0 else max(h)
 
@@ -328,34 +372,61 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     lam_norm = norm(lam, inf) if len(lam) else 0.0
     mu_norm = norm(mu, inf) if len(mu) else 0.0
     znorm = norm(z, inf) if len(z) else 0.0
-    feascond = \
-        max([gnorm, maxh]) / (1 + max([norm(x, inf), znorm]))
-    gradcond = \
-        norm(Lx, inf) / (1 + max([lam_norm, mu_norm]))
+    feascond = max([gnorm, maxh]) / (1 + max([norm(x, inf), znorm]))
+    gradcond = norm(Lx, inf) / (1 + max([lam_norm, mu_norm]))
     compcond = dot(z, mu) / (1 + norm(x, inf))
     costcond = absolute(f - f0) / (1 + absolute(f0))
 
     # save history
-    hist.append({'feascond': feascond, 'gradcond': gradcond,
-        'compcond': compcond, 'costcond': costcond, 'gamma': gamma,
-        'stepsize': 0, 'obj': f / opt["cost_mult"], 'alphap': 0, 'alphad': 0})
+    hist.append(
+        {
+            "feascond": feascond,
+            "gradcond": gradcond,
+            "compcond": compcond,
+            "costcond": costcond,
+            "gamma": gamma,
+            "stepsize": 0,
+            "obj": f / opt["cost_mult"],
+            "alphap": 0,
+            "alphad": 0,
+        }
+    )
 
-    if opt["verbose"]: # pragma: no cover
-        s = '-sc' if opt["step_control"] else ''
-        v = pipsver('all')
-        print('Python Interior Point Solver - PIPS%s, Version %s, %s' %
-                    (s, v['Version'], v['Date']))
-        if opt['verbose'] > 1:
-            print(" it    objective   step size   feascond     gradcond     "
-                  "compcond     costcond  ")
-            print("----  ------------ --------- ------------ ------------ "
-                  "------------ ------------")
-            print("%3d  %12.8g %10s %12g %12g %12g %12g" %
-                (i, (f / opt["cost_mult"]), "",
-                 feascond, gradcond, compcond, costcond))
+    if opt["verbose"]:  # pragma: no cover
+        s = "-sc" if opt["step_control"] else ""
+        v = pipsver("all")
+        print(
+            "Python Interior Point Solver - PIPS%s, Version %s, %s"
+            % (s, v["Version"], v["Date"])
+        )
+        if opt["verbose"] > 1:
+            print(
+                " it    objective   step size   feascond     gradcond     "
+                "compcond     costcond  "
+            )
+            print(
+                "----  ------------ --------- ------------ ------------ "
+                "------------ ------------"
+            )
+            print(
+                "%3d  %12.8g %10s %12g %12g %12g %12g"
+                % (
+                    i,
+                    (f / opt["cost_mult"]),
+                    "",
+                    feascond,
+                    gradcond,
+                    compcond,
+                    costcond,
+                )
+            )
 
-    if feascond < opt["feastol"] and gradcond < opt["gradtol"] and \
-        compcond < opt["comptol"] and costcond < opt["costtol"]:
+    if (
+        feascond < opt["feastol"]
+        and gradcond < opt["gradtol"]
+        and compcond < opt["comptol"]
+        and costcond < opt["costtol"]
+    ):
         converged = True
         if opt["verbose"]:
             print("Converged!")
@@ -366,16 +437,17 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         i += 1
 
         # compute update step
-        lmbda = {"eqnonlin": lam[range(neqnln)],
-                 "ineqnonlin": mu[range(niqnln)]}
+        lmbda = {"eqnonlin": lam[range(neqnln)], "ineqnonlin": mu[range(niqnln)]}
         if nonlinear:
             if hess_fcn is None:
-                print("pips: Hessian evaluation via finite differences "
-                      "not yet implemented.\nPlease provide "
-                      "your own hessian evaluation function.")
+                print(
+                    "pips: Hessian evaluation via finite differences "
+                    "not yet implemented.\nPlease provide "
+                    "your own hessian evaluation function."
+                )
             Lxx = hess_fcn(x, lmbda, opt["cost_mult"])
         else:
-            _, _, d2f = f_fcn(x, True)      # cost
+            _, _, d2f = f_fcn(x, True)  # cost
             Lxx = d2f * opt["cost_mult"]
         rz = range(len(z))
         zinvdiag = sparse((1.0 / z, (rz, rz))) if len(z) else None
@@ -385,22 +457,23 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         M = Lxx if dh is None else Lxx + dh_zinv * mudiag * dh.T
         N = Lx if dh is None else Lx + dh_zinv * (mudiag * h + gamma * e)
 
-        Ab = sparse(M) if dg is None else vstack([
-            hstack([M, dg]),
-            hstack([dg.T, sparse((neq, neq))])
-        ])
+        Ab = (
+            sparse(M)
+            if dg is None
+            else vstack([hstack([M, dg]), hstack([dg.T, sparse((neq, neq))])])
+        )
         bb = r_[-N, -g]
 
         dxdlam = spsolve(Ab.tocsr(), bb)
 
         if any(isnan(dxdlam)):
             if opt["verbose"]:
-                print('\nNumerically Failed\n')
+                print("\nNumerically Failed\n")
             eflag = -1
             break
 
         dx = dxdlam[:nx]
-        dlam = dxdlam[nx:nx + neq]
+        dlam = dxdlam[nx : nx + neq]
         dz = -h - z if dh is None else -h - z - dh.T * dx
         dmu = -mu if dh is None else -mu + zinvdiag * (gamma * e - mudiag * dz)
 
@@ -417,14 +490,23 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
             gamma = sigma * dot(z, mu) / niq
 
         # evaluate cost, constraints, derivatives
-        f, df = f_fcn(x)             # cost
+        f, df = f_fcn(x)  # cost
         f = f * opt["cost_mult"]
         df = df * opt["cost_mult"]
         if nonlinear:
-            hn, gn, dhn, dgn = gh_fcn(x)                   # nln constraints
-#            g = gn if Ai is None else r_[gn, Ai * x - bi] # ieq constraints
-#            h = hn if Ae is None else r_[hn, Ae * x - be] # eq constraints
-            h = hn if Ai is None else r_[hn.reshape(len(hn),), Ai * x - bi] # ieq constr
+            hn, gn, dhn, dgn = gh_fcn(x)  # nln constraints
+            #            g = gn if Ai is None else r_[gn, Ai * x - bi] # ieq constraints
+            #            h = hn if Ae is None else r_[hn, Ae * x - be] # eq constraints
+            h = (
+                hn
+                if Ai is None
+                else r_[
+                    hn.reshape(
+                        len(hn),
+                    ),
+                    Ai * x - bi,
+                ]
+            )  # ieq constr
             g = gn if Ae is None else r_[gn, Ae * x - be]  # eq constr
 
             if (dhn is None) and (Ai is None):
@@ -445,13 +527,13 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
             else:
                 dg = hstack([dgn, Ae.T])
         else:
-            h = -bi if Ai is None else Ai * x - bi    # inequality constraints
-            g = -be if Ae is None else Ae * x - be    # equality constraints
+            h = -bi if Ai is None else Ai * x - bi  # inequality constraints
+            g = -be if Ae is None else Ae * x - be  # equality constraints
             # 1st derivatives are constant, still dh = Ai.T, dg = Ae.T
 
         Lx = df
         Lx = Lx + dg * lam if dg is not None else Lx
-        Lx = Lx + dh * mu  if dh is not None else Lx
+        Lx = Lx + dh * mu if dh is not None else Lx
 
         if len(h) == 0:
             maxh = zeros(1)
@@ -462,31 +544,56 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         lam_norm = norm(lam, inf) if len(lam) else 0.0
         mu_norm = norm(mu, inf) if len(mu) else 0.0
         znorm = norm(z, inf) if len(z) else 0.0
-        feascond = \
-            max([gnorm, maxh]) / (1 + max([norm(x, inf), znorm]))
-        gradcond = \
-            norm(Lx, inf) / (1 + max([lam_norm, mu_norm]))
+        feascond = max([gnorm, maxh]) / (1 + max([norm(x, inf), znorm]))
+        gradcond = norm(Lx, inf) / (1 + max([lam_norm, mu_norm]))
         compcond = dot(z, mu) / (1 + norm(x, inf))
         costcond = float(absolute(f - f0) / (1 + absolute(f0)))
 
-        hist.append({'feascond': feascond, 'gradcond': gradcond,
-            'compcond': compcond, 'costcond': costcond, 'gamma': gamma,
-            'stepsize': norm(dx), 'obj': f / opt["cost_mult"],
-            'alphap': alphap, 'alphad': alphad})
+        hist.append(
+            {
+                "feascond": feascond,
+                "gradcond": gradcond,
+                "compcond": compcond,
+                "costcond": costcond,
+                "gamma": gamma,
+                "stepsize": norm(dx),
+                "obj": f / opt["cost_mult"],
+                "alphap": alphap,
+                "alphad": alphad,
+            }
+        )
 
         if opt["verbose"] > 1:
-            print("%3d  %12.8g %10.5g %12g %12g %12g %12g" %
-                (i, (f / opt["cost_mult"]), norm(dx), feascond, gradcond,
-                 compcond, costcond))
+            print(
+                "%3d  %12.8g %10.5g %12g %12g %12g %12g"
+                % (
+                    i,
+                    (f / opt["cost_mult"]),
+                    norm(dx),
+                    feascond,
+                    gradcond,
+                    compcond,
+                    costcond,
+                )
+            )
 
-        if feascond < opt["feastol"] and gradcond < opt["gradtol"] and \
-            compcond < opt["comptol"] and costcond < opt["costtol"]:
+        if (
+            feascond < opt["feastol"]
+            and gradcond < opt["gradtol"]
+            and compcond < opt["comptol"]
+            and costcond < opt["costtol"]
+        ):
             converged = True
             if opt["verbose"]:
                 print("Converged!")
         else:
-            if any(isnan(x)) or (alphap < alpha_min) or \
-                (alphad < alpha_min) or (gamma < EPS) or (gamma > 1.0 / EPS):
+            if (
+                any(isnan(x))
+                or (alphap < alpha_min)
+                or (alphad < alpha_min)
+                or (gamma < EPS)
+                or (gamma > 1.0 / EPS)
+            ):
                 if opt["verbose"]:
                     print("Numerically failed.")
                 eflag = -1
@@ -505,18 +612,18 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
         eflag = converged
 
     if eflag == 0:
-        message = 'Did not converge'
+        message = "Did not converge"
     elif eflag == 1:
-        message = 'Converged'
+        message = "Converged"
     elif eflag == -1:
-        message = 'Numerically failed'
+        message = "Numerically failed"
     else:
         raise
 
     output = {"iterations": i, "hist": hist, "message": message}
 
     # zero out multipliers on non-binding constraints
-    mu[find( (h < -opt["feastol"]) & (mu < mu_threshold) )] = 0.0
+    mu[find((h < -opt["feastol"]) & (mu < mu_threshold))] = 0.0
 
     # un-scale cost and prices
     f = f / opt["cost_mult"]
@@ -524,34 +631,37 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     mu = mu / opt["cost_mult"]
 
     # re-package multipliers into struct
-    lam_lin = lam[neqnln:neq]           # lambda for linear constraints
-    mu_lin = mu[niqnln:niq]             # mu for linear constraints
-    kl = find(lam_lin < 0.0)     # lower bound binding
-    ku = find(lam_lin > 0.0)     # upper bound binding
+    lam_lin = lam[neqnln:neq]  # lambda for linear constraints
+    mu_lin = mu[niqnln:niq]  # mu for linear constraints
+    kl = find(lam_lin < 0.0)  # lower bound binding
+    ku = find(lam_lin > 0.0)  # upper bound binding
 
     mu_l = zeros(nx + nA)
     mu_l[ieq[kl]] = -lam_lin[kl]
-    mu_l[igt] = mu_lin[nlt:nlt + ngt]
-    mu_l[ibx] = mu_lin[nlt + ngt + nbx:nlt + ngt + nbx + nbx]
+    mu_l[igt] = mu_lin[nlt : nlt + ngt]
+    mu_l[ibx] = mu_lin[nlt + ngt + nbx : nlt + ngt + nbx + nbx]
 
     mu_u = zeros(nx + nA)
     mu_u[ieq[ku]] = lam_lin[ku]
     mu_u[ilt] = mu_lin[:nlt]
-    mu_u[ibx] = mu_lin[nlt + ngt:nlt + ngt + nbx]
+    mu_u[ibx] = mu_lin[nlt + ngt : nlt + ngt + nbx]
 
-    lmbda = {'mu_l': mu_l[nx:], 'mu_u': mu_u[nx:],
-             'lower': mu_l[:nx], 'upper': mu_u[:nx]}
+    lmbda = {
+        "mu_l": mu_l[nx:],
+        "mu_u": mu_u[nx:],
+        "lower": mu_l[:nx],
+        "upper": mu_u[:nx],
+    }
 
     if niqnln > 0:
-        lmbda['ineqnonlin'] = mu[:niqnln]
+        lmbda["ineqnonlin"] = mu[:niqnln]
     if neqnln > 0:
-        lmbda['eqnonlin'] = lam[:neqnln]
+        lmbda["eqnonlin"] = lam[:neqnln]
 
-#    lmbda = {"eqnonlin": lam[:neqnln], 'ineqnonlin': mu[:niqnln],
-#             "mu_l": mu_l[nx:], "mu_u": mu_u[nx:],
-#             "lower": mu_l[:nx], "upper": mu_u[:nx]}
+    #    lmbda = {"eqnonlin": lam[:neqnln], 'ineqnonlin': mu[:niqnln],
+    #             "mu_l": mu_l[nx:], "mu_u": mu_u[nx:],
+    #             "lower": mu_l[:nx], "upper": mu_u[:nx]}
 
-    solution =  {"x": x, "f": f, "eflag": converged,
-                 "output": output, "lmbda": lmbda}
+    solution = {"x": x, "f": f, "eflag": converged, "output": output, "lmbda": lmbda}
 
     return solution

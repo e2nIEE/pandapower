@@ -17,6 +17,7 @@ from pandapower.topology.graph_searches import connected_components
 
 try:
     import igraph
+
     IGRAPH_INSTALLED = True
 except ImportError:
     IGRAPH_INSTALLED = False
@@ -26,8 +27,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_km=0.01, switch_length_km=0.001,
-                         dcline_length_km=1.0):
+def build_igraph_from_pp(
+    net,
+    respect_switches=False,
+    buses=None,
+    trafo_length_km=0.01,
+    switch_length_km=0.001,
+    dcline_length_km=1.0,
+):
     """
     This function uses the igraph library to create an igraph graph for a given pandapower network.
     Lines, transformers and switches are respected.
@@ -43,7 +50,7 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
         graph, meshed, roots = build_igraph_from_pp(net)
     """
     if not IGRAPH_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "igraph")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "igraph")
     g = igraph.Graph(directed=True)
     bus_index = net.bus.index if buses is None else np.array(buses)
     nr_buses = len(bus_index)
@@ -59,36 +66,51 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
     if respect_switches:
         mask &= _get_switch_mask(net, "line", "l", open_switches)
     for line in net.line[mask].itertuples():
-        g.add_edge(pp_bus_mapping[line.from_bus],
-                   pp_bus_mapping[line.to_bus],
-                   weight=line.length_km)
+        g.add_edge(
+            pp_bus_mapping[line.from_bus],
+            pp_bus_mapping[line.to_bus],
+            weight=line.length_km,
+        )
 
     # add dclines
     mask = _get_element_mask_from_nodes(net, "dcline", ["from_bus", "to_bus"], buses)
     if respect_switches:
         mask &= _get_switch_mask(net, "dcline", "l", open_switches)
     for dcline in net.dcline[mask].itertuples():
-        g.add_edge(pp_bus_mapping[dcline.from_bus],
-                   pp_bus_mapping[dcline.to_bus],
-                   weight=dcline_length_km)
+        g.add_edge(
+            pp_bus_mapping[dcline.from_bus],
+            pp_bus_mapping[dcline.to_bus],
+            weight=dcline_length_km,
+        )
 
     # add trafos
     mask = _get_element_mask_from_nodes(net, "trafo", ["hv_bus", "lv_bus"], buses)
     if respect_switches:
         mask &= _get_switch_mask(net, "trafo", "t", open_switches)
     for trafo in net.trafo[mask].itertuples():
-        g.add_edge(pp_bus_mapping[trafo.hv_bus],
-                   pp_bus_mapping[trafo.lv_bus], weight=trafo_length_km)
+        g.add_edge(
+            pp_bus_mapping[trafo.hv_bus],
+            pp_bus_mapping[trafo.lv_bus],
+            weight=trafo_length_km,
+        )
 
     # add trafo3w
-    mask = _get_element_mask_from_nodes(net, "trafo3w", ["hv_bus", "mv_bus", "lv_bus"], buses)
+    mask = _get_element_mask_from_nodes(
+        net, "trafo3w", ["hv_bus", "mv_bus", "lv_bus"], buses
+    )
     if respect_switches:
         mask &= _get_switch_mask(net, "trafo3w", "t3", open_switches)
     for trafo3w in net.trafo3w[mask].itertuples():
-        g.add_edge(pp_bus_mapping[trafo3w.hv_bus],
-                   pp_bus_mapping[trafo3w.lv_bus], weight=trafo_length_km)
-        g.add_edge(pp_bus_mapping[trafo3w.hv_bus],
-                   pp_bus_mapping[trafo3w.mv_bus], weight=trafo_length_km)
+        g.add_edge(
+            pp_bus_mapping[trafo3w.hv_bus],
+            pp_bus_mapping[trafo3w.lv_bus],
+            weight=trafo_length_km,
+        )
+        g.add_edge(
+            pp_bus_mapping[trafo3w.hv_bus],
+            pp_bus_mapping[trafo3w.mv_bus],
+            weight=trafo_length_km,
+        )
 
     # add switches
     mask = net.switch.et.values == "b"
@@ -96,8 +118,11 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
         mask &= ~open_switches
     bus_mask = _get_element_mask_from_nodes(net, "switch", ["element", "bus"], buses)
     for switch in net.switch[mask & bus_mask].itertuples():
-        g.add_edge(pp_bus_mapping[switch.element],
-                   pp_bus_mapping[switch.bus], weight=switch_length_km)
+        g.add_edge(
+            pp_bus_mapping[switch.element],
+            pp_bus_mapping[switch.bus],
+            weight=switch_length_km,
+        )
 
     meshed = _igraph_meshed(g)
 
@@ -111,6 +136,7 @@ def _igraph_meshed(g):
             return True
     return False
 
+
 def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
     mask = np.ones(len(net[element])).astype(bool)
     if nodes is not None:
@@ -118,11 +144,13 @@ def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
             mask &= np.isin(net[element][node_element].values, nodes)
     return mask
 
+
 def _get_switch_mask(net, element, switch_element, open_switches):
     element_switches = net.switch.et.values == switch_element
     open_elements = net.switch.element.values[open_switches & element_switches]
     open_element_mask = np.isin(net[element].index, open_elements, invert=True)
     return open_element_mask
+
 
 def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
     """
@@ -152,7 +180,7 @@ def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
     return list(zip(*layout.coords))
 
 
-def coords_from_nxgraph(mg=None, layout_engine='neato'):
+def coords_from_nxgraph(mg=None, layout_engine="neato"):
     """
     Create a list of generic coordinates from a networkx graph layout.
 
@@ -164,22 +192,36 @@ def coords_from_nxgraph(mg=None, layout_engine='neato'):
     """
     # workaround for bug in agraph
     for u, v in mg.edges(data=False):
-        if 'key' in mg[int(u)][int(v)]:
-            del mg[int(u)][int(v)]['key']
-        if 'key' in mg[int(u)][int(v)].get(0, ()):
-            del mg[int(u)][int(v)][0]['key']
+        if "key" in mg[int(u)][int(v)]:
+            del mg[int(u)][int(v)]["key"]
+        if "key" in mg[int(u)][int(v)].get(0, ()):
+            del mg[int(u)][int(v)][0]["key"]
     # ToDo: Insert fallback layout for nxgraph
-    return list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(mg, prog=layout_engine).values()))))
+    return list(
+        zip(
+            *(
+                list(
+                    nx.drawing.nx_agraph.graphviz_layout(
+                        mg, prog=layout_engine
+                    ).values()
+                )
+            )
+        )
+    )
 
 
-def create_generic_coordinates(net, mg=None, library="igraph",
-                               respect_switches=False,
-                               geodata_table="bus",
-                               buses=None,
-                               overwrite=False,
-                               layout_engine='neato',
-                               trafo_length_km=0.01,
-                               switch_length_km=0.001):
+def create_generic_coordinates(
+    net,
+    mg=None,
+    library="igraph",
+    respect_switches=False,
+    geodata_table="bus",
+    buses=None,
+    overwrite=False,
+    layout_engine="neato",
+    trafo_length_km=0.01,
+    switch_length_km=0.001,
+):
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches
     and rings. It will remove out of service buses/lines from the net. The coordinates will be
@@ -211,14 +253,23 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     if library == "igraph":
         if not IGRAPH_INSTALLED:
             soft_dependency_error("build_igraph_from_pp()", "igraph")
-        graph, meshed, roots = build_igraph_from_pp(net, respect_switches, buses=buses,
-                                                    trafo_length_km=trafo_length_km, switch_length_km=switch_length_km)
+        graph, meshed, roots = build_igraph_from_pp(
+            net,
+            respect_switches,
+            buses=buses,
+            trafo_length_km=trafo_length_km,
+            switch_length_km=switch_length_km,
+        )
         coords = coords_from_igraph(graph, roots, meshed)
     elif library == "networkx":
         if mg is None:
-            nxg = create_nxgraph(net, respect_switches=respect_switches,
-                                     include_out_of_service=True,
-                                     trafo_length_km=trafo_length_km, switch_length_km=switch_length_km)
+            nxg = create_nxgraph(
+                net,
+                respect_switches=respect_switches,
+                include_out_of_service=True,
+                trafo_length_km=trafo_length_km,
+                switch_length_km=switch_length_km,
+            )
         else:
             nxg = copy.deepcopy(mg)
         coords = coords_from_nxgraph(nxg, layout_engine=layout_engine)
@@ -226,34 +277,48 @@ def create_generic_coordinates(net, mg=None, library="igraph",
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):
         net[geodata_table]["geo"] = pd.Series(
-            map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords)),
+            map(
+                lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True),
+                zip(*coords),
+            ),
             index=net[geodata_table].index if buses is None else buses,
         )
     return net
 
 
 def _prepare_geodata_table(net, geodata_table, overwrite):
-    if geodata_table in net and "geo" in net[geodata_table] and net[geodata_table]["geo"].dropna().shape[0]:
+    if (
+        geodata_table in net
+        and "geo" in net[geodata_table]
+        and net[geodata_table]["geo"].dropna().shape[0]
+    ):
         if overwrite:
             net[geodata_table] = net[geodata_table].drop("geo", axis=1)
-            net[geodata_table] = net[geodata_table].dropna(how='all')
+            net[geodata_table] = net[geodata_table].dropna(how="all")
         else:
-            raise UserWarning(f"Table {geodata_table} is not empty - use overwrite=True to overwrite existing geodata")
+            raise UserWarning(
+                f"Table {geodata_table} is not empty - use overwrite=True to overwrite existing geodata"
+            )
 
     if geodata_table not in net:
         net[geodata_table] = pd.DataFrame(columns=["geo"])
 
+
 def fuse_geodata(net):
-    mg = create_nxgraph(net, include_lines=False, include_impedances=False, respect_switches=False)
-    geocoords = set(net.bus.dropna(subset=['geo']).index)
+    mg = create_nxgraph(
+        net, include_lines=False, include_impedances=False, respect_switches=False
+    )
+    geocoords = set(net.bus.dropna(subset=["geo"]).index)
     for area in connected_components(mg):
         if len(area & geocoords) > 1:
-            geo = net.bus.loc[list(area & geocoords), 'geo'].apply(geojson.loads)
+            geo = net.bus.loc[list(area & geocoords), "geo"].apply(geojson.loads)
             for bus in area:
                 if len(geo) > 1:
-                    coordinates = [point['coordinates'] for point in geo]
+                    coordinates = [point["coordinates"] for point in geo]
                     mean_lat = np.mean([coord[1] for coord in coordinates])
                     mean_lon = np.mean([coord[0] for coord in coordinates])
                 else:
                     mean_lon, mean_lat = geo.coordinates
-                net.bus.geo.loc[bus] = geojson.dumps(geojson.Point((mean_lon, mean_lat)))
+                net.bus.geo.loc[bus] = geojson.dumps(
+                    geojson.Point((mean_lon, mean_lat))
+                )

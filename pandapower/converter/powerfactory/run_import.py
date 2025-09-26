@@ -20,7 +20,7 @@ def choose_imp_dir(user, IMPFOLD):
     if len(imp_dir_list) != 0:
         imp_dir = imp_dir_list[0]
     else:
-        imp_dir = user.CreateObject('IntFolder', IMPFOLD)
+        imp_dir = user.CreateObject("IntFolder", IMPFOLD)
     return imp_dir
 
 
@@ -31,11 +31,11 @@ def clear_dir(dir):
 
 
 def run_ldf(com_ldf):
-    com_ldf.SetAttribute('iopt_net', 0)
+    com_ldf.SetAttribute("iopt_net", 0)
     # com_ldf.SetAttribute('iopt_at', 1)
-    com_ldf.SetAttribute('iopt_pq', 0)
+    com_ldf.SetAttribute("iopt_pq", 0)
 
-    com_ldf.SetAttribute('errlf', 0.001)
-    com_ldf.SetAttribute('erreq', 0.01)
+    com_ldf.SetAttribute("errlf", 0.001)
+    com_ldf.SetAttribute("erreq", 0.01)
 
     com_ldf.Execute()

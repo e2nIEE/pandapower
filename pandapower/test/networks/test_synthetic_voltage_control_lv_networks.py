@@ -6,12 +6,14 @@
 
 import pytest
 
-from pandapower.networks.synthetic_voltage_control_lv_networks import create_synthetic_voltage_control_lv_network
+from pandapower.networks.synthetic_voltage_control_lv_networks import (
+    create_synthetic_voltage_control_lv_network,
+)
 from pandapower.run import runpp
 
 
 def test_rural_1():
-    net = create_synthetic_voltage_control_lv_network('rural_1')
+    net = create_synthetic_voltage_control_lv_network("rural_1")
     assert abs(net.line.length_km.sum() - 1.616) < 1e-6
     assert abs(net.load.p_mw.sum() - 77e-3) < 1e-6
     assert len(net.bus.index) == 26
@@ -22,7 +24,7 @@ def test_rural_1():
 
 
 def test_rural_2():
-    net = create_synthetic_voltage_control_lv_network('rural_2')
+    net = create_synthetic_voltage_control_lv_network("rural_2")
     assert abs(net.line.length_km.sum() - 0.567) < 1e-6
     assert abs(net.load.p_mw.sum() - 64.5e-3) < 1e-6
     assert len(net.bus.index) == 18
@@ -33,7 +35,7 @@ def test_rural_2():
 
 
 def test_village_1():
-    net = create_synthetic_voltage_control_lv_network('village_1')
+    net = create_synthetic_voltage_control_lv_network("village_1")
     assert abs(net.line.length_km.sum() - 2.6) < 1e-6
     assert abs(net.load.p_mw.sum() - 262.1e-3) < 1e-6
     assert len(net.bus.index) == 80
@@ -44,7 +46,7 @@ def test_village_1():
 
 
 def test_village_2():
-    net = create_synthetic_voltage_control_lv_network('village_2')
+    net = create_synthetic_voltage_control_lv_network("village_2")
     assert abs(net.line.length_km.sum() - 1.832) < 1e-6
     assert abs(net.load.p_mw.sum() - 183.6e-3) < 1e-6
     assert len(net.bus.index) == 74
@@ -55,7 +57,7 @@ def test_village_2():
 
 
 def test_suburb_1():
-    net = create_synthetic_voltage_control_lv_network('suburb_1')
+    net = create_synthetic_voltage_control_lv_network("suburb_1")
     assert abs(net.line.length_km.sum() - 4.897) < 1e-6
     assert abs(net.load.p_mw.sum() - 578.3e-3) < 1e-6
     assert len(net.bus.index) == 204
@@ -65,5 +67,5 @@ def test_suburb_1():
     assert net.converged
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

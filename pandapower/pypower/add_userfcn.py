@@ -2,10 +2,10 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Appends a userfcn to the list to be called for a case.
-"""
+"""Appends a userfcn to the list to be called for a case."""
 
 from sys import stderr
+
 
 def add_userfcn(ppc, stage, fcn, args=None, allow_multiple=False):
     """Appends a userfcn to the list to be called for a case.
@@ -90,24 +90,29 @@ def add_userfcn(ppc, stage, fcn, args=None, allow_multiple=False):
     if args is None:
         args = []
 
-    if stage not in ['ext2int', 'formulation', 'int2ext', 'printpf', 'savecase']:
-        stderr.write('add_userfcn : \'%s\' is not the name of a valid callback stage\n' % stage)
+    if stage not in ["ext2int", "formulation", "int2ext", "printpf", "savecase"]:
+        stderr.write(
+            "add_userfcn : '%s' is not the name of a valid callback stage\n" % stage
+        )
 
     n = 0
-    if 'userfcn' in ppc:
-        if stage in ppc['userfcn']:
-            n = len(ppc['userfcn'][stage]) #+ 1
+    if "userfcn" in ppc:
+        if stage in ppc["userfcn"]:
+            n = len(ppc["userfcn"][stage])  # + 1
             if not allow_multiple:
                 for k in range(n):
-                    if ppc['userfcn'][stage][k]['fcn'] == fcn:
-                        stderr.write('add_userfcn: the function \'%s\' has already been added\n' % fcn.__name__)
+                    if ppc["userfcn"][stage][k]["fcn"] == fcn:
+                        stderr.write(
+                            "add_userfcn: the function '%s' has already been added\n"
+                            % fcn.__name__
+                        )
         else:
-            ppc['userfcn'][stage] = []
+            ppc["userfcn"][stage] = []
     else:
-        ppc['userfcn'] = {stage: []}
+        ppc["userfcn"] = {stage: []}
 
-    ppc['userfcn'][stage].append({'fcn': fcn})
+    ppc["userfcn"][stage].append({"fcn": fcn})
     if len(args) > 0:
-        ppc['userfcn'][stage][n]['args'] = args
+        ppc["userfcn"][stage][n]["args"] = args
 
     return ppc

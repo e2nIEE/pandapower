@@ -2,17 +2,26 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Checks for P-Q capability curve constraints.
-"""
+"""Checks for P-Q capability curve constraints."""
 
 from sys import stderr
 
 from numpy import any, zeros, nonzero
 
-from pandapower.pypower.idx_gen import QMAX, QMIN, PMAX, PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
+from pandapower.pypower.idx_gen import (
+    QMAX,
+    QMIN,
+    PMAX,
+    PC1,
+    PC2,
+    QC1MIN,
+    QC1MAX,
+    QC2MIN,
+    QC2MAX,
+)
 
 
-def hasPQcap(gen, hilo='B'):
+def hasPQcap(gen, hilo="B"):
     """Checks for P-Q capability curve constraints.
 
     Returns a column vector of 1's and 0's. The 1's correspond to rows of
@@ -39,25 +48,27 @@ def hasPQcap(gen, hilo='B'):
     @author: Ray Zimmerman (PSERC Cornell)
     """
     ## check for errors capability curve data
-    if any( gen[:, PC1] > gen[:, PC2] ):
-        stderr.write('hasPQcap: Pc1 > Pc2\n')
-    if any( gen[:, QC2MAX] > gen[:, QC1MAX] ):
-        stderr.write('hasPQcap: Qc2max > Qc1max\n')
-    if any( gen[:, QC2MIN] < gen[:, QC1MIN] ):
-        stderr.write('hasPQcap: Qc2min < Qc1min\n')
+    if any(gen[:, PC1] > gen[:, PC2]):
+        stderr.write("hasPQcap: Pc1 > Pc2\n")
+    if any(gen[:, QC2MAX] > gen[:, QC1MAX]):
+        stderr.write("hasPQcap: Qc2max > Qc1max\n")
+    if any(gen[:, QC2MIN] < gen[:, QC1MIN]):
+        stderr.write("hasPQcap: Qc2min < Qc1min\n")
 
     L = zeros(gen.shape[0], bool)
     U = zeros(gen.shape[0], bool)
-    k = nonzero( gen[:, PC1] != gen[:, PC2] )
+    k = nonzero(gen[:, PC1] != gen[:, PC2])
 
-    if hilo != 'U':       ## include lower constraint
-        Qmin_at_Pmax = gen[k, QC1MIN] + (gen[k, PMAX] - gen[k, PC1]) * \
-            (gen[k, QC2MIN] - gen[k, QC1MIN]) / (gen[k, PC2] - gen[k, PC1])
+    if hilo != "U":  ## include lower constraint
+        Qmin_at_Pmax = gen[k, QC1MIN] + (gen[k, PMAX] - gen[k, PC1]) * (
+            gen[k, QC2MIN] - gen[k, QC1MIN]
+        ) / (gen[k, PC2] - gen[k, PC1])
         L[k] = Qmin_at_Pmax > gen[k, QMIN]
 
-    if hilo != 'L':       ## include upper constraint
-        Qmax_at_Pmax = gen[k, QC1MAX] + (gen[k, PMAX] - gen[k, PC1]) * \
-            (gen[k, QC2MAX] - gen[k, QC1MAX]) / (gen[k, PC2] - gen[k, PC1])
+    if hilo != "L":  ## include upper constraint
+        Qmax_at_Pmax = gen[k, QC1MAX] + (gen[k, PMAX] - gen[k, PC1]) * (
+            gen[k, QC2MAX] - gen[k, QC1MAX]
+        ) / (gen[k, PC2] - gen[k, PC1])
         U[k] = Qmax_at_Pmax < gen[k, QMAX]
 
     return L | U

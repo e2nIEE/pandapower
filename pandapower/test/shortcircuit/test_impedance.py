@@ -6,7 +6,12 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_impedance
+from pandapower.create import (
+    create_empty_network,
+    create_bus,
+    create_ext_grid,
+    create_impedance,
+)
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 
@@ -15,9 +20,15 @@ def impedance_net():
     net = create_empty_network(sn_mva=78)
     b1 = create_bus(net, 220)
     b2 = create_bus(net, 30)
-    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
-    create_ext_grid(net, b2, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
-    create_impedance(net, b1, b2, rft_pu=0.01, xft_pu=0.02, rtf_pu=0.05, xtf_pu=0.01, sn_mva=1)
+    create_ext_grid(
+        net, b1, s_sc_max_mva=100.0, s_sc_min_mva=40.0, rx_min=0.1, rx_max=0.1
+    )
+    create_ext_grid(
+        net, b2, s_sc_max_mva=100.0, s_sc_min_mva=40.0, rx_min=0.1, rx_max=0.1
+    )
+    create_impedance(
+        net, b1, b2, rft_pu=0.01, xft_pu=0.02, rtf_pu=0.05, xtf_pu=0.01, sn_mva=1
+    )
     return net
 
 
@@ -37,5 +48,5 @@ def test_impedance_min(impedance_net):
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.20375890703, 0.87488745362])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

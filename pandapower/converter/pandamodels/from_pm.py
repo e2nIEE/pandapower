@@ -15,7 +15,6 @@ from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.toolbox import pp_elements
 
 
 def read_pm_results_to_net(net, ppc, ppci, result_pm):
@@ -41,7 +40,7 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
             for tp, ri in result.items():
                 add_time_series_data_to_net(neti, net.controller, tp)
                 _extract_results(neti, ri)
-                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp)+1)])
+                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp) + 1)])
                 result[tp] = deepcopy(neti)
             net["res_ts_opt"] = result
         _clean_up(net)
@@ -55,8 +54,12 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
 def add_storage_results(net, result_pmi):
     if "storage" in result_pmi:
         df = net.res_storage
-        df[["ps", "qs", "se", "qsc"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
-        df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
+        df[["ps", "qs", "se", "qsc"]] = pd.DataFrame(
+            [[np.nan, np.nan, np.nan, np.nan]], index=df.index
+        )
+        df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame(
+            [[np.nan, np.nan, np.nan, np.nan]], index=df.index
+        )
         controllable_storages = net.storage.index[net.storage.controllable]
         df_pm = pd.DataFrame.from_dict(result_pmi["storage"]).T
         df_pm.index = controllable_storages
@@ -65,6 +68,7 @@ def add_storage_results(net, result_pmi):
 
 def add_time_series_data_to_net(net, controller, tp):
     from pandapower.control import ConstControl
+
     for idx, content in controller.iterrows():
         if type(content["object"]) == ConstControl:
             element = content["object"].__dict__["matching_params"]["element"]
@@ -81,7 +85,9 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
     sol = result_pm["solution"]
     ppci["obj"] = result_pm["objective"]
     termination_status = str(result_pm["termination_status"])
-    ppci["success"] = "LOCALLY_SOLVED" in termination_status or "OPTIMAL" in termination_status
+    ppci["success"] = (
+        "LOCALLY_SOLVED" in termination_status or "OPTIMAL" in termination_status
+    )
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
 
@@ -94,10 +100,12 @@ def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
         result = {}
         for tp, soli in sol["nw"].items():
             pm_results_to_ppc_results_one_time_step(ppci, soli)
-            result[str(int(tp)-1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))
+            result[str(int(tp) - 1)] = deepcopy(
+                _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
+            )
     else:
         if "bus" not in sol:
-            ppci["success"] = False # PowerModels failed
+            ppci["success"] = False  # PowerModels failed
         else:
             pm_results_to_ppc_results_one_time_step(ppci, sol)
             result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
@@ -111,7 +119,9 @@ def pm_results_to_ppc_results_one_time_step(ppci, sol):
             ppci["bus"][bus_idx, VM] = bus["vm"]
         if "va" in bus:
             # replace nans with 0.(in case of SOCWR model for example
-            ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
+            ppci["bus"][bus_idx, VA] = (
+                0.0 if bus["va"] == None else math.degrees(bus["va"])
+            )
         if "w" in bus:
             # SOCWR model has only w instead of vm values
             ppci["bus"][bus_idx, VM] = bus["w"]
@@ -123,7 +133,9 @@ def pm_results_to_ppc_results_one_time_step(ppci, sol):
 
     # read Q from branch results (if not DC calculation)
     if "branch" in sol:
-        dc_results = sol["branch"]["1"]["qf"] is None or np.isnan(sol["branch"]["1"]["qf"])
+        dc_results = sol["branch"]["1"]["qf"] is None or np.isnan(
+            sol["branch"]["1"]["qf"]
+        )
         # read branch status results (OTS)
         branch_status = "br_status" in sol["branch"]["1"]
         for i, branch in sol["branch"].items():

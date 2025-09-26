@@ -40,12 +40,18 @@ def test_mv_oberrhein():
                 assert net.converged
 
                 if k is True:
-                    net0, net1 = mv_oberrhein(scenario=i, include_substations=j, separation_by_sub=k)
+                    net0, net1 = mv_oberrhein(
+                        scenario=i, include_substations=j, separation_by_sub=k
+                    )
                     assert len(net1.keys()) == len(net0.keys()) == len(net.keys())
-                    assert net1.res_ext_grid.loc[1].all() == net.res_ext_grid.loc[1].all()
-                    assert net0.res_ext_grid.loc[0].all() == net.res_ext_grid.loc[0].all()
+                    assert (
+                        net1.res_ext_grid.loc[1].all() == net.res_ext_grid.loc[1].all()
+                    )
+                    assert (
+                        net0.res_ext_grid.loc[0].all() == net.res_ext_grid.loc[0].all()
+                    )
                     assert len(net.bus) == len(net0.bus) + len(net1.bus)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

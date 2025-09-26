@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 def test_opf_oberrhein():
-    """ Testing a  simple network with transformer for loading
-    constraints with OPF using a generator """
+    """Testing a  simple network with transformer for loading
+    constraints with OPF using a generator"""
     # create net
     net = mv_oberrhein()
 

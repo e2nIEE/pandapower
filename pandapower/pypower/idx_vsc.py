@@ -37,16 +37,21 @@ columns 0-12 must be included in the input matrix (vsc in ppc dict)
     15. C{VSC_P_DC}                     DC bus resultant active power (MW)
 
 """
+
 # define AC modes
 VSC_MODE_AC_V = 0
 VSC_MODE_AC_Q = 1
 VSC_MODE_AC_SL = 2
 
 # define DC modes
-VSC_MODE_DC_V = 0 # constant voltage regulation on dc bus aka dc slack
-VSC_MODE_DC_P = 1 # constant power regulation on dc bus
-VSC_MODE_DC_DP = 2 # constant difference regulation as a test for bipolar vsc, upper vsc
-VSC_MODE_DC_DM = 3 # constant difference regulation as a test for bipolar vsc, lower vsc
+VSC_MODE_DC_V = 0  # constant voltage regulation on dc bus aka dc slack
+VSC_MODE_DC_P = 1  # constant power regulation on dc bus
+VSC_MODE_DC_DP = (
+    2  # constant difference regulation as a test for bipolar vsc, upper vsc
+)
+VSC_MODE_DC_DM = (
+    3  # constant difference regulation as a test for bipolar vsc, lower vsc
+)
 
 # define the indices
 VSC_BUS = 0  # f, from bus number
@@ -69,6 +74,6 @@ VSC_P = 14  # result for P
 VSC_Q = 15  # result for Q
 VSC_P_DC = 16  # result for P
 
-VSC_DIFF_REF_BUS = 17 # reference bus for difference regulation
+VSC_DIFF_REF_BUS = 17  # reference bus for difference regulation
 
 vsc_cols = 18

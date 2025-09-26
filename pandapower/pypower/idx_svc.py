@@ -28,7 +28,6 @@ columns 0-10 must be included in the input matrix (in case file)
 
 """
 
-
 # define the indices
 SVC_BUS = 0  # f, from bus number
 SVC_X_L = 1  # (p.u.)

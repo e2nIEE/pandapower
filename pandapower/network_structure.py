@@ -479,13 +479,10 @@ def get_structure_dict() -> dict:
             "vm_pu": "f8",
             "va_degree": "f8",
             "p_mw": "f8",
-            "q_mvar": "f8"},
-        "_empty_res_bus_dc": {
-            "vm_pu": "f8",
-            "p_mw": "f8"},
-        "_empty_res_ext_grid": {
-            "p_mw": "f8",
-            "q_mvar": "f8"},
+            "q_mvar": "f8",
+        },
+        "_empty_res_bus_dc": {"vm_pu": "f8", "p_mw": "f8"},
+        "_empty_res_ext_grid": {"p_mw": "f8", "q_mvar": "f8"},
         "_empty_res_line": {
             "p_from_mw": "f8",
             "q_from_mvar": "f8",
@@ -528,31 +525,12 @@ def get_structure_dict() -> dict:
             "va_lv_degree": "f8",
             "loading_percent": "f8",
         },
-        "_empty_res_load": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_asymmetric_load": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_asymmetric_sgen": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_motor": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_sgen": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_shunt": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "vm_pu": "f8"
-        },
+        "_empty_res_load": {"p_mw": "f8", "q_mvar": "f8"},
+        "_empty_res_asymmetric_load": {"p_mw": "f8", "q_mvar": "f8"},
+        "_empty_res_asymmetric_sgen": {"p_mw": "f8", "q_mvar": "f8"},
+        "_empty_res_motor": {"p_mw": "f8", "q_mvar": "f8"},
+        "_empty_res_sgen": {"p_mw": "f8", "q_mvar": "f8"},
+        "_empty_res_shunt": {"p_mw": "f8", "q_mvar": "f8", "vm_pu": "f8"},
         "_empty_res_svc": {
             "thyristor_firing_angle_degree": "f8",
             "x_ohm": "f8",
@@ -622,17 +600,9 @@ def get_structure_dict() -> dict:
             "vm_to_pu": "f8",
             "va_to_degree": "f8",
         },
-        "_empty_res_source_dc": {
-            "p_dc_mw": "f8"
-        },
-        "_empty_res_load_dc": {
-            "p_dc_mw": "f8"
-        },
-        "_empty_res_ward": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "vm_pu": "f8"
-        },
+        "_empty_res_source_dc": {"p_dc_mw": "f8"},
+        "_empty_res_load_dc": {"p_dc_mw": "f8"},
+        "_empty_res_ward": {"p_mw": "f8", "q_mvar": "f8", "vm_pu": "f8"},
         "_empty_res_xward": {
             "p_mw": "f8",
             "q_mvar": "f8",
@@ -765,10 +735,7 @@ def get_structure_dict() -> dict:
             "p_c_mw": "f8",
             "q_c_mvar": "f8",
         },
-        "_empty_res_storage": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
+        "_empty_res_storage": {"p_mw": "f8", "q_mvar": "f8"},
         "_empty_res_storage_3ph": {
             "p_a_mw": "f8",
             "p_b_mw": "f8",
@@ -797,14 +764,16 @@ def get_structure_dict() -> dict:
         "_ppc1": None,
         "_ppc2": None,
         "_is_elements": None,
-        "_pd2ppc_lookups": [{
-            "bus": None,
-            "bus_dc": None,
-            "ext_grid": None,
-            "gen": None,
-            "branch": None,
-            "branch_dc": None,
-        }],
+        "_pd2ppc_lookups": [
+            {
+                "bus": None,
+                "bus_dc": None,
+                "ext_grid": None,
+                "gen": None,
+                "branch": None,
+                "branch_dc": None,
+            }
+        ],
         "version": __version__,
         "format_version": __format_version__,
         "converged": False,
@@ -813,6 +782,8 @@ def get_structure_dict() -> dict:
         "f_hz": 50.0,
         "sn_mva": 1,
     }
+
+
 def get_std_type_structure_dict() -> dict:
     """
     This function returns the structure dict of the std_types
@@ -912,5 +883,3 @@ def get_std_type_structure_dict() -> dict:
             "x_total": dtype(object),
         },
     }
-
-

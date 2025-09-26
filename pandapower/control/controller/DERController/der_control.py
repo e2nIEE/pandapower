@@ -6,7 +6,11 @@
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.control.controller.DERController.PQVAreas import BaseArea, PQVArea4110, QVArea4110
+from pandapower.control.controller.DERController.PQVAreas import (
+    BaseArea,
+    PQVArea4110,
+    QVArea4110,
+)
 from pandapower.control.controller.DERController.QModels import QModel
 from pandapower.control.controller.pq_control import PQController
 
@@ -88,30 +92,60 @@ class DERController(PQController):
         >>> runpp(net, run_control=True)
     """
 
-    def __init__(self, net, element_index, element="sgen",
-                 q_model=None, pqv_area=None,
-                 saturate_sn_mva=np.nan, q_prio=True, damping_coef=2,
-                 max_p_error=1e-6, max_q_error=1e-6, pq_simultaneity_factor=1., f_sizing=1.,
-                 data_source=None, p_profile=None, profile_from_name=False,
-                 profile_scale=1.0, in_service=True, ts_absolute=True,
-                 order=0, level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
+    def __init__(
+        self,
+        net,
+        element_index,
+        element="sgen",
+        q_model=None,
+        pqv_area=None,
+        saturate_sn_mva=np.nan,
+        q_prio=True,
+        damping_coef=2,
+        max_p_error=1e-6,
+        max_q_error=1e-6,
+        pq_simultaneity_factor=1.0,
+        f_sizing=1.0,
+        data_source=None,
+        p_profile=None,
+        profile_from_name=False,
+        profile_scale=1.0,
+        in_service=True,
+        ts_absolute=True,
+        order=0,
+        level=0,
+        drop_same_existing_ctrl=False,
+        matching_params=None,
+        **kwargs,
+    ):
         element_index = list(ensure_iterability(element_index))
         if matching_params is None:
             matching_params = {"element_index": element_index}
-        super().__init__(net, element_index=element_index, element=element, max_p_error=max_p_error,
-                         max_q_error=max_q_error, pq_simultaneity_factor=pq_simultaneity_factor,
-                         f_sizing=f_sizing, data_source=data_source,
-                         profile_scale=profile_scale, in_service=in_service,
-                         ts_absolute=ts_absolute, initial_run=True,
-                         drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, 
-                         order=order, level=level, **kwargs) 
+        super().__init__(
+            net,
+            element_index=element_index,
+            element=element,
+            max_p_error=max_p_error,
+            max_q_error=max_q_error,
+            pq_simultaneity_factor=pq_simultaneity_factor,
+            f_sizing=f_sizing,
+            data_source=data_source,
+            profile_scale=profile_scale,
+            in_service=in_service,
+            ts_absolute=ts_absolute,
+            initial_run=True,
+            drop_same_existing_ctrl=drop_same_existing_ctrl,
+            matching_params=matching_params,
+            order=order,
+            level=level,
+            **kwargs,
+        )
 
         # --- init DER Model params
         self.q_model = q_model
         self.pqv_area = pqv_area
         self.saturate_sn_mva = np.array(ensure_iterability(saturate_sn_mva))
-        self.saturate_sn_mva_activated = isinstance(self.saturate_sn_mva, np.ndarray) 
+        self.saturate_sn_mva_activated = isinstance(self.saturate_sn_mva, np.ndarray)
         self.q_prio = q_prio
         self.damping_coef = damping_coef
 
@@ -121,16 +155,24 @@ class DERController(PQController):
 
         # --- log unexpected param values
         if n_nan_sn := sum(self.sn_mva.isnull()):
-            logger.error(f"The DERController relates to sn_mva, but for {n_nan_sn} elements "
-                         "sn_mva is NaN.")
+            logger.error(
+                f"The DERController relates to sn_mva, but for {n_nan_sn} elements "
+                "sn_mva is NaN."
+            )
         if self.saturate_sn_mva_activated and (self.saturate_sn_mva <= 0).any():
-            raise ValueError(f"saturate_sn_mva cannot be <= 0 but is {self.saturate_sn_mva}")
+            raise ValueError(
+                f"saturate_sn_mva cannot be <= 0 but is {self.saturate_sn_mva}"
+            )
         if self.q_model is not None and not isinstance(self.q_model, QModel):
-            logger.warning(f"The Q model is expected of type QModel, however {type(self.q_model)} "
-                           "is provided.")
+            logger.warning(
+                f"The Q model is expected of type QModel, however {type(self.q_model)} "
+                "is provided."
+            )
         if self.pqv_area is not None and not isinstance(self.pqv_area, BaseArea):
-            logger.warning(f"The PQV area is expected of type BaseArea, however "
-                           f"{type(self.pqv_area)} is provided.")
+            logger.warning(
+                f"The PQV area is expected of type BaseArea, however "
+                f"{type(self.pqv_area)} is provided."
+            )
 
     def time_step(self, net, time):
         # get new values from profiles
@@ -141,14 +183,13 @@ class DERController(PQController):
     #        self.write_to_net(net)
 
     def is_converged(self, net):
-
         self._determine_target_powers(net)
 
-        return np.allclose(self.target_q_mvar, self.q_mvar, atol=self.max_q_error) and \
-            np.allclose(self.target_p_mw, self.p_mw, atol=self.max_p_error)
+        return np.allclose(
+            self.target_q_mvar, self.q_mvar, atol=self.max_q_error
+        ) and np.allclose(self.target_p_mw, self.p_mw, atol=self.max_p_error)
 
     def control_step(self, net):
-
         if "target_p_mw" not in vars(self) or "target_q_mvar" not in vars(self):
             self._determine_target_powers(net)
 
@@ -165,11 +206,13 @@ class DERController(PQController):
 
         if np.any(p_series_mw < 0):
             logger.info("p_series_mw is forced to be greater/equal zero")
-            p_series_mw[p_series_mw < 0] = 0.
+            p_series_mw[p_series_mw < 0] = 0.0
 
         # --- First Step: Calculate/Select P, Q
         p_pu = self._step_p(p_series_mw)
-        q_pu = self._step_q(p_series_mw=p_series_mw, q_series_mvar=q_series_mvar, vm_pu=vm_pu)
+        q_pu = self._step_q(
+            p_series_mw=p_series_mw, q_series_mvar=q_series_mvar, vm_pu=vm_pu
+        )
 
         # --- Second Step: Saturates P, Q according to SnMVA and PQV_AREA
         if self.saturate_sn_mva_activated or (self.pqv_area is not None):
@@ -180,7 +223,9 @@ class DERController(PQController):
 
         # --- Apply target p and q considering the damping factor coefficient ----------------------
         self.target_p_mw = self.p_mw + (target_p_mw - self.p_mw) / self.damping_coef
-        self.target_q_mvar = self.q_mvar + (target_q_mvar - self.q_mvar) / self.damping_coef
+        self.target_q_mvar = (
+            self.q_mvar + (target_q_mvar - self.q_mvar) / self.damping_coef
+        )
 
     def _step_p(self, p_series_mw=None):
         return p_series_mw / self.sn_mva
@@ -203,9 +248,11 @@ class DERController(PQController):
             in_area = self.pqv_area.in_area(p_pu, q_pu, vm_pu)
             if not all(in_area):
                 min_max_q_pu = self.pqv_area.q_flexibility(
-                    p_pu=p_pu[~in_area], vm_pu=vm_pu[~in_area])
-                q_pu[~in_area] = np.minimum(np.maximum(
-                    q_pu[~in_area], min_max_q_pu[:, 0]), min_max_q_pu[:, 1])
+                    p_pu=p_pu[~in_area], vm_pu=vm_pu[~in_area]
+                )
+                q_pu[~in_area] = np.minimum(
+                    np.maximum(q_pu[~in_area], min_max_q_pu[:, 0]), min_max_q_pu[:, 1]
+                )
 
         if self.saturate_sn_mva_activated:
             p_pu, q_pu = self._saturate_sn_mva_step(p_pu, q_pu, vm_pu)
@@ -214,33 +261,49 @@ class DERController(PQController):
     def _saturate_sn_mva_step(self, p_pu, q_pu, vm_pu):
         # Saturation on SnMVA according to priority mode
         sat_s_pu = self.saturate_sn_mva / self.sn_mva  # sat_s is relative to sn_mva
-        to_saturate = p_pu ** 2 + q_pu ** 2 > sat_s_pu ** 2
+        to_saturate = p_pu**2 + q_pu**2 > sat_s_pu**2
         if any(to_saturate):
             if self.q_prio:
                 if (
-                        isinstance(self.pqv_area, PQVArea4110) or isinstance(self.pqv_area, QVArea4110)
+                    isinstance(self.pqv_area, PQVArea4110)
+                    or isinstance(self.pqv_area, QVArea4110)
                 ) and any(
-                    (0.95 < vm_pu[to_saturate]) & (vm_pu[to_saturate] < 1.05) &
-                    (-0.328684 < q_pu[to_saturate]) & any(q_pu[to_saturate] < 0.328684)
+                    (0.95 < vm_pu[to_saturate])
+                    & (vm_pu[to_saturate] < 1.05)
+                    & (-0.328684 < q_pu[to_saturate])
+                    & any(q_pu[to_saturate] < 0.328684)
                 ):
-                    logger.warning(f"Such kind of saturation is performed that is not in line with"
-                                   " VDE AR N 4110: p reduction within 0.95 < vm < 1.05 and "
-                                   "0.95 < cosphi.")
-                q_pu[to_saturate] = np.clip(q_pu[to_saturate], -sat_s_pu[to_saturate],
-                                            sat_s_pu[to_saturate])
-                p_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate] ** 2 - q_pu[to_saturate] ** 2)
+                    logger.warning(
+                        "Such kind of saturation is performed that is not in line with"
+                        " VDE AR N 4110: p reduction within 0.95 < vm < 1.05 and "
+                        "0.95 < cosphi."
+                    )
+                q_pu[to_saturate] = np.clip(
+                    q_pu[to_saturate], -sat_s_pu[to_saturate], sat_s_pu[to_saturate]
+                )
+                p_pu[to_saturate] = np.sqrt(
+                    sat_s_pu[to_saturate] ** 2 - q_pu[to_saturate] ** 2
+                )
             else:
-                p_pu[to_saturate] = np.clip(p_pu[to_saturate], 0., sat_s_pu[to_saturate])
-                q_pu[to_saturate] = np.sqrt(sat_s_pu[to_saturate] ** 2 - p_pu[to_saturate] ** 2) * \
-                                    np.sign(q_pu[to_saturate])
+                p_pu[to_saturate] = np.clip(
+                    p_pu[to_saturate], 0.0, sat_s_pu[to_saturate]
+                )
+                q_pu[to_saturate] = np.sqrt(
+                    sat_s_pu[to_saturate] ** 2 - p_pu[to_saturate] ** 2
+                ) * np.sign(q_pu[to_saturate])
         return p_pu, q_pu
 
     def __str__(self):
-        el_id_str = f"len(element_index)={len(self.element_index)}" if len(self.element_index) > 6 \
+        el_id_str = (
+            f"len(element_index)={len(self.element_index)}"
+            if len(self.element_index) > 6
             else f"element_index={self.element_index}"
-        return (f"DERController({el_id_str}, q_model={self.q_model}, pqv_area={self.pqv_area}, "
-                f"saturate_sn_mva={self.saturate_sn_mva}, q_prio={self.q_prio}, "
-                f"damping_coef={self.damping_coef})")
+        )
+        return (
+            f"DERController({el_id_str}, q_model={self.q_model}, pqv_area={self.pqv_area}, "
+            f"saturate_sn_mva={self.saturate_sn_mva}, q_prio={self.q_prio}, "
+            f"damping_coef={self.damping_coef})"
+        )
 
 
 if __name__ == "__main__":

@@ -8,7 +8,9 @@ import copy
 import pandas as pd
 import pytest
 
-from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
+from pandapower.control.controller.trafo.ContinuousTapControl import (
+    ContinuousTapControl,
+)
 from pandapower.create import create_bus
 from pandapower.networks.cigre_networks import create_cigre_network_lv
 from pandapower.toolbox.comparison import nets_equal, logger as tbc_logger
@@ -24,7 +26,7 @@ def test_nets_equal():
     assert nets_equal(net, original)
 
     # detecting additional element
-    create_bus(net, vn_kv=.4)
+    create_bus(net, vn_kv=0.4)
     assert not nets_equal(original, net)
     assert not nets_equal(net, original)
     net = copy.deepcopy(original)
@@ -78,5 +80,5 @@ def test_nets_equal():
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

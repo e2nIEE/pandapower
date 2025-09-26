@@ -29,7 +29,7 @@ try:
     from julia import Main
 
     julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError) as e:
+except (ImportError, RuntimeError, UnsupportedPythonError):
     julia_installed = False
 
 
@@ -53,8 +53,11 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
     vm_pu = copy.deepcopy(net.res_bus.vm_pu)
 
     # get previously calculated power models results
-    pm_res_file = os.path.join(os.path.abspath(os.path.dirname(test.__file__)),
-                               "test_files", "pm_example_res.json")
+    pm_res_file = os.path.join(
+        os.path.abspath(os.path.dirname(test.__file__)),
+        "test_files",
+        "pm_example_res.json",
+    )
 
     with open(pm_res_file, "r") as fp:
         result_pm = json.load(fp)
@@ -75,5 +78,5 @@ def test_obj_factors(net_3w_trafo_opf):
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["3"] == 3
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

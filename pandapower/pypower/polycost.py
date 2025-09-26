@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Evaluates polynomial generator cost & derivatives.
-"""
+"""Evaluates polynomial generator cost & derivatives."""
 
 import sys
 
@@ -29,7 +28,7 @@ def polycost(gencost, Pg, der=0):
     @author: Ray Zimmerman (PSERC Cornell)
     """
     if any(gencost[:, MODEL] == PW_LINEAR):
-        sys.stderr.write('polycost: all costs must be polynomial\n')
+        sys.stderr.write("polycost: all costs must be polynomial\n")
 
     ng = len(Pg)
     maxN = max(gencost[:, NCOST].astype(int64))
@@ -38,19 +37,19 @@ def polycost(gencost, Pg, der=0):
     ## form coefficient matrix where 1st column is constant term, 2nd linear, etc.
     c = zeros((ng, maxN))
     for n in arange(minN, maxN + 1):
-        k = find(gencost[:, NCOST] == n)   ## cost with n coefficients
-        c[k, :n] = gencost[k, (COST + n - 1):COST - 1:-1]
+        k = find(gencost[:, NCOST] == n)  ## cost with n coefficients
+        c[k, :n] = gencost[k, (COST + n - 1) : COST - 1 : -1]
 
     ## do derivatives
     for d in range(1, der + 1):
         if c.shape[1] >= 2:
-            c = c[:, 1:maxN - d + 1]
+            c = c[:, 1 : maxN - d + 1]
         else:
             c = zeros((ng, 1))
             break
 
         for k in range(2, maxN - d + 1):
-            c[:, k-1] = c[:, k-1] * k
+            c[:, k - 1] = c[:, k - 1] * k
 
     ## evaluate polynomial
     if len(c) == 0:

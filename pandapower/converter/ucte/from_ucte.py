@@ -9,7 +9,7 @@ from pandapower.converter.ucte.ucte_converter import UCTE2pandapower
 from pandapower.converter.ucte.ucte_parser import UCTEParser
 from pandapower.auxiliary import pandapowerNet
 
-logger = logging.getLogger('ucte.from_ucte')
+logger = logging.getLogger("ucte.from_ucte")
 
 
 def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True) -> pandapowerNet:
@@ -59,9 +59,17 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
 
     time_end_converting = time.time()
 
-    logger.info("Needed time for parsing from ucte: %s" % (time_start_converting - time_start_parsing))
-    logger.info("Needed time for converting from ucte: %s" % (time_end_converting - time_start_converting))
-    logger.info("Total Time (from_ucte()): %s" % (time_end_converting - time_start_parsing))
+    logger.info(
+        "Needed time for parsing from ucte: %s"
+        % (time_start_converting - time_start_parsing)
+    )
+    logger.info(
+        "Needed time for converting from ucte: %s"
+        % (time_end_converting - time_start_converting)
+    )
+    logger.info(
+        "Total Time (from_ucte()): %s" % (time_end_converting - time_start_parsing)
+    )
 
     return pp_net
 
@@ -71,5 +79,7 @@ if __name__ == "__main__":
     import pandapower as pp
 
     # loading the line test as example
-    ucte_file = os.path.join(pp.pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
+    ucte_file = os.path.join(
+        pp.pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct"
+    )
     net = pp.converter.from_ucte(ucte_file)

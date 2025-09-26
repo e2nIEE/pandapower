@@ -11,7 +11,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS
 
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 
-__all__ = ['BaseAlgebra', 'BaseAlgebraZeroInjConstraints']
+__all__ = ["BaseAlgebra", "BaseAlgebraZeroInjConstraints"]
 
 
 class BaseAlgebra:
@@ -19,10 +19,10 @@ class BaseAlgebra:
         """Object to calculate matrices required in state-estimation iterations."""
         self.eppci = eppci
 
-        self.fb = eppci['branch'][:, F_BUS].real.astype(np.int64)
-        self.tb = eppci['branch'][:, T_BUS].real.astype(np.int64)
-        self.n_bus = eppci['bus'].shape[0]
-        self.n_branch = eppci['branch'].shape[0]
+        self.fb = eppci["branch"][:, F_BUS].real.astype(np.int64)
+        self.tb = eppci["branch"][:, T_BUS].real.astype(np.int64)
+        self.n_bus = eppci["bus"].shape[0]
+        self.n_branch = eppci["branch"].shape[0]
 
         self.num_non_slack_bus = eppci.num_non_slack_bus
         self.non_slack_buses = eppci.non_slack_buses
@@ -56,7 +56,7 @@ class BaseAlgebra:
             E2 = E[-num_clusters:]
         else:
             E1 = E
-        
+
         meas_mask = self.eppci.non_nan_meas_mask
         V = self.eppci.E2V(E1)
         Sfe = V[f_bus] * np.conj(self.Yf * V)
@@ -77,17 +77,28 @@ class BaseAlgebra:
         Imte = np.abs(Ite)[meas_mask["ito"]]
         # Iafe = np.angle(Ife)[meas_mask["iafrom"]]
         # Iate = np.angle(Ite)[meas_mask["iato"]]
-        
+
         hx = np.r_[Pbuse, Qbuse, Pfe, Qfe, Pte, Qte, Vm, Va, Imfe, Imte]
 
         if self.eppci.algorithm == "af-wls":
-            Pb2 = np.real(Sbuse) - np.sum(np.multiply(E2,self.eppci["rated_power_clusters"][:,:num_clusters]),axis=1)
-            Qb2 = np.imag(Sbuse) - np.sum(np.multiply(E2,self.eppci["rated_power_clusters"][:,num_clusters:2*num_clusters]),axis=1)
+            Pb2 = np.real(Sbuse) - np.sum(
+                np.multiply(E2, self.eppci["rated_power_clusters"][:, :num_clusters]),
+                axis=1,
+            )
+            Qb2 = np.imag(Sbuse) - np.sum(
+                np.multiply(
+                    E2,
+                    self.eppci["rated_power_clusters"][
+                        :, num_clusters : 2 * num_clusters
+                    ],
+                ),
+                axis=1,
+            )
             Pbuse2 = Pb2[meas_mask["pbalance"]]
             Qbuse2 = Qb2[meas_mask["qbalance"]]
             E2e = E2[meas_mask["afactor"]]
             hx = np.r_[hx, Pbuse2, Qbuse2, E2e]
-        
+
         return hx
 
     def create_hx_jacobian(self, E):
@@ -100,33 +111,33 @@ class BaseAlgebra:
 
         meas_mask = self.eppci.non_nan_meas_mask
         V = self.eppci.E2V(E1)
-        nvar = 2*len(V)
+        nvar = 2 * len(V)
         jac = sparse((0, nvar))
 
-        if len(meas_mask["pbus"])+len(meas_mask["qbus"])>0:
+        if len(meas_mask["pbus"]) + len(meas_mask["qbus"]) > 0:
             dPbus, dQbus = self._dSbus_dv(V, meas_mask["pbus"], meas_mask["qbus"])
             jac = vstack((jac, dPbus, dQbus))
 
-        if len(meas_mask["pfrom"])+len(meas_mask["qfrom"])>0:
+        if len(meas_mask["pfrom"]) + len(meas_mask["qfrom"]) > 0:
             dPf, dQf = self._dSbr_dv(V, "from", meas_mask["pfrom"], meas_mask["qfrom"])
             jac = vstack((jac, dPf, dQf))
 
-        if len(meas_mask["pto"])+len(meas_mask["qto"])>0:
+        if len(meas_mask["pto"]) + len(meas_mask["qto"]) > 0:
             dPt, dQt = self._dSbr_dv(V, "to", meas_mask["pto"], meas_mask["qto"])
             jac = vstack((jac, dPt, dQt))
 
         dVm = self._dVmbus_dV(V, meas_mask["vm"])
         jac = vstack((jac, dVm))
 
-        if len(meas_mask["va"])>0:
+        if len(meas_mask["va"]) > 0:
             dVa = self._dVabus_dV(V, meas_mask["va"])
             jac = vstack((jac, dVa))
 
-        if len(meas_mask["ifrom"])>0:
+        if len(meas_mask["ifrom"]) > 0:
             dIfm = self._dImbr_dV(V, "from", meas_mask["ifrom"])
             jac = vstack((jac, dIfm))
 
-        if len(meas_mask["ito"])>0:
+        if len(meas_mask["ito"]) > 0:
             dItm = self._dImbr_dV(V, "to", meas_mask["ito"])
             jac = vstack((jac, dItm))
 
@@ -134,13 +145,17 @@ class BaseAlgebra:
         # dIta = self._dIabr_dV(V, "to")
 
         if self.eppci.algorithm == "af-wls":
-            p_bal_jac_E1, q_bal_jac_E1 = self._dSbus_dv(V, meas_mask["pbalance"], meas_mask["qbalance"])
-            af_vmeas_E1 = sparse((num_clusters,jac.shape[1])) 
+            p_bal_jac_E1, q_bal_jac_E1 = self._dSbus_dv(
+                V, meas_mask["pbalance"], meas_mask["qbalance"]
+            )
+            af_vmeas_E1 = sparse((num_clusters, jac.shape[1]))
 
-            jac_E2 = sparse((jac.shape[0],num_clusters))
-            p_bal_jac_E2 = sparse(- self.eppci["rated_power_clusters"][:,:num_clusters])
-            q_bal_jac_E2 = sparse(- self.eppci["rated_power_clusters"][:,num_clusters:2*num_clusters])
-            af_vmeas_E2 = eye(num_clusters, num_clusters, format='csr')
+            jac_E2 = sparse((jac.shape[0], num_clusters))
+            p_bal_jac_E2 = sparse(-self.eppci["rated_power_clusters"][:, :num_clusters])
+            q_bal_jac_E2 = sparse(
+                -self.eppci["rated_power_clusters"][:, num_clusters : 2 * num_clusters]
+            )
+            af_vmeas_E2 = eye(num_clusters, num_clusters, format="csr")
             p_bal_jac_E2 = p_bal_jac_E2[meas_mask["pbalance"]]
             q_bal_jac_E2 = q_bal_jac_E2[meas_mask["qbalance"]]
             af_vmeas_E2 = af_vmeas_E2[meas_mask["afactor"]]
@@ -165,29 +180,28 @@ class BaseAlgebra:
         maskS, maskP, maskQ = self._define_mask(ib, maskP, maskQ)
 
         diagV = sparse((V, (ib, ib)))
-        diagV2 = diagV[maskS,:]
+        diagV2 = diagV[maskS, :]
         diagIbus = sparse((Ibus, (ib, ib)))
-        diagIbus2 = diagIbus[maskS,:]
+        diagIbus2 = diagIbus[maskS, :]
         diagVnorm = sparse((V / abs(V), (ib, ib)))
 
         dS_dVm = diagV2 @ conj(Ybus @ diagVnorm) + conj(diagIbus2) @ diagVnorm
         dS_dVa = 1j * diagV2 @ conj(diagIbus - Ybus @ diagV)
 
-        dP_dth = dS_dVa.real[maskP,:]
-        dP_dv = dS_dVm.real[maskP,:]
-        dQ_dth = dS_dVa.imag[maskQ,:]
-        dQ_dv = dS_dVm.imag[maskQ,:]
+        dP_dth = dS_dVa.real[maskP, :]
+        dP_dv = dS_dVm.real[maskP, :]
+        dQ_dth = dS_dVa.imag[maskQ, :]
+        dQ_dv = dS_dVm.imag[maskQ, :]
 
         dP = hstack((dP_dth, dP_dv))
         dQ = hstack((dQ_dth, dQ_dv))
 
         return dP, dQ
-     
 
     def _dSbr_dv(self, V, side, maskP=None, maskQ=None):
-        branch = self.eppci['branch']
-        f = branch[:, F_BUS].real.astype(int64)       ## list of "from" buses
-        t = branch[:, T_BUS].real.astype(int64)       ## list of "to" buses
+        branch = self.eppci["branch"]
+        f = branch[:, F_BUS].real.astype(int64)  ## list of "from" buses
+        t = branch[:, T_BUS].real.astype(int64)  ## list of "to" buses
         nl = len(f)
         nb = len(V)
         il = arange(nl)
@@ -205,24 +219,26 @@ class BaseAlgebra:
         Vnorm = V / abs(V)
 
         diagVs = sparse((V[s], (il, il)))
-        diagVs2 = diagVs[maskS,:]
+        diagVs2 = diagVs[maskS, :]
         diagI = sparse((I, (il, il)))
-        diagI2 = diagI[maskS,:]
-        diagV  = sparse((V, (ib, ib)))
+        diagI2 = diagI[maskS, :]
+        diagV = sparse((V, (ib, ib)))
         diagVnorm = sparse((Vnorm, (ib, ib)))
 
         shape = (nl, nb)
         # Partial derivative of S w.r.t voltage phase angle.
-        dS_dVa = 1j * (conj(diagI2) @
-            sparse((V[s], (il, s)), shape) - diagVs2 @ conj(Y @ diagV))
+        dS_dVa = 1j * (
+            conj(diagI2) @ sparse((V[s], (il, s)), shape) - diagVs2 @ conj(Y @ diagV)
+        )
         # Partial derivative of S w.r.t. voltage amplitude.
-        dS_dVm = diagVs2 @ conj(Y @ diagVnorm) + conj(diagI2) @ \
-            sparse((Vnorm[s], (il, s)), shape)
-        
-        dP_dth = dS_dVa.real[maskP,:]
-        dP_dv = dS_dVm.real[maskP,:]
-        dQ_dth = dS_dVa.imag[maskQ,:]
-        dQ_dv = dS_dVm.imag[maskQ,:]
+        dS_dVm = diagVs2 @ conj(Y @ diagVnorm) + conj(diagI2) @ sparse(
+            (Vnorm[s], (il, s)), shape
+        )
+
+        dP_dth = dS_dVa.real[maskP, :]
+        dP_dv = dS_dVm.real[maskP, :]
+        dQ_dth = dS_dVa.imag[maskQ, :]
+        dQ_dv = dS_dVm.imag[maskQ, :]
 
         dP = hstack((dP_dth, dP_dv))
         dQ = hstack((dQ_dth, dQ_dv))
@@ -235,8 +251,8 @@ class BaseAlgebra:
             maskVm = arange(V_shape)
 
         dvm_dth = sparse((len(maskVm), V_shape))  # Sparse zero matrix
-        dvm_dv = eye(V_shape, V_shape, format='csr')
-        dvm_dv = dvm_dv[maskVm,:]
+        dvm_dv = eye(V_shape, V_shape, format="csr")
+        dvm_dv = dvm_dv[maskVm, :]
         dvm = hstack((dvm_dth, dvm_dv))
         return dvm
 
@@ -245,14 +261,14 @@ class BaseAlgebra:
         if maskVa is None:
             maskVa = arange(V_shape)
 
-        dva_dth = eye(V_shape, V_shape, format='csr')  # Sparse identity matrix
-        dva_dth = dva_dth[maskVa,:]
+        dva_dth = eye(V_shape, V_shape, format="csr")  # Sparse identity matrix
+        dva_dth = dva_dth[maskVa, :]
         dva_dv = sparse((len(maskVa), V_shape))  # Sparse zero matrix
         dva = hstack((dva_dth, dva_dv))
         return dva
-    
+
     def _dImbr_dV(self, V, side, maskI=None):
-        nl = len(self.eppci['branch'])
+        nl = len(self.eppci["branch"])
         nb = len(V)
         il = arange(nl)
         vb = arange(nb)
@@ -273,16 +289,16 @@ class BaseAlgebra:
         idx = abs(I) != 0
         I = I[idx]
         il = il[idx]
-        diagInorm = sparse((conj(I) / abs(I), (il, il)), shape=(nl,nl))
-        diagInorm2 = diagInorm[maskI,:]
+        diagInorm = sparse((conj(I) / abs(I), (il, il)), shape=(nl, nl))
+        diagInorm2 = diagInorm[maskI, :]
         a = diagInorm2 @ Y @ diagV
         b = diagInorm2 @ Y @ diagVnorm
-        dIm_dth = - a.imag
+        dIm_dth = -a.imag
         dIm_dv = b.real
         dIm = hstack((dIm_dth, dIm_dv))
 
         return dIm
-    
+
     def _define_mask(self, idx, mask1, mask2):
         if mask1 is None:
             mask1 = idx
@@ -291,10 +307,10 @@ class BaseAlgebra:
         masktot, mask1, mask2 = self._merge_mask(mask1, mask2)
 
         return masktot, mask1, mask2
-    
+
     @staticmethod
     def _merge_mask(mask1, mask2):
-        new_mask_tot = np.unique(np.concatenate((mask1,mask2),0))
+        new_mask_tot = np.unique(np.concatenate((mask1, mask2), 0))
         new_mask1 = np.in1d(new_mask_tot, mask1)
         new_mask2 = np.in1d(new_mask_tot, mask2)
         return new_mask_tot, new_mask1, new_mask2
@@ -304,12 +320,11 @@ class BaseAlgebraZeroInjConstraints(BaseAlgebra):
     def create_cx(self, E, p_zero_inj, q_zero_inj):
         V = self.eppci.E2V(E)
         Sbus = V * np.conj(self.Ybus * V)
-        c = np.r_[Sbus[p_zero_inj].real,
-                  Sbus[q_zero_inj].imag] * self.eppci['baseMVA']
+        c = np.r_[Sbus[p_zero_inj].real, Sbus[q_zero_inj].imag] * self.eppci["baseMVA"]
         return c
 
     def create_cx_jacobian(self, E, p_zero_inj, q_zero_inj):
         V = self.eppci.E2V(E)
         dPbus, dQbus = self._dSbus_dv(V, p_zero_inj, q_zero_inj)
-        c_jac = vstack((dPbus,dQbus))
+        c_jac = vstack((dPbus, dQbus))
         return c_jac[:][:, self.delta_v_bus_mask]

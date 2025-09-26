@@ -5,15 +5,36 @@
 
 
 import numpy as np
-import pandas as pd
-from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
+from pandapower.auxiliary import (
+    _sum_by_group,
+    I_from_SV_elementwise,
+    sequence_to_phase,
+    S_from_VI_elementwise,
+)
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
-from pandapower.pypower.idx_brch_dc import DC_IF, DC_IT, DC_F_BUS, DC_T_BUS, DC_PF, DC_PT, DC_BR_R, DC_TDPF
+from pandapower.pypower.idx_brch_dc import (
+    DC_IF,
+    DC_IT,
+    DC_F_BUS,
+    DC_T_BUS,
+    DC_PF,
+    DC_PT,
+    DC_BR_R,
+    DC_TDPF,
+)
 from pandapower.pypower.idx_brch_tdpf import TDPF
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_bus_dc import DC_BASE_KV, DC_VM
-from pandapower.pypower.idx_tcsc import TCSC_THYRISTOR_FIRING_ANGLE, TCSC_X_PU, TCSC_PF, TCSC_PT, TCSC_QF, TCSC_QT, \
-    TCSC_IF, TCSC_IT
+from pandapower.pypower.idx_tcsc import (
+    TCSC_THYRISTOR_FIRING_ANGLE,
+    TCSC_X_PU,
+    TCSC_PF,
+    TCSC_PT,
+    TCSC_QF,
+    TCSC_QT,
+    TCSC_IF,
+    TCSC_IT,
+)
 
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
@@ -59,7 +80,9 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
         **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
 
     """
-    I012_f, S012_f, V012_f, I012_t, S012_t, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
+    I012_f, S012_f, V012_f, I012_t, S012_t, V012_t = _get_branch_flows_3ph(
+        ppc0, ppc1, ppc2
+    )
     _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     # _get_trafo3w_results(net, ppc, s_ft, i_ft)
@@ -71,8 +94,9 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
 def _get_branch_flows(ppc):
     br_idx = ppc["branch"][:, (F_BUS, T_BUS)].real.astype(np.int64)
     vm_ft = ppc["bus"][br_idx, VM] * ppc["bus"][br_idx, BASE_KV]
-    s_ft = np.sqrt(ppc["branch"][:, (PF, PT)].real ** 2 +
-                   ppc["branch"][:, (QF, QT)].real ** 2)
+    s_ft = np.sqrt(
+        ppc["branch"][:, (PF, PT)].real ** 2 + ppc["branch"][:, (QF, QT)].real ** 2
+    )
     i_ft = s_ft / vm_ft / np.sqrt(3)
     return i_ft, s_ft
 
@@ -80,16 +104,38 @@ def _get_branch_flows(ppc):
 def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
     br_from_idx = ppc1["branch"][:, F_BUS].real.astype(np.int64)
     br_to_idx = ppc1["branch"][:, T_BUS].real.astype(np.int64)
-    V012_f = np.array([(ppc["bus"][br_from_idx, VM] * ppc["bus"][br_from_idx, BASE_KV] *
-                        np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
-    V012_t = np.array([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
-                        np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
-    S012_f = np.array([((ppc["branch"][:, PF].real +
-                         1j * ppc["branch"][:, QF].real))
-                       for ppc in [ppc0, ppc1, ppc2]])
-    S012_t = np.array([((ppc["branch"][:, PT].real +
-                         1j * ppc["branch"][:, QT].real))
-                       for ppc in [ppc0, ppc1, ppc2]])
+    V012_f = np.array(
+        [
+            (
+                ppc["bus"][br_from_idx, VM]
+                * ppc["bus"][br_from_idx, BASE_KV]
+                * np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))
+            ).flatten()
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
+    V012_t = np.array(
+        [
+            (
+                ppc["bus"][br_to_idx, VM]
+                * ppc["bus"][br_to_idx, BASE_KV]
+                * np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))
+            ).flatten()
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
+    S012_f = np.array(
+        [
+            (ppc["branch"][:, PF].real + 1j * ppc["branch"][:, QF].real)
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
+    S012_t = np.array(
+        [
+            (ppc["branch"][:, PT].real + 1j * ppc["branch"][:, QT].real)
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
     I012_f = I_from_SV_elementwise(S012_f, V012_f / np.sqrt(3))
     I012_t = I_from_SV_elementwise(S012_t, V012_t / np.sqrt(3))
 
@@ -118,12 +164,14 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
         pl_mw = np.zeros_like(pf_mw)
         ql_mvar = np.zeros_like(q_from_mvar)
 
-    with np.errstate(invalid='ignore'):
+    with np.errstate(invalid="ignore"):
         i_ka = np.max(i_ft[f:t], axis=1)
     i_from_ka = i_ft[f:t][:, 0]
     i_to_ka = i_ft[f:t][:, 1]
     line_df = net["line"]
-    i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    i_max = (
+        line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    )
     from_bus = ppc["branch"][f:t, F_BUS].real.astype(np.int64)
     to_bus = ppc["branch"][f:t, T_BUS].real.astype(np.int64)
 
@@ -148,18 +196,30 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     res_line_df["loading_percent"].values[:] = loading * 100
 
     # if consider_line_temperature, add resulting r_ohm_per_km to net.res_line
-    if net["_options"]["consider_line_temperature"] or net["_options"].get("tdpf", False):
+    if net["_options"]["consider_line_temperature"] or net["_options"].get(
+        "tdpf", False
+    ):
         base_kv = ppc["bus"][from_bus, BASE_KV]
         baseR = np.square(base_kv) / net.sn_mva
         length_km = line_df.length_km.values
         parallel = line_df.parallel.values
-        res_line_df["r_ohm_per_km"] = ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
+        res_line_df["r_ohm_per_km"] = (
+            ppc["branch"][f:t, BR_R].real / length_km * baseR * parallel
+        )
 
         if net["_options"].get("tdpf", False):
-            tdpf_lines = ppc["internal"]['branch_is'][f:t] & np.nan_to_num(ppc['branch'][f:t, TDPF]).real.astype(bool)
-            res_line_df.loc[tdpf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"]["r_theta_kelvin_per_mw"]
-            no_tdpf_t = line_df.loc[~tdpf_lines].get("temperature_degree_celsius", default=20.)
-            res_line_df.loc[tdpf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]
+            tdpf_lines = ppc["internal"]["branch_is"][f:t] & np.nan_to_num(
+                ppc["branch"][f:t, TDPF]
+            ).real.astype(bool)
+            res_line_df.loc[tdpf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"][
+                "r_theta_kelvin_per_mw"
+            ]
+            no_tdpf_t = line_df.loc[~tdpf_lines].get(
+                "temperature_degree_celsius", default=20.0
+            )
+            res_line_df.loc[tdpf_lines, "temperature_degree_celsius"] = ppc["internal"][
+                "T"
+            ]
             res_line_df.loc[~tdpf_lines, "temperature_degree_celsius"] = no_tdpf_t
 
 
@@ -186,7 +246,9 @@ def _get_line_dc_results(net, ppc):
     i_ka = np.maximum(i_from_ka, i_to_ka)
 
     line_df = net["line_dc"]
-    i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    i_max = (
+        line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    )
 
     # write to line
     res_line_df = net["res_line_dc"]
@@ -204,16 +266,24 @@ def _get_line_dc_results(net, ppc):
     res_line_df["loading_percent"].values[:] = loading * 100
 
     # if consider_line_temperature, add resulting r_ohm_per_km to net.res_line
-    if net["_options"]["consider_line_temperature"] or net["_options"].get("tdpf", False):
+    if net["_options"]["consider_line_temperature"] or net["_options"].get(
+        "tdpf", False
+    ):
         baseR = np.square(base_v_kv) / net.sn_mva
         length_km = line_df.length_km.values
         parallel = line_df.parallel.values
-        res_line_df["r_ohm_per_km"] = ppc["branch_dc"][f:t, DC_BR_R].real / length_km * baseR * parallel
+        res_line_df["r_ohm_per_km"] = (
+            ppc["branch_dc"][f:t, DC_BR_R].real / length_km * baseR * parallel
+        )
 
         if net["_options"].get("tdpf", False):
-            tdpf_lines = ppc["internal"]['branch_dc_is'][f:t] & np.nan_to_num(ppc['branch_dc'][f:t, DC_TDPF]).real.astype(bool)
+            tdpf_lines = ppc["internal"]["branch_dc_is"][f:t] & np.nan_to_num(
+                ppc["branch_dc"][f:t, DC_TDPF]
+            ).real.astype(bool)
             # res_line_df.loc[tdpf_lines, "r_theta_kelvin_per_mw"] = ppc["internal"]["r_theta_kelvin_per_mw"]  # todo for dc
-            no_tdpf_t = line_df.loc[~tdpf_lines].get("temperature_degree_celsius", default=20.)
+            no_tdpf_t = line_df.loc[~tdpf_lines].get(
+                "temperature_degree_celsius", default=20.0
+            )
             # res_line_df.loc[tdpf_lines, "temperature_degree_celsius"] = ppc["internal"]["T"]  # todo for DC
             res_line_df.loc[~tdpf_lines, "temperature_degree_celsius"] = no_tdpf_t
 
@@ -222,19 +292,25 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     # create res_line_vals which are written to the pandas dataframe
     ac = net["_options"]["ac"]
 
-    if not "line" in net._pd2ppc_lookups["branch"]:
+    if "line" not in net._pd2ppc_lookups["branch"]:
         return
 
     f, t = net._pd2ppc_lookups["branch"]["line"]
     I012_from_ka = I012_f[:, f:t]
     I012_to_ka = I012_t[:, f:t]
     line_df = net["line"]
-    i_max_phase = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    i_max_phase = (
+        line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
+    )
 
-    Vabc_f, Vabc_t, Iabc_f, Iabc_t = [sequence_to_phase(X012) for X012 in
-                                      [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
-    Sabc_f, Sabc_t = [S_from_VI_elementwise(*Xabc_tup) / np.sqrt(3) for Xabc_tup in
-                      [(Vabc_f, Iabc_f), (Vabc_t, Iabc_t)]]
+    Vabc_f, Vabc_t, Iabc_f, Iabc_t = [
+        sequence_to_phase(X012)
+        for X012 in [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]
+    ]
+    Sabc_f, Sabc_t = [
+        S_from_VI_elementwise(*Xabc_tup) / np.sqrt(3)
+        for Xabc_tup in [(Vabc_f, Iabc_f), (Vabc_t, Iabc_t)]
+    ]
     # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
     Pabcf_mw = Sabc_f.real
     Qabcf_mvar = Sabc_f.imag
@@ -257,9 +333,9 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
 
     In_f_ka_complex = Iabc_f_ka_complex.sum(axis=0)
     In_f_ka = np.abs(In_f_ka_complex)
-#    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
+    #    In_f_ia_n_degree = np.angle(In_f_ka_complex).flatten()*180/np.pi
     In_t_ka_complex = Iabc_t_ka_complex.sum(axis=0)
-#    In_t_ia_n_degree = np.angle(In_t_ka_complex).flatten()*180/np.pi
+    #    In_t_ia_n_degree = np.angle(In_t_ka_complex).flatten()*180/np.pi
     In_t_ka = np.abs(In_t_ka_complex)
     In_ka = np.maximum.reduce([In_t_ka, In_f_ka])
 
@@ -327,20 +403,34 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
         # calculate loading with rated current
         trafo_df = net["trafo"]
         vns = np.vstack([trafo_df["vn_hv_kv"].values, trafo_df["vn_lv_kv"].values]).T
-        lds_trafo = i_ft[f:t] * vns * np.sqrt(3) / trafo_df["sn_mva"].values[:, np.newaxis] * 100.
-        with np.errstate(invalid='ignore'):
+        lds_trafo = (
+            i_ft[f:t]
+            * vns
+            * np.sqrt(3)
+            / trafo_df["sn_mva"].values[:, np.newaxis]
+            * 100.0
+        )
+        with np.errstate(invalid="ignore"):
             ld_trafo = np.max(lds_trafo, axis=1)
     elif trafo_loading == "power":
         # calculate loading with rated loading
-        ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_mva"].values[:, np.newaxis] * 100., axis=1)
+        ld_trafo = np.max(
+            s_ft[f:t] / net["trafo"]["sn_mva"].values[:, np.newaxis] * 100.0, axis=1
+        )
     else:
         raise ValueError(
-            "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+            "Unknown transformer loading parameter %s - choose 'current' or 'power'"
+            % trafo_loading
+        )
     if any(net["trafo"]["df"].values <= 0):
-        raise UserWarning('Transformer rating factor df must be positive. Transformers with false '
-                          'rating factors: %s' % net["trafo"].query('df<=0').index.tolist())
+        raise UserWarning(
+            "Transformer rating factor df must be positive. Transformers with false "
+            "rating factors: %s" % net["trafo"].query("df<=0").index.tolist()
+        )
 
-    loading_percent = ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
+    loading_percent = (
+        ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
+    )
 
     hv_buses = ppc["branch"][f:t, F_BUS].real.astype(np.int64)
     lv_buses = ppc["branch"][f:t, T_BUS].real.astype(np.int64)
@@ -367,17 +457,21 @@ def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     ac = net["_options"]["ac"]
     trafo_loading = net["_options"]["trafo_loading"]
 
-    if not "trafo" in net._pd2ppc_lookups["branch"]:
+    if "trafo" not in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     I012_hv_ka = I012_f[:, f:t]
     I012_lv_ka = I012_t[:, f:t]
     trafo_df = net["trafo"]
 
-    Vabc_hv, Vabc_lv, Iabc_hv, Iabc_lv = [sequence_to_phase(X012) for X012 in
-                                          [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
-    Sabc_hv, Sabc_lv = [S_from_VI_elementwise(*Xabc_tup) / np.sqrt(3) for Xabc_tup in
-                        [(Vabc_hv, Iabc_hv), (Vabc_lv, Iabc_lv)]]
+    Vabc_hv, Vabc_lv, Iabc_hv, Iabc_lv = [
+        sequence_to_phase(X012)
+        for X012 in [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]
+    ]
+    Sabc_hv, Sabc_lv = [
+        S_from_VI_elementwise(*Xabc_tup) / np.sqrt(3)
+        for Xabc_tup in [(Vabc_hv, Iabc_hv), (Vabc_lv, Iabc_lv)]
+    ]
     # Todo: Check why the sqrt(3) is necessary in the previous line as opposed to _get_line_results()
     Pabc_hv_mw = Sabc_hv.real
     Qabc_hv_mvar = Sabc_hv.imag
@@ -396,18 +490,26 @@ def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     if trafo_loading == "current":
         trafo_df = net["trafo"]
         vns = np.vstack([trafo_df["vn_hv_kv"].values, trafo_df["vn_lv_kv"].values]).T
-        ld_trafo = np.maximum.reduce([np.asarray(Iabc_hv_ka) * vns[:, 0], np.asarray(Iabc_lv_ka) * vns[:, 1]])
-        ld_trafo = ld_trafo * np.sqrt(3) / trafo_df["sn_mva"].values * 100.
+        ld_trafo = np.maximum.reduce(
+            [np.asarray(Iabc_hv_ka) * vns[:, 0], np.asarray(Iabc_lv_ka) * vns[:, 1]]
+        )
+        ld_trafo = ld_trafo * np.sqrt(3) / trafo_df["sn_mva"].values * 100.0
     elif trafo_loading == "power":
         ld_trafo = np.maximum.reduce([np.abs(Sabc_hv), np.abs(Sabc_lv)])
-        ld_trafo = ld_trafo / net["trafo"]["sn_mva"].values[:, np.newaxis] * 3. * 100.
+        ld_trafo = ld_trafo / net["trafo"]["sn_mva"].values[:, np.newaxis] * 3.0 * 100.0
     else:
         raise ValueError(
-            "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+            "Unknown transformer loading parameter %s - choose 'current' or 'power'"
+            % trafo_loading
+        )
     if any(net["trafo"]["df"].values <= 0):
-        raise UserWarning('Transformer rating factor df must be positive. Transformers with false '
-                          'rating factors: %s' % net["trafo"].query('df<=0').index.tolist())
-    loading_percent = ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
+        raise UserWarning(
+            "Transformer rating factor df must be positive. Transformers with false "
+            "rating factors: %s" % net["trafo"].query("df<=0").index.tolist()
+        )
+    loading_percent = (
+        ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
+    )
 
     # write results to trafo dataframe
     res_trafo_df = net["res_trafo_3ph"]
@@ -432,11 +534,11 @@ def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     res_trafo_df["i_a_hv_ka"] = Iabc_hv_ka[0, :].flatten()
     res_trafo_df["i_b_hv_ka"] = Iabc_hv_ka[1, :].flatten()
     res_trafo_df["i_c_hv_ka"] = Iabc_hv_ka[2, :].flatten()
-#    res_trafo_df["i_n_hv_ka"] = In_hv_ka.flatten()
+    #    res_trafo_df["i_n_hv_ka"] = In_hv_ka.flatten()
     res_trafo_df["i_a_lv_ka"] = Iabc_lv_ka[0, :].flatten()
     res_trafo_df["i_b_lv_ka"] = Iabc_lv_ka[1, :].flatten()
     res_trafo_df["i_c_lv_ka"] = Iabc_lv_ka[2, :].flatten()
-#    res_trafo_df["i_n_lv_ka"] = In_lv_ka.flatten()
+    #    res_trafo_df["i_n_lv_ka"] = In_lv_ka.flatten()
     res_trafo_df["loading_a_percent"] = loading_percent[0, :]
     res_trafo_df["loading_b_percent"] = loading_percent[1, :]
     res_trafo_df["loading_c_percent"] = loading_percent[2, :]
@@ -491,16 +593,18 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
         ld_h = i_h * t3["vn_hv_kv"].values * np.sqrt(3) / t3["sn_hv_mva"].values * 100
         ld_m = i_m * t3["vn_mv_kv"].values * np.sqrt(3) / t3["sn_mv_mva"].values * 100
         ld_l = i_l * t3["vn_lv_kv"].values * np.sqrt(3) / t3["sn_lv_mva"].values * 100
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid="ignore"):
             ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
     elif trafo_loading == "power":
-        ld_h = s_ft[:, 0][f:hv] / t3["sn_hv_mva"].values * 100.
-        ld_m = s_ft[:, 1][hv:mv] / t3["sn_mv_mva"].values * 100.
-        ld_l = s_ft[:, 1][mv:lv] / t3["sn_lv_mva"].values * 100.
+        ld_h = s_ft[:, 0][f:hv] / t3["sn_hv_mva"].values * 100.0
+        ld_m = s_ft[:, 1][hv:mv] / t3["sn_mv_mva"].values * 100.0
+        ld_l = s_ft[:, 1][mv:lv] / t3["sn_lv_mva"].values * 100.0
         ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
     else:
         raise ValueError(
-            "Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+            "Unknown transformer loading parameter %s - choose 'current' or 'power'"
+            % trafo_loading
+        )
     loading_percent = ld_trafo
 
     hv_buses = ppc["branch"][f:hv, F_BUS].real.astype(np.int64)
@@ -509,7 +613,9 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
     lv_buses = ppc["branch"][mv:lv, T_BUS].real.astype(np.int64)
 
     # write results to trafo3w dataframe
-    res_trafo3w_df = net["res_trafo3w"] if suffix is None else net["res_trafo3w%s" % suffix]
+    res_trafo3w_df = (
+        net["res_trafo3w"] if suffix is None else net["res_trafo3w%s" % suffix]
+    )
 
     res_trafo3w_df["p_hv_mw"].values[:] = p_hv_mw
     res_trafo3w_df["q_hv_mvar"].values[:] = q_hv_mvar
@@ -536,7 +642,7 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
 def _get_impedance_results(net, ppc, i_ft, suffix=None):
     ac = net["_options"]["ac"]
 
-    if not "impedance" in net._pd2ppc_lookups["branch"]:
+    if "impedance" not in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["impedance"]
     pf_mw = ppc["branch"][f:t, (PF)].real
@@ -562,7 +668,9 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-    res_impedance_df = net["res_impedance"] if suffix is None else net["res_impedance%s" % suffix]
+    res_impedance_df = (
+        net["res_impedance"] if suffix is None else net["res_impedance%s" % suffix]
+    )
 
     res_impedance_df["p_from_mw"].values[:] = p_from_mw
     res_impedance_df["q_from_mvar"].values[:] = q_from_mvar
@@ -575,7 +683,9 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
 
 
 def _get_tcsc_results(net, ppc, suffix=None):
-    tcsc = net.get("tcsc")  # todo: it used to be "if len(net.tcsc) == 0:"  <- change back when pandamodels bug is fixed
+    tcsc = net.get(
+        "tcsc"
+    )  # todo: it used to be "if len(net.tcsc) == 0:"  <- change back when pandamodels bug is fixed
     if tcsc is None or len(tcsc) == 0:
         return
 
@@ -601,8 +711,10 @@ def _get_tcsc_results(net, ppc, suffix=None):
         pl_mw = p_from_mw + p_to_mw
         ql_mvar = q_from_mvar + q_to_mvar
     else:
-        raise NotImplementedError("TCSC not implemented for algorithm != 'ac' - writing zeros to tcsc results. "
-                                  "Results for other elements are as if TCSC elements were open switches.")
+        raise NotImplementedError(
+            "TCSC not implemented for algorithm != 'ac' - writing zeros to tcsc results. "
+            "Results for other elements are as if TCSC elements were open switches."
+        )
         zeros_ = np.zeros(t)
         # this looks like a pyramid
         p_from_mw = zeros_
@@ -619,7 +731,9 @@ def _get_tcsc_results(net, ppc, suffix=None):
     # todo for suffix not None
     res_tcsc_df = net["res_tcsc"] if suffix is None else net["res_tcsc%s" % suffix]
 
-    res_tcsc_df["thyristor_firing_angle_degree"].values[:] = np.rad2deg(ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real)
+    res_tcsc_df["thyristor_firing_angle_degree"].values[:] = np.rad2deg(
+        ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real
+    )
     res_tcsc_df["x_ohm"].values[:] = ppc["tcsc"][f:t, TCSC_X_PU].real * baseZ
     res_tcsc_df["p_from_mw"].values[:] = p_from_mw
     res_tcsc_df["q_from_mvar"].values[:] = q_from_mvar
@@ -639,17 +753,23 @@ def _get_tcsc_results(net, ppc, suffix=None):
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     ac = net["_options"]["ac"]
 
-    if not "xward" in net._pd2ppc_lookups["branch"]:
+    if "xward" not in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["xward"]
     p_branch_xward = ppc["branch"][f:t, PF].real
-    net["res_xward"]["p_mw"].values[:] = net["res_xward"]["p_mw"].values + p_branch_xward
+    net["res_xward"]["p_mw"].values[:] = (
+        net["res_xward"]["p_mw"].values + p_branch_xward
+    )
     if ac:
         q_branch_xward = ppc["branch"][f:t, QF].real
-        net["res_xward"]["q_mvar"].values[:] = net["res_xward"]["q_mvar"].values + q_branch_xward
+        net["res_xward"]["q_mvar"].values[:] = (
+            net["res_xward"]["q_mvar"].values + q_branch_xward
+        )
     else:
         q_branch_xward = np.zeros(len(p_branch_xward))
-    b_pp, p, q = _sum_by_group(net["xward"]["bus"].values, p_branch_xward, q_branch_xward)
+    b_pp, p, q = _sum_by_group(
+        net["xward"]["bus"].values, p_branch_xward, q_branch_xward
+    )
     b_ppc = bus_lookup_aranged[b_pp]
 
     pq_buses[b_ppc, 0] += p
@@ -670,7 +790,7 @@ def _get_switch_results(net, ppc, i_ft, suffix=None):
 
     if "switch" in net._pd2ppc_lookups["branch"]:
         f, t = net._pd2ppc_lookups["branch"]["switch"]
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid="ignore"):
             i_ka = np.max(i_ft[f:t], axis=1)
         net[res_switch_df].loc[net._impedance_bb_switches, "i_ka"] = i_ka
 
@@ -680,35 +800,43 @@ def _get_switch_results(net, ppc, i_ft, suffix=None):
         p_to_mw = ppc["branch"][f:t, PT].real
         q_to_mvar = ppc["branch"][f:t, QT].real
 
-        net[res_switch_df].loc[net._impedance_bb_switches,"p_from_mw"] = p_from_mw
-        net[res_switch_df].loc[net._impedance_bb_switches,"q_from_mvar"] = q_from_mvar
-        net[res_switch_df].loc[net._impedance_bb_switches,"p_to_mw"] = p_to_mw
-        net[res_switch_df].loc[net._impedance_bb_switches,"q_to_mvar"] = q_to_mvar
+        net[res_switch_df].loc[net._impedance_bb_switches, "p_from_mw"] = p_from_mw
+        net[res_switch_df].loc[net._impedance_bb_switches, "q_from_mvar"] = q_from_mvar
+        net[res_switch_df].loc[net._impedance_bb_switches, "p_to_mw"] = p_to_mw
+        net[res_switch_df].loc[net._impedance_bb_switches, "q_to_mvar"] = q_to_mvar
 
     _copy_switch_results_from_branches(net, suffix)
     if "in_ka" in net.switch.columns:
-        net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
+        net[res_switch_df]["loading_percent"] = (
+            net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
+        )
 
 
 def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka"):
     res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
 
-    switch_lines = net.switch.element[net.switch.et=="l"]
+    switch_lines = net.switch.element[net.switch.et == "l"]
     if len(switch_lines) > 0:
         res_line_df = "res_line" if suffix is None else "res_line%s" % suffix
-        net[res_switch_df].loc[switch_lines.index, current_parameter] = net[res_line_df].loc[switch_lines.values, current_parameter].values
+        net[res_switch_df].loc[switch_lines.index, current_parameter] = (
+            net[res_line_df].loc[switch_lines.values, current_parameter].values
+        )
 
-    switch_trafo = net.switch[net.switch.et.values=="t"]
+    switch_trafo = net.switch[net.switch.et.values == "t"]
     if len(switch_trafo) > 0:
         res_trafo_df = "res_trafo" if suffix is None else "res_trafo%s" % suffix
         for side in ["hv", "lv"]:
-            buses = net.trafo["{}_bus".format(side)].loc[switch_trafo.element.values].values
-            side_switch_trafo = switch_trafo[switch_trafo.bus.values==buses]
+            buses = (
+                net.trafo["{}_bus".format(side)].loc[switch_trafo.element.values].values
+            )
+            side_switch_trafo = switch_trafo[switch_trafo.bus.values == buses]
             switches = side_switch_trafo.index
             trafos = side_switch_trafo.element.values
             current, unit = current_parameter.split("_")
             side_current = "{}_{}_{}".format(current, side, unit)
-            net[res_switch_df].loc[switches, current_parameter] = net[res_trafo_df].loc[trafos, side_current].values
+            net[res_switch_df].loc[switches, current_parameter] = (
+                net[res_trafo_df].loc[trafos, side_current].values
+            )
     open_switches = ~net.switch.closed.values
     if any(open_switches):
         net[res_switch_df].loc[open_switches, current_parameter] = 0

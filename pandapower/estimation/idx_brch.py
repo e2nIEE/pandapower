@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
 IM_FROM = 0
 IM_FROM_STD = 1
 IM_TO = 2

@@ -10,13 +10,14 @@ except ImportError:
 
 try:
     from julia.api import Julia
+
     Julia(compiled_modules=False)
     from julia import Main
     from julia import Pkg
     from julia import Base
 
     julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError) as e:
+except (ImportError, RuntimeError, UnsupportedPythonError):
     julia_installed = False
 
 import logging
@@ -34,8 +35,7 @@ def test_julia_connection():
     try:
         julia.Julia()
     except:
-        raise UserWarning(
-            "cannot connect to julia, check pyjulia configuration")
+        raise UserWarning("cannot connect to julia, check pyjulia configuration")
 
 
 @pytest.mark.slow
@@ -97,5 +97,5 @@ def test_pandamodels_dev_mode():
     Pkg.resolve()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

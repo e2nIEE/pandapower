@@ -11,10 +11,13 @@ import pytest
 from pandapower.create import create_empty_network, create_switch
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.run import runpp
-from pandapower.test.loadflow.result_test_network_generator import add_test_trafo3w, \
-    add_test_trafo, add_test_line, \
-    add_test_impedance, \
-    add_test_bus_bus_switch
+from pandapower.test.loadflow.result_test_network_generator import (
+    add_test_trafo3w,
+    add_test_trafo,
+    add_test_line,
+    add_test_impedance,
+    add_test_bus_bus_switch,
+)
 from pandapower.test.loadflow.test_scenarios import network_with_trafo3ws
 from pandapower.topology.create_graph import create_nxgraph, graph_tool_available
 
@@ -37,7 +40,10 @@ def test_line():
 
         # check respect_switches
         mg = create_nxgraph(net, respect_switches=False, library=library)
-        assert set(mg.get_edge_data(f, t).keys()) == {("line", line), ("line", open_loop_line)}
+        assert set(mg.get_edge_data(f, t).keys()) == {
+            ("line", line),
+            ("line", open_loop_line),
+        }
         assert set(mg.nodes()) == set(net.bus.index)
 
         # check not including lines
@@ -51,14 +57,19 @@ def test_line():
         par = mg.get_edge_data(f, t, key=("line", line))
         r = line_tab.length_km / line_tab.parallel * line_tab.r_ohm_per_km
         x = line_tab.length_km / line_tab.parallel * line_tab.x_ohm_per_km
-        z = np.sqrt(r ** 2 + x ** 2)
+        z = np.sqrt(r**2 + x**2)
         assert np.isclose(par["r_ohm"], r)
         assert np.isclose(par["x_ohm"], x)
         assert np.isclose(par["z_ohm"], z)
         assert np.isclose(par["weight"], line_tab.length_km)
         assert par["path"] == 1
 
-        mg = create_nxgraph(net, calc_branch_impedances=True, branch_impedance_unit="pu", library=library)
+        mg = create_nxgraph(
+            net,
+            calc_branch_impedances=True,
+            branch_impedance_unit="pu",
+            library=library,
+        )
         line_tab = net.line.loc[line]
         par = mg.get_edge_data(f, t, key=("line", line))
         runpp(net)
@@ -81,7 +92,10 @@ def test_trafo():
 
         # check respect_switches
         mg = create_nxgraph(net, respect_switches=False, library=library)
-        assert set(mg.get_edge_data(f, t).keys()) == {("trafo", trafo), ("trafo", open_loop_trafo)}
+        assert set(mg.get_edge_data(f, t).keys()) == {
+            ("trafo", trafo),
+            ("trafo", open_loop_trafo),
+        }
         assert set(mg.nodes()) == set(net.bus.index)
 
         # check not including trafos
@@ -97,7 +111,7 @@ def test_trafo():
         mg = create_nxgraph(net, calc_branch_impedances=True, library=library)
         trafo_tab = net.trafo.loc[trafo]
         par = mg.get_edge_data(f, t, key=("trafo", trafo))
-        base_Z = trafo_tab.sn_mva / (trafo_tab.vn_hv_kv ** 2)
+        base_Z = trafo_tab.sn_mva / (trafo_tab.vn_hv_kv**2)
         r = (trafo_tab.vkr_percent / 100) / base_Z / trafo_tab.parallel
         z = (trafo_tab.vk_percent / 100) / base_Z / trafo_tab.parallel
         assert np.isclose(par["r_ohm"], r)
@@ -105,7 +119,12 @@ def test_trafo():
         assert par["weight"] == 0
         assert par["path"] == 1
 
-        mg = create_nxgraph(net, calc_branch_impedances=True, branch_impedance_unit="pu", library=library)
+        mg = create_nxgraph(
+            net,
+            calc_branch_impedances=True,
+            branch_impedance_unit="pu",
+            library=library,
+        )
         par = mg.get_edge_data(f, t, key=("trafo", trafo))
         runpp(net)
         f, t = net._pd2ppc_lookups["branch"]["trafo"]
@@ -129,7 +148,10 @@ def test_trafo3w():
         net.trafo3w.at[t2, "in_service"] = True
         mg = create_nxgraph(net, library=library)
         for f, t in combinations([hv, mv, lv], 2):
-            assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1), ("trafo3w", t2)}
+            assert set(mg.get_edge_data(f, t).keys()) == {
+                ("trafo3w", t1),
+                ("trafo3w", t2),
+            }
             assert set(mg.nodes()) == set(net.bus.index)
 
         for sb in [hv, mv, lv]:
@@ -139,7 +161,10 @@ def test_trafo3w():
                 if sb == f or t == sb:
                     assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t2)}
                 else:
-                    assert set(mg.get_edge_data(f, t).keys()) == {("trafo3w", t1), ("trafo3w", t2)}
+                    assert set(mg.get_edge_data(f, t).keys()) == {
+                        ("trafo3w", t1),
+                        ("trafo3w", t2),
+                    }
                 assert set(mg.nodes()) == set(net.bus.index)
             net.switch.at[sw, "closed"] = True
 
@@ -154,9 +179,9 @@ def test_trafo3w_impedances(network_with_trafo3ws):
         mg = create_nxgraph(net, calc_branch_impedances=True, library=library)
         trafo3 = net.trafo3w.loc[t3]
         hv, mv, lv = trafo3.hv_bus, trafo3.mv_bus, trafo3.lv_bus
-        base_Z_hv = min(trafo3.sn_hv_mva, trafo3.sn_mv_mva) / (trafo3.vn_hv_kv ** 2)
-        base_Z_mv = min(trafo3.sn_mv_mva, trafo3.sn_lv_mva) / (trafo3.vn_hv_kv ** 2)
-        base_Z_lv = min(trafo3.sn_hv_mva, trafo3.sn_lv_mva) / (trafo3.vn_hv_kv ** 2)
+        base_Z_hv = min(trafo3.sn_hv_mva, trafo3.sn_mv_mva) / (trafo3.vn_hv_kv**2)
+        base_Z_mv = min(trafo3.sn_mv_mva, trafo3.sn_lv_mva) / (trafo3.vn_hv_kv**2)
+        base_Z_lv = min(trafo3.sn_hv_mva, trafo3.sn_lv_mva) / (trafo3.vn_hv_kv**2)
 
         par = mg.get_edge_data(hv, mv, key=("trafo3w", t3))
         assert np.isclose(par["r_ohm"], (trafo3.vkr_hv_percent / 100) / base_Z_hv)
@@ -195,7 +220,12 @@ def test_impedance():
         assert set(mg.nodes()) == set(net.bus.index)
 
         # check edge attributes
-        mg = create_nxgraph(net, calc_branch_impedances=True, branch_impedance_unit="pu", library=library)
+        mg = create_nxgraph(
+            net,
+            calc_branch_impedances=True,
+            branch_impedance_unit="pu",
+            library=library,
+        )
         runpp(net)
 
         par = mg.get_edge_data(f, t, key=("impedance", impedance))
@@ -228,7 +258,9 @@ def test_bus_bus_switches():
         assert set(mg.get_edge_data(f, t)) == {("switch", s)}
         assert set(mg.nodes()) == set(net.bus.index)
 
-        mg = create_nxgraph(net, respect_switches=False, calc_branch_impedances=True, library=library)
+        mg = create_nxgraph(
+            net, respect_switches=False, calc_branch_impedances=True, library=library
+        )
         # TODO check R/X/Z values
         par = mg.get_edge_data(f, t, key=("switch", s))
         assert np.isclose(par["r_ohm"], 0)
@@ -250,11 +282,15 @@ def test_branch_impedance_unit():
     net = create_empty_network()
     with pytest.raises(ValueError) as exception_info:
         mg = create_nxgraph(net, branch_impedance_unit="p.u.")
-    assert str(exception_info.value) == "branch impedance unit can be either 'ohm' or 'pu'"
+    assert (
+        str(exception_info.value) == "branch impedance unit can be either 'ohm' or 'pu'"
+    )
 
 
-@pytest.mark.xfail(reason="This test fails, since graph_tool bus indices must be a range(0, n_buses). "
-                          "If a bus is removed, graph-tool is not working.")
+@pytest.mark.xfail(
+    reason="This test fails, since graph_tool bus indices must be a range(0, n_buses). "
+    "If a bus is removed, graph-tool is not working."
+)
 def test_nogo_graph_tool():
     net = create_empty_network()
     add_test_line(net)
@@ -264,5 +300,5 @@ def test_nogo_graph_tool():
     assert set(mg.nodes()) == set(net.bus.index) - {0}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

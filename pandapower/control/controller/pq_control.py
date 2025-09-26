@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.control.controller.const_control import ConstControl
+
 try:
     from pandaplan.core import pplog
 except:
@@ -52,11 +53,33 @@ class PQController(ConstControl):
 
     """
 
-    def __init__(self, net, element_index, element="sgen", max_p_error=0.0001, max_q_error=0.0001,
-                 pq_simultaneity_factor=1., converter_sizing_pu=1., data_source=None, profile_scale=1., in_service=True,
-                 ts_absolute=True, order=0, level=0, **kwargs):
-        super().__init__(net, element=element, variable="p_mw", element_index=element_index,
-                         in_service=in_service, order=order, level=level, **kwargs)
+    def __init__(
+        self,
+        net,
+        element_index,
+        element="sgen",
+        max_p_error=0.0001,
+        max_q_error=0.0001,
+        pq_simultaneity_factor=1.0,
+        converter_sizing_pu=1.0,
+        data_source=None,
+        profile_scale=1.0,
+        in_service=True,
+        ts_absolute=True,
+        order=0,
+        level=0,
+        **kwargs,
+    ):
+        super().__init__(
+            net,
+            element=element,
+            variable="p_mw",
+            element_index=element_index,
+            in_service=in_service,
+            order=order,
+            level=level,
+            **kwargs,
+        )
 
         # read attributes from net
         self.element_index = element_index
@@ -71,7 +94,7 @@ class PQController(ConstControl):
 
         self.sign = 1
         if element == "sgen":
-            self.sign *=-1
+            self.sign *= -1
         # Simultaneity factor
         self.pq_simultaneity_factor = pq_simultaneity_factor
 
@@ -97,8 +120,10 @@ class PQController(ConstControl):
     def set_p_profile(self, p_profile, profile_from_name):
         if profile_from_name:
             if p_profile:
-                logger.warning("Given parameter 'p_profile' will be discarded "
-                               "since 'profile_from_name' has been set to True.")
+                logger.warning(
+                    "Given parameter 'p_profile' will be discarded "
+                    "since 'profile_from_name' has been set to True."
+                )
             self.p_profile = [f"P_{name}" for name in self.element_names]
         else:
             self.p_profile = p_profile
@@ -106,8 +131,10 @@ class PQController(ConstControl):
     def set_q_profile(self, q_profile, profile_from_name):
         if profile_from_name:
             if q_profile:
-                logger.warning("Given parameter 'q_profile' will be discarded "
-                               "since 'profile_from_name' has been set to True.")
+                logger.warning(
+                    "Given parameter 'q_profile' will be discarded "
+                    "since 'profile_from_name' has been set to True."
+                )
             self.q_profile = [f"Q_{name}" for name in self.element_names]
         else:
             self.q_profile = q_profile
@@ -115,15 +142,29 @@ class PQController(ConstControl):
     def __repr__(self):
         rep = super(PQController, self).__repr__()
 
-        for member in ["element_index", "bus", "p_mw", "q_mvar", "sn_mva", "element_names",
-                       "gen_type", "element_in_service", "pq_simultaneity_factor",
-                       "converter_sizing_pu", "data_source", "profile_scale", "p_profile", "q_profile",
-                       "ts_absolute", "max_p_error",
-                       "max_q_error"]:
+        for member in [
+            "element_index",
+            "bus",
+            "p_mw",
+            "q_mvar",
+            "sn_mva",
+            "element_names",
+            "gen_type",
+            "element_in_service",
+            "pq_simultaneity_factor",
+            "converter_sizing_pu",
+            "data_source",
+            "profile_scale",
+            "p_profile",
+            "q_profile",
+            "ts_absolute",
+            "max_p_error",
+            "max_q_error",
+        ]:
             rep += ("\n" + member + ":").ljust(20)
             d = locals()
-            exec('value = self.' + member, d)
-            rep += str(d['value'])
+            exec("value = self." + member, d)
+            rep += str(d["value"])
 
         return rep
 
@@ -137,20 +178,30 @@ class PQController(ConstControl):
 
         if self.data_source is not None:
             if self.p_profile is not None:
-                self.p_mw = self.pq_simultaneity_factor * \
-                            self.data_source.get_time_step_value(time_step=time,
-                                                                 profile_name=self.p_profile,
-                                                                 scale_factor=self.profile_scale)
+                self.p_mw = (
+                    self.pq_simultaneity_factor
+                    * self.data_source.get_time_step_value(
+                        time_step=time,
+                        profile_name=self.p_profile,
+                        scale_factor=self.profile_scale,
+                    )
+                )
 
             if self.q_profile is not None:
-                self.q_mvar = self.pq_simultaneity_factor * \
-                              self.data_source.get_time_step_value(time_step=time,
-                                                                   profile_name=self.q_profile,
-                                                                   scale_factor=self.profile_scale)
+                self.q_mvar = (
+                    self.pq_simultaneity_factor
+                    * self.data_source.get_time_step_value(
+                        time_step=time,
+                        profile_name=self.q_profile,
+                        scale_factor=self.profile_scale,
+                    )
+                )
 
             if not self.ts_absolute:
                 if self.sn_mva.isnull().any():
-                    logger.error(f"There are PQ controlled elements with NaN sn_mva values.")
+                    logger.error(
+                        "There are PQ controlled elements with NaN sn_mva values."
+                    )
                 self.p_mw = self.p_mw * self.sn_mva
                 self.q_mvar = self.q_mvar * self.sn_mva
 
@@ -189,24 +240,29 @@ class PQController(ConstControl):
             **q_mvar** - Reactive power limited to inverter sizing
         """
         if n_nan_sn := sum(self.sn_mva.isnull()):
-            logger.warning(f"Limiting to inverter size will result in NaN for the {n_nan_sn} PQ "
-                           "controlled elements with NaN sn_mva values.")
+            logger.warning(
+                f"Limiting to inverter size will result in NaN for the {n_nan_sn} PQ "
+                "controlled elements with NaN sn_mva values."
+            )
         # limit output to inverter sizing
-        if (np.sqrt(p_mw ** 2 + q_mvar ** 2) > self.converter_sizing_pu * self.sn_mva).any():
-           # limit Q first
+        if (
+            np.sqrt(p_mw**2 + q_mvar**2) > self.converter_sizing_pu * self.sn_mva
+        ).any():
+            # limit Q first
             # t = q_mvar
             # q_mvar = sign(q_mvar) * math.sqrt((self.converter_sizing_pu * self.sn_mva) ** 2 - p_mw ** 2)
-            sn_mva = self.converter_sizing_pu *self.sn_mva
-            max_q_mvar = np.sqrt(sn_mva ** 2 - p_mw ** 2)
-            q_mvar = np.min((q_mvar*self.sign, max_q_mvar*self.sign))
+            sn_mva = self.converter_sizing_pu * self.sn_mva
+            max_q_mvar = np.sqrt(sn_mva**2 - p_mw**2)
+            q_mvar = np.min((q_mvar * self.sign, max_q_mvar * self.sign))
 
-            logger.debug("Note: Q_mvar has been limited"
-                             "respect to the inverter sizing.")
+            logger.debug("Note: Q_mvar has been limitedrespect to the inverter sizing.")
             if np.isnan(max_q_mvar).any():  # limit P if it already exceeds Sn
                 q_mvar = 0
                 p_mw = self.converter_sizing_pu * self.sn_mva
-                logger.debug("Note: P_mw has been limited and"
-                             "q_mvar has been set to 0 in respect to sn_mva ")
+                logger.debug(
+                    "Note: P_mw has been limited and"
+                    "q_mvar has been set to 0 in respect to sn_mva "
+                )
         return p_mw, q_mvar
 
     def initialize_control(self, net):

@@ -11,13 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class MyTestControl(ConstController):
-
     def __new__(cls):
         obj = super().__new__(cls)
         return obj
 
-class ConstControl(ConstController):
 
+class ConstControl(ConstController):
     def is_converged(self, net):
-        self.check_word = 'banana'
+        self.check_word = "banana"
         return super().is_converged(net)

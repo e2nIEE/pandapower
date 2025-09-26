@@ -6,12 +6,19 @@
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_dcline_trace, create_scale_trace,  create_trafo_trace, draw_traces, \
-    _create_node_trace
+from pandapower.plotting.plotly.traces import (
+    create_bus_trace,
+    create_line_trace,
+    create_dcline_trace,
+    create_scale_trace,
+    create_trafo_trace,
+    draw_traces,
+    _create_node_trace,
+)
 from pandapower.plotting.plotly.mapbox_plot import *
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,71 +27,183 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     if element == "bus":
         # load_str, sgen_str, vsc_str = [], [], []
         load_str, sgen_str = [], []
-        for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            load_str.append("Load: {:.3f} MW<br />".format(ln) if ln != 0. else "")
+        for ln in [
+            net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index
+        ]:
+            load_str.append("Load: {:.3f} MW<br />".format(ln) if ln != 0.0 else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if s != 0. else "")
+            sgen_str.append(
+                "Static generation: {:.3f} MW<br />".format(s) if s != 0.0 else ""
+            )
         # we do not really need vsc result for every bus:
-        #for vn in [net.res_vsc.loc[net.vsc.bus == b, "p_mw"].fillna(0).sum() for b in net.bus.index]:
+        # for vn in [net.res_vsc.loc[net.vsc.bus == b, "p_mw"].fillna(0).sum() for b in net.bus.index]:
         #    vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
         hoverinfo = (
-                "Index: " + net.bus.index.astype(str) + '<br />' +
-                "Name: " + net.bus['name'].astype(str) + '<br />' +
-                'V_n: ' + net.bus['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + load_str + sgen_str).tolist()
+            "Index: "
+            + net.bus.index.astype(str)
+            + "<br />"
+            + "Name: "
+            + net.bus["name"].astype(str)
+            + "<br />"
+            + "V_n: "
+            + net.bus["vn_kv"].round(precision).astype(str)
+            + " kV"
+            + "<br />"
+            + load_str
+            + sgen_str
+        ).tolist()
     elif element == "bus_dc":
         vsc_str = []
-        for vn in [net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum() for b in net.bus_dc.index]:
-            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
+        for vn in [
+            net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum()
+            for b in net.bus_dc.index
+        ]:
+            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0.0 else "")
         hoverinfo = (
-                "Index: " + net.bus_dc.index.astype(str) + '<br />' +
-                "Name: " + net.bus_dc['name'].astype(str) + '<br />' +
-                'V_n: ' + net.bus_dc['vn_kv'].round(precision).astype(str) + ' kV' + '<br />' + vsc_str).tolist()
+            "Index: "
+            + net.bus_dc.index.astype(str)
+            + "<br />"
+            + "Name: "
+            + net.bus_dc["name"].astype(str)
+            + "<br />"
+            + "V_n: "
+            + net.bus_dc["vn_kv"].round(precision).astype(str)
+            + " kV"
+            + "<br />"
+            + vsc_str
+        ).tolist()
     elif element == "line":
         hoverinfo = (
-                "Index: " + net.line.index.astype(str) + '<br />' +
-                "Name: " + net.line['name'].astype(str) + '<br />' +
-                'Length: ' + net.line['length_km'].round(precision).astype(str) + ' km' + '<br />' +
-                'R: ' + (net.line['length_km'] * net.line['r_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
-                + ' Ohm' + '<br />'
-                + 'X: ' + (net.line['length_km'] * net.line['x_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
-                + ' Ohm'
-                + net.line['parallel'].apply(lambda x: f'<br />Parallel: {x}' if x > 1 else  '<br />')).tolist()
+            "Index: "
+            + net.line.index.astype(str)
+            + "<br />"
+            + "Name: "
+            + net.line["name"].astype(str)
+            + "<br />"
+            + "Length: "
+            + net.line["length_km"].round(precision).astype(str)
+            + " km"
+            + "<br />"
+            + "R: "
+            + (net.line["length_km"] * net.line["r_ohm_per_km"] / net.line["parallel"])
+            .round(precision)
+            .astype(str)
+            + " Ohm"
+            + "<br />"
+            + "X: "
+            + (net.line["length_km"] * net.line["x_ohm_per_km"] / net.line["parallel"])
+            .round(precision)
+            .astype(str)
+            + " Ohm"
+            + net.line["parallel"].apply(
+                lambda x: f"<br />Parallel: {x}" if x > 1 else "<br />"
+            )
+        ).tolist()
     elif element == "line_dc":
         hoverinfo = (
-                "Index: " + net.line_dc.index.astype(str) + '<br />' +
-                "Name: " + net.line_dc['name'].astype(str) + '<br />' +
-                'Length: ' + net.line_dc['length_km'].round(precision).astype(str) + ' km' + '<br />' +
-                'R: ' + (net.line_dc['length_km'] * net.line['r_ohm_per_km'] / net.line['parallel']).round(precision).astype(str)
-                + ' Ohm' + '<br />'
-                + net.line_dc['parallel'].apply(lambda x: f'<br />Parallel: {x}' if x > 1 else  '<br />')).tolist()
+            "Index: "
+            + net.line_dc.index.astype(str)
+            + "<br />"
+            + "Name: "
+            + net.line_dc["name"].astype(str)
+            + "<br />"
+            + "Length: "
+            + net.line_dc["length_km"].round(precision).astype(str)
+            + " km"
+            + "<br />"
+            + "R: "
+            + (
+                net.line_dc["length_km"]
+                * net.line["r_ohm_per_km"]
+                / net.line["parallel"]
+            )
+            .round(precision)
+            .astype(str)
+            + " Ohm"
+            + "<br />"
+            + net.line_dc["parallel"].apply(
+                lambda x: f"<br />Parallel: {x}" if x > 1 else "<br />"
+            )
+        ).tolist()
     elif element == "trafo":
         hoverinfo = (
-                "Index: " + net.trafo.index.astype(str) + '<br />' +
-                "Name: " + net.trafo['name'].astype(str) + '<br />' +
-                'V_n HV: ' + net.trafo['vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'V_n LV: ' + net.trafo['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'Tap pos.: ' + net.trafo['tap_pos'].astype(str) + '<br />').tolist()
+            "Index: "
+            + net.trafo.index.astype(str)
+            + "<br />"
+            + "Name: "
+            + net.trafo["name"].astype(str)
+            + "<br />"
+            + "V_n HV: "
+            + net.trafo["vn_hv_kv"].round(precision).astype(str)
+            + " kV"
+            + "<br />"
+            + "V_n LV: "
+            + net.trafo["vn_lv_kv"].round(precision).astype(str)
+            + " kV"
+            + "<br />"
+            + "Tap pos.: "
+            + net.trafo["tap_pos"].astype(str)
+            + "<br />"
+        ).tolist()
     elif element == "trafo3w":
         hoverinfo = (
-                "Index: " + net.trafo3w.index.astype(str) + '<br />' +
-                "Name: " + net.trafo3w['name'].astype(str) + '<br />' +
-                'V_n HV: ' + net.trafo3w['vn_hv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'V_n MV: ' + net.trafo3w['vn_mv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'V_n LV: ' + net.trafo3w['vn_lv_kv'].round(precision).astype(str) + ' kV' + '<br />' +
-                'Tap pos.: ' + net.trafo3w['tap_pos'].astype(str) + '<br />').tolist()
+            "Index: "
+            + net.trafo3w.index.astype(str)
+            + "<br />"
+            + "Name: "
+            + net.trafo3w["name"].astype(str)
+            + "<br />"
+            + "V_n HV: "
+            + net.trafo3w["vn_hv_kv"].round(precision).astype(str)
+            + " kV"
+            + "<br />"
+            + "V_n MV: "
+            + net.trafo3w["vn_mv_kv"].round(precision).astype(str)
+            + " kV"
+            + "<br />"
+            + "V_n LV: "
+            + net.trafo3w["vn_lv_kv"].round(precision).astype(str)
+            + " kV"
+            + "<br />"
+            + "Tap pos.: "
+            + net.trafo3w["tap_pos"].astype(str)
+            + "<br />"
+        ).tolist()
     elif element == "ext_grid":
         hoverinfo = (
-                "Index: " + net.ext_grid.index.astype(str) + '<br />' +
-                "Name: " + net.ext_grid['name'].astype(str) + '<br />' +
-                'V_m: ' + net.ext_grid['vm_pu'].round(precision).astype(str) + ' p.u.' + '<br />' +
-                'V_a: ' + net.ext_grid['va_degree'].round(precision).astype(str) + ' °' + '<br />').tolist()
+            "Index: "
+            + net.ext_grid.index.astype(str)
+            + "<br />"
+            + "Name: "
+            + net.ext_grid["name"].astype(str)
+            + "<br />"
+            + "V_m: "
+            + net.ext_grid["vm_pu"].round(precision).astype(str)
+            + " p.u."
+            + "<br />"
+            + "V_a: "
+            + net.ext_grid["va_degree"].round(precision).astype(str)
+            + " °"
+            + "<br />"
+        ).tolist()
         hover_index = net.ext_grid.bus.tolist()
     elif element == "vsc":
         hoverinfo = (
-                "Index: " + net.vsc.index.astype(str) + '<br />' +
-                "Name: " + net.vsc['name'].astype(str) + '<br />' +
-                'P: ' + net.res_vsc['p_mw'].fillna(0).round(precision).astype(str) + ' MW' + '<br />' +
-                'Q: ' + net.res_vsc['q_mvar'].fillna(0).round(precision).astype(str) + ' MVAr' + '<br />').tolist()
+            "Index: "
+            + net.vsc.index.astype(str)
+            + "<br />"
+            + "Name: "
+            + net.vsc["name"].astype(str)
+            + "<br />"
+            + "P: "
+            + net.res_vsc["p_mw"].fillna(0).round(precision).astype(str)
+            + " MW"
+            + "<br />"
+            + "Q: "
+            + net.res_vsc["q_mvar"].fillna(0).round(precision).astype(str)
+            + " MVAr"
+            + "<br />"
+        ).tolist()
         hover_index = net.vsc.bus.tolist()
     else:
         return None
@@ -94,13 +213,30 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
-def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
-                  map_style='basic', figsize=1.0, aspectratio='auto',
-                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
-                  bus_color="blue", line_color='grey', trafo_color='green',
-                  trafo3w_color='green', ext_grid_color="yellow",
-                  filename='temp-plot.html', auto_open=True, showlegend=True,
-                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'):
+def simple_plotly(
+    net,
+    respect_switches=True,
+    use_line_geo=None,
+    on_map=False,
+    map_style="basic",
+    figsize=1.0,
+    aspectratio="auto",
+    line_width=1.0,
+    bus_size=10.0,
+    ext_grid_size=20.0,
+    bus_color="blue",
+    line_color="grey",
+    trafo_color="green",
+    trafo3w_color="green",
+    ext_grid_color="yellow",
+    filename="temp-plot.html",
+    auto_open=True,
+    showlegend=True,
+    additional_traces=None,
+    zoomlevel=11,
+    auto_draw_traces=True,
+    hvdc_color="cyan",
+):
     """
     Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
@@ -178,7 +314,7 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         filename=filename,
         auto_open=auto_open,
         showlegend=showlegend,
-        zoomlevel=zoomlevel
+        zoomlevel=zoomlevel,
     )
 
     traces, _ = _simple_plotly_generic(
@@ -201,7 +337,7 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         node_trace_func=create_bus_trace,
         hoverinfo_func=get_hoverinfo,
         hvdc_color=hvdc_color,
-        settings=settings
+        settings=settings,
     )
     if additional_traces:
         if isinstance(additional_traces, dict):
@@ -210,7 +346,9 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         shift = 0
         for weighted_trace in additional_traces:
             # for weighted_marker_traces "meta" should include information for the "scale legend"
-            if ("meta" in weighted_trace) and (weighted_trace["meta"]["show_scale_legend"]):
+            if ("meta" in weighted_trace) and (
+                weighted_trace["meta"]["show_scale_legend"]
+            ):
                 sc_trace = create_scale_trace(net, weighted_trace, down_shift=shift)
                 traces.extend(sc_trace)
                 shift += len(weighted_trace["meta"]["scale_marker_size"])
@@ -222,34 +360,54 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         return traces, settings
 
 
-def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_width, node_size, ext_grid_size,
-                           node_color, branch_color, trafo_color, trafo3w_color, ext_grid_color,
-                           node_element, branch_element, trans_element, trans3w_element,
-                           branch_trace_func, node_trace_func, hoverinfo_func,
-                           hvdc_color="cyan", settings=None, **kwargs):
-
+def _simple_plotly_generic(
+    net,
+    respect_separators,
+    use_branch_geodata,
+    branch_width,
+    node_size,
+    ext_grid_size,
+    node_color,
+    branch_color,
+    trafo_color,
+    trafo3w_color,
+    ext_grid_color,
+    node_element,
+    branch_element,
+    trans_element,
+    trans3w_element,
+    branch_trace_func,
+    node_trace_func,
+    hoverinfo_func,
+    hvdc_color="cyan",
+    settings=None,
+    **kwargs,
+):
     settings_defaults = {  # if no settings are provided, these are used
-        'on_map': kwargs.get('on_map', True),
-        'map_style': kwargs.get('map_style', 'basic'),
-        'figsize': kwargs.get('figsize', 1.),
-        'aspectratio': kwargs.get('aspectratio', 'auto'),
-        'filename': kwargs.get('filename', 'temp-plot.html'),
-        'auto_open': kwargs.get('auto_open', 'auto'),
-        'showlegend': kwargs.get('showlegend', True),
-        'zoomlevel': kwargs.get('zoomlevel', 11)
+        "on_map": kwargs.get("on_map", True),
+        "map_style": kwargs.get("map_style", "basic"),
+        "figsize": kwargs.get("figsize", 1.0),
+        "aspectratio": kwargs.get("aspectratio", "auto"),
+        "filename": kwargs.get("filename", "temp-plot.html"),
+        "auto_open": kwargs.get("auto_open", "auto"),
+        "showlegend": kwargs.get("showlegend", True),
+        "zoomlevel": kwargs.get("zoomlevel", 11),
     }
 
-    settings = settings_defaults | settings if settings else {}  # add missing settings to settings dict
+    settings = (
+        settings_defaults | settings if settings else {}
+    )  # add missing settings to settings dict
 
     if len(net[node_element]["geo"].dropna()) == 0:
         logger.warning(
             "No or insufficient geodata available --> Creating artificial coordinates. This may take some time..."
         )
         create_generic_coordinates(net, respect_switches=respect_separators)
-        if settings['on_map']:
+        if settings["on_map"]:
             logger.warning(
-                "Map plots not available with artificial coordinates and will be disabled!")
-            settings['on_map'] = False
+                "Map plots not available with artificial coordinates and will be disabled!"
+            )
+            settings["on_map"] = False
 
     # ----- Nodes (Buses) ------
     # initializing node trace
@@ -259,7 +417,7 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
         net[node_element].index,
         size=node_size,
         color=node_color,
-        infofunc=hoverinfo
+        infofunc=hoverinfo,
     )
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
@@ -267,7 +425,8 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
         use_branch_geodata = False if len(net[branch_element]["geo"]) == 0 else True
     elif use_branch_geodata and len(net[branch_element]["geo"]) == 0:
         logger.warning(
-            "No or insufficient line geodata available --> only bus geodata will be used.")
+            "No or insufficient line geodata available --> only bus geodata will be used."
+        )
         use_branch_geodata = False
     hoverinfo = hoverinfo_func(net, element=branch_element)
     branch_traces = branch_trace_func(
@@ -277,36 +436,40 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
         respect_separators,
         color=branch_color,
         width=branch_width,
-        infofunc=hoverinfo
+        infofunc=hoverinfo,
     )
     trans_trace = []
     trans_trace3w = []
     ext_grid_trace = []
     dc_line_trace = []
     # ----- Trafos ------
-    if 'trafo' in net and len(net.trafo):
+    if "trafo" in net and len(net.trafo):
         hoverinfo = hoverinfo_func(net, element=trans_element)
         trans_trace = create_trafo_trace(
             net,
             color=trafo_color,
             width=branch_width * 5,
             infofunc=hoverinfo,
-            use_line_geo=use_branch_geodata
+            use_line_geo=use_branch_geodata,
         )
     # ----- 3W Trafos ------
-    if 'trafo3w' in net and len(net.trafo3w):
+    if "trafo3w" in net and len(net.trafo3w):
         hoverinfo = hoverinfo_func(net, element=trans3w_element)
         trans_trace3w = create_trafo_trace(
-            net, color=trafo3w_color, trafotype='3W',
+            net,
+            color=trafo3w_color,
+            trafotype="3W",
             width=branch_width * 5,
-            trace_name='3W transformers',
+            trace_name="3W transformers",
             infofunc=hoverinfo,
-            use_line_geo=use_branch_geodata
+            use_line_geo=use_branch_geodata,
         )
     # ----- Ext grid ------
     # get external grid from _create_node_trace
-    if 'ext_grid' in net and len(net.ext_grid):
-        marker_type = 'circle' if settings['on_map'] else 'square'  # workaround because doesn't appear on mapbox if square
+    if "ext_grid" in net and len(net.ext_grid):
+        marker_type = (
+            "circle" if settings["on_map"] else "square"
+        )  # workaround because doesn't appear on mapbox if square
         hoverinfo = hoverinfo_func(net, element="ext_grid")
         ext_grid_trace = _create_node_trace(
             net,
@@ -315,34 +478,53 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
             patch_type=marker_type,
             color=ext_grid_color,
             infofunc=hoverinfo,
-            trace_name='external grid',
+            trace_name="external grid",
             node_element=node_element,
-            branch_element=branch_element
+            branch_element=branch_element,
         )
     # ----- HVDC lines ------
-    if 'dcline' in net and len(net.dcline):
+    if "dcline" in net and len(net.dcline):
         dc_line_trace = create_dcline_trace(net, color=hvdc_color)
 
-    return branch_traces + trans_trace + trans_trace3w + ext_grid_trace + node_trace + dc_line_trace, settings
+    return (
+        branch_traces
+        + trans_trace
+        + trans_trace3w
+        + ext_grid_trace
+        + node_trace
+        + dc_line_trace,
+        settings,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from pandapower.networks import mv_oberrhein
     from pandapower.plotting.plotly.traces import create_weighted_marker_trace
 
     net = mv_oberrhein()
     net.load.scaling, net.sgen.scaling = 1, 1
     # different markers and sizemodes as examples
-    markers_load = create_weighted_marker_trace(net, elm_type="load", color="red",
-                                                patch_type="triangle-up", sizemode="area",
-                                                marker_scaling=100)
-    markers_sgen = create_weighted_marker_trace(net, elm_type="sgen", color="green",
-                                                patch_type="circle-open", sizemode="diameter",
-                                                marker_scaling=100, scale_marker_size=[0.2, 0.4])
+    markers_load = create_weighted_marker_trace(
+        net,
+        elm_type="load",
+        color="red",
+        patch_type="triangle-up",
+        sizemode="area",
+        marker_scaling=100,
+    )
+    markers_sgen = create_weighted_marker_trace(
+        net,
+        elm_type="sgen",
+        color="green",
+        patch_type="circle-open",
+        sizemode="diameter",
+        marker_scaling=100,
+        scale_marker_size=[0.2, 0.4],
+    )
 
     fig = simple_plotly(
         net,
         bus_size=1,
         aspectratio="original",
-        additional_traces=[markers_sgen, markers_load]
+        additional_traces=[markers_sgen, markers_load],
     )

@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
 VM = 0
 VM_STD = 1
 P = 2

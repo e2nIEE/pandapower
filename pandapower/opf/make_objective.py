@@ -25,7 +25,9 @@ def _make_objective(ppci, net):
 
         _fill_gencost_pwl(ppci, net)
         if is_quadratic:
-            raise ValueError("Piecewise linear costs can not be mixed with quadratic costs")
+            raise ValueError(
+                "Piecewise linear costs can not be mixed with quadratic costs"
+            )
         elif len(net.poly_cost):
             _add_linear_costs_as_pwl_cost(ppci, net)
     elif len(net.poly_cost):
@@ -42,7 +44,7 @@ def _make_objective(ppci, net):
 def _get_gen_index(net, et, element):
     if et == "dcline":
         dc_idx = net.dcline.index.get_loc(element)
-        element = len(net.gen.index) - 2*len(net.dcline) + dc_idx*2 + 1
+        element = len(net.gen.index) - 2 * len(net.dcline) + dc_idx * 2 + 1
         et = "gen"
     lookup = "%s_controllable" % et if et in ["load", "sgen", "storage"] else et
     try:
@@ -52,26 +54,34 @@ def _get_gen_index(net, et, element):
 
 
 def _map_costs_to_gen(net, cost):
-    gens = array([_get_gen_index(net, et, element)
-                  for et, element in zip(cost.et.values, cost.element.values)])
+    gens = array(
+        [
+            _get_gen_index(net, et, element)
+            for et, element in zip(cost.et.values, cost.element.values)
+        ]
+    )
     cost_is = array([gen is not None for gen in gens])
     cost = cost[cost_is]
     gens = gens[cost_is].astype(int64)
-    signs = array([-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et])
+    signs = array(
+        [-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et]
+    )
     return gens, cost, signs
 
 
 def _init_gencost(ppci, net):
     is_quadratic = net.poly_cost[["cp2_eur_per_mw2", "cq2_eur_per_mvar2"]].values.any()
-    q_costs = net.poly_cost[["cq1_eur_per_mvar", "cq2_eur_per_mvar2"]].values.any() or \
-        "q" in net.pwl_cost.power_type.values
-    rows = len(ppci["gen"])*2 if q_costs else len(ppci["gen"])
+    q_costs = (
+        net.poly_cost[["cq1_eur_per_mvar", "cq2_eur_per_mvar2"]].values.any()
+        or "q" in net.pwl_cost.power_type.values
+    )
+    rows = len(ppci["gen"]) * 2 if q_costs else len(ppci["gen"])
     if len(net.pwl_cost):
         nr_points = {len(p) for p in net.pwl_cost.points.values}
         points = max(nr_points)
         if is_quadratic:
             raise ValueError("Quadratic costs can be mixed with piecewise linear costs")
-        columns = COST + (max(points, 2) + 1)*2
+        columns = COST + (max(points, 2) + 1) * 2
     else:
         columns = COST + 3 if is_quadratic else COST + 2
     ppci["gencost"] = zeros((rows, columns), dtype=float)
@@ -82,7 +92,9 @@ def _fill_gencost_poly(ppci, net, is_quadratic, q_costs):
     gens, cost, signs = _map_costs_to_gen(net, net.poly_cost)
     c0 = cost["cp0_eur"].values
     c1 = cost["cp1_eur_per_mw"].values
-    signs = array([-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et])
+    signs = array(
+        [-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et]
+    )
     if is_quadratic:
         c2 = cost["cp2_eur_per_mw2"]
         ppci["gencost"][gens, NCOST] = 3
@@ -97,7 +109,9 @@ def _fill_gencost_poly(ppci, net, is_quadratic, q_costs):
         gens_q = gens + len(ppci["gen"])
         c0 = cost["cq0_eur"].values
         c1 = cost["cq1_eur_per_mvar"].values
-        signs = array([-1 if element in ["load", "storage"] else 1 for element in cost.et])
+        signs = array(
+            [-1 if element in ["load", "storage"] else 1 for element in cost.et]
+        )
         if is_quadratic:
             c2 = cost["cq2_eur_per_mvar2"]
             ppci["gencost"][gens_q, NCOST] = 3
@@ -117,7 +131,7 @@ def _fill_gencost_pwl(ppci, net):
             gens += len(ppci["gen"])
         for gen, points, sign in zip(gens, cost.points.values, signs):
             costs = costs_from_areas(points, sign)
-            ppci["gencost"][gen, COST:COST+len(costs)] = costs
+            ppci["gencost"][gen, COST : COST + len(costs)] = costs
             ppci["gencost"][gen, NCOST] = len(costs) / 2
 
 

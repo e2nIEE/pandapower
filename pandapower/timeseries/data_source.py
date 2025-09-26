@@ -25,7 +25,9 @@ class DataSource(JSONSerializableClass):
     def __repr__(self):
         return self.__class__.__name__
 
-    def get_time_step_value(self, time_step, profile_name, scale_factor=1.0):  # pragma: no cover
+    def get_time_step_value(
+        self, time_step, profile_name, scale_factor=1.0
+    ):  # pragma: no cover
         """
         This method retrieves values of the data source according to the given parameters.
         For actual parameters look into the DataSource you are actually using.

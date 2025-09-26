@@ -52,7 +52,9 @@ def get_controller_index_by_type(net, ctrl_type, idx=[]):
     """
     idx = idx if len(idx) else net.controller.index
     is_of_type = net.controller.object.apply(lambda x: isinstance(x, ctrl_type))
-    return list(net.controller.index.values[net.controller.index.isin(idx) & is_of_type])
+    return list(
+        net.controller.index.values[net.controller.index.isin(idx) & is_of_type]
+    )
 
 
 def get_controller_index_by_typename(net, typename, idx=[], case_sensitive=False):
@@ -61,10 +63,16 @@ def get_controller_index_by_typename(net, typename, idx=[], case_sensitive=False
     """
     idx = idx if len(idx) else net.controller.index
     if case_sensitive:
-        return [i for i in idx if str(net.controller.object.at[i]).split(" ")[0] == typename]
+        return [
+            i for i in idx if str(net.controller.object.at[i]).split(" ")[0] == typename
+        ]
     else:
-        return [i for i in idx if str(net.controller.object.at[i]).split(" ")[0].lower() ==
-                typename.lower()]
+        return [
+            i
+            for i in idx
+            if str(net.controller.object.at[i]).split(" ")[0].lower()
+            == typename.lower()
+        ]
 
 
 def _controller_attributes_query(controller, parameters):
@@ -75,7 +83,9 @@ def _controller_attributes_query(controller, parameters):
     element_index_match = True
     for key in parameters.keys():
         if key not in controller.__dict__:
-            logger.debug(str(key) + " is no attribute of controller object " + str(controller))
+            logger.debug(
+                str(key) + " is no attribute of controller object " + str(controller)
+            )
             return False
         try:
             match = bool(controller.__getattribute__(key) == parameters[key])
@@ -83,24 +93,30 @@ def _controller_attributes_query(controller, parameters):
             try:
                 match = all(controller.__getattribute__(key) == parameters[key])
             except ValueError:
-                match = bool(len(set(controller.__getattribute__(key)) & set(parameters[key])))
+                match = bool(
+                    len(set(controller.__getattribute__(key)) & set(parameters[key]))
+                )
         if key == "element_index":
             element_index_match = match
         else:
             complete_match &= match
 
     if complete_match and not element_index_match:
-        intersect_elms = set(ensure_iterability(controller.__getattribute__("element_index"))) & \
-                         set(ensure_iterability(parameters["element_index"]))
+        intersect_elms = set(
+            ensure_iterability(controller.__getattribute__("element_index"))
+        ) & set(ensure_iterability(parameters["element_index"]))
         if len(intersect_elms):
-            logger.debug("'element_index' has an intersection of " + str(intersect_elms) +
-                         " with Controller %i" % controller.index)
+            logger.debug(
+                "'element_index' has an intersection of "
+                + str(intersect_elms)
+                + " with Controller %i" % controller.index
+            )
 
     return complete_match & element_index_match
 
 
 def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
-    """ Returns indices of searched controllers. Parameters can specify the search query.
+    """Returns indices of searched controllers. Parameters can specify the search query.
 
     INPUT:
         **net** (pandapowerNet) - The pandapower network
@@ -132,15 +148,22 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         # query of parameters in net.controller dataframe
         idx = Index(idx, dtype=np.int64)
         for df_key in df_keys:
-            idx = idx.intersection(net.controller.index[net.controller[df_key] == parameters[df_key]])
+            idx = idx.intersection(
+                net.controller.index[net.controller[df_key] == parameters[df_key]]
+            )
         # query of parameters in controller object attributes
-        matches = net.controller.object.apply(lambda ctrl: _controller_attributes_query(ctrl, attributes_dict))
-        idx = list(net.controller.index.values[net.controller.index.isin(idx) & matches])
+        matches = net.controller.object.apply(
+            lambda ctrl: _controller_attributes_query(ctrl, attributes_dict)
+        )
+        idx = list(
+            net.controller.index.values[net.controller.index.isin(idx) & matches]
+        )
     return idx
 
 
-def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None,
-                                       **kwargs):
+def log_same_type_existing_controllers(
+    net, this_ctrl_type, index=None, matching_params=None, **kwargs
+):
     """
     Logs same type controllers, if a controller is created.
     INPUT:
@@ -158,19 +181,28 @@ def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching
     """
     index = str(index)
     if isinstance(matching_params, dict):
-        same_type_existing_ctrl = get_controller_index(net, ctrl_type=this_ctrl_type,
-                                                       parameters=matching_params)
+        same_type_existing_ctrl = get_controller_index(
+            net, ctrl_type=this_ctrl_type, parameters=matching_params
+        )
         if len(same_type_existing_ctrl):
-            logger.info("Controller " + index + " has same type and matching parameters like " +
-                        "controllers " + str(['%i' % idx for idx in same_type_existing_ctrl]))
+            logger.info(
+                "Controller "
+                + index
+                + " has same type and matching parameters like "
+                + "controllers "
+                + str(["%i" % idx for idx in same_type_existing_ctrl])
+            )
     else:
         logger.info("Creating controller " + index + " of type %s " % this_ctrl_type)
-        logger.debug("no matching parameters are given to check whether problematic, " +
-                     "same type controllers already exist.")
+        logger.debug(
+            "no matching parameters are given to check whether problematic, "
+            + "same type controllers already exist."
+        )
 
 
-def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None,
-                                        **kwargs):
+def drop_same_type_existing_controllers(
+    net, this_ctrl_type, index=None, matching_params=None, **kwargs
+):
     """
     Drops same type controllers to create a new controller of this type.
     INPUT:
@@ -188,17 +220,27 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
     """
     index = str(index)
     if isinstance(matching_params, dict):
-        same_type_existing_ctrl = get_controller_index(net, ctrl_type=this_ctrl_type,
-                                                       parameters=matching_params)
+        same_type_existing_ctrl = get_controller_index(
+            net, ctrl_type=this_ctrl_type, parameters=matching_params
+        )
         if len(same_type_existing_ctrl):
             net.controller = net.controller.drop(same_type_existing_ctrl)
-            logger.debug("Controllers " + str(['%i' % idx for idx in same_type_existing_ctrl]) +
-                         "got removed because of same type and matching parameters as new " +
-                         "controller " + index + ".")
+            logger.debug(
+                "Controllers "
+                + str(["%i" % idx for idx in same_type_existing_ctrl])
+                + "got removed because of same type and matching parameters as new "
+                + "controller "
+                + index
+                + "."
+            )
     else:
-        logger.info("Creating controller " + index + " of type %s, " % this_ctrl_type +
-                    "no matching parameters are given to check which " +
-                    "same type controllers should be dropped.")
+        logger.info(
+            "Creating controller "
+            + index
+            + " of type %s, " % this_ctrl_type
+            + "no matching parameters are given to check which "
+            + "same type controllers should be dropped."
+        )
 
 
 def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel=None):
@@ -206,7 +248,7 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     x = np.linspace(start, stop, num)
     y = characteristic(x)
-    plt.plot(x, y, marker='x')
+    plt.plot(x, y, marker="x")
     if xlabel is not None:
         plt.xlabel(xlabel)
     if ylabel is not None:
@@ -218,84 +260,177 @@ def create_trafo_characteristic_object(net):
     if "trafo_characteristic_spline" in net:
         del net["trafo_characteristic_spline"]
     # 2-winding transformers
-    if (net['trafo_characteristic_table'].index.size > 0 and
-            net['trafo']['id_characteristic_table'].notna().any()):
+    if (
+        net["trafo_characteristic_table"].index.size > 0
+        and net["trafo"]["id_characteristic_table"].notna().any()
+    ):
         time_start = time.time()
         logger.info("Creating tap dependent characteristic objects for 2w-trafos.")
-        characteristic_df_temp = net['trafo_characteristic_table'][
-            ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']]
-        for trafo_id, trafo_row in net.trafo.dropna(subset=['id_characteristic_table']).iterrows():
+        characteristic_df_temp = net["trafo_characteristic_table"][
+            [
+                "id_characteristic",
+                "step",
+                "voltage_ratio",
+                "angle_deg",
+                "vk_percent",
+                "vkr_percent",
+            ]
+        ]
+        for trafo_id, trafo_row in net.trafo.dropna(
+            subset=["id_characteristic_table"]
+        ).iterrows():
             characteristic_df = characteristic_df_temp.loc[
-                characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic_table']]
-            variables = ['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']
-            variables_filtered = [var for var in variables if var in characteristic_df.columns]
-            x_points = [characteristic_df['step'].to_list()]
-            y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
-            _create_trafo_characteristics(net, "trafo", [trafo_id], variables_filtered,
-                                          x_points, y_points)
-        logger.info(f"Finished creating tap dependent characteristic objects for 2w-trafos in "
-                    f"{time.time() - time_start}.")
+                characteristic_df_temp["id_characteristic"]
+                == trafo_row["id_characteristic_table"]
+            ]
+            variables = ["voltage_ratio", "angle_deg", "vk_percent", "vkr_percent"]
+            variables_filtered = [
+                var for var in variables if var in characteristic_df.columns
+            ]
+            x_points = [characteristic_df["step"].to_list()]
+            y_points = {
+                col: [characteristic_df[col].tolist()] for col in variables_filtered
+            }
+            _create_trafo_characteristics(
+                net, "trafo", [trafo_id], variables_filtered, x_points, y_points
+            )
+        logger.info(
+            f"Finished creating tap dependent characteristic objects for 2w-trafos in "
+            f"{time.time() - time_start}."
+        )
     else:
-        logger.info("trafo_characteristic_table has no values for 2w-trafos - no characteristic objects created.")
+        logger.info(
+            "trafo_characteristic_table has no values for 2w-trafos - no characteristic objects created."
+        )
     # 3-winding transformers
-    if (net['trafo_characteristic_table'].index.size > 0 and
-            net['trafo3w']['id_characteristic_table'].notna().any()):
+    if (
+        net["trafo_characteristic_table"].index.size > 0
+        and net["trafo3w"]["id_characteristic_table"].notna().any()
+    ):
         time_start = time.time()
         logger.info("Creating tap dependent characteristic objects for 3w-trafos.")
-        characteristic_df_temp = net['trafo_characteristic_table'][
-                ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vkr_hv_percent',
-                 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']]
-        for trafo_id, trafo_row in net.trafo3w.dropna(subset=['id_characteristic_table']).iterrows():
+        characteristic_df_temp = net["trafo_characteristic_table"][
+            [
+                "id_characteristic",
+                "step",
+                "voltage_ratio",
+                "angle_deg",
+                "vk_hv_percent",
+                "vkr_hv_percent",
+                "vk_mv_percent",
+                "vkr_mv_percent",
+                "vk_lv_percent",
+                "vkr_lv_percent",
+            ]
+        ]
+        for trafo_id, trafo_row in net.trafo3w.dropna(
+            subset=["id_characteristic_table"]
+        ).iterrows():
             characteristic_df = characteristic_df_temp.loc[
-                characteristic_df_temp['id_characteristic'] == trafo_row['id_characteristic_table']]
-            variables = ['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent',
-                         'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']
-            variables_filtered = [var for var in variables if var in characteristic_df.columns]
-            x_points = [characteristic_df['step'].to_list()]
-            y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
-            _create_trafo_characteristics(net, "trafo3w", [trafo_id], variables_filtered,
-                                          x_points, y_points)
-        logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos in "
-                    f"{time.time() - time_start}.")
+                characteristic_df_temp["id_characteristic"]
+                == trafo_row["id_characteristic_table"]
+            ]
+            variables = [
+                "voltage_ratio",
+                "angle_deg",
+                "vk_hv_percent",
+                "vkr_hv_percent",
+                "vk_mv_percent",
+                "vkr_mv_percent",
+                "vk_lv_percent",
+                "vkr_lv_percent",
+            ]
+            variables_filtered = [
+                var for var in variables if var in characteristic_df.columns
+            ]
+            x_points = [characteristic_df["step"].to_list()]
+            y_points = {
+                col: [characteristic_df[col].tolist()] for col in variables_filtered
+            }
+            _create_trafo_characteristics(
+                net, "trafo3w", [trafo_id], variables_filtered, x_points, y_points
+            )
+        logger.info(
+            f"Finished creating tap dependent characteristic objects for 3w-trafos in "
+            f"{time.time() - time_start}."
+        )
     else:
-        logger.info("trafo_characteristic_table has no values for 3w-trafos - no characteristic objects created.")
+        logger.info(
+            "trafo_characteristic_table has no values for 3w-trafos - no characteristic objects created."
+        )
 
     # pivot spline characteristic objects to have one row per trafo/trafo3w
-    net["trafo_characteristic_spline"] = net["trafo_characteristic_spline_temp"].applymap(
-        lambda x: net["trafo_characteristic_spline"].loc[x, 'object'] if pd.notna(x) else pd.NA).sort_index()
+    net["trafo_characteristic_spline"] = (
+        net["trafo_characteristic_spline_temp"]
+        .applymap(
+            lambda x: net["trafo_characteristic_spline"].loc[x, "object"]
+            if pd.notna(x)
+            else pd.NA
+        )
+        .sort_index()
+    )
     # create id_characteristic column
-    net["trafo_characteristic_spline"]["id_characteristic"] = net["trafo_characteristic_spline"].index
+    net["trafo_characteristic_spline"]["id_characteristic"] = net[
+        "trafo_characteristic_spline"
+    ].index
     net["trafo_characteristic_spline"].insert(
-        0, 'id_characteristic', net["trafo_characteristic_spline"].pop('id_characteristic'))
+        0,
+        "id_characteristic",
+        net["trafo_characteristic_spline"].pop("id_characteristic"),
+    )
     del net["trafo_characteristic_spline_temp"]
 
 
-def _create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
-    supported_columns = {"trafo": ["voltage_ratio_characteristic", "angle_deg_characteristic",
-                                   "vk_percent_characteristic", "vkr_percent_characteristic"],
-                         "trafo3w": ["voltage_ratio_characteristic", "angle_deg_characteristic",
-                                     "vk_hv_percent_characteristic", "vkr_hv_percent_characteristic",
-                                     "vk_mv_percent_characteristic", "vkr_mv_percent_characteristic",
-                                     "vk_lv_percent_characteristic", "vkr_lv_percent_characteristic"]}
+def _create_trafo_characteristics(
+    net, trafotable, trafo_index, variable, x_points, y_points
+):
+    supported_columns = {
+        "trafo": [
+            "voltage_ratio_characteristic",
+            "angle_deg_characteristic",
+            "vk_percent_characteristic",
+            "vkr_percent_characteristic",
+        ],
+        "trafo3w": [
+            "voltage_ratio_characteristic",
+            "angle_deg_characteristic",
+            "vk_hv_percent_characteristic",
+            "vkr_hv_percent_characteristic",
+            "vk_mv_percent_characteristic",
+            "vkr_mv_percent_characteristic",
+            "vk_lv_percent_characteristic",
+            "vkr_lv_percent_characteristic",
+        ],
+    }
 
     # create or re-populate id_characteristic_spline column - same indices as id_characteristic_table
-    net[trafotable]["id_characteristic_spline"] = net[trafotable]["id_characteristic_table"].copy()
+    net[trafotable]["id_characteristic_spline"] = net[trafotable][
+        "id_characteristic_table"
+    ].copy()
     if "trafo_characteristic_spline_temp" not in net:
-        col_list = list(dict.fromkeys(supported_columns["trafo"] + supported_columns["trafo3w"]))
-        net["trafo_characteristic_spline_temp"] = pd.DataFrame(columns=col_list, dtype="Int64")
+        col_list = list(
+            dict.fromkeys(supported_columns["trafo"] + supported_columns["trafo3w"])
+        )
+        net["trafo_characteristic_spline_temp"] = pd.DataFrame(
+            columns=col_list, dtype="Int64"
+        )
 
     for var in variable:
         # create characteristics for the specified variable and set their indices in the trafo table
         col = f"{var}_characteristic"
         # check if the variable is a valid attribute of the trafo table
         if col not in supported_columns[trafotable]:
-            raise UserWarning("Variable %s is not supported for table %s" % (var, trafotable))
+            raise UserWarning(
+                "Variable %s is not supported for table %s" % (var, trafotable)
+            )
 
         # check inputs, check if 1 trafo or multiple, verify shape of x_points and y_points and trafo_index
-        if hasattr(trafo_index, '__iter__'):
+        if hasattr(trafo_index, "__iter__"):
             single_mode = False
             if not (len(trafo_index) == len(x_points) == len(y_points[var])):
-                raise UserWarning("The lengths of the trafo index and points do not match!")
+                raise UserWarning(
+                    "The lengths of the trafo index and points do not match!"
+                )
         else:
             single_mode = True
             if len(x_points) != len(y_points[var]):
@@ -318,31 +453,56 @@ def create_shunt_characteristic_object(net):
     # check if shunt_characteristic_spline table already exists & if so, delete & re-create
     if "shunt_characteristic_spline" in net:
         del net["shunt_characteristic_spline"]
-    if net['shunt_characteristic_table'].index.size > 0:
+    if net["shunt_characteristic_table"].index.size > 0:
         time_start = time.time()
         logger.info("Creating step dependent power characteristic objects for shunts.")
-        characteristic_df_temp = net['shunt_characteristic_table']
-        for shunt_id, shunt_row in net.shunt.dropna(subset=['id_characteristic_table']).iterrows():
+        characteristic_df_temp = net["shunt_characteristic_table"]
+        for shunt_id, shunt_row in net.shunt.dropna(
+            subset=["id_characteristic_table"]
+        ).iterrows():
             characteristic_df = characteristic_df_temp.loc[
-                characteristic_df_temp['id_characteristic'] == shunt_row['id_characteristic_table']]
-            variables = ['q_mvar', 'p_mw']
-            variables_filtered = [var for var in variables if var in characteristic_df.columns]
-            x_points = [characteristic_df['step'].to_list()]
-            y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
-            _create_shunt_characteristics(net, [shunt_id], variables_filtered,
-                                          x_points, y_points)
-        logger.info(f"Finished creating step dependent power characteristic objects for shunts in"
-                    f"{time.time() - time_start}.")
+                characteristic_df_temp["id_characteristic"]
+                == shunt_row["id_characteristic_table"]
+            ]
+            variables = ["q_mvar", "p_mw"]
+            variables_filtered = [
+                var for var in variables if var in characteristic_df.columns
+            ]
+            x_points = [characteristic_df["step"].to_list()]
+            y_points = {
+                col: [characteristic_df[col].tolist()] for col in variables_filtered
+            }
+            _create_shunt_characteristics(
+                net, [shunt_id], variables_filtered, x_points, y_points
+            )
+        logger.info(
+            f"Finished creating step dependent power characteristic objects for shunts in"
+            f"{time.time() - time_start}."
+        )
     else:
-        logger.info("shunt_characteristic_table is empty - no characteristic objects created.")
+        logger.info(
+            "shunt_characteristic_table is empty - no characteristic objects created."
+        )
 
     # pivot spline characteristic objects to have one row per shunt
-    net["shunt_characteristic_spline"] = net["shunt_characteristic_spline_temp"].applymap(
-        lambda x: net["shunt_characteristic_spline"].loc[x, 'object'] if pd.notna(x) else pd.NA).sort_index()
+    net["shunt_characteristic_spline"] = (
+        net["shunt_characteristic_spline_temp"]
+        .applymap(
+            lambda x: net["shunt_characteristic_spline"].loc[x, "object"]
+            if pd.notna(x)
+            else pd.NA
+        )
+        .sort_index()
+    )
     # create id_characteristic column
-    net["shunt_characteristic_spline"]["id_characteristic"] = net["shunt_characteristic_spline"].index
+    net["shunt_characteristic_spline"]["id_characteristic"] = net[
+        "shunt_characteristic_spline"
+    ].index
     net["shunt_characteristic_spline"].insert(
-        0, 'id_characteristic', net["shunt_characteristic_spline"].pop('id_characteristic'))
+        0,
+        "id_characteristic",
+        net["shunt_characteristic_spline"].pop("id_characteristic"),
+    )
     del net["shunt_characteristic_spline_temp"]
 
 
@@ -351,9 +511,13 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
 
     # create id_characteristic_spline column - same indices as id_characteristic_table
     if "id_characteristic_spline" not in net["shunt"]:
-        net["shunt"]["id_characteristic_spline"] = net["shunt"]["id_characteristic_table"].copy()
+        net["shunt"]["id_characteristic_spline"] = net["shunt"][
+            "id_characteristic_table"
+        ].copy()
     if "shunt_characteristic_spline_temp" not in net:
-        net["shunt_characteristic_spline_temp"] = pd.DataFrame(columns=supported_columns, dtype="Int64")
+        net["shunt_characteristic_spline_temp"] = pd.DataFrame(
+            columns=supported_columns, dtype="Int64"
+        )
 
     for var in variable:
         # create characteristics for the specified variable and set their indices in the shunt table
@@ -363,10 +527,12 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
             raise UserWarning("Variable %s is not supported for table shunt" % var)
 
         # check inputs, check if 1 shunt or multiple, verify shape of x_points and y_points and shunt_index
-        if hasattr(shunt_index, '__iter__'):
+        if hasattr(shunt_index, "__iter__"):
             single_mode = False
             if not (len(shunt_index) == len(x_points) == len(y_points[var])):
-                raise UserWarning("The lengths of the shunt index and points do not match!")
+                raise UserWarning(
+                    "The lengths of the shunt index and points do not match!"
+                )
         else:
             single_mode = True
             if len(x_points) != len(y_points[var]):
@@ -387,20 +553,33 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
 
 def _set_reactive_capability_curve_flag(net, element):
     if element not in ["gen", "sgen"]:
-        UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
-                    f"Please give gen or sgen as an argument of the function")
+        UserWarning(
+            f"The given {element} type is not valid for setting curve dependency table flag. "
+            f"Please give gen or sgen as an argument of the function"
+        )
         return
     # Quick checks for element table and required columns
-    if (len(net[element]) == 0 or
-            not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
-            or (not net[element]['id_q_capability_characteristic'].notna().any() and
-                not net[element]['reactive_capability_curve'].any()) and not net[element]['curve_style'].any()):
+    if (
+        len(net[element]) == 0
+        or not {
+            "id_q_capability_characteristic",
+            "reactive_capability_curve",
+            "curve_style",
+        }.issubset(net[element].columns)
+        or (
+            not net[element]["id_q_capability_characteristic"].notna().any()
+            and not net[element]["reactive_capability_curve"].any()
+        )
+        and not net[element]["curve_style"].any()
+    ):
         logger.info(f"No {element} with Q capability curve table found.")
     else:
-        net[element]['reactive_capability_curve'] = (
-                net[element]['id_q_capability_characteristic'].notna() &
-                (net[element]['id_q_capability_characteristic'] >= 0) &
-                net[element]['curve_style'].isin(["straightLineYValues", "constantYValue"])
+        net[element]["reactive_capability_curve"] = (
+            net[element]["id_q_capability_characteristic"].notna()
+            & (net[element]["id_q_capability_characteristic"] >= 0)
+            & net[element]["curve_style"].isin(
+                ["straightLineYValues", "constantYValue"]
+            )
         ).astype(bool)
 
 
@@ -410,7 +589,10 @@ def create_q_capability_characteristics_object(net):
         del net["q_capability_characteristic"]
 
     # create characteristics
-    if "q_capability_curve_table" in net.keys() and net['q_capability_curve_table'].index.size > 0:
+    if (
+        "q_capability_curve_table" in net.keys()
+        and net["q_capability_curve_table"].index.size > 0
+    ):
         time_start = time.time()
 
         # Set flag reactive_capability_curve
@@ -418,16 +600,20 @@ def create_q_capability_characteristics_object(net):
         _set_reactive_capability_curve_flag(net, "sgen")
 
         # Create Q capability curve characteristics dataframe
-        net["q_capability_characteristic"] = pd.DataFrame({
-            "id_q_capability_curve": pd.Series(dtype="Int64"),
-            "q_min_characteristic": pd.Series(dtype="object"),
-            "q_max_characteristic": pd.Series(dtype="object"),
-        })
+        net["q_capability_characteristic"] = pd.DataFrame(
+            {
+                "id_q_capability_curve": pd.Series(dtype="Int64"),
+                "q_min_characteristic": pd.Series(dtype="object"),
+                "q_max_characteristic": pd.Series(dtype="object"),
+            }
+        )
 
         net["q_capability_characteristic_temp"] = pd.DataFrame()
-        characteristic_df_temp = net['q_capability_curve_table']
-        mydata_grouped = characteristic_df_temp.groupby('id_q_capability_curve')
-        net["q_capability_characteristic"]["id_q_capability_curve"] = mydata_grouped.size().index
+        characteristic_df_temp = net["q_capability_curve_table"]
+        mydata_grouped = characteristic_df_temp.groupby("id_q_capability_curve")
+        net["q_capability_characteristic"]["id_q_capability_curve"] = (
+            mydata_grouped.size().index
+        )
 
         # Prepare lists
         element_ids = []
@@ -436,30 +622,38 @@ def create_q_capability_characteristics_object(net):
 
         # Iterate directly over grouped data
         for element_id, group_data in mydata_grouped:
-            p_mw_values = np.hstack(group_data['p_mw'])
-            q_min_values = np.hstack(group_data['q_min_mvar'])
-            q_max_values = np.hstack(group_data['q_max_mvar'])
+            p_mw_values = np.hstack(group_data["p_mw"])
+            q_min_values = np.hstack(group_data["q_min_mvar"])
+            q_max_values = np.hstack(group_data["q_max_mvar"])
 
             # Compute Characteristic indices
             q_min_index = Characteristic(
-                net, p_mw_values, q_min_values, table="q_capability_characteristic_temp").index
+                net, p_mw_values, q_min_values, table="q_capability_characteristic_temp"
+            ).index
             q_max_index = Characteristic(
-                net, p_mw_values, q_max_values, table="q_capability_characteristic_temp").index
+                net, p_mw_values, q_max_values, table="q_capability_characteristic_temp"
+            ).index
 
             # Collect results
             element_ids.append(element_id)
             q_min_indices.append(q_min_index)
             q_max_indices.append(q_max_index)
-            logger.info("Adding characteristic objects for id_q_capability_curve %d" % element_id)
+            logger.info(
+                "Adding characteristic objects for id_q_capability_curve %d"
+                % element_id
+            )
 
-        characteristic_df = pd.DataFrame({
-            "id_q_capability_curve": element_ids,
-            "q_min_characteristic": q_min_indices,
-            "q_max_characteristic": q_max_indices,
-        }).set_index("id_q_capability_curve")
+        characteristic_df = pd.DataFrame(
+            {
+                "id_q_capability_curve": element_ids,
+                "q_min_characteristic": q_min_indices,
+                "q_max_characteristic": q_max_indices,
+            }
+        ).set_index("id_q_capability_curve")
 
         net["q_capability_characteristic"] = net[
-            "q_capability_characteristic"].combine_first(characteristic_df)
+            "q_capability_characteristic"
+        ].combine_first(characteristic_df)
 
         # Extract the temporary table containing the objects
         temp_table = net["q_capability_characteristic_temp"]
@@ -468,12 +662,18 @@ def create_q_capability_characteristics_object(net):
         if not temp_table.empty:
             object_map = temp_table["object"]  # Cache the mapping for efficiency
             net["q_capability_characteristic"]["q_min_characteristic"] = net[
-                "q_capability_characteristic"]["q_min_characteristic"].map(object_map)
+                "q_capability_characteristic"
+            ]["q_min_characteristic"].map(object_map)
             net["q_capability_characteristic"]["q_max_characteristic"] = net[
-                "q_capability_characteristic"]["q_max_characteristic"].map(object_map)
-        logger.info(f"Finished creating p dependent q characteristic objects for capability curve in "
-                    f"{time.time() - time_start}.")
+                "q_capability_characteristic"
+            ]["q_max_characteristic"].map(object_map)
+        logger.info(
+            f"Finished creating p dependent q characteristic objects for capability curve in "
+            f"{time.time() - time_start}."
+        )
         del net["q_capability_characteristic_temp"]
 
     else:
-        logger.info("q_capability_curve_table is empty - no characteristic objects created.")
+        logger.info(
+            "q_capability_curve_table is empty - no characteristic objects created."
+        )

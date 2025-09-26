@@ -24,41 +24,51 @@ def test_duplicate_measurements_at_trafo3w():
     pp.create_ext_grid(net, bus=hv_bus2, vm_pu=1.02, name="Grid Slack 2")
 
     # Create two three-winding transformers using standard types
-    trafo1 = pp.create_transformer3w(net,
-                                     hv_bus=hv_bus1,
-                                     mv_bus=mv_bus1,
-                                     lv_bus=lv_bus1,
-                                     std_type="63/25/38 MVA 110/20/10 kV",
-                                     name="3W Trafo 1")
+    trafo1 = pp.create_transformer3w(
+        net,
+        hv_bus=hv_bus1,
+        mv_bus=mv_bus1,
+        lv_bus=lv_bus1,
+        std_type="63/25/38 MVA 110/20/10 kV",
+        name="3W Trafo 1",
+    )
 
-    trafo2 = pp.create_transformer3w(net,
-                                     hv_bus=hv_bus2,
-                                     mv_bus=mv_bus2,
-                                     lv_bus=lv_bus2,
-                                     std_type="63/25/38 MVA 110/20/10 kV",
-                                     name="3W Trafo 2")
+    trafo2 = pp.create_transformer3w(
+        net,
+        hv_bus=hv_bus2,
+        mv_bus=mv_bus2,
+        lv_bus=lv_bus2,
+        std_type="63/25/38 MVA 110/20/10 kV",
+        name="3W Trafo 2",
+    )
 
     # Add measurements: measure active (p) and reactive (q) power on each side of each transformer
     for trafo in [trafo1, trafo2]:
         for side in ["hv", "mv"]:
-            pp.create_measurement(net,
-                                  meas_type="p",
-                                  element_type="trafo3w",
-                                  element=trafo,
-                                  side=side,
-                                  value=2.0,
-                                  std_dev=1,
-                                  name=f"P_{side.upper()}_Trafo{trafo}")
-            pp.create_measurement(net,
-                                  meas_type="p",
-                                  element_type="trafo3w",
-                                  element=trafo,
-                                  side=side,
-                                  value=4.0,
-                                  std_dev=1,
-                                  name=f"P2_{side.upper()}_Trafo{trafo}")
+            pp.create_measurement(
+                net,
+                meas_type="p",
+                element_type="trafo3w",
+                element=trafo,
+                side=side,
+                value=2.0,
+                std_dev=1,
+                name=f"P_{side.upper()}_Trafo{trafo}",
+            )
+            pp.create_measurement(
+                net,
+                meas_type="p",
+                element_type="trafo3w",
+                element=trafo,
+                side=side,
+                value=4.0,
+                std_dev=1,
+                name=f"P2_{side.upper()}_Trafo{trafo}",
+            )
 
-    _, _, eppci = pp2eppci(net, v_start="flat", delta_start="flat", zero_injection="aux_bus")
+    _, _, eppci = pp2eppci(
+        net, v_start="flat", delta_start="flat", zero_injection="aux_bus"
+    )
     vals = eppci.data["branch"][[2, 3], branch_cols + P_TO]
     np.testing.assert_array_equal(vals, [3, 3])
 
@@ -66,5 +76,6 @@ def test_duplicate_measurements_at_trafo3w():
     # 0.707107 =  ((1^2 + 1^2)^0.5)/2
     np.testing.assert_array_almost_equal(std_dev, [0.707107, 0.707107], decimal=6)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

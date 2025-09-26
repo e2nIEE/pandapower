@@ -8,14 +8,11 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-"""Builds index lists of each type of bus.
-"""
+"""Builds index lists of each type of bus."""
 
-from numpy import ones, flatnonzero as find, isin
+from numpy import flatnonzero as find, isin
 from pandapower.pypower.idx_bus import BUS_TYPE, REF, PV, PQ, BUS_I
 from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_REF, DC_P, DC_B2B
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
-from scipy.sparse import csr_matrix as sparse
 
 from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_MODE_AC_SL, VSC_BUS
 
@@ -37,25 +34,25 @@ def bustypes(bus, gen, vsc=None):
     changes by Uni Kassel (Florian Schaefer): If new ref bus is chosen -> Init as numpy array
     """
     # get generator status
-#    nb = bus.shape[0]
-#    ng = gen.shape[0]
+    #    nb = bus.shape[0]
+    #    ng = gen.shape[0]
     # gen connection matrix, element i, j is 1 if, generator j at bus i is ON
-    #Cg = sparse((gen[:, GEN_STATUS] > 0,
-#                 (gen[:, GEN_BUS], range(ng))), (nb, ng))
+    # Cg = sparse((gen[:, GEN_STATUS] > 0,
+    #                 (gen[:, GEN_BUS], range(ng))), (nb, ng))
     # number of generators at each bus that are ON
-    #bus_gen_status = (Cg * ones(ng, int)).astype(bool)
+    # bus_gen_status = (Cg * ones(ng, int)).astype(bool)
 
     # form index lists for slack, PV, and PQ buses
     if vsc is None:
-        ref = find((bus[:, BUS_TYPE] == REF)) # ref bus index
+        ref = find((bus[:, BUS_TYPE] == REF))  # ref bus index
         pv = find((bus[:, BUS_TYPE] == PV))  # PV bus indices
         pq = find((bus[:, BUS_TYPE] == PQ))  # PQ bus indices
     else:
         vsc_ref_bus = vsc[vsc[:, VSC_MODE_AC] == VSC_MODE_AC_SL, VSC_BUS]
         vsc_ref_mask = isin(bus[:, BUS_I], vsc_ref_bus)
         ref = find((bus[:, BUS_TYPE] == REF) & ~vsc_ref_mask)  # ref bus index
-        pv  = find((bus[:, BUS_TYPE] == PV)) # PV bus indices
-        pq  = find((bus[:, BUS_TYPE] == PQ) | vsc_ref_mask) # PQ bus indices
+        pv = find((bus[:, BUS_TYPE] == PV))  # PV bus indices
+        pq = find((bus[:, BUS_TYPE] == PQ) | vsc_ref_mask)  # PQ bus indices
     return ref, pv, pq
 
 

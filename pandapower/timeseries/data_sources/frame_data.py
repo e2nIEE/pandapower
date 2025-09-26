@@ -40,7 +40,10 @@ class DFData(DataSource):
 
     def __repr__(self):
         s = "%s with %d rows and %d columns" % (
-            self.__class__.__name__, len(self.df), len(self.df.columns))
+            self.__class__.__name__,
+            len(self.df),
+            len(self.df.columns),
+        )
 
         if len(self.df.columns) <= 10:
             s += ": %s" % self.df.columns.values.__str__()
@@ -48,7 +51,7 @@ class DFData(DataSource):
 
     def get_time_step_value(self, time_step, profile_name, scale_factor=1.0):
         res = self.df.loc[time_step, profile_name]
-        if hasattr(res, 'values'):
+        if hasattr(res, "values"):
             res = res.values
             isnumber = np.issubdtype(res.dtype, np.number)
         else:

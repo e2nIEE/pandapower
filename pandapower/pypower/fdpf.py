@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Solves the power flow using a fast decoupled method.
-"""
+"""Solves the power flow using a fast decoupled method."""
 
 import sys
 
@@ -38,9 +37,9 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
         ppopt = ppoption()
 
     ## options
-    tol     = ppopt['PF_TOL']
-    max_it  = ppopt['PF_MAX_IT_FD']
-    verbose = ppopt['VERBOSE']
+    tol = ppopt["PF_TOL"]
+    max_it = ppopt["PF_MAX_IT_FD"]
+    verbose = ppopt["VERBOSE"]
 
     ## initialize
     converged = 0
@@ -50,8 +49,8 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
     Vm = abs(V)
 
     ## set up indexing for updating V
-    #npv = len(pv)
-    #npq = len(pq)
+    # npv = len(pv)
+    # npq = len(pq)
     pvpq = r_[pv, pq]
 
     ## evaluate initial mismatch
@@ -63,17 +62,17 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
     normP = linalg.norm(P, inf)
     normQ = linalg.norm(Q, inf)
     if verbose > 1:
-        sys.stdout.write('\niteration     max mismatch (p.u.)  ')
-        sys.stdout.write('\ntype   #        P            Q     ')
-        sys.stdout.write('\n---- ----  -----------  -----------')
-        sys.stdout.write('\n  -  %3d   %10.3e   %10.3e' % (i, normP, normQ))
+        sys.stdout.write("\niteration     max mismatch (p.u.)  ")
+        sys.stdout.write("\ntype   #        P            Q     ")
+        sys.stdout.write("\n---- ----  -----------  -----------")
+        sys.stdout.write("\n  -  %3d   %10.3e   %10.3e" % (i, normP, normQ))
     if normP < tol and normQ < tol:
         converged = 1
         if verbose > 1:
-            sys.stdout.write('\nConverged!\n')
+            sys.stdout.write("\nConverged!\n")
 
     ## reduce B matrices
-    Bp = Bp[array([pvpq]).T, pvpq].tocsc() # splu requires a CSC matrix
+    Bp = Bp[array([pvpq]).T, pvpq].tocsc()  # splu requires a CSC matrix
     Bpp = Bpp[array([pq]).T, pq].tocsc()
 
     ## factor B matrices
@@ -81,7 +80,7 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
     Bpp_solver = splu(Bpp)
 
     ## do P and Q iterations
-    while (not converged and i < max_it):
+    while not converged and i < max_it:
         ## update iteration counter
         i = i + 1
 
@@ -101,13 +100,14 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
         normP = linalg.norm(P, inf)
         normQ = linalg.norm(Q, inf)
         if verbose > 1:
-            sys.stdout.write("\n  %s  %3d   %10.3e   %10.3e" %
-                             (type,i, normP, normQ))
+            sys.stdout.write("\n  %s  %3d   %10.3e   %10.3e" % (type, i, normP, normQ))
         if normP < tol and normQ < tol:
             converged = 1
             if verbose:
-                sys.stdout.write('\nFast-decoupled power flow converged in %d '
-                    'P-iterations and %d Q-iterations.\n' % (i, i - 1))
+                sys.stdout.write(
+                    "\nFast-decoupled power flow converged in %d "
+                    "P-iterations and %d Q-iterations.\n" % (i, i - 1)
+                )
             break
 
         ##-----  do Q iteration, update Vm  -----
@@ -126,17 +126,20 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
         normP = linalg.norm(P, inf)
         normQ = linalg.norm(Q, inf)
         if verbose > 1:
-            sys.stdout.write('\n  Q  %3d   %10.3e   %10.3e' % (i, normP, normQ))
+            sys.stdout.write("\n  Q  %3d   %10.3e   %10.3e" % (i, normP, normQ))
         if normP < tol and normQ < tol:
             converged = 1
             if verbose:
-                sys.stdout.write('\nFast-decoupled power flow converged in %d '
-                    'P-iterations and %d Q-iterations.\n' % (i, i))
+                sys.stdout.write(
+                    "\nFast-decoupled power flow converged in %d "
+                    "P-iterations and %d Q-iterations.\n" % (i, i)
+                )
             break
 
     if verbose:
         if not converged:
-            sys.stdout.write('\nFast-decoupled power flow did not converge in '
-                             '%d iterations.' % i)
+            sys.stdout.write(
+                "\nFast-decoupled power flow did not converge in %d iterations." % i
+            )
 
     return V, converged, i

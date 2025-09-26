@@ -33,6 +33,8 @@ def test_wrong_zero_inj():
 
 def test_no_observability():
     grid = create_net_with_bb_switch()
-    grid.measurement.drop(grid.measurement.index[int(len(grid.measurement) * 0.1):], inplace=True)
+    grid.measurement.drop(
+        grid.measurement.index[int(len(grid.measurement) * 0.1) :], inplace=True
+    )
     with pytest.raises(UserWarning):
         estimate(grid)

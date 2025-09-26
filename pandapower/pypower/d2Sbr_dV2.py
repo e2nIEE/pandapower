@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Computes 2nd derivatives of complex power flow w.r.t. voltage.
-"""
+"""Computes 2nd derivatives of complex power flow w.r.t. voltage."""
 
 from numpy import ones, conj
 from scipy.sparse import csr_matrix
@@ -38,8 +37,8 @@ def d2Sbr_dV2(Cbr, Ybr, V, lam):
 
     A = Ybr.H * diaglam * Cbr
     B = conj(diagV) * A * diagV
-    D = csr_matrix( ((A * V) * conj(V), (ib, ib)) )
-    E = csr_matrix( ((A.T * conj(V) * V), (ib, ib)) )
+    D = csr_matrix(((A * V) * conj(V), (ib, ib)))
+    E = csr_matrix(((A.T * conj(V) * V), (ib, ib)))
     F = B + B.T
     G = csr_matrix((ones(nb) / abs(V), (ib, ib)))
 

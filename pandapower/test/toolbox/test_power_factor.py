@@ -8,8 +8,14 @@ import pandas as pd
 import pytest
 
 from pandapower.toolbox.element_selection import pp_elements
-from pandapower.toolbox.power_factor import signing_system_value, cosphi_pos_neg_from_pq, pq_from_cosphi, \
-    cosphi_to_pos, cosphi_from_pq, cosphi_from_pos
+from pandapower.toolbox.power_factor import (
+    signing_system_value,
+    cosphi_pos_neg_from_pq,
+    pq_from_cosphi,
+    cosphi_to_pos,
+    cosphi_from_pq,
+    cosphi_from_pos,
+)
 
 
 def test_signing_system_value():
@@ -57,50 +63,65 @@ def test_cosphi_from_pq():
     cosphi, s, qmode, pmode = cosphi_from_pq(1, 0.4)
     assert np.isclose(cosphi, 0.9284766908852593)
     assert np.isclose(s, 1.077032961426901)
-    assert qmode == 'underexcited'
-    assert pmode == 'load'
+    assert qmode == "underexcited"
+    assert pmode == "load"
 
     p = np.array([1, 1, 1, 1, 1, 0, 0, 0, -1, -1, -1])
     q = np.array([1, -1, 0, 0.5, -0.5, 1, -1, 0, 1, -1, 0])
     cosphi, s, qmode, pmode = cosphi_from_pq(p, q)
-    assert np.allclose(cosphi[[0, 1, 8, 9]], 2 ** 0.5 / 2)
+    assert np.allclose(cosphi[[0, 1, 8, 9]], 2**0.5 / 2)
     assert np.allclose(cosphi[[3, 4]], 0.89442719)
     assert np.allclose(cosphi[[2, 10]], 1)
     assert pd.Series(cosphi[[5, 6, 7]]).isnull().all()
-    assert np.allclose(s, (p ** 2 + q ** 2) ** 0.5)
+    assert np.allclose(s, (p**2 + q**2) ** 0.5)
     assert all(pmode == np.array(["load"] * 5 + ["undef"] * 3 + ["gen"] * 3))
     ind_cap_ind = ["underexcited", "overexcited", "underexcited"]
-    assert all(qmode == np.array(ind_cap_ind + ["underexcited", "overexcited"] + ind_cap_ind * 2))
+    assert all(
+        qmode
+        == np.array(ind_cap_ind + ["underexcited", "overexcited"] + ind_cap_ind * 2)
+    )
 
 
 def test_cosphi_to_pos():
     assert np.isclose(cosphi_to_pos(0.96), 0.96)
     assert np.isclose(cosphi_to_pos(-0.94), 1.06)
     assert np.isclose(cosphi_to_pos(-0.96), 1.04)
-    assert np.allclose(cosphi_to_pos([0.96, -0.94, -0.96]), np.array([0.96, 1.06, 1.04]))
+    assert np.allclose(
+        cosphi_to_pos([0.96, -0.94, -0.96]), np.array([0.96, 1.06, 1.04])
+    )
 
 
 def test_cosphi_from_pos():
     assert np.isclose(cosphi_from_pos(0.96), 0.96)
     assert np.isclose(cosphi_from_pos(1.06), -0.94)
     assert np.isclose(cosphi_from_pos(1.04), -0.96)
-    assert np.allclose(cosphi_from_pos([0.96, 1.06, 1.04]), np.array([0.96, -0.94, -0.96]))
+    assert np.allclose(
+        cosphi_from_pos([0.96, 1.06, 1.04]), np.array([0.96, -0.94, -0.96])
+    )
 
 
 def test_cosphi_pos_neg():
-    assert np.isclose(np.round(cosphi_pos_neg_from_pq(2, 0.), 5), 1)
+    assert np.isclose(np.round(cosphi_pos_neg_from_pq(2, 0.0), 5), 1)
     assert np.isclose(np.round(cosphi_pos_neg_from_pq(0.76, 0.25), 5), 0.94993)
     assert np.isclose(np.round(cosphi_pos_neg_from_pq(-0.76, 0.25), 5), 0.94993)
     assert np.isclose(np.round(cosphi_pos_neg_from_pq(0.76, -0.25), 5), -0.94993)
     assert np.allclose(
-        np.round(cosphi_pos_neg_from_pq([0.76, 0.76, 0.76, 0.76], [0.25, -0.25, 0, 0.1]), 5),
-        np.array([0.94993, -0.94993, 1., 0.99145]))
+        np.round(
+            cosphi_pos_neg_from_pq([0.76, 0.76, 0.76, 0.76], [0.25, -0.25, 0, 0.1]), 5
+        ),
+        np.array([0.94993, -0.94993, 1.0, 0.99145]),
+    )
     assert np.allclose(
-        np.round(cosphi_pos_neg_from_pq(
-            [0.76, 0.76, -0.76, 0.76, 0, 0.1],
-            [0.25, -0.25, 0.25, 0.1, 0.1, 0]), 5),
-        np.array([0.94993, -0.94993, 0.94993, 0.99145, np.nan, 1]), equal_nan=True)
+        np.round(
+            cosphi_pos_neg_from_pq(
+                [0.76, 0.76, -0.76, 0.76, 0, 0.1], [0.25, -0.25, 0.25, 0.1, 0.1, 0]
+            ),
+            5,
+        ),
+        np.array([0.94993, -0.94993, 0.94993, 0.99145, np.nan, 1]),
+        equal_nan=True,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

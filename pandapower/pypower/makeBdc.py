@@ -8,9 +8,20 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-"""Builds the B matrices and phase shift injections for DC power flow.
-"""
-from numpy import ones, zeros_like, r_, pi, flatnonzero as find, real, int64, float64, divide, errstate
+"""Builds the B matrices and phase shift injections for DC power flow."""
+
+from numpy import (
+    ones,
+    zeros_like,
+    r_,
+    pi,
+    flatnonzero as find,
+    real,
+    int64,
+    float64,
+    divide,
+    errstate,
+)
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_bus import BUS_I
 
@@ -44,13 +55,12 @@ def makeBdc(bus, branch, return_csr=True):
     sparse = csr_matrix if return_csr else csc_matrix
 
     ## constants
-    nb = bus.shape[0]          ## number of buses
-    nl = branch.shape[0]       ## number of lines
+    nb = bus.shape[0]  ## number of buses
+    nl = branch.shape[0]  ## number of lines
 
     ## check that bus numbers are equal to indices to bus (one set of bus nums)
     if any(bus[:, BUS_I] != list(range(nb))):
-        logger.error('makeBdc: buses must be numbered consecutively in '
-                     'bus matrix\n')
+        logger.error("makeBdc: buses must be numbered consecutively in bus matrix\n")
 
     ## for each branch, compute the elements of the branch B matrix and the phase
     ## shift "quiescent" injections, where
@@ -62,15 +72,15 @@ def makeBdc(bus, branch, return_csr=True):
     b = calc_b_from_branch(branch, nl)
 
     ## build connection matrix Cft = Cf - Ct for line and from - to buses
-    f = real(branch[:, F_BUS]).astype(int64)                           ## list of "from" buses
-    t = real(branch[:, T_BUS]).astype(int64)                           ## list of "to" buses
-    i = r_[range(nl), range(nl)]                   ## double set of row indices
+    f = real(branch[:, F_BUS]).astype(int64)  ## list of "from" buses
+    t = real(branch[:, T_BUS]).astype(int64)  ## list of "to" buses
+    i = r_[range(nl), range(nl)]  ## double set of row indices
     ## connection matrix
     Cft = sparse((r_[ones(nl), -ones(nl)], (i, r_[f, t])), (nl, nb))
 
     ## build Bf such that Bf * Va is the vector of real branch powers injected
     ## at each branch's "from" bus
-    Bf = sparse((r_[b, -b], (i, r_[f, t])), (nl, nb))## = spdiags(b, 0, nl, nl) * Cft
+    Bf = sparse((r_[b, -b], (i, r_[f, t])), (nl, nb))  ## = spdiags(b, 0, nl, nl) * Cft
 
     ## build Bbus
     Bbus = Cft.T * Bf
@@ -83,7 +93,7 @@ def makeBdc(bus, branch, return_csr=True):
 
 def phase_shift_injection(b, shift, Cft):
     ## build phase shift injection vectors
-    Pfinj = b * (-shift * pi / 180.)  ## injected at the from bus ...
+    Pfinj = b * (-shift * pi / 180.0)  ## injected at the from bus ...
     # Ptinj = -Pfinj                            ## and extracted at the to bus
     Pbusinj = Cft.T * Pfinj  ## Pbusinj = Cf * Pfinj + Ct * Ptinj
     return Pfinj, Pbusinj

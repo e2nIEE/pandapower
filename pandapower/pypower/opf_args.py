@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Parses and initializes OPF input arguments.
-"""
+"""Parses and initializes OPF input arguments."""
 
 from sys import stderr
 
@@ -12,7 +11,7 @@ from scipy.sparse import issparse
 
 from pandapower.pypower._compat import PY2
 from pandapower.pypower.ppoption import ppoption
-#from pandapower.pypower.loadcase import loadcase
+# from pandapower.pypower.loadcase import loadcase
 
 
 if not PY2:
@@ -82,44 +81,51 @@ def opf_args(ppc, ppopt):
     @author: Carlos E. Murillo-Sanchez (PSERC Cornell & Universidad
     Autonoma de Manizales)
     """
-#    nargin = len([arg for arg in [baseMVA, bus, gen, branch, areas, gencost,
-#                                  Au, lbu, ubu, ppopt, N, fparm, H, Cw,
-#                                  z0, zl, zu] if arg is not None])
+    #    nargin = len([arg for arg in [baseMVA, bus, gen, branch, areas, gencost,
+    #                                  Au, lbu, ubu, ppopt, N, fparm, H, Cw,
+    #                                  z0, zl, zu] if arg is not None])
     userfcn = array([])
     ## passing filename or dict
-    zu    = array([])
-    zl    = array([])
-    z0    = array([])
-    Cw    = array([])
-    H     = None
+    zu = array([])
+    zl = array([])
+    z0 = array([])
+    Cw = array([])
+    H = None
     fparm = array([])
-    N     = None
-    ubu   = array([])
-    lbu   = array([])
-    Au    = None
+    N = None
+    ubu = array([])
+    lbu = array([])
+    Au = None
 
-    baseMVA, bus, gen, branch, gencost = \
-        ppc['baseMVA'], ppc['bus'], ppc['gen'], ppc['branch'], ppc['gencost']
-    if 'areas' in ppc:
-        areas = ppc['areas']
+    baseMVA, bus, gen, branch, gencost = (
+        ppc["baseMVA"],
+        ppc["bus"],
+        ppc["gen"],
+        ppc["branch"],
+        ppc["gencost"],
+    )
+    if "areas" in ppc:
+        areas = ppc["areas"]
     else:
         areas = array([])
-    if Au is None and 'A' in ppc:
+    if Au is None and "A" in ppc:
         Au, lbu, ubu = ppc["A"], ppc["l"], ppc["u"]
-    if N is None and 'N' in ppc:  ## these two must go together
+    if N is None and "N" in ppc:  ## these two must go together
         N, Cw = ppc["N"], ppc["Cw"]
-    if H is None and 'H' in ppc:  ## will default to zeros
+    if H is None and "H" in ppc:  ## will default to zeros
         H = ppc["H"]
-    if (fparm is None or len(fparm) == 0) and 'fparm' in ppc:  ## will default to [1 0 0 1]
+    if (
+        fparm is None or len(fparm) == 0
+    ) and "fparm" in ppc:  ## will default to [1 0 0 1]
         fparm = ppc["fparm"]
-    if (z0 is None or len(z0) == 0) and 'z0' in ppc:
+    if (z0 is None or len(z0) == 0) and "z0" in ppc:
         z0 = ppc["z0"]
-    if (zl is None or len(zl) == 0) and 'zl' in ppc:
+    if (zl is None or len(zl) == 0) and "zl" in ppc:
         zl = ppc["zl"]
-    if (zu is None or len(zu) == 0) and 'zu' in ppc:
+    if (zu is None or len(zu) == 0) and "zu" in ppc:
         zu = ppc["zu"]
-    if (userfcn is None or len(userfcn) == 0) and 'userfcn' in ppc:
-        userfcn = ppc['userfcn']
+    if (userfcn is None or len(userfcn) == 0) and "userfcn" in ppc:
+        userfcn = ppc["userfcn"]
     if N is not None:
         nw = N.shape[0]
     else:
@@ -127,45 +133,90 @@ def opf_args(ppc, ppopt):
 
     if nw:
         if Cw.shape[0] != nw:
-            stderr.write('opf_args.m: dimension mismatch between N and Cw in '
-                         'generalized cost parameters\n')
+            stderr.write(
+                "opf_args.m: dimension mismatch between N and Cw in "
+                "generalized cost parameters\n"
+            )
         if len(fparm) > 0 and fparm.shape[0] != nw:
-            stderr.write('opf_args.m: dimension mismatch between N and fparm '
-                         'in generalized cost parameters\n')
+            stderr.write(
+                "opf_args.m: dimension mismatch between N and fparm "
+                "in generalized cost parameters\n"
+            )
         if (H is not None) and (H.shape[0] != nw | H.shape[0] != nw):
-            stderr.write('opf_args.m: dimension mismatch between N and H in '
-                         'generalized cost parameters\n')
+            stderr.write(
+                "opf_args.m: dimension mismatch between N and H in "
+                "generalized cost parameters\n"
+            )
         if Au is not None:
             if Au.shape[0] > 0 and N.shape[1] != Au.shape[1]:
-                stderr.write('opf_args.m: A and N must have the same number '
-                             'of columns\n')
+                stderr.write(
+                    "opf_args.m: A and N must have the same number of columns\n"
+                )
         ## make sure N and H are sparse
         if not issparse(N):
-            stderr.write('opf_args.m: N must be sparse in generalized cost '
-                         'parameters\n')
+            stderr.write(
+                "opf_args.m: N must be sparse in generalized cost parameters\n"
+            )
         if not issparse(H):
-            stderr.write('opf_args.m: H must be sparse in generalized cost parameters\n')
+            stderr.write(
+                "opf_args.m: H must be sparse in generalized cost parameters\n"
+            )
 
     if Au is not None and not issparse(Au):
-        stderr.write('opf_args.m: Au must be sparse\n')
+        stderr.write("opf_args.m: Au must be sparse\n")
     if ppopt == None or len(ppopt) == 0:
         ppopt = ppoption()
 
-    return baseMVA, bus, gen, branch, gencost, Au, lbu, ubu, \
-        ppopt, N, fparm, H, Cw, z0, zl, zu, userfcn, areas
+    return (
+        baseMVA,
+        bus,
+        gen,
+        branch,
+        gencost,
+        Au,
+        lbu,
+        ubu,
+        ppopt,
+        N,
+        fparm,
+        H,
+        Cw,
+        z0,
+        zl,
+        zu,
+        userfcn,
+        areas,
+    )
 
 
 def opf_args2(ppc, ppopt):
-    """Parses and initializes OPF input arguments.
-    """
-    baseMVA, bus, gen, branch, gencost, Au, lbu, ubu, \
-        ppopt, N, fparm, H, Cw, z0, zl, zu, userfcn, areas = opf_args(ppc, ppopt)
+    """Parses and initializes OPF input arguments."""
+    (
+        baseMVA,
+        bus,
+        gen,
+        branch,
+        gencost,
+        Au,
+        lbu,
+        ubu,
+        ppopt,
+        N,
+        fparm,
+        H,
+        Cw,
+        z0,
+        zl,
+        zu,
+        userfcn,
+        areas,
+    ) = opf_args(ppc, ppopt)
 
-    ppc['baseMVA'] = baseMVA
-    ppc['bus'] = bus
-    ppc['gen'] = gen
-    ppc['branch'] = branch
-    ppc['gencost'] = gencost
+    ppc["baseMVA"] = baseMVA
+    ppc["bus"] = bus
+    ppc["gen"] = gen
+    ppc["branch"] = branch
+    ppc["gencost"] = gencost
 
     if areas is not None and len(areas) > 0:
         ppc["areas"] = areas
@@ -175,7 +226,7 @@ def opf_args2(ppc, ppopt):
         ppc["N"], ppc["Cw"] = N, Cw
         if len(fparm) > 0:
             ppc["fparm"] = fparm
-        #if len(H) > 0:
+        # if len(H) > 0:
         ppc["H"] = H
     if z0 is not None and len(z0) > 0:
         ppc["z0"] = z0

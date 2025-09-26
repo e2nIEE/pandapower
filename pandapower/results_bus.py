@@ -5,17 +5,37 @@
 
 
 import numpy as np
-import pandas as pd
 from numpy import complex128
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
-from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS, BUS_TYPE, BUS_I
+from pandapower.pypower.idx_bus import (
+    VM,
+    VA,
+    PD,
+    QD,
+    LAM_P,
+    LAM_Q,
+    BASE_KV,
+    NONE,
+    BUS_TYPE,
+    BUS_I,
+)
 from pandapower.pypower.idx_bus_dc import DC_VM, DC_BUS_TYPE, DC_NONE, DC_PD, DC_BUS_I
 
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
-from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q, SSC_INTERNAL_BUS
+from pandapower.pypower.idx_ssc import (
+    SSC_Q,
+    SSC_INTERNAL_BUS,
+)
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
-from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, VSC_INTERNAL_BUS
+from pandapower.pypower.idx_vsc import (
+    VSC_Q,
+    VSC_P,
+    VSC_P_DC,
+    VSC_BUS_DC,
+    VSC_INTERNAL_BUS_DC,
+    VSC_INTERNAL_BUS,
+)
 
 import logging
 
@@ -65,19 +85,27 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
         net["res_bus_3ph"]["vm_b_pu"] = np.abs(Vabc_pu[1, :].flatten())
         net["res_bus_3ph"]["vm_c_pu"] = np.abs(Vabc_pu[2, :].flatten())
     # voltage angles
-    net["res_bus_3ph"]["va_a_degree"] = np.angle(Vabc_pu[0, :].flatten())*180/np.pi
-    net["res_bus_3ph"]["va_b_degree"] = np.angle(Vabc_pu[1, :].flatten())*180/np.pi
-    net["res_bus_3ph"]["va_c_degree"] = np.angle(Vabc_pu[2, :].flatten())*180/np.pi
-    net["res_bus_3ph"]["unbalance_percent"] = np.abs(V012_pu[2, :]/V012_pu[1, :])*100
+    net["res_bus_3ph"]["va_a_degree"] = np.angle(Vabc_pu[0, :].flatten()) * 180 / np.pi
+    net["res_bus_3ph"]["va_b_degree"] = np.angle(Vabc_pu[1, :].flatten()) * 180 / np.pi
+    net["res_bus_3ph"]["va_c_degree"] = np.angle(Vabc_pu[2, :].flatten()) * 180 / np.pi
+    net["res_bus_3ph"]["unbalance_percent"] = (
+        np.abs(V012_pu[2, :] / V012_pu[1, :]) * 100
+    )
     net["res_bus_3ph"].index = net["bus"].index
 
 
 def _V012_from_ppc012(net, ppc0, ppc1, ppc2):
     bus_idx = _get_bus_idx(net)
     V012_pu = np.zeros((3, len(bus_idx)), dtype=complex128)
-    V012_pu[0, :] = ppc0["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc0["bus"][bus_idx][:, VA]))
-    V012_pu[1, :] = ppc1["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc1["bus"][bus_idx][:, VA]))
-    V012_pu[2, :] = ppc2["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc2["bus"][bus_idx][:, VA]))
+    V012_pu[0, :] = ppc0["bus"][bus_idx][:, VM] * np.exp(
+        1j * np.deg2rad(ppc0["bus"][bus_idx][:, VA])
+    )
+    V012_pu[1, :] = ppc1["bus"][bus_idx][:, VM] * np.exp(
+        1j * np.deg2rad(ppc1["bus"][bus_idx][:, VA])
+    )
+    V012_pu[2, :] = ppc2["bus"][bus_idx][:, VM] * np.exp(
+        1j * np.deg2rad(ppc2["bus"][bus_idx][:, VA])
+    )
     return V012_pu
 
 
@@ -112,7 +140,6 @@ def _get_bus_results(net, ppc, bus_pq):
 
 
 def _get_bus_dc_results(net, bus_p_dc):
-
     # write sum of p and q values to bus
     net["res_bus_dc"]["p_mw"].values[:] = bus_p_dc[:, 0]
 
@@ -151,18 +178,18 @@ def write_voltage_dependend_load_results(net, p, q, b):
 
         voltage_depend_loads = net["_options"]["voltage_depend_loads"]
 
-        cz_p = l["const_z_p_percent"].values / 100.
-        ci_p = l["const_i_p_percent"].values / 100.
-        cp = 1. - (cz_p + ci_p)
+        cz_p = l["const_z_p_percent"].values / 100.0
+        ci_p = l["const_i_p_percent"].values / 100.0
+        cp = 1.0 - (cz_p + ci_p)
 
         # constant power
         pl = l["p_mw"].values * scaling * load_is * cp
         net["res_load"]["p_mw"] = pl
         p = np.hstack([p, pl])
 
-        cz_q = l["const_z_q_percent"].values / 100.
-        ci_q = l["const_i_q_percent"].values / 100.
-        cq = 1. - (cz_q + ci_q)
+        cz_q = l["const_z_q_percent"].values / 100.0
+        ci_q = l["const_i_q_percent"].values / 100.0
+        cq = 1.0 - (cz_q + ci_q)
 
         ql = l["q_mvar"].values * scaling * load_is * cq
         net["res_load"]["q_mvar"] = ql
@@ -173,13 +200,13 @@ def write_voltage_dependend_load_results(net, p, q, b):
         if voltage_depend_loads:
             # constant impedance and constant current
             vm_l = net["_ppc"]["bus"][lidx, 7]
-            volt_depend_p = ci_p * vm_l + cz_p * vm_l ** 2
+            volt_depend_p = ci_p * vm_l + cz_p * vm_l**2
             pl = l["p_mw"].values * scaling * load_is * volt_depend_p
             net["res_load"]["p_mw"] += pl
             p = np.hstack([p, pl])
 
-            volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
-            ql = l["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
+            volt_depend_q = ci_q * vm_l + cz_q * vm_l**2
+            ql = l["q_mvar"].values * scaling * load_is * volt_depend_q  # * volt_depend
             net["res_load"]["q_mvar"] += ql
             q = np.hstack([q, ql])
 
@@ -237,14 +264,22 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         net[res_].loc[controlled_elements, "p_mw"] = ppc["gen"][gen_idx, PG] * gen_sign
 
     # add results from distributed slack calculation for xwards from ppc instead of the element table
-    if net._options['distributed_slack'] and element == "xward" and np.any(net.xward.loc[element_in_service, 'slack_weight'].values != 0):
+    if (
+        net._options["distributed_slack"]
+        and element == "xward"
+        and np.any(net.xward.loc[element_in_service, "slack_weight"].values != 0)
+    ):
         _extract_dist_slack_pq_results(net, ppc, element, res_)
 
     if ac:
         # Q result in mvar to element
-        net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
+        net[res_]["q_mvar"].values[:] = (
+            el_data[q_mvar].values * scaling * element_in_service
+        )
         if is_controllable:
-            net[res_].loc[controlled_elements, "q_mvar"] = ppc["gen"][gen_idx, QG] * gen_sign
+            net[res_].loc[controlled_elements, "q_mvar"] = (
+                ppc["gen"][gen_idx, QG] * gen_sign
+            )
     else:
         net[res_]["q_mvar"].values[:] = np.nan
 
@@ -285,22 +320,24 @@ def write_p_dc_results_to_element(net, ppc, element):
         # net[res_]["p_dc_mw"].values[:] = element_data[p_mw].values * vsc_p_mode
 
         # use the ppc value for the result instead:
-        #res_p = np.nans(shape=(len(net[element])), dtype=np.float64)
-        #res_p[net._is_elements["vsc"]] = ppc[element][:, VSC_P_DC]
+        # res_p = np.nans(shape=(len(net[element])), dtype=np.float64)
+        # res_p[net._is_elements["vsc"]] = ppc[element][:, VSC_P_DC]
         net[res_]["p_dc_mw"].values[:] = ppc[element][:, VSC_P_DC]
     else:
-        scaling = element_data["scaling"].values if 'scaling' in element_data else 1.0
+        scaling = element_data["scaling"].values if "scaling" in element_data else 1.0
         element_in_service = _is_elements[element]
-        net[res_]["p_dc_mw"].values[:] = element_data["p_dc_mw"].values * scaling * element_in_service
+        net[res_]["p_dc_mw"].values[:] = (
+            element_data["p_dc_mw"].values * scaling * element_in_service
+        )
 
-        #if is_controllable:
+        # if is_controllable:
         #    net[res_].loc[controlled_elements, "p_dc_mw"] = ppc["gen"][gen_idx, PG] * gen_sign
 
     return net
 
 
 def _extract_dist_slack_pq_results(net, ppc, element, res_):
-    node_elements = ['sgen', 'load', 'ward', 'xward', 'storage']
+    node_elements = ["sgen", "load", "ward", "xward", "storage"]
     for b in net[element].bus.values:
         connected = dict()
         for e in node_elements:
@@ -308,20 +345,24 @@ def _extract_dist_slack_pq_results(net, ppc, element, res_):
             if len(conn) > 0:
                 connected.update({e: conn})
 
-        p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
+        p_bus = ppc["bus"][net._pd2ppc_lookups["bus"][b], PD]
         # first, count the total slack weights per bus, and obtain the variable part of the active power
         total_weight = 0
         for e, idx in connected.items():
-            if 'slack_weight' in net[e].columns:
-                elm_weight = net[e].loc[idx, 'slack_weight'].values
+            if "slack_weight" in net[e].columns:
+                elm_weight = net[e].loc[idx, "slack_weight"].values
                 if np.abs(elm_weight).sum() != 0:
                     total_weight += np.abs(elm_weight)
-            p_bus -= net[e].loc[idx, 'ps_mw' if e in ["ward", "xward"] else "p_mw"].values.sum()
+            p_bus -= (
+                net[e]
+                .loc[idx, "ps_mw" if e in ["ward", "xward"] else "p_mw"]
+                .values.sum()
+            )
 
         # now, distribute the variable part of the active power among the dist_slack elements
         for e, idx in connected.items():
-            if 'slack_weight' in net[e].columns:
-                elm_weight = net[e].loc[idx, 'slack_weight'].values
+            if "slack_weight" in net[e].columns:
+                elm_weight = net[e].loc[idx, "slack_weight"].values
                 if np.abs(elm_weight).sum() != 0:
                     net[res_]["p_mw"] += p_bus * elm_weight / total_weight
 
@@ -342,36 +383,48 @@ def write_pq_results_to_element_3ph(net, element):
 
     # info element
     el_data = net[element]
-    res_ = "res_" + element+"_3ph"
+    res_ = "res_" + element + "_3ph"
 
     scaling = el_data["scaling"].values
 
     element_in_service = _is_elements[element]
 
-    net[res_]["p_a_mw"] = list(
-        (el_data["p_mw"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
+    net[res_]["p_a_mw"] = (
+        list((el_data["p_mw"].values / 3) * scaling * element_in_service)
+        if element in ["load", "sgen"]
         else list(el_data["p_a_mw"].values * scaling * element_in_service)
+    )
 
-    net[res_]["p_b_mw"] = list(
-        (el_data["p_mw"].values / 3) * scaling * element_in_service)if element in ["load", "sgen"] \
+    net[res_]["p_b_mw"] = (
+        list((el_data["p_mw"].values / 3) * scaling * element_in_service)
+        if element in ["load", "sgen"]
         else list(el_data["p_b_mw"].values * scaling * element_in_service)
+    )
 
-    net[res_]["p_c_mw"] = list(
-        (el_data["p_mw"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
+    net[res_]["p_c_mw"] = (
+        list((el_data["p_mw"].values / 3) * scaling * element_in_service)
+        if element in ["load", "sgen"]
         else list(el_data["p_c_mw"].values * scaling * element_in_service)
+    )
     if ac:
         # Q result in kvar to element
-        net[res_]["q_a_mvar"] = list(
-            (el_data["q_mvar"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
+        net[res_]["q_a_mvar"] = (
+            list((el_data["q_mvar"].values / 3) * scaling * element_in_service)
+            if element in ["load", "sgen"]
             else list(el_data["q_a_mvar"].values * scaling * element_in_service)
+        )
 
-        net[res_]["q_b_mvar"] = list(
-            (el_data["q_mvar"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
+        net[res_]["q_b_mvar"] = (
+            list((el_data["q_mvar"].values / 3) * scaling * element_in_service)
+            if element in ["load", "sgen"]
             else list(el_data["q_b_mvar"].values * scaling * element_in_service)
+        )
 
-        net[res_]["q_c_mvar"] = list(
-            (el_data["q_mvar"].values / 3) * scaling * element_in_service) if element in ["load", "sgen"] \
+        net[res_]["q_c_mvar"] = (
+            list((el_data["q_mvar"].values / 3) * scaling * element_in_service)
+            if element in ["load", "sgen"]
             else list(el_data["q_c_mvar"].values * scaling * element_in_service)
+        )
 
     # update index of result table
     net[res_].index = net[element].index
@@ -393,7 +446,7 @@ def get_p_q_b(net, element, suffix=None):
 
 def get_p_q_b_3ph(net, element):
     ac = net["_options"]["ac"]
-    res_ = "res_" + element+"_3ph"
+    res_ = "res_" + element + "_3ph"
 
     # bus values are needed for stacking
     b = net[element]["bus"].values
@@ -411,8 +464,16 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
     b, p, q = np.array([]), np.array([]), np.array([])
 
     ac = net["_options"]["ac"]
-    elements = ["load", "motor", "sgen", "storage", "ward", "xward",
-                "asymmetric_load", "asymmetric_sgen"]
+    elements = [
+        "load",
+        "motor",
+        "sgen",
+        "storage",
+        "ward",
+        "xward",
+        "asymmetric_load",
+        "asymmetric_sgen",
+    ]
 
     if net["_options"]["voltage_depend_loads"] and ac:
         # voltage dependend loads need special treatment here
@@ -444,13 +505,18 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
 
 
 def _get_p_dc_results(net, ppc, bus_lookup_aranged):
-    bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)  # 1 because only p relevant
+    bus_p_dc = np.zeros(
+        shape=(len(net["bus_dc"].index), 1), dtype=np.float64
+    )  # 1 because only p relevant
     b, p = np.array([]), np.array([])
 
     # ac = net["_options"]["ac"]
     # elements = ["load", "motor", "sgen", "storage", "ward", "xward",
     #             "asymmetric_load", "asymmetric_sgen"]
-    elements = ["vsc", "load_dc"]  # we only have VSC element so far that injects or consumes P from DC bus
+    elements = [
+        "vsc",
+        "load_dc",
+    ]  # we only have VSC element so far that injects or consumes P from DC bus
 
     for element in elements:
         if len(net[element]) > 0:
@@ -474,30 +540,39 @@ def _get_p_dc_results(net, ppc, bus_lookup_aranged):
 def _get_p_q_results_3ph(net, bus_lookup_aranged):
     # results to be filled (bus, p in kw, q in kvar)
     bus_pq = np.zeros(shape=(len(net["bus"].index), 6), dtype=float)
-    b, pA, pB, pC, qA, qB, qC = np.array([]), np.array([]), np.array([]), np.array([]), \
-        np.array([]), np.array([]), np.array([])
+    b, pA, pB, pC, qA, qB, qC = (
+        np.array([]),
+        np.array([]),
+        np.array([]),
+        np.array([]),
+        np.array([]),
+        np.array([]),
+        np.array([]),
+    )
 
     ac = net["_options"]["ac"]
     # Todo: Voltage dependent loads
     elements = ["storage", "sgen", "load"]
     elements_3ph = ["asymmetric_load", "asymmetric_sgen"]
     for element in elements:
-        sign = -1 if element in ['sgen', 'asymmetric_sgen'] else 1
+        sign = -1 if element in ["sgen", "asymmetric_sgen"] else 1
         if len(net[element]):
             write_pq_results_to_element(net, net._ppc1, element, suffix="3ph")
             p_el, q_el, bus_el = get_p_q_b(net, element, suffix="3ph")
-            pA = np.hstack([pA, sign * p_el/3])
-            pB = np.hstack([pB, sign * p_el/3])
-            pC = np.hstack([pC, sign * p_el/3])
-            qA = np.hstack([qA, sign * q_el/3 if ac else np.zeros(len(p_el/3))])
-            qB = np.hstack([qB, sign * q_el/3 if ac else np.zeros(len(p_el/3))])
-            qC = np.hstack([qC, sign * q_el/3 if ac else np.zeros(len(p_el/3))])
+            pA = np.hstack([pA, sign * p_el / 3])
+            pB = np.hstack([pB, sign * p_el / 3])
+            pC = np.hstack([pC, sign * p_el / 3])
+            qA = np.hstack([qA, sign * q_el / 3 if ac else np.zeros(len(p_el / 3))])
+            qB = np.hstack([qB, sign * q_el / 3 if ac else np.zeros(len(p_el / 3))])
+            qC = np.hstack([qC, sign * q_el / 3 if ac else np.zeros(len(p_el / 3))])
             b = np.hstack([b, bus_el])
     for element in elements_3ph:
-        sign = -1 if element in ['sgen', 'asymmetric_sgen'] else 1
+        sign = -1 if element in ["sgen", "asymmetric_sgen"] else 1
         if len(net[element]):
             write_pq_results_to_element_3ph(net, element)
-            p_el_A, q_el_A, p_el_B, q_el_B, p_el_C, q_el_C, bus_el = get_p_q_b_3ph(net, element)
+            p_el_A, q_el_A, p_el_B, q_el_B, p_el_C, q_el_C, bus_el = get_p_q_b_3ph(
+                net, element
+            )
             pA = np.hstack([pA, sign * p_el_A])
             pB = np.hstack([pB, sign * p_el_B])
             pC = np.hstack([pC, sign * p_el_C])
@@ -507,7 +582,9 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
             b = np.hstack([b, bus_el])
 
     # sum pq results from every element to be written to net['bus'] later on
-    b_pp, vp_A, vq_A, vp_B, vq_B, vp_C, vq_C = _sum_by_group_nvals(b.astype(np.int64), pA, qA, pB, qB, pC, qC)
+    b_pp, vp_A, vq_A, vp_B, vq_B, vp_C, vq_C = _sum_by_group_nvals(
+        b.astype(np.int64), pA, qA, pB, qB, pC, qC
+    )
     b_ppc = bus_lookup_aranged[b_pp]
     bus_pq[b_ppc, 0] = vp_A
     bus_pq[b_ppc, 1] = vq_A
@@ -540,19 +617,32 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
             if any(s.step_dependency_table):
                 use_step_table = True
         if use_step_table:
-            merged_df = s.merge(net.shunt_characteristic_table, left_on=['id_characteristic_table', 'step'],
-                                right_on=['id_characteristic', 'step'], how='left', suffixes=('', '_char'))
-            p_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['p_mw_char'].values/merged_df['step'].values, merged_df['p_mw'].values).astype(np.float64)
-            q_shunt_step = np.where(merged_df['step_dependency_table'], merged_df['q_mvar_char'].values/merged_df['step'].values, merged_df['q_mvar'].values).astype(np.float64)
+            merged_df = s.merge(
+                net.shunt_characteristic_table,
+                left_on=["id_characteristic_table", "step"],
+                right_on=["id_characteristic", "step"],
+                how="left",
+                suffixes=("", "_char"),
+            )
+            p_shunt_step = np.where(
+                merged_df["step_dependency_table"],
+                merged_df["p_mw_char"].values / merged_df["step"].values,
+                merged_df["p_mw"].values,
+            ).astype(np.float64)
+            q_shunt_step = np.where(
+                merged_df["step_dependency_table"],
+                merged_df["q_mvar_char"].values / merged_df["step"].values,
+                merged_df["q_mvar"].values,
+            ).astype(np.float64)
         else:
             p_shunt_step = net["shunt"]["p_mw"].values
             q_shunt_step = net["shunt"]["q_mvar"].values
-        p_shunt = u_shunt ** 2 * p_shunt_step * shunt_is * v_ratio * step
+        p_shunt = u_shunt**2 * p_shunt_step * shunt_is * v_ratio * step
         net["res_shunt"]["p_mw"].values[:] = p_shunt
         p = np.hstack([p, p_shunt])
         if ac:
             net["res_shunt"]["vm_pu"].values[:] = u_shunt
-            q_shunt = u_shunt ** 2 * q_shunt_step * shunt_is * v_ratio * step
+            q_shunt = u_shunt**2 * q_shunt_step * shunt_is * v_ratio * step
             net["res_shunt"]["q_mvar"].values[:] = q_shunt
             q = np.hstack([q, q_shunt])
         b = np.hstack([b, s["bus"].values])
@@ -563,13 +653,15 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         ward_is = _is_elements["ward"]
         u_ward = ppc["bus"][widx, VM]
         u_ward = np.nan_to_num(u_ward)
-        p_ward = u_ward ** 2 * net["ward"]["pz_mw"].values * ward_is
+        p_ward = u_ward**2 * net["ward"]["pz_mw"].values * ward_is
         net["res_ward"]["p_mw"].values[:] = net["res_ward"]["p_mw"].values + p_ward
         p = np.hstack([p, p_ward])
         if ac:
             net["res_ward"]["vm_pu"].values[:] = u_ward
-            q_ward = u_ward ** 2 * net["ward"]["qz_mvar"].values * ward_is
-            net["res_ward"]["q_mvar"].values[:] = net["res_ward"]["q_mvar"].values + q_ward
+            q_ward = u_ward**2 * net["ward"]["qz_mvar"].values * ward_is
+            net["res_ward"]["q_mvar"].values[:] = (
+                net["res_ward"]["q_mvar"].values + q_ward
+            )
             q = np.hstack([q, q_ward])
         b = np.hstack([b, w["bus"].values])
 
@@ -579,13 +671,15 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         xward_is = _is_elements["xward"]
         u_xward = ppc["bus"][widx, VM]
         u_xward = np.nan_to_num(u_xward)
-        p_xward = u_xward ** 2 * net["xward"]["pz_mw"].values * xward_is
+        p_xward = u_xward**2 * net["xward"]["pz_mw"].values * xward_is
         net["res_xward"]["p_mw"].values[:] = net["res_xward"]["p_mw"].values + p_xward
         p = np.hstack([p, p_xward])
         if ac:
             net["res_xward"]["vm_pu"].values[:] = u_xward
-            q_xward = u_xward ** 2 * net["xward"]["qz_mvar"].values * xward_is
-            net["res_xward"]["q_mvar"].values[:] = net["res_xward"]["q_mvar"].values + q_xward
+            q_xward = u_xward**2 * net["xward"]["qz_mvar"].values * xward_is
+            net["res_xward"]["q_mvar"].values[:] = (
+                net["res_xward"]["q_mvar"].values + q_xward
+            )
             q = np.hstack([q, q_xward])
         b = np.hstack([b, xw["bus"].values])
 
@@ -594,14 +688,18 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
     if len(svc):
         svcidx = bus_lookup[svc["bus"].values]
         svc_is = _is_elements["svc"]
-        net["res_svc"].loc[svc_is, "thyristor_firing_angle_degree"] = np.rad2deg(ppc["svc"][svc_is, SVC_THYRISTOR_FIRING_ANGLE])
+        net["res_svc"].loc[svc_is, "thyristor_firing_angle_degree"] = np.rad2deg(
+            ppc["svc"][svc_is, SVC_THYRISTOR_FIRING_ANGLE]
+        )
         p = np.hstack([p, np.zeros_like(svc["bus"].values)])
         if ac:
             net["res_svc"].loc[svc_is, "vm_pu"] = ppc["bus"][svcidx[svc_is], VM]
             net["res_svc"].loc[svc_is, "va_degree"] = ppc["bus"][svcidx[svc_is], VA]
             q_svc = ppc["svc"][:, SVC_Q]
             net["res_svc"].loc[:, "q_mvar"] = q_svc  # write all because of zeros
-            net["res_svc"].loc[svc_is, "x_ohm"] = ppc["svc"][svc_is, SVC_X_PU] * baseZ[svcidx[svc_is]]
+            net["res_svc"].loc[svc_is, "x_ohm"] = (
+                ppc["svc"][svc_is, SVC_X_PU] * baseZ[svcidx[svc_is]]
+            )
             q = np.hstack([q, q_svc])
         b = np.hstack([b, svc["bus"].values])
 
@@ -633,7 +731,9 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         vsc_dc_tb = ppc["vsc"][vsc_is, VSC_INTERNAL_BUS_DC].real.astype(np.int64)
 
         net["res_vsc"].loc[vsc_is, "vm_internal_pu"] = ppc["bus"][vsc_tb, VM]
-        net["res_vsc"].loc[vsc_is, "vm_internal_dc_pu"] = ppc["bus_dc"][vsc_dc_tb, DC_VM]
+        net["res_vsc"].loc[vsc_is, "vm_internal_dc_pu"] = ppc["bus_dc"][
+            vsc_dc_tb, DC_VM
+        ]
         net["res_vsc"].loc[vsc_is, "vm_dc_pu"] = ppc["bus_dc"][vsc_dc_fb, DC_VM]
         p_vsc = ppc["vsc"][:, VSC_P]
         net["res_vsc"].loc[:, "p_mw"] = p_vsc  # write all because of zeros

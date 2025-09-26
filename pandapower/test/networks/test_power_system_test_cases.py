@@ -6,10 +6,36 @@
 
 import pytest
 
-from pandapower.networks.power_system_test_cases import case4gs, case5, case6ww, case9, case14, case24_ieee_rts, \
-    case30, case_ieee30, case33bw, case39, case57, case89pegase, case118, case145, case_illinois200, case300, \
-    case1354pegase, case1888rte, case2848rte, case2869pegase, case3120sp, case6470rte, case6495rte, case6515rte, \
-    case9241pegase, GBnetwork, GBreducednetwork, iceland  # missing test for case11_iwamoto
+from pandapower.networks.power_system_test_cases import (
+    case4gs,
+    case5,
+    case6ww,
+    case9,
+    case14,
+    case24_ieee_rts,
+    case30,
+    case_ieee30,
+    case33bw,
+    case39,
+    case57,
+    case89pegase,
+    case118,
+    case145,
+    case_illinois200,
+    case300,
+    case1354pegase,
+    case1888rte,
+    case2848rte,
+    case2869pegase,
+    case3120sp,
+    case6470rte,
+    case6495rte,
+    case6515rte,
+    case9241pegase,
+    GBnetwork,
+    GBreducednetwork,
+    iceland,
+)  # missing test for case11_iwamoto
 from pandapower.run import runpp
 import numpy as np
 
@@ -32,8 +58,8 @@ def _compare_arrays(arr1, arr2, tolerance=0.1):
 def compare_arrays(arr1, arr2, atol=0.1):
     is_equal, where = _compare_arrays(arr1, arr2, atol)
     if not is_equal:
-        name = ''
-        if 'name' in dir(arr1):
+        name = ""
+        if "name" in dir(arr1):
             name = arr1.name
         raise ValueError(f"In {name}, the following elements are not equal: {where}")
 
@@ -70,13 +96,27 @@ def test_case5():
     # the network was recreated by hand and all the values were transferred.
     # Tolerances were set so that pp does not fail.
     compare_arrays(net.res_bus.vm_pu, [1.00, 0.99, 1.00, 1.00, 1.00], atol=0.02)
-    compare_arrays(net.res_bus.va_degree, [3.275, -0.758, -0.492, 0.000, 4.113], atol=0.002)
+    compare_arrays(
+        net.res_bus.va_degree, [3.275, -0.758, -0.492, 0.000, 4.113], atol=0.002
+    )
 
-    compare_arrays(net.res_line.p_from_mw, [249.81, 186.40, -226.21, -51.96, -28.59, -238.26], atol=0.2)
-    compare_arrays(net.res_line.p_to_mw, [-248.04, -185.28, 226.54, 52.08, 28.62, 239.97], atol=0.2)
-    compare_arrays(net.res_line.i_ka, [0.630, 0.469, 0.571, 0.268, 0.072, 0.604], atol=0.1)
-    compare_arrays(net.res_line.q_from_mvar, [21.6, -14.6, 22.7, -94.0, 2.6, 32.16], atol=1.1)
-    compare_arrays(net.res_line.q_to_mvar, [-4.6, 24.6, -22.5, 93.4, -3.1, -15.7], atol=1.1)
+    compare_arrays(
+        net.res_line.p_from_mw,
+        [249.81, 186.40, -226.21, -51.96, -28.59, -238.26],
+        atol=0.2,
+    )
+    compare_arrays(
+        net.res_line.p_to_mw, [-248.04, -185.28, 226.54, 52.08, 28.62, 239.97], atol=0.2
+    )
+    compare_arrays(
+        net.res_line.i_ka, [0.630, 0.469, 0.571, 0.268, 0.072, 0.604], atol=0.1
+    )
+    compare_arrays(
+        net.res_line.q_from_mvar, [21.6, -14.6, 22.7, -94.0, 2.6, 32.16], atol=1.1
+    )
+    compare_arrays(
+        net.res_line.q_to_mvar, [-4.6, 24.6, -22.5, 93.4, -3.1, -15.7], atol=1.1
+    )
 
     compare_arrays(net.res_gen.p_mw, [40.0, 323.5, 466.5], atol=0.1)
     compare_arrays(net.res_gen.q_mvar, [29.7, 194.7, -38.2], atol=1.1)
@@ -206,7 +246,7 @@ def test_case1888rte_changed_slack():
 
     ref_bus_idx = [1233, 1854]
     net = case1888rte(ref_bus_idx=ref_bus_idx)
-    runpp(net, trafo_model='pi')
+    runpp(net, trafo_model="pi")
     assert list(net.ext_grid.bus.sort_values()) == ref_bus_idx
     assert net.converged
 
@@ -281,5 +321,5 @@ def test_iceland():
     _ppc_element_test(net, 189, 206, 35, True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

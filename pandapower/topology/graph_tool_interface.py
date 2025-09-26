@@ -61,14 +61,16 @@ class GraphToolInterface(Graph):
         for e in edges:
             e_key, e_val = self.edge_properties["edge_data"][e].popitem()
             if key is not None:
-                if key == e_key: return e_val
+                if key == e_key:
+                    return e_val
             edge_data[e_key] = e_val
         return edge_data
 
     def add_edge(self, source, target, add_missing=True, **kwargs):
-
         # add the edge
-        edge = super(GraphToolInterface, self).add_edge(source, target, add_missing=add_missing)
+        edge = super(GraphToolInterface, self).add_edge(
+            source, target, add_missing=add_missing
+        )
         # add the properties from kwargs
         if "key" in kwargs:
             key = kwargs.pop("key")

@@ -35,8 +35,12 @@ def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
     S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
     vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
     """
-    r_for_t_rated_rise = net.line.r_ohm_per_km * (1 + net.line.alpha * t_rise_degree_celsius) * \
-                         net.line.length_km / net.line.parallel
+    r_for_t_rated_rise = (
+        net.line.r_ohm_per_km
+        * (1 + net.line.alpha * t_rise_degree_celsius)
+        * net.line.length_km
+        / net.line.parallel
+    )
     p_rated_loss_mw = np.square(net.line.max_i_ka * np.sqrt(3)) * r_for_t_rated_rise
     r_theta_kelvin_per_mw = t_rise_degree_celsius / p_rated_loss_mw
     return r_theta_kelvin_per_mw
@@ -210,9 +214,22 @@ def calc_T_ngoko(i_square_pu, a0, a1, a2, tdpf_delay_s, T0, tau):
     return t_transient
 
 
-def calc_a0_a1_a2_tau(t_air_pu, t_max_pu, t_ref_pu, r_ref_ohm_per_m, conductor_outer_diameter_m,
-                      mc_joule_per_m_k, wind_speed_m_per_s, wind_angle_degree, s_w_per_square_meter,
-                      alpha_pu=ALPHA, solar_absorptivity=0.5, emissivity=0.5, T_base=1, i_base_a=1):
+def calc_a0_a1_a2_tau(
+    t_air_pu,
+    t_max_pu,
+    t_ref_pu,
+    r_ref_ohm_per_m,
+    conductor_outer_diameter_m,
+    mc_joule_per_m_k,
+    wind_speed_m_per_s,
+    wind_angle_degree,
+    s_w_per_square_meter,
+    alpha_pu=ALPHA,
+    solar_absorptivity=0.5,
+    emissivity=0.5,
+    T_base=1,
+    i_base_a=1,
+):
     """
     Calculate the coefficients for the simplified thermal model according to Ngoko et al.
 
@@ -269,16 +286,46 @@ def calc_a0_a1_a2_tau(t_air_pu, t_max_pu, t_ref_pu, r_ref_ohm_per_m, conductor_o
     r_amb_ohm_per_m = r_ref_ohm_per_m * (1 + alpha_pu * (t_air_pu - t_ref_pu))
     r_max_ohm_per_m = r_ref_ohm_per_m * (1 + alpha_pu * (t_max_pu - t_ref_pu))
 
-    h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_air_pu * T_base + 273) ** 3
-    kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_air_pu * T_base + 273) ** 2
+    h_r = (
+        4
+        * np.pi
+        * conductor_outer_diameter_m
+        * SIGMA
+        * emissivity
+        * (t_air_pu * T_base + 273) ** 3
+    )
+    kappa = (
+        6
+        * np.pi
+        * conductor_outer_diameter_m
+        * SIGMA
+        * emissivity
+        * (t_air_pu * T_base + 273) ** 2
+    )
 
-    h_c = calc_h_c(conductor_outer_diameter_m, wind_speed_m_per_s, wind_angle_degree, t_air_pu * T_base)
+    h_c = calc_h_c(
+        conductor_outer_diameter_m,
+        wind_speed_m_per_s,
+        wind_angle_degree,
+        t_air_pu * T_base,
+    )
 
     k2 = r_max_ohm_per_m / (h_r + h_c + kappa)
 
-    a0 = t_air_pu + (solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c) / T_base
+    a0 = (
+        t_air_pu
+        + (solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter)
+        / (h_r + h_c)
+        / T_base
+    )
     a1 = r_amb_ohm_per_m / (h_r + h_c) / T_base * np.square(i_base_a)
-    a2 = k2 / (h_r + h_c) * (alpha_pu / T_base * r_ref_ohm_per_m - kappa * k2) / T_base * np.power(i_base_a, 4)
+    a2 = (
+        k2
+        / (h_r + h_c)
+        * (alpha_pu / T_base * r_ref_ohm_per_m - kappa * k2)
+        / T_base
+        * np.power(i_base_a, 4)
+    )
     # a2 = a1 / (h_r + h_c) * (alpha/T_base * r_ref_ohm_per_m - kappa * a1) / T_base * np.power(i_base_a, 4)
 
     # rho = 2710  # kg/m³ # density of aluminum
@@ -288,27 +335,37 @@ def calc_a0_a1_a2_tau(t_air_pu, t_max_pu, t_ref_pu, r_ref_ohm_per_m, conductor_o
     return a0, a1, a2, tau
 
 
-def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_degree_celsius):
-    rho_air = 101325 / (287.058 * (t_air_degree_celsius + 273))  # pressure 1 atm. / (R_specific * T)
-    rho_air_relative = 1.  # relative air density
+def calc_h_c(
+    conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_degree_celsius
+):
+    rho_air = 101325 / (
+        287.058 * (t_air_degree_celsius + 273)
+    )  # pressure 1 atm. / (R_specific * T)
+    rho_air_relative = 1.0  # relative air density
     # r_f = 0.05 # roughness of conductors
-    r_f = 0.1 # roughness of conductors
+    r_f = 0.1  # roughness of conductors
     w = rho_air * conductor_outer_diameter_m * v_m_per_s
 
-    K = np.where(v_m_per_s < 0.5, 0.55,
-                 np.where(v_m_per_s < 24,
-                          0.42 + 0.68 * np.sin(np.deg2rad(wind_angle_degree)) ** 1.08,
-                          0.42 + 0.58 * np.sin(np.deg2rad(wind_angle_degree)) ** 0.9))
+    K = np.where(
+        v_m_per_s < 0.5,
+        0.55,
+        np.where(
+            v_m_per_s < 24,
+            0.42 + 0.68 * np.sin(np.deg2rad(wind_angle_degree)) ** 1.08,
+            0.42 + 0.58 * np.sin(np.deg2rad(wind_angle_degree)) ** 0.9,
+        ),
+    )
 
-    h_cfl = 8.74 * K * w ** 0.471
+    h_cfl = 8.74 * K * w**0.471
 
-    h_cfh = 13.44 * K * w ** 0.633 if r_f <= 0.05 else 20.89 * K * w ** 0.8
+    h_cfh = 13.44 * K * w**0.633 if r_f <= 0.05 else 20.89 * K * w**0.8
 
-    h_cn = 8.1 * conductor_outer_diameter_m ** 0.75
+    h_cn = 8.1 * conductor_outer_diameter_m**0.75
 
     h_c = np.maximum(np.maximum(h_cfl, h_cfh), h_cn)
 
     return h_c
+
 
 #
 # def calc_a0_a1_a2_old(t_air_degree_celsius, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, solar_absorptivity=0.5, emissivity=0.5):
@@ -363,8 +420,25 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_deg
 #     return tau
 
 
-def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup, pq_lookup, tau, tdpf_delay_s, Vm, Va,
-                  r_theta_pu, J, r, x, g):
+def create_J_tdpf(
+    branch,
+    tdpf_lines,
+    alpha_pu,
+    r_ref_pu,
+    pvpq,
+    pq,
+    pvpq_lookup,
+    pq_lookup,
+    tau,
+    tdpf_delay_s,
+    Vm,
+    Va,
+    r_theta_pu,
+    J,
+    r,
+    x,
+    g,
+):
     """
              | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
              | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -391,9 +465,14 @@ def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup,
     """
     C = np.ones_like(tdpf_lines, dtype=np.float64)
     if tdpf_delay_s is not None and tdpf_delay_s != np.inf:
-        C *= (1 - np.exp(-tdpf_delay_s / tau))
+        C *= 1 - np.exp(-tdpf_delay_s / tau)
 
-    dg_dT = (np.square(x) - np.square(r)) * alpha_pu * r_ref_pu / np.square(np.square(r) + np.square(x))
+    dg_dT = (
+        (np.square(x) - np.square(r))
+        * alpha_pu
+        * r_ref_pu
+        / np.square(np.square(r) + np.square(x))
+    )
     db_dT = 2 * x * g * alpha_pu * r_ref_pu / (np.square(r) + np.square(x))
 
     in_pq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(np.int64), pq)
@@ -402,10 +481,37 @@ def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup,
     in_pvpq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(np.int64), pvpq)
 
     # todo: optimize and speed-up the code for the matrices (write numba versions)
-    J13 = create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT)
-    J23 = create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT)
-    J31 = create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta_pu, g)
-    J32 = create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g)
+    J13 = create_J13(
+        branch,
+        tdpf_lines,
+        in_pvpq_f,
+        in_pvpq_t,
+        pvpq,
+        pvpq_lookup,
+        Vm,
+        Va,
+        dg_dT,
+        db_dT,
+    )
+    J23 = create_J23(
+        branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT
+    )
+    J31 = create_J31(
+        branch,
+        tdpf_lines,
+        in_pvpq_f,
+        in_pvpq_t,
+        pvpq,
+        pvpq_lookup,
+        Vm,
+        Va,
+        C,
+        r_theta_pu,
+        g,
+    )
+    J32 = create_J32(
+        branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g
+    )
     J33 = create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT)
 
     Jright = vstack([sparse(J13), sparse(J23)], format="csr")
@@ -415,7 +521,12 @@ def create_J_tdpf(branch, tdpf_lines, alpha_pu, r_ref_pu, pvpq, pq, pvpq_lookup,
 
 
 def calc_I(Sf, bus, f_bus, V):
-    If = 1e3 * abs(Sf) / (abs(V[f_bus]) * bus[f_bus, BASE_KV].astype(np.float64)) / np.sqrt(3)
+    If = (
+        1e3
+        * abs(Sf)
+        / (abs(V[f_bus]) * bus[f_bus, BASE_KV].astype(np.float64))
+        / np.sqrt(3)
+    )
     return If
 
 
@@ -433,6 +544,7 @@ def get_S_flows(branch, Yf, Yt, baseMVA, V):
     t_bus = np.real(branch[br, T_BUS]).astype(np.int64)
     St = V[t_bus] * np.conj(Yt[br, :] * V) * baseMVA
     return Sf, St, f_bus, t_bus
+
 
 #
 # def calc_AB(branch, tdpf_lines, pvpq, pvpq_lookup, Va, Vm):
@@ -470,7 +582,9 @@ def get_S_flows(branch, Yf, Yt, baseMVA, V):
 #     return A, B
 
 
-def create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT):
+def create_J13(
+    branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT
+):
     """
          | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -534,7 +648,9 @@ def create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
     return J13
 
 
-def create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT):
+def create_J23(
+    branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT
+):
     """
          | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -597,12 +713,24 @@ def create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_d
         pq_j = pq_lookup[m]
         A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
         B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
-        J23[pq_j, tdpf_lines[in_pq]] = - A_mn * db_dT[in_pq] - B_mn * dg_dT[in_pq]
+        J23[pq_j, tdpf_lines[in_pq]] = -A_mn * db_dT[in_pq] - B_mn * dg_dT[in_pq]
 
     return J23
 
 
-def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta_pu, g):
+def create_J31(
+    branch,
+    tdpf_lines,
+    in_pvpq_f,
+    in_pvpq_t,
+    pvpq,
+    pvpq_lookup,
+    Vm,
+    Va,
+    C,
+    r_theta_pu,
+    g,
+):
     """
          | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -659,12 +787,22 @@ def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
 
     for in_pvpq, m, n in ((in_pvpq_f, mf, nf), (in_pvpq_t, mt, nt)):
         pq_j = pvpq_lookup[m]
-        J31[tdpf_lines[in_pvpq], pq_j] = - 2 * r_theta_pu[in_pvpq] * g[in_pvpq] * Vm[m] * Vm[n] * np.sin(Va[m] - Va[n]) * C[in_pvpq]
+        J31[tdpf_lines[in_pvpq], pq_j] = (
+            -2
+            * r_theta_pu[in_pvpq]
+            * g[in_pvpq]
+            * Vm[m]
+            * Vm[n]
+            * np.sin(Va[m] - Va[n])
+            * C[in_pvpq]
+        )
 
     return J31
 
 
-def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g):
+def create_J32(
+    branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g
+):
     """
          | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
          | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
@@ -720,7 +858,13 @@ def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r
 
     for in_pq, m, n in ((in_pq_f, mf, nf), (in_pq_t, mt, nt)):
         pq_j = pq_lookup[m]
-        J32[tdpf_lines[in_pq], pq_j] = - 2 * r_theta_pu[in_pq] * g[in_pq] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[in_pq]
+        J32[tdpf_lines[in_pq], pq_j] = (
+            -2
+            * r_theta_pu[in_pq]
+            * g[in_pq]
+            * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n]))
+            * C[in_pq]
+        )
 
     return J32
 
@@ -760,7 +904,7 @@ def create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT):
     # k = (np.square(g) + np.square(b)) / g
     # p_loss_pu = i_square_pu / k
 
-    #for mn in range(nrow):
+    # for mn in range(nrow):
     # for mn in tdpf_lines:
     #     #for ij in range(nrow):
     #     for ij_lookup, ij in enumerate(tdpf_lines):
@@ -769,7 +913,7 @@ def create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT):
     #             # J33[mn, ij] = -(1 + 2 * alpha[ij_lookup] * r_ref[ij_lookup] * g[ij_lookup] * i_square_pu[ij_lookup])
     #             J33[mn, ij] = 1 - r_theta_pu[ij_lookup] * (Vm[i]**2 + Vm[j]**2 - 2*Vm[i]*Vm[j]*np.cos(Va[i]-Va[j])) * dg_dT[ij_lookup]
 
-    #use this instead:
+    # use this instead:
     # for ij_lookup, ij in enumerate(tdpf_lines):
     #    i, j = branch[ij, [F_BUS, T_BUS]].real.astype(np.int64)
     #    # J33[mn, ij] = -(1 + 2 * alpha[ij_lookup] * r_ref[ij_lookup] * g[ij_lookup] * i_square_pu[ij_lookup])
@@ -778,6 +922,11 @@ def create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT):
     # vectorized with numpy:
     i = branch[tdpf_lines, F_BUS].real.astype(np.int64)
     j = branch[tdpf_lines, T_BUS].real.astype(np.int64)
-    J33[tdpf_lines, tdpf_lines] = 1 - r_theta_pu * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT
+    J33[tdpf_lines, tdpf_lines] = (
+        1
+        - r_theta_pu
+        * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j]))
+        * dg_dT
+    )
 
     return J33

@@ -17,7 +17,9 @@ def test_set_line_geodata_from_bus_geodata():
     net = case9()
     bus_geo_data = deepcopy(net.bus.geo)
 
-    empty_line_geo = pd.Series(None, index=net.line.index, dtype=object)  # ensure that line geo data
+    empty_line_geo = pd.Series(
+        None, index=net.line.index, dtype=object
+    )  # ensure that line geo data
     assert not net.bus.geo.isnull().any()  # ensure that bus geo data is available
 
     simple_plot(net, show_plot=False)  # test that plotting works with case9 file

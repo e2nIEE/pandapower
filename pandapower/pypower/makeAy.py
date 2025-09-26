@@ -2,11 +2,11 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Make the A matrix and RHS for the CCV formulation.
-"""
+"""Make the A matrix and RHS for the CCV formulation."""
 
 from numpy import array, diff, any, zeros, r_, flatnonzero as find, int64
-#from scipy.sparse import csr_matrix as sparse
+
+# from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import lil_matrix as sparse
 
 from pandapower.pypower.idx_cost import MODEL, PW_LINEAR, NCOST, COST
@@ -58,28 +58,28 @@ def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
     ## same order as the compressed column sparse format used by matlab
     ## this should be the quickest.
 
-    m = sum( gencost[iycost, NCOST].astype(int64) )  ## total number of cost points
+    m = sum(gencost[iycost, NCOST].astype(int64))  ## total number of cost points
     Ay = sparse((m - ny, ybas + ny - 1))
     by = array([])
     ## First fill the Pg or Qg coefficients (since their columns come first)
     ## and the rhs
     k = 0
     for i in iycost:
-        ns = gencost[i, NCOST].astype(int64)         ## # of cost points segments = ns-1
-        p = gencost[i, COST:COST + 2 * ns - 1:2] / baseMVA
-        c = gencost[i, COST + 1:COST + 2 * ns:2]
-        m = diff(c) / diff(p)               ## slopes for Pg (or Qg)
+        ns = gencost[i, NCOST].astype(int64)  ## # of cost points segments = ns-1
+        p = gencost[i, COST : COST + 2 * ns - 1 : 2] / baseMVA
+        c = gencost[i, COST + 1 : COST + 2 * ns : 2]
+        m = diff(c) / diff(p)  ## slopes for Pg (or Qg)
         if any(diff(p) == 0):
-            print('makeAy: bad x axis data in row ##i of gencost matrix' % i)
-        b = m * p[:ns - 1] - c[:ns - 1]        ## and rhs
-        by = r_[by,  b]
+            print("makeAy: bad x axis data in row ##i of gencost matrix" % i)
+        b = m * p[: ns - 1] - c[: ns - 1]  ## and rhs
+        by = r_[by, b]
         if i > ng:
-            sidx = qgbas + (i - ng) - 1        ## this was for a q cost
+            sidx = qgbas + (i - ng) - 1  ## this was for a q cost
         else:
-            sidx = pgbas + i - 1               ## this was for a p cost
+            sidx = pgbas + i - 1  ## this was for a p cost
 
         ## FIXME: Bug in SciPy 0.7.2 prevents setting with a sequence
-#        Ay[k:k + ns - 1, sidx] = m
+        #        Ay[k:k + ns - 1, sidx] = m
         for ii, kk in enumerate(range(k, k + ns - 1)):
             Ay[kk, sidx] = m[ii]
 
@@ -90,7 +90,7 @@ def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
     for i in iycost:
         ns = gencost[i, NCOST].astype(int64)
         ## FIXME: Bug in SciPy 0.7.2 prevents setting with a sequence
-#        Ay[k:k + ns - 1, ybas + j - 1] = -ones(ns - 1)
+        #        Ay[k:k + ns - 1, ybas + j - 1] = -ones(ns - 1)
         for kk in range(k, k + ns - 1):
             Ay[kk, ybas + j - 1] = -1
         k = k + ns - 1

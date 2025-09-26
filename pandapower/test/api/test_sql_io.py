@@ -14,10 +14,22 @@ import pytest
 import time
 
 from pandapower import reset_results, runpp, pp_dir
-from pandapower.networks import case9, case14, case39, simple_mv_open_ring_net, create_cigre_network_hv, mv_oberrhein
+from pandapower.networks import (
+    case9,
+    case14,
+    case39,
+    simple_mv_open_ring_net,
+    create_cigre_network_hv,
+    mv_oberrhein,
+)
 from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.auxiliary import _preserve_dtypes
-from pandapower.sql_io import download_sql_table, to_postgresql, from_postgresql, delete_postgresql_net
+from pandapower.sql_io import (
+    download_sql_table,
+    to_postgresql,
+    from_postgresql,
+    delete_postgresql_net,
+)
 from pandapower.test import assert_res_equal
 
 try:
@@ -38,8 +50,16 @@ except ImportError:
     SQLITE_INSTALLED = False
 
 
-@pytest.fixture(params=[case9, case14, case39, simple_mv_open_ring_net,
-                        create_cigre_network_hv, mv_oberrhein])
+@pytest.fixture(
+    params=[
+        case9,
+        case14,
+        case39,
+        simple_mv_open_ring_net,
+        create_cigre_network_hv,
+        mv_oberrhein,
+    ]
+)
 def net_in(request):
     net = request.param()
     # net.line.loc[0, "geo"] = '{"coordinates": [[1.1, 2.2], [3.3, 4.4]], "type": "LineString"}'
@@ -51,7 +71,9 @@ def net_in(request):
 
 
 def get_postgresql_connection_data():
-    filename = os.path.join(pp_dir, "test", "test_files", "postgresql_connect_data.json")
+    filename = os.path.join(
+        pp_dir, "test", "test_files", "postgresql_connect_data.json"
+    )
     if not os.path.isfile(filename):
         return {}, None
     with open(filename) as fp:
@@ -68,7 +90,7 @@ def postgresql_listening(**connect_data):
         conn = psycopg2.connect(**connect_data)
         conn.close()
         return True
-    except psycopg2.OperationalError as ex:
+    except psycopg2.OperationalError:
         return False
 
 
@@ -82,9 +104,13 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
     else:
         runpp(net)
     connection_data, schema = get_postgresql_connection_data()
-    grid_id = to_postgresql(net, schema=schema, include_results=include_results, **connection_data, **kwargs)
+    grid_id = to_postgresql(
+        net, schema=schema, include_results=include_results, **connection_data, **kwargs
+    )
 
-    net_out = from_postgresql(grid_id=grid_id, schema=schema, **connection_data, **kwargs)
+    net_out = from_postgresql(
+        grid_id=grid_id, schema=schema, **connection_data, **kwargs
+    )
 
     if not include_results:
         runpp(net)
@@ -110,18 +136,24 @@ def assert_postgresql_roundtrip(net_in, **kwargs):
     delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
 
 
-POSTGRESQL_AVAILABLE = PSYCOPG2_INSTALLED and postgresql_listening(**get_postgresql_connection_data()[0])
+POSTGRESQL_AVAILABLE = PSYCOPG2_INSTALLED and postgresql_listening(
+    **get_postgresql_connection_data()[0]
+)
 
 
-@pytest.mark.skipif(not POSTGRESQL_AVAILABLE,
-                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
+@pytest.mark.skipif(
+    not POSTGRESQL_AVAILABLE,
+    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL",
+)
 def test_postgresql(net_in):
     assert_postgresql_roundtrip(net_in, include_results=False)
     assert_postgresql_roundtrip(net_in, include_results=True)
 
 
-@pytest.mark.skipif(not POSTGRESQL_AVAILABLE,
-                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
+@pytest.mark.skipif(
+    not POSTGRESQL_AVAILABLE,
+    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL",
+)
 def test_unique():
     net = case9()
     connection_data, schema = get_postgresql_connection_data()
@@ -132,13 +164,17 @@ def test_unique():
     delete_postgresql_net(grid_id=grid_id, schema=schema, **connection_data)
 
 
-@pytest.mark.skipif(not POSTGRESQL_AVAILABLE,
-                    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL")
+@pytest.mark.skipif(
+    not POSTGRESQL_AVAILABLE,
+    reason="testing happens on GitHub Actions where we create a temporary instance of PostgreSQL",
+)
 def test_delete():
     connection_data, schema = get_postgresql_connection_data()
     # cannot delete if the net does not exist
     with pytest.raises(UserWarning):
-        delete_postgresql_net(grid_id=int(time.time()), schema=schema, **connection_data)
+        delete_postgresql_net(
+            grid_id=int(time.time()), schema=schema, **connection_data
+        )
 
     # check that net is deleted
     net = case9()

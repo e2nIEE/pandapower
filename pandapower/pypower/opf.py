@@ -7,8 +7,7 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-"""Solves an optimal power flow.
-"""
+"""Solves an optimal power flow."""
 
 from time import perf_counter
 
@@ -147,23 +146,25 @@ def opf(ppc, ppopt):
     @author: Richard Lincoln
     """
     ##----- initialization -----
-    t0 = perf_counter()         ## start timer
+    t0 = perf_counter()  ## start timer
 
     ## process input arguments
     ppc, ppopt = opf_args2(ppc, ppopt)
 
     ## add zero columns to bus, gen, branch for multipliers, etc if needed
-    nb   = shape(ppc['bus'])[0]    ## number of buses
-    nl   = shape(ppc['branch'])[0] ## number of branches
-    ng   = shape(ppc['gen'])[0]    ## number of dispatchable injections
-    if shape(ppc['bus'])[1] < MU_VMIN + 1:
-        ppc['bus'] = c_[ppc['bus'], zeros((nb, MU_VMIN + 1 - shape(ppc['bus'])[1]))]
+    nb = shape(ppc["bus"])[0]  ## number of buses
+    nl = shape(ppc["branch"])[0]  ## number of branches
+    ng = shape(ppc["gen"])[0]  ## number of dispatchable injections
+    if shape(ppc["bus"])[1] < MU_VMIN + 1:
+        ppc["bus"] = c_[ppc["bus"], zeros((nb, MU_VMIN + 1 - shape(ppc["bus"])[1]))]
 
-    if shape(ppc['gen'])[1] < MU_QMIN + 1:
-        ppc['gen'] = c_[ppc['gen'], zeros((ng, MU_QMIN + 1 - shape(ppc['gen'])[1]))]
+    if shape(ppc["gen"])[1] < MU_QMIN + 1:
+        ppc["gen"] = c_[ppc["gen"], zeros((ng, MU_QMIN + 1 - shape(ppc["gen"])[1]))]
 
-    if shape(ppc['branch'])[1] < MU_ANGMAX + 1:
-        ppc['branch'] = c_[ppc['branch'], zeros((nl, MU_ANGMAX + 1 - shape(ppc['branch'])[1]))]
+    if shape(ppc["branch"])[1] < MU_ANGMAX + 1:
+        ppc["branch"] = c_[
+            ppc["branch"], zeros((nl, MU_ANGMAX + 1 - shape(ppc["branch"])[1]))
+        ]
 
     ##-----  convert to internal numbering, remove out-of-service stuff  -----
     # ppc = ext2int(ppc)
@@ -185,10 +186,10 @@ def opf(ppc, ppopt):
     #     results['branch'][ ix_(results['order']['branch']['status']['off'], [PF, QF, PT, QT, MU_SF, MU_ST, MU_ANGMIN, MU_ANGMAX]) ] = 0
 
     ##-----  finish preparing output  -----
-    et = perf_counter() - t0      ## compute elapsed time
+    et = perf_counter() - t0  ## compute elapsed time
 
-    results['et'] = et
-    results['success'] = success
-    results['raw'] = raw
+    results["et"] = et
+    results["success"] = success
+    results["raw"] = raw
 
     return results

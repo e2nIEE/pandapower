@@ -5,32 +5,38 @@
 
 
 import numpy as np
-from numpy import complex128
 
-from pandapower.pypower.idx_bus import VM, VA,BASE_KV
-from pandapower.pypower.idx_bus_dc import DC_PD, DC_REF, DC_BUS_TYPE
+from pandapower.pypower.idx_bus import VM, VA, BASE_KV
+from pandapower.pypower.idx_bus_dc import DC_PD
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
 from pandapower.pypower.idx_source_dc import SOURCE_DC_STATUS, SOURCE_DC_BUS
 
-from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
-    I_from_SV_elementwise, S_from_VI_elementwise, SVabc_from_SV012
+from pandapower.auxiliary import (
+    _sum_by_group,
+    sequence_to_phase,
+    _sum_by_group_nvals,
+    I_from_SV_elementwise,
+    S_from_VI_elementwise,
+    SVabc_from_SV012,
+)
 
-from pandapower.auxiliary import _sum_by_group
-from pandapower.pypower.idx_bus import VM, VA
-from pandapower.pypower.idx_gen import PG, QG
 from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_MODE_AC_SL, VSC_P, VSC_Q
 
 
 def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
 
-    eg_end = sum(net['ext_grid'].in_service)
-    gen_end = eg_end + len(net['gen'])
+    eg_end = sum(net["ext_grid"].in_service)
+    gen_end = eg_end + len(net["gen"])
 
     if eg_end > 0:
         b, p, q = _get_ext_grid_results(net, ppc)
     else:
-        b, p, q = np.array([], dtype=np.int64), np.array([], dtype=np.float64), np.array([], dtype=np.float64)
+        b, p, q = (
+            np.array([], dtype=np.int64),
+            np.array([], dtype=np.float64),
+            np.array([], dtype=np.float64),
+        )
 
     # get results for gens
     if gen_end > eg_end:
@@ -40,7 +46,9 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
         _get_dcline_results(net)
         b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
         p = np.hstack([p, net.res_dcline[["p_from_mw", "p_to_mw"]].values.flatten()])
-        q = np.hstack([q, net.res_dcline[["q_from_mvar", "q_to_mvar"]].values.flatten()])
+        q = np.hstack(
+            [q, net.res_dcline[["q_from_mvar", "q_to_mvar"]].values.flatten()]
+        )
 
     # if len(net.vsc) > 0:
     #     # not necessary actually because the pq results already read from bus.
@@ -57,19 +65,23 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
 def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
 
-    eg_end = len(net['ext_grid'])
-    gen_end = eg_end + len(net['gen'][net['_is_elements']['gen']])
+    eg_end = len(net["ext_grid"])
+    gen_end = eg_end + len(net["gen"][net["_is_elements"]["gen"]])
 
     b, pA, qA, pB, qB, pC, qC = _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2)
 
     # get results for gens
     if gen_end > eg_end:
-        b, pA, qA, pB, qB, pC, qC = _get_pp_gen_results_3ph(net, ppc0, ppc1, ppc2, b, pA, qA, pB, qB, pC, qC)
+        b, pA, qA, pB, qB, pC, qC = _get_pp_gen_results_3ph(
+            net, ppc0, ppc1, ppc2, b, pA, qA, pB, qB, pC, qC
+        )
 
     if not ac:
-        qA, qB, qC = np.copy((np.zeros(len(pA)),)*3)
+        qA, qB, qC = np.copy((np.zeros(len(pA)),) * 3)
 
-    b_pp, pA_sum, qA_sum, pB_sum, qB_sum, pC_sum, qC_sum = _sum_by_group_nvals(b.astype(np.int64), pA, qA, pB, qB, pC, qC)
+    b_pp, pA_sum, qA_sum, pB_sum, qB_sum, pC_sum, qC_sum = _sum_by_group_nvals(
+        b.astype(np.int64), pA, qA, pB, qB, pC, qC
+    )
     b_ppc = bus_lookup_aranged[b_pp]
     pq_bus[b_ppc, 0] -= pA_sum
     pq_bus[b_ppc, 1] -= qA_sum
@@ -80,10 +92,10 @@ def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
 
 
 def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
-    #ac = net["_options"]["ac"]
+    # ac = net["_options"]["ac"]
 
-    #eg_end = sum(net['source_dc'].in_service)
-    #gen_end = eg_end + len(net['vsc'])
+    # eg_end = sum(net['source_dc'].in_service)
+    # gen_end = eg_end + len(net['vsc'])
 
     # TODO: Check why this code is NOT needed.
     # vsc_slack = net["_is_elements"]['vsc'] & (net.vsc.control_mode_dc == "vm_pu")
@@ -98,20 +110,22 @@ def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
     # else:
     #     return
 
-    scd_relevant = net["_is_elements"]['source_dc'] & (ppc["source_dc"][:, SOURCE_DC_STATUS] > 0)
+    scd_relevant = net["_is_elements"]["source_dc"] & (
+        ppc["source_dc"][:, SOURCE_DC_STATUS] > 0
+    )
 
-    p = np.zeros(len(net['source_dc']))
+    p = np.zeros(len(net["source_dc"]))
 
     # read results from ppc for these buses
     scd_bus = ppc["source_dc"][scd_relevant, SOURCE_DC_BUS].astype(int).tolist()
     p[scd_relevant] = ppc["bus_dc"][scd_bus, DC_PD]
-    net['res_source_dc']['p_dc_mw'] = p
+    net["res_source_dc"]["p_dc_mw"] = p
 
-    #bus_dc_slack = ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF
+    # bus_dc_slack = ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF
 
-    #b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
-    #b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]
-    #bus_p_dc[b, 0] -= p_sum
+    # b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
+    # b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]
+    # bus_p_dc[b, 0] -= p_sum
 
 
 def _get_vsc_slack_results(net, ppc, b, p, q):
@@ -119,7 +133,9 @@ def _get_vsc_slack_results(net, ppc, b, p, q):
 
     # get results for external grids
     # todo: is VSC_CONTROLLABLE relevant here?
-    vsc_relevant = net["_is_elements"]['vsc'] & (ppc["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_SL)
+    vsc_relevant = net["_is_elements"]["vsc"] & (
+        ppc["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_SL
+    )
     # vsc_grid_lookup = net["_pd2ppc_lookups"]["vsc"]
 
     # read results from ppc for these buses
@@ -134,7 +150,7 @@ def _get_vsc_slack_results(net, ppc, b, p, q):
         vsc_q[vsc_relevant] = ppc["vsc"][vsc_relevant, VSC_Q]
 
     # get bus values for pq_bus
-    vsc_b = net['vsc'].bus.values
+    vsc_b = net["vsc"].bus.values
 
     return np.r_[b, vsc_b], np.r_[p, vsc_p], np.r_[q, vsc_q]
 
@@ -143,10 +159,10 @@ def _get_ext_grid_results(net, ppc):
     ac = net["_options"]["ac"]
 
     # get results for external grids
-    eg_is_mask = net["_is_elements"]['ext_grid']
+    eg_is_mask = net["_is_elements"]["ext_grid"]
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
 
-    n_res_eg = len(net['ext_grid'])
+    n_res_eg = len(net["ext_grid"])
     # indices of in service gens in the ppc
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
     gen_idx_ppc = ext_grid_lookup[eg_is_idx]
@@ -164,36 +180,46 @@ def _get_ext_grid_results(net, ppc):
         net["res_ext_grid"]["q_mvar"] = q
 
     # get bus values for pq_bus
-    b = net['ext_grid'].bus.values
+    b = net["ext_grid"].bus.values
     # copy index for results
-    net["res_ext_grid"].index = net['ext_grid'].index
+    net["res_ext_grid"].index = net["ext_grid"].index
 
     return b, p, q
 
 
 def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     # get results for external grids
-    eg_is_mask = net["_is_elements"]['ext_grid']
+    eg_is_mask = net["_is_elements"]["ext_grid"]
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
 
-    n_res_eg = len(net['ext_grid'])
+    n_res_eg = len(net["ext_grid"])
     # indices of in service gens in the ppc
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
     eg_idx_ppc = ext_grid_lookup[eg_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
     eg_bus_idx_ppc = np.real(ppc1["gen"][eg_idx_ppc, GEN_BUS]).astype(np.int64)
     # read results from ppc for these buses
-    V012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
-    V012[:, eg_idx_ppc] = np.array([ppc["bus"][eg_bus_idx_ppc, VM] * ppc["bus"][eg_bus_idx_ppc, BASE_KV]
-                                      * np.exp(1j * np.deg2rad(ppc["bus"][eg_bus_idx_ppc, VA]))
-                                      for ppc in [ppc0, ppc1, ppc2]])
+    V012 = np.array(np.zeros((3, n_res_eg)), dtype=np.complex128)
+    V012[:, eg_idx_ppc] = np.array(
+        [
+            ppc["bus"][eg_bus_idx_ppc, VM]
+            * ppc["bus"][eg_bus_idx_ppc, BASE_KV]
+            * np.exp(1j * np.deg2rad(ppc["bus"][eg_bus_idx_ppc, VA]))
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
 
-    S012 = np.array(np.zeros((3, n_res_eg)),dtype = np.complex128)
-    S012[:, eg_idx_ppc] = np.array([(ppc["gen"][eg_idx_ppc, PG] + 1j \
-                                   * ppc["gen"][eg_idx_ppc, QG]) \
-                                    for ppc in [ppc0, ppc1, ppc2]])
+    S012 = np.array(np.zeros((3, n_res_eg)), dtype=np.complex128)
+    S012[:, eg_idx_ppc] = np.array(
+        [
+            (ppc["gen"][eg_idx_ppc, PG] + 1j * ppc["gen"][eg_idx_ppc, QG])
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
 
-    Sabc, Vabc = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
+    Sabc, Vabc = SVabc_from_SV012(
+        S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc
+    )
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
@@ -207,9 +233,9 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     net["res_ext_grid_3ph"]["q_c_mvar"] = qC
 
     # get bus values for pq_bus
-    b = net['ext_grid'].bus.values
+    b = net["ext_grid"].bus.values
     # copy index for results
-    net["res_ext_grid_3ph"].index = net['ext_grid'].index
+    net["res_ext_grid_3ph"].index = net["ext_grid"].index
 
     return b, pA, qA, pB, qB, pC, qC
 
@@ -225,7 +251,7 @@ def _get_p_q_gen_results(net, ppc):
         gen_idx_ppc = []
 
     # read results from ppc for these buses
-    n_res_gen = len(net['gen'])
+    n_res_gen = len(net["gen"])
     p_gen = np.zeros(n_res_gen)
     p_gen[gen_is] = ppc["gen"][gen_idx_ppc, PG]
     q_gen = None
@@ -237,10 +263,11 @@ def _get_p_q_gen_results(net, ppc):
     net["res_gen"]["p_mw"].values[:] = p_gen
     return p_gen, q_gen
 
+
 def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     _is_elements = net["_is_elements"]
     ac = net["_options"]["ac"]
-    gen_is_mask = _is_elements['gen']
+    gen_is_mask = _is_elements["gen"]
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
     gen_is_idx = net["gen"].index[gen_is_mask]
     # indices of in service gens in the ppc
@@ -250,21 +277,31 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
         gen_idx_ppc = []
 
     # read results from ppc for these buses
-    n_res_gen = len(net['gen'])
+    n_res_gen = len(net["gen"])
     gen_idx_ppc = gen_lookup[gen_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
     gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(np.int64)
 
     V012 = np.array(np.zeros((3, n_res_gen)))
-    V012[:, gen_is_idx] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
-                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
-                                      for ppc in [ppc0, ppc1, ppc2]])
+    V012[:, gen_is_idx] = np.array(
+        [
+            ppc["bus"][gen_bus_idx_ppc, VM]
+            * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
 
     S012 = np.array(np.zeros((3, n_res_gen)))
     S012[:, gen_is_idx] = np.array(
-        [-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
+        [
+            -(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG])
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
     I012 = np.array(np.zeros((3, n_res_gen)))
-    I012[:, gen_is_idx] = I_from_SV_elementwise(S012[:, gen_is_idx], V012[:, gen_is_idx])
+    I012[:, gen_is_idx] = I_from_SV_elementwise(
+        S012[:, gen_is_idx], V012[:, gen_is_idx]
+    )
 
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
@@ -282,16 +319,15 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     return pA, qA, pB, qB, pC, qC
 
 
-
 def _get_v_gen_resuts(net, ppc):
     # lookups for ppc
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
     # in service gens
-    gen_is = net["_is_elements"]['gen']
+    gen_is = net["_is_elements"]["gen"]
     bus_idx_ppc = bus_lookup[net["gen"]["bus"].values[gen_is]]
 
-    n_res_gen = len(net['gen'])
+    n_res_gen = len(net["gen"])
 
     # voltage magnitudes
     v_pu = np.zeros(n_res_gen)
@@ -312,18 +348,22 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
 
     # in service gens
-    gen_is_mask = net["_is_elements"]['gen']
+    gen_is_mask = net["_is_elements"]["gen"]
     gen_is_idx = net["gen"].index[gen_is_mask]
     bus_idx_ppc = bus_lookup[net["gen"]["bus"].values[gen_is_mask]]
 
-    n_res_gen = len(net['gen'])
+    n_res_gen = len(net["gen"])
     gen_idx_ppc = gen_lookup[gen_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
     gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(np.int64)
     V012 = np.array(np.zeros((3, n_res_gen)))
-    V012[:, gen_is_mask] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
-                                      * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
-                                      for ppc in [ppc0, ppc1, ppc2]])
+    V012[:, gen_is_mask] = np.array(
+        [
+            ppc["bus"][gen_bus_idx_ppc, VM]
+            * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
+            for ppc in [ppc0, ppc1, ppc2]
+        ]
+    )
     VABC = sequence_to_phase(V012)
 
     # voltage magnitudes
@@ -351,7 +391,7 @@ def _get_pp_gen_results(net, ppc, b, p, q):
     p_gen, q_gen = _get_p_q_gen_results(net, ppc)
     _get_v_gen_resuts(net, ppc)
 
-    b = np.hstack([b, net['gen'].bus.values])
+    b = np.hstack([b, net["gen"].bus.values])
 
     p = np.hstack([p, p_gen])
     if net["_options"]["ac"]:
@@ -359,14 +399,17 @@ def _get_pp_gen_results(net, ppc, b, p, q):
 
     return b, p, q
 
+
 def _get_pp_gen_results_3ph(net, ppc0, ppc1, ppc2, b, pA, qA, pB, qB, pC, qC):
-    pA_gen, qA_gen, pB_gen, qB_gen, pC_gen, qC_gen = _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2)
+    pA_gen, qA_gen, pB_gen, qB_gen, pC_gen, qC_gen = _get_p_q_gen_results_3ph(
+        net, ppc0, ppc1, ppc2
+    )
     _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2)
 
     ac = net["_options"]["ac"]
 
-    net["res_gen_3ph"].index = net['gen'].index
-    b = np.hstack([b, net['gen'].bus.values])
+    net["res_gen_3ph"].index = net["gen"].index
+    b = np.hstack([b, net["gen"].bus.values])
 
     pA = np.hstack([pA, pA_gen])
     pB = np.hstack([pB, pB_gen])
@@ -378,17 +421,18 @@ def _get_pp_gen_results_3ph(net, ppc0, ppc1, ppc2, b, pA, qA, pB, qB, pC, qC):
 
     return b, pA, qA, pB, qB, pC, qC
 
+
 def _get_dcline_results(net):
-    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2):]
+    dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2) :]
     from_gens = net.res_gen.loc[dc_gens[1::2]]
     to_gens = net.res_gen.loc[dc_gens[::2]]
 
-    net.res_dcline.p_from_mw = - from_gens.p_mw.values
-    net.res_dcline.p_to_mw = - to_gens.p_mw.values
-    net.res_dcline.pl_mw = - (to_gens.p_mw.values + from_gens.p_mw.values)
+    net.res_dcline.p_from_mw = -from_gens.p_mw.values
+    net.res_dcline.p_to_mw = -to_gens.p_mw.values
+    net.res_dcline.pl_mw = -(to_gens.p_mw.values + from_gens.p_mw.values)
 
-    net.res_dcline.q_from_mvar = - from_gens.q_mvar.values
-    net.res_dcline.q_to_mvar = - to_gens.q_mvar.values
+    net.res_dcline.q_from_mvar = -from_gens.q_mvar.values
+    net.res_dcline.q_to_mvar = -to_gens.q_mvar.values
 
     net.res_dcline.vm_from_pu = from_gens.vm_pu.values
     net.res_dcline.vm_to_pu = to_gens.vm_pu.values

@@ -159,9 +159,18 @@ class SplineCharacteristic(Characteristic):
 
         **fill_value**
     """
+
     json_excludes = ["self", "__class__", "_interpolator"]
 
-    def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", table="characteristic", **kwargs):
+    def __init__(
+        self,
+        net,
+        x_values,
+        y_values,
+        interpolator_kind="interp1d",
+        table="characteristic",
+        **kwargs,
+    ):
         super().__init__(net, x_values=x_values, y_values=y_values, table=table)
         self.kwargs = kwargs
         self.interpolator_kind = interpolator_kind
@@ -180,13 +189,19 @@ class SplineCharacteristic(Characteristic):
 
     @interpolator.getter
     def interpolator(self):
-        if not hasattr(self, '_interpolator'):
+        if not hasattr(self, "_interpolator"):
             if self.interpolator_kind == "interp1d":
-                self._interpolator = default_interp1d(self.x_vals, self.y_vals, **self.kwargs)
+                self._interpolator = default_interp1d(
+                    self.x_vals, self.y_vals, **self.kwargs
+                )
             elif self.interpolator_kind == "Pchip":
-                self._interpolator = PchipInterpolator(self.x_vals, self.y_vals, **self.kwargs)
+                self._interpolator = PchipInterpolator(
+                    self.x_vals, self.y_vals, **self.kwargs
+                )
             else:
-                raise NotImplementedError(f"Interpolator {self.interpolator_kind} not implemented!")
+                raise NotImplementedError(
+                    f"Interpolator {self.interpolator_kind} not implemented!"
+                )
         return self._interpolator
 
     def __call__(self, x):
@@ -204,7 +219,6 @@ class SplineCharacteristic(Characteristic):
 
 
 class LogSplineCharacteristic(SplineCharacteristic):
-
     def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__(net, x_values, y_values, **kwargs)
 
@@ -232,5 +246,9 @@ class LogSplineCharacteristic(SplineCharacteristic):
         return np.power(10, self.interpolator(np.log10(x)))
 
 
-def default_interp1d(x, y, kind="quadratic", bounds_error=False, fill_value="extrapolate", **kwargs):
-    return interp1d(x, y, kind=kind, bounds_error=bounds_error, fill_value=fill_value, **kwargs)
+def default_interp1d(
+    x, y, kind="quadratic", bounds_error=False, fill_value="extrapolate", **kwargs
+):
+    return interp1d(
+        x, y, kind=kind, bounds_error=bounds_error, fill_value=fill_value, **kwargs
+    )

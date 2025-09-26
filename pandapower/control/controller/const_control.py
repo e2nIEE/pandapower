@@ -57,22 +57,46 @@ class ConstControl(Controller):
         control.
     """
 
-    def __init__(self, net, element, variable, element_index, profile_name=None, data_source=None,
-                 scale_factor=1.0, in_service=True, recycle=True, order=-1, level=-1,
-                 drop_same_existing_ctrl=False, matching_params=None,
-                 initial_run=False, **kwargs):
+    def __init__(
+        self,
+        net,
+        element,
+        variable,
+        element_index,
+        profile_name=None,
+        data_source=None,
+        scale_factor=1.0,
+        in_service=True,
+        recycle=True,
+        order=-1,
+        level=-1,
+        drop_same_existing_ctrl=False,
+        matching_params=None,
+        initial_run=False,
+        **kwargs,
+    ):
         # just calling init of the parent
         if matching_params is None:
-            matching_params = {"element": element, "variable": variable,
-                               "element_index": element_index}
-        super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
-                         drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, initial_run=initial_run) 
-        
+            matching_params = {
+                "element": element,
+                "variable": variable,
+                "element_index": element_index,
+            }
+        super().__init__(
+            net,
+            in_service=in_service,
+            recycle=recycle,
+            order=order,
+            level=level,
+            drop_same_existing_ctrl=drop_same_existing_ctrl,
+            matching_params=matching_params,
+            initial_run=initial_run,
+        )
+
         # write kwargs in self
         for key, value in kwargs.items():
             setattr(self, key, value)
-        
+
         # data source for time series values
         self.data_source = data_source
         # ids of sgens or loads
@@ -84,29 +108,51 @@ class ConstControl(Controller):
         self.scale_factor = scale_factor
         self.applied = False
         self.write_flag, self.variable = _detect_read_write_flag(
-            net, element, element_index, variable)
+            net, element, element_index, variable
+        )
         self.set_recycle(net)
 
     def set_recycle(self, net):
-        allowed_elements = ["load", "sgen", "storage", "gen", "ext_grid", "trafo", "trafo3w", "line"]
-        if net.controller.at[self.index, 'recycle'] is False or self.element not in allowed_elements:
+        allowed_elements = [
+            "load",
+            "sgen",
+            "storage",
+            "gen",
+            "ext_grid",
+            "trafo",
+            "trafo3w",
+            "line",
+        ]
+        if (
+            net.controller.at[self.index, "recycle"] is False
+            or self.element not in allowed_elements
+        ):
             # if recycle is set to False by the user when creating the controller it is deactivated
             # or when const control controls an element which is not able to be recycled
-            net.controller.at[self.index, 'recycle'] = False
+            net.controller.at[self.index, "recycle"] = False
             return
         # these variables determine what is re-calculated during a time series run
         recycle = dict(trafo=False, gen=False, bus_pq=False)
-        if self.element in ["sgen", "load", "storage"] and self.variable in ["p_mw", "q_mvar",
-                                                                             "scaling"]:
+        if self.element in ["sgen", "load", "storage"] and self.variable in [
+            "p_mw",
+            "q_mvar",
+            "scaling",
+        ]:
             recycle["bus_pq"] = True
-        if self.element in ["gen"] and self.variable in ["p_mw", "vm_pu", "scaling"] \
-                or self.element in ["ext_grid"] and self.variable in ["vm_pu", "va_degree"]:
+        if (
+            self.element in ["gen"]
+            and self.variable in ["p_mw", "vm_pu", "scaling"]
+            or self.element in ["ext_grid"]
+            and self.variable in ["vm_pu", "va_degree"]
+        ):
             recycle["gen"] = True
         if self.element in ["trafo", "trafo3w", "line"]:
             recycle["trafo"] = True
         # recycle is either the dict what should be recycled
         # or False if the element + variable combination is not supported
-        net.controller.at[self.index, 'recycle'] = recycle if any(list(recycle.values())) else False
+        net.controller.at[self.index, "recycle"] = (
+            recycle if any(list(recycle.values())) else False
+        )
 
     def time_step(self, net, time):
         """
@@ -120,12 +166,20 @@ class ConstControl(Controller):
         if self.data_source is None:
             self.values = net[self.element][self.variable].loc[self.element_index]
         else:
-            self.values = self.data_source.get_time_step_value(time_step=time,
-                                                               profile_name=self.profile_name,
-                                                               scale_factor=self.scale_factor)
+            self.values = self.data_source.get_time_step_value(
+                time_step=time,
+                profile_name=self.profile_name,
+                scale_factor=self.scale_factor,
+            )
         if self.values is not None:
-            write_to_net(net, self.element, self.element_index, self.variable, self.values,
-                         self.write_flag)
+            write_to_net(
+                net,
+                self.element,
+                self.element_index,
+                self.variable,
+                self.values,
+                self.write_flag,
+            )
 
     def is_converged(self, net):
         """

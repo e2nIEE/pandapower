@@ -30,10 +30,13 @@ def test_lv_schutterwald():
 
             if k is True:
                 subnets = lv_schutterwald(include_heat_pumps=j, separation_by_sub=k)
-                assert all(len(subnets[0].keys()) == len(subnet.keys()) for subnet in subnets[1:])
+                assert all(
+                    len(subnets[0].keys()) == len(subnet.keys())
+                    for subnet in subnets[1:]
+                )
                 assert len(net.bus) == sum(len(subnet.bus) for subnet in subnets)
                 assert all(subnet.converged for subnet in subnets)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -2,22 +2,18 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Quadratic Program Solver for PYPOWER.
-"""
-
-import sys
+"""Quadratic Program Solver for PYPOWER."""
 
 from pandapower.pypower.qps_pips import qps_pips
-#from pandapower.pypower.qps_ipopt import qps_ipopt
-#from pandapower.pypower.qps_cplex import qps_cplex
-#from pandapower.pypower.qps_mosek import qps_mosek
-#from pandapower.pypower.qps_gurobi import qps_gurobi
-
-from pandapower.pypower.util import have_fcn
+# from pandapower.pypower.qps_ipopt import qps_ipopt
+# from pandapower.pypower.qps_cplex import qps_cplex
+# from pandapower.pypower.qps_mosek import qps_mosek
+# from pandapower.pypower.qps_gurobi import qps_gurobi
 
 
-def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
-                x0=None, opt=None):
+def qps_pypower(
+    H, c=None, A=None, l=None, u=None, xmin=None, xmax=None, x0=None, opt=None
+):
     """Quadratic Program Solver for PYPOWER.
 
     A common wrapper function for various QP solvers.
@@ -117,61 +113,60 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
     """
     if opt is None:
         opt = {}
-#    if x0 is None:
-#        x0 = array([])
-#    if xmax is None:
-#        xmax = array([])
-#    if xmin is None:
-#        xmin = array([])
+    #    if x0 is None:
+    #        x0 = array([])
+    #    if xmax is None:
+    #        xmax = array([])
+    #    if xmin is None:
+    #        xmin = array([])
 
     ## default options
-    if 'alg' in opt:
-        alg = opt['alg']
+    if "alg" in opt:
+        alg = opt["alg"]
     else:
         alg = 0
 
-    if 'verbose' in opt:
-        verbose = opt['verbose']
+    if "verbose" in opt:
+        verbose = opt["verbose"]
     else:
         verbose = 0
 
     ##----- call the appropriate solver  -----
     # if alg == 0 or alg == 200 or alg == 250:    ## use MIPS or sc-MIPS
     ## set up options
-    if 'pips_opt' in opt:
-        pips_opt = opt['pips_opt']
+    if "pips_opt" in opt:
+        pips_opt = opt["pips_opt"]
     else:
         pips_opt = {}
 
-    if 'max_it' in opt:
-        pips_opt['max_it'] = opt['max_it']
+    if "max_it" in opt:
+        pips_opt["max_it"] = opt["max_it"]
 
     if alg == 200:
-        pips_opt['step_control'] = False
+        pips_opt["step_control"] = False
     else:
-        pips_opt['step_control'] = True
+        pips_opt["step_control"] = True
 
-    pips_opt['verbose'] = verbose
+    pips_opt["verbose"] = verbose
 
     ## call solver
-    x, f, eflag, output, lmbda = \
-        qps_pips(H, c, A, l, u, xmin, xmax, x0, pips_opt)
-#    elif alg == 400:                    ## use IPOPT
-#        x, f, eflag, output, lmbda = \
-#            qps_ipopt(H, c, A, l, u, xmin, xmax, x0, opt)
-#    elif alg == 500:                    ## use CPLEX
-#        x, f, eflag, output, lmbda = \
-#            qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt)
-#    elif alg == 600:                    ## use MOSEK
-#        x, f, eflag, output, lmbda = \
-#            qps_mosek(H, c, A, l, u, xmin, xmax, x0, opt)
-#    elif 700:                           ## use Gurobi
-#        x, f, eflag, output, lmbda = \
-#            qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt)
-#     else:
-#         print('qps_pypower: {} is not a valid algorithm code\n'.format(alg))
+    x, f, eflag, output, lmbda = qps_pips(H, c, A, l, u, xmin, xmax, x0, pips_opt)
+    #    elif alg == 400:                    ## use IPOPT
+    #        x, f, eflag, output, lmbda = \
+    #            qps_ipopt(H, c, A, l, u, xmin, xmax, x0, opt)
+    #    elif alg == 500:                    ## use CPLEX
+    #        x, f, eflag, output, lmbda = \
+    #            qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt)
+    #    elif alg == 600:                    ## use MOSEK
+    #        x, f, eflag, output, lmbda = \
+    #            qps_mosek(H, c, A, l, u, xmin, xmax, x0, opt)
+    #    elif 700:                           ## use Gurobi
+    #        x, f, eflag, output, lmbda = \
+    #            qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt)
+    #     else:
+    #         print('qps_pypower: {} is not a valid algorithm code\n'.format(alg))
 
-    if 'alg' not in output:
-        output['alg'] = alg
+    if "alg" not in output:
+        output["alg"] = alg
 
     return x, f, eflag, output, lmbda

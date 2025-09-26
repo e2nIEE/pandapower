@@ -1,7 +1,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-""" Defines constants for named column indices to gen matrix.
+"""Defines constants for named column indices to gen matrix.
 
 The index, name and meaning of each column of the gen matrix is given
 below:
@@ -30,24 +30,24 @@ they are typically not present in the input matrix
 """
 
 # define the indices
-SOURCE_DC_BUS       = 0    # bus number
-SOURCE_DC_PG        = 1    # Pg, real power output (MW)
-SOURCE_DC_VG        = 2    # Vg, voltage magnitude setpoint (p.u.)
-SOURCE_DC_MBASE     = 3    # mBase, total MVA base of this machine, defaults to baseMVA
-SOURCE_DC_STATUS    = 4    # status, 1 - machine in service, 0 - machine out of service
-SOURCE_DC_PMAX      = 5    # Pmax, maximum real power output (MW)
-SOURCE_DC_PMIN      = 6    # Pmin, minimum real power output (MW)
-SOURCE_DC_RAMP_AGC  = 7    # ramp rate for load following/AGC (MW/min)
-SOURCE_DC_RAMP_10   = 8    # ramp rate for 10 minute reserves (MW)
-SOURCE_DC_RAMP_30   = 9    # ramp rate for 30 minute reserves (MW)
-SOURCE_DC_APF       = 10   # area participation factor
+SOURCE_DC_BUS = 0  # bus number
+SOURCE_DC_PG = 1  # Pg, real power output (MW)
+SOURCE_DC_VG = 2  # Vg, voltage magnitude setpoint (p.u.)
+SOURCE_DC_MBASE = 3  # mBase, total MVA base of this machine, defaults to baseMVA
+SOURCE_DC_STATUS = 4  # status, 1 - machine in service, 0 - machine out of service
+SOURCE_DC_PMAX = 5  # Pmax, maximum real power output (MW)
+SOURCE_DC_PMIN = 6  # Pmin, minimum real power output (MW)
+SOURCE_DC_RAMP_AGC = 7  # ramp rate for load following/AGC (MW/min)
+SOURCE_DC_RAMP_10 = 8  # ramp rate for 10 minute reserves (MW)
+SOURCE_DC_RAMP_30 = 9  # ramp rate for 30 minute reserves (MW)
+SOURCE_DC_APF = 10  # area participation factor
 
 # included in opf solution, not necessarily in input
 # assume objective function has units, u
-SOURCE_DC_MU_PMAX   = 11   # Kuhn-Tucker multiplier on upper Pg limit (u/MW)
-SOURCE_DC_MU_PMIN   = 12   # Kuhn-Tucker multiplier on lower Pg limit (u/MW)
+SOURCE_DC_MU_PMAX = 11  # Kuhn-Tucker multiplier on upper Pg limit (u/MW)
+SOURCE_DC_MU_PMIN = 12  # Kuhn-Tucker multiplier on lower Pg limit (u/MW)
 
 # Additional added by pandapower
-SOURCE_SL_FAC       = 13   # Slack contribution factor
+SOURCE_SL_FAC = 13  # Slack contribution factor
 
 source_dc_cols = 14

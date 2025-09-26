@@ -3,12 +3,23 @@ import copy
 import numpy as np
 import pytest
 
-from pandapower.create import create_buses, create_bus, create_empty_network, create_line_from_parameters, \
-    create_load, create_ext_grid, create_ssc
+from pandapower.create import (
+    create_buses,
+    create_bus,
+    create_empty_network,
+    create_line_from_parameters,
+    create_load,
+    create_ext_grid,
+    create_ssc,
+)
 
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_ssc_impedance_gen
+from pandapower.test.loadflow.test_facts import (
+    copy_with_impedance,
+    facts_case_study_grid,
+    compare_ssc_impedance_gen,
+)
 
 
 def test_ssc_minimal():
@@ -23,16 +34,32 @@ def test_ssc_minimal():
 
     ### compare (ssc) to bus 1(net)
 
-    assert np.isclose(net.res_bus.at[0, "vm_pu"], net.ssc.set_vm_pu.at[0], rtol=0, atol=1e-6)
-    assert np.isclose(np.abs(net._ppc["internal"]["V"][-1]), net.res_ssc.vm_internal_pu.at[0], rtol=0, atol=1e-6)
+    assert np.isclose(
+        net.res_bus.at[0, "vm_pu"], net.ssc.set_vm_pu.at[0], rtol=0, atol=1e-6
+    )
+    assert np.isclose(
+        np.abs(net._ppc["internal"]["V"][-1]),
+        net.res_ssc.vm_internal_pu.at[0],
+        rtol=0,
+        atol=1e-6,
+    )
 
     assert np.isclose(net.res_ssc.vm_pu[0], net.res_bus.vm_pu.at[0], rtol=0, atol=1e-6)
-    assert np.isclose(net.res_ssc.va_degree[0], net.res_bus.va_degree.at[0], rtol=0, atol=1e-6)
+    assert np.isclose(
+        net.res_ssc.va_degree[0], net.res_bus.va_degree.at[0], rtol=0, atol=1e-6
+    )
 
     compare_ssc_impedance_gen(net, net_ref)
 
-    assert np.isclose(net.res_bus.q_mvar[0], net_ref.res_bus.q_mvar.at[0], rtol=0, atol=1e-6)
-    assert np.isclose(net.res_ssc.q_mvar[0], net_ref.res_impedance.q_from_mvar.at[0], rtol=0, atol=1e-6)
+    assert np.isclose(
+        net.res_bus.q_mvar[0], net_ref.res_bus.q_mvar.at[0], rtol=0, atol=1e-6
+    )
+    assert np.isclose(
+        net.res_ssc.q_mvar[0],
+        net_ref.res_impedance.q_from_mvar.at[0],
+        rtol=0,
+        atol=1e-6,
+    )
 
 
 def test_ssc_controllable():
@@ -53,7 +80,16 @@ def test_ssc_controllable():
     assert np.isclose(net1.res_ssc.vm_pu.at[1], 1, rtol=0, atol=1e-6)
 
     net2 = copy.deepcopy(net)
-    create_ssc(net2, 1, 0, x, 1, controllable=False, vm_internal_pu=1.02, va_internal_degree=150)
+    create_ssc(
+        net2,
+        1,
+        0,
+        x,
+        1,
+        controllable=False,
+        vm_internal_pu=1.02,
+        va_internal_degree=150,
+    )
     runpp_with_consistency_checks(net2)
     assert np.isclose(net2.res_ssc.vm_internal_pu, 1.02, rtol=0, atol=1e-6)
 
@@ -134,17 +170,38 @@ def test_ssc_simple():
 
     ### compare (ssc) to bus 1(net)
 
-    assert np.isclose(net.res_bus.at[1, "vm_pu"], net.ssc.set_vm_pu.at[0], rtol=0, atol=1e-6)
-    assert np.isclose(np.abs(net._ppc["internal"]["V"][-1]), net.res_ssc.vm_internal_pu.at[0], rtol=0, atol=1e-6)
+    assert np.isclose(
+        net.res_bus.at[1, "vm_pu"], net.ssc.set_vm_pu.at[0], rtol=0, atol=1e-6
+    )
+    assert np.isclose(
+        np.abs(net._ppc["internal"]["V"][-1]),
+        net.res_ssc.vm_internal_pu.at[0],
+        rtol=0,
+        atol=1e-6,
+    )
 
     assert np.isclose(net.res_ssc.vm_pu[0], net.res_bus.vm_pu.at[1], rtol=0, atol=1e-6)
-    assert np.isclose(net.res_ssc.va_degree[0], net.res_bus.va_degree.at[1], rtol=0, atol=1e-6)
+    assert np.isclose(
+        net.res_ssc.va_degree[0], net.res_bus.va_degree.at[1], rtol=0, atol=1e-6
+    )
 
     compare_ssc_impedance_gen(net, net_ref)
 
-    assert np.isclose(net.res_bus.q_mvar[0], net_ref.res_bus.q_mvar.at[0], rtol=0, atol=1e-6)
-    assert np.isclose(net.res_ssc.q_mvar[0], net.res_bus.q_mvar.at[1] - net.load.q_mvar.at[0], rtol=0, atol=1e-6)
-    assert np.isclose(net.res_ssc.q_mvar[0], net_ref.res_impedance.q_from_mvar.at[0], rtol=0, atol=1e-6)
+    assert np.isclose(
+        net.res_bus.q_mvar[0], net_ref.res_bus.q_mvar.at[0], rtol=0, atol=1e-6
+    )
+    assert np.isclose(
+        net.res_ssc.q_mvar[0],
+        net.res_bus.q_mvar.at[1] - net.load.q_mvar.at[0],
+        rtol=0,
+        atol=1e-6,
+    )
+    assert np.isclose(
+        net.res_ssc.q_mvar[0],
+        net_ref.res_impedance.q_from_mvar.at[0],
+        rtol=0,
+        atol=1e-6,
+    )
 
 
 if __name__ == "__main__":

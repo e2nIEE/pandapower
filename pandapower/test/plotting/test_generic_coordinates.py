@@ -26,8 +26,10 @@ def test_create_generic_coordinates_igraph():
     assert len(net.bus.geo.dropna()) == len(net.bus)
 
 
-@pytest.mark.xfail(reason="The current implementation is not working properly, as multigraph edges "
-                          "as AtlasViews are accessed with list logic.")
+@pytest.mark.xfail(
+    reason="The current implementation is not working properly, as multigraph edges "
+    "as AtlasViews are accessed with list logic."
+)
 def test_create_generic_coordinates_nx():
     net = create_test_network()
     net.bus_geodata = net.bus_geodata.drop(net.bus_geodata.index)
@@ -39,7 +41,9 @@ def test_create_generic_coordinates_nx():
 def test_create_generic_coordinates_igraph_custom_table_index():
     net = simple_four_bus_system()
     for buses in [[0, 1], [0, 2], [0, 1, 2]]:
-        create_generic_coordinates(net, buses=buses, geodata_table="test", overwrite=True)
+        create_generic_coordinates(
+            net, buses=buses, geodata_table="test", overwrite=True
+        )
         assert np.all(net.test.index == buses)
 
 

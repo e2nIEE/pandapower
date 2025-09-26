@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 def test_opf_cigre():
-    """ Testing a  simple network with transformer for loading
-    constraints with OPF using a generator """
+    """Testing a  simple network with transformer for loading
+    constraints with OPF using a generator"""
     # create net
     net = create_cigre_network_mv(with_der="pv_wind")
 
@@ -31,10 +31,10 @@ def test_opf_cigre():
     net.sgen["min_q_mvar"] = -0.01
     net.sgen["controllable"] = True
     net.load["controllable"] = False
-    net.sgen.loc[net.sgen.bus == 4, 'in_service'] = False
-    net.sgen.loc[net.sgen.bus == 6, 'in_service'] = False
-    net.sgen.loc[net.sgen.bus == 8, 'in_service'] = False
-    net.sgen.loc[net.sgen.bus == 9, 'in_service'] = False
+    net.sgen.loc[net.sgen.bus == 4, "in_service"] = False
+    net.sgen.loc[net.sgen.bus == 6, "in_service"] = False
+    net.sgen.loc[net.sgen.bus == 8, "in_service"] = False
+    net.sgen.loc[net.sgen.bus == 9, "in_service"] = False
 
     # run OPF
     runopp(net)
@@ -42,8 +42,8 @@ def test_opf_cigre():
 
 
 def test_some_sgens_not_controllable():
-    """ Testing a  simple network with transformer for loading
-    constraints with OPF using a generator """
+    """Testing a  simple network with transformer for loading
+    constraints with OPF using a generator"""
     # create net
     net = create_cigre_network_mv(with_der="pv_wind")
 
@@ -63,15 +63,19 @@ def test_some_sgens_not_controllable():
     net.sgen.loc[net.sgen.bus == 9, "controllable"] = False
 
     for sgen_idx, row in net["sgen"].iterrows():
-        cost_sgen = create_poly_cost(net, sgen_idx, 'sgen', cp1_eur_per_mw=1.)
+        cost_sgen = create_poly_cost(net, sgen_idx, "sgen", cp1_eur_per_mw=1.0)
         net.poly_cost.cp1_eur_per_mw.at[cost_sgen] = 100
 
     # run OPF
     runopp(net, calculate_voltage_angles=False)
     assert net["OPF_converged"]
     # check if p_mw of non conrollable sgens are unchanged
-    assert np.allclose(net.res_sgen.p_mw[~net.sgen.controllable], net.sgen.p_mw[~net.sgen.controllable])
-    assert not np.allclose(net.res_sgen.p_mw[net.sgen.controllable], net.sgen.p_mw[net.sgen.controllable])
+    assert np.allclose(
+        net.res_sgen.p_mw[~net.sgen.controllable], net.sgen.p_mw[~net.sgen.controllable]
+    )
+    assert not np.allclose(
+        net.res_sgen.p_mw[net.sgen.controllable], net.sgen.p_mw[net.sgen.controllable]
+    )
 
 
 if __name__ == "__main__":

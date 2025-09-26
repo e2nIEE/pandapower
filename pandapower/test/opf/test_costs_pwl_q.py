@@ -3,8 +3,15 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_sgen, create_ext_grid, create_load, \
-    create_line_from_parameters, create_pwl_cost
+from pandapower.create import (
+    create_empty_network,
+    create_bus,
+    create_sgen,
+    create_ext_grid,
+    create_load,
+    create_line_from_parameters,
+    create_pwl_cost,
+)
 from pandapower.run import runopp
 
 
@@ -15,15 +22,33 @@ def test_3point_pwl():
 
     # create net
     net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    create_sgen(net, 1, p_mw=0.1, q_mvar=0, controllable=True, min_p_mw=0.1, max_p_mw=0.15,
-                max_q_mvar=0.05, min_q_mvar=-0.05)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_sgen(
+        net,
+        1,
+        p_mw=0.1,
+        q_mvar=0,
+        controllable=True,
+        min_p_mw=0.1,
+        max_p_mw=0.15,
+        max_q_mvar=0.05,
+        min_q_mvar=-0.05,
+    )
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     # creating a pwl cost function that actually is realistic: The absolute value of the reactive power has costs.
     create_pwl_cost(net, 0, "sgen", [[-50, 0, -1.5], [0, 50, 1.5]], power_type="q")

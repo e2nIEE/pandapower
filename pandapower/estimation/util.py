@@ -30,18 +30,25 @@ def estimate_voltage_vector(net):
     while len(trafo_index):
         for tix in trafo_index:
             trafo = trafos.loc[tix]
-            if notnull(res_bus.vm_pu.at[trafo.hv_bus]) and isnull(res_bus.vm_pu.at[trafo.lv_bus]):
+            if notnull(res_bus.vm_pu.at[trafo.hv_bus]) and isnull(
+                res_bus.vm_pu.at[trafo.lv_bus]
+            ):
                 try:
                     area = list(connected_component(net_graph, trafo.lv_bus))
                     shift = trafo.shift_degree if "shift_degree" in trafo else 0
-                    ratio = (trafo.vn_hv_kv / trafo.vn_lv_kv) / (net.bus.vn_kv.at[trafo.hv_bus]
-                                                                 / net.bus.vn_kv.at[trafo.lv_bus])
+                    ratio = (trafo.vn_hv_kv / trafo.vn_lv_kv) / (
+                        net.bus.vn_kv.at[trafo.hv_bus] / net.bus.vn_kv.at[trafo.lv_bus]
+                    )
                     res_bus.loc[area, "vm_pu"] = res_bus.vm_pu.at[trafo.hv_bus] * ratio
-                    res_bus.loc[area, "va_degree"] = res_bus.va_degree.at[trafo.hv_bus] - shift
+                    res_bus.loc[area, "va_degree"] = (
+                        res_bus.va_degree.at[trafo.hv_bus] - shift
+                    )
                 except KeyError:
-                    raise UserWarning("An out-of-service bus is connected to an in-service "
-                                      "transformer. Please set the transformer out of service or"
-                                      "put the bus into service. Treat results with caution!")
+                    raise UserWarning(
+                        "An out-of-service bus is connected to an in-service "
+                        "transformer. Please set the transformer out of service or"
+                        "put the bus into service. Treat results with caution!"
+                    )
                 trafo_index.remove(tix)
             elif notnull(res_bus.vm_pu.at[trafo.hv_bus]):
                 # parallel transformer, lv buses are already set from previous transformer
@@ -49,33 +56,45 @@ def estimate_voltage_vector(net):
             if len(trafo_index) == len(trafos):
                 # after the initial run we could not identify any areas correctly, it's probably a transmission grid
                 # with slack on the LV bus and multiple transformers/gens. do flat init and return
-                res_bus.loc[res_bus.vm_pu.isnull(), "vm_pu"] = 1.
-                res_bus.loc[res_bus.va_degree.isnull(), "va_degree"] = 0.
+                res_bus.loc[res_bus.vm_pu.isnull(), "vm_pu"] = 1.0
+                res_bus.loc[res_bus.va_degree.isnull(), "va_degree"] = 0.0
                 return res_bus
     return res_bus
 
 
 def _get_bus_ppc_mapping(net, bus_to_be_fused):
-    bus_with_elements = set(net.load.bus).union(set(net.sgen.bus)).union(
-        set(net.shunt.bus)).union(set(net.gen.bus)).union(
-        set(net.ext_grid.bus)).union(set(net.ward.bus)).union(
-        set(net.xward.bus))
+    bus_with_elements = (
+        set(net.load.bus)
+        .union(set(net.sgen.bus))
+        .union(set(net.shunt.bus))
+        .union(set(net.gen.bus))
+        .union(set(net.ext_grid.bus))
+        .union(set(net.ward.bus))
+        .union(set(net.xward.bus))
+    )
     # Run dc pp to get the ppc we need
-    #rundcpp(net)
+    # rundcpp(net)
 
     runpp(net, calculate_voltage_angles=True)
 
-    bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups['bus'], columns=["bus_ppci"])
-    bus_ppci['bus_with_elements'] = bus_ppci.index.isin(bus_with_elements)
+    bus_ppci = pd.DataFrame(data=net._pd2ppc_lookups["bus"], columns=["bus_ppci"])
+    bus_ppci["bus_with_elements"] = bus_ppci.index.isin(bus_with_elements)
     existed_bus = bus_ppci[bus_ppci.index.isin(net.bus.index)]
-    bus_ppci['vn_kv'] = net.bus.loc[existed_bus.index, 'vn_kv']
-    ppci_bus_with_elements = bus_ppci.groupby('bus_ppci')['bus_with_elements'].sum()
-    bus_ppci.loc[:, 'elements_in_cluster'] = ppci_bus_with_elements[bus_ppci['bus_ppci'].values].values
-    bus_ppci['bus_to_be_fused'] = False
+    bus_ppci["vn_kv"] = net.bus.loc[existed_bus.index, "vn_kv"]
+    ppci_bus_with_elements = bus_ppci.groupby("bus_ppci")["bus_with_elements"].sum()
+    bus_ppci.loc[:, "elements_in_cluster"] = ppci_bus_with_elements[
+        bus_ppci["bus_ppci"].values
+    ].values
+    bus_ppci["bus_to_be_fused"] = False
     if bus_to_be_fused is not None:
-        bus_ppci.loc[bus_to_be_fused, 'bus_to_be_fused'] = True
-        bus_cluster_to_be_fused_mask = bus_ppci.groupby('bus_ppci')['bus_to_be_fused'].any()
-        bus_ppci.loc[bus_cluster_to_be_fused_mask[bus_ppci['bus_ppci'].values].values, 'bus_to_be_fused'] = True
+        bus_ppci.loc[bus_to_be_fused, "bus_to_be_fused"] = True
+        bus_cluster_to_be_fused_mask = bus_ppci.groupby("bus_ppci")[
+            "bus_to_be_fused"
+        ].any()
+        bus_ppci.loc[
+            bus_cluster_to_be_fused_mask[bus_ppci["bus_ppci"].values].values,
+            "bus_to_be_fused",
+        ] = True
     return bus_ppci
 
 
@@ -100,28 +119,45 @@ def set_bb_switch_impedance(net, bus_to_be_fused=None, z_ohm=0.1):
     :param z_ohm: float z_ohm to be setted for the switch
     :return: None
     """
-    if 'z_ohm' in net.switch:
-        net.switch['z_ohm_ori'] = net.switch['z_ohm']
+    if "z_ohm" in net.switch:
+        net.switch["z_ohm_ori"] = net.switch["z_ohm"]
 
     lookup = _get_bus_ppc_mapping(net, bus_to_be_fused)
     for _ in range(int(lookup.elements_in_cluster.max()) - 1):
-        bus_to_be_handled = lookup[((lookup['elements_in_cluster'] >= 2) &
-                                    lookup['bus_with_elements']) & (~lookup['bus_to_be_fused'])]
-        bus_to_be_handled = bus_to_be_handled[bus_to_be_handled['bus_ppci'].duplicated(keep='first')].index
-        imp_switch_sel = (net.switch.et == 'b') & (net.switch.closed) &\
-                         (net.switch.bus.isin(bus_to_be_handled) | net.switch.element.isin(bus_to_be_handled))
-        net.switch.loc[imp_switch_sel, 'z_ohm'] = z_ohm
+        bus_to_be_handled = lookup[
+            ((lookup["elements_in_cluster"] >= 2) & lookup["bus_with_elements"])
+            & (~lookup["bus_to_be_fused"])
+        ]
+        bus_to_be_handled = bus_to_be_handled[
+            bus_to_be_handled["bus_ppci"].duplicated(keep="first")
+        ].index
+        imp_switch_sel = (
+            (net.switch.et == "b")
+            & (net.switch.closed)
+            & (
+                net.switch.bus.isin(bus_to_be_handled)
+                | net.switch.element.isin(bus_to_be_handled)
+            )
+        )
+        net.switch.loc[imp_switch_sel, "z_ohm"] = z_ohm
 
         # check if fused buses were isolated by the switching type change
         lookup_discon = _get_bus_ppc_mapping(net, bus_to_be_fused)
         imp_switch = net.switch.loc[imp_switch_sel, :]
-        detached_bus = lookup_discon.loc[lookup_discon.elements_in_cluster == 0, :].index
+        detached_bus = lookup_discon.loc[
+            lookup_discon.elements_in_cluster == 0, :
+        ].index
         # Find the cause of isolated bus
-        switch_to_be_fused = (imp_switch.bus.isin(bus_to_be_handled) & imp_switch.element.isin(detached_bus)) | \
-                             (imp_switch.bus.isin(detached_bus) & imp_switch.element.isin(bus_to_be_handled))
+        switch_to_be_fused = (
+            imp_switch.bus.isin(bus_to_be_handled)
+            & imp_switch.element.isin(detached_bus)
+        ) | (
+            imp_switch.bus.isin(detached_bus)
+            & imp_switch.element.isin(bus_to_be_handled)
+        )
         if not switch_to_be_fused.values.any():
             return
-        net.switch.loc[imp_switch[switch_to_be_fused].index, 'z_ohm'] = 0
+        net.switch.loc[imp_switch[switch_to_be_fused].index, "z_ohm"] = 0
         lookup = _get_bus_ppc_mapping(net, bus_to_be_fused)
         if lookup.elements_in_cluster.max() == 1:
             return
@@ -138,77 +174,145 @@ def reset_bb_switch_impedance(net):
         net.switch = net.switch.drop("z_ohm_ori", axis=1)
 
 
-def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_dev=0.03,
-                                   seed=14, with_random_error=False):
+def add_virtual_meas_from_loadflow(
+    net,
+    v_std_dev=0.01,
+    p_std_dev=0.03,
+    q_std_dev=0.03,
+    seed=14,
+    with_random_error=False,
+):
     np.random.seed(seed)
 
-    bus_meas_types = {'v': 'vm_pu', 'p': 'p_mw', 'q': 'q_mvar'}
-    branch_meas_type = {'line': {'side': ('from', 'to'),
-                                 'meas_type': ('p_mw', 'q_mvar')},
-                        'trafo': {'side': ('hv', 'lv'),
-                                  'meas_type': ('p_mw', 'q_mvar')},
-                        'trafo3w': {'side': ('hv', 'mv', 'lv'),
-                                    'meas_type': ('p_mw', 'q_mvar')}}
+    bus_meas_types = {"v": "vm_pu", "p": "p_mw", "q": "q_mvar"}
+    branch_meas_type = {
+        "line": {"side": ("from", "to"), "meas_type": ("p_mw", "q_mvar")},
+        "trafo": {"side": ("hv", "lv"), "meas_type": ("p_mw", "q_mvar")},
+        "trafo3w": {"side": ("hv", "mv", "lv"), "meas_type": ("p_mw", "q_mvar")},
+    }
     for bus_ix, bus_res in net.res_bus.iterrows():
         for meas_type in bus_meas_types.keys():
             meas_value = float(bus_res[bus_meas_types[meas_type]])
-            if meas_type in ('p', 'q'):
-                create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
-                                      value=meas_value, std_dev=1)
+            if meas_type in ("p", "q"):
+                create_measurement(
+                    net,
+                    meas_type=meas_type,
+                    element_type="bus",
+                    element=bus_ix,
+                    value=meas_value,
+                    std_dev=1,
+                )
             else:
-                create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
-                                      value=meas_value, std_dev=v_std_dev)
-    remove_shunt_injection_from_meas(net,"shunt")
-    remove_shunt_injection_from_meas(net,"ward")
+                create_measurement(
+                    net,
+                    meas_type=meas_type,
+                    element_type="bus",
+                    element=bus_ix,
+                    value=meas_value,
+                    std_dev=v_std_dev,
+                )
+    remove_shunt_injection_from_meas(net, "shunt")
+    remove_shunt_injection_from_meas(net, "ward")
 
     for br_type in branch_meas_type.keys():
-        if not net['res_' + br_type].empty:
-            for br_ix, br_res in net['res_' + br_type].iterrows():
-                for side in branch_meas_type[br_type]['side']:
-                    for meas_type in branch_meas_type[br_type]['meas_type']:
-                        create_measurement(net, meas_type=meas_type[0], element_type=br_type,
-                                              element=br_ix, side=side,
-                                              value=br_res[meas_type[0] + '_' + side + meas_type[1:]], std_dev=1)
+        if not net["res_" + br_type].empty:
+            for br_ix, br_res in net["res_" + br_type].iterrows():
+                for side in branch_meas_type[br_type]["side"]:
+                    for meas_type in branch_meas_type[br_type]["meas_type"]:
+                        create_measurement(
+                            net,
+                            meas_type=meas_type[0],
+                            element_type=br_type,
+                            element=br_ix,
+                            side=side,
+                            value=br_res[meas_type[0] + "_" + side + meas_type[1:]],
+                            std_dev=1,
+                        )
 
-    add_virtual_meas_error(net, v_std_dev=v_std_dev, p_std_dev=p_std_dev, q_std_dev=q_std_dev,
-                           with_random_error=with_random_error)
+    add_virtual_meas_error(
+        net,
+        v_std_dev=v_std_dev,
+        p_std_dev=p_std_dev,
+        q_std_dev=q_std_dev,
+        with_random_error=with_random_error,
+    )
 
-def remove_shunt_injection_from_meas(net,type):
+
+def remove_shunt_injection_from_meas(net, type):
     index = net[type].index.tolist()
     bus = net[type]["bus"].tolist()
     for k in range(len(index)):
         try:
-            idxp = net.measurement[((net.measurement["element_type"]=="bus") & (net.measurement["element"]==bus[k])) & (net.measurement["measurement_type"]=="p")].index[0]
-            idxq = net.measurement[((net.measurement["element_type"]=="bus") & (net.measurement["element"]==bus[k])) & (net.measurement["measurement_type"]=="q")].index[0]
+            idxp = net.measurement[
+                (
+                    (net.measurement["element_type"] == "bus")
+                    & (net.measurement["element"] == bus[k])
+                )
+                & (net.measurement["measurement_type"] == "p")
+            ].index[0]
+            idxq = net.measurement[
+                (
+                    (net.measurement["element_type"] == "bus")
+                    & (net.measurement["element"] == bus[k])
+                )
+                & (net.measurement["measurement_type"] == "q")
+            ].index[0]
             if type == "shunt":
-                net.measurement.loc[idxp,"value"] -= net.res_shunt.loc[index[k], 'p_mw']
-                net.measurement.loc[idxq,"value"] -= net.res_shunt.loc[index[k], 'q_mvar']
+                net.measurement.loc[idxp, "value"] -= net.res_shunt.loc[
+                    index[k], "p_mw"
+                ]
+                net.measurement.loc[idxq, "value"] -= net.res_shunt.loc[
+                    index[k], "q_mvar"
+                ]
             if type == "ward":
-                net.measurement.loc[idxp,"value"] -= net.res_ward.loc[index[k], 'p_mw'] - net.ward.loc[index[k], 'ps_mw']
-                net.measurement.loc[idxq,"value"] -= net.res_ward.loc[index[k], 'q_mvar'] - net.ward.loc[index[k], 'qs_mvar']
+                net.measurement.loc[idxp, "value"] -= (
+                    net.res_ward.loc[index[k], "p_mw"] - net.ward.loc[index[k], "ps_mw"]
+                )
+                net.measurement.loc[idxq, "value"] -= (
+                    net.res_ward.loc[index[k], "q_mvar"]
+                    - net.ward.loc[index[k], "qs_mvar"]
+                )
         except:
             continue
 
-def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
-                                       p_std_dev=0.01, q_std_dev=0.01, dg_std_dev=0.1,
-                                       seed=14, with_random_error=True):
+
+def add_virtual_pmu_meas_from_loadflow(
+    net,
+    v_std_dev=0.001,
+    i_std_dev=0.1,
+    p_std_dev=0.01,
+    q_std_dev=0.01,
+    dg_std_dev=0.1,
+    seed=14,
+    with_random_error=True,
+):
     np.random.seed(seed)
 
-    bus_meas_types = {'v': 'vm_pu', "va": "va_degree", 'p': 'p_mw', 'q': 'q_mvar'}
-    branch_meas_type = {'line': {'side': ('from', 'to'),
-                                 'meas_type': ('i_ka', 'ia_degree', 'p_mw', 'q_mvar')},
-                        'trafo': {'side': ('hv', 'lv'),
-                                  'meas_type': ('i_ka', 'ia_degree', 'p_mw', 'q_mvar')},
-                        'trafo3w': {'side': ('hv', 'mv', 'lv'),
-                                    'meas_type': ('i_ka', 'ia_degree', 'p_mw', 'q_mvar')}}
+    bus_meas_types = {"v": "vm_pu", "va": "va_degree", "p": "p_mw", "q": "q_mvar"}
+    branch_meas_type = {
+        "line": {
+            "side": ("from", "to"),
+            "meas_type": ("i_ka", "ia_degree", "p_mw", "q_mvar"),
+        },
+        "trafo": {
+            "side": ("hv", "lv"),
+            "meas_type": ("i_ka", "ia_degree", "p_mw", "q_mvar"),
+        },
+        "trafo3w": {
+            "side": ("hv", "mv", "lv"),
+            "meas_type": ("i_ka", "ia_degree", "p_mw", "q_mvar"),
+        },
+    }
 
     # Added degree result for branches
     for br_type in branch_meas_type.keys():
-        for side in branch_meas_type[br_type]['side']:
-            p, q, vm, va = net["res_" + br_type]["p_%s_mw" % side].values, \
-                           net["res_" + br_type]["q_%s_mvar" % side].values, \
-                           net["res_" + br_type]["vm_%s_pu" % side].values, \
-                           net["res_" + br_type]["va_%s_degree" % side].values
+        for side in branch_meas_type[br_type]["side"]:
+            p, q, vm, va = (
+                net["res_" + br_type]["p_%s_mw" % side].values,
+                net["res_" + br_type]["q_%s_mvar" % side].values,
+                net["res_" + br_type]["vm_%s_pu" % side].values,
+                net["res_" + br_type]["va_%s_degree" % side].values,
+            )
             S = p + q * 1j
             V = vm * np.exp(np.deg2rad(va) * 1j)
             I = np.conj(S / V)
@@ -217,35 +321,74 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
     for bus_ix, bus_res in net.res_bus.iterrows():
         for meas_type in bus_meas_types.keys():
             meas_value = float(bus_res[bus_meas_types[meas_type]])
-            if meas_type in ('p', 'q'):
-                create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
-                                      value=meas_value, std_dev=1)
+            if meas_type in ("p", "q"):
+                create_measurement(
+                    net,
+                    meas_type=meas_type,
+                    element_type="bus",
+                    element=bus_ix,
+                    value=meas_value,
+                    std_dev=1,
+                )
             else:
-                create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
-                                      value=meas_value, std_dev=v_std_dev)
-    remove_shunt_injection_from_meas(net,"shunt")
-    remove_shunt_injection_from_meas(net,"ward")
+                create_measurement(
+                    net,
+                    meas_type=meas_type,
+                    element_type="bus",
+                    element=bus_ix,
+                    value=meas_value,
+                    std_dev=v_std_dev,
+                )
+    remove_shunt_injection_from_meas(net, "shunt")
+    remove_shunt_injection_from_meas(net, "ward")
 
     for br_type in branch_meas_type.keys():
-        if not net['res_' + br_type].empty:
-            for br_ix, br_res in net['res_' + br_type].iterrows():
-                for side in branch_meas_type[br_type]['side']:
-                    for meas_type in branch_meas_type[br_type]['meas_type']:
-                        create_measurement(net, meas_type=meas_type.split("_")[0], element_type=br_type,
-                                              element=br_ix, side=side,
-                                              value=br_res[meas_type.split("_")[0] + '_' +
-                                                           side + '_' + meas_type.split("_")[1]], std_dev=1)
+        if not net["res_" + br_type].empty:
+            for br_ix, br_res in net["res_" + br_type].iterrows():
+                for side in branch_meas_type[br_type]["side"]:
+                    for meas_type in branch_meas_type[br_type]["meas_type"]:
+                        create_measurement(
+                            net,
+                            meas_type=meas_type.split("_")[0],
+                            element_type=br_type,
+                            element=br_ix,
+                            side=side,
+                            value=br_res[
+                                meas_type.split("_")[0]
+                                + "_"
+                                + side
+                                + "_"
+                                + meas_type.split("_")[1]
+                            ],
+                            std_dev=1,
+                        )
     if with_random_error:
-        add_virtual_meas_error(net, v_std_dev=v_std_dev, p_std_dev=p_std_dev, q_std_dev=q_std_dev,
-                               i_std_dev=i_std_dev, dg_std_dev=dg_std_dev, with_random_error=with_random_error)
+        add_virtual_meas_error(
+            net,
+            v_std_dev=v_std_dev,
+            p_std_dev=p_std_dev,
+            q_std_dev=q_std_dev,
+            i_std_dev=i_std_dev,
+            dg_std_dev=dg_std_dev,
+            with_random_error=with_random_error,
+        )
 
 
-def add_virtual_meas_error(net, v_std_dev=0.001, i_std_dev=0.01,
-                           p_std_dev=0.03, q_std_dev=0.03, dg_std_dev=0.1, with_random_error=True):
+def add_virtual_meas_error(
+    net,
+    v_std_dev=0.001,
+    i_std_dev=0.01,
+    p_std_dev=0.03,
+    q_std_dev=0.03,
+    dg_std_dev=0.1,
+    with_random_error=True,
+):
     if net.measurement.empty:
         raise AssertionError("Measurement cannot be empty!")
 
-    r = np.random.normal(0, 1, net.measurement.shape[0])  # random error in range from -1, 1
+    r = np.random.normal(
+        0, 1, net.measurement.shape[0]
+    )  # random error in range from -1, 1
     p_meas_mask = net.measurement.measurement_type == "p"
     q_meas_mask = net.measurement.measurement_type == "q"
     v_meas_mask = net.measurement.measurement_type == "v"
@@ -253,16 +396,26 @@ def add_virtual_meas_error(net, v_std_dev=0.001, i_std_dev=0.01,
     dg_meas_mask = net.measurement.measurement_type.isin(("ia", "va"))
 
     if with_random_error:
-        net.measurement.loc[p_meas_mask, 'value'] += r[p_meas_mask.values] * p_std_dev *\
-            net.measurement.loc[p_meas_mask, 'value'].abs()
-        net.measurement.loc[q_meas_mask, 'value'] += r[q_meas_mask.values] * q_std_dev *\
-            net.measurement.loc[q_meas_mask, 'value'].abs()
-        net.measurement.loc[v_meas_mask, 'value'] += r[v_meas_mask.values] * v_std_dev
-        net.measurement.loc[i_meas_mask, 'value'] += r[i_meas_mask.values] * i_std_dev / 10000
-        net.measurement.loc[dg_meas_mask, 'value'] += r[dg_meas_mask.values] * dg_std_dev
+        net.measurement.loc[p_meas_mask, "value"] += (
+            r[p_meas_mask.values]
+            * p_std_dev
+            * net.measurement.loc[p_meas_mask, "value"].abs()
+        )
+        net.measurement.loc[q_meas_mask, "value"] += (
+            r[q_meas_mask.values]
+            * q_std_dev
+            * net.measurement.loc[q_meas_mask, "value"].abs()
+        )
+        net.measurement.loc[v_meas_mask, "value"] += r[v_meas_mask.values] * v_std_dev
+        net.measurement.loc[i_meas_mask, "value"] += (
+            r[i_meas_mask.values] * i_std_dev / 10000
+        )
+        net.measurement.loc[dg_meas_mask, "value"] += (
+            r[dg_meas_mask.values] * dg_std_dev
+        )
 
-    net.measurement.loc[p_meas_mask, 'std_dev'] = p_std_dev
-    net.measurement.loc[q_meas_mask, 'std_dev'] = q_std_dev
-    net.measurement.loc[v_meas_mask, 'std_dev'] = v_std_dev
-    net.measurement.loc[i_meas_mask, 'std_dev'] = i_std_dev
-    net.measurement.loc[dg_meas_mask, 'std_dev'] = dg_std_dev
+    net.measurement.loc[p_meas_mask, "std_dev"] = p_std_dev
+    net.measurement.loc[q_meas_mask, "std_dev"] = q_std_dev
+    net.measurement.loc[v_meas_mask, "std_dev"] = v_std_dev
+    net.measurement.loc[i_meas_mask, "std_dev"] = i_std_dev
+    net.measurement.loc[dg_meas_mask, "std_dev"] = dg_std_dev

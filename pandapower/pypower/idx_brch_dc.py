@@ -41,23 +41,25 @@ they are typically not present in the input matrix
 """
 
 # define the indices
-DC_F_BUS       = 0    # f, from bus number
-DC_T_BUS       = 1    # t, to bus number
-DC_BR_R        = 2    # r, resistance (p.u.)
-DC_BR_G        = 3    # b, total line charging susceptance (p.u.)  # todo Roman check if necessary
-DC_RATE_A      = 4    # rateA, MVA rating A (long term rating)
-DC_RATE_B      = 5    # rateB, MVA rating B (short term rating)
-DC_RATE_C      = 6    # rateC, MVA rating C (emergency rating)
-DC_BR_STATUS   = 7   # initial branch status, 1 - in service, 0 - out of service
+DC_F_BUS = 0  # f, from bus number
+DC_T_BUS = 1  # t, to bus number
+DC_BR_R = 2  # r, resistance (p.u.)
+DC_BR_G = (
+    3  # b, total line charging susceptance (p.u.)  # todo Roman check if necessary
+)
+DC_RATE_A = 4  # rateA, MVA rating A (long term rating)
+DC_RATE_B = 5  # rateB, MVA rating B (short term rating)
+DC_RATE_C = 6  # rateC, MVA rating C (emergency rating)
+DC_BR_STATUS = 7  # initial branch status, 1 - in service, 0 - out of service
 
 # included in power flow solution, not necessarily in input
-DC_PF          = 8   # real power injected at "from" bus end (MW)
-DC_IF          = 9   # current injected at "from" bus end (p.u.)
-DC_PT          = 10   # real power injected at "to" bus end (MW)
-DC_IT          = 11   # current injected at "to" bus end (p.u.)
+DC_PF = 8  # real power injected at "from" bus end (MW)
+DC_IF = 9  # current injected at "from" bus end (p.u.)
+DC_PT = 10  # real power injected at "to" bus end (MW)
+DC_IT = 11  # current injected at "to" bus end (p.u.)
 
-DC_BR_R_ASYM = 12   # todo Roman check if necessary
-DC_BR_X_ASYM = 13   # todo Roman check if necessary
+DC_BR_R_ASYM = 12  # todo Roman check if necessary
+DC_BR_X_ASYM = 13  # todo Roman check if necessary
 
 DC_TDPF = 14  ### TDPF not implemented for DC lines
 

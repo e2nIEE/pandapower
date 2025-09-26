@@ -8,9 +8,11 @@ import networkx as nx
 import numpy as np
 
 from pandapower.auxiliary import _init_nx_options
-from pandapower.build_branch import _calc_impedance_parameters_from_dataframe, \
-    _calc_branch_values_from_trafo_df, \
-    _trafo_df_from_trafo3w
+from pandapower.build_branch import (
+    _calc_impedance_parameters_from_dataframe,
+    _calc_branch_values_from_trafo_df,
+    _trafo_df_from_trafo3w,
+)
 from pandapower.build_bus import _build_bus_ppc
 from pandapower.pd2ppc import _init_ppc
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
@@ -37,13 +39,28 @@ BR_Z = 3
 logger = logging.getLogger(__name__)
 
 
-def create_nxgraph(net, respect_switches=True, include_lines=True, include_impedances=True,
-                   include_dclines=True, include_trafos=True, include_trafo3ws=True, include_tcsc=True,
-                   include_vsc=True, include_line_dc=True,
-                   nogobuses=None, notravbuses=None, multi=True,
-                   calc_branch_impedances=False, branch_impedance_unit="ohm",
-                   library="networkx", include_out_of_service=False,
-                   include_switches=True, trafo_length_km=None, switch_length_km=None):
+def create_nxgraph(
+    net,
+    respect_switches=True,
+    include_lines=True,
+    include_impedances=True,
+    include_dclines=True,
+    include_trafos=True,
+    include_trafo3ws=True,
+    include_tcsc=True,
+    include_vsc=True,
+    include_line_dc=True,
+    nogobuses=None,
+    notravbuses=None,
+    multi=True,
+    calc_branch_impedances=False,
+    branch_impedance_unit="ohm",
+    library="networkx",
+    include_out_of_service=False,
+    include_switches=True,
+    trafo_length_km=None,
+    switch_length_km=None,
+):
     """
      Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
      of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
@@ -122,7 +139,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
         if graph_tool_available and library == "graph_tool":
             mg = GraphToolInterface(net.bus.index)
         elif not graph_tool_available and library == "graph_tool":
-            raise UserWarning("graph_tool selected as the library for topological analysis but it is not installed")
+            raise UserWarning(
+                "graph_tool selected as the library for topological analysis but it is not installed"
+            )
         else:
             mg = nx.MultiGraph()
     else:
@@ -136,7 +155,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
     line = get_edge_table(net, "line", include_lines)
     if line is not None:
-        indices, parameter, in_service = init_par(line, calc_branch_impedances, include_out_of_service)
+        indices, parameter, in_service = init_par(
+            line, calc_branch_impedances, include_out_of_service
+        )
         indices[:, F_BUS] = line.from_bus.values
         indices[:, T_BUS] = line.to_bus.values
 
@@ -149,52 +170,91 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
         parameter[:, WEIGHT] = line.length_km.values
         if calc_branch_impedances:
-            baseR = get_baseR(net, ppc, line.from_bus.values) \
-                if branch_impedance_unit == "pu" else 1
+            baseR = (
+                get_baseR(net, ppc, line.from_bus.values)
+                if branch_impedance_unit == "pu"
+                else 1
+            )
             line_length = line.length_km.values / line.parallel.values
             r = line.r_ohm_per_km.values * line_length
             x = line.x_ohm_per_km.values * line_length
             parameter[:, BR_R] = r / baseR
             parameter[:, BR_X] = x / baseR
 
-        add_edges(mg, indices, parameter, in_service, net, "line", calc_branch_impedances,
-                  branch_impedance_unit)
+        add_edges(
+            mg,
+            indices,
+            parameter,
+            in_service,
+            net,
+            "line",
+            calc_branch_impedances,
+            branch_impedance_unit,
+        )
 
     impedance = get_edge_table(net, "impedance", include_impedances)
     if impedance is not None:
-        indices, parameter, in_service = init_par(impedance, calc_branch_impedances, include_out_of_service)
+        indices, parameter, in_service = init_par(
+            impedance, calc_branch_impedances, include_out_of_service
+        )
         indices[:, F_BUS] = impedance.from_bus.values
         indices[:, T_BUS] = impedance.to_bus.values
 
         if calc_branch_impedances:
-            baseR = get_baseR(net, ppc, impedance.from_bus.values) \
-                if branch_impedance_unit == "ohm" else 1
+            baseR = (
+                get_baseR(net, ppc, impedance.from_bus.values)
+                if branch_impedance_unit == "ohm"
+                else 1
+            )
             r, x, *_ = _calc_impedance_parameters_from_dataframe(net)
             parameter[:, BR_R] = r * baseR
             parameter[:, BR_X] = x * baseR
 
-        add_edges(mg, indices, parameter, in_service, net, "impedance",
-                  calc_branch_impedances, branch_impedance_unit)
+        add_edges(
+            mg,
+            indices,
+            parameter,
+            in_service,
+            net,
+            "impedance",
+            calc_branch_impedances,
+            branch_impedance_unit,
+        )
 
     tcsc = get_edge_table(net, "tcsc", include_tcsc)
     if tcsc is not None:
-        indices, parameter, in_service = init_par(tcsc, calc_branch_impedances, include_out_of_service)
+        indices, parameter, in_service = init_par(
+            tcsc, calc_branch_impedances, include_out_of_service
+        )
         indices[:, F_BUS] = tcsc.from_bus.values
         indices[:, T_BUS] = tcsc.to_bus.values
 
         if calc_branch_impedances:
             baseR = get_baseR(net, ppc, tcsc.from_bus.values)
-            x = 1 / calc_y_svc_pu(net.tcsc.thyristor_firing_angle_degree, net.tcsc.x_l_ohm / baseR,
-                                  net.tcsc.x_cvar_ohm / baseR)
+            x = 1 / calc_y_svc_pu(
+                net.tcsc.thyristor_firing_angle_degree,
+                net.tcsc.x_l_ohm / baseR,
+                net.tcsc.x_cvar_ohm / baseR,
+            )
             parameter[:, BR_R] = 0
             parameter[:, BR_X] = x * (baseR if branch_impedance_unit == "ohm" else 1)
 
-        add_edges(mg, indices, parameter, in_service, net, "tcsc",
-                  calc_branch_impedances, branch_impedance_unit)
+        add_edges(
+            mg,
+            indices,
+            parameter,
+            in_service,
+            net,
+            "tcsc",
+            calc_branch_impedances,
+            branch_impedance_unit,
+        )
 
     dclines = get_edge_table(net, "dcline", include_dclines)
     if dclines is not None:
-        indices, parameter, in_service = init_par(dclines, calc_branch_impedances, include_out_of_service)
+        indices, parameter, in_service = init_par(
+            dclines, calc_branch_impedances, include_out_of_service
+        )
         indices[:, F_BUS] = dclines.from_bus.values
         indices[:, T_BUS] = dclines.to_bus.values
 
@@ -202,12 +262,22 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             parameter[:, BR_R] = np.inf
             parameter[:, BR_X] = np.inf
 
-        add_edges(mg, indices, parameter, in_service, net, "dcline",
-                  calc_branch_impedances, branch_impedance_unit)
+        add_edges(
+            mg,
+            indices,
+            parameter,
+            in_service,
+            net,
+            "dcline",
+            calc_branch_impedances,
+            branch_impedance_unit,
+        )
 
     trafo = get_edge_table(net, "trafo", include_trafos)
     if trafo is not None:
-        indices, parameter, in_service = init_par(trafo, calc_branch_impedances, include_out_of_service)
+        indices, parameter, in_service = init_par(
+            trafo, calc_branch_impedances, include_out_of_service
+        )
         indices[:, F_BUS] = trafo.hv_bus.values
         indices[:, T_BUS] = trafo.lv_bus.values
 
@@ -222,14 +292,25 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
                 in_service &= ~open_trafos_mask
 
         if calc_branch_impedances:
-            baseR = get_baseR(net, ppc, trafo.hv_bus.values) \
-                if branch_impedance_unit == "ohm" else 1
+            baseR = (
+                get_baseR(net, ppc, trafo.hv_bus.values)
+                if branch_impedance_unit == "ohm"
+                else 1
+            )
             r, x, *_ = _calc_branch_values_from_trafo_df(net, ppc, trafo)
             parameter[:, BR_R] = r * baseR
             parameter[:, BR_X] = x * baseR
 
-        add_edges(mg, indices, parameter, in_service, net, "trafo",
-                  calc_branch_impedances, branch_impedance_unit)
+        add_edges(
+            mg,
+            indices,
+            parameter,
+            in_service,
+            net,
+            "trafo",
+            calc_branch_impedances,
+            branch_impedance_unit,
+        )
 
     trafo3w = get_edge_table(net, "trafo3w", include_trafo3ws)
     if trafo3w is not None:
@@ -237,8 +318,11 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
         if calc_branch_impedances:
             trafo_df = _trafo_df_from_trafo3w(net)
             r_all, x_all, *_ = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
-            baseR = get_baseR(net, ppc, trafo3w.hv_bus.values) \
-                if branch_impedance_unit == "ohm" else 1
+            baseR = (
+                get_baseR(net, ppc, trafo3w.hv_bus.values)
+                if branch_impedance_unit == "ohm"
+                else 1
+            )
             r = {side: r for side, r in zip(sides, np.split(r_all, 3))}
             x = {side: x for side, x in zip(sides, np.split(x_all, 3))}
 
@@ -252,7 +336,9 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
             open_trafo3w_buses = net.switch.bus.values[mask]
             open_trafo3w = (open_trafo3w_index + open_trafo3w_buses * 1j).flatten()
         for f, t in combinations(sides, 2):
-            indices, parameter, in_service = init_par(trafo3w, calc_branch_impedances, include_out_of_service)
+            indices, parameter, in_service = init_par(
+                trafo3w, calc_branch_impedances, include_out_of_service
+            )
             indices[:, F_BUS] = trafo3w["%s_bus" % f].values
             indices[:, T_BUS] = trafo3w["%s_bus" % t].values
 
@@ -261,14 +347,23 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
 
             if respect_switches and len(open_trafo3w):
                 for BUS in [F_BUS, T_BUS]:
-                    open_switch = np.isin(indices[:, INDEX] + indices[:, BUS] * 1j,
-                                          open_trafo3w)
+                    open_switch = np.isin(
+                        indices[:, INDEX] + indices[:, BUS] * 1j, open_trafo3w
+                    )
                     in_service &= ~open_switch
             if calc_branch_impedances:
                 parameter[:, BR_R] = (r[f] + r[t]) * baseR
                 parameter[:, BR_X] = (x[f] + x[t]) * baseR
-            add_edges(mg, indices, parameter, in_service, net, "trafo3w",
-                      calc_branch_impedances, branch_impedance_unit)
+            add_edges(
+                mg,
+                indices,
+                parameter,
+                in_service,
+                net,
+                "trafo3w",
+                calc_branch_impedances,
+                branch_impedance_unit,
+            )
 
     if include_switches:
         switch = net.switch
@@ -278,15 +373,23 @@ def create_nxgraph(net, respect_switches=True, include_lines=True, include_imped
                 in_service = (switch.et.values == "b") & ~open_sw
             else:
                 # add edges for any bus-bus switches
-                in_service = (switch.et.values == "b")
+                in_service = switch.et.values == "b"
             ret = init_par(switch, calc_branch_impedances)
             indices, parameter = ret[0], ret[1]
             indices[:, F_BUS] = switch.bus.values
             indices[:, T_BUS] = switch.element.values
             if switch_length_km is not None:
                 parameter[:, WEIGHT] = switch_length_km
-            add_edges(mg, indices, parameter, in_service, net, "switch",
-                      calc_branch_impedances, branch_impedance_unit)
+            add_edges(
+                mg,
+                indices,
+                parameter,
+                in_service,
+                net,
+                "switch",
+                calc_branch_impedances,
+                branch_impedance_unit,
+            )
 
     # add all buses that were not added when creating branches
     if len(mg.nodes()) < len(net.bus.index):
@@ -343,8 +446,16 @@ def get_edge_table(net, table_name, include_edges):
     return table
 
 
-def add_edges(mg, indices, parameter, in_service, net, element, calc_branch_impedances=False,
-              branch_impedance_unit="ohm"):
+def add_edges(
+    mg,
+    indices,
+    parameter,
+    in_service,
+    net,
+    element,
+    calc_branch_impedances=False,
+    branch_impedance_unit="ohm",
+):
     # this function is optimized for maximum perfomance, because the loops are called for every
     # branch element. That is why the loop over the numpy array is copied for each use case instead
     # of making a more generalized function or checking the different use cases inside the loop
@@ -352,16 +463,37 @@ def add_edges(mg, indices, parameter, in_service, net, element, calc_branch_impe
         parameter[:, BR_Z] = np.sqrt(parameter[:, BR_R] ** 2 + parameter[:, BR_X] ** 2)
         if branch_impedance_unit == "ohm":
             for idx, p in zip(indices[in_service], parameter[in_service]):
-                mg.add_edge(idx[F_BUS], idx[T_BUS], key=(element, idx[INDEX]), weight=p[WEIGHT],
-                            path=1, r_ohm=p[BR_R], x_ohm=p[BR_X], z_ohm=p[BR_Z])
+                mg.add_edge(
+                    idx[F_BUS],
+                    idx[T_BUS],
+                    key=(element, idx[INDEX]),
+                    weight=p[WEIGHT],
+                    path=1,
+                    r_ohm=p[BR_R],
+                    x_ohm=p[BR_X],
+                    z_ohm=p[BR_Z],
+                )
         elif branch_impedance_unit == "pu":
             for idx, p in zip(indices[in_service], parameter[in_service]):
-                mg.add_edge(idx[F_BUS], idx[T_BUS], key=(element, idx[INDEX]), weight=p[WEIGHT],
-                            path=1, r_pu=p[BR_R], x_pu=p[BR_X], z_pu=p[BR_Z])
+                mg.add_edge(
+                    idx[F_BUS],
+                    idx[T_BUS],
+                    key=(element, idx[INDEX]),
+                    weight=p[WEIGHT],
+                    path=1,
+                    r_pu=p[BR_R],
+                    x_pu=p[BR_X],
+                    z_pu=p[BR_Z],
+                )
     else:
         for idx, p in zip(indices[in_service], parameter[in_service]):
-            mg.add_edge(idx[F_BUS], idx[T_BUS], key=(element, idx[INDEX]), weight=p[WEIGHT],
-                        path=1)
+            mg.add_edge(
+                idx[F_BUS],
+                idx[T_BUS],
+                key=(element, idx[INDEX]),
+                weight=p[WEIGHT],
+                path=1,
+            )
 
 
 def get_baseR(net, ppc, buses):
@@ -380,7 +512,13 @@ def init_par(tab, calc_branch_impedances=False, include_out_of_service=False):
         parameters = np.zeros((n, 1), dtype=float)
 
     if "in_service" in tab:
-        return indices, parameters, np.ones(n, dtype=bool) if include_out_of_service else tab.in_service.values.copy()
+        return (
+            indices,
+            parameters,
+            np.ones(n, dtype=bool)
+            if include_out_of_service
+            else tab.in_service.values.copy(),
+        )
     else:
         return indices, parameters
 

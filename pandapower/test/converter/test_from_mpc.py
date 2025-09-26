@@ -30,8 +30,10 @@ def test_from_mpc_mat():
     case24 = case24_ieee_rts()
     set_user_pf_options(case24)
     this_folder = os.path.join(pp_dir, "test", "converter")
-    mat_case = os.path.join(this_folder, 'case24_ieee_rts.mat')
-    case24_from_mpc = from_mpc(mat_case, f_hz=60, casename_mpc_file='mpc', tap_side="hv")
+    mat_case = os.path.join(this_folder, "case24_ieee_rts.mat")
+    case24_from_mpc = from_mpc(
+        mat_case, f_hz=60, casename_mpc_file="mpc", tap_side="hv"
+    )
 
     runpp(case24)
     runpp(case24_from_mpc)
@@ -40,13 +42,15 @@ def test_from_mpc_mat():
     assert nets_equal(case24, case24_from_mpc, check_only_results=True)
 
 
-@pytest.mark.skipif(not matpowercaseframes_imported,
-                    reason="matpowercaseframes is needed to convert .m files.")
+@pytest.mark.skipif(
+    not matpowercaseframes_imported,
+    reason="matpowercaseframes is needed to convert .m files.",
+)
 def test_from_mpc_m():
     this_folder = os.path.join(pp_dir, "test", "converter")
-    mat_case = os.path.join(this_folder, 'case24_ieee_rts.mat')
-    m_case = os.path.join(this_folder, 'case24_ieee_rts.m')
-    case24_mat = from_mpc(mat_case, f_hz=60, casename_mpc_file='mpc', tap_side="hv")
+    mat_case = os.path.join(this_folder, "case24_ieee_rts.mat")
+    m_case = os.path.join(this_folder, "case24_ieee_rts.m")
+    case24_mat = from_mpc(mat_case, f_hz=60, casename_mpc_file="mpc", tap_side="hv")
     case24_m = from_mpc(m_case, f_hz=60, tap_side="hv")
 
     runpp(case24_mat)
@@ -56,5 +60,5 @@ def test_from_mpc_m():
     assert nets_equal(case24_mat, case24_m)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

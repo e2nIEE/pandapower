@@ -19,15 +19,22 @@ DEFAULT_OPT_METHOD = "Newton-CG"
 
 class OptAlgorithm(BaseAlgorithm):
     def estimate(self, eppci: ExtendedPPCI, estimator="wls", verbose=True, **kwargs):
-        opt_method = DEFAULT_OPT_METHOD if 'opt_method' not in kwargs else kwargs['opt_method']
+        opt_method = (
+            DEFAULT_OPT_METHOD if "opt_method" not in kwargs else kwargs["opt_method"]
+        )
 
         # matrix calculation object
         estm = get_estimator(BaseEstimatorOpt, estimator)(eppci, **kwargs)
 
         jac = estm.create_cost_jacobian
-        res = minimize(estm.cost_function, x0=eppci.E,
-                       method=opt_method, jac=jac, tol=self.tolerance,
-                       options={"disp": verbose})
+        res = minimize(
+            estm.cost_function,
+            x0=eppci.E,
+            method=opt_method,
+            jac=jac,
+            tol=self.tolerance,
+            options={"disp": verbose},
+        )
 
         self.successful = res.success
         if self.successful:

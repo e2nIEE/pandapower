@@ -3,18 +3,17 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from copy import deepcopy
 import os
-import pytest
 import numpy as np
-import pandas as pd
 
 import pandapower as pp
 from pandapower.converter import from_jao
 
 
 def test_from_jao_with_testfile():
-    testfile = os.path.join(pp.pp_dir, 'test', 'converter', "jao_testfiles", "testfile.xlsx")
+    testfile = os.path.join(
+        pp.pp_dir, "test", "converter", "jao_testfiles", "testfile.xlsx"
+    )
     assert os.path.isfile(testfile)
 
     # --- net1
@@ -26,11 +25,13 @@ def test_from_jao_with_testfile():
     assert len(net1.trafo) == 1
 
     # line data conversion
-    assert np.all((0.01 < net1.line[['r_ohm_per_km', 'x_ohm_per_km']]) & (
-        net1.line[['r_ohm_per_km', 'x_ohm_per_km']] < 0.4))
-    assert np.all((0.5 < net1.line['c_nf_per_km']) & (net1.line['c_nf_per_km'] < 25))
-    assert np.all(net1.line['g_us_per_km'] < 1)
-    assert np.all((0.2 < net1.line['max_i_ka']) & (net1.line['max_i_ka'] < 5))
+    assert np.all(
+        (0.01 < net1.line[["r_ohm_per_km", "x_ohm_per_km"]])
+        & (net1.line[["r_ohm_per_km", "x_ohm_per_km"]] < 0.4)
+    )
+    assert np.all((0.5 < net1.line["c_nf_per_km"]) & (net1.line["c_nf_per_km"] < 25))
+    assert np.all(net1.line["g_us_per_km"] < 1)
+    assert np.all((0.2 < net1.line["max_i_ka"]) & (net1.line["max_i_ka"] < 5))
 
     # trafo data conversion
     assert 100 < net1.trafo.sn_mva.iat[0] < 1000
@@ -45,7 +46,9 @@ def test_from_jao_with_testfile():
 
     # --- net2
     net2 = from_jao(testfile, None, True)
-    pp.nets_equal(net1, net2)  # extend_data_for_grid_group_connections makes no difference here
+    pp.nets_equal(
+        net1, net2
+    )  # extend_data_for_grid_group_connections makes no difference here
 
     # --- net3
     net3 = from_jao(testfile, None, True, drop_grid_groups_islands=True)
@@ -55,6 +58,6 @@ def test_from_jao_with_testfile():
     assert len(net3.trafo) == 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_from_jao_with_testfile()
     # pytest.main([__file__, "-xs"])

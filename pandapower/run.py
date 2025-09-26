@@ -6,9 +6,15 @@
 
 import inspect
 
-from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
-    _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, \
-    _init_rundcpp_options, _init_runopp_options, _internal_stored
+from pandapower.auxiliary import (
+    _check_bus_index_and_print_warning_if_high,
+    _check_gen_index_and_print_warning_if_high,
+    _init_runpp_options,
+    _init_rundcopp_options,
+    _init_rundcpp_options,
+    _init_runopp_options,
+    _internal_stored,
+)
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _powerflow, _recycled_powerflow
 from pandapower.optimal_powerflow import _optimal_powerflow
@@ -20,6 +26,7 @@ try:
     from power_grid_model.errors import PowerGridError
     from power_grid_model.validation import validate_input_data
     from power_grid_model_io.converters import PandaPowerConverter
+
     PGM_IMPORTED = True
 except ImportError:
     PGM_IMPORTED = False
@@ -40,36 +47,78 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     :param kwargs: load flow options, e. g. tolerance_mva = 1e-3
     :return: None
     """
-    standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
-                           'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_q_lims',
-                           'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
-                           'trafo3w_losses', 'init', 'init_vm_pu', 'init_va_degree', 'init_results',
-                           'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
-                           'max_iteration', 'v_debug', 'run_control', 'distributed_slack', 'lightsim2grid',
-                           'tdpf', 'tdpf_delay_s', 'tdpf_update_r_theta']
+    standard_parameters = [
+        "calculate_voltage_angles",
+        "trafo_model",
+        "check_connectivity",
+        "mode",
+        "copy_constraints_to_ppc",
+        "switch_rx_ratio",
+        "enforce_q_lims",
+        "recycle",
+        "voltage_depend_loads",
+        "consider_line_temperature",
+        "delta",
+        "trafo3w_losses",
+        "init",
+        "init_vm_pu",
+        "init_va_degree",
+        "init_results",
+        "tolerance_mva",
+        "trafo_loading",
+        "numba",
+        "ac",
+        "algorithm",
+        "max_iteration",
+        "v_debug",
+        "run_control",
+        "distributed_slack",
+        "lightsim2grid",
+        "tdpf",
+        "tdpf_delay_s",
+        "tdpf_update_r_theta",
+    ]
 
-    if overwrite or 'user_pf_options' not in net.keys():
-        net['user_pf_options'] = dict()
+    if overwrite or "user_pf_options" not in net.keys():
+        net["user_pf_options"] = dict()
 
-    net.user_pf_options.update({key: val for key, val in kwargs.items()
-                                if key in standard_parameters})
+    net.user_pf_options.update(
+        {key: val for key, val in kwargs.items() if key in standard_parameters}
+    )
 
-    additional_kwargs = {key: val for key, val in kwargs.items()
-                         if key not in standard_parameters}
+    additional_kwargs = {
+        key: val for key, val in kwargs.items() if key not in standard_parameters
+    }
 
     # this part is to inform user and to make typos in parameters visible
     if len(additional_kwargs) > 0:
-        logger.info('parameters %s are not in the list of standard options' % list(
-            additional_kwargs.keys()))
+        logger.info(
+            "parameters %s are not in the list of standard options"
+            % list(additional_kwargs.keys())
+        )
 
         net.user_pf_options.update(additional_kwargs)
 
 
-def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
-          max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
-          trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
-          voltage_depend_loads=True, consider_line_temperature=False,
-          run_control=False, distributed_slack=False, tdpf=False, tdpf_delay_s=None, **kwargs):
+def runpp(
+    net,
+    algorithm="nr",
+    calculate_voltage_angles=True,
+    init="auto",
+    max_iteration="auto",
+    tolerance_mva=1e-8,
+    trafo_model="t",
+    trafo_loading="current",
+    enforce_q_lims=False,
+    check_connectivity=True,
+    voltage_depend_loads=True,
+    consider_line_temperature=False,
+    run_control=False,
+    distributed_slack=False,
+    tdpf=False,
+    tdpf_delay_s=None,
+    **kwargs,
+):
     """
     Runs a power flow
 
@@ -153,8 +202,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are set out of service in the ppc
 
-        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. 
-            If False, net.load.const_z_p_percent, net.load.const_i_p_percent, 
+        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads.
+            If False, net.load.const_z_p_percent, net.load.const_i_p_percent,
             net.load.const_z_q_percent and net.load.const_i_q_percent are not considered,
             i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
@@ -231,55 +280,72 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
     if run_control and net.controller.in_service.any():
         from pandapower.control import run_control
+
         parameters = {**locals(), **kwargs}
         # disable run control for inner loop to avoid infinite loop
         parameters["run_control"] = False
         run_control(**parameters)
     else:
         passed_parameters = _passed_runpp_parameters(locals())
-        _init_runpp_options(net, algorithm=algorithm,
-                            calculate_voltage_angles=calculate_voltage_angles,
-                            init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
-                            trafo_model=trafo_model, trafo_loading=trafo_loading,
-                            enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
-                            voltage_depend_loads=voltage_depend_loads,
-                            consider_line_temperature=consider_line_temperature,
-                            tdpf=tdpf, tdpf_delay_s=tdpf_delay_s,
-                            distributed_slack=distributed_slack,
-                            passed_parameters=passed_parameters, **kwargs)
+        _init_runpp_options(
+            net,
+            algorithm=algorithm,
+            calculate_voltage_angles=calculate_voltage_angles,
+            init=init,
+            max_iteration=max_iteration,
+            tolerance_mva=tolerance_mva,
+            trafo_model=trafo_model,
+            trafo_loading=trafo_loading,
+            enforce_q_lims=enforce_q_lims,
+            check_connectivity=check_connectivity,
+            voltage_depend_loads=voltage_depend_loads,
+            consider_line_temperature=consider_line_temperature,
+            tdpf=tdpf,
+            tdpf_delay_s=tdpf_delay_s,
+            distributed_slack=distributed_slack,
+            passed_parameters=passed_parameters,
+            **kwargs,
+        )
         _check_bus_index_and_print_warning_if_high(net)
         _check_gen_index_and_print_warning_if_high(net)
         _powerflow(net, **kwargs)
 
 
-def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8, symmetric=True, validate_input=False):
+def runpp_pgm(
+    net,
+    algorithm="nr",
+    max_iterations=20,
+    error_tolerance_vm_pu=1e-8,
+    symmetric=True,
+    validate_input=False,
+):
     """
-        Runs powerflow using power-grid-model library
+    Runs powerflow using power-grid-model library
 
-        INPUT:
-            **net** - The pandapower format network
+    INPUT:
+        **net** - The pandapower format network
 
-        OPTIONAL:
-            **symmetric** (bool, True) -
+    OPTIONAL:
+        **symmetric** (bool, True) -
 
-            - True: three-phase symmetric calculation, even for asymmetric loads/generations
-            - False: three-phase asymmetric calculation
+        - True: three-phase symmetric calculation, even for asymmetric loads/generations
+        - False: three-phase asymmetric calculation
 
-            **algorithm** (str, "nr") - Algorithms available in power-grid-model.
-            Check power-grid-model documentation for detailed information on the algorithms.
+        **algorithm** (str, "nr") - Algorithms available in power-grid-model.
+        Check power-grid-model documentation for detailed information on the algorithms.
 
-            - "nr" - Newton Raphson algorithm
-            - "bfsw" - Iterative current algorithm. Similar to backward-forward sweep algorithm
-            - "lc" - Linear current approximation algorithm
-            - "lin" - Linear approximation algorithm
+        - "nr" - Newton Raphson algorithm
+        - "bfsw" - Iterative current algorithm. Similar to backward-forward sweep algorithm
+        - "lc" - Linear current approximation algorithm
+        - "lin" - Linear approximation algorithm
 
-            **error_tolerance_u_pu** (float, 1e-8) - error tolerance for voltage in p.u.
+        **error_tolerance_u_pu** (float, 1e-8) - error tolerance for voltage in p.u.
 
-            **max_iterations** (int, 20) - Maximum number of iterations for algorithms.
-            No effect on linear approximation algorithms.
+        **max_iterations** (int, 20) - Maximum number of iterations for algorithms.
+        No effect on linear approximation algorithms.
 
-            **validate_input** (bool, False) - Validate input data to be used for power-flow in power-grid-model.
-            It is recommended to use pandapower.diagnostic tool prior.
+        **validate_input** (bool, False) - Validate input data to be used for power-flow in power-grid-model.
+        It is recommended to use pandapower.diagnostic tool prior.
     """
     if not PGM_IMPORTED:
         raise ImportError(
@@ -291,7 +357,7 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
         "nr": CalculationMethod.newton_raphson,
         "lin": CalculationMethod.linear,
         "bfsw": CalculationMethod.iterative_current,
-        "lc": CalculationMethod.linear_current
+        "lc": CalculationMethod.linear_current,
     }
     if algorithm not in algorithm_map:
         raise KeyError(f"Invalid algorithm '{algorithm}'")
@@ -300,12 +366,16 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
     # 2. Convert the pandapower data to the power grid model format. Ignoring the 'extra info', which is a
     #    dictionary representation of the internal state of the PandaPowerConverter.
     pgm_converter = PandaPowerConverter()
-    pgm_input_data, _extra_info = pgm_converter.load_input_data(net, make_extra_info=False)
+    pgm_input_data, _extra_info = pgm_converter.load_input_data(
+        net, make_extra_info=False
+    )
 
     # 3. If required, validate the input data
     if validate_input:
         validation_errors = validate_input_data(
-            pgm_input_data, calculation_type=CalculationType.power_flow, symmetric=symmetric
+            pgm_input_data,
+            calculation_type=CalculationType.power_flow,
+            symmetric=symmetric,
         )
 
         # If there were validation errors, convert the errors to a human readable test and log each error for
@@ -325,7 +395,7 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
             symmetric=symmetric,
             error_tolerance=error_tolerance_vm_pu,
             max_iterations=max_iterations,
-            calculation_method=calculation_method
+            calculation_method=calculation_method,
         )
         net["converged"] = True
 
@@ -344,8 +414,16 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
         net[table] = converted_output_data[table]
 
 
-def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
-            switch_rx_ratio=2, trafo3w_losses="hv", **kwargs):
+def rundcpp(
+    net,
+    trafo_model="t",
+    trafo_loading="current",
+    recycle=None,
+    check_connectivity=True,
+    switch_rx_ratio=2,
+    trafo3w_losses="hv",
+    **kwargs,
+):
     """
     Runs PANDAPOWER DC Flow
 
@@ -380,9 +458,16 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
         **kwargs** - options to use for PYPOWER.runpf
     """
-    _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
-                          recycle=recycle, check_connectivity=check_connectivity,
-                          switch_rx_ratio=switch_rx_ratio, trafo3w_losses=trafo3w_losses, **kwargs)
+    _init_rundcpp_options(
+        net,
+        trafo_model=trafo_model,
+        trafo_loading=trafo_loading,
+        recycle=recycle,
+        check_connectivity=check_connectivity,
+        switch_rx_ratio=switch_rx_ratio,
+        trafo3w_losses=trafo3w_losses,
+        **kwargs,
+    )
 
     if isinstance(recycle, dict) and _internal_stored(net, ac=False):
         _recycled_powerflow(net, recycle=recycle, **kwargs)
@@ -393,9 +478,20 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _powerflow(net, **kwargs)
 
 
-def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity=True,
-           suppress_warnings=True, switch_rx_ratio=2, delta=1e-10, init="flat", numba=True,
-           trafo3w_losses="hv", consider_line_temperature=False, **kwargs):
+def runopp(
+    net,
+    verbose=False,
+    calculate_voltage_angles=True,
+    check_connectivity=True,
+    suppress_warnings=True,
+    switch_rx_ratio=2,
+    delta=1e-10,
+    init="flat",
+    numba=True,
+    trafo3w_losses="hv",
+    consider_line_temperature=False,
+    **kwargs,
+):
     """
         Runs the  pandapower Optimal Power Flow.
         Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -475,18 +571,33 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
             - SCPDIPM_RED_IT(20) maximum number of step size reductions per iteration
     """
     _check_necessary_opf_parameters(net, logger)
-    _init_runopp_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                         check_connectivity=check_connectivity,
-                         switch_rx_ratio=switch_rx_ratio, delta=delta, init=init, numba=numba,
-                         trafo3w_losses=trafo3w_losses,
-                         consider_line_temperature=consider_line_temperature, **kwargs)
+    _init_runopp_options(
+        net,
+        calculate_voltage_angles=calculate_voltage_angles,
+        check_connectivity=check_connectivity,
+        switch_rx_ratio=switch_rx_ratio,
+        delta=delta,
+        init=init,
+        numba=numba,
+        trafo3w_losses=trafo3w_losses,
+        consider_line_temperature=consider_line_temperature,
+        **kwargs,
+    )
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
-def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True,
-             switch_rx_ratio=0.5, delta=1e-10, trafo3w_losses="hv", **kwargs):
+def rundcopp(
+    net,
+    verbose=False,
+    check_connectivity=True,
+    suppress_warnings=True,
+    switch_rx_ratio=0.5,
+    delta=1e-10,
+    trafo3w_losses="hv",
+    **kwargs,
+):
     """
     Runs the  pandapower Optimal Power Flow.
     Flexibilities, constraints and cost parameters are defined in the pandapower element tables.
@@ -527,9 +638,14 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     if (not net.load.empty) & ("controllable" not in net.load.columns):
         logger.warning('Warning: Please specify load["controllable"]\n')
 
-    _init_rundcopp_options(net, check_connectivity=check_connectivity,
-                           switch_rx_ratio=switch_rx_ratio, delta=delta,
-                           trafo3w_losses=trafo3w_losses, **kwargs)
+    _init_rundcopp_options(
+        net,
+        check_connectivity=check_connectivity,
+        switch_rx_ratio=switch_rx_ratio,
+        delta=delta,
+        trafo3w_losses=trafo3w_losses,
+        **kwargs,
+    )
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
@@ -552,10 +668,13 @@ def _passed_runpp_parameters(local_parameters):
     # we want to also include the parameters that are optional (passed in "kwargs")!
     # that is why we include the parameters that are also not in default_parameters
     # maybe the part "if key not in default_parameters.keys()" is redundant, idk
-    kwargs_parameters = local_parameters.pop('kwargs', None)
+    kwargs_parameters = local_parameters.pop("kwargs", None)
     passed_parameters = {
-        key: val for key, val in local_parameters.items()
-        if key not in default_parameters.keys() or val != default_parameters.get(key, None)}
+        key: val
+        for key, val in local_parameters.items()
+        if key not in default_parameters.keys()
+        or val != default_parameters.get(key, None)
+    }
     # passed_parameters should have the "kwargs" parameters in the same level as other parameters
     # (not nested in "kwargs: {...}") for them to be considered later on, otherwise they will be ignored
     passed_parameters.update(kwargs_parameters)

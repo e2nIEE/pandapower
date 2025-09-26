@@ -4,6 +4,7 @@
 
 @author: mrichter
 """
+
 from __future__ import annotations
 from typing import List, Dict, Union
 import pandas as pd
@@ -34,10 +35,14 @@ class RepairMain(CustomLogger):
     def get_assets(self):
         pass
 
-    def repair(self, data: Dict[str, pd.DataFrame], report_container: ReportContainer = None):
+    def repair(
+        self, data: Dict[str, pd.DataFrame], report_container: ReportContainer = None
+    ):
         pass
 
-    def deserialize(self, path_or_json_str: str, report_container: ReportContainer) -> RepairMain:
+    def deserialize(
+        self, path_or_json_str: str, report_container: ReportContainer
+    ) -> RepairMain:
         pass
 
 
@@ -45,8 +50,11 @@ class PandapowerRepair(RepairMain):
     def __init__(self, assets: List[AssetType] = None):
         super().__init__(assets)
 
-    def deserialize(self, path_or_json_str: Union[str, PandapowerRepair], report_container: ReportContainer = None) -> \
-            PandapowerRepair:
+    def deserialize(
+        self,
+        path_or_json_str: Union[str, PandapowerRepair],
+        report_container: ReportContainer = None,
+    ) -> PandapowerRepair:
         pass
 
 
@@ -58,9 +66,16 @@ class CIMRepair(CustomLogger):
     def set_profile(self, profile: str, repair_main: RepairMain):
         pass
 
-    def repair(self, cim_dict: Dict[str, Dict[str, pd.DataFrame]], report_container: ReportContainer = None):
+    def repair(
+        self,
+        cim_dict: Dict[str, Dict[str, pd.DataFrame]],
+        report_container: ReportContainer = None,
+    ):
         pass
 
-    def deserialize(self, path_or_json_str: Union[str, CIMRepair], report_container: ReportContainer = None) -> \
-            CIMRepair:
+    def deserialize(
+        self,
+        path_or_json_str: Union[str, CIMRepair],
+        report_container: ReportContainer = None,
+    ) -> CIMRepair:
         pass

@@ -15,7 +15,9 @@ from pandapower.toolbox.element_selection import pp_elements
 
 def _get_cases_path(filename=None):
     if filename:
-        return os.path.join(pp_dir, "networks", "power_system_test_case_jsons", filename)
+        return os.path.join(
+            pp_dir, "networks", "power_system_test_case_jsons", filename
+        )
     else:
         return os.path.join(pp_dir, "networks", "power_system_test_case_jsons")
 
@@ -42,23 +44,43 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     for i in ext_grid_idx:
         ext_grid_data = net.ext_grid.loc[i]
         net.ext_grid = net.ext_grid.drop(i)
-        create_gen(net, ext_grid_data.bus, ext_grid_p[j],
-                   vm_pu=ext_grid_data.vm_pu, controllable=True,
-                   min_q_mvar=ext_grid_data.min_q_mvar, max_q_mvar=ext_grid_data.max_q_mvar,
-                   min_p_mw=ext_grid_data.min_p_mw, max_p_mw=ext_grid_data.max_p_mw)
+        create_gen(
+            net,
+            ext_grid_data.bus,
+            ext_grid_p[j],
+            vm_pu=ext_grid_data.vm_pu,
+            controllable=True,
+            min_q_mvar=ext_grid_data.min_q_mvar,
+            max_q_mvar=ext_grid_data.max_q_mvar,
+            min_p_mw=ext_grid_data.min_p_mw,
+            max_p_mw=ext_grid_data.max_p_mw,
+        )
         j += 1
     # old gen at ref_bus -> ext_grid (and sgen)
     for i in gen_idx:
         gen_data = net.gen.loc[i]
         net.gen = net.gen.drop(i)
         if gen_data.bus not in net.ext_grid.bus.values:
-            create_ext_grid(net, gen_data.bus, vm_pu=gen_data.vm_pu, va_degree=0.,
-                            min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
-                            min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
+            create_ext_grid(
+                net,
+                gen_data.bus,
+                vm_pu=gen_data.vm_pu,
+                va_degree=0.0,
+                min_q_mvar=gen_data.min_q_mvar,
+                max_q_mvar=gen_data.max_q_mvar,
+                min_p_mw=gen_data.min_p_mw,
+                max_p_mw=gen_data.max_p_mw,
+            )
         else:
-            create_sgen(net, gen_data.bus, p_mw=gen_data.p_mw,
-                        min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
-                        min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
+            create_sgen(
+                net,
+                gen_data.bus,
+                p_mw=gen_data.p_mw,
+                min_q_mvar=gen_data.min_q_mvar,
+                max_q_mvar=gen_data.max_q_mvar,
+                min_p_mw=gen_data.min_p_mw,
+                max_p_mw=gen_data.max_p_mw,
+            )
 
 
 def sorted_from_json(path, **kwargs):
@@ -283,8 +305,15 @@ def case39(**kwargs):
     return case39
 
 
-def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, vn_kv_area5=230,
-           vn_kv_area6=161, **kwargs):
+def case57(
+    vn_kv_area1=115,
+    vn_kv_area2=500,
+    vn_kv_area3=138,
+    vn_kv_area4=345,
+    vn_kv_area5=230,
+    vn_kv_area6=161,
+    **kwargs,
+):
     """
     This function provides the ieee case57 network with the data origin `PYPOWER case 57 \
     <https:/pypi.python.org/pypi/PYPOWER>`_.
@@ -398,7 +427,9 @@ def case_illinois200(**kwargs):
          >>> from pandapower.networks.power_system_test_cases import case_illinois200
          >>> net = case_illinois200()
     """
-    case_illinois200 = sorted_from_json(_get_cases_path("case_illinois200.json", **kwargs))
+    case_illinois200 = sorted_from_json(
+        _get_cases_path("case_illinois200.json", **kwargs)
+    )
     return case_illinois200
 
 
@@ -469,7 +500,9 @@ def case1888rte(ref_bus_idx=1246, **kwargs):
          >>> net = case1888rte()
     """
     case1888rte = sorted_from_json(_get_cases_path("case1888rte.json", **kwargs))
-    case1888rte.ext_grid.loc[0, ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']] *= 2
+    case1888rte.ext_grid.loc[
+        0, ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]
+    ] *= 2
 
     if ref_bus_idx != 1246:  # change reference bus
         _change_ref_bus(case1888rte, ref_bus_idx, ext_grid_p=[-89.5])
@@ -572,7 +605,9 @@ def case6470rte(ref_bus_idx=5988, **kwargs):
          >>> net = case6470rte()
     """
     case6470rte = sorted_from_json(_get_cases_path("case6470rte.json", **kwargs))
-    case6470rte.ext_grid.loc[0, ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']] *= 2
+    case6470rte.ext_grid.loc[
+        0, ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]
+    ] *= 2
     if ref_bus_idx != 5988:  # change reference bus
         _change_ref_bus(case6470rte, ref_bus_idx, ext_grid_p=[-169.41])
     return case6470rte
@@ -607,8 +642,11 @@ def case6495rte(ref_bus_idx=None, **kwargs):
     ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
     case6495rte = sorted_from_json(_get_cases_path("case6495rte.json", **kwargs))
     if ref_bus_idx != [6077, 6161, 6305, 6306, 6307, 6308]:  # change reference bus
-        _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[1382.35, 2894.13, 1498.32,
-                                                              1498.32, 1493.11, 1493.12])
+        _change_ref_bus(
+            case6495rte,
+            ref_bus_idx,
+            ext_grid_p=[1382.35, 2894.13, 1498.32, 1498.32, 1493.11, 1493.12],
+        )
     return case6495rte
 
 
@@ -681,7 +719,9 @@ def GBreducednetwork(**kwargs):
          >>> from pandapower.networks.power_system_test_cases import GBreducednetwork
          >>> net = GBreducednetwork()
     """
-    GBreducednetwork = sorted_from_json(_get_cases_path("GBreducednetwork.json", **kwargs))
+    GBreducednetwork = sorted_from_json(
+        _get_cases_path("GBreducednetwork.json", **kwargs)
+    )
     return GBreducednetwork
 
 

@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Construct linear constraints for generator capability curves.
-"""
+"""Construct linear constraints for generator capability curves."""
 
 from numpy import array, linalg, zeros, arange, r_, c_
 from numpy import flatnonzero as find
@@ -40,54 +39,62 @@ def makeApq(baseMVA, gen):
     """
     data = {}
     ## data dimensions
-    ng = gen.shape[0]      ## number of dispatchable injections
+    ng = gen.shape[0]  ## number of dispatchable injections
 
     ## which generators require additional linear constraints
     ## (in addition to simple box constraints) on (Pg,Qg) to correctly
     ## model their PQ capability curves
-    ipqh = find( hasPQcap(gen, 'U') )
-    ipql = find( hasPQcap(gen, 'L') )
-    npqh = ipqh.shape[0]   ## number of general PQ capability curves (upper)
-    npql = ipql.shape[0]   ## number of general PQ capability curves (lower)
+    ipqh = find(hasPQcap(gen, "U"))
+    ipql = find(hasPQcap(gen, "L"))
+    npqh = ipqh.shape[0]  ## number of general PQ capability curves (upper)
+    npql = ipql.shape[0]  ## number of general PQ capability curves (lower)
 
     ## make Apqh if there is a need to add general PQ capability curves
     ## use normalized coefficient rows so multipliers have right scaling
     ## in $$/pu
     if npqh > 0:
-        data["h"] = c_[gen[ipqh, QC1MAX] - gen[ipqh, QC2MAX],
-                       gen[ipqh, PC2] - gen[ipqh, PC1]]
-        ubpqh = data["h"][:, 0] * gen[ipqh, PC1] + \
-                data["h"][:, 1] * gen[ipqh, QC1MAX]
+        data["h"] = c_[
+            gen[ipqh, QC1MAX] - gen[ipqh, QC2MAX], gen[ipqh, PC2] - gen[ipqh, PC1]
+        ]
+        ubpqh = data["h"][:, 0] * gen[ipqh, PC1] + data["h"][:, 1] * gen[ipqh, QC1MAX]
         for i in range(npqh):
             tmp = linalg.norm(data["h"][i, :])
             data["h"][i, :] = data["h"][i, :] / tmp
             ubpqh[i] = ubpqh[i] / tmp
-        Apqh = sparse((data["h"].flatten('F'),
-                       (r_[arange(npqh), arange(npqh)], r_[ipqh, ipqh+ng])),
-                      (npqh, 2*ng))
+        Apqh = sparse(
+            (
+                data["h"].flatten("F"),
+                (r_[arange(npqh), arange(npqh)], r_[ipqh, ipqh + ng]),
+            ),
+            (npqh, 2 * ng),
+        )
         ubpqh = ubpqh / baseMVA
     else:
         data["h"] = array([])
-        Apqh  = zeros((0, 2*ng))
+        Apqh = zeros((0, 2 * ng))
         ubpqh = array([])
 
     ## similarly Apql
     if npql > 0:
-        data["l"] = c_[gen[ipql, QC2MIN] - gen[ipql, QC1MIN],
-                       gen[ipql, PC1] - gen[ipql, PC2]]
-        ubpql = data["l"][:, 0] * gen[ipql, PC1] + \
-                data["l"][:, 1] * gen[ipql, QC1MIN]
+        data["l"] = c_[
+            gen[ipql, QC2MIN] - gen[ipql, QC1MIN], gen[ipql, PC1] - gen[ipql, PC2]
+        ]
+        ubpql = data["l"][:, 0] * gen[ipql, PC1] + data["l"][:, 1] * gen[ipql, QC1MIN]
         for i in range(npql):
             tmp = linalg.norm(data["l"][i, :])
             data["l"][i, :] = data["l"][i, :] / tmp
             ubpql[i] = ubpql[i] / tmp
-        Apql = sparse((data["l"].flatten('F'),
-                       (r_[arange(npql), arange(npql)], r_[ipql, ipql+ng])),
-                      (npql, 2*ng))
+        Apql = sparse(
+            (
+                data["l"].flatten("F"),
+                (r_[arange(npql), arange(npql)], r_[ipql, ipql + ng]),
+            ),
+            (npql, 2 * ng),
+        )
         ubpql = ubpql / baseMVA
     else:
         data["l"] = array([])
-        Apql  = zeros((0, 2*ng))
+        Apql = zeros((0, 2 * ng))
         ubpql = array([])
 
     data["ipql"] = ipql

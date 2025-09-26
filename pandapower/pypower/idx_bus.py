@@ -60,32 +60,32 @@ REF = 3
 NONE = 4
 
 # define the indices
-BUS_I = 0    # bus number (1 to 29997)
-BUS_TYPE = 1    # bus type
-PD = 2    # Pd, real power demand (MW)
-QD = 3    # Qd, reactive power demand (MVAr)
-GS = 4    # Gs, shunt conductance (MW at V = 1.0 p.u.)
-BS = 5    # Bs, shunt susceptance (MVAr at V = 1.0 p.u.)
-BUS_AREA = 6    # area number, 1-100
-VM = 7    # Vm, voltage magnitude (p.u.)
-VA = 8    # Va, voltage angle (degrees)
-BASE_KV = 9    # baseKV, base voltage (kV)
-ZONE = 10   # zone, loss zone (1-999)
-VMAX = 11   # maxVm, maximum voltage magnitude (p.u.)
-VMIN = 12   # minVm, minimum voltage magnitude (p.u.)
+BUS_I = 0  # bus number (1 to 29997)
+BUS_TYPE = 1  # bus type
+PD = 2  # Pd, real power demand (MW)
+QD = 3  # Qd, reactive power demand (MVAr)
+GS = 4  # Gs, shunt conductance (MW at V = 1.0 p.u.)
+BS = 5  # Bs, shunt susceptance (MVAr at V = 1.0 p.u.)
+BUS_AREA = 6  # area number, 1-100
+VM = 7  # Vm, voltage magnitude (p.u.)
+VA = 8  # Va, voltage angle (degrees)
+BASE_KV = 9  # baseKV, base voltage (kV)
+ZONE = 10  # zone, loss zone (1-999)
+VMAX = 11  # maxVm, maximum voltage magnitude (p.u.)
+VMIN = 12  # minVm, minimum voltage magnitude (p.u.)
 
 # included in opf solution, not necessarily in input
 # assume objective function has units, u
-LAM_P = 13   # Lagrange multiplier on real power mismatch (u/MW)
-LAM_Q = 14   # Lagrange multiplier on reactive power mismatch (u/MVAr)
-MU_VMAX = 15   # Kuhn-Tucker multiplier on upper voltage limit (u/p.u.)
-MU_VMIN = 16   # Kuhn-Tucker multiplier on lower voltage limit (u/p.u.)
+LAM_P = 13  # Lagrange multiplier on real power mismatch (u/MW)
+LAM_Q = 14  # Lagrange multiplier on reactive power mismatch (u/MVAr)
+MU_VMAX = 15  # Kuhn-Tucker multiplier on upper voltage limit (u/p.u.)
+MU_VMIN = 16  # Kuhn-Tucker multiplier on lower voltage limit (u/p.u.)
 
 # Additional pandapower extensions to ppc
-CID_P = 13   # coefficient of active power of constant current load at rated voltage in range [0,1]
-CZD_P = 14   # coefficient of active power of constant impedance load at rated voltage in range [0,1]
+CID_P = 13  # coefficient of active power of constant current load at rated voltage in range [0,1]
+CZD_P = 14  # coefficient of active power of constant impedance load at rated voltage in range [0,1]
 SL_FAC = 15
-CID_Q = 16   # coefficient of reactive power of constant current load at rated voltage in range [0,1]
-CZD_Q = 17   # coefficient of reactive power of constant impedance load at rated voltage in range [0,1]
+CID_Q = 16  # coefficient of reactive power of constant current load at rated voltage in range [0,1]
+CZD_Q = 17  # coefficient of reactive power of constant impedance load at rated voltage in range [0,1]
 
 bus_cols = 18

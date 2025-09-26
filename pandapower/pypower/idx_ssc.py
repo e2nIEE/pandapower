@@ -36,8 +36,8 @@ SSC_X = 3  # (p.u.)
 SSC_SET_VM_PU = 4
 SSC_STATUS = 5  # initial branch status, 1 - in service, 0 - out of service
 SSC_CONTROLLABLE = 6
-SSC_X_CONTROL_VA = 7 # va degrees ## check with roman
-SSC_X_CONTROL_VM = 8 # (p.u)  vm
-SSC_Q = 9 # result for Q
+SSC_X_CONTROL_VA = 7  # va degrees ## check with roman
+SSC_X_CONTROL_VM = 8  # (p.u)  vm
+SSC_Q = 9  # result for Q
 
-ssc_cols  = 10
+ssc_cols = 10

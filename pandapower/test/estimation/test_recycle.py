@@ -30,5 +30,6 @@ def test_recycle_case30():
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-5)
     assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-5)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

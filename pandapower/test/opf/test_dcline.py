@@ -7,8 +7,16 @@ import pytest
 from numpy import array, allclose, isclose
 
 from pandapower.auxiliary import OPFNotConverged
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_dcline, \
-    create_load, create_pwl_cost, create_poly_cost
+from pandapower.create import (
+    create_empty_network,
+    create_bus,
+    create_ext_grid,
+    create_line,
+    create_dcline,
+    create_load,
+    create_pwl_cost,
+    create_poly_cost,
+)
 from pandapower.run import runopp
 from pandapower.test.consistency_checks import consistency_checks
 
@@ -27,16 +35,27 @@ def dcline_net():
     b4 = create_bus(net, 380)
     b1 = create_bus(net, 380)
 
-    create_ext_grid(net, b1, 1.02, min_p_mw=0., max_p_mw=1e9)
+    create_ext_grid(net, b1, 1.02, min_p_mw=0.0, max_p_mw=1e9)
     create_line(net, b1, b2, 30, "490-AL1/64-ST1A 380.0")
-    create_dcline(net, name="dc line", from_bus=b2, to_bus=b3, p_mw=200, loss_percent=1.0,
-                  loss_mw=0.5, vm_from_pu=1.01, vm_to_pu=1.012, max_p_mw=1000,
-                  in_service=True, index=4)
+    create_dcline(
+        net,
+        name="dc line",
+        from_bus=b2,
+        to_bus=b3,
+        p_mw=200,
+        loss_percent=1.0,
+        loss_mw=0.5,
+        vm_from_pu=1.01,
+        vm_to_pu=1.012,
+        max_p_mw=1000,
+        in_service=True,
+        index=4,
+    )
     create_line(net, b3, b4, 20, "490-AL1/64-ST1A 380.0")
 
     create_load(net, bus=b4, p_mw=800, controllable=False)
     create_line(net, b4, b5, 20, "490-AL1/64-ST1A 380.0")
-    create_ext_grid(net, b5, 1.02, min_p_mw=0., max_p_mw=1e9)
+    create_ext_grid(net, b5, 1.02, min_p_mw=0.0, max_p_mw=1e9)
 
     return net
 
@@ -51,8 +70,10 @@ def get_delta_try_except(net):
     return 1e-10
 
 
-@pytest.mark.xfail(reason="numerical issue with OPF convergence. The failure seems to depend on the"
-                          " python version. Should be reworked.")
+@pytest.mark.xfail(
+    reason="numerical issue with OPF convergence. The failure seems to depend on the"
+    " python version. Should be reworked."
+)
 def test_dispatch1(dcline_net):
     net = dcline_net
     create_pwl_cost(net, 0, "ext_grid", [[-1e12, 1e9, 100]])
@@ -62,22 +83,29 @@ def test_dispatch1(dcline_net):
     net.line["max_loading_percent"] = 1000  # does not converge if unconstrained
     runopp(net, delta=1e-8)
     consistency_checks(net)
-    rel_loss_expect = (net.res_dcline.pl_mw - net.dcline.loss_mw) / \
-                      (net.res_dcline.p_from_mw - net.res_dcline.pl_mw) * 100
+    rel_loss_expect = (
+        (net.res_dcline.pl_mw - net.dcline.loss_mw)
+        / (net.res_dcline.p_from_mw - net.res_dcline.pl_mw)
+        * 100
+    )
     assert allclose(rel_loss_expect.values, net.dcline.loss_percent.values, rtol=1e-2)
 
     assert allclose(net.res_ext_grid.p_mw.values, [0.5, 805], atol=0.1)
-    assert allclose(net.res_ext_grid.q_mvar.values, [-7.78755773243, 0.62830727889], atol=1e-3)
+    assert allclose(
+        net.res_ext_grid.q_mvar.values, [-7.78755773243, 0.62830727889], atol=1e-3
+    )
 
     assert allclose(net.res_dcline.p_from_mw.values, [0.500754071], atol=1e-3)
     assert allclose(net.res_dcline.q_from_mvar.values, [7.78745600524])
 
     assert allclose(net.res_dcline.p_to_mw.values, array([-5.48553789e-05]))
-    assert allclose(net.res_dcline.q_to_mvar.values, array([-.62712636707]))
+    assert allclose(net.res_dcline.q_to_mvar.values, array([-0.62712636707]))
 
 
-@pytest.mark.xfail(reason="numerical issue with OPF convergence. If vm_pu delta is != 0. at "
-                          "ext_grid -> fail. See build_gen() in line 111 + 112")
+@pytest.mark.xfail(
+    reason="numerical issue with OPF convergence. If vm_pu delta is != 0. at "
+    "ext_grid -> fail. See build_gen() in line 111 + 112"
+)
 def test_dcline_dispatch2(dcline_net):
     net = dcline_net
     create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=80)
@@ -92,11 +120,14 @@ def test_dcline_dispatch2(dcline_net):
     # runopp(net, delta=get_delta_try_except(net))
     runopp(net)
     consistency_checks(net, rtol=1e-3)
-    rel_loss_expect = (net.res_dcline.pl_mw - net.dcline.loss_mw) / \
-                      (net.res_dcline.p_from_mw - net.res_dcline.pl_mw) * 100
+    rel_loss_expect = (
+        (net.res_dcline.pl_mw - net.dcline.loss_mw)
+        / (net.res_dcline.p_from_mw - net.res_dcline.pl_mw)
+        * 100
+    )
     assert allclose(rel_loss_expect.values, net.dcline.loss_percent.values)
 
-    p_eg_expect = array([8.21525358e+02, 5.43498903e-05])
+    p_eg_expect = array([8.21525358e02, 5.43498903e-05])
     q_eg_expect = array([-7787.55852923e-3, -21048.59213887e-3])
     assert allclose(net.res_ext_grid.p_mw.values, p_eg_expect)
     assert allclose(net.res_ext_grid.q_mvar.values, q_eg_expect)
@@ -114,8 +145,10 @@ def test_dcline_dispatch2(dcline_net):
     assert allclose(net.res_dcline.q_to_mvar.values, q_to_expect)
 
 
-@pytest.mark.xfail(reason="numerical issue with OPF convergence. If vm_pu delta is != 0. at "
-                          "ext_grid -> fail. See build_gen() in line 111 + 112")
+@pytest.mark.xfail(
+    reason="numerical issue with OPF convergence. If vm_pu delta is != 0. at "
+    "ext_grid -> fail. See build_gen() in line 111 + 112"
+)
 def test_dcline_dispatch3(dcline_net):
     net = dcline_net
     create_poly_cost(net, 4, "dcline", cp1_eur_per_mw=1.5)

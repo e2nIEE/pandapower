@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-""" Defines constants for named column indices to gencost matrix.
+"""Defines constants for named column indices to gencost matrix.
 
 Some examples of usage, after defining the constants using the line above,
 are::
@@ -37,13 +37,14 @@ additional constants, used to assign/compare values in the C{MODEL} column
 @author: Ray Zimmerman (PSERC Cornell)
 @author: Richard Lincoln
 """
+
 # define cost models
-PW_LINEAR   = 1
-POLYNOMIAL  = 2
+PW_LINEAR = 1
+POLYNOMIAL = 2
 
 # define the indices
-MODEL       = 0
-STARTUP     = 1
-SHUTDOWN    = 2
-NCOST       = 3
-COST        = 4
+MODEL = 0
+STARTUP = 1
+SHUTDOWN = 2
+NCOST = 3
+COST = 4
