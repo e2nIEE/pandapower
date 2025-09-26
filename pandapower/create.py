@@ -143,9 +143,9 @@ def create_bus(
 
     if coords is not None:
         raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
-    entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo}
 
-    _set_entries(net, "bus", index, True, **entries, **kwargs)
+    entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
+    _set_entries(net, "bus", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
     _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
@@ -222,9 +222,8 @@ def create_bus_dc(
     if coords is not None:
         raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
 
-    entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo}
-
-    _set_entries(net, "bus_dc", index, True, **entries, **kwargs)
+    entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
+    _set_entries(net, "bus_dc", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
     _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.)
@@ -514,9 +513,8 @@ def create_load(
     entries = {"name": name, "bus": bus, "p_mw": p_mw, "const_z_p_percent": const_z_p_percent,
                "const_i_p_percent": const_i_p_percent, "const_z_q_percent": const_z_q_percent,
                "const_i_q_percent": const_i_q_percent, "scaling": scaling, "q_mvar": q_mvar, "sn_mva": sn_mva,
-               "in_service": in_service, "type": type}
-
-    _set_entries(net, "load", index, True, **entries, **kwargs)
+               "in_service": in_service, "type": type, **kwargs}
+    _set_entries(net, "load", index, True, entries=entries)
 
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "load")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "load")
@@ -717,9 +715,8 @@ def create_asymmetric_load(
 
     entries = {"name": name, "bus": bus, "p_a_mw": p_a_mw, "p_b_mw": p_b_mw, "p_c_mw": p_c_mw, "scaling": scaling,
                "q_a_mvar": q_a_mvar, "q_b_mvar": q_b_mvar, "q_c_mvar": q_c_mvar, "sn_mva": sn_mva,
-               "in_service": in_service, "type": type}
-
-    _set_entries(net, "asymmetric_load", index, True, **entries, **kwargs)
+               "in_service": in_service, "type": type, **kwargs}
+    _set_entries(net, "asymmetric_load", index, True, entries=entries)
 
     return index
 
@@ -949,9 +946,8 @@ def create_sgen(
     index = _get_index_with_check(net, "sgen", index, name="static generator")
 
     entries = {"name": name, "bus": bus, "p_mw": p_mw, "scaling": scaling, "q_mvar": q_mvar, "sn_mva": sn_mva,
-               "in_service": in_service, "type": type, "current_source": current_source}
-
-    _set_entries(net, "sgen", index, True, **entries, **kwargs)
+               "in_service": in_service, "type": type, "current_source": current_source, **kwargs}
+    _set_entries(net, "sgen", index, True, entries=entries)
 
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "sgen")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
@@ -1228,9 +1224,8 @@ def create_asymmetric_sgen(
 
     entries = {"name": name, "bus": bus, "p_a_mw": p_a_mw, "p_b_mw": p_b_mw, "p_c_mw": p_c_mw, "scaling": scaling,
                "q_a_mvar": q_a_mvar, "q_b_mvar": q_b_mvar, "q_c_mvar": q_c_mvar, "sn_mva": sn_mva,
-               "in_service": in_service, "type": type}
-
-    _set_entries(net, "asymmetric_sgen", index, True, **entries, **kwargs)
+               "in_service": in_service, "type": type, **kwargs}
+    _set_entries(net, "asymmetric_sgen", index, True, entries=entries)
 
     return index
 
@@ -1368,9 +1363,8 @@ def create_storage(
 
     entries = {"name": name, "bus": bus, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva, "scaling": scaling,
                "soc_percent": soc_percent, "min_e_mwh": min_e_mwh, "max_e_mwh": max_e_mwh,
-               "in_service": in_service, "type": type}
-
-    _set_entries(net, "storage", index, True, **entries, **kwargs)
+               "in_service": in_service, "type": type, **kwargs}
+    _set_entries(net, "storage", index, True, entries=entries)
 
     # check for OPF parameters and add columns to network table
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "storage")
@@ -1617,8 +1611,8 @@ def create_gen(
     index = _get_index_with_check(net, "gen", index, name="generator")
 
     entries = {"name": name, "bus": bus, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "type": type,
-               "slack": slack, "in_service": in_service, "scaling": scaling, "slack_weight": slack_weight}
-    _set_entries(net, "gen", index, True, **entries, **kwargs)
+               "slack": slack, "in_service": in_service, "scaling": scaling, "slack_weight": slack_weight, **kwargs}
+    _set_entries(net, "gen", index, True, entries=entries)
 
     # OPF limits
     _set_value_if_not_nan(net, index, controllable, "controllable", "gen",
@@ -1894,8 +1888,8 @@ def create_motor(
     entries = {"name": name, "bus": bus, "pn_mech_mw": pn_mech_mw, "cos_phi": cos_phi, "cos_phi_n": cos_phi_n,
                "vn_kv": vn_kv, "rx": rx, "efficiency_n_percent": efficiency_n_percent,
                "efficiency_percent": efficiency_percent, "loading_percent": loading_percent, "lrc_pu": lrc_pu,
-               "scaling": scaling, "in_service": in_service}
-    _set_entries(net, "motor", index, **entries, **kwargs)
+               "scaling": scaling, "in_service": in_service, **kwargs}
+    _set_entries(net, "motor", index, entries=entries)
 
     return index
 
@@ -1997,8 +1991,8 @@ def create_ext_grid(
     index = _get_index_with_check(net, "ext_grid", index, name="external grid")
 
     entries = {"name": name, "bus": bus, "vm_pu": vm_pu, "va_degree": va_degree, "in_service": in_service,
-               "slack_weight": slack_weight}
-    _set_entries(net, "ext_grid", index, **entries, **kwargs)
+               "slack_weight": slack_weight, **kwargs}
+    _set_entries(net, "ext_grid", index, entries=entries)
 
     # OPF limits
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "ext_grid")
@@ -2124,7 +2118,7 @@ def create_line(
     entries = {
         "name": name, "length_km": length_km, "from_bus": from_bus,
         "to_bus": to_bus, "in_service": in_service, "std_type": std_type,
-        "df": df, "parallel": parallel
+        "df": df, "parallel": parallel, **kwargs
     }
 
     lineparam = load_std_type(net, std_type, "line")
@@ -2148,9 +2142,9 @@ def create_line(
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
-    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
+    tdpf_parameters = {c: entries.pop(c) for c in tdpf_columns if c in entries}
 
-    _set_entries(net, "line", index, **entries, **kwargs)
+    _set_entries(net, "line", index, entries=entries)
 
     if geodata and hasattr(geodata, '__iter__'):
         geo = [[x, y] for x, y in geodata]
@@ -2274,7 +2268,7 @@ def create_line_dc(
     entries = {
         "name": name, "length_km": length_km, "from_bus_dc": from_bus_dc,
         "to_bus_dc": to_bus_dc, "in_service": in_service, "std_type": std_type,
-        "df": df, "parallel": parallel
+        "df": df, "parallel": parallel, **kwargs
     }
 
     lineparam = load_std_type(net, std_type, "line_dc")
@@ -2297,7 +2291,7 @@ def create_line_dc(
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
-    _set_entries(net, "line_dc", index, **entries, **kwargs)
+    _set_entries(net, "line_dc", index, entries=entries)
 
 
     if geodata and hasattr(geodata, '__iter__'):
@@ -2723,21 +2717,20 @@ def create_line_from_parameters(
 
     index = _get_index_with_check(net, "line", index)
 
-    entries = {
-        "name": name, "length_km": length_km, "from_bus": from_bus,
-        "to_bus": to_bus, "in_service": in_service, "std_type": None,
-        "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
-        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
-        "g_us_per_km": g_us_per_km
-    }
-
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
                     "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
-    _set_entries(net, "line", index, **entries, **kwargs)
+    entries = {
+        "name": name, "length_km": length_km, "from_bus": from_bus,
+        "to_bus": to_bus, "in_service": in_service, "std_type": None,
+        "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
+        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
+        "g_us_per_km": g_us_per_km, **kwargs
+    }
+    _set_entries(net, "line", index, entries=entries)
 
     nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
     if not np_any(nan_0_values):
@@ -2878,7 +2871,7 @@ def create_line_dc_from_parameters(
         "name": name, "length_km": length_km, "from_bus_dc": from_bus_dc,
         "to_bus_dc": to_bus_dc, "in_service": in_service, "std_type": None,
         "df": df, "r_ohm_per_km": r_ohm_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
-        "g_us_per_km": g_us_per_km
+        "g_us_per_km": g_us_per_km, **kwargs
     }
 
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
@@ -2887,7 +2880,7 @@ def create_line_dc_from_parameters(
                     "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
-    _set_entries(net, "line_dc", index, **entries, **kwargs)
+    _set_entries(net, "line_dc", index, entries=entries)
 
 
     if geodata and hasattr(geodata, '__iter__'):
@@ -3308,7 +3301,7 @@ def create_transformer(
 
     entries: dict[str, str | None | Int | bool | float] = {
         "name": name, "hv_bus": hv_bus, "lv_bus": lv_bus,
-        "in_service": in_service, "std_type": std_type
+        "in_service": in_service, "std_type": std_type, **kwargs
     }
     ti = load_std_type(net, std_type, "trafo")
 
@@ -3351,7 +3344,7 @@ def create_transformer(
                 "net.trafo_characteristic_table and populate the tap_dependency_table and id_characteristic_table "
                 "parameters."))
 
-    _set_entries(net, "trafo", index, **entries, **kwargs)
+    _set_entries(net, "trafo", index, entries=entries)
 
     if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
         convert_trafo_pst_logic(net)
@@ -3566,7 +3559,7 @@ def create_transformer_from_parameters(
         "pfe_kw": pfe_kw, "i0_percent": i0_percent, "tap_neutral": tap_neutral,
         "tap_max": tap_max, "tap_min": tap_min, "shift_degree": shift_degree,
         "tap_side": tap_side, "tap_step_percent": tap_step_percent,
-        "tap_step_degree": tap_step_degree, "parallel": parallel, "df": df}
+        "tap_step_degree": tap_step_degree, "parallel": parallel, "df": df, **kwargs}
 
     if ("tap_neutral" in entries) and (tap_pos is nan):
         entries["tap_pos"] = entries["tap_neutral"]
@@ -3586,7 +3579,7 @@ def create_transformer_from_parameters(
                 "parameters."))
 
     entries.update(kwargs)
-    _set_entries(net, "trafo", index, **entries)
+    _set_entries(net, "trafo", index, entries=entries)
 
     _set_value_if_not_nan(net, index, id_characteristic_table,
                           "id_characteristic_table", "trafo", dtype="Int64")
@@ -4189,7 +4182,7 @@ def create_transformer3w_from_parameters(
                "tap_at_star_point": tap_at_star_point, "vk0_hv_percent": vk0_hv_percent,
                "vk0_mv_percent": vk0_mv_percent, "vk0_lv_percent": vk0_lv_percent, "vkr0_hv_percent": vkr0_hv_percent,
                "vkr0_mv_percent": vkr0_mv_percent, "vkr0_lv_percent": vkr0_lv_percent, "vector_group": vector_group}
-    _set_entries(net, "trafo3w", index, **entries, **kwargs)
+    _set_entries(net, "trafo3w", index, entries=entries)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table,
@@ -4509,8 +4502,8 @@ def create_switch(
     index = _get_index_with_check(net, "switch", index)
 
     entries = {"bus": bus, "element": element, "et": et, "closed": closed, "type": type, "name": name,
-               "z_ohm": z_ohm, "in_ka": in_ka}
-    _set_entries(net, "switch", index, **entries, **kwargs)
+               "z_ohm": z_ohm, "in_ka": in_ka, **kwargs}
+    _set_entries(net, "switch", index, entries=entries)
 
     return index
 
@@ -4687,8 +4680,8 @@ def create_shunt(
 
     entries = {"bus": bus, "name": name, "p_mw": p_mw, "q_mvar": q_mvar, "vn_kv": vn_kv, "step": step,
                "max_step": max_step, "in_service": in_service, "step_dependency_table": step_dependency_table,
-               "id_characteristic_table": id_characteristic_table,}
-    _set_entries(net, "shunt", index, **entries, **kwargs)
+               "id_characteristic_table": id_characteristic_table, **kwargs}
+    _set_entries(net, "shunt", index, entries=entries)
 
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
                           "shunt", dtype="Int64")
@@ -4838,8 +4831,8 @@ def create_source_dc(
 
     index = _get_index_with_check(net, "source_dc", index)
 
-    entries = {"name": name, "bus_dc": bus_dc, "vm_pu": vm_pu, "in_service": in_service, "type": type}
-    _set_entries(net, "source_dc", index, True, **entries, **kwargs)
+    entries = {"name": name, "bus_dc": bus_dc, "vm_pu": vm_pu, "in_service": in_service, "type": type, **kwargs}
+    _set_entries(net, "source_dc", index, True, entries=entries)
 
     return index
 
@@ -4890,8 +4883,8 @@ def create_load_dc(
     index = _get_index_with_check(net, "source_dc", index=index)
 
     entries = {"name": name, "bus_dc": bus_dc, "p_dc_mw": p_dc_mw, "in_service": in_service, "scaling": scaling,
-               "type": type, "controllable": controllable}
-    _set_entries(net, "load_dc", index, True, **entries, **kwargs)
+               "type": type, "controllable": controllable, **kwargs}
+    _set_entries(net, "load_dc", index, True, entries=entries)
 
     return index
 
@@ -4960,8 +4953,9 @@ def create_svc(
 
     entries = {"name": name, "bus": bus, "x_l_ohm": x_l_ohm, "x_cvar_ohm": x_cvar_ohm, "set_vm_pu": set_vm_pu,
                "thyristor_firing_angle_degree": thyristor_firing_angle_degree, "controllable": controllable,
-               "in_service": in_service, "min_angle_degree": min_angle_degree, "max_angle_degree": max_angle_degree}
-    _set_entries(net, "svc", index, **entries, **kwargs)
+               "in_service": in_service, "min_angle_degree": min_angle_degree, "max_angle_degree": max_angle_degree,
+               **kwargs}
+    _set_entries(net, "svc", index, entries=entries)
 
     return index
 
@@ -5029,8 +5023,8 @@ def create_ssc(
 
     entries = {"name": name, "bus": bus, "r_ohm": r_ohm, "x_ohm": x_ohm, "set_vm_pu": set_vm_pu,
                "vm_internal_pu": vm_internal_pu, "va_internal_degree": va_internal_degree, "controllable": controllable,
-               "in_service": in_service}
-    _set_entries(net, "ssc", index, **entries, **kwargs)
+               "in_service": in_service, **kwargs}
+    _set_entries(net, "ssc", index, entries=entries)
 
     return index
 
@@ -5110,8 +5104,8 @@ def create_b2b_vsc(
     entries = {"name": name, "bus": bus, "bus_dc_plus": bus_dc_plus, "bus_dc_minus": bus_dc_minus, "r_ohm": r_ohm,
                "x_ohm": x_ohm, "r_dc_ohm": r_dc_ohm, "pl_dc_mw": pl_dc_mw, "control_mode_ac": control_mode_ac,
                "control_value_ac": control_value_ac, "control_mode_dc": control_mode_dc,
-               "control_value_dc": control_value_dc, "controllable": controllable, "in_service": in_service}
-    _set_entries(net, "b2b_vsc", index, **entries, **kwargs)
+               "control_value_dc": control_value_dc, "controllable": controllable, "in_service": in_service, **kwargs}
+    _set_entries(net, "b2b_vsc", index, entries=entries)
 
     return index
 
@@ -5189,8 +5183,8 @@ def create_bi_vsc(
     entries = {"name": name, "bus": bus, "bus_dc_plus": bus_dc_plus, "bus_dc_minus": bus_dc_minus, "r_ohm": r_ohm,
                "x_ohm": x_ohm, "r_dc_ohm": r_dc_ohm, "pl_dc_mw": pl_dc_mw, "control_mode_ac": control_mode_ac,
                "control_value_ac": control_value_ac, "control_mode_dc": control_mode_dc,
-               "control_value_dc": control_value_dc, "controllable": controllable, "in_service": in_service}
-    _set_entries(net, "bi_vsc", index, **entries, **kwargs)
+               "control_value_dc": control_value_dc, "controllable": controllable, "in_service": in_service, **kwargs}
+    _set_entries(net, "bi_vsc", index, entries=entries)
 
     return index
 
@@ -5267,8 +5261,8 @@ def create_vsc(
     entries = {"name": name, "bus": bus, "bus_dc": bus_dc, "r_ohm": r_ohm, "x_ohm": x_ohm, "r_dc_ohm": r_dc_ohm,
                "pl_dc_mw": pl_dc_mw, "control_mode_ac": control_mode_ac, "control_value_ac": control_value_ac,
                "control_mode_dc": control_mode_dc, "control_value_dc": control_value_dc, "controllable": controllable,
-               "in_service": in_service, "ref_bus": ref_bus}
-    _set_entries(net, "vsc", index, **entries, **kwargs)
+               "in_service": in_service, "ref_bus": ref_bus, **kwargs}
+    _set_entries(net, "vsc", index, entries=entries)
 
     return index
 
@@ -5415,8 +5409,8 @@ def create_impedance(
 
     entries = {"from_bus": from_bus, "to_bus": to_bus, "rft_pu": rft_pu, "xft_pu": xft_pu, "rtf_pu": rtf_pu,
                "xtf_pu": xtf_pu, "gf_pu": gf_pu, "bf_pu": bf_pu, "gt_pu": gt_pu, "bt_pu": bt_pu, "name": name,
-               "sn_mva": sn_mva, "in_service": in_service}
-    _set_entries(net, "impedance", index, **entries, **kwargs)
+               "sn_mva": sn_mva, "in_service": in_service, **kwargs}
+    _set_entries(net, "impedance", index, entries=entries)
 
     if rft0_pu is not None:
         _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
@@ -5664,8 +5658,8 @@ def create_tcsc(
     entries = {"name": name, "from_bus": from_bus, "to_bus": to_bus, "x_l_ohm": x_l_ohm, "x_cvar_ohm": x_cvar_ohm,
                "set_p_to_mw": set_p_to_mw, "thyristor_firing_angle_degree": thyristor_firing_angle_degree,
                "controllable": controllable, "in_service": in_service, "min_angle_degree": min_angle_degree,
-               "max_angle_degree": max_angle_degree}
-    _set_entries(net, "tcsc", index, **entries, **kwargs)
+               "max_angle_degree": max_angle_degree, **kwargs}
+    _set_entries(net, "tcsc", index, entries=entries)
 
     return index
 
@@ -5758,8 +5752,8 @@ def create_ward(
     index = _get_index_with_check(net, "ward", index, "ward equivalent")
 
     entries = {"bus": bus, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw, "qz_mvar": qz_mvar, "name": name,
-               "in_service": in_service}
-    _set_entries(net, "ward", index, **entries, **kwargs)
+               "in_service": in_service, **kwargs}
+    _set_entries(net, "ward", index, entries=entries)
 
     return index
 
@@ -5861,9 +5855,9 @@ def create_xward(
     index = _get_index_with_check(net, "xward", index, "extended ward equivalent")
 
     entries = {"bus": bus, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw, "qz_mvar": qz_mvar, "r_ohm": r_ohm,
-               "x_ohm": x_ohm, "vm_pu": vm_pu, "name": name, "slack_weight": slack_weight,
-               "in_service": in_service}
-    _set_entries(net, "xward", index, **entries, **kwargs)
+               "x_ohm": x_ohm, "vm_pu": vm_pu, "name": name, "slack_weight": slack_weight, "in_service": in_service,
+               **kwargs}
+    _set_entries(net, "xward", index, entries=entries)
 
     return index
 
@@ -5938,8 +5932,8 @@ def create_dcline(
     entries = {"name": name, "from_bus": from_bus, "to_bus": to_bus, "p_mw": p_mw, "loss_percent": loss_percent,
                "loss_mw": loss_mw, "vm_from_pu": vm_from_pu, "vm_to_pu": vm_to_pu, "max_p_mw": max_p_mw,
                "min_q_from_mvar": min_q_from_mvar, "max_q_from_mvar": max_q_from_mvar, "max_q_to_mvar": max_q_to_mvar,
-                "min_q_to_mvar": min_q_to_mvar, "in_service": in_service}
-    _set_entries(net, "dcline", index, **entries, **kwargs)
+                "min_q_to_mvar": min_q_to_mvar, "in_service": in_service, **kwargs}
+    _set_entries(net, "dcline", index, entries=entries)
 
     return index
 
@@ -6044,8 +6038,8 @@ def create_measurement(
             raise UserWarning("More than one measurement of this type exists")
 
     entries = {"name": name, "measurement_type": meas_type.lower(), "element_type": element_type, "element": element,
-               "value": value, "std_dev": std_dev, "side": side}
-    _set_entries(net, "measurement", index, **entries, **kwargs)
+               "value": value, "std_dev": std_dev, "side": side, **kwargs}
+    _set_entries(net, "measurement", index, entries=entries)
     return index
 
 
@@ -6105,8 +6099,8 @@ def create_pwl_cost(
 
     index = _get_index_with_check(net, "pwl_cost", index, "piecewise_linear_cost")
 
-    entries = {"power_type": power_type, "element": element, "et": et, "points": points}
-    _set_entries(net, "pwl_cost", index, **entries, **kwargs)
+    entries = {"power_type": power_type, "element": element, "et": et, "points": points, **kwargs}
+    _set_entries(net, "pwl_cost", index, entries=entries)
     return index
 
 
@@ -6247,8 +6241,8 @@ def create_poly_cost(
 
     entries = {"element": element, "et": et, "cp0_eur": cp0_eur, "cp1_eur_per_mw": cp1_eur_per_mw, "cq0_eur": cq0_eur,
                "cq1_eur_per_mvar": cq1_eur_per_mvar, "cp2_eur_per_mw2": cp2_eur_per_mw2,
-               "cq2_eur_per_mvar2": cq2_eur_per_mvar2}
-    _set_entries(net, "poly_cost", index, **entries, **kwargs)
+               "cq2_eur_per_mvar2": cq2_eur_per_mvar2, **kwargs}
+    _set_entries(net, "poly_cost", index, entries=entries)
     return index
 
 
@@ -6642,8 +6636,10 @@ def _add_multiple_branch_geodata(net, geodata, index, table="line"):
 
     _preserve_dtypes(net[table], dtypes)
 
+def _set_entries(net, table, index, preserve_dtypes=True, entries: Optional[dict] = None):
+    if entries is None:
+        return
 
-def _set_entries(net, table, index, preserve_dtypes=True, **entries):
     dtypes = None
     if preserve_dtypes:
         # only get dtypes of columns that are set and that are already present in the table
