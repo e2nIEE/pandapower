@@ -5938,7 +5938,7 @@ def create_dcline(
     entries = {"name": name, "from_bus": from_bus, "to_bus": to_bus, "p_mw": p_mw, "loss_percent": loss_percent,
                "loss_mw": loss_mw, "vm_from_pu": vm_from_pu, "vm_to_pu": vm_to_pu, "max_p_mw": max_p_mw,
                "min_q_from_mvar": min_q_from_mvar, "max_q_from_mvar": max_q_from_mvar, "max_q_to_mvar": max_q_to_mvar,
-               "in_service": in_service}
+                "min_q_to_mvar": min_q_to_mvar, "in_service": in_service}
     _set_entries(net, "dcline", index, **entries, **kwargs)
 
     return index
