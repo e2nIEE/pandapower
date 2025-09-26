@@ -40,6 +40,7 @@ Change Log
 - [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [FIXED] saturate_sn_mva parameter in DER controller
 - [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
 - [FIXED] cim2pp: use pandapower network pandas structure dict to set needed dtypes instead of hardcoded values
 - [ADDED] cim2pp: export trafo `tap_step_degree` parameter
