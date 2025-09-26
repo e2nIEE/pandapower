@@ -63,6 +63,7 @@ Change Log
 - [ADDED] add a few more tests for the grid modification functions
 - [FIXED] cim2pp: minor speed increase through faster dict creation and removal of not needed .keys() call
 - [Fixed] JAO converter: rename_locnames table updated to suit newest JAO network, _multi_str_repl function was refactored
+- [CHANGED] file_io.to_json: allow passing through sort_keys argument
 
 [3.1.2] - 2025-06-16
 -------------------------------
