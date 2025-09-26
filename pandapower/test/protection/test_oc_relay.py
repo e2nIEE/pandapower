@@ -1,10 +1,3 @@
-import sys, os, _tkinter
-print("sys.executable:", sys.executable)
-print("sys.prefix:", sys.prefix)
-print("TCL_LIBRARY env:", os.environ.get("TCL_LIBRARY"))
-print("TK_LIBRARY env:", os.environ.get("TK_LIBRARY"))
-print("_tkinter version:", _tkinter.TCL_VERSION)
-
 import numpy as np
 
 from pandapower.create import (
