@@ -25,7 +25,7 @@ class CimParser:
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
 
         :param cim: CIM profile structure used for parsing
-        :param cgmes_version: CIM version to use, '2.4.15' or '3.0', default '2.4.15'
+        :param cgmes_version: CGMES version to use, '2.4.15' or '3.0', default '2.4.15'
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
@@ -183,6 +183,7 @@ class CimParser:
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'description', 'ConnectivityNodeContainer']),
                 'Bay': pd.DataFrame(columns=['rdfId', 'VoltageLevel']),
                 'BusbarSection': pd.DataFrame(columns=['rdfId', 'name']),
+                'Junction': pd.DataFrame(columns=['rdfId', 'name']),
                 'Substation': pd.DataFrame(columns=['rdfId', 'name', 'Region']),
                 'GeographicalRegion': pd.DataFrame(columns=['rdfId', 'name']),
                 'SubGeographicalRegion': pd.DataFrame(columns=['rdfId', 'name', 'Region']),
