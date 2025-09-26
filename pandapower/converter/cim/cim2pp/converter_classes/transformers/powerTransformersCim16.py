@@ -309,16 +309,16 @@ class PowerTransformersCim16:
         eqssh_tap_changers[sc['tc']] = 'RatioTapChanger'
         eqssh_tap_changers['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers[sc['tc_id']] = eqssh_tap_changers['rdfId'].copy()
-        # todo: check correct implementation for PhaseTapChangerLinear tap changers
+        # todo: check correct implementation for PhaseTapChangerLinear tap changers -> Ideal done, compared with PF
         eqssh_tap_changers_linear = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerLinear'],
                                              self.cimConverter.cim['ssh']['PhaseTapChangerLinear'], how='left',
                                              on='rdfId')
-        eqssh_tap_changers_linear['stepVoltageIncrement'] = .001
+        eqssh_tap_changers_linear['stepVoltageIncrement'] = np.nan
         eqssh_tap_changers_linear[sc['tc']] = 'PhaseTapChangerLinear'
         eqssh_tap_changers_linear['tap_changer_type'] = "Ideal"  # Ideal phase shifter
         eqssh_tap_changers_linear[sc['tc_id']] = eqssh_tap_changers_linear['rdfId'].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_linear], ignore_index=True, sort=False)
-        # todo: check correct implementation for PhaseTapChangerAsymmetrical tap changers
+        # todo: check correct implementation for PhaseTapChangerAsymmetrical tap changers -> Done by Irene and compared with PF
         eqssh_tap_changers_async = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerAsymmetrical'],
                                             self.cimConverter.cim['ssh']['PhaseTapChangerAsymmetrical'], how='left',
                                             on='rdfId')
@@ -335,6 +335,7 @@ class PowerTransformersCim16:
                                                  on='rdfId')
         eqssh_ratio_tap_changers_sync['stepVoltageIncrement'] = eqssh_ratio_tap_changers_sync['voltageStepIncrement']
         eqssh_ratio_tap_changers_sync = eqssh_ratio_tap_changers_sync.drop(columns=['voltageStepIncrement'])
+        eqssh_ratio_tap_changers_sync['stepPhaseShiftIncrement'] = eqssh_ratio_tap_changers_sync["stepVoltageIncrement"].apply(lambda du: 2 * math.atan2(du, 2))
         eqssh_ratio_tap_changers_sync[sc['tc']] = 'PhaseTapChangerSymmetrical'
         eqssh_ratio_tap_changers_sync['tap_changer_type'] = "Symmetrical"  # Symmetrical phase shifter
         eqssh_ratio_tap_changers_sync[sc['tc_id']] = eqssh_ratio_tap_changers_sync['rdfId'].copy()

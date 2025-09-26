@@ -435,8 +435,9 @@ class CimParser:
         if not isinstance(profile_list, list):
             profile_list = [profile_list]
         for one_profile in profile_list:
-            if '/EquipmentCore/' in one_profile or '/EquipmentOperation/' in one_profile or \
-                    '/EquipmentShortCircuit/' in one_profile or '/CoreEquipment-EU/' in one_profile:
+            if ('/EquipmentCore/' in one_profile or '/EquipmentOperation/' in one_profile or
+                    '/EquipmentShortCircuit/' in one_profile or '/CoreEquipment-EU/' in one_profile or
+                    '/LTDS/Equipment/' in one_profile):
                 return 'eq'
             elif '/SteadyStateHypothesis/' in one_profile or '/SteadyStateHypothesis-EU/' in one_profile:
                 return 'ssh'
@@ -470,7 +471,7 @@ class CimParser:
                                                  message="The CGMES profile could not be parsed from the XML."))
             raise Exception("The CGMES profile could not be parsed from the XML.")
 
-    def _parse_source_file(self, file: str, output: dict, encoding: str, profile_name: str = None):
+    def _parse_source_file(self, file: str, output: dict, encoding: str):
         self.logger.info("Parsing file: %s" % file)
         if not self._check_file(file):
             return
@@ -495,10 +496,7 @@ class CimParser:
             return
         parser = etree.XMLParser(encoding=encoding, resolve_entities=False)
         xml_tree = etree.parse(file, parser)
-        if profile_name is None:
-            prf = self._get_cgmes_profile_from_xml(xml_tree.getroot())
-        else:
-            prf = profile_name
+        prf = self._get_cgmes_profile_from_xml(xml_tree.getroot())
         self.file_names[prf] = file
         self._parse_xml_tree(xml_tree.getroot(), prf, output)
 

@@ -53,7 +53,7 @@ class EquivalentInjectionsCim16:
         equivalent_injection.nominalVoltage = equivalent_injection.nominalVoltage.fillna(equivalent_injection.vn_kv)
         equivalent_injection['regulationStatus'] = equivalent_injection['regulationStatus'].fillna(False)
         equivalent_injection['vm_pu'] = equivalent_injection.regulationTarget / equivalent_injection.nominalVoltage
-        if 'inService' in equivalent_injection.columns:
+        if 'inService' in equivalent_injection.columns:  # CGMES 3.0
             equivalent_injection['connected'] = equivalent_injection['connected'] & equivalent_injection['inService']
         equivalent_injection = equivalent_injection.rename(
             columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service', 'index_bus': 'bus',

@@ -25,7 +25,7 @@ class EnergySourceCim16:
         es_slack = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.notna()]
         es_sgen = eqssh_energy_sources.loc[eqssh_energy_sources.vm_pu.isna()]
         # create reactive_capability_curve flag
-        if 'reactive_capability_curve' not in es_sgen.columns:
+        if 'reactive_capability_curve' not in es_sgen.columns:  #todo
             es_sgen['reactive_capability_curve'] = False
         self.cimConverter.copy_to_pp('ext_grid', es_slack)
         self.cimConverter.copy_to_pp('sgen', es_sgen)
