@@ -95,11 +95,7 @@ def to_json(net: pandapowerNet, filename: None = ..., encryption_key: Union[str,
             indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> str: ...
 
 @overload
-def to_json(net: pandapowerNet, filename: str, encryption_key: Union[str, None] = ...,
-            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
-
-@overload
-def to_json(net: pandapowerNet, filename: TextIO, encryption_key: Union[str, None] = ...,
+def to_json(net: pandapowerNet, filename: Union[str, TextIO], encryption_key: Union[str, None] = ...,
             indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
 
 def to_json(
@@ -108,7 +104,7 @@ def to_json(
     encryption_key: Union[str, None] = None,
     indent: Union[int, str, None] = 2,
     sort_keys: bool = False,
-)-> str | None:
+)-> Union[str, None]:
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
