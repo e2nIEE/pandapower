@@ -9,12 +9,11 @@ import pickle
 import os
 import sys
 import json
-from typing import Union, TextIO, overload
+from typing import Union, TextIO, overload as function_overload
 from warnings import warn
 import numpy
 import pandas as pd
 from packaging.version import Version
-
 
 try:
     import xlsxwriter
@@ -80,7 +79,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         >>> to_excel(net, "example2.xlsx")  # relative path
     """
     if not xlsxwriter_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "xlsxwriter")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "xlsxwriter")
     dict_net = to_dict_of_dfs(
         net,
         include_results=include_results,
@@ -90,21 +89,24 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         for item, table in dict_net.items():
             table.to_excel(writer, sheet_name=item)
 
-@overload
+
+@function_overload
 def to_json(net: pandapowerNet, filename: None = ..., encryption_key: Union[str, None] = ...,
             indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> str: ...
 
-@overload
+
+@function_overload
 def to_json(net: pandapowerNet, filename: Union[str, TextIO], encryption_key: Union[str, None] = ...,
             indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
 
+
 def to_json(
-    net: pandapowerNet,
-    filename: Union[str, TextIO, None] = None,
-    encryption_key: Union[str, None] = None,
-    indent: Union[int, str, None] = 2,
-    sort_keys: bool = False,
-)-> Union[str, None]:
+        net: pandapowerNet,
+        filename: Union[str, TextIO, None] = None,
+        encryption_key: Union[str, None] = None,
+        indent: Union[int, str, None] = 2,
+        sort_keys: bool = False,
+) -> Union[str, None]:
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -191,7 +193,7 @@ def from_excel(filename, convert=True):
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
     if not openpyxl_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "openpyxl")
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:
