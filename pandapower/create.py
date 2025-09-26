@@ -4354,16 +4354,9 @@ def create_transformers3w_from_parameters( # no index ?
     index = _get_multiple_index_with_check(net, "trafo3w", index, len(hv_buses),
                                            name="Three winding transformers")
 
-    bus_not_exist_warning = 'Transformers trying to attach to non existing buses '
-    if not np_all(isin(hv_buses, net.bus.index)):
-        bus_not_exist = set(hv_buses) - set(net.bus.index)
-        raise UserWarning(f"{bus_not_exist_warning}{bus_not_exist}s")
-    if not np_all(isin(mv_buses, net.bus.index)):
-        bus_not_exist = set(mv_buses) - set(net.bus.index)
-        raise UserWarning(f"{bus_not_exist_warning}{bus_not_exist}s")
-    if not np_all(isin(lv_buses, net.bus.index)):
-        bus_not_exist = set(lv_buses) - set(net.bus.index)
-        raise UserWarning(f"{bus_not_exist_warning}{bus_not_exist}s")
+    if not np.all([isin(hv_buses, net.bus.index), isin(mv_buses, net.bus.index), isin(lv_buses, net.bus.index)]):
+        bus_not_exist = (set(hv_buses) | set(mv_buses) | set(lv_buses)) - set(net.bus.index)
+        raise UserWarning(f'Transformers trying to attach to non existing buses {bus_not_exist}')
 
     tp_neutral = pd.Series(tap_neutral, index=index, dtype=float64)
     tp_pos = pd.Series(tap_pos, index=index, dtype=float64).fillna(tp_neutral)
