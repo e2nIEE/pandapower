@@ -9,7 +9,7 @@ import pickle
 import os
 import sys
 import json
-from typing import Union
+from typing import Union, TextIO, overload
 from warnings import warn
 import numpy
 import pandas as pd
@@ -90,8 +90,21 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         for item, table in dict_net.items():
             table.to_excel(writer, sheet_name=item)
 
+@overload
+def to_json(net: pandapowerNet, filename: None = ..., encryption_key: Union[str, None] = ...,
+            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> str: ...
 
-def to_json(net, filename=None, encryption_key=None, store_index_names=None, indent: Union[int, str] = 2):
+@overload
+def to_json(net: pandapowerNet, filename: Union[str, TextIO], encryption_key: Union[str, None] = ...,
+            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
+
+def to_json(
+    net: pandapowerNet,
+    filename: Union[str, TextIO, None] = None,
+    encryption_key: Union[str, None] = None,
+    indent: Union[int, str, None] = 2,
+    sort_keys: bool = False,
+)-> Union[str, None]:
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -104,21 +117,16 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=None, ind
         :param encryption_key: If given, the pandapower network is stored as an encrypted json string, default None
         :type encryption_key: str or None
         :param indent: indentation to use for the json. String or amount of spaces to use, defaut 2
-        :type indent: int or str
+        :type indent: int or str or None
+        :param sort_keys: sort dictionaries by key, default False
+        :type sort_keys: bool
 
         :example:
              >>> from pandapower.file_io import to_json
              >>> to_json(net, "example.json")
     """
-    # --- store index names
-    if store_index_names is not None:
-        msg = "The input parameter 'store_index_names' of function 'to_json()' is deprecated."
-        if Version(pp_version) < Version("2.15"):
-            warn(msg)
-        else:
-            raise DeprecationWarning(msg)
 
-    json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent)
+    json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent, sort_keys=sort_keys)
     if encryption_key is not None:
         json_string = encrypt_string(json_string, encryption_key)
 
@@ -130,6 +138,7 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=None, ind
     else:
         with open(filename, "w") as fp:
             fp.write(json_string)
+    return None
 
 
 def from_pickle(filename, convert=True):
