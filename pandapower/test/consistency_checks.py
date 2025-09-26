@@ -6,10 +6,14 @@
 
 import pandas as pd
 from numpy import allclose, isclose
+import numpy as np
 
 from pandapower import runpp, rundcpp, runpp_pgm
+from pandapower.build_branch import _calc_tap_from_dataframe
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.results import get_relevant_elements
+
+phases = ["a", "b", "c"]
 
 
 def runpp_with_consistency_checks(net, **kwargs):
@@ -168,6 +172,7 @@ def consistency_checks_3ph(net, rtol=2e-3):
     indices_consistent_3ph(net)
     branch_loss_consistent_with_bus_feed_in_3ph(net, rtol)
     element_power_consistent_with_bus_power_3ph(net, rtol)
+    trafo_currents_consistent_3ph(net)
 
 def indices_consistent_3ph(net):
     elements = get_relevant_elements("pf_3ph")
@@ -187,13 +192,13 @@ def branch_loss_consistent_with_bus_feed_in_3ph(net, atol=1e-2):
     bus_surplus_q = -net.res_bus_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum().sum()
 
 
-    branch_loss_p = net.res_line_3ph.p_a_l_mw.sum() + net.res_trafo_3ph.p_a_l_mw.sum() + \
-                    net.res_line_3ph.p_b_l_mw.sum() + net.res_trafo_3ph.p_b_l_mw.sum() + \
-                    net.res_line_3ph.p_c_l_mw.sum() + net.res_trafo_3ph.p_c_l_mw.sum()
+    branch_loss_p = net.res_line_3ph.pl_a_mw.sum() + net.res_trafo_3ph.pl_a_mw.sum() + \
+                    net.res_line_3ph.pl_b_mw.sum() + net.res_trafo_3ph.pl_b_mw.sum() + \
+                    net.res_line_3ph.pl_c_mw.sum() + net.res_trafo_3ph.pl_c_mw.sum()
 
-    branch_loss_q = net.res_line_3ph.q_a_l_mvar.sum() + net.res_trafo_3ph.q_a_l_mvar.sum() + \
-                    net.res_line_3ph.q_b_l_mvar.sum() + net.res_trafo_3ph.q_b_l_mvar.sum() + \
-                    net.res_line_3ph.q_c_l_mvar.sum() + net.res_trafo_3ph.q_c_l_mvar.sum()
+    branch_loss_q = net.res_line_3ph.ql_a_mvar.sum() + net.res_trafo_3ph.ql_a_mvar.sum() + \
+                    net.res_line_3ph.ql_b_mvar.sum() + net.res_trafo_3ph.ql_b_mvar.sum() + \
+                    net.res_line_3ph.ql_c_mvar.sum() + net.res_trafo_3ph.ql_c_mvar.sum()
 
     try:
         assert isclose(bus_surplus_p, branch_loss_p, atol=atol)
@@ -262,3 +267,91 @@ def element_power_consistent_with_bus_power_3ph(net, rtol=1e-2):
     assert allclose(net.res_bus_3ph.q_b_mvar.values, bus_q_b.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_3ph.p_c_mw.values, bus_p_c.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_3ph.q_c_mvar.values, bus_q_c.values, equal_nan=True, rtol=rtol)
+
+def get_trafo_s_3ph(net, tf_index, side):
+    s = np.array([(net.res_trafo_3ph.at[tf_index, "p_"+ph+"_"+side+"_mw"]+1j *
+                   net.res_trafo_3ph.at[tf_index, "q_"+ph+"_"+side+"_mvar"])
+                   for ph in phases
+                ])
+    if side == "lv":
+        s = -s
+    return s
+
+def get_trafo_v_3ph(net, tf_index, side):
+    bus_id = net.trafo.at[tf_index, side+"_bus"]
+    v = np.array([(net.res_bus_3ph.at[bus_id, "vm_"+ph+"_pu"] *
+                   net.bus.vn_kv[bus_id] *
+                   np.exp(1j * np.deg2rad(
+                       net.res_bus_3ph.at[bus_id, "va_"+ph+"_degree"])
+                          )
+                   )
+                  for ph in phases
+                ]) / np.sqrt(3)
+    return v
+
+def get_trafo_currents_3ph(net, tf_index, side):
+    s = get_trafo_s_3ph(net, tf_index, side)
+    v = get_trafo_v_3ph(net, tf_index, side)
+    i = np.conjugate(s / v)
+    return i
+
+def check_dyn_transformer_currents(i_hv, i_lv, ratio, shift_degree, rtol):
+    # HV and LV Currents are related depending on clock (shift)
+    # Dyn11
+    if shift_degree == -30:
+        assert isclose(i_hv[0], (i_lv[0] - i_lv[2])/(ratio * np.sqrt(3)), rtol)
+        assert isclose(i_hv[1], (i_lv[1] - i_lv[0])/(ratio * np.sqrt(3)), rtol)
+        assert isclose(i_hv[2], (i_lv[2] - i_lv[1])/(ratio * np.sqrt(3)), rtol)
+    # Dyn1
+    elif shift_degree == 30:
+        assert isclose(i_hv[0], (i_lv[0] - i_lv[1])/(ratio * np.sqrt(3)), rtol)
+        assert isclose(i_hv[1], (i_lv[1] - i_lv[2])/(ratio * np.sqrt(3)), rtol)
+        assert isclose(i_hv[2], (i_lv[2] - i_lv[0])/(ratio * np.sqrt(3)), rtol)
+    # Dyn5
+    elif shift_degree == 150:
+        assert isclose(i_hv[0], (i_lv[2] - i_lv[0])/(ratio * np.sqrt(3)), rtol)
+        assert isclose(i_hv[1], (i_lv[0] - i_lv[1])/(ratio * np.sqrt(3)), rtol)
+        assert isclose(i_hv[2], (i_lv[1] - i_lv[2])/(ratio * np.sqrt(3)), rtol)
+    # Dyn7
+    elif (shift_degree == 210) or (shift_degree == -150):
+        assert isclose(i_hv[0], (i_lv[1] - i_lv[0])/(ratio * np.sqrt(3)), rtol)
+        assert isclose(i_hv[1], (i_lv[2] - i_lv[1])/(ratio * np.sqrt(3)), rtol)
+        assert isclose(i_hv[2], (i_lv[0] - i_lv[2])/(ratio * np.sqrt(3)), rtol)
+
+def check_ynyn_traformer_currents(i_hv, i_lv, ratio, shift_degree, rtol):
+    # YNyn0
+    if shift_degree == 0:
+        assert isclose(i_hv[0], i_lv[0] / ratio, rtol)
+        assert isclose(i_hv[1], i_lv[1] / ratio, rtol)
+        assert isclose(i_hv[2], i_lv[2] / ratio, rtol)
+    # YNyn6
+    if (shift_degree == 180) or (shift_degree == -180):
+        assert isclose(i_hv[0], -i_lv[0] / ratio, rtol)
+        assert isclose(i_hv[1], -i_lv[1] / ratio, rtol)
+        assert isclose(i_hv[2], -i_lv[2] / ratio, rtol)
+
+def trafo_currents_consistent_3ph(net):
+    """
+    The HV and LV currents of the transformer has to be related in accordance with trafo vector_group and clock
+    """
+    rtol = 1e-1
+    if "vector_group" not in net.trafo:
+        return
+    for vector_group, trafo_df in net.trafo.groupby('vector_group'):
+        if vector_group not in ["Dyn", "YNd", "YNyn", "Yzn"]:
+            continue
+        ### Yzn need to be implemented
+        if vector_group == "Yzn":
+            continue
+        ###############################
+        vnh, vnl, _ = _calc_tap_from_dataframe(net, trafo_df)
+        ratio = vnh / vnl
+        for index, trafo in trafo_df.iterrows():
+            i_hv = get_trafo_currents_3ph(net, index, "hv")
+            i_lv = get_trafo_currents_3ph(net, index, "lv")
+            tf_index = net.trafo.index.get_loc(index)
+            if vector_group == "Dyn":
+                check_dyn_transformer_currents(i_hv, i_lv, ratio[tf_index], trafo["shift_degree"], rtol)
+
+            if vector_group == "YNyn":
+                check_ynyn_traformer_currents(i_hv, i_lv, ratio[tf_index], trafo["shift_degree"], rtol)
