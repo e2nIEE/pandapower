@@ -38,7 +38,7 @@ is_active_current = [False, True]  # TODO: for gen not working yet (grids and re
 gen_mode = ['sgen', 'gen']  # TODO: mode 'all' is implemented but results are not created yet
 
 # parameters for WP 2.5
-grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated"]  # ToDo: resonant needs to be added
+grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated", "resonant"]
 
 # create parameter lists for WPs
 param_wp21, param_vec_wp21, param_wp22, param_vec_wp22, param_vec_wp25 = create_parameter_list(

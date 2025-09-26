@@ -125,6 +125,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         trafo_df["xn_ohm"] = 0.
     if "rn_ohm" not in trafo_df.columns:
         trafo_df["rn_ohm"] = 0.
+    if "xn_ohm_hv" not in trafo_df.columns:
+        trafo_df["xn_ohm_hv"] = 0.
+    if "rn_ohm_hv" not in trafo_df.columns:
+        trafo_df["rn_ohm_hv"] = 0.
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if "trafo" not in branch_lookup:
         return
@@ -253,7 +257,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         z0_k = (r_sc + x_sc * 1j) / parallel
         # z_n_ohm = trafos["xn_ohm"].fillna(0).values
         z_n_ohm = trafos["rn_ohm"] + 1j * trafos["xn_ohm"]
+        z_n_ohm_hv = trafos["rn_ohm_hv"] + 1j * trafos["xn_ohm_hv"]
         k_st_tr = trafos["k_st"].fillna(1).values
+        # if no grounding type is specified solid grounding with 0 ohm on both sides of the transformer is assumed
+        z0_k_hv = z0_k
 
         if mode == "sc":  # or trafo_model == "pi":
             case = net._options["case"]
@@ -275,10 +282,22 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             # grounding impedance: for power system unit, the neutral grounding is set at the HV side.
             # for petersen coil and power transformers, the neutral grounding is at the LV side
             z_petersen_pu = 3 * z_n_ohm / ((vn_bus_lv ** 2) / net.sn_mva)
+            # Calculate the grounding impedance for the ynyn vector group, which can be at either at the HV or LV side
+            if vector_group.lower() == "ynyn":
+                # Calculate the Petersen coil impedance in per unit (pu) on the HV side
+                z_petersen_pu_hv = 3 * z_n_ohm_hv / (vn_bus_hv ** 2 / net.sn_mva)
+                z_petersen_pu_hv /= si0_hv_partial  # Normalize by the HV partial component
+                z0_k_hv = z0_k + z_petersen_pu_hv.values  # Combine with the base zero-sequence impedance
+                z_petersen_pu /= (1 - si0_hv_partial) # Normalize by the LV partial component
+                z0_k += z_petersen_pu.values
+            else:
+                # Update the zero-sequence impedance, adding the Petersen coil impedance of the low voltage side
+                z0_k += z_petersen_pu.values
+                z0_k_hv = z0_k  # Use the base zero-sequence impedance if not ynyn for both sides (hv and lv)
             # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
             # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_trafo_hv ** 2) / net.sn_mva)
             z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
-            z0_k = np.where(power_station_unit, z0_k_psu, z0_k + z_petersen_pu)
+            z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
         # y0_k = 1 / (z0_k * k_st_tr + 3 * z_n_ohm)  # adding admittance for "pi" model
@@ -299,7 +318,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         #     za=ZAN|_|                  |_| zb=ZBN
         #            |                    |
         # =============================================================================
-        z1 = si0_hv_partial * z0_k
+        z1 = si0_hv_partial * z0_k_hv
         z2 = (1 - si0_hv_partial) * z0_k
         z3 = z0_mag
         z_temp = z1 * z2 + z2 * z3 + z1 * z3

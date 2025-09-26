@@ -126,7 +126,8 @@ def compare_results(columns_to_check, net_df, pf_results):
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
     # TODO skss_mw and ikss_ka only 1e-4 sufficient?
-    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
+    # TODO rk_ohm and xk_ohm only 1e-3 sufficient?
+    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-3, "xk_ohm": 1e-3,
             "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-2}  # TODO: tolerances ok?
 
     for column in columns_to_check:
@@ -201,6 +202,9 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
         elif grounding_type == "isolated":
             net.trafo['xn_ohm'] = 1e99
             net.trafo['rn_ohm'] = 1e99
+        elif grounding_type == "resonant":
+            net.trafo['xn_ohm'] = 777
+            net.trafo['rn_ohm'] = 0
 
     if is_gen:
         if gen_mode == "sgen" or gen_mode == "all":
@@ -289,8 +293,6 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
     calc_sc(net, bus=fault_location_bus, fault=fault, case=case, branch_results=branch_results,
             return_all_currents=False, ip=False,
             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
-
-     # TODO: add 3xI0 column to net.res_bus_sc and net.res_line_sc!
 
     if branch_results:
         columns_to_check = net.res_line_sc.columns

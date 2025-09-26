@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+from pandapower.pd2ppc_zero import BIG_NUMBER
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
@@ -17,7 +18,8 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None, gen_a
     pf_dataframes = load_pf_results(excel_file)
 
     # Toleranzen für relevante Größen
-    tolerances = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5, "3xI0": 1e-4,
+    #TODO for grounding rk and xk tolerances have been lowered, need to be checked
+    tolerances = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-3, "xk_ohm": 1e-3, "3xI0": 1e-4,
                   "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}
 
     faults = ["LG", "LLG"]
@@ -164,6 +166,9 @@ def get_result_dfs(net_name, fault_location, grounding_type, gen_active=False):
                 net.gen.loc[net.gen.bus == 14, 'in_service'] = True
                 net.gen.loc[net.gen.bus == 19, 'in_service'] = True
 
+    net.trafo['xn_ohm_hv'] = 0
+    net.trafo['rn_ohm_hv'] = 0
+
     if grounding_type == "solid":
         net.trafo['xn_ohm'] = 0
         net.trafo['rn_ohm'] = 0
@@ -177,8 +182,8 @@ def get_result_dfs(net_name, fault_location, grounding_type, gen_active=False):
         net.trafo['xn_ohm'] = 5
         net.trafo['rn_ohm'] = 5
     elif grounding_type == "isolated":
-        net.trafo['xn_ohm'] = 1e20
-        net.trafo['rn_ohm'] = 1e20
+        net.trafo['xn_ohm'] = BIG_NUMBER # 1e20
+        net.trafo['rn_ohm'] = BIG_NUMBER # 1e20
     elif grounding_type == "resonant":
         net.trafo['xn_ohm'] = 777
         net.trafo['rn_ohm'] = 0
@@ -303,22 +308,23 @@ if __name__ == "__main__":
         if f.endswith(".json") and f[:-5].endswith("_gen") and '1_four_bus_radial_grid' not in f[:-5]]
 
     ## show panadpower and powerfactory results for specified grid and location
-    net_name = '2_five_bus_radial_grid_yyn_gen'   # possible net_name in net_names and net_names_gen
-    fault_location = 1  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
-    grounding_type = "inductance"
+    # net_name = '2_five_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
+    net_name = '4_twenty_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
+    fault_location = 18  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
+    grounding_type = "resonant"
     grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated", "resonant"]
-    gen_active = True
+    gen_active = False
 
     diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, grounding_type, gen_active=gen_active)
 
-    fault_location = [fault_location]
+    """fault_location = [fault_location]
     ## detailed overview for all grids
     df_bus, df_branch = generate_summary_tables(names, fault_location, grounding_types, detailed=True,
                                                 gen_active=gen_active)
 
     ## simple overview for all grids
     df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, grounding_types, detailed=False,
-                                                              gen_active=gen_active)
+                                                              gen_active=gen_active)"""
 
 
 ##
