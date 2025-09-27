@@ -341,7 +341,7 @@ def _categorize_switches(trip_decisions, tripping_times):
     backup_tripping_times = copy.deepcopy(tripping_times)
     backup_tripping_times.remove(min(backup_tripping_times))
     backup_tripping_times.remove(min(backup_tripping_times))
-    for index, row in trip_decisions.iterrows():
+    for _, row in trip_decisions.iterrows():
         switch_id = row.switch_id
         trip = row.trip_melt
         trip_time = row.trip_melt_time_s
@@ -486,8 +486,8 @@ def plot_tripped_grid(
     net, trip_decisions, sc_location, bus_size=0.055, plot_annotations=True):
     collection = _create_plot_collection(net, bus_size) #[lc, bc_extgrid, bc, bc_fault_location]
     tripping_times = []
-    for td_id in range(len(trip_decisions)):
-        tripping_times.append(trip_decisions[td_id].get("Trip time [s]"))
+    for _, row in trip_decisions.iterrows():
+        tripping_times.append(row.trip_melt_time_s)
     tripping_times = [v for v in tripping_times if not isinf(v)]
     inst_trip_switches, backup_trip_switches, inst_backup_switches = _categorize_switches(
         trip_decisions, tripping_times)
@@ -507,8 +507,8 @@ def plot_tripped_grid_protection_device(
 ):
     collection = _create_plot_collection(net, bus_size)
     tripping_times = []
-    for td_id in range(len(trip_decisions)):
-        tripping_times.append(trip_decisions.trip_melt_time_s.at[td_id])
+    for _, row in trip_decisions.iterrows():
+        tripping_times.append(row.trip_melt_time_s)
     tripping_times = [v for v in tripping_times if not isinf(v)]
     if not tripping_times:
         return
