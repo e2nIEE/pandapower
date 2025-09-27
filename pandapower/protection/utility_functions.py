@@ -341,10 +341,10 @@ def _categorize_switches(trip_decisions, tripping_times):
     backup_tripping_times = copy.deepcopy(tripping_times)
     backup_tripping_times.remove(min(backup_tripping_times))
     backup_tripping_times.remove(min(backup_tripping_times))
-    for td_id in range(len(trip_decisions)):
-        switch_id = trip_decisions[td_id].get("Switch ID")
-        trip = trip_decisions[td_id].get("Trip")
-        trip_time = trip_decisions[td_id].get("Trip time [s]")
+    for index, row in trip_decisions.iterrows():
+        switch_id = row.switch_id
+        trip = row.trip_melt
+        trip_time = row.trip_melt_time_s
         if trip_time == heapq.nsmallest(2, tripping_times)[-1]:
             inst_backup.append(switch_id)
         if trip_time == min(tripping_times):
@@ -440,14 +440,22 @@ def _add_bus_and_line_annotations(net, sc_location, sc_bus, collection, bus_size
     line_text, line_geodata = [], []
     for line in net.line.index[:-1]:
         text_line = f"  line_{line}"
+        line_text.append(text_line)
         get_bus_index = get_connected_buses_at_element(net, element_index=line,
                                                       element_type="l", respect_in_service=False)
         bus_list = list(get_bus_index)[:2]
-        bus_coords = [geojson.utils.coords(geojson.loads(net.bus.geo.at[bus])) for bus in bus_list]
-        x = (bus_coords[0][0] + bus_coords[1][0]) / 2
-        y = (bus_coords[0][1] + bus_coords[1][1]) / 2 + 0.05
-        line_text.append(text_line)
-        line_geodata.append((x, y))
+        # place annotations on middle of the line
+        bus_coords = list(zip(
+                *net.bus.geo.iloc[bus_list[0:2]]
+                .apply(geojson.loads)
+                .apply(geojson.utils.coords)
+                .apply(next)
+                .to_list()))
+        line_geo_x_y = [sum(x) / 2 for x in bus_coords]
+        line_geo_x_y[1] += 0.05
+        # list of new geo data for line (half position of switch)
+        line_geodata.append(tuple(line_geo_x_y))
+
     fault_current = round(net.res_bus_sc["ikss_ka"].at[sc_bus], 2)
     collection.append(create_annotation_collection(texts=line_text,
                                                    coords=line_geodata, size=0.06))
@@ -497,24 +505,14 @@ def plot_tripped_grid(
 def plot_tripped_grid_protection_device(
     net, trip_decisions, sc_location, sc_bus, bus_size=0.055, plot_annotations=True
 ):
-    collection = _create_plot_collection(net, bus_size) #[lc, bc_extgrid, bc, bc_fault_location]
-
+    collection = _create_plot_collection(net, bus_size)
     tripping_times = []
-
     for td_id in range(len(trip_decisions)):
         tripping_times.append(trip_decisions.trip_melt_time_s.at[td_id])
     tripping_times = [v for v in tripping_times if not isinf(v)]
     if not tripping_times:
         return
-    backup_tripping_times = copy.deepcopy(tripping_times)
-    backup_tripping_times.remove(min(backup_tripping_times))
-    backup_tripping_times.remove(min(backup_tripping_times))
-
-    inst_trip_switches = []
-    backup_trip_switches = []
-    inst_backup_switches = []
     bus_bus_switches = net.switch.index[net.switch.et == "b"]
-
     # add trafo to collection
     if len(net.trafo) > 0:
         trafo_collection = create_trafo_collection(net, size=2 * bus_size)
@@ -526,187 +524,17 @@ def plot_tripped_grid_protection_device(
         load_collection = create_load_collection(net, size=2 * bus_size)
         collection.append(load_collection)
 
-    for trip_idx in range(len(trip_decisions)):
-        trip_decision = trip_decisions.iloc[[trip_idx]]
-        switch_id = trip_decision.switch_id.at[trip_idx]
-        trip = trip_decision.trip_melt.at[trip_idx]
-        trip_time = trip_decision.trip_melt_time_s.at[trip_idx]
-
-        if trip_time == heapq.nsmallest(2, tripping_times)[-1]:
-            inst_backup_switches.append(switch_id)
-
-        if trip_time == min(tripping_times):
-            inst_trip_switches.append(switch_id)
-
-        if trip_time in backup_tripping_times and trip == True:
-            backup_trip_switches.append(switch_id)
-
-    dist_to_bus = bus_size * 3.25
-
-    # Inst relay trip, red colour
-    if len(inst_trip_switches) > 0:
-        sc_inst = create_line_switch_collection(
-            net,
-            size=bus_size,
-            distance_to_bus=dist_to_bus,
-            color="red",
-            switches=set(inst_trip_switches) - set(bus_bus_switches),
-        )
-        bb_inst = create_bus_bus_switch_collection(
-            net, size=bus_size, helper_line_color="red"
-        )
-        collection.append(sc_inst)
-        collection.append(bb_inst)
-
-    # backup relay based on time grade (yellow colour)
-    if len(backup_trip_switches) > 0:
-        sc_backup = create_line_switch_collection(
-            net,
-            size=bus_size,
-            distance_to_bus=dist_to_bus,
-            color="yellow",
-            switches=backup_trip_switches,
-        )
-        bb_backup = create_bus_bus_switch_collection(
-            net, size=bus_size, helper_line_color="yellow"
-        )
-        collection.append(sc_backup)
-        collection.append(bb_backup)
-
-    # orange colour for inst_backup relay
-    if len(inst_backup_switches) > 0:
-        instant_sc_backup = create_line_switch_collection(
-            net,
-            size=bus_size,
-            distance_to_bus=dist_to_bus,
-            color="orange",
-            switches=inst_backup_switches,
-        )
-##        instant_bb_backup = create_bus_bus_switch_collection(
-##            net, size=bus_size, helper_line_color="orange")
-        collection.append(instant_sc_backup)
-
-    len_sc = len(
-        set(net.switch.index) - set(inst_trip_switches) - set(backup_trip_switches)
-    )
-
-    if len_sc != 0:
-        # closed switch-black
-        sc = create_line_switch_collection(
-            net,
-            size=bus_size,
-            distance_to_bus=dist_to_bus,
-            color="black",
-            switches=set(net.switch.index)
-            - set(inst_trip_switches)
-            - set(backup_trip_switches)
-            - set(bus_bus_switches),
-        )
-        bb = create_bus_bus_switch_collection(
-            net, size=bus_size, helper_line_color="black"
-        )
-
-        collection.append(sc)
-        collection.append(bb)
+    inst_trip_switches, backup_trip_switches, inst_backup_switches = _categorize_switches(
+        trip_decisions, tripping_times)
+    _add_switch_collections(net, collection, inst_trip_switches, bus_bus_switches, "red", bus_size)
+    _add_switch_collections(net, collection, backup_trip_switches, bus_bus_switches, "yellow", bus_size)
+    _add_switch_collections(net, collection, inst_backup_switches, bus_bus_switches, "orange", bus_size)
+    closed_switches = set(net.switch.index) - set(inst_trip_switches) - set(backup_trip_switches)
+    _add_switch_collections(net, collection, closed_switches, bus_bus_switches, "black", bus_size)
 
     # make annotations optional (if True then annotate else only plot)
     if plot_annotations:
-        # line annotations
-        line_text = []
-        line_geodata = []
-
-        fault_current = None
-
-        # for Switches in trip_decisions:
-        for line in net.line.index:
-            if line == max(net.line.index):
-                break
-
-            # annotate line_id
-            text_line = r"  line_" + str(line)  # + ",sw_"+str(Switch_index)
-
-            # get bus_index from the line (from switch)
-            get_bus_index = get_connected_buses_at_element(
-                net, element_index=line, element_type="l", respect_in_service=False
-            )
-
-            bus_list = list(get_bus_index)
-
-            # place annotations on middle of the line
-            bus_coords = list(
-                zip(
-                    *net.bus.geo.iloc[bus_list[0:2]]
-                    .apply(geojson.loads)
-                    .apply(geojson.utils.coords)
-                    .apply(next)
-                    .to_list()
-                )
-            )
-            line_geo_x_y = [sum(x) / 2 for x in bus_coords]
-            line_geo_x_y[1] += 0.05
-
-            # list of new geo data for line (half position of switch)
-            line_geodata.append(tuple(line_geo_x_y))
-
-            fault_current = round(
-                net.res_bus_sc["ikss_ka"].at[sc_bus], 2
-            )  # round(Switches['Fault Current'],2)
-
-            line_text.append(text_line)
-
-        # line annotations to collections for plotting
-        line_annotate = create_annotation_collection(
-            texts=line_text, coords=line_geodata, size=0.06, prop=None
-        )
-        collection.append(line_annotate)
-
-        # Bus Annotations
-        bus_text = []
-        for i in net.bus.index:
-            bus_texts = f"bus_{i}"
-            bus_text.append(bus_texts)
-
-        bus_text = bus_text[:-1]
-
-        bus_geodata = (
-            net.bus.geo.apply(geojson.loads)
-            .apply(geojson.utils.coords)
-            .apply(next)
-            .to_list()
-        )
-
-        # placing bus
-        bus_geodata = [(x[0] - 0.11, x[1] + 0.095) for x in bus_geodata]
-
-        bus_annotate = create_annotation_collection(
-            texts=bus_text, coords=bus_geodata, size=0.06, prop=None
-        )
-        collection.append(bus_annotate)
-
-        # max_bus_idx = max(net.bus.dropna(subset=["geo"]).index)
-
-        # Short circuit annotations
-        collection.append(get_fault_annotation(net, fault_current))
-
-        # sc_location annotation
-        collection.append(get_sc_location_annotation(net, sc_location))
-
-        # switch annotations
-        # from pandapower.protection.utility_functions import switch_geodata
-        switch_text = []
-        for switch_id in trip_decisions.switch_id:
-            text_switch = r"sw_" + str(switch_id)
-            switch_text.append(text_switch)
-
-        switch_geodata = switch_geodatas(
-            net, size=bus_size, distance_to_bus=3.25 * bus_size
-        )
-        for i, (x, y) in enumerate(switch_geodata):
-            switch_geodata[i] = (x - 0.085, y + 0.055)
-        switch_annotate = create_annotation_collection(
-            texts=switch_text, coords=switch_geodata, size=0.06, prop=None
-        )
-        collection.append(switch_annotate)
+        _add_bus_and_line_annotations(net, sc_location, sc_bus, collection, bus_size)
     draw_collections(collection)
 
 
