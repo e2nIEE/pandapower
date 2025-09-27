@@ -152,7 +152,8 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
-    _, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, on, gbus, V0, *_ = (
+    print("Got It")
+    _, _, gen, _, _, _, _, _, ref, *_ = (
         _get_pf_variables_from_ppci(ppci)
     )
 
@@ -212,7 +213,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  ## & set bus type to PQ
 
             ## update bus index lists of each type of bus
-            ref, pv, pq = bustypes(bus, gen)
+            ref, *_ = bustypes(bus, gen)
 
             limited = r_[limited, mx].astype(int64)
         else:

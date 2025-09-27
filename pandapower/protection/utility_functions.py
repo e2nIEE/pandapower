@@ -351,7 +351,7 @@ def _categorize_switches(trip_decisions, tripping_times):
             inst_trip.append(switch_id)
         if trip_time in backup_tripping_times and trip:
             backup_trip.append(switch_id)
-    return inst_trip, backup_trip, inst_backup 
+    return inst_trip, backup_trip, inst_backup
 
 def _add_switch_collections(net, collection, switches, bus_bus_switches, color, bus_size):
     """Add both line and bus-bus switch collections of a given color."""
@@ -486,7 +486,6 @@ def plot_tripped_grid(
     _add_switch_collections(net, collection, inst_trip_switches, [], "red", bus_size)
     _add_switch_collections(net, collection, backup_trip_switches, [], "yellow", bus_size)
     _add_switch_collections(net, collection, inst_backup_switches, [], "orange", bus_size)
-    collection.append(instant_sc_backup)
     closed_switches = set(net.switch.index) - set(inst_trip_switches) - set(backup_trip_switches)
     _add_switch_collections(net, collection, closed_switches, [], "black", bus_size)
     # make annotations optional (if True then annotate else only plot)
