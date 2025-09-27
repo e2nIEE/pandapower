@@ -12,16 +12,11 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.create import (
-    create_empty_network,
-    create_bus,
-    create_ext_grid,
-    create_line_from_parameters,
-    create_measurement,
-    create_load,
-    create_transformer,
-    create_line,
-    create_sgen,
-    create_transformer3w,
+    create_empty_network, create_bus,
+    create_ext_grid, create_line_from_parameters,
+    create_measurement, create_load,
+    create_transformer, create_line,
+    create_sgen, create_transformer3w,
     create_switch,
 )
 from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
@@ -59,8 +54,7 @@ def _create_3_bus_net(bus_v, line_r, line_x, line_c, line_i):
 
 def test_2bus():
     # 1. Create network
-    net = _create_2_bus_net(bus_v=[1.0, 1.0],
-                            line_r=[1], line_x=[0.5],
+    net = _create_2_bus_net(bus_v=[1.0, 1.0], line_r=[1], line_x=[0.5],
                             line_c=[0], line_i=[1])
 
     create_measurement(net, "p", "line", 0.0111, 0.05, 0, "from")  # p12
@@ -87,11 +81,8 @@ def test_2bus():
 
 def test_3bus():
     # 1. Create network
-    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0],
-                            line_r=[0.7, 0.8, 1],
-                            line_x=[0.2, 0.8, 0.6],
-                            line_c=[0, 0, 0],
-                            line_i=[1, 1, 1])
+    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0], line_r=[0.7, 0.8, 1],
+                            line_x=[0.2, 0.8, 0.6],line_c=[0, 0, 0], line_i=[1, 1, 1])
 
     create_measurement(net, "p", "line", -0.0011, 0.01, 0, "from")  # p12
     create_measurement(net, "q", "line", 0.024, 0.01, 0, "from")  # q12
@@ -113,7 +104,7 @@ def test_3bus():
     target_delta = np.array([0.0, 0.8677, 3.1381])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if (np.nanmax(abs(diff_v)) >= 1e-4) or (np.nanmax(abs(diff_delta)) >= 1e-4):
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
@@ -125,11 +116,8 @@ def test_3bus():
 
 
 def test_3bus_with_bad_data():
-    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0],
-                            line_r=[0.7, 0.8, 1],
-                            line_x=[0.2, 0.8, 0.6],
-                            line_c=[0, 0, 0],
-                            line_i=[1, 1, 1])
+    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0], line_r=[0.7, 0.8, 1],
+                            line_x=[0.2, 0.8, 0.6], line_c=[0, 0, 0], line_i=[1, 1, 1])
 
     create_measurement(net, "p", "line", -0.0011, 0.01, 0, "from")  # p12
     create_measurement(net, "q", "line", 0.024, 0.01, 0, "from")  # q12
@@ -161,7 +149,7 @@ def test_3bus_with_bad_data():
 
     assert bad_data_detected
     assert success_rn_max
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if (np.nanmax(abs(diff_v)) >= 1e-4) or (np.nanmax(abs(diff_delta)) >= 1e-4):
         raise AssertionError("Estimation failed!")
 
 
@@ -175,11 +163,8 @@ def test_3bus_with_out_of_service_bus():
     # Measurements should be in kW/kVar/A - Voltage in p.u.
 
     # 1. Create network
-    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0],
-                            line_r=[0.01, 0.02, 0.03],
-                            line_x=[0.03, 0.05, 0.08],
-                            line_c=[0, 0, 0],
-                            line_i=[1, 1, 1])
+    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0], line_r=[0.01, 0.02, 0.03],
+                            line_x=[0.03, 0.05, 0.08], line_c=[0, 0, 0], line_i=[1, 1, 1])
     create_bus(net, name="bus4", vn_kv=1.0, in_service=0)  # out-of-service bus test
 
     create_measurement(net, "v", "bus", 1.006, 0.004, 0)  # V at bus 1
@@ -213,7 +198,7 @@ def test_3bus_with_out_of_service_bus():
     target_delta = np.array([[0.0, -1.2475, -2.7457, np.nan]])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if (np.nanmax(abs(diff_v)) >= 1e-4) or (np.nanmax(abs(diff_delta)) >= 1e-4):
         raise AssertionError("Estimation failed!")
 
 
@@ -221,11 +206,8 @@ def test_3bus_with_transformer():
     np.random.seed(12)
 
     # 1. Create network
-    net = _create_3_bus_net(bus_v=[10.0, 10.0, 10.0],
-                            line_r=[0.01, 0.02, 0.03],
-                            line_x=[0.03, 0.05, 0.08],
-                            line_c=[0, 0, 0],
-                            line_i=[1, 1, 1])
+    net = _create_3_bus_net(bus_v=[10.0, 10.0, 10.0], line_r=[0.01, 0.02, 0.03],
+                            line_x=[0.03, 0.05, 0.08], line_c=[0, 0, 0], line_i=[1, 1, 1])
     create_bus(net, name="bus4", vn_kv=110.0)
     net.ext_grid.bus = 3
     net.ext_grid.vm_pu = 1.01
@@ -294,22 +276,13 @@ def test_3bus_with_transformer():
     )
 
     create_measurement(
-        net,
-        "p",
-        "trafo",
-        r2(net.res_trafo.p_hv_mw.iloc[0], 0.01),
-        0.01,
-        side="hv",
-        element=0,
+        net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], 0.01),
+        0.01, side="hv", element=0,
     )  # transformer meas.
     create_measurement(
-        net,
-        "q",
-        "trafo",
+        net, "q", "trafo",
         r2(net.res_trafo.q_hv_mvar.iloc[0], 0.01),
-        0.01,
-        side="hv",
-        element=0,
+        0.01, side="hv", element=0,
     )  # at hv side
 
     # 2. Do state estimation
@@ -321,7 +294,7 @@ def test_3bus_with_transformer():
     diff_v = net.res_bus.vm_pu.values - v_result
     diff_delta = net.res_bus.va_degree.values - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 6e-4) or not (np.nanmax(abs(diff_delta)) < 8e-4):
+    if (np.nanmax(abs(diff_v)) >= 6e-4) or (np.nanmax(abs(diff_delta)) >= 8e-4):
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
@@ -359,18 +332,14 @@ def test_3bus_with_2_slacks():
     create_measurement(net, "p", "bus", 0.501, 0.010, element=6)  # P at bus 6
     create_measurement(net, "q", "bus", 0.286, 0.010, element=6)  # Q at bus 6
 
-    create_measurement(
-        net, "p", "line", 0.888, 0.008, 3, "from"
-    )  # Pline (bus 5 -> bus 6) at bus 5
-    create_measurement(
-        net, "p", "line", 1.173, 0.008, 4, "from"
-    )  # Pline (bus 5 -> bus 7) at bus 5
-    create_measurement(
-        net, "q", "line", 0.568, 0.008, 3, "from"
-    )  # Qline (bus 5 -> bus 6) at bus 5
-    create_measurement(
-        net, "q", "line", 0.663, 0.008, 4, "from"
-    )  # Qline (bus 5 -> bus 7) at bus 5
+    # Pline (bus 5 -> bus 6) at bus 5
+    create_measurement(net, "p", "line", 0.888, 0.008, 3, "from")
+    # Pline (bus 5 -> bus 7) at bus 5
+    create_measurement(net, "p", "line", 1.173, 0.008, 4, "from")
+    # Qline (bus 5 -> bus 6) at bus 5
+    create_measurement(net, "q", "line", 0.568, 0.008, 3, "from")
+    # Qline (bus 5 -> bus 7) at bus 5
+    create_measurement(net, "q", "line", 0.663, 0.008, 4, "from")
 
     # 2. Do state estimation
     if not estimate(net, init="flat", maximum_iterations=10):
@@ -381,11 +350,9 @@ def test_3bus_with_2_slacks():
     target_v = np.array([0.9996, 0.9741, 0.9438, np.nan, 0.9996, 0.9741, 0.9438])
     target_delta = np.array(
         [
-            0.0,
-            -1.2475469989322963,
+            0.0, -1.2475469989322963,
             -2.7457167371166862,
-            np.nan,
-            0.0,
+            np.nan, 0.0,
             -1.2475469989322963,
             -2.7457167371166862,
         ]
@@ -395,6 +362,31 @@ def test_3bus_with_2_slacks():
         v_result, target_v, atol=1e-4, equal_nan=True
     ) or not np.allclose(delta_result, target_delta, atol=1e-4, equal_nan=True):
         raise AssertionError("Estimation failed!")
+
+def add_standard_measurements(net, bus_indices=(0, 2), line_index=0):
+    """Add standard p/q measurements for given buses and a line to the net."""
+    
+    # buses: indices (default 0, 2)
+    for bus_idx in bus_indices:
+        for meas_type, col in [("p", "p_mw"), ("q", "q_mvar")]:
+            val = getattr(net.res_bus, col)[bus_idx]
+            create_measurement(
+                net, meas_type, "bus", val * r(),
+                max(1e-3, abs(0.03 * val)), bus_idx
+            )
+
+    # lines: one line index, both sides
+    for side, p_col, q_col in [
+        ("from", "p_from_mw", "q_from_mvar"),
+        ("to", "p_to_mw", "q_to_mvar"),
+    ]:
+        for meas_type, col in [("p", p_col), ("q", q_col)]:
+            val = getattr(net.res_line, col)[line_index]
+            create_measurement(
+                net, meas_type, "line", val * r(),
+                max(1e-3, abs(0.03 * val)),
+                element=line_index, side=side
+            )
 
 
 def test_3bus_with_i_line_measurements():
@@ -406,74 +398,10 @@ def test_3bus_with_i_line_measurements():
     runpp(net)
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[0] * r(0.01), 0.01, 0)
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[2] * r(0.01), 0.01, 1)
-    create_measurement(
-        net,
-        "p",
-        "bus",
-        net.res_bus.p_mw[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.p_mw[0])),
-        0,
-    )
-    create_measurement(
-        net,
-        "q",
-        "bus",
-        net.res_bus.q_mvar[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[0])),
-        0,
-    )
-    create_measurement(
-        net,
-        "p",
-        "bus",
-        net.res_bus.p_mw[2] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.p_mw[2])),
-        2,
-    )
-    create_measurement(
-        net,
-        "q",
-        "bus",
-        net.res_bus.q_mvar[2] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[2])),
-        2,
-    )
-    create_measurement(
-        net,
-        "p",
-        "line",
-        net.res_line.p_from_mw[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.p_from_mw[0])),
-        element=0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "q",
-        "line",
-        net.res_line.q_from_mvar[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.q_from_mvar[0])),
-        element=0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "i",
-        "line",
-        net.res_line.i_from_ka[0] * 1e3 * r(),
-        max(1.0, abs(30 * net.res_line.i_from_ka[0])),
-        element=0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "i",
-        "line",
-        net.res_line.i_from_ka[1] * 1e3 * r(),
+    add_standard_measurements(net)
+    create_measurement(net, "i", "line", net.res_line.i_from_ka[1] * 1e3 * r(),
         max(1.0, abs(30 * net.res_line.i_from_ka[1])),
-        element=1,
-        side="from",
-    )
+        element=1, side="from")
 
     if not estimate(net, init="flat"):
         raise AssertionError("Estimation failed!")
@@ -496,74 +424,7 @@ def test_3bus_with_pq_line_from_to_measurements():
     runpp(net)
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[0] * r(0.01), 0.01, 0)
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[2] * r(0.01), 0.01, 1)
-    create_measurement(
-        net,
-        "p",
-        "bus",
-        net.res_bus.p_mw[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.p_mw[0])),
-        0,
-    )
-    create_measurement(
-        net,
-        "q",
-        "bus",
-        net.res_bus.q_mvar[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[0])),
-        0,
-    )
-    create_measurement(
-        net,
-        "p",
-        "bus",
-        net.res_bus.p_mw[2] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.p_mw[2])),
-        2,
-    )
-    create_measurement(
-        net,
-        "q",
-        "bus",
-        net.res_bus.q_mvar[2] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[2])),
-        2,
-    )
-    create_measurement(
-        net,
-        "p",
-        "line",
-        net.res_line.p_from_mw[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.p_from_mw[0])),
-        element=0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "q",
-        "line",
-        net.res_line.q_from_mvar[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.q_from_mvar[0])),
-        element=0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "p",
-        "line",
-        net.res_line.p_to_mw[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.p_to_mw[0])),
-        element=0,
-        side="to",
-    )
-    create_measurement(
-        net,
-        "q",
-        "line",
-        net.res_line.q_to_mvar[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.q_to_mvar[0])),
-        element=0,
-        side="to",
-    )
+    add_standard_measurements(net)
 
     if not estimate(net, init="flat"):
         raise AssertionError("Estimation failed!")
@@ -586,74 +447,7 @@ def test_3bus_with_side_names():
     runpp(net)
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[0] * r(0.01), 0.01, 0)
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[2] * r(0.01), 0.01, 1)
-    create_measurement(
-        net,
-        "p",
-        "bus",
-        net.res_bus.p_mw[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.p_mw[0])),
-        0,
-    )
-    create_measurement(
-        net,
-        "q",
-        "bus",
-        net.res_bus.q_mvar[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[0])),
-        0,
-    )
-    create_measurement(
-        net,
-        "p",
-        "bus",
-        net.res_bus.p_mw[2] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.p_mw[2])),
-        2,
-    )
-    create_measurement(
-        net,
-        "q",
-        "bus",
-        net.res_bus.q_mvar[2] * r(),
-        max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[2])),
-        2,
-    )
-    create_measurement(
-        net,
-        "p",
-        "line",
-        net.res_line.p_from_mw[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.p_from_mw[0])),
-        element=0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "q",
-        "line",
-        net.res_line.q_from_mvar[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.q_from_mvar[0])),
-        element=0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "p",
-        "line",
-        net.res_line.p_to_mw[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.p_to_mw[0])),
-        element=0,
-        side="to",
-    )
-    create_measurement(
-        net,
-        "q",
-        "line",
-        net.res_line.q_to_mvar[0] * r(),
-        max(1.0e-3, abs(0.03 * net.res_line.q_to_mvar[0])),
-        element=0,
-        side="to",
-    )
+    add_standard_measurements(net)
 
     if not estimate(net, init="flat"):
         raise AssertionError("Estimation failed!")
@@ -932,14 +726,14 @@ def test_network_with_trafo3w_pq():
     if not estimate(net):
         raise AssertionError("Estimation failed!")
 
-    if not (
+    if (
         np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values))
-        < 0.006
-    ) or not (
+        >= 0.006
+    ) or (
         np.nanmax(
             np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)
         )
-        < 0.006
+        >= 0.006
     ):
         raise AssertionError("Estimation failed")
 
@@ -1052,85 +846,63 @@ def create_net_with_bb_switch():
     runpp(net, calculate_voltage_angles=True)
 
     create_measurement(
-        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus1], 0.002), 0.002, element=bus1
-    )
+        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus1], 0.002),
+        0.002, element=bus1)
     create_measurement(
-        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus3], 0.002), 0.002, element=bus3
-    )
+        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus3], 0.002),
+        0.002, element=bus3)
     create_measurement(
-        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus5], 0.002), 0.002, element=bus5
-    )
+        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus5], 0.002),
+        0.002, element=bus5)
 
     create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus5], 0.002), 0.002, element=bus5
-    )
+        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus5], 0.002),
+        0.002, element=bus5)
     create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus5], 0.002), 0.002, element=bus5
-    )
-
-    # If measurement on the bus with bb-switch activated, it will incluence the results of the merged bus
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus4], 0.002), 0.002, element=bus4
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus4], 0.002), 0.002, element=bus4
-    )
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus3], 0.001), 0.001, element=bus3
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus3], 0.001), 0.001, element=bus3
-    )
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus2], 0.001), 0.001, element=bus2
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus2], 0.001), 0.001, element=bus2
-    )
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus1], 0.001), 0.001, element=bus1
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus1], 0.001), 0.001, element=bus1
-    )
+        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus5], 0.002),
+        0.002, element=bus5)
 
     create_measurement(
-        net,
-        "p",
-        "line",
-        r2(net.res_line.p_from_mw.iloc[0], 0.002),
-        0.002,
-        0,
-        side="from",
-    )
+        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus4], 0.002),
+        0.002, element=bus4)
     create_measurement(
-        net,
-        "q",
-        "line",
-        r2(net.res_line.q_from_mvar.iloc[0], 0.002),
-        0.002,
-        0,
-        side="from",
-    )
+        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus4], 0.002),
+        0.002, element=bus4)
 
     create_measurement(
-        net,
-        "p",
-        "trafo",
-        r2(net.res_trafo.p_hv_mw.iloc[0], 0.001),
-        0.01,
-        side="hv",
-        element=0,
-    )
+        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus3], 0.001),
+        0.001, element=bus3)
     create_measurement(
-        net,
-        "q",
-        "trafo",
-        r2(net.res_trafo.q_hv_mvar.iloc[0], 0.001),
-        0.01,
-        side="hv",
-        element=0,
-    )
+        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus3], 0.001),
+        0.001, element=bus3)
+
+    create_measurement(
+        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus2], 0.001),
+        0.001, element=bus2)
+    create_measurement(
+        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus2], 0.001),
+        0.001, element=bus2)
+
+    create_measurement(
+        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus1], 0.001),
+        0.001, element=bus1)
+    create_measurement(
+        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus1], 0.001),
+        0.001, element=bus1)
+
+    create_measurement(
+        net, "p", "line", r2(net.res_line.p_from_mw.iloc[0], 0.002),
+        0.002, 0, side="from")
+    create_measurement(
+        net, "q", "line", r2(net.res_line.q_from_mvar.iloc[0], 0.002),
+        0.002, 0, side="from")
+
+    create_measurement(
+        net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], 0.001),
+        0.01, side="hv", element=0)
+    create_measurement(
+        net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], 0.001),
+        0.01, side="hv", element=0)
     return net
 
 
@@ -1167,7 +939,6 @@ def test_net_with_bb_switch_fuse_one():
         1e-1,
     )
 
-
 @pytest.mark.xfail
 def test_net_with_bb_switch_fuse_one_identify_pq():
     net = create_net_with_bb_switch()
@@ -1199,35 +970,19 @@ def test_net_with_zero_injection():
     factor = 48.4 * 2 * np.pi * 50 * 1e-9  # capacity factor
 
     create_line_from_parameters(
-        net,
-        1,
-        2,
-        1,
-        r_ohm_per_km=0.0221 * 48.4,
-        x_ohm_per_km=0.1603 * 48.4,
-        c_nf_per_km=0.00274 / factor,
-        max_i_ka=1,
-    )
+        net, 1, 2, 1,
+        r_ohm_per_km=0.0221 * 48.4, x_ohm_per_km=0.1603 * 48.4,
+        c_nf_per_km=0.00274 / factor, max_i_ka=1)
+
     create_line_from_parameters(
-        net,
-        2,
-        3,
-        1,
-        r_ohm_per_km=0.0428 * 48.4,
-        x_ohm_per_km=0.242 * 48.4,
-        c_nf_per_km=0.00384 / factor,
-        max_i_ka=1,
-    )
+        net, 2, 3, 1,
+        r_ohm_per_km=0.0428 * 48.4, x_ohm_per_km=0.242 * 48.4,
+        c_nf_per_km=0.00384 / factor, max_i_ka=1)
+
     l3 = create_line_from_parameters(
-        net,
-        2,
-        4,
-        1,
-        r_ohm_per_km=0.002 * 48.4,
-        x_ohm_per_km=0.0111 * 48.4,
-        c_nf_per_km=0.00018 / factor,
-        max_i_ka=1,
-    )
+        net, 2, 4, 1,
+        r_ohm_per_km=0.002 * 48.4, x_ohm_per_km=0.0111 * 48.4,
+        c_nf_per_km=0.00018 / factor, max_i_ka=1)
 
     create_measurement(net, "v", "bus", 1.063548, 0.001, b1)  # V at bus 1
     create_measurement(net, "v", "bus", 1.068342, 0.001, b3)  # V at bus 3
@@ -1276,26 +1031,12 @@ def test_zero_injection_aux_bus():
     bus3 = create_bus(net, name="bus3", vn_kv=10.0)
     bus4 = create_bus(net, name="bus4", vn_kv=110.0)
 
-    create_line_from_parameters(
-        net,
-        bus1,
-        bus2,
-        10,
-        r_ohm_per_km=0.59,
-        x_ohm_per_km=0.35,
-        c_nf_per_km=10.1,
-        max_i_ka=1,
-    )
-    create_line_from_parameters(
-        net,
-        bus2,
-        bus3,
-        10,
-        r_ohm_per_km=0.59,
-        x_ohm_per_km=0.35,
-        c_nf_per_km=10.1,
-        max_i_ka=1,
-    )
+    for from_bus, to_bus in [(bus1, bus2), (bus2, bus3)]:
+        create_line_from_parameters(
+            net, from_bus, to_bus, 10,
+            r_ohm_per_km=0.59, x_ohm_per_km=0.35,
+            c_nf_per_km=10.1, max_i_ka=1)
+
     create_transformer(net, bus4, bus1, std_type="40 MVA 110/10 kV")
     create_ext_grid(net, bus=bus4, vm_pu=1.0)
     create_load(net, bus1, p_mw=0.350, q_mvar=0.100)
@@ -1307,71 +1048,29 @@ def test_zero_injection_aux_bus():
     # Created bb switch
     runpp(net, calculate_voltage_angles=True)
 
-    create_measurement(
-        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus1], 0.002), 0.002, element=bus1
-    )
-    create_measurement(
-        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus4], 0.002), 0.002, element=bus4
-    )
+    # voltage measurements
+    for bus in [bus1, bus4]:
+        create_measurement(net, "v", "bus",
+            r2(net.res_bus.vm_pu.iloc[bus], 0.002), 0.002, element=bus)
 
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus4], 0.002), 0.002, element=bus4
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus4], 0.002), 0.002, element=bus4
-    )
+    # p/q bus measurements
+    for bus, tol in [(bus4, 0.002), (bus2, 0.001), (bus1, 0.001)]:
+        for meas_type, val in [("p", net.res_bus.p_mw.iloc[bus]),
+                               ("q", net.res_bus.q_mvar.iloc[bus])]:
+            create_measurement(net, meas_type, "bus",
+                r2(val, tol), tol, element=bus)
 
-    # If measurement on the bus with bb-switch activated, it will incluence the results of the merged bus
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus2], 0.001), 0.001, element=bus2
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus2], 0.001), 0.001, element=bus2
-    )
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus1], 0.001), 0.001, element=bus1
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus1], 0.001), 0.001, element=bus1
-    )
+    # line measurements
+    for meas_type, val in [("p", net.res_line.p_from_mw.iloc[0]),
+                           ("q", net.res_line.q_from_mvar.iloc[0])]:
+        create_measurement(net, meas_type, "line",
+            r2(val, 0.002), 0.002, 0, side="from")
 
-    create_measurement(
-        net,
-        "p",
-        "line",
-        r2(net.res_line.p_from_mw.iloc[0], 0.002),
-        0.002,
-        0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "q",
-        "line",
-        r2(net.res_line.q_from_mvar.iloc[0], 0.002),
-        0.002,
-        0,
-        side="from",
-    )
-
-    create_measurement(
-        net,
-        "p",
-        "trafo",
-        r2(net.res_trafo.p_hv_mw.iloc[0], 0.001),
-        0.01,
-        side="hv",
-        element=0,
-    )
-    create_measurement(
-        net,
-        "q",
-        "trafo",
-        r2(net.res_trafo.q_hv_mvar.iloc[0], 0.001),
-        0.01,
-        side="hv",
-        element=0,
-    )
+    # trafo measurements
+    for meas_type, val in [("p", net.res_trafo.p_hv_mw.iloc[0]),
+                           ("q", net.res_trafo.q_hv_mvar.iloc[0])]:
+        create_measurement(net, meas_type, "trafo",
+            r2(val, 0.001), 0.01, side="hv", element=0)
 
     net_noinj_bus = deepcopy(net)
     net_aux = deepcopy(net)
@@ -1414,26 +1113,13 @@ def test_net_unobserved_island():
     bus3 = create_bus(net, name="bus3", vn_kv=10.0)
     bus4 = create_bus(net, name="bus4", vn_kv=110.0)
 
-    create_line_from_parameters(
-        net,
-        bus1,
-        bus2,
-        10,
-        r_ohm_per_km=0.59,
-        x_ohm_per_km=0.35,
-        c_nf_per_km=10.1,
-        max_i_ka=1,
-    )
-    create_line_from_parameters(
-        net,
-        bus2,
-        bus3,
-        10,
-        r_ohm_per_km=0.59,
-        x_ohm_per_km=0.35,
-        c_nf_per_km=10.1,
-        max_i_ka=1,
-    )
+    for from_bus, to_bus in [(bus1, bus2), (bus2, bus3)]:
+        create_line_from_parameters(
+            net, from_bus, to_bus, 10,
+            r_ohm_per_km=0.59, x_ohm_per_km=0.35,
+            c_nf_per_km=10.1, max_i_ka=1
+        )
+
     create_transformer(net, bus4, bus1, std_type="40 MVA 110/10 kV")
     create_ext_grid(net, bus=bus4, vm_pu=1.0)
     create_load(net, bus1, p_mw=0.350, q_mvar=0.100)
@@ -1443,67 +1129,31 @@ def test_net_unobserved_island():
     # Created bb switch
     runpp(net, calculate_voltage_angles=True)
 
-    create_measurement(
-        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus1], 0.002), 0.002, element=bus1
-    )
-    create_measurement(
-        net, "v", "bus", r2(net.res_bus.vm_pu.iloc[bus4], 0.002), 0.002, element=bus4
-    )
+    # voltage at buses
+    for b in (bus1, bus4):
+        create_measurement(net, "v", "bus",
+            r2(net.res_bus.vm_pu.iloc[b], 0.002), 0.002, element=b)
 
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus4], 0.002), 0.002, element=bus4
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus4], 0.002), 0.002, element=bus4
-    )
+    # p and q at bus4
+    for t, col in [("p", "p_mw"), ("q", "q_mvar")]:
+        create_measurement(net, t, "bus",
+            r2(getattr(net.res_bus, col).iloc[bus4], 0.002), 0.002, element=bus4)
 
-    # IF pq of bus2 is not available makes bus3 an unobserved island
-    #    create_measurement(net, "p", "bus", -r2(net.res_bus.p_mw.iloc[bus2], .001), .001, element=bus2)
-    #    create_measurement(net, "q", "bus", -r2(net.res_bus.q_mvar.iloc[bus2], .001), .001, element=bus2)
-    create_measurement(
-        net, "p", "bus", r2(net.res_bus.p_mw.iloc[bus1], 0.001), 0.001, element=bus1
-    )
-    create_measurement(
-        net, "q", "bus", r2(net.res_bus.q_mvar.iloc[bus1], 0.001), 0.001, element=bus1
-    )
+    # p and q at bus1
+    for t, col in [("p", "p_mw"), ("q", "q_mvar")]:
+        create_measurement(net, t, "bus",
+            r2(getattr(net.res_bus, col).iloc[bus1], 0.001), 0.001, element=bus1)
 
-    create_measurement(
-        net,
-        "p",
-        "line",
-        r2(net.res_line.p_from_mw.iloc[0], 0.002),
-        0.002,
-        0,
-        side="from",
-    )
-    create_measurement(
-        net,
-        "q",
-        "line",
-        r2(net.res_line.q_from_mvar.iloc[0], 0.002),
-        0.002,
-        0,
-        side="from",
-    )
+    # line measurements
+    for t, col in [("p", "p_from_mw"), ("q", "q_from_mvar")]:
+        create_measurement(net, t, "line",
+            r2(getattr(net.res_line, col).iloc[0], 0.002), 0.002, 0, side="from")
 
-    create_measurement(
-        net,
-        "p",
-        "trafo",
-        r2(net.res_trafo.p_hv_mw.iloc[0], 0.001),
-        0.01,
-        side="hv",
-        element=0,
-    )
-    create_measurement(
-        net,
-        "q",
-        "trafo",
-        r2(net.res_trafo.q_hv_mvar.iloc[0], 0.001),
-        0.01,
-        side="hv",
-        element=0,
-    )
+    # trafo measurements
+    for t, col in [("p", "p_hv_mw"), ("q", "q_hv_mvar")]:
+        create_measurement(net, t, "trafo",
+            r2(getattr(net.res_trafo, col).iloc[0], 0.001), 0.01, side="hv", element=0)
+
 
     if not estimate(net, tolerance=1e-6, zero_injection=None):
         raise AssertionError("Estimation failed!")
@@ -1515,24 +1165,12 @@ def test_net_oos_line():
     runpp(net)
 
     for line_ix in net.line.index:
-        create_measurement(
-            net,
-            "p",
-            "line",
-            net.res_line.at[line_ix, "p_from_mw"],
-            0.01,
-            element=line_ix,
-            side="from",
-        )
-        create_measurement(
-            net,
-            "q",
-            "line",
-            net.res_line.at[line_ix, "q_from_mvar"],
-            0.01,
-            element=line_ix,
-            side="from",
-        )
+        for t, col in [("p", "p_from_mw"), ("q", "q_from_mvar")]:
+            create_measurement(
+                net, t, "line",
+                net.res_line.at[line_ix, col], 0.01,
+                element=line_ix, side="from"
+            )
 
     for bus_ix in net.bus.index:
         create_measurement(
