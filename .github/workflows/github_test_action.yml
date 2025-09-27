@@ -101,7 +101,8 @@ jobs:
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv run pytest -n=auto --cov=./ --cov-report=xml
+          # uv run pytest -n=auto --cov=./ --cov-report=xml
+          python-jl pytest -n=auto --cov=./ --cov-report=xml
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
   upload-coverage:
