@@ -336,15 +336,15 @@ def _create_plot_collection(net, bus_size):
         color="red", size=bus_size, patch_type="circle")
     return [lc, bc_extgrid, bc, bc_fault_location]
 
-def _categorize_switches(trip_decisions, tripping_times, backup_times):
+def _categorize_switches(trip_decisions, tripping_times):
     inst_trip, backup_trip, inst_backup = [], [], []
     backup_tripping_times = copy.deepcopy(tripping_times)
     backup_tripping_times.remove(min(backup_tripping_times))
     backup_tripping_times.remove(min(backup_tripping_times))
     for td_id in range(len(trip_decisions)):
-        switch_id = trip_decision.get("Switch ID")
-        trip = trip_decision.get("Trip")
-        trip_time = trip_decision.get("Trip time [s]")
+        switch_id = trip_decisions[td_id].get("Switch ID")
+        trip = trip_decisions[td_id].get("Trip")
+        trip_time = trip_decisions[td_id].get("Trip time [s]")
         if trip_time == heapq.nsmallest(2, tripping_times)[-1]:
             inst_backup.append(switch_id)
         if trip_time == min(tripping_times):
@@ -474,31 +474,24 @@ def _add_bus_and_line_annotations(net, sc_location, sc_bus, collection, bus_size
                                                    coords=switch_geodata, size=0.06))
 
 
-
 def plot_tripped_grid(
     net, trip_decisions, sc_location, bus_size=0.055, plot_annotations=True):
     collection = _create_plot_collection(net, bus_size) #[lc, bc_extgrid, bc, bc_fault_location]
-
     tripping_times = []
     for td_id in range(len(trip_decisions)):
         tripping_times.append(trip_decisions[td_id].get("Trip time [s]"))
     tripping_times = [v for v in tripping_times if not isinf(v)]
-
     inst_trip_switches, backup_trip_switches, inst_backup_switches = _categorize_switches(
         trip_decisions, tripping_times)
-
     _add_switch_collections(net, collection, inst_trip_switches, [], "red", bus_size)
-    _add_switch_collections(net, collection, backup_trip, [], "yellow", bus_size)
-    _add_switch_collections(net, collection, inst_backup, [], "orange", bus_size)
-    
+    _add_switch_collections(net, collection, backup_trip_switches, [], "yellow", bus_size)
+    _add_switch_collections(net, collection, inst_backup_switches, [], "orange", bus_size)
     collection.append(instant_sc_backup)
-
     closed_switches = set(net.switch.index) - set(inst_trip_switches) - set(backup_trip_switches)
-    _add_switch_collections(net, collection, closed_switches, "black", bus_size)
-
+    _add_switch_collections(net, collection, closed_switches, [], "black", bus_size)
     # make annotations optional (if True then annotate else only plot)
     if plot_annotations:
-        collection.extend(_create_annotation_collections(net, trip_decisions, sc_location, bus_size))
+        collection.extend(_create_annotation_collections(net, bus_size, trip_decisions, sc_location, 0.0))
     draw_collections(collection)
 
 
