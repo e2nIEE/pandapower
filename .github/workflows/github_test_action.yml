@@ -102,7 +102,7 @@ jobs:
       - name: Test with pytest, Codecov and Coverage
         run: |
           # uv run pytest -n=auto --cov=./ --cov-report=xml
-          python -m pytest -n=auto --cov=./ --cov-report=xml
+          uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
   upload-coverage:
