@@ -59,43 +59,33 @@ except ImportError:
 
 warnings.filterwarnings("ignore")
 
-
-def _get_coords_from_bus_idx(
-    net: pandapowerNet, bus_idx: pd.Index
-) -> List[Tuple[float, float]]:
+def _get_coords_from_element_idx(net: pandapowerNet, idx: pd.Index, element_type="bus") -> List[Tuple[float, float]]:
     try:
-        bl = net.bus.dropna(subset=["geo"]).loc[bus_idx, "geo"]
-        if isinstance(bl, pd.Series):
+        df = getattr(net, element_type).dropna(subset=["geo"]).loc[idx, "geo"]
+        if isinstance(df, pd.Series):
             return (
-                bl.apply(geojson.loads)
+                df.apply(geojson.loads)
                 .apply(geojson.utils.coords)
                 .apply(next)
                 .to_list()
             )
         else:
-            return [next(geojson.utils.coords(geojson.loads(bl)))]
+            return [next(geojson.utils.coords(geojson.loads(df)))]
     except KeyError:
-        logger.error(f"Bus {bus_idx} not found in net.bus.geo")
+        logger.error(f"{element_type.title()} {idx} not found in net.{element_type}.geo")
     return []
+
+
+def _get_coords_from_bus_idx(
+    net: pandapowerNet, bus_idx: pd.Index
+) -> List[Tuple[float, float]]:
+    return _get_coords_from_element_idx(net, bus_idx, "bus")
 
 
 def _get_coords_from_line_idx(
     net: pandapowerNet, line_idx: pd.Index
 ) -> List[Tuple[float, float]]:
-    try:
-        ll = net.line.dropna(subset=["geo"]).loc[line_idx, "geo"]
-        if isinstance(ll, pd.Series):
-            return (
-                ll.apply(geojson.loads)
-                .apply(geojson.utils.coords)
-                .apply(next)
-                .to_list()
-            )
-        else:
-            return [next(geojson.utils.coords(geojson.loads(ll)))]
-    except KeyError:
-        logger.error(f"Line {line_idx} not found in net.line.geo")
-    return []
+    return _get_coords_from_element_idx(net, line_idx, "line")
 
 
 def create_sc_bus(net_copy, sc_line_id, sc_fraction):
@@ -322,16 +312,11 @@ def get_sc_location_annotation(
 
     return sc_annotate
 
-
-def plot_tripped_grid(
-    net, trip_decisions, sc_location, bus_size=0.055, plot_annotations=True
-):
+def _create_plot_collection(net, bus_size):
     # plot the tripped grid of net_sc
     if MPLCURSORS_INSTALLED:
         mplcursors.cursor(hover=False)
-
     # plot grid and color the according switches - instantaneous tripping red, int backup tripping orange and tripping_time_auto backuo-yellow
-
     ext_grid_busses = net.ext_grid.bus.values
     fault_location = [max(net.bus.index)]
 
@@ -357,8 +342,12 @@ def plot_tripped_grid(
         size=bus_size,
         patch_type="circle",
     )
+    return [lc, bc_extgrid, bc, bc_fault_location]
 
-    collection = [lc, bc_extgrid, bc, bc_fault_location]
+def plot_tripped_grid(
+    net, trip_decisions, sc_location, bus_size=0.055, plot_annotations=True
+):
+    collection = _create_plot_collection(net, bus_size) #[lc, bc_extgrid, bc, bc_fault_location]
 
     tripping_times = []
 
@@ -555,39 +544,7 @@ def plot_tripped_grid(
 def plot_tripped_grid_protection_device(
     net, trip_decisions, sc_location, sc_bus, bus_size=0.055, plot_annotations=True
 ):
-    # plot the tripped grid of net_sc with networks using ProtectionDevice class
-    if MPLCURSORS_INSTALLED:
-        mplcursors.cursor(hover=False)
-
-    # plot grid and color the according switches - instantaneous tripping red, int backup tripping orange and tripping_time_auto backuo-yellow
-
-    ext_grid_busses = net.ext_grid.bus.values
-    fault_location = [max(net.bus.index)]
-
-    lc = create_line_collection(net, lines=net.line.index, zorder=0)
-
-    bc_extgrid = create_bus_collection(
-        net, buses=ext_grid_busses, zorder=1, size=bus_size, patch_type="rect"
-    )
-
-    bc = create_bus_collection(
-        net,
-        buses=set(net.bus.index) - set(ext_grid_busses) - set(fault_location),
-        zorder=2,
-        color="black",
-        size=bus_size,
-    )
-
-    bc_fault_location = create_bus_collection(
-        net,
-        buses=set(fault_location),
-        zorder=3,
-        color="red",
-        size=bus_size,
-        patch_type="circle",
-    )
-
-    collection = [lc, bc_extgrid, bc, bc_fault_location]
+    collection = _create_plot_collection(net, bus_size) #[lc, bc_extgrid, bc, bc_fault_location]
 
     tripping_times = []
 

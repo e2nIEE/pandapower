@@ -32,15 +32,36 @@ from pandapower.run import runpp
 from pandapower.std_types import create_std_type
 
 
-def test_2bus():
-    # 1. Create network
+def _create_2_bus_net(bus_v, line_r, line_x, line_c, line_i):
     net = create_empty_network()
-    create_bus(net, name="bus1", vn_kv=1.0)
-    create_bus(net, name="bus2", vn_kv=1.0)
+    create_bus(net, name="bus1", vn_kv=bus_v[0])
+    create_bus(net, name="bus2", vn_kv=bus_v[1])
     create_ext_grid(net, 0)
     create_line_from_parameters(
-        net, 0, 1, 1, r_ohm_per_km=1, x_ohm_per_km=0.5, c_nf_per_km=0, max_i_ka=1
+        net, 0, 1, 1, r_ohm_per_km=line_r[0], x_ohm_per_km=line_x[0],
+        c_nf_per_km=line_c[0], max_i_ka=line_i[0]
     )
+    return net
+
+def _create_3_bus_net(bus_v, line_r, line_x, line_c, line_i):
+    net = _create_2_bus_net(bus_v[:2], line_r[:1], line_x[:1],
+                            line_c[:1], line_i[:1])
+    create_bus(net, name="bus3", vn_kv=bus_v[2])
+    create_line_from_parameters(
+        net, 0, 2, 1, r_ohm_per_km=line_r[1], x_ohm_per_km=line_x[1],
+        c_nf_per_km=line_c[1], max_i_ka=line_i[1]
+    )
+    create_line_from_parameters(
+        net, 1, 2, 1, r_ohm_per_km=line_r[2], x_ohm_per_km=line_x[2],
+        c_nf_per_km=line_c[2], max_i_ka=line_c[2]
+    )
+    return net
+
+def test_2bus():
+    # 1. Create network
+    net = _create_2_bus_net(bus_v=[1.0, 1.0],
+                            line_r=[1], line_x=[0.5],
+                            line_c=[0], line_i=[1])
 
     create_measurement(net, "p", "line", 0.0111, 0.05, 0, "from")  # p12
     create_measurement(net, "q", "line", 0.06, 0.05, 0, "from")  # q12
@@ -66,20 +87,11 @@ def test_2bus():
 
 def test_3bus():
     # 1. Create network
-    net = create_empty_network()
-    create_bus(net, name="bus1", vn_kv=1.0)
-    create_bus(net, name="bus2", vn_kv=1.0)
-    create_bus(net, name="bus3", vn_kv=1.0)
-    create_ext_grid(net, 0)
-    create_line_from_parameters(
-        net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=1
-    )
-    create_line_from_parameters(
-        net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0, max_i_ka=1
-    )
-    create_line_from_parameters(
-        net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0, max_i_ka=1
-    )
+    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0],
+                            line_r=[0.7, 0.8, 1],
+                            line_x=[0.2, 0.8, 0.6],
+                            line_c=[0, 0, 0],
+                            line_i=[1, 1, 1])
 
     create_measurement(net, "p", "line", -0.0011, 0.01, 0, "from")  # p12
     create_measurement(net, "q", "line", 0.024, 0.01, 0, "from")  # q12
@@ -113,20 +125,11 @@ def test_3bus():
 
 
 def test_3bus_with_bad_data():
-    net = create_empty_network()
-    create_bus(net, name="bus1", vn_kv=1.0)
-    create_bus(net, name="bus2", vn_kv=1.0)
-    create_bus(net, name="bus3", vn_kv=1.0)
-    create_ext_grid(net, 0)
-    create_line_from_parameters(
-        net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=1
-    )
-    create_line_from_parameters(
-        net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0, max_i_ka=1
-    )
-    create_line_from_parameters(
-        net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0, max_i_ka=1
-    )
+    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0],
+                            line_r=[0.7, 0.8, 1],
+                            line_x=[0.2, 0.8, 0.6],
+                            line_c=[0, 0, 0],
+                            line_i=[1, 1, 1])
 
     create_measurement(net, "p", "line", -0.0011, 0.01, 0, "from")  # p12
     create_measurement(net, "q", "line", 0.024, 0.01, 0, "from")  # q12
@@ -172,21 +175,12 @@ def test_3bus_with_out_of_service_bus():
     # Measurements should be in kW/kVar/A - Voltage in p.u.
 
     # 1. Create network
-    net = create_empty_network()
-    create_bus(net, name="bus1", vn_kv=1.0)
-    create_bus(net, name="bus2", vn_kv=1.0)
-    create_bus(net, name="bus3", vn_kv=1.0)
+    net = _create_3_bus_net(bus_v=[1.0, 1.0, 1.0],
+                            line_r=[0.01, 0.02, 0.03],
+                            line_x=[0.03, 0.05, 0.08],
+                            line_c=[0, 0, 0],
+                            line_i=[1, 1, 1])
     create_bus(net, name="bus4", vn_kv=1.0, in_service=0)  # out-of-service bus test
-    create_ext_grid(net, 0)
-    create_line_from_parameters(
-        net, 0, 1, 1, r_ohm_per_km=0.01, x_ohm_per_km=0.03, c_nf_per_km=0.0, max_i_ka=1
-    )
-    create_line_from_parameters(
-        net, 0, 2, 1, r_ohm_per_km=0.02, x_ohm_per_km=0.05, c_nf_per_km=0.0, max_i_ka=1
-    )
-    create_line_from_parameters(
-        net, 1, 2, 1, r_ohm_per_km=0.03, x_ohm_per_km=0.08, c_nf_per_km=0.0, max_i_ka=1
-    )
 
     create_measurement(net, "v", "bus", 1.006, 0.004, 0)  # V at bus 1
     create_measurement(net, "v", "bus", 0.968, 0.004, 1)  # V at bus 2
@@ -227,21 +221,14 @@ def test_3bus_with_transformer():
     np.random.seed(12)
 
     # 1. Create network
-    net = create_empty_network()
-    create_bus(net, name="bus1", vn_kv=10.0)
-    create_bus(net, name="bus2", vn_kv=10.0)
-    create_bus(net, name="bus3", vn_kv=10.0)
+    net = _create_3_bus_net(bus_v=[10.0, 10.0, 10.0],
+                            line_r=[0.01, 0.02, 0.03],
+                            line_x=[0.03, 0.05, 0.08],
+                            line_c=[0, 0, 0],
+                            line_i=[1, 1, 1])
     create_bus(net, name="bus4", vn_kv=110.0)
-    create_ext_grid(net, bus=3, vm_pu=1.01)
-    create_line_from_parameters(
-        net, 0, 1, 1, r_ohm_per_km=0.01, x_ohm_per_km=0.03, c_nf_per_km=0.0, max_i_ka=1
-    )
-    create_line_from_parameters(
-        net, 0, 2, 1, r_ohm_per_km=0.02, x_ohm_per_km=0.05, c_nf_per_km=0.0, max_i_ka=1
-    )
-    create_line_from_parameters(
-        net, 1, 2, 1, r_ohm_per_km=0.03, x_ohm_per_km=0.08, c_nf_per_km=0.0, max_i_ka=1
-    )
+    net.ext_grid.bus = 3
+    net.ext_grid.vm_pu = 1.01
 
     create_std_type(
         net,
