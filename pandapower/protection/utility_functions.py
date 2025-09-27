@@ -465,7 +465,6 @@ def plot_tripped_grid(
 
 def plot_tripped_grid_protection_device(
     net, trip_decisions, sc_location, sc_bus, bus_size=0.055, plot_annotations=True):
-    
     collection = _create_plot_collection(net, bus_size)
     tripping_times = []
     for _, row in trip_decisions.iterrows():
