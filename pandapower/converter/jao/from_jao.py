@@ -1189,10 +1189,9 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     # --- check whether all name strings point at location names of the buses
     if False:  # for easy testing
         fail = ~(joined_in_buses | longest_part_in_buses)
-        a = pd.concat(
-            [trafo_bus_names_joined.loc[fail], trafo_bus_names_longest_part.loc[fail]],
-            axis=1,
-        )
+##        a = pd.concat(
+##            [trafo_bus_names_joined.loc[fail], trafo_bus_names_longest_part.loc[fail]],
+##            axis=1)
 
     if n_bus_names_not_found := len(joined_in_buses) - sum(
         joined_in_buses | longest_part_in_buses
@@ -1215,7 +1214,7 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
     # just keep one bus per name and vn_kv. If there are multiple buses of different TSOs, join the
     # TSO strings:
     bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg(
-        {"TSO": lambda x: "/".join(x)}
+        {"TSO": "/".join}
     )
     assert not bus_df.duplicated(["name", "vn_kv"]).any()
     return bus_df
