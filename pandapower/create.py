@@ -319,12 +319,11 @@ def create_buses(
     if coords:
         raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
 
-    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
-    _set_multiple_entries(net, "bus", index, **entries, **kwargs)
+    _set_multiple_entries(net, "bus", index, entries=entries)
     net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
-    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index
 
@@ -402,10 +401,10 @@ def create_buses_dc(
     if coords:
         raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
 
-    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo}
+    entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu)
-    _set_multiple_entries(net, "bus_dc", index, **entries, **kwargs)
+    _set_multiple_entries(net, "bus_dc", index, entries=entries)
 
     return index
 
@@ -630,7 +629,7 @@ def create_loads(
     entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
                "const_z_p_percent": const_z_p_percent, "const_i_p_percent": const_i_p_percent,
                "const_z_q_percent": const_z_q_percent, "const_i_q_percent": const_i_q_percent,
-               "scaling": scaling, "in_service": in_service, "name": name, "type": type}
+               "scaling": scaling, "in_service": in_service, "name": name, "type": type, **kwargs}
 
     _add_to_entries_if_not_nan(net, "load", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "load", entries, index, "max_p_mw", max_p_mw)
@@ -640,8 +639,7 @@ def create_loads(
                                default_val=False)
     defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, **entries,
-                          **kwargs)
+    _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
     return index
 
@@ -1111,7 +1109,7 @@ def create_sgens(
 
     entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva, "scaling": scaling,
                "in_service": in_service, "name": name, "type": type, "current_source": current_source,
-               "reactive_capability_curve": reactive_capability_curve, "curve_style": curve_style}
+               "reactive_capability_curve": reactive_capability_curve, "curve_style": curve_style, **kwargs}
 
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
@@ -1143,8 +1141,7 @@ def create_sgens(
                           f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
 
     defaults_to_fill = [("controllable", False), ('reactive_capability_curve', False), ("curve_style", None)]
-    _set_multiple_entries(net, "sgen", index, defaults_to_fill=defaults_to_fill, **entries,
-                          **kwargs)
+    _set_multiple_entries(net, "sgen", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
     return index
 
@@ -1474,7 +1471,7 @@ def create_storages(
 
     entries = {"name": name, "bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
                "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
-               "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type}
+               "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type, **kwargs}
 
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
@@ -1484,8 +1481,7 @@ def create_storages(
                                default_val=False)
     defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, **entries,
-                          **kwargs)
+    _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
     return index
 
@@ -1783,7 +1779,8 @@ def create_gens(
 
     entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
                "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type,
-               "slack": slack, "curve_style": curve_style, "reactive_capability_curve": reactive_capability_curve}
+               "slack": slack, "curve_style": curve_style, "reactive_capability_curve": reactive_capability_curve,
+               **kwargs}
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
@@ -1808,8 +1805,7 @@ def create_gens(
                                default_val=True)
     defaults_to_fill = [("controllable", True), ('reactive_capability_curve', False), ("curve_style", None)]
 
-    _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, **entries,
-                          **kwargs)
+    _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
     return index
 
@@ -2411,7 +2407,7 @@ def create_lines(
 
     entries = {"from_bus": from_buses, "to_bus": to_buses, "length_km": length_km,
                "std_type": std_type, "name": name, "df": df, "parallel": parallel,
-               "in_service": in_service}
+               "in_service": in_service, **kwargs}
 
     # add std type data
     if isinstance(std_type, str):
@@ -2446,9 +2442,8 @@ def create_lines(
     for column, value in tdpf_parameters.items():
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
-    _set_multiple_entries(net, "line", index, **entries, **kwargs)
+    _set_multiple_entries(net, "line", index, entries=entries)
     net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
-    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     if geodata:
         _add_multiple_branch_geodata(net, geodata, index)
@@ -2556,7 +2551,7 @@ def create_lines_dc(
 
     entries = {"from_bus_dc": from_buses_dc, "to_bus_dc": to_buses_dc, "length_km": length_km,
                "std_type": std_type, "name": name, "df": df, "parallel": parallel,
-               "in_service": in_service}
+               "in_service": in_service, **kwargs}
 
     # add std type data
     if isinstance(std_type, str):
@@ -2586,7 +2581,7 @@ def create_lines_dc(
     for column, value in tdpf_parameters.items():
         _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
 
-    _set_multiple_entries(net, "line_dc", index, **entries, **kwargs)
+    _set_multiple_entries(net, "line_dc", index, entries=entries)
 
     if geodata is not None:
         _add_multiple_branch_geodata(net, "line_dc", geodata, index)
@@ -3027,7 +3022,7 @@ def create_lines_from_parameters(
     entries = {"from_bus": from_buses, "to_bus": to_buses, "length_km": length_km, "type": type,
                "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
                "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km,
-               "name": name, "df": df, "parallel": parallel, "in_service": in_service}
+               "name": name, "df": df, "parallel": parallel, "in_service": in_service, **kwargs}
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
                                max_loading_percent)
@@ -3049,7 +3044,7 @@ def create_lines_from_parameters(
     for column, value in tdpf_parameters.items():
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
-    _set_multiple_entries(net, "line", index, **entries, **kwargs)
+    _set_multiple_entries(net, "line", index, entries=entries)
 
     if geodata is not None:
         _add_multiple_branch_geodata(net, geodata, index)
@@ -3169,7 +3164,7 @@ def create_lines_dc_from_parameters(
 
     entries = {"from_bus_dc": from_buses_dc, "to_bus_dc": to_buses_dc, "length_km": length_km, "type": type,
                "r_ohm_per_km": r_ohm_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km, "name": name, "df": df,
-               "parallel": parallel, "in_service": in_service}
+               "parallel": parallel, "in_service": in_service, **kwargs}
 
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent",
                                max_loading_percent)
@@ -3189,7 +3184,7 @@ def create_lines_dc_from_parameters(
     for column, value in tdpf_parameters.items():
         _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
 
-    _set_multiple_entries(net, "line_dc", index, **entries, **kwargs)
+    _set_multiple_entries(net, "line_dc", index, entries=entries)
 
     if geodata is not None:
         _add_multiple_branch_geodata(net, "line_dc", geodata, index)
@@ -3806,7 +3801,7 @@ def create_transformers_from_parameters( # index missing ?
                "shift_degree": shift_degree, "tap_pos": tp_pos, "tap_side": tap_side,
                "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
                "tap_changer_type": tap_changer_type, "parallel": parallel, "df": df,
-               "tap_dependency_table": tap_dependency_table}
+               "tap_dependency_table": tap_dependency_table, **kwargs}
 
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "id_characteristic_table",
                                id_characteristic_table, dtype="Int64")
@@ -3843,7 +3838,7 @@ def create_transformers_from_parameters( # index missing ?
                 "net.trafo_characteristic_table and populate the tap_dependency_table and id_characteristic_table "
                 "parameters."))
 
-    _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, **entries, **kwargs)
+    _set_multiple_entries(net, "trafo", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
     if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
         convert_trafo_pst_logic(net)
@@ -4376,7 +4371,7 @@ def create_transformers3w_from_parameters( # no index ?
                "vk0_hv_percent": vk0_hv_percent, "vk0_mv_percent": vk0_mv_percent,
                "vk0_lv_percent": vk0_lv_percent, "vkr0_hv_percent": vkr0_hv_percent,
                "vkr0_mv_percent": vkr0_mv_percent, "vkr0_lv_percent": vkr0_lv_percent,
-               "vector_group": vector_group, "tap_dependency_table": tap_dependency_table}
+               "vector_group": vector_group, "tap_dependency_table": tap_dependency_table, **kwargs}
 
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "max_loading_percent",
                                max_loading_percent)
@@ -4398,8 +4393,7 @@ def create_transformers3w_from_parameters( # no index ?
                 "net.trafo_characteristic_table and populate the tap_dependency_table and id_characteristic_table "
                 "parameters."))
 
-    _set_multiple_entries(net, "trafo3w", index, defaults_to_fill=defaults_to_fill, **entries,
-                          **kwargs)
+    _set_multiple_entries(net, "trafo3w", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
     return index
 
@@ -4597,9 +4591,9 @@ def create_switches(
             raise UserWarning(f"{table.capitalize()} not connected ({table} element, bus): {list(bus_element_pairs)}")
 
     entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
-               "name": name, "z_ohm": z_ohm, "in_ka": in_ka}
+               "name": name, "z_ohm": z_ohm, "in_ka": in_ka, **kwargs}
 
-    _set_multiple_entries(net, "switch", index, **entries, **kwargs)
+    _set_multiple_entries(net, "switch", index, entries=entries)
 
     return index
 
@@ -4749,8 +4743,8 @@ def create_shunts(
 
     entries = {"bus": buses, "name": name, "p_mw": p_mw, "q_mvar": q_mvar, "vn_kv": vn_kv, "step": step,
                "max_step": max_step, "in_service": in_service, "step_dependency_table": step_dependency_table,
-               "id_characteristic_table": id_characteristic_table}
-    _set_multiple_entries(net, "shunt", index, **entries, **kwargs)
+               "id_characteristic_table": id_characteristic_table, **kwargs}
+    _set_multiple_entries(net, "shunt", index, entries=entries)
 
     return index
 
@@ -5560,8 +5554,8 @@ def create_impedances(
 
     entries = {"from_bus": from_buses, "to_bus": to_buses, "rft_pu": rft_pu, "xft_pu": xft_pu, "rtf_pu": rtf_pu,
                "xtf_pu": xtf_pu, "gf_pu": gf_pu, "bf_pu": bf_pu, "gt_pu": gt_pu, "bt_pu": bt_pu, "name": name,
-               "sn_mva": sn_mva, "in_service": in_service}
-    _set_multiple_entries(net, "impedance", index, **entries, **kwargs)
+               "sn_mva": sn_mva, "in_service": in_service, **kwargs}
+    _set_multiple_entries(net, "impedance", index, entries=entries)
 
     if rft0_pu is not None:
         _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
@@ -5788,9 +5782,9 @@ def create_wards(
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
     entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
-               "qz_mvar": qz_mvar, "in_service": in_service}
+               "qz_mvar": qz_mvar, "in_service": in_service, **kwargs}
 
-    _set_multiple_entries(net, "ward", index, **entries, **kwargs)
+    _set_multiple_entries(net, "ward", index, entries=entries)
 
     return index
 
@@ -6163,8 +6157,8 @@ def create_pwl_costs(
 
     index = _get_multiple_index_with_check(net, "pwl_cost", index, len(elements),
                                            "piecewise_linear_cost")
-    entries = {"power_type": power_type, "element": elements, "et": et, "points": points}
-    _set_multiple_entries(net, "pwl_cost", index, **entries, **kwargs)
+    entries = {"power_type": power_type, "element": elements, "et": et, "points": points, **kwargs}
+    _set_multiple_entries(net, "pwl_cost", index, entries=entries)
     return index
 
 
@@ -6307,8 +6301,8 @@ def create_poly_costs(
 
     entries = {"element": elements, "et": et, "cp0_eur": cp0_eur, "cp1_eur_per_mw": cp1_eur_per_mw, "cq0_eur": cq0_eur,
                "cq1_eur_per_mvar": cq1_eur_per_mvar, "cp2_eur_per_mw2": cp2_eur_per_mw2,
-               "cq2_eur_per_mvar2": cq2_eur_per_mvar2}
-    _set_multiple_entries(net, "poly_cost", index, **entries, **kwargs)
+               "cq2_eur_per_mvar2": cq2_eur_per_mvar2, **kwargs}
+    _set_multiple_entries(net, "poly_cost", index, entries=entries)
     return index
 
 
@@ -6350,7 +6344,8 @@ def create_group(
     element_indices,
     name: str = "",
     reference_columns=None,
-    index: Optional[int] = None
+    index: Optional[int] = None,
+    **kwargs
 ):
     """Add a new group to net['group'] dataframe.
 
@@ -6394,10 +6389,9 @@ def create_group(
     index = np.array([_get_index_with_check(net, "group", index)] * len(element_types), dtype=np.int64)
 
     entries = {"name": name, "element_type": element_types, "element_index": element_indices,
-               "reference_column": reference_columns}
-    _set_multiple_entries(net, "group", index, **entries)
+               "reference_column": reference_columns, **kwargs}
+    _set_multiple_entries(net, "group", index, entries=entries)
     net.group.loc[net.group.reference_column == "", "reference_column"] = None  # overwrite
-    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index[0]
 
@@ -6645,8 +6639,12 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: Optional[dict
         _preserve_dtypes(net[table], dtypes)
 
 
-def _set_multiple_entries(net, table, index, preserve_dtypes=True, defaults_to_fill=None,
-                          **entries):
+def _set_multiple_entries(net: pandapowerNet, table: str, index: np.typing.NDArray[Int] | list[Int] | pd.Index,
+                          preserve_dtypes: Optional[bool] = True, defaults_to_fill: Optional[list[tuple]] = None,
+                          entries: Optional[dict] = None):
+    if entries is None:
+        return
+
     dtypes = None
     if preserve_dtypes:
         # store dtypes
