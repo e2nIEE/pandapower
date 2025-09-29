@@ -148,14 +148,9 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
-<<<<<<< HEAD
     _, _, gen, _, _, _, _, _, ref, *_ = (
         _get_pf_variables_from_ppci(ppci)
     )
-=======
-    print("Got It")
-    _, _, gen, _, _, _, _, _, ref, *_ = _get_pf_variables_from_ppci(ppci)
->>>>>>> 779ae2a7177a289954c826ee0322079463cf8b2b
 
     qlim = ppopt["ENFORCE_Q_LIMS"]
     limited = []  ## list of indices of gens @ Q lims
