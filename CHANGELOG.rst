@@ -50,6 +50,8 @@ Change Log
 - [FIXED] json io test with new network structure dict
 - [FIXED] DC OPF bug if verbose = True
 - [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
+- [Added] Parellel contingency analysis using multiple cores through a multiprocessing worker pool
+- [Changed] DC-line mode to handle negative values in 2 different ways, inversing the line direction or considering powerflow always to correlate with the given from_bus 
 
 [3.1.2] - 2025-06-16
 -------------------------------
