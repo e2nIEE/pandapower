@@ -6639,7 +6639,7 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: Optional[dict
         _preserve_dtypes(net[table], dtypes)
 
 
-def _set_multiple_entries(net: pandapowerNet, table: str, index: int | np.ndarray | list[int],
+def _set_multiple_entries(net: pandapowerNet, table: str, index: np.typing.NDArray[Int] | list[Int] | pd.Index,
                           preserve_dtypes: Optional[bool] = True, defaults_to_fill: Optional[list[tuple]] = None,
                           entries: Optional[dict] = None):
     if entries is None:
