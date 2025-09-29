@@ -92,8 +92,9 @@ jobs:
       #    uv run python ./.install_pycall.py
       - name: Install PandaModels.jl
         run: |
+          julia -e 'set ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"'
           julia -e 'using Pkg; Pkg.add("PandaModels")'
-          julia -e 'using Pkg; set ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
+          julia -e 'using Pkg; Pkg.add("PyCall")'
           uv run python -c "import julia; julia.install(color=True)"
       - name: List of installed packages
         run: |
