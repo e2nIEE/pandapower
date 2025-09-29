@@ -36,6 +36,38 @@ except ImportError:
 
 from pandapower.run import runpp
 
+def _setup_contingency_analysis(net, pf_options=None, pf_options_nminus1=None, **kwargs):
+    raise_errors = kwargs.get("raise_errors", False)
+    if "recycle" in kwargs:
+        kwargs["recycle"] = False  # so that we can be sure it doesn't happen
+    if pf_options is None:
+        pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
+    if pf_options_nminus1 is None:
+        pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
+    if kwargs is not None:
+        # avoid duplicate passing keys to contingency_evaluation_function()
+        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
+        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in
+                              kwargs.keys()}
+
+    contingency_results = {element: {"index": net[element].index.values}
+                           for element in ("bus", "line", "trafo", "trafo3w") if len(net[element]) > 0}
+    for element in contingency_results.keys():
+        if element == "bus":
+            continue
+        contingency_results[element].update(
+            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
+             "cause_element": np.empty_like(net[element].index.values, dtype=object),
+             "cause_index": np.empty_like(net[element].index.values, dtype=np.int64)})
+    result_variables = {**{"bus": ["vm_pu"]},
+                        **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
+    if len(net.line) > 0 and (net.get("_options", {}).get("tdpf", False) or
+                              pf_options.get("tdpf", False) or pf_options_nminus1.get("tdpf", False)):
+        result_variables["line"].append("temperature_degree_celsius")
+    return raise_errors, contingency_results, result_variables, pf_options, pf_options_nminus1
+
+
+
 
 def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None, write_to_net=True,
                     contingency_evaluation_function=runpp, **kwargs):
@@ -67,33 +99,7 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     """
     # set up the dict for results and relevant variables
     # ".get" in case the options have been set in pp.set_user_pf_options:
-    raise_errors = kwargs.get("raise_errors", False)
-    if "recycle" in kwargs:
-        kwargs["recycle"] = False  # so that we can be sure it doesn't happen
-    if pf_options is None:
-        pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
-    if pf_options_nminus1 is None:
-        pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
-    if kwargs is not None:
-        # avoid duplicate passing keys to contingency_evaluation_function()
-        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
-        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in
-                              kwargs.keys()}
-
-    contingency_results = {element: {"index": net[element].index.values}
-                           for element in ("bus", "line", "trafo", "trafo3w") if len(net[element]) > 0}
-    for element in contingency_results.keys():
-        if element == "bus":
-            continue
-        contingency_results[element].update(
-            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
-             "cause_element": np.empty_like(net[element].index.values, dtype=object),
-             "cause_index": np.empty_like(net[element].index.values, dtype=np.int64)})
-    result_variables = {**{"bus": ["vm_pu"]},
-                        **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
-    if len(net.line) > 0 and (net.get("_options", {}).get("tdpf", False) or
-                              pf_options.get("tdpf", False) or pf_options_nminus1.get("tdpf", False)):
-        result_variables["line"].append("temperature_degree_celsius")
+    raise_errors, contingency_results, result_variables, pf_options, pf_options_nminus1 = _setup_contingency_analysis(net, pf_options, pf_options_nminus1,**kwargs)
 
     # for n-1
     for element, val in nminus1_cases.items():
@@ -530,6 +536,7 @@ def _run_single_contingency(contingency_case, net, pf_options_nminus1, result_va
     """
     Worker function executed by each parallel process.
     It runs a single contingency analysis.
+    A simple helper function to enable parallel execution.
     """
     try:
         import copy
@@ -580,33 +587,7 @@ def run_contingency_parallel(net, nminus1_cases, pf_options=None, pf_options_nmi
     :return: contingency results dict of arrays per element for index, min/max result
     :rtype: dict
     """
-    # --- Setup and Initialization ---
-    raise_errors = kwargs.get("raise_errors", False)
-    if "recycle" in kwargs:
-        kwargs["recycle"] = False  # so that we can be sure it doesn't happen
-    if pf_options is None:
-        pf_options = net.user_pf_options.get("pf_options", net.user_pf_options)
-    if pf_options_nminus1 is None:
-        pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
-    if kwargs is not None:
-        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
-        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs.keys()}
 
-    contingency_results = {element: {"index": net[element].index.values}
-                           for element in ("bus", "line", "trafo", "trafo3w") if len(net[element]) > 0}
-    for element in contingency_results.keys():
-        if element == "bus":
-            continue
-        contingency_results[element].update(
-            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
-             "cause_element": np.empty_like(net[element].index.values, dtype=object),
-             "cause_index": np.empty_like(net[element].index.values, dtype=np.int64)})
-
-    result_variables = {**{"bus": ["vm_pu"]},
-                        **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
-    if len(net.line) > 0 and (net.get("_options", {}).get("tdpf", False) or
-                             pf_options.get("tdpf", False) or pf_options_nminus1.get("tdpf", False)):
-        result_variables["line"].append("temperature_degree_celsius")
 
     # --- N-1 Contingency Analysis ---
     if n_procs is None:
@@ -614,6 +595,8 @@ def run_contingency_parallel(net, nminus1_cases, pf_options=None, pf_options_nmi
 
     # --- Parallel Execution Path ---
     if n_procs > 1:
+        # --- Setup and Initialization ---
+        raise_errors, contingency_results, result_variables, pf_options, pf_options_nminus1 = _setup_contingency_analysis(net, pf_options, pf_options_nminus1,**kwargs)
         tasks = []
         for element, val in nminus1_cases.items():
             for i in val["index"]:
@@ -635,38 +618,26 @@ def run_contingency_parallel(net, nminus1_cases, pf_options=None, pf_options_nmi
                                             cause_element=single_result["case"][0],
                                             cause_index=single_result["case"][1],
                                             parallel_results=single_result["res_vals"])
+        # --- N-0 (Base Case) Analysis ---
+        if pf_options is None:
+            pf_options = pf_options_nminus1
+        contingency_evaluation_function(net, **pf_options, **kwargs)
+        _update_contingency_results_parallel(net, contingency_results, result_variables, nminus1=False)
+
+        # --- Write Results to Net ---
+        if write_to_net:
+            for element, element_results in contingency_results.items():
+                index = element_results["index"]
+                for var, val in element_results.items():
+                    if var == "index" or var in net[f"res_{element}"].columns.values:
+                        continue
+                    net[f"res_{element}"].loc[index, var] = val
     
     # --- Sequential Execution Path ---
     else:
-        for element, val in nminus1_cases.items():
-            for i in val["index"]:
-                if not net[element].at[i, "in_service"]:
-                    continue
-                net[element].at[i, 'in_service'] = False
-                try:
-                    contingency_evaluation_function(net, **pf_options_nminus1, **kwargs)
-                    _update_contingency_results_parallel(net, contingency_results, result_variables, nminus1=True,
-                                                cause_element=element, cause_index=i)
-                except Exception as err:
-                    logger.error(f"{element} {i} causes {err}")
-                    if raise_errors:
-                        raise err
-                finally:
-                    net[element].at[i, 'in_service'] = True
+        contingency_results =run_contingency(net, nminus1_cases, pf_options=pf_options, pf_options_nminus1=pf_options_nminus1, write_to_net=write_to_net,contingency_evaluation_function=contingency_evaluation_function, **kwargs)
 
-    # --- N-0 (Base Case) Analysis ---
-    contingency_evaluation_function(net, **pf_options, **kwargs)
-    _update_contingency_results_parallel(net, contingency_results, result_variables, nminus1=False)
-
-    # --- Write Results to Net ---
-    if write_to_net:
-        for element, element_results in contingency_results.items():
-            index = element_results["index"]
-            for var, val in element_results.items():
-                if var == "index" or var in net[f"res_{element}"].columns.values:
-                    continue
-                net[f"res_{element}"].loc[index, var] = val
-
+    
     return contingency_results
 
 def _update_contingency_results_parallel(net, contingency_results, result_variables, nminus1, cause_element=None,
