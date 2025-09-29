@@ -324,7 +324,6 @@ def create_buses(
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, entries=entries)
     net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
-    # empty_defaults_per_dtype() applied in _set_multiple_entries()
 
     return index
 
