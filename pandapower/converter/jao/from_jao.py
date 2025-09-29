@@ -123,9 +123,7 @@ def from_jao(
     # --- read data
     data = pd.read_excel(excel_file_path, sheet_name=None, header=[0, 1])
     if html_file_path is not None:
-        with open(
-            html_file_path, mode="r", encoding=kwargs.get("encoding", "utf-8")
-        ) as f:
+        with open(html_file_path, mode="r", encoding=kwargs.get("encoding", "utf-8")) as f:
             html_str = f.read()
     else:
         html_str = ""
@@ -204,9 +202,7 @@ def _data_correction(
         cols.loc[cols[1] == "Voltage_level(kV)", 0] = None
         cols.loc[cols[1] == "Comment", 0] = None
         cols.loc[cols[0].str.startswith("Unnamed:").astype(bool), 0] = None
-        cols.loc[cols[1] == "Length_(km)", 0] = (
-            "Electrical Parameters"  # might be wrong in
-        )
+        cols.loc[cols[1] == "Length_(km)", 0] = "Electrical Parameters"  # might be wrong in
         # Tielines otherwise
         data[key].columns = pd.MultiIndex.from_arrays(cols.values.T)
 
@@ -236,10 +232,7 @@ def _data_correction(
             ("Substation_2", "Full_name"),
         ]:
             data[key].loc[:, loc_name] = (
-                data[key]
-                .loc[:, loc_name]
-                .str.strip()
-                .apply(_multi_str_repl, repl=rename_locnames)
+                data[key].loc[:, loc_name].str.strip().apply(_multi_str_repl, repl=rename_locnames)
             )
     html_str = _multi_str_repl(html_str, rename_locnames)
 
@@ -248,20 +241,11 @@ def _data_correction(
 
     # --- fix Locations
     loc_name = ("Location", "Full Name")
-    data[key].loc[:, loc_name] = (
-        data[key]
-        .loc[:, loc_name]
-        .str.strip()
-        .apply(_multi_str_repl, repl=rename_locnames)
-    )
+    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().apply(_multi_str_repl, repl=rename_locnames)
 
     # --- fix data in nonnull_taps
     taps = (
-        data[key]
-        .loc[:, ("Phase Shifting Properties", "Taps used for RAO")]
-        .fillna("")
-        .astype(str)
-        .str.replace(" ", "")
+        data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].fillna("").astype(str).str.replace(" ", "")
     )
     nonnull = taps.apply(len).astype(bool)
     nonnull_taps = taps.loc[nonnull]
@@ -270,9 +254,7 @@ def _data_correction(
     slash_sep = (~nonnull_taps.str.contains(";")) & nonnull_taps.str.contains("/")
     nonnull_taps.loc[slash_sep] = nonnull_taps.loc[slash_sep].str.replace("/", ";")
     nonnull_taps.loc[nonnull_taps == "0"] = "0;0"
-    data[key].loc[nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = (
-        nonnull_taps
-    )
+    data[key].loc[nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = nonnull_taps
     data[key].loc[~nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = "0;0"
 
     # --- phase shifter with double info
@@ -280,11 +262,7 @@ def _data_correction(
     for col in cols:
         if is_object_dtype(data[key].loc[:, ("Phase Shifting Properties", col)]):
             tr_double = data[key].index[
-                data[key]
-                .loc[:, ("Phase Shifting Properties", col)]
-                .str.contains("/")
-                .fillna(0)
-                .astype(bool)
+                data[key].loc[:, ("Phase Shifting Properties", col)].str.contains("/").fillna(0).astype(bool)
             ]
             data[key].loc[tr_double, ("Phase Shifting Properties", col)] = (
                 data[key]
@@ -319,9 +297,7 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
         assert pos1 >= len(name_start)
         return st[pos0:pos1]
 
-    json_start_str = (
-        '<script type="application/json" data-for="htmlwidget-216030e6806f328c00fb">'
-    )
+    json_start_str = '<script type="application/json" data-for="htmlwidget-216030e6806f328c00fb">'
     json_start_pos = html_str.find(json_start_str) + len(json_start_str)
     json_end_pos = html_str[json_start_pos:].find("</script>")
     json_str = html_str[json_start_pos : (json_start_pos + json_end_pos)]
@@ -331,19 +307,11 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
     polylines = geo_data[methods_pos.at["addPolylines"]]["args"]
     EIC_start = "EIC Code:<b> "
     if len(polylines[6]) != len(polylines[0]):
-        raise AssertionError(
-            "The lists of EIC Code data and geo data are not of the same length."
-        )
-    line_EIC = [
-        polylines[6][i][polylines[6][i].find(EIC_start) + len(EIC_start) :]
-        for i in range(len(polylines[6]))
-    ]
+        raise AssertionError("The lists of EIC Code data and geo data are not of the same length.")
+    line_EIC = [polylines[6][i][polylines[6][i].find(EIC_start) + len(EIC_start) :] for i in range(len(polylines[6]))]
     line_name = [_filter_name(polylines[6][i]) for i in range(len(polylines[6]))]
     line_geo_data = pd.concat(
-        [
-            _lng_lat_to_df(polylines[0][i][0][0], line_EIC[i], line_name[i])
-            for i in range(len(polylines[0]))
-        ],
+        [_lng_lat_to_df(polylines[0][i][0][0], line_EIC[i], line_name[i]) for i in range(len(polylines[0]))],
         ignore_index=True,
     )
 
@@ -354,18 +322,14 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
     return line_geo_data
 
 
-def _create_buses_from_line_data(
-    net: pandapowerNet, data: dict[str, pd.DataFrame]
-) -> None:
+def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFrame]) -> None:
     """Creates buses to the pandapower net using information from the lines and tielines sheets
     (excel file).
 
     :param pandapowerNet net: net to be filled by buses
     :param dict[str, pd.DataFrame data: data provided by the excel file which will be corrected
     """
-    bus_df_empty = pd.DataFrame(
-        {"name": str(), "vn_kv": float(), "TSO": str()}, index=[]
-    )
+    bus_df_empty = pd.DataFrame({"name": str(), "vn_kv": float(), "TSO": str()}, index=[])
     bus_df = deepcopy(bus_df_empty)
     for key in ["Lines", "Tielines"]:
         for subst in ["Substation_1", "Substation_2"]:
@@ -374,19 +338,13 @@ def _create_buses_from_line_data(
                 (None, "Voltage_level(kV)"),
                 (None, "TSO"),
             ]
-            to_add = (
-                data[key]
-                .loc[:, data_col_tuples]
-                .set_axis(bus_df.columns, axis="columns")
-            )
+            to_add = data[key].loc[:, data_col_tuples].set_axis(bus_df.columns, axis="columns")
             if len(bus_df):
                 bus_df = pd.concat([bus_df, to_add])
             else:
                 bus_df = to_add
     bus_df = _drop_duplicates_and_join_TSO(bus_df)
-    new_bus_idx = create_buses(
-        net, len(bus_df), vn_kv=bus_df.vn_kv, name=bus_df.name, zone=bus_df.TSO
-    )
+    new_bus_idx = create_buses(net, len(bus_df), vn_kv=bus_df.vn_kv, name=bus_df.name, zone=bus_df.TSO)
     assert np.allclose(new_bus_idx, bus_df.index)
 
 
@@ -444,12 +402,8 @@ def _create_lines(
             length_km,
             data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,
             data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,
-            data[key][("Electrical Parameters", "Susceptance_B(μS)")].values
-            / length_km,
-            data[key][("Maximum Current Imax (A)", "Fixed")]
-            .fillna(max_i_ka_fillna * 1e3)
-            .values
-            / 1e3,
+            data[key][("Electrical Parameters", "Susceptance_B(μS)")].values / length_km,
+            data[key][("Maximum Current Imax (A)", "Fixed")].fillna(max_i_ka_fillna * 1e3).values / 1e3,
             name=data[key].xs("NE_name", level=1, axis=1).values[:, 0],
             EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],
             TSO=data[key].xs("TSO", level=1, axis=1).values[:, 0],
@@ -458,9 +412,7 @@ def _create_lines(
         )
 
 
-def _create_transformers_and_buses(
-    net: pandapowerNet, data: dict[str, pd.DataFrame], **kwargs
-) -> None:
+def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFrame], **kwargs) -> None:
     """
     Creates transformers to the pandapower net using information from the transformers sheet (excel file).
 
@@ -472,14 +424,10 @@ def _create_transformers_and_buses(
     key = "Transformers"
     bus_idx = _get_bus_idx(net)
     vn_hv_kv, vn_lv_kv = _get_transformer_voltages(data, bus_idx)
-    trafo_connections = _allocate_trafos_to_buses_and_create_buses(
-        net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs
-    )
+    trafo_connections = _allocate_trafos_to_buses_and_create_buses(net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
     max_i_a = data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
     empty_i_idx = max_i_a.index[max_i_a.isnull()]
-    max_i_a.loc[empty_i_idx] = (
-        data[key].loc[empty_i_idx, ("Maximum Current Imax (A) primary", "Max")].values
-    )
+    max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, ("Maximum Current Imax (A) primary", "Max")].values
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
     z_pu = vn_lv_kv**2 / sn_mva
     rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
@@ -499,15 +447,9 @@ def _create_transformers_and_buses(
         .set_axis(["tap_min", "tap_max"], axis=1)
     )
 
-    du = _get_float_column(
-        data[key], ("Phase Shifting Properties", "Phase Regulation δu (%)")
-    )
-    dphi = _get_float_column(
-        data[key], ("Phase Shifting Properties", "Angle Regulation δu (%)")
-    )
-    phase_shifter = np.isclose(du, 0) & (
-        ~np.isclose(dphi, 0)
-    )  # Symmetrical/Asymmetrical not
+    du = _get_float_column(data[key], ("Phase Shifting Properties", "Phase Regulation δu (%)"))
+    dphi = _get_float_column(data[key], ("Phase Shifting Properties", "Angle Regulation δu (%)"))
+    phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))  # Symmetrical/Asymmetrical not
     # considered
 
     _ = create_transformers_from_parameters(
@@ -533,10 +475,7 @@ def _create_transformers_and_buses(
         name=data[key].loc[:, ("Location", "Full Name")].str.strip().values,
         EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],
         TSO=data[key].xs("TSO", level=1, axis=1).values[:, 0],
-        Comment=data[key]
-        .xs("Comment", level=1, axis=1)
-        .replace("\xa0", "")
-        .values[:, 0],
+        Comment=data[key].xs("Comment", level=1, axis=1).replace("\xa0", "").values[:, 0],
     )
 
 
@@ -560,10 +499,7 @@ def _invent_connections_between_grid_groups(
     grid_groups = get_grid_groups(net)
     bus_idx = _get_bus_idx(net)
     bus_grid_groups = pd.concat(
-        [
-            pd.Series(group, index=buses)
-            for group, buses in zip(grid_groups.index, grid_groups.buses)
-        ]
+        [pd.Series(group, index=buses) for group, buses in zip(grid_groups.index, grid_groups.buses)]
     ).sort_index()
 
     # treat for example "Wuergau" equally as "Wuergau (2)":
@@ -603,13 +539,9 @@ def _invent_connections_between_grid_groups(
                 "voltage levels."
             )
         TSO = net.bus.zone.at[grid_groups_at_location.index[0]]
-        vn_kvs = net.bus.vn_kv.loc[grid_groups_at_location.index].sort_values(
-            ascending=False
-        )
+        vn_kvs = net.bus.vn_kv.loc[grid_groups_at_location.index].sort_values(ascending=False)
         try:
-            trafos_connecting_same_voltage_levels = connected_vn_kvs_by_trafos.loc[
-                tuple(vn_kvs)
-            ]
+            trafos_connecting_same_voltage_levels = connected_vn_kvs_by_trafos.loc[tuple(vn_kvs)]
         except KeyError:
             logger.info(
                 f"For location {location_name}, no transformer data can be reused since "
@@ -619,11 +551,7 @@ def _invent_connections_between_grid_groups(
             continue
         trafos_of_same_TSO = trafos_connecting_same_voltage_levels.loc[
             (
-                net.bus.zone.loc[
-                    net.trafo.hv_bus.loc[
-                        trafos_connecting_same_voltage_levels.values.flatten()
-                    ].values
-                ]
+                net.bus.zone.loc[net.trafo.hv_bus.loc[trafos_connecting_same_voltage_levels.values.flatten()].values]
                 == TSO
             ).values
         ].values.flatten()
@@ -643,15 +571,11 @@ def _invent_connections_between_grid_groups(
         duplicated_row.name = "additional transformer to connect the grid"
         net.trafo = pd.concat([net.trafo, duplicated_row])
 
-        bus_grid_groups.loc[bus_grid_groups == grid_groups_at_location.iat[1]] = (
-            grid_groups_at_location.iat[0]
-        )
+        bus_grid_groups.loc[bus_grid_groups == grid_groups_at_location.iat[1]] = grid_groups_at_location.iat[0]
 
     # --- merge buses of same voltage level, different grid groups and equal name base
     bus_name_splits = net.bus.name.str.split(r"[ -/]+", expand=True)
-    buses_with_single_base = net.bus.name.loc[
-        (~bus_name_splits.isnull()).sum(axis=1) == 1
-    ]
+    buses_with_single_base = net.bus.name.loc[(~bus_name_splits.isnull()).sum(axis=1) == 1]
     for idx, name_base in buses_with_single_base.items():
         same_name_base = net.bus.drop(idx).name.str.contains(name_base)
         if not any(same_name_base):
@@ -664,11 +588,9 @@ def _invent_connections_between_grid_groups(
         to_fuse = bus_grid_groups.drop(idx).loc[is_fuse_candidate].drop_duplicates()
         fuse_buses(net, idx, set(to_fuse.index))
 
-        bus_grid_groups.loc[
-            bus_grid_groups.isin(
-                bus_grid_groups.drop(idx).loc[is_fuse_candidate].unique()
-            )
-        ] = grid_groups_at_location.iat[0]
+        bus_grid_groups.loc[bus_grid_groups.isin(bus_grid_groups.drop(idx).loc[is_fuse_candidate].unique())] = (
+            grid_groups_at_location.iat[0]
+        )
         bus_grid_groups = bus_grid_groups.drop(to_fuse.index)
 
     # --- fuse buses that are close to each other
@@ -684,14 +606,11 @@ def _invent_connections_between_grid_groups(
             bus_grid_groups = bus_grid_groups.drop(b2)
         else:
             logger.info(
-                "Buses of the following names were intended to be fused but were not found."
-                f"\n'{name1}' and '{name2}'"
+                f"Buses of the following names were intended to be fused but were not found.\n'{name1}' and '{name2}'"
             )
 
 
-def drop_islanded_grid_groups(
-    net: pandapowerNet, min_bus_number: Union[int, str], **kwargs
-) -> None:
+def drop_islanded_grid_groups(net: pandapowerNet, min_bus_number: Union[int, str], **kwargs) -> None:
     """
     Drops grid groups that are islanded and include a number of buses below min_bus_number.
 
@@ -711,9 +630,7 @@ def drop_islanded_grid_groups(
         slack_buses = set(net.ext_grid.loc[net.ext_grid.in_service, "bus"]) | set(
             net.gen.loc[net.gen.in_service & net.gen.slack, "bus"]
         )
-        grid_groups_to_drop = grid_groups.loc[
-            ~grid_groups.buses.apply(lambda x: not x.isdisjoint(slack_buses))
-        ]
+        grid_groups_to_drop = grid_groups.loc[~grid_groups.buses.apply(lambda x: not x.isdisjoint(slack_buses))]
 
     elif min_bus_number == "max":
         min_bus_number = grid_groups["n_buses"].max()
@@ -723,9 +640,7 @@ def drop_islanded_grid_groups(
         grid_groups_to_drop = _grid_groups_to_drop_by_min_bus_number()
 
     else:
-        raise NotImplementedError(
-            f"{min_bus_number=} is not implemented. Use an int, 'max', or 'unsupplied' instead."
-        )
+        raise NotImplementedError(f"{min_bus_number=} is not implemented. Use an int, 'max', or 'unsupplied' instead.")
 
     buses_to_drop = reduce(set.union, grid_groups_to_drop.buses)
     drop_buses(net, buses_to_drop)
@@ -744,12 +659,8 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
     :param pd.DataFrame: line_geo_data: Converted geodata from the html file
     """
     iSl = pd.IndexSlice
-    lgd_EIC_bus = line_geo_data.pivot_table(
-        values="value", index=["EIC_Code", "bus"], columns="geo_dim"
-    )
-    lgd_name_bus = line_geo_data.pivot_table(
-        values="value", index=["name", "bus"], columns="geo_dim"
-    )
+    lgd_EIC_bus = line_geo_data.pivot_table(values="value", index=["EIC_Code", "bus"], columns="geo_dim")
+    lgd_name_bus = line_geo_data.pivot_table(values="value", index=["name", "bus"], columns="geo_dim")
     lgd_EIC_bus_idx_extended = pd.MultiIndex.from_frame(
         lgd_EIC_bus.index.to_frame()
         .assign(**dict(col_name="EIC_Code"))
@@ -775,18 +686,12 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         return f'{{"coordinates": [{this_bus_geo.at["lng"]}, {this_bus_geo.at["lat"]}], "type": "Point"}}'
 
     def _add_bus_geo_inner(bus: int) -> Optional[str]:
-        from_bus_line_excerpt = net.line.loc[
-            net.line.from_bus == bus, ["EIC_Code", "name", "Tieline"]
-        ]
-        to_bus_line_excerpt = net.line.loc[
-            net.line.to_bus == bus, ["EIC_Code", "name", "Tieline"]
-        ]
+        from_bus_line_excerpt = net.line.loc[net.line.from_bus == bus, ["EIC_Code", "name", "Tieline"]]
+        to_bus_line_excerpt = net.line.loc[net.line.to_bus == bus, ["EIC_Code", "name", "Tieline"]]
         line_excerpt = pd.concat([from_bus_line_excerpt, to_bus_line_excerpt])
         n_connected_line_ends = len(line_excerpt)
         if n_connected_line_ends == 0:
-            logger.error(
-                f"Bus {bus} (name {net.bus.at[bus, 'name']}) is not found in line_geo_data."
-            )
+            logger.error(f"Bus {bus} (name {net.bus.at[bus, 'name']}) is not found in line_geo_data.")
             return None
         is_dupl = pd.concat(
             [
@@ -805,26 +710,18 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                         "EIC": to_bus_line_excerpt.EIC_Code.isin(dupl_EICs).values,
                         "name": to_bus_line_excerpt.name.isin(dupl_names).values,
                     },
-                    index=pd.MultiIndex.from_product(
-                        [["to"], to_bus_line_excerpt.index], names=["bus", "line_index"]
-                    ),
+                    index=pd.MultiIndex.from_product([["to"], to_bus_line_excerpt.index], names=["bus", "line_index"]),
                 ),
             ]
         )
         is_missing = pd.DataFrame(
             {
-                "EIC": ~line_excerpt.EIC_Code.isin(
-                    lgd_bus.loc["EIC_Code"].index.get_level_values("identifier")
-                ),
-                "name": ~line_excerpt.name.isin(
-                    lgd_bus.loc["name"].index.get_level_values("identifier")
-                ),
+                "EIC": ~line_excerpt.EIC_Code.isin(lgd_bus.loc["EIC_Code"].index.get_level_values("identifier")),
+                "name": ~line_excerpt.name.isin(lgd_bus.loc["name"].index.get_level_values("identifier")),
             }
         ).set_axis(is_dupl.index, axis=0)
         is_tieline = pd.Series(
-            net.line.loc[
-                is_dupl.index.get_level_values("line_index"), "Tieline"
-            ].values,
+            net.line.loc[is_dupl.index.get_level_values("line_index"), "Tieline"].values,
             index=is_dupl.index,
         )
 
@@ -838,13 +735,9 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                 "bus": is_dupl.index.get_level_values("bus").values,
             }
         )  # default is EIC_Code
-        take_from_name = (
-            (is_dupl.EIC | is_missing.EIC) & (~is_dupl.name & ~is_missing.name)
-        ).values
+        take_from_name = ((is_dupl.EIC | is_missing.EIC) & (~is_dupl.name & ~is_missing.name)).values
         access_vals.loc[take_from_name, "col_name"] = "name"
-        access_vals.loc[take_from_name, "identifier"] = line_excerpt.name.loc[
-            take_from_name
-        ].values
+        access_vals.loc[take_from_name, "identifier"] = line_excerpt.name.loc[take_from_name].values
         keep = (~(is_dupl | is_missing)).any(axis=1).values
         if np.all(is_missing):
             log_msg = (
@@ -866,15 +759,11 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         access_vals = access_vals.loc[keep]
 
         # --- get this_bus_geo from EIC_Code or name with regard to access_vals
-        this_bus_geo = lgd_bus.loc[
-            iSl[access_vals.col_name, access_vals.identifier, access_vals.bus], :
-        ]
+        this_bus_geo = lgd_bus.loc[iSl[access_vals.col_name, access_vals.identifier, access_vals.bus], :]
 
         if len(this_bus_geo) > 1:
             # reduce similar/equal lines
-            this_bus_geo = this_bus_geo.loc[
-                this_bus_geo.round(2).drop_duplicates().index
-            ]
+            this_bus_geo = this_bus_geo.loc[this_bus_geo.round(2).drop_duplicates().index]
 
         # --- return geo_json_str
         len_this_bus_geo = len(this_bus_geo)
@@ -905,24 +794,14 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
 # --- tertiary functions ---------------------------------------------------------------------------
 
 
-def _float_col_comma_correction(
-    data: dict[str, pd.DataFrame], key: str, col_names: list
-):
+def _float_col_comma_correction(data: dict[str, pd.DataFrame], key: str, col_names: list):
     for col_name in col_names:
-        data[key][col_name] = pd.to_numeric(
-            data[key][col_name].astype(str).str.replace(",", "."), errors="coerce"
-        )
+        data[key][col_name] = pd.to_numeric(data[key][col_name].astype(str).str.replace(",", "."), errors="coerce")
 
 
-def _get_transformer_voltages(
-    data: dict[str, pd.DataFrame], bus_idx: pd.Series
-) -> tuple[np.ndarray, np.ndarray]:
+def _get_transformer_voltages(data: dict[str, pd.DataFrame], bus_idx: pd.Series) -> tuple[np.ndarray, np.ndarray]:
     key = "Transformers"
-    vn = (
-        data[key]
-        .loc[:, [("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")]]
-        .values
-    )
+    vn = data[key].loc[:, [("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")]].values
     vn_hv_kv = np.max(vn, axis=1)
     vn_lv_kv = np.min(vn, axis=1)
     if is_integer_dtype(list(bus_idx.index.dtypes)[1]):
@@ -996,9 +875,7 @@ def _allocate_trafos_to_buses_and_create_buses(
             "lv_rel_deviation": np.zeros(len(vn_hv_kv)),
         }
     )
-    trafo_connections[["hv_bus", "lv_bus"]] = trafo_connections[
-        ["hv_bus", "lv_bus"]
-    ].astype(np.int64)
+    trafo_connections[["hv_bus", "lv_bus"]] = trafo_connections[["hv_bus", "lv_bus"]].astype(np.int64)
 
     for side in ["hv", "lv"]:
         bus_col, trafo_vn_col, next_col, rel_dev_col, has_dev_col = (
@@ -1008,36 +885,22 @@ def _allocate_trafos_to_buses_and_create_buses(
             f"{side}_rel_deviation",
             f"trafo_{side}_to_bus_deviation",
         )
-        name_vn_series = pd.Series(
-            tuple(zip(trafo_location_names, trafo_connections[trafo_vn_col]))
-        )
+        name_vn_series = pd.Series(tuple(zip(trafo_location_names, trafo_connections[trafo_vn_col])))
         isin = name_vn_series.isin(bus_idx.index)
         trafo_connections[has_dev_col] = ~isin
-        trafo_connections.loc[isin, bus_col] = bus_idx.loc[
-            name_vn_series.loc[isin]
-        ].values
+        trafo_connections.loc[isin, bus_col] = bus_idx.loc[name_vn_series.loc[isin]].values
 
         # --- code to find bus locations with vn deviation
         next_vn = np.array(
             [
                 bus_idx.loc[tln.name].index.values[
-                    (
-                        pd.Series(bus_idx.loc[tln.name].index)
-                        - getattr(tln, trafo_vn_col)
-                    )
-                    .abs()
-                    .idxmin()
+                    (pd.Series(bus_idx.loc[tln.name].index) - getattr(tln, trafo_vn_col)).abs().idxmin()
                 ]
-                for tln in trafo_connections.loc[
-                    ~isin, ["name", trafo_vn_col]
-                ].itertuples()
+                for tln in trafo_connections.loc[~isin, ["name", trafo_vn_col]].itertuples()
             ]
         )
         trafo_connections.loc[~isin, next_col] = next_vn
-        rel_dev = (
-            np.abs(next_vn - trafo_connections.loc[~isin, trafo_vn_col].values)
-            / next_vn
-        )
+        rel_dev = np.abs(next_vn - trafo_connections.loc[~isin, trafo_vn_col].values) / next_vn
         trafo_connections.loc[~isin, rel_dev_col] = rel_dev
         trafo_connections.loc[~isin, bus_col] = bus_idx.loc[
             list(
@@ -1051,10 +914,7 @@ def _allocate_trafos_to_buses_and_create_buses(
         ].values
 
         # --- create buses to avoid too large vn deviations between nodes and transformers
-        need_bus_creation = (
-            trafo_connections[rel_dev_col]
-            > rel_deviation_threshold_for_trafo_bus_creation
-        )
+        need_bus_creation = trafo_connections[rel_dev_col] > rel_deviation_threshold_for_trafo_bus_creation
         new_bus_data = pd.DataFrame(
             {
                 "vn_kv": trafo_connections.loc[need_bus_creation, trafo_vn_col].values,
@@ -1074,9 +934,7 @@ def _allocate_trafos_to_buses_and_create_buses(
             net.bus.loc[new_bus_idx, ["name", "vn_kv"]]
             .reset_index()
             .set_index(["name", "vn_kv"])
-            .loc[
-                list(new_bus_data[["name", "vn_kv"]].itertuples(index=False, name=None))
-            ]
+            .loc[list(new_bus_data[["name", "vn_kv"]].itertuples(index=False, name=None))]
             .values
         )
         trafo_connections.loc[need_bus_creation, next_col] = trafo_connections.loc[
@@ -1089,19 +947,13 @@ def _allocate_trafos_to_buses_and_create_buses(
     # --- vn_hv_kv < vn_lv_kv *(1+rel_deviation_threshold_for_trafo_bus_creation) which usually
     # --- occurs for PSTs only)
     same_bus_connection = trafo_connections.hv_bus == trafo_connections.lv_bus
-    duplicated_buses = net.bus.loc[
-        trafo_connections.loc[same_bus_connection, "lv_bus"]
-    ].copy()
+    duplicated_buses = net.bus.loc[trafo_connections.loc[same_bus_connection, "lv_bus"]].copy()
     duplicated_buses["name"] += " (2)"
-    duplicated_buses.index = list(
-        range(net.bus.index.max() + 1, net.bus.index.max() + 1 + len(duplicated_buses))
-    )
+    duplicated_buses.index = list(range(net.bus.index.max() + 1, net.bus.index.max() + 1 + len(duplicated_buses)))
     trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
     net.bus = pd.concat([net.bus, duplicated_buses])
     if n_add_buses := len(duplicated_buses):
-        tr_names = data[key].loc[
-            trafo_connections.index[same_bus_connection], ("Location", "Full Name")
-        ]
+        tr_names = data[key].loc[trafo_connections.index[same_bus_connection], ("Location", "Full Name")]
         are_PSTs = tr_names.str.contains("PST")
         logger.info(
             f"{n_add_buses} additional buses were created to avoid that transformers are "
@@ -1115,10 +967,7 @@ def _allocate_trafos_to_buses_and_create_buses(
 
     # --- log according to log_rel_vn_deviation
     for side in ["hv", "lv"]:
-        need_logging = (
-            trafo_connections.loc[trafo_connections[has_dev_col], rel_dev_col]
-            > log_rel_vn_deviation
-        )
+        need_logging = trafo_connections.loc[trafo_connections[has_dev_col], rel_dev_col] > log_rel_vn_deviation
         if n_need_logging := sum(need_logging):
             max_dev = trafo_connections[rel_dev_col].max()
             idx_max_dev = trafo_connections[rel_dev_col].idxmax()
@@ -1144,9 +993,7 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     # --- split (original and lower case) strings at " " separators to remove impeding parts for
     # identifying the location names
     trafo_bus_names_expended = (
-        trafo_bus_names.str.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+", expand=True)
-        .fillna("")
-        .replace(" ", "")
+        trafo_bus_names.str.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+", expand=True).fillna("").replace(" ", "")
     )
     trafo_bus_names_expended_lower = (
         trafo_bus_names.str.lower()
@@ -1156,9 +1003,7 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     )
 
     # --- identify impeding parts
-    contains_number = trafo_bus_names_expended.map(
-        lambda x: any(char.isdigit() for char in x)
-    )
+    contains_number = trafo_bus_names_expended.map(lambda x: any(char.isdigit() for char in x))
     to_drop = (
         (trafo_bus_names_expended_lower == "tr")
         | (trafo_bus_names_expended_lower == "pst")
@@ -1174,28 +1019,19 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     trafo_bus_names_expended[to_drop] = ""
 
     # --- reconstruct name strings for identification
-    trafo_bus_names_joined = (
-        trafo_bus_names_expended.where(~to_drop)
-        .fillna("")
-        .agg(" ".join, axis=1)
-        .str.strip()
-    )
-    trafo_bus_names_longest_part = trafo_bus_names_expended.apply(
-        lambda row: max(row, key=len), axis=1
-    )
+    trafo_bus_names_joined = trafo_bus_names_expended.where(~to_drop).fillna("").agg(" ".join, axis=1).str.strip()
+    trafo_bus_names_longest_part = trafo_bus_names_expended.apply(lambda row: max(row, key=len), axis=1)
     joined_in_buses = trafo_bus_names_joined.isin(bus_location_names)
     longest_part_in_buses = trafo_bus_names_longest_part.isin(bus_location_names)
 
     # --- check whether all name strings point at location names of the buses
     if False:  # for easy testing
         fail = ~(joined_in_buses | longest_part_in_buses)
-##        a = pd.concat(
-##            [trafo_bus_names_joined.loc[fail], trafo_bus_names_longest_part.loc[fail]],
-##            axis=1)
+    ##        a = pd.concat(
+    ##            [trafo_bus_names_joined.loc[fail], trafo_bus_names_longest_part.loc[fail]],
+    ##            axis=1)
 
-    if n_bus_names_not_found := len(joined_in_buses) - sum(
-        joined_in_buses | longest_part_in_buses
-    ):
+    if n_bus_names_not_found := len(joined_in_buses) - sum(joined_in_buses | longest_part_in_buses):
         raise ValueError(
             f"For {n_bus_names_not_found} Tranformers, no suitable bus location names were found, "
             f"i.e. the algorithm did not find a (part) of Transformers-Location-Full Name that fits"
@@ -1213,9 +1049,7 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
     bus_df = bus_df.drop_duplicates(ignore_index=True)
     # just keep one bus per name and vn_kv. If there are multiple buses of different TSOs, join the
     # TSO strings:
-    bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg(
-        {"TSO": "/".join}
-    )
+    bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": "/".join})
     assert not bus_df.duplicated(["name", "vn_kv"]).any()
     return bus_df
 
@@ -1227,26 +1061,12 @@ def _get_float_column(df, col_tuple, fill=0):
 
 
 def _get_bus_idx(net: pandapowerNet) -> pd.Series:
-    return (
-        net.bus[["name", "vn_kv"]]
-        .rename_axis("index")
-        .reset_index()
-        .set_index(["name", "vn_kv"])["index"]
-    )
+    return net.bus[["name", "vn_kv"]].rename_axis("index").reset_index().set_index(["name", "vn_kv"])["index"]
 
 
 def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
-    notravbuses_dict = (
-        dict()
-        if "notravbuses" not in kwargs.keys()
-        else {"notravbuses": kwargs.pop("notravbuses")}
-    )
-    grid_group_buses = [
-        set_
-        for set_ in connected_components(
-            create_nxgraph(net, **kwargs), **notravbuses_dict
-        )
-    ]
+    notravbuses_dict = dict() if "notravbuses" not in kwargs.keys() else {"notravbuses": kwargs.pop("notravbuses")}
+    grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs), **notravbuses_dict)]
     grid_groups = pd.DataFrame({"buses": grid_group_buses})
     grid_groups["n_buses"] = grid_groups["buses"].apply(len)
     return grid_groups
@@ -1269,24 +1089,18 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
         av = dict()  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
         av["lines_fbw_tbwo"] = net.line.index[
-            net.line.from_bus.isin(av["bus_with_geo"])
-            & (~net.line.to_bus.isin(av["bus_with_geo"]))
+            net.line.from_bus.isin(av["bus_with_geo"]) & (~net.line.to_bus.isin(av["bus_with_geo"]))
         ]
         av["lines_fbwo_tbw"] = net.line.index[
-            (~net.line.from_bus.isin(av["bus_with_geo"]))
-            & net.line.to_bus.isin(av["bus_with_geo"])
+            (~net.line.from_bus.isin(av["bus_with_geo"])) & net.line.to_bus.isin(av["bus_with_geo"])
         ]
         av["trafos_hvbw_lvbwo"] = net.trafo.index[
-            net.trafo.hv_bus.isin(av["bus_with_geo"])
-            & (~net.trafo.lv_bus.isin(av["bus_with_geo"]))
+            net.trafo.hv_bus.isin(av["bus_with_geo"]) & (~net.trafo.lv_bus.isin(av["bus_with_geo"]))
         ]
         av["trafos_hvbwo_lvbw"] = net.trafo.index[
-            (~net.trafo.hv_bus.isin(av["bus_with_geo"]))
-            & net.trafo.lv_bus.isin(av["bus_with_geo"])
+            (~net.trafo.hv_bus.isin(av["bus_with_geo"])) & net.trafo.lv_bus.isin(av["bus_with_geo"])
         ]
-        av["n_lines_one_side_geo"] = len(av["lines_fbw_tbwo"]) + len(
-            av["lines_fbwo_tbw"]
-        )
+        av["n_lines_one_side_geo"] = len(av["lines_fbw_tbwo"]) + len(av["lines_fbwo_tbw"])
         return av
 
     geo_avail = _check_geo_availablitiy(net)
@@ -1303,11 +1117,9 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
                 "trafos_hvbw_lvbwo",
             ],
         ):
-            net.bus.loc[net[et].loc[geo_avail[idx_key], bus_wo_geo].values, "geo"] = (
-                net.bus.loc[
-                    net[et].loc[geo_avail[idx_key], bus_w_geo].values, "geo"
-                ].values
-            )
+            net.bus.loc[net[et].loc[geo_avail[idx_key], bus_wo_geo].values, "geo"] = net.bus.loc[
+                net[et].loc[geo_avail[idx_key], bus_w_geo].values, "geo"
+            ].values
         geo_avail = _check_geo_availablitiy(net)
 
     set_line_geodata_from_bus_geodata(net)
@@ -1327,12 +1139,8 @@ if __name__ == "__main__":
     home = str(Path.home())
     jao_data_folder = os.path.join(home, "Documents", "JAO Static Grid Model")
 
-    release5 = os.path.join(
-        jao_data_folder, "20240329_Core Static Grid Model – 5th release"
-    )
-    excel_file_path = os.path.join(
-        release5, "20240329_Core Static Grid Model_public.xlsx"
-    )
+    release5 = os.path.join(jao_data_folder, "20240329_Core Static Grid Model – 5th release")
+    excel_file_path = os.path.join(release5, "20240329_Core Static Grid Model_public.xlsx")
     html_file_path = os.path.join(
         release5,
         "20240329_Core Static Grid Model Map_public",
@@ -1340,9 +1148,7 @@ if __name__ == "__main__":
     )
 
     release6 = os.path.join(jao_data_folder, "202409_Core Static Grid Mode_6th release")
-    excel_file_path = os.path.join(
-        release6, "20240916_Core Static Grid Model_for publication.xlsx"
-    )
+    excel_file_path = os.path.join(release6, "20240916_Core Static Grid Model_for publication.xlsx")
     html_file_path = os.path.join(
         release6,
         "2024-09-13_Core_SGM_publication_files",
@@ -1352,9 +1158,7 @@ if __name__ == "__main__":
     pp_net_json_file = os.path.join(home, "desktop", "jao_grid.json")
 
     if 1:  # read from original data
-        net = from_jao(
-            excel_file_path, html_file_path, True, drop_grid_groups_islands=True
-        )
+        net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
         pp.to_json(net, pp_net_json_file)
     else:  # load net from already converted and stored net
         net = pp.from_json(pp_net_json_file)

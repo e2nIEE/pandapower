@@ -184,9 +184,7 @@ def test_switch_states_in_time_series():
     ow.log_variable("res_line", "pl_mw")
     ow.log_variable("res_ext_grid", "p_mw")
 
-    ConstControl(
-        net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1"
-    )
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1")
     ConstControl(
         net,
         "switch",
@@ -199,9 +197,7 @@ def test_switch_states_in_time_series():
     run_timeseries(net, time_steps, verbose=False)
 
     assert np.allclose(
-        profiles["load1"].values * profiles["switch_pos"].values
-        + 0.1
-        + ow.output["res_line.pl_mw"].sum(axis=1).values,
+        profiles["load1"].values * profiles["switch_pos"].values + 0.1 + ow.output["res_line.pl_mw"].sum(axis=1).values,
         ow.output["res_ext_grid.p_mw"][0].values,
     )
 
@@ -268,15 +264,13 @@ def test_false_alarm_trafos(simple_test_net):
 
     if "convergence problems" in s.getvalue():
         raise UserWarning(
-            "Control diagnostic raises false alarm! Controllers are fine, "
-            "but warning is raised: %s" % s.getvalue()
+            "Control diagnostic raises false alarm! Controllers are fine, but warning is raised: %s" % s.getvalue()
         )
 
     control_diagnostic(net)
     if "convergence problems" in s.getvalue():
         raise UserWarning(
-            "Control diagnostic raises false alarm! Controllers are fine, "
-            "but warning is raised: %s" % s.getvalue()
+            "Control diagnostic raises false alarm! Controllers are fine, but warning is raised: %s" % s.getvalue()
         )
 
     diagnostic_logger.removeHandler(h)
@@ -305,9 +299,7 @@ def test_timeseries_results(simple_test_net):
     )
 
     time_steps = range(0, n_timesteps)
-    ow = OutputWriter(
-        net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json"
-    )
+    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     ow.log_variable("res_load", "p_mw")
     ow.log_variable("res_bus", "vm_pu")
 
@@ -323,9 +315,7 @@ def test_timeseries_results(simple_test_net):
     # @Flo in / out of service testen ...
     ow.log_variable("res_load", "p_mw")
     net.controller.in_service = False  # set the first controller out of service
-    ConstControl(
-        net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1"
-    )
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1")
 
     run_timeseries(net, time_steps, verbose=False)
     assert np.allclose(ow.output["res_load.p_mw"][0].sum(), profiles["load1"].sum())
@@ -352,9 +342,7 @@ def test_timeseries_var_func(simple_test_net):
     )
 
     time_steps = range(0, n_timesteps)
-    ow = OutputWriter(
-        net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json"
-    )
+    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     ow.log_variable("res_load", "p_mw", eval_function=np.max)
     ow.log_variable("res_bus", "vm_pu", eval_function=np.min)
     ow.log_variable("res_bus", "q_mvar", eval_function=np.sum)

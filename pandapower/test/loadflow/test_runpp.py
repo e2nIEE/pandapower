@@ -178,13 +178,9 @@ def test_runpp_init():
     runpp(net, calculate_voltage_angles="auto")
     va = net.res_bus.va_degree.at[4]
     runpp(net, calculate_voltage_angles=True, init_va_degree="dc")
-    assert np.allclose(
-        va - net.trafo.shift_degree.at[tidx], net.res_bus.va_degree.at[4]
-    )
+    assert np.allclose(va - net.trafo.shift_degree.at[tidx], net.res_bus.va_degree.at[4])
     runpp(net, calculate_voltage_angles=True, init_va_degree="results")
-    assert np.allclose(
-        va - net.trafo.shift_degree.at[tidx], net.res_bus.va_degree.at[4]
-    )
+    assert np.allclose(va - net.trafo.shift_degree.at[tidx], net.res_bus.va_degree.at[4])
 
 
 def test_runpp_init_auxiliary_buses():
@@ -195,27 +191,17 @@ def test_runpp_init_auxiliary_buses():
     tidx = create_transformer3w(net, b2, b3, b4, std_type="63/25/38 MVA 110/20/10 kV")
     create_load(net, b3, p_mw=5)
     create_load(net, b4, p_mw=5)
-    create_xward(
-        net, b4, ps_mw=1, qs_mvar=1, pz_mw=1, qz_mvar=1, r_ohm=0.1, x_ohm=0.1, vm_pu=1.0
-    )
+    create_xward(net, b4, ps_mw=1, qs_mvar=1, pz_mw=1, qz_mvar=1, r_ohm=0.1, x_ohm=0.1, vm_pu=1.0)
     net.trafo3w.at[tidx, "shift_lv_degree"] = 120
     net.trafo3w.at[tidx, "shift_mv_degree"] = 80
     runpp(net)
     va = net.res_bus.va_degree.at[b2]
     runpp(net, calculate_voltage_angles=True, init_va_degree="dc")
-    assert np.allclose(
-        va - net.trafo3w.shift_mv_degree.at[tidx], net.res_bus.va_degree.at[b3], atol=2
-    )
-    assert np.allclose(
-        va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4], atol=2
-    )
+    assert np.allclose(va - net.trafo3w.shift_mv_degree.at[tidx], net.res_bus.va_degree.at[b3], atol=2)
+    assert np.allclose(va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4], atol=2)
     runpp(net, calculate_voltage_angles=True, init_va_degree="results")
-    assert np.allclose(
-        va - net.trafo3w.shift_mv_degree.at[tidx], net.res_bus.va_degree.at[b3], atol=2
-    )
-    assert np.allclose(
-        va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4], atol=2
-    )
+    assert np.allclose(va - net.trafo3w.shift_mv_degree.at[tidx], net.res_bus.va_degree.at[b3], atol=2)
+    assert np.allclose(va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4], atol=2)
 
 
 def test_result_iter():
@@ -225,9 +211,7 @@ def test_result_iter():
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except LoadflowNotConverged:
-            raise UserWarning(
-                "Power flow did not converge after adding %s" % net.last_added_case
-            )
+            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
 
 
 @pytest.fixture
@@ -249,12 +233,7 @@ def bus_bus_net():
 def test_bus_bus_switches(bus_bus_net):
     net = bus_bus_net
     runpp(net)
-    assert (
-        net.res_bus.vm_pu.at[3]
-        == net.res_bus.vm_pu.at[4]
-        == net.res_bus.vm_pu.at[5]
-        == net.res_bus.vm_pu.at[6]
-    )
+    assert net.res_bus.vm_pu.at[3] == net.res_bus.vm_pu.at[4] == net.res_bus.vm_pu.at[5] == net.res_bus.vm_pu.at[6]
     assert net.res_bus.vm_pu.at[0] == net.res_bus.vm_pu.at[7]
 
     net.bus.at[5, "in_service"] = False
@@ -315,10 +294,7 @@ def test_z_switch(z_switch_net, numba):
     net_zero_z_switch = copy.deepcopy(net)
     net_zero_z_switch.switch.z_ohm = 0
     runpp(net_zero_z_switch, numba=numba, switch_rx_ratio=1)
-    assert (
-        pytest.approx(net_zero_z_switch.res_bus.vm_pu.at[0], abs=1e-9)
-        == net_zero_z_switch.res_bus.vm_pu.at[2]
-    )
+    assert pytest.approx(net_zero_z_switch.res_bus.vm_pu.at[0], abs=1e-9) == net_zero_z_switch.res_bus.vm_pu.at[2]
 
 
 @pytest.fixture
@@ -494,9 +470,7 @@ def test_connectivity_check_island_with_one_pv_bus():
     isolated_bus1 = create_bus(net, vn_kv=20.0, name="isolated Bus1")
     isolated_bus2 = create_bus(net, vn_kv=20.0, name="isolated Bus2")
     isolated_gen = create_bus(net, vn_kv=20.0, name="isolated Gen")
-    isolated_pv_bus = create_gen(
-        net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus"
-    )
+    isolated_pv_bus = create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
     create_line(
         net,
         isolated_bus2,
@@ -629,9 +603,7 @@ def test_test_sn_mva():
         try:
             assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
         except:
-            raise UserWarning(
-                "Result difference due to sn_mva after adding %s" % net1.last_added_case
-            )
+            raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
 
 
 def test_bsfw_algorithm():
@@ -741,13 +713,9 @@ def test_pypower_algorithms_iter():
                     calculate_voltage_angles="auto",
                 )
             except AssertionError:
-                raise UserWarning(
-                    "Consistency Error after adding %s" % net.last_added_case
-                )
+                raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
             except LoadflowNotConverged:
-                raise UserWarning(
-                    "Power flow did not converge after adding %s" % net.last_added_case
-                )
+                raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
 
 
 @pytest.mark.xfail
@@ -813,12 +781,8 @@ def test_zip_loads_gridcal():
     # print('\t|V|:', abs(grid.power_flow_results.voltage))
     # print('\tVang:', np.rad2deg(np.angle(grid.power_flow_results.voltage)))
 
-    vm_pu_gridcal = np.array(
-        [1.0, 0.9566486349, 0.9555640318, 0.9340468428, 0.9540542172]
-    )
-    va_degree_gridcal = np.array(
-        [0.0, -2.3717973886, -2.345654238, -3.6303651197, -2.6713716569]
-    )
+    vm_pu_gridcal = np.array([1.0, 0.9566486349, 0.9555640318, 0.9340468428, 0.9540542172])
+    va_degree_gridcal = np.array([0.0, -2.3717973886, -2.345654238, -3.6303651197, -2.6713716569])
 
     Ybus_gridcal = np.array(
         [
@@ -862,9 +826,7 @@ def test_zip_loads_gridcal():
 
     losses_gridcal = 4.69773448916 - 2.710430515j
 
-    abs_path = os.path.join(
-        pp_dir, "networks", "power_system_test_case_jsons", "case5_demo_gridcal.json"
-    )
+    abs_path = os.path.join(pp_dir, "networks", "power_system_test_case_jsons", "case5_demo_gridcal.json")
     net = from_json(abs_path)
 
     runpp(net, voltage_depend_loads=True, recycle=None)
@@ -982,9 +944,7 @@ def test_zip_loads_out_of_service():
     )
 
     # create branch elements
-    create_transformer(
-        net, hv_bus=bus1, lv_bus=bus2, std_type="0.4 MVA 20/0.4 kV", name="Trafo"
-    )
+    create_transformer(net, hv_bus=bus1, lv_bus=bus2, std_type="0.4 MVA 20/0.4 kV", name="Trafo")
     create_line(
         net,
         from_bus=bus2,
@@ -1165,18 +1125,14 @@ def test_get_internal():
     Ybus = ppc["internal"]["Ybus"]
 
     _, ppci = _pd2ppc(net)
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V0, _ = (
-        _get_pf_variables_from_ppci(ppci)
-    )
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
     dist_slack = False
     slack_weights = np.zeros(shape=V.shape)
     slack_weights[ref] = 1
 
-    J = _create_J_without_numba(
-        Ybus, V, ref, pvpq, pq, slack_weights=slack_weights, dist_slack=dist_slack
-    )
+    J = _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights=slack_weights, dist_slack=dist_slack)
 
     assert np.allclose(J.toarray(), J_intern.toarray(), atol=1e-4, rtol=0)
     # get J for all other algorithms
@@ -1385,9 +1341,7 @@ def two_ext_grids_at_one_bus():
 
     # connect second ext_grid to b1 with different angle but out of service
     eg2 = create_ext_grid(net, b1, vm_pu=1.01, va_degree=20, index=5, in_service=False)
-    runpp_with_consistency_checks(
-        net
-    )  # power flow still converges since eg2 is out of service
+    runpp_with_consistency_checks(net)  # power flow still converges since eg2 is out of service
     assert net.converged
 
     # error is raised after eg2 is set in service
@@ -1477,12 +1431,8 @@ def test_only_ref_buses():
 
     net.ext_grid.at[1, "vm_pu"] = 0.5
     runpp(net)
-    assert np.allclose(
-        net.res_ext_grid.p_mw.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12
-    )
-    assert np.allclose(
-        net.res_ext_grid.q_mvar.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12
-    )
+    assert np.allclose(net.res_ext_grid.p_mw.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12)
+    assert np.allclose(net.res_ext_grid.q_mvar.values, np.array([0.25, -0.125]), rtol=0, atol=1e-12)
     assert abs(net.res_line.p_from_mw.at[0] - 0.25) < 1e-12
     assert abs(net.res_line.q_from_mvar.at[0] - 0.25) < 1e-12
     assert abs(net.res_line.p_to_mw.at[0] + 0.125) < 1e-12
@@ -1528,13 +1478,9 @@ def test_init_results():
         net, bus=net.trafo3w.hv_bus.at[t3idx], element=t3idx, et="t3", closed=False
     )  # trafo3w switch at hv side
     assert_init_results(net)
-    net.switch.at[t3_switch, "bus"] = net.trafo3w.mv_bus.at[
-        t3idx
-    ]  # trafo3w switch at mv side
+    net.switch.at[t3_switch, "bus"] = net.trafo3w.mv_bus.at[t3idx]  # trafo3w switch at mv side
     assert_init_results(net)
-    net.switch.at[t3_switch, "bus"] = net.trafo3w.lv_bus.at[
-        t3idx
-    ]  # trafo3w switch at lv side
+    net.switch.at[t3_switch, "bus"] = net.trafo3w.lv_bus.at[t3idx]  # trafo3w switch at lv side
     assert_init_results(net)
 
 
@@ -1730,9 +1676,7 @@ def test_tap_dependent_impedance():
             "vkr_lv_percent": [0.3, 0.3, 0.3, 0.3, 0.3],
         }
     )
-    net["trafo_characteristic_table"] = pd.concat(
-        [net["trafo_characteristic_table"], new_rows], ignore_index=True
-    )
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
     net.trafo3w["id_characteristic_table"].at[0] = 1
     net.trafo3w["tap_dependency_table"].at[0] = True
 
@@ -1831,9 +1775,7 @@ def test_tap_table_order():
             "vkr_lv_percent": np.nan,
         }
     )
-    net["trafo_characteristic_table"] = pd.concat(
-        [net["trafo_characteristic_table"], new_rows], ignore_index=True
-    )
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
     net.trafo["id_characteristic_table"].at[0] = 2
     net.trafo["id_characteristic_table"].at[1] = 1
     net.trafo["tap_dependency_table"].at[0] = True
@@ -1846,12 +1788,8 @@ def test_tap_table_order():
     tol = 0.001
 
     assert net.converged == True
-    assert np.isclose(
-        net.res_bus.loc[4, "va_degree"], -1 * (150 - 2 + 0.03717), 0, tol, False
-    )
-    assert np.isclose(
-        net.res_bus.loc[5, "va_degree"], -1 * (150 - 0 + 0.03810), 0, tol, False
-    )
+    assert np.isclose(net.res_bus.loc[4, "va_degree"], -1 * (150 - 2 + 0.03717), 0, tol, False)
+    assert np.isclose(net.res_bus.loc[5, "va_degree"], -1 * (150 - 0 + 0.03810), 0, tol, False)
     assert np.isclose(net.res_bus.loc[4, "vm_pu"], 1.03144595, tol, False)
     assert np.isclose(net.res_bus.loc[5, "vm_pu"], 0.96268165, tol, False)
 
@@ -1874,9 +1812,7 @@ def test_shunt_step_dependency_warning():
         runpp(net)
 
 
-@pytest.mark.skipif(
-    not lightsim2grid_available, reason="lightsim2grid is not installed"
-)
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid():
     # test several nets
     for net in result_test_network_generator():
@@ -1888,17 +1824,13 @@ def test_lightsim2grid():
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except LoadflowNotConverged:
-            raise UserWarning(
-                "Power flow did not converge after adding %s" % net.last_added_case
-            )
+            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
         except NotImplementedError as err:
             assert len(net.ext_grid) > 1
             assert "multiple ext_grids are found" in str(err)
 
 
-@pytest.mark.skipif(
-    not lightsim2grid_available, reason="lightsim2grid is not installed"
-)
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_case118():
     net = case118()
     net_ref = copy.deepcopy(net)
@@ -1907,43 +1839,33 @@ def test_lightsim2grid_case118():
     assert_res_equal(net, net_ref)
 
 
-@pytest.mark.skipif(
-    not lightsim2grid_available, reason="lightsim2grid is not installed"
-)
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_zip():
     # voltage dependent loads are not implemented in lightsim2grid
     with pytest.raises(NotImplementedError, match="voltage-dependent loads"):
         test_zip_loads_consistency(lightsim2grid=True)
 
 
-@pytest.mark.skipif(
-    not lightsim2grid_available, reason="lightsim2grid is not installed"
-)
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_qlims():
     test_minimal_net(lightsim2grid=True, enforce_q_lims=True)
 
 
-@pytest.mark.skipif(
-    not lightsim2grid_available, reason="lightsim2grid is not installed"
-)
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_extgrid():
     # multiple ext grids not implemented
     with pytest.raises(NotImplementedError, match="multiple ext_grids"):
         test_ext_grid_and_gen_at_one_bus(lightsim2grid=True)
 
 
-@pytest.mark.skipif(
-    lightsim2grid_available, reason="only relevant if lightsim2grid is not installed"
-)
+@pytest.mark.skipif(lightsim2grid_available, reason="only relevant if lightsim2grid is not installed")
 def test_lightsim2grid_option_basic():
     net = simple_four_bus_system()
     runpp(net)
     assert not net._options["lightsim2grid"]
 
 
-@pytest.mark.skipif(
-    not lightsim2grid_available, reason="lightsim2grid is not installed"
-)
+@pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_option():
     # basic usage
     net = simple_four_bus_system()
@@ -2022,15 +1944,9 @@ def test_shunt_with_missing_vn_kv():
 def _test_net_for_q_capability_curve():
     net = create_empty_network()
 
-    bus1 = create_bus(
-        net, name="bus1", vn_kv=20.0, type="b", min_vm_pu=0.96, max_vm_pu=1.02
-    )
-    bus2 = create_bus(
-        net, name="bus2", vn_kv=110.0, type="b", min_vm_pu=0.96, max_vm_pu=1.02
-    )
-    bus3 = create_bus(
-        net, name="bus3", vn_kv=110.0, type="b", min_vm_pu=0.96, max_vm_pu=1.02
-    )
+    bus1 = create_bus(net, name="bus1", vn_kv=20.0, type="b", min_vm_pu=0.96, max_vm_pu=1.02)
+    bus2 = create_bus(net, name="bus2", vn_kv=110.0, type="b", min_vm_pu=0.96, max_vm_pu=1.02)
+    bus3 = create_bus(net, name="bus3", vn_kv=110.0, type="b", min_vm_pu=0.96, max_vm_pu=1.02)
 
     create_ext_grid(
         net,
