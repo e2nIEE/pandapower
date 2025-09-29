@@ -168,11 +168,7 @@ def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
         slacks = (
             set(net.ext_grid[net.ext_grid.in_service].bus.values)
             | set(net.gen[net.gen.in_service & net.gen.slack].bus.values)
-            | set(
-                net.vsc[
-                    net.vsc.in_service & (net.vsc.control_mode_ac == "slack")
-                ].bus.values
-            )
+            | set(net.vsc[net.vsc.in_service & (net.vsc.control_mode_ac == "slack")].bus.values)
         )
     not_supplied = set()
     for cc in nx.connected_components(mg):
@@ -205,7 +201,7 @@ def find_basic_graph_characteristics(g, roots, characteristics):
         "notn1_starts": set(),
     }
 
-    discovery = dict.fromkeys(roots,0)  # "time" of first discovery of node during search
+    discovery = dict.fromkeys(roots, 0)  # "time" of first discovery of node during search
     low = {root: 0 for root in roots}
     visited = set(roots)
     path = []
@@ -246,9 +242,7 @@ def find_basic_graph_characteristics(g, roots, characteristics):
                         stub = path.pop()
                         if stub != grandparent:
                             char_dict["stub_buses"].add(stub)
-                        while (
-                            path and path[-1] != grandparent and path[-1] not in roots
-                        ):
+                        while path and path[-1] != grandparent and path[-1] not in roots:
                             stub = path.pop()
                             char_dict["stub_buses"].add(stub)
             low[grandparent] = min(low[parent], low[grandparent])
@@ -331,8 +325,7 @@ def find_graph_characteristics(g, roots, characteristics):
                 visited.add(child)
                 stack.append((parent, child, iter(g[child])))
                 if required_bridges and (
-                    (parent, child) in char_dict["bridges"]
-                    or (child, parent) in char_dict["bridges"]
+                    (parent, child) in char_dict["bridges"] or (child, parent) in char_dict["bridges"]
                 ):
                     visited_bridges.append((parent, child))
 
@@ -355,9 +348,7 @@ def find_graph_characteristics(g, roots, characteristics):
 
             if notn1_areas and grandparent == notn1_area_start:
                 if grandparent in char_dict["notn1_areas"]:
-                    char_dict["notn1_areas"][grandparent].update(
-                        set(curr_notn1_area[:])
-                    )
+                    char_dict["notn1_areas"][grandparent].update(set(curr_notn1_area[:]))
                 else:
                     char_dict["notn1_areas"][grandparent] = set(curr_notn1_area[:])
                 del curr_notn1_area[:]
@@ -375,9 +366,7 @@ def get_2connected_buses(g, roots):
 
         **roots** - Roots of the graphsearch
     """
-    char_dict = find_graph_characteristics(
-        g, roots, characteristics=["connected", "stub_buses"]
-    )
+    char_dict = find_graph_characteristics(g, roots, characteristics=["connected", "stub_buses"])
     connected, stub_buses = char_dict["connected"], char_dict["stub_buses"]
     two_connected = connected - stub_buses
     return connected, two_connected
@@ -415,9 +404,7 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     _, n1_buses = get_2connected_buses(mg, roots)
     net.bus["on_stub"] = True
     net.bus.loc[list(n1_buses), "on_stub"] = False
-    net.line["is_stub"] = ~(
-        (net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses))
-    )
+    net.line["is_stub"] = ~((net.line.from_bus.isin(n1_buses)) & (net.line.to_bus.isin(n1_buses)))
     stubs = set(net.bus.index) - set(n1_buses)
     return stubs
 
@@ -473,10 +460,7 @@ def elements_on_path(mg, path, element="line"):
         raise ValueError("Invalid element type %s" % element)
     if isinstance(mg, nx.MultiGraph):
         return [
-            edge[1]
-            for b1, b2 in zip(path, path[1:])
-            for edge in mg.get_edge_data(b1, b2).keys()
-            if edge[0] == element
+            edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys() if edge[0] == element
         ]
     else:
         return [

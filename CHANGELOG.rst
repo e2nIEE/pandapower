@@ -67,6 +67,7 @@ Change Log
 - [CHANGED] file_io.to_json: allow passing through sort_keys argument
 - [FIXED] create.py: remove needlessly slow dict(zip) constructs in favor of fast literal dict creation, some other small code refactoring
 - [ADDED] cim2pp: new shema files, added Junctions and shorcuts for busbars
+- [FIXED] create.pu set_multiple_entries remove not needed dict translation
 
 [3.1.2] - 2025-06-16
 -------------------------------

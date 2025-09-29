@@ -28,14 +28,10 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     if element == "bus":
         # load_str, sgen_str, vsc_str = [], [], []
         load_str, sgen_str = [], []
-        for ln in [
-            net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index
-        ]:
+        for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
             load_str.append("Load: {:.3f} MW<br />".format(ln) if not np.isclose(ln, 0.0) else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            sgen_str.append(
-                "Static generation: {:.3f} MW<br />".format(s) if not np.isclose(s, 0.0) else ""
-            )
+            sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if not np.isclose(s, 0.0) else "")
         # we do not really need vsc result for every bus:
         # for vn in [net.res_vsc.loc[net.vsc.bus == b, "p_mw"].fillna(0).sum() for b in net.bus.index]:
         #    vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
@@ -55,10 +51,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
         ).tolist()
     elif element == "bus_dc":
         vsc_str = []
-        for vn in [
-            net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum()
-            for b in net.bus_dc.index
-        ]:
+        for vn in [net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum() for b in net.bus_dc.index]:
             vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if not np.isclose(vn, 0.0) else "")
         hoverinfo = (
             "Index: "
@@ -86,19 +79,13 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
             + " km"
             + "<br />"
             + "R: "
-            + (net.line["length_km"] * net.line["r_ohm_per_km"] / net.line["parallel"])
-            .round(precision)
-            .astype(str)
+            + (net.line["length_km"] * net.line["r_ohm_per_km"] / net.line["parallel"]).round(precision).astype(str)
             + " Ohm"
             + "<br />"
             + "X: "
-            + (net.line["length_km"] * net.line["x_ohm_per_km"] / net.line["parallel"])
-            .round(precision)
-            .astype(str)
+            + (net.line["length_km"] * net.line["x_ohm_per_km"] / net.line["parallel"]).round(precision).astype(str)
             + " Ohm"
-            + net.line["parallel"].apply(
-                lambda x: f"<br />Parallel: {x}" if x > 1 else "<br />"
-            )
+            + net.line["parallel"].apply(lambda x: f"<br />Parallel: {x}" if x > 1 else "<br />")
         ).tolist()
     elif element == "line_dc":
         hoverinfo = (
@@ -113,18 +100,10 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
             + " km"
             + "<br />"
             + "R: "
-            + (
-                net.line_dc["length_km"]
-                * net.line["r_ohm_per_km"]
-                / net.line["parallel"]
-            )
-            .round(precision)
-            .astype(str)
+            + (net.line_dc["length_km"] * net.line["r_ohm_per_km"] / net.line["parallel"]).round(precision).astype(str)
             + " Ohm"
             + "<br />"
-            + net.line_dc["parallel"].apply(
-                lambda x: f"<br />Parallel: {x}" if x > 1 else "<br />"
-            )
+            + net.line_dc["parallel"].apply(lambda x: f"<br />Parallel: {x}" if x > 1 else "<br />")
         ).tolist()
     elif element == "trafo":
         hoverinfo = (
@@ -347,9 +326,7 @@ def simple_plotly(
         shift = 0
         for weighted_trace in additional_traces:
             # for weighted_marker_traces "meta" should include information for the "scale legend"
-            if ("meta" in weighted_trace) and (
-                weighted_trace["meta"]["show_scale_legend"]
-            ):
+            if ("meta" in weighted_trace) and (weighted_trace["meta"]["show_scale_legend"]):
                 sc_trace = create_scale_trace(net, weighted_trace, down_shift=shift)
                 traces.extend(sc_trace)
                 shift += len(weighted_trace["meta"]["scale_marker_size"])
@@ -395,9 +372,7 @@ def _simple_plotly_generic(
         "zoomlevel": kwargs.get("zoomlevel", 11),
     }
 
-    settings = (
-        settings_defaults | settings if settings else {}
-    )  # add missing settings to settings dict
+    settings = settings_defaults | settings if settings else {}  # add missing settings to settings dict
 
     if len(net[node_element]["geo"].dropna()) == 0:
         logger.warning(
@@ -405,9 +380,7 @@ def _simple_plotly_generic(
         )
         create_generic_coordinates(net, respect_switches=respect_separators)
         if settings["on_map"]:
-            logger.warning(
-                "Map plots not available with artificial coordinates and will be disabled!"
-            )
+            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             settings["on_map"] = False
 
     # ----- Nodes (Buses) ------
@@ -425,9 +398,7 @@ def _simple_plotly_generic(
     if use_branch_geodata is None:
         use_branch_geodata = False if len(net[branch_element]["geo"]) == 0 else True
     elif use_branch_geodata and len(net[branch_element]["geo"]) == 0:
-        logger.warning(
-            "No or insufficient line geodata available --> only bus geodata will be used."
-        )
+        logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False
     hoverinfo = hoverinfo_func(net, element=branch_element)
     branch_traces = branch_trace_func(
@@ -488,12 +459,7 @@ def _simple_plotly_generic(
         dc_line_trace = create_dcline_trace(net, color=hvdc_color)
 
     return (
-        branch_traces
-        + trans_trace
-        + trans_trace3w
-        + ext_grid_trace
-        + node_trace
-        + dc_line_trace,
+        branch_traces + trans_trace + trans_trace3w + ext_grid_trace + node_trace + dc_line_trace,
         settings,
     )
 

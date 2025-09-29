@@ -92,9 +92,7 @@ def vlevel_plotly(
     vlev_bus_dict = {}
     for vl_buses in vlev_buses:
         if net.bus.loc[list(vl_buses), "vn_kv"].unique().shape[0] > 1:
-            logger.warning(
-                "buses from the same voltage level does not have the same vn_kv !?"
-            )
+            logger.warning("buses from the same voltage level does not have the same vn_kv !?")
         vn_kv = net.bus.loc[list(vl_buses), "vn_kv"].unique()[0]
         if vlev_bus_dict.get(vn_kv):
             vlev_bus_dict[vn_kv].update(vl_buses)
@@ -105,10 +103,7 @@ def vlevel_plotly(
     nvlevs = len(vlev_bus_dict)
     colors = get_plotly_color_palette(nvlevs)
     colors_dict = colors_dict or dict(zip(vlev_bus_dict.keys(), colors))
-    bus_groups = [
-        (buses, colors_dict[vlev], f"{vlev} kV")
-        for vlev, buses in vlev_bus_dict.items()
-    ]
+    bus_groups = [(buses, colors_dict[vlev], f"{vlev} kV") for vlev, buses in vlev_bus_dict.items()]
 
     return _draw_colored_bus_groups_plotly(
         net,
@@ -150,14 +145,11 @@ def _draw_colored_bus_groups_plotly(
     # create geocoord if none are available
     if any(net.line.geo.isna()) and any(net.bus.geo.isna()):
         logger.warning(
-            "No or insufficient geodata available --> Creating artificial coordinates."
-            + " This may take some time"
+            "No or insufficient geodata available --> Creating artificial coordinates." + " This may take some time"
         )
         create_generic_coordinates(net, respect_switches=respect_switches)
         if on_map:
-            logger.warning(
-                "Map plots not available with artificial coordinates and will be disabled!"
-            )
+            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
@@ -168,9 +160,7 @@ def _draw_colored_bus_groups_plotly(
     if use_line_geo is None:
         use_line_geo = False if any(net.line.geo.isna()) else True
     elif use_line_geo and any(net.line.geo.isna()):
-        logger.warning(
-            "No or insufficient line geodata available --> only bus geodata will be used."
-        )
+        logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geo = False
 
     # creating traces for buses and lines for each voltage level
@@ -191,9 +181,7 @@ def _draw_colored_bus_groups_plotly(
         if bus_trace_vlev is not None:
             bus_traces += bus_trace_vlev
 
-        vlev_lines = net.line[
-            net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)
-        ].index.tolist()
+        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)].index.tolist()
         traced_lines |= set(vlev_lines)
         line_trace_vlev = create_line_trace(
             net,
@@ -252,9 +240,7 @@ if __name__ == "__main__":
     vlev_bus_dict = {}
     for vl_buses in vlev_buses:
         if net.bus.loc[vl_buses, "vn_kv"].unique().shape[0] > 1:
-            logger.warning(
-                "buses from the same voltage level does not have the same vn_kv !?"
-            )
+            logger.warning("buses from the same voltage level does not have the same vn_kv !?")
         vn_kv = net.bus.loc[vl_buses, "vn_kv"].unique()[0]
         if vlev_bus_dict.get(vn_kv):
             vlev_bus_dict[vn_kv].update(vl_buses)
@@ -282,9 +268,7 @@ if __name__ == "__main__":
         if bus_trace_vlev is not None:
             bus_traces += bus_trace_vlev
 
-        vlev_lines = net.line[
-            net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)
-        ].index.tolist()
+        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)].index.tolist()
         print(vlev_lines)
         line_trace_vlev = create_line_trace(
             net,

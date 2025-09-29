@@ -115,6 +115,10 @@ exclude_lines = [
     "if __name__ == .__main__.:"
 ]
 
-# styeling information for black formatter
+# styling information for black formatter
 [tool.black]
+line-length = 120
+
+# styling information for ruff formatter
+[tool.ruff]
 line-length = 120

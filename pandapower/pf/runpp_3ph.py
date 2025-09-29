@@ -84,15 +84,9 @@ def _get_elements(params, net, element, phase, typ):
             vl = elm[active, scaling].ravel()
             p_mw = [net[element].columns.get_loc("p_mw")]
             q_mvar = [net[element].columns.get_loc("q_mvar")]
-            params["p" + phase + typ] = np.hstack(
-                [params["p" + phase + typ], elm[active, p_mw] / 3 * vl * sign]
-            )
-            params["q" + phase + typ] = np.hstack(
-                [params["q" + phase + typ], (elm[active, q_mvar] / 3) * vl * sign]
-            )
-            params["b" + typ] = np.hstack(
-                [params["b" + typ], elm[active, bus].astype(np.int64)]
-            )
+            params["p" + phase + typ] = np.hstack([params["p" + phase + typ], elm[active, p_mw] / 3 * vl * sign])
+            params["q" + phase + typ] = np.hstack([params["q" + phase + typ], (elm[active, q_mvar] / 3) * vl * sign])
+            params["b" + typ] = np.hstack([params["b" + typ], elm[active, bus].astype(np.int64)])
 
         elif element.startswith("asymmetric"):
             vl = elm[active, scaling].ravel()
@@ -107,15 +101,9 @@ def _get_elements(params, net, element, phase, typ):
                 "c": net[element].columns.get_loc("q_c_mvar"),
             }
 
-            params["p" + phase + typ] = np.hstack(
-                [params["p" + phase + typ], elm[active, p[phase]] * vl * sign]
-            )
-            params["q" + phase + typ] = np.hstack(
-                [params["q" + phase + typ], elm[active, q[phase]] * vl * sign]
-            )
-            params["b" + typ] = np.hstack(
-                [params["b" + typ], elm[active, bus].astype(np.int64)]
-            )
+            params["p" + phase + typ] = np.hstack([params["p" + phase + typ], elm[active, p[phase]] * vl * sign])
+            params["q" + phase + typ] = np.hstack([params["q" + phase + typ], elm[active, q[phase]] * vl * sign])
+            params["b" + typ] = np.hstack([params["b" + typ], elm[active, bus].astype(np.int64)])
     return params
 
 
@@ -135,19 +123,13 @@ def _load_mapping(net, ppci1):
     # =============================================================================
     for phase in phases:
         for typ in load_types:
-            params["S" + phase + typ] = (
-                ppci1["bus"][:, PD] + ppci1["bus"][:, QD] * 1j
-            ) * 0
+            params["S" + phase + typ] = (ppci1["bus"][:, PD] + ppci1["bus"][:, QD] * 1j) * 0
             params["p" + phase + typ] = np.array([])  # p values from loads/sgens
             params["q" + phase + typ] = np.array([])  # q values from loads/sgens
             params["P" + phase + typ] = np.array([])  # Aggregated Active Power
             params["Q" + phase + typ] = np.array([])  # Aggregated reactive Power
-            params["b" + phase + typ] = np.array(
-                [], dtype=np.int64
-            )  # bus map for phases
-            params["b" + typ] = np.array(
-                [], dtype=np.int64
-            )  # aggregated bus map(s_abc)
+            params["b" + phase + typ] = np.array([], dtype=np.int64)  # bus map for phases
+            params["b" + typ] = np.array([], dtype=np.int64)  # aggregated bus map(s_abc)
             for element in load_elements:
                 _get_elements(params, net, element, phase, typ)
             # Mapping constant power loads to buses
@@ -399,11 +381,7 @@ def runpp_3ph(
     overrule_options = {}
     if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
         passed_parameters = _passed_runpp_parameters(locals())
-        overrule_options = {
-            key: val
-            for key, val in net.user_pf_options.items()
-            if key not in passed_parameters.keys()
-        }
+        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in passed_parameters.keys()}
     if numba:
         numba = _check_if_numba_is_installed()
 
@@ -412,9 +390,7 @@ def runpp_3ph(
     #    v_debug = kwargs.get("v_debug", False)
     copy_constraints_to_ppc = False
     if trafo_model == "pi":
-        raise NotImplementedError(
-            "Three phase Power Flow doesnot support pi model because of lack of accuracy"
-        )
+        raise NotImplementedError("Three phase Power Flow doesnot support pi model because of lack of accuracy")
     #    if calculate_voltage_angles == "auto":
     #        calculate_voltage_angles = False
     #        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]  # Todo: Where does that number come from?
@@ -479,9 +455,7 @@ def runpp_3ph(
     _, ppci0 = _pd2ppc_recycle(net, 0, recycle=recycle)
 
     _, bus0, gen0, branch0, _, _, _ = _get_pf_variables_from_ppci(ppci0)
-    base_mva, bus1, gen1, branch1, sl_bus, _, pq_bus = _get_pf_variables_from_ppci(
-        ppci1
-    )
+    base_mva, bus1, gen1, branch1, sl_bus, _, pq_bus = _get_pf_variables_from_ppci(ppci1)
     _, bus2, gen2, branch2, _, _, _ = _get_pf_variables_from_ppci(ppci2)
 
     # initialize the results after the conversion to ppc is done, otherwise init=results does not work
@@ -522,9 +496,7 @@ def runpp_3ph(
     else:
         v_012_it = np.concatenate(
             [
-                np.array(
-                    ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))
-                ).reshape((1, nb))
+                np.array(ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))).reshape((1, nb))
                 for ppc in (ppci0, ppci1, ppci2)
             ],
             axis=0,
@@ -714,9 +686,7 @@ def runpp_3ph(
     if not ppci0["success"]:
         net["converged"] = False
         _clean_up(net, res=False)
-        raise LoadflowNotConverged(
-            "Power Flow {0} did not converge after {1} iterations!".format("nr", count)
-        )
+        raise LoadflowNotConverged("Power Flow {0} did not converge after {1} iterations!".format("nr", count))
     else:
         net["converged"] = True
 
@@ -757,15 +727,9 @@ def _get_y_bus(ppci0, ppci1, ppci2, recycle):
         )
     else:
         # build admittance matrices
-        y_0_bus, y_0_f, y_0_t = makeYbus(
-            ppci0["baseMVA"], ppci0["bus"], ppci0["branch"]
-        )
-        y_1_bus, y_1_f, y_1_t = makeYbus(
-            ppci1["baseMVA"], ppci1["bus"], ppci1["branch"]
-        )
-        y_2_bus, y_2_f, y_2_t = makeYbus(
-            ppci2["baseMVA"], ppci2["bus"], ppci2["branch"]
-        )
+        y_0_bus, y_0_f, y_0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+        y_1_bus, y_1_f, y_1_t = makeYbus(ppci1["baseMVA"], ppci1["bus"], ppci1["branch"])
+        y_2_bus, y_2_f, y_2_t = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
         if recycle and recycle["Ybus"]:
             (
                 ppci0["internal"]["Ybus"],

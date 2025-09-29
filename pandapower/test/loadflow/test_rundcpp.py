@@ -60,12 +60,8 @@ def test_rundcpp_init_auxiliary_buses():
     rundcpp(net)
     va = net.res_bus.va_degree.at[b2]
     rundcpp(net)
-    assert np.allclose(
-        va - net.trafo3w.shift_mv_degree.at[tidx], net.res_bus.va_degree.at[b3], atol=2
-    )
-    assert np.allclose(
-        va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4], atol=2
-    )
+    assert np.allclose(va - net.trafo3w.shift_mv_degree.at[tidx], net.res_bus.va_degree.at[b3], atol=2)
+    assert np.allclose(va - net.trafo3w.shift_lv_degree.at[tidx], net.res_bus.va_degree.at[b4], atol=2)
 
 
 # ToDo: Bugs because of float datatypes -> Check Travis on linux machines...
@@ -76,9 +72,7 @@ def test_result_iter():
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
         except LoadflowNotConverged:
-            raise UserWarning(
-                "Power flow did not converge after adding %s" % net.last_added_case
-            )
+            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
 
 
 def test_two_open_switches():
@@ -118,9 +112,7 @@ def test_test_sn_mva():
         try:
             assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
         except:
-            raise UserWarning(
-                "Result difference due to sn_mva after adding %s" % net1.last_added_case
-            )
+            raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
 
 
 def test_single_bus_network():

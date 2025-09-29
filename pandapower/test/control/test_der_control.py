@@ -88,15 +88,11 @@ def test_qofv():
     # pf without controller
     net.controller.in_service = [True, False]
     runpp(net, run_control=True)
-    assert (
-        0.991 <= cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
-    )
+    assert 0.991 <= cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
     # pf with 2nd controller (should have same result)
     net.controller.in_service = [False, True]
     runpp(net, run_control=True)
-    assert (
-        0.995 <= cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
-    )
+    assert 0.995 <= cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
 
     # --- run control -> q injection is positive with cosphi=0.9 since vm is nearly 1.05
     net.ext_grid.vm_pu = 1.05
@@ -112,9 +108,7 @@ def test_qofv():
     assert net.res_bus.vm_pu.at[1] < vmb4
     assert net.res_sgen.q_mvar.at[0] < 0
     cosphi_expected = 0.9
-    q_expected = (
-        (net.res_sgen.p_mw.at[0] / cosphi_expected) ** 2 - net.res_sgen.p_mw.at[0] ** 2
-    ) ** 0.5
+    q_expected = ((net.res_sgen.p_mw.at[0] / cosphi_expected) ** 2 - net.res_sgen.p_mw.at[0] ** 2) ** 0.5
     assert np.isclose(net.res_sgen.q_mvar.at[0], -q_expected, atol=1e-5)
 
     # pf with 2nd controller (should have same result)
@@ -137,9 +131,7 @@ def test_qofv():
     assert net.res_bus.vm_pu.at[1] > vmb4
     assert net.res_sgen.q_mvar.at[0] > 0
     cosphi_expected = 0.9
-    q_expected = (
-        (net.res_sgen.p_mw.at[0] / cosphi_expected) ** 2 - net.res_sgen.p_mw.at[0] ** 2
-    ) ** 0.5
+    q_expected = ((net.res_sgen.p_mw.at[0] / cosphi_expected) ** 2 - net.res_sgen.p_mw.at[0] ** 2) ** 0.5
     assert np.isclose(net.res_sgen.q_mvar.at[0], q_expected, atol=1e-5)
 
     # pf with 2nd controller (should have same result)
@@ -161,11 +153,7 @@ def test_qofv():
     runpp(net, run_control=True)
     assert net.res_bus.vm_pu.at[1] > vmb4
     assert net.res_sgen.q_mvar.at[0] > 0
-    assert (
-        0.95
-        < cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0]
-        < 0.96
-    )
+    assert 0.95 < cosphi_from_pq(-net.res_sgen.p_mw.at[0], -net.res_sgen.q_mvar.at[0])[0] < 0.96
 
     # pf with 2nd controller (should have different result because slope is not given by cosphi
     # points but by q points)
@@ -181,9 +169,7 @@ def test_cosphi_of_p_timeseries():
 
     net = simple_test_net()
     sn = net.sgen.sn_mva.at[0]
-    ts_data = pd.DataFrame(
-        {"P_0": list(range(-50, -1360, -100)) + [-1400, -1425, -1450, -1475]}
-    )
+    ts_data = pd.DataFrame({"P_0": list(range(-50, -1360, -100)) + [-1400, -1425, -1450, -1475]})
     ds = DFData(ts_data)
 
     # Create, add output and set outputwriter
@@ -197,14 +183,10 @@ def test_cosphi_of_p_timeseries():
         data_source=ds,
         p_profile="P_0",
         profile_scale=-2e-3,
-        q_model=DERModels.QModelCosphiPCurve(
-            {"p_points_pu": (0, 0.5, 1), "cosphi_points": (1, 1, 1)}
-        ),
+        q_model=DERModels.QModelCosphiPCurve({"p_points_pu": (0, 0.5, 1), "cosphi_points": (1, 1, 1)}),
     )
 
-    DER_no_q2 = DERController(
-        net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3
-    )
+    DER_no_q2 = DERController(net, 0, data_source=ds, p_profile="P_0", profile_scale=-2e-3)
 
     DER_ue = DERController(
         net,
@@ -212,9 +194,7 @@ def test_cosphi_of_p_timeseries():
         data_source=ds,
         p_profile="P_0",
         profile_scale=-2e-3,
-        q_model=DERModels.QModelCosphiPCurve(
-            {"p_points_pu": (0, 0.5, 1), "cosphi_points": (1, 1, -0.95)}
-        ),
+        q_model=DERModels.QModelCosphiPCurve({"p_points_pu": (0, 0.5, 1), "cosphi_points": (1, 1, -0.95)}),
     )
 
     DER_ue2 = DERController(
@@ -237,9 +217,7 @@ def test_cosphi_of_p_timeseries():
         data_source=ds,
         p_profile="P_0",
         profile_scale=-2e-3,
-        q_model=DERModels.QModelCosphiPCurve(
-            {"p_points_pu": (0, 0.5, 1), "cosphi_points": (1, 1, 0.95)}
-        ),
+        q_model=DERModels.QModelCosphiPCurve({"p_points_pu": (0, 0.5, 1), "cosphi_points": (1, 1, 0.95)}),
     )
 
     # Run timeseries
@@ -278,9 +256,7 @@ def test_cosphi_of_p_timeseries():
         fig = plt.figure(figsize=(9, 5))
         ax = fig.gca()
         for i_key, (key, res) in enumerate(res_to_plot.items()):
-            cosphi_pos_neg = toolbox.cosphi_pos_neg_from_pq(
-                res["res_sgen.p_mw"], res["res_sgen.q_mvar"]
-            )
+            cosphi_pos_neg = toolbox.cosphi_pos_neg_from_pq(res["res_sgen.p_mw"], res["res_sgen.q_mvar"])
             cosphi_pos_neg[np.isnan(cosphi_pos_neg[0])] = 1
             cosphi_pos = toolbox.cosphi_to_pos(cosphi_pos_neg)
             x = res["res_sgen.p_mw"].values.flatten() / net.sgen.sn_mva.at[0]
@@ -302,22 +278,16 @@ def test_cosphi_of_p_timeseries():
     assert (res_ue["res_bus.vm_pu"][1] <= res_no_q["res_bus.vm_pu"][1] + 1e-8).all()
     assert (res_oe["res_bus.vm_pu"][1] + 1e-8 >= res_no_q["res_bus.vm_pu"][1]).all()
     assert (res_ue["res_sgen.q_mvar"][0] <= 1e-5).all()
-    assert np.allclose(
-        res_ue["res_sgen.q_mvar"][0], -res_oe["res_sgen.q_mvar"][0], atol=1e-5
-    )
+    assert np.allclose(res_ue["res_sgen.q_mvar"][0], -res_oe["res_sgen.q_mvar"][0], atol=1e-5)
 
     # diff between ue and ue2
-    should_be_same = (
-        (ts_data["P_0"] * -2e-3 / sn <= 0.2) | (ts_data["P_0"] * -2e-3 / sn >= 0.3)
-    ).values
+    should_be_same = ((ts_data["P_0"] * -2e-3 / sn <= 0.2) | (ts_data["P_0"] * -2e-3 / sn >= 0.3)).values
     assert np.allclose(
         res_ue["res_sgen.q_mvar"].values[should_be_same, 0],
         res_ue2["res_sgen.q_mvar"].values[should_be_same, 0],
         atol=1e-5,
     )
-    assert np.allclose(
-        res_ue["res_sgen.q_mvar"].values[~should_be_same, 0], 0, atol=1e-5
-    )
+    assert np.allclose(res_ue["res_sgen.q_mvar"].values[~should_be_same, 0], 0, atol=1e-5)
     assert np.all(res_ue2["res_sgen.q_mvar"].values[~should_be_same, 0] > -1e-5)
 
 
@@ -383,17 +353,11 @@ def test_QModels_with_2Dim_timeseries():
 
     # --- check results
     # ow0 and ow1 are equal
-    pd.testing.assert_frame_equal(
-        ow0.output["res_bus.vm_pu"], ow1.output["res_bus.vm_pu"]
-    )
-    pd.testing.assert_frame_equal(
-        ow0.output["res_sgen.q_mvar"], ow1.output["res_sgen.q_mvar"], atol=1e-4
-    )
+    pd.testing.assert_frame_equal(ow0.output["res_bus.vm_pu"], ow1.output["res_bus.vm_pu"])
+    pd.testing.assert_frame_equal(ow0.output["res_sgen.q_mvar"], ow1.output["res_sgen.q_mvar"], atol=1e-4)
     # p values are taken from input data (no PQV area is falsifies the input)
     for ow in ows:
-        pd.testing.assert_frame_equal(
-            pd.DataFrame(ts_data.to_numpy()), ow.output["res_sgen.p_mw"], atol=1e-4
-        )
+        pd.testing.assert_frame_equal(pd.DataFrame(ts_data.to_numpy()), ow.output["res_sgen.p_mw"], atol=1e-4)
     # q of ow2 is as expected
     p = ow2.output["res_sgen.p_mw"].values.reshape((-1,))
     q = ow2.output["res_sgen.q_mvar"].values.reshape((-1,))

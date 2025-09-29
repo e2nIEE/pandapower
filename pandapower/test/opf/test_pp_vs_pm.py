@@ -351,9 +351,7 @@ def test_opf_ext_grid_controllable_pm():
 
     eg_bus = net.ext_grid.bus.at[0]
     assert np.isclose(net_old.res_bus.vm_pu[eg_bus], 1.06414000007302)
-    assert (
-        np.abs(net_new.res_bus.vm_pu[eg_bus] - net_old.res_bus.vm_pu[eg_bus]) < 0.0058
-    )
+    assert np.abs(net_new.res_bus.vm_pu[eg_bus] - net_old.res_bus.vm_pu[eg_bus]) < 0.0058
     assert np.abs(net_new.res_cost - net_old.res_cost) / net_old.res_cost < 1e-2
 
 

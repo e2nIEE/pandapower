@@ -22,37 +22,15 @@ def test_data_source():
     """
     # load file
 
-    filename = os.path.join(
-        pp_dir, "test", "timeseries", "test_files", "small_profile.csv"
-    )
+    filename = os.path.join(pp_dir, "test", "timeseries", "test_files", "small_profile.csv")
     df = pd.read_csv(filename, sep=";")
     my_data_source = DFData(df)
     copy.deepcopy(my_data_source)
 
-    assert np.isclose(
-        my_data_source.get_time_step_value(time_step=0,
-                                           profile_name="my_profilename"), 0.0
-    )
-    assert np.isclose(
-        my_data_source.get_time_step_value(time_step=3,
-                                           profile_name="my_profilename"), 0.0
-    )
-    assert (
-        abs(
-            my_data_source.get_time_step_value(
-                time_step=4, profile_name="my_profilename"
-            )
-            - -3.97e-1
-        )
-        < epsilon
-    )
-    assert (
-        abs(
-            my_data_source.get_time_step_value(time_step=8, profile_name="constload3")
-            - -5.37e-3
-        )
-        < epsilon
-    )
+    assert np.isclose(my_data_source.get_time_step_value(time_step=0, profile_name="my_profilename"), 0.0)
+    assert np.isclose(my_data_source.get_time_step_value(time_step=3, profile_name="my_profilename"), 0.0)
+    assert abs(my_data_source.get_time_step_value(time_step=4, profile_name="my_profilename") - -3.97e-1) < epsilon
+    assert abs(my_data_source.get_time_step_value(time_step=8, profile_name="constload3") - -5.37e-3) < epsilon
 
 
 if __name__ == "__main__":

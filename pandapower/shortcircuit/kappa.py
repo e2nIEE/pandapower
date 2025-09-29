@@ -31,9 +31,7 @@ def _add_kappa_to_ppc(net, ppc):
         raise ValueError("Unknown kappa method %s - specify B or C" % kappa_method)
     # ppc["bus"][:, KAPPA] = kappa
     # if kappa is already defined in a previous step (e.g. for sgen DFIG kappa is provided by the manufacturer)
-    ppc["bus"][:, KAPPA] = np.where(
-        np.isnan(ppc["bus"][:, KAPPA]), kappa, ppc["bus"][:, KAPPA]
-    )
+    ppc["bus"][:, KAPPA] = np.where(np.isnan(ppc["bus"][:, KAPPA]), kappa, ppc["bus"][:, KAPPA])
 
 
 def _kappa(rx):
@@ -116,25 +114,16 @@ def nxgraph_from_ppc(net, ppc):
     )
     mg.add_node("earth")
     vs_buses_pp = list(
-        set(net["ext_grid"][net._is_elements["ext_grid"]].bus.values)
-        | set(net["gen"][net._is_elements["gen"]].bus)
+        set(net["ext_grid"][net._is_elements["ext_grid"]].bus.values) | set(net["gen"][net._is_elements["gen"]].bus)
     )
     vs_buses = bus_lookup[vs_buses_pp]
     gen_vs_buses = vs_buses[~np.isnan(ppc["bus"][vs_buses, K_G])]
     non_gen_vs_buses = vs_buses[np.isnan(ppc["bus"][vs_buses, K_G])]
     if np.size(gen_vs_buses):
         z = 1 / (ppc["bus"][gen_vs_buses, GS_P] + ppc["bus"][gen_vs_buses, BS_P] * 1j)
-        mg.add_edges_from(
-            ("earth", int(bus), {"r": z.real, "x": z.imag})
-            for bus, z in zip(gen_vs_buses, z)
-        )
+        mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) for bus, z in zip(gen_vs_buses, z))
 
     if np.size(non_gen_vs_buses):
-        z = 1 / (
-            ppc["bus"][non_gen_vs_buses, GS] + ppc["bus"][non_gen_vs_buses, BS] * 1j
-        )
-        mg.add_edges_from(
-            ("earth", int(bus), {"r": z.real, "x": z.imag})
-            for bus, z in zip(non_gen_vs_buses, z)
-        )
+        z = 1 / (ppc["bus"][non_gen_vs_buses, GS] + ppc["bus"][non_gen_vs_buses, BS] * 1j)
+        mg.add_edges_from(("earth", int(bus), {"r": z.real, "x": z.imag}) for bus, z in zip(non_gen_vs_buses, z))
     return mg
