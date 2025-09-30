@@ -18,10 +18,7 @@ from pandapower.create import create_empty_network, create_buses, create_ext_gri
     create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs, create_impedances
 from pandapower.run import runpp
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 ppc_elms = ["bus", "branch", "gen"]

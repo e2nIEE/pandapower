@@ -5,10 +5,7 @@ import tkinter as tk
 from tkinter.filedialog import askdirectory
 import pandas
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()

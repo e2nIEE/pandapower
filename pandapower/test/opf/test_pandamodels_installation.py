@@ -19,10 +19,7 @@ try:
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

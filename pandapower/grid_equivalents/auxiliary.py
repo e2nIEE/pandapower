@@ -19,10 +19,7 @@ from pandapower.toolbox.element_selection import pp_elements, get_connected_elem
 from pandapower.toolbox.grid_modification import drop_lines, drop_trafos, drop_measurements_at_elements, \
     drop_controllers_at_buses
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 home = str(Path.home())

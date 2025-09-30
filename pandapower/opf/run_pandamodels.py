@@ -3,10 +3,7 @@ from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.optimal_powerflow import OPFNotConverged
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 

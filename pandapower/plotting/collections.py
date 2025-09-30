@@ -43,10 +43,7 @@ from pandapower.plotting.patch_makers import load_patches, node_patches, gen_pat
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

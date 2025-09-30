@@ -15,10 +15,7 @@ import pytest
 from pandapower import pp_dir
 from pandapower.test import tutorials_path
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 test_dir = os.path.abspath(os.path.join(pp_dir, "test"))
 
 logger = logging.getLogger()

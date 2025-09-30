@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from functools import reduce
 import operator
@@ -9,11 +10,6 @@ from pandapower.toolbox.element_selection import pp_elements, element_bus_tuples
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_component, connected_components
 
-
-try:
-    from pandaplan.core import pplog as logging
-except ImportError:
-    import logging
 
 logger = logging.getLogger(__name__)
 

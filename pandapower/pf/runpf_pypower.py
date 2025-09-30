@@ -31,10 +31,7 @@ from pandapower.pypower.gausspf import gausspf
 
 from pandapower.auxiliary import _check_if_numba_is_installed
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

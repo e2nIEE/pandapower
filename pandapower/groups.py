@@ -18,10 +18,7 @@ from pandapower.toolbox.element_selection import branch_element_bus_dict, elemen
     pp_elements, get_connected_elements_dict
 from pandapower.toolbox.result_info import res_power_columns
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +135,7 @@ def attach_to_group(net, index, element_types, element_indices, reference_column
     element_types, element_indices, reference_columns = _group_parameter_list(
         element_types, element_indices, reference_columns)
 
-    complete_new = {col: list() for col in [
+    complete_new = {col: [] for col in [
         "name", "element_type", "element_index", "reference_column"]}
     name = group_name(net, index)
 
@@ -189,7 +186,7 @@ def attach_to_group(net, index, element_types, element_indices, reference_column
     # --- add new rows to net.group
     if len(complete_new["name"]):
         _check_elements_existence(net, element_types, element_indices, reference_columns)
-        _set_multiple_entries(net, "group", [index]*len(complete_new["name"]), **complete_new)
+        _set_multiple_entries(net, "group", [index]*len(complete_new["name"]), entries=complete_new)
         net.group.sort_index(inplace=True)
 
 

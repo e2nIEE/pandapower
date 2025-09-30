@@ -11,11 +11,9 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.mapbox_plot import *
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_trafo_trace, draw_traces
+from pandapower.plotting.geo import convert_crs
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -107,7 +105,7 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
-        geo_data_to_latlong(net, projection=projection)
+        convert_crs(net, epsg_in=projection)
 
     # ----- Buses ------
     # initializating bus trace
@@ -161,11 +159,13 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
                                       cmap=cmap_lines, cmin=0, cmax=100)
 
     # ----- Ext grid ------
+    ext_grid_trace = []
     # get external grid from create_bus_trace
-    marker_type = 'circle' if on_map else 'square'
-    ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
-                                      color='grey', size=bus_size * 2, trace_name='external_grid',
-                                      patch_type=marker_type)
+    if 'ext_grid' in net and len(net.ext_grid):
+        marker_type = 'circle' if on_map else 'square'
+        ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
+                                          color='grey', size=bus_size * 2, trace_name='external_grid',
+                                          patch_type=marker_type)
 
     return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
                        showlegend=False, aspectratio=aspectratio, on_map=on_map,

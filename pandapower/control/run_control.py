@@ -278,7 +278,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     4. Call finalize_control() on each controller
 
     """
-    ctrl_variables = prepare_run_ctrl(net, ctrl_variables)
+    ctrl_variables = prepare_run_ctrl(net, ctrl_variables, **kwargs)
     kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)
 
     controller_order = ctrl_variables["controller_order"]

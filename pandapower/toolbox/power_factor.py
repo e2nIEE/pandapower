@@ -14,10 +14,7 @@ try:
 except ImportError:
     GRAPHS_EQUAL_POSSIBLE = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

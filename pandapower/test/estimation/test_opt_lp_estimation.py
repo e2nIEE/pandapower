@@ -7,7 +7,7 @@ import sys
 
 import numpy as np
 import pytest
-
+import copy
 from pandapower.estimation import estimate
 from pandapower.estimation.algorithm.base import WLSAlgorithm
 from pandapower.estimation.algorithm.lp import LPAlgorithm
@@ -35,7 +35,7 @@ def test_case9_compare_classical_wls_opt_wls():
         raise AssertionError("Estimation failed due to algorithm failing!")
     net = eppci2pp(net, ppc, eppci)
 
-    net_wls = net.deepcopy()
+    net_wls = copy.deepcopy(net)
     estimate(net_wls)
 
     if not (np.allclose(net_wls.res_bus_est.vm_pu.copy(), net.res_bus_est.vm_pu.copy(),
@@ -172,4 +172,4 @@ def test_ql_qc():
 
 
 if __name__ == '__main__':
-    pytest.main([__file__, "-xs"])
+    pytest.main([__file__, "-xs"]) 

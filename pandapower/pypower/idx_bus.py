@@ -82,8 +82,10 @@ MU_VMAX = 15   # Kuhn-Tucker multiplier on upper voltage limit (u/p.u.)
 MU_VMIN = 16   # Kuhn-Tucker multiplier on lower voltage limit (u/p.u.)
 
 # Additional pandapower extensions to ppc
-CID = 13   # coefficient of constant current load at rated voltage in range [0,1]
-CZD = 14   # coefficient of constant impedance load at rated voltage in range [0,1]
+CID_P = 13   # coefficient of active power of constant current load at rated voltage in range [0,1]
+CZD_P = 14   # coefficient of active power of constant impedance load at rated voltage in range [0,1]
 SL_FAC = 15
+CID_Q = 16   # coefficient of reactive power of constant current load at rated voltage in range [0,1]
+CZD_Q = 17   # coefficient of reactive power of constant impedance load at rated voltage in range [0,1]
 
-bus_cols = 16
+bus_cols = 18

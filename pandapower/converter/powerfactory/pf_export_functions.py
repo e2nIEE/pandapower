@@ -1,11 +1,8 @@
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
-def create_network_dict(app, flag_graphics='GPS'):
+def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
     # elements to be exported from PowerFactory
     set_object_extentions = {
         # node elements:
@@ -86,7 +83,7 @@ def create_network_dict(app, flag_graphics='GPS'):
 
     logger.info('collecting network elements')
     for obj in set_object_extentions:
-        if obj == 'ElmTerm':
+        if (obj == 'ElmTerm'):
             dict_net[obj] = app.GetCalcRelevantObjects(obj, 1, 0, 1)
         else:
             dict_net[obj] = app.GetCalcRelevantObjects(obj)

@@ -3,21 +3,15 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-import warnings
-from typing_extensions import overload
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_dcline_trace, create_scale_trace,  create_trafo_trace, draw_traces, \
-    _create_node_trace, _create_branch_trace
+    _create_node_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -100,29 +94,8 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
-@overload
 def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
-                  *, map_style='basic', figsize=1.0, aspectratio='auto',
-                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
-                  bus_color="blue", line_color='grey', trafo_color='green',
-                  trafo3w_color='green', ext_grid_color="yellow",
-                  filename='temp-plot.html', auto_open=True, showlegend=True,
-                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'): ...
-
-
-@overload
-@deprecated("projection is deprecated and will be removed in future versions. geojson should always be WGS84.")
-def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
-                  projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
-                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
-                  bus_color="blue", line_color='grey', trafo_color='green',
-                  trafo3w_color='green', ext_grid_color="yellow",
-                  filename='temp-plot.html', auto_open=True, showlegend=True,
-                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'): ...
-
-
-def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
-                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
+                  map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
                   trafo3w_color='green', ext_grid_color="yellow",
@@ -196,13 +169,6 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
     """
-    if projection is not None:
-        warnings.warn(
-            FutureWarning(
-                "projection is deprecated and will be removed in future versions. geojson should always be WGS84."
-            ),
-            stacklevel=2
-        )
 
     settings = dict(
         on_map=on_map,
@@ -261,15 +227,6 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
                            node_element, branch_element, trans_element, trans3w_element,
                            branch_trace_func, node_trace_func, hoverinfo_func,
                            hvdc_color="cyan", settings=None, **kwargs):
-
-    if 'projection' in kwargs:
-        warnings.warn(
-            FutureWarning(
-                "projection is deprecated and will not be used. geojson should always be WGS84."
-            ),
-            stacklevel=2
-        )
-        kwargs.pop('projection')
 
     settings_defaults = {  # if no settings are provided, these are used
         'on_map': kwargs.get('on_map', True),

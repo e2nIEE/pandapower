@@ -20,10 +20,7 @@ import time
 import re
 from functools import reduce
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +159,13 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     net_internal, net_external = _get_internal_and_external_nets(
         net, boundary_buses, all_internal_buses, all_external_buses,
         show_computing_time, calc_volt_angles=calc_volt_angles, runpp_fct=runpp_fct, **kwargs)
+    if net_internal is not None and "trafo_characteristic_table" in net_internal:
+        net_internal.trafo_characteristic_table = net_internal.trafo_characteristic_table[
+            ~net_internal.trafo_characteristic_table.id_characteristic.isin(net_external.trafo.id_characteristic_table)
+        ]
+        net_external.trafo_characteristic_table = net_external.trafo_characteristic_table[
+            ~net_external.trafo_characteristic_table.id_characteristic.isin(net_internal.trafo.id_characteristic_table)
+        ]
     net_zpbn = net_external
     # --- remove buses without power flow results in net_eq
     drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])

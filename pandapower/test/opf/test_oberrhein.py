@@ -8,10 +8,7 @@ import pytest
 from pandapower.networks import mv_oberrhein
 from pandapower.run import runopp
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

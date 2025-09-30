@@ -7,26 +7,26 @@ import numpy as np
 import pytest
 
 from pandapower.run import runpp
-from pandapower.networks.power_system_test_cases import case9
+from pandapower.networks.power_system_test_cases import case14
 from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_sgen, create_load, \
     create_line, create_transformer3w
 from pandapower.estimation import estimate
 from pandapower.estimation.util import add_virtual_pmu_meas_from_loadflow
 
-def run_se_lp_verify(net):
-    estimate(net, algorithm="lp", maximum_iterations=10)
+def run_se_verify(net):
+    estimate(net, algorithm="wls")
     if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
        not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1):
         raise AssertionError("Estimation failed!")
 
 
 def test_pmu_case14():
-    net = case9()
+    net = case14()
 
     runpp(net)
     add_virtual_pmu_meas_from_loadflow(net)
 
-    run_se_lp_verify(net)
+    run_se_verify(net)
 
 
 def test_pmu_with_trafo3w():
@@ -50,7 +50,7 @@ def test_pmu_with_trafo3w():
     runpp(net)
     add_virtual_pmu_meas_from_loadflow(net, with_random_error=False)
 
-    run_se_lp_verify(net)
+    run_se_verify(net)
 
 
 if __name__ == '__main__':

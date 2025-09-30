@@ -138,7 +138,7 @@ def printpf(baseMVA, bus=None, gen=None, branch=None, f=None, success=None,
     if isDC:
         bus[:, r_[QD, BS]]          = zeros((nb, 2))
         gen[:, r_[QG, QMAX, QMIN]]  = zeros((ng, 3))
-        branch[:, r_[BR_R, BR_B, BR_G]]   = zeros((nl, 2))
+        branch[:, r_[BR_R, BR_B, BR_G]]   = zeros((nl, 3))
 
     ## parameters
     ties = find(bus[e2i[branch[:, F_BUS].real.astype(int64)], BUS_AREA] !=

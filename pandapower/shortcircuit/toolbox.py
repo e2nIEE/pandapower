@@ -4,10 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from pandapower.auxiliary import _preserve_dtypes
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
