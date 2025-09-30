@@ -20,7 +20,10 @@ def validate_dataframes_for_network(net: pandapowerNet):
     """
 
     for element in net:
-        schema_path = Path(os.getcwd() + os.sep + 'pandapower' + os.sep + 'network_schema') / f"{element}.py"
+        schema_path = (
+            Path(os.getcwd() + os.sep + "pandapower" + os.sep + "network_schema")
+            / f"{element}.py"
+        )
 
         if not os.path.exists(schema_path):
             continue
