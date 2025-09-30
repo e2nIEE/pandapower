@@ -1,8 +1,6 @@
 import pandera.pandas as pa
 
-import pandapower as pp
-
-schema = pa.DataFrameSchema(
+schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
     {
         "name": pa.Column(str),
         "std_type": pa.Column(str),
@@ -21,15 +19,9 @@ schema = pa.DataFrameSchema(
         "df": pa.Column(float),
         "type": pa.Column(str),
         "max_loading_percent": pa.Column(float, required=False),
-        "endtemp_degree": pa.Column(float, required=False),
+        "endtemp_degree": pa.Column(float, required=False),  # not in create method call
         "in_service": pa.Column(bool),
-        "geo": pa.Column(str),
+        "geo": pa.Column(str),  # missing in docu
     },
     strict=False,
 )
-
-
-net = pp.networks.mv_oberrhein()
-
-# This will pass validation
-validated_df = schema.validate(net.line)

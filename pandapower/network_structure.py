@@ -1,10 +1,13 @@
 from numpy import dtype
 
 from pandapower._version import __version__, __format_version__
-
-# reihenfolge sollte überall gleich sein, structure/create/docu...
-# element sortierung in docu
-
+from pandapower.network_schema.tools import get_dtypes
+from pandapower.network_schema.bus import schema as bus_schema
+from pandapower.network_schema.load import schema as load_schema
+from pandapower.network_schema.sgen import schema as sgen_schema
+from pandapower.network_schema.switch import schema as switch_schema
+from pandapower.network_schema.ext_grid import schema as ext_grid_schema
+from pandapower.network_schema.line import schema as line_schema
 
 def get_structure_dict() -> dict:
     """
@@ -12,16 +15,7 @@ def get_structure_dict() -> dict:
     """
     return {
         # structure data
-        "bus": {  # in methodcall but not parameter docu: geodata, coords
-            "name": dtype(str),
-            "vn_kv": "f8",
-            "type": dtype(str),
-            "zone": dtype(str),
-            "max_vm_pu": "f8",
-            "min_vm_pu": "f8",
-            "in_service": "bool",
-            "geo": dtype(str),  # missing in docu, not a create method parameter, kwargs?
-        },
+        "bus": get_dtypes(bus_schema),
         "bus_dc": {  # in methodcall but not parameter docu: geodata, coords
             "name": dtype(str),
             "vn_kv": "f8",
@@ -30,46 +24,8 @@ def get_structure_dict() -> dict:
             "in_service": "bool",
             "geo": dtype(str),  # missing in docu, not a create method parameter, kwargs?
         },
-        "load": {
-            "name": dtype(str),
-            "bus": "i8",
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "const_z_p_percent": "f8",
-            "const_i_p_percent": "f8",
-            "const_z_q_percent": "f8",
-            "const_i_q_percent": "f8",
-            "sn_mva": "f8",
-            "scaling": "f8",
-            "in_service": "bool",
-            "type": dtype(str),
-            "controllable": "bool",
-            "max_p_mw": "f8",
-            "min_p_mw": "f8",
-            "max_q_mvar": "f8",
-            "min_q_mvar": "f8",
-        },
-        "sgen": {  # in methodcall but not parameter docu: generator_type, max_i_ka, kappa, lrc_pu
-            "name": dtype(str),
-            "bus": "i8",
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "sn_mva": "f8",
-            "scaling": "f8",
-            "min_p_mw": "f8",
-            "max_p_mw": "f8",
-            "min_q_mvar": "f8",
-            "max_q_mvar": "f8",
-            "controllable": "bool",
-            "k": "f8",
-            "rx": "f8",
-            "in_service": "bool",
-            "id_q_capability_characteristic": "i8",
-            "curve_style": dtype(str),
-            "reactive_capability_curve": "bool",
-            "type": dtype(str),  # missing in docu
-            "current_source": "bool",  # missing in docu
-        },
+        "load": get_dtypes(load_schema),
+        "sgen": get_dtypes(sgen_schema),
         "motor": {
             "name": dtype(str),
             "bus": "i8",
@@ -157,16 +113,7 @@ def get_structure_dict() -> dict:
             "slack": "bool",  # missing in docu
             "controllable": "bool",  # missing in docu
         },
-        "switch": {
-            "bus": "i8",
-            "name": dtype(str),
-            "element": "i8",
-            "et": dtype(str),
-            "type": dtype(str),
-            "closed": "bool",
-            "in_ka": "f8",
-            "z_ohm": "f8",  # missing in docu
-        },
+        "switch": get_dtypes(switch_schema),
         "shunt": {
             "name": dtype(str),
             "bus": "i8",
@@ -218,47 +165,8 @@ def get_structure_dict() -> dict:
             "in_service": "bool",
             "ref_bus": "u4",  # missing in docu
         },
-        "ext_grid": {
-            "name": dtype(str),
-            "bus": "i8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-            "max_p_mw": "f8",
-            "min_p_mw": "f8",
-            "max_q_mvar": "f8",
-            "min_q_mvar": "f8",
-            "s_sc_max_mva": "f8",
-            "s_sc_min_mva": "f8",
-            "rx_max": "f8",
-            "rx_min": "f8",
-            "r0x0_max": "f8",
-            "x0x_max": "f8",
-            "slack_weight": "f8",  # missing in docu
-            "in_service": "bool",
-            "controllable": "bool",  # missing in docu
-        },
-        "line": {  # in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
-            "name": dtype(str),
-            "std_type": dtype(str),
-            "from_bus": "i8",
-            "to_bus": "i8",
-            "length_km": "f8",
-            "r_ohm_per_km": "f8",
-            "x_ohm_per_km": "f8",
-            "c_nf_per_km": "f8",
-            "r0_ohm_per_km": "f8",
-            "x0_ohm_per_km": "f8",
-            "c0_nf_per_km": "f8",
-            "g_us_per_km": "f8",
-            "max_i_ka": "f8",
-            "parallel": "i8",
-            "df": "f8",
-            "type": dtype(str),
-            "max_loading_percent": "f8",
-            "endtemp_degree": "f8",  # not in craete method call
-            "in_service": "bool",
-            "geo": dtype(str),  # missing in docu
-        },
+        "ext_grid": get_dtypes(ext_grid_schema),
+        "line": get_dtypes(line_schema),
         "line_dc": {  # in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
             "name": dtype(str),
             "std_type": dtype(str),
@@ -275,11 +183,11 @@ def get_structure_dict() -> dict:
             "in_service": "bool",
             "geo": dtype(str),  # missing in docu
         },
-        "trafo": {  # in methodcall but not parameter docu: xn_ohm, pt_percent, ahhh warum gibt es 2 create methoden???
+        "trafo": {  # in methodcall but not parameter docu: xn_ohm, pt_percent
             "name": dtype(str),
             "std_type": dtype(str),
-            "hv_bus": "u4",
-            "lv_bus": "u4",
+            "hv_bus": "i8",
+            "lv_bus": "i8",
             "sn_mva": "f8",
             "vn_hv_kv": "f8",
             "vn_lv_kv": "f8",
@@ -309,7 +217,7 @@ def get_structure_dict() -> dict:
             "df": "f8",
             "in_service": "bool",
             "oltc": "bool",
-            "power_station_unit": "bool",  # not in create method call
+            "power_station_unit": "bool",
             "tap2_side": "i8",
             "tap2_neutral": "i8",
             "tap2_min": "i8",
@@ -318,8 +226,8 @@ def get_structure_dict() -> dict:
             "tap2_step_degree": "f8",
             "tap2_pos": "i8",
             "tap2_changer_type": "f8",
-            "leakage_resistance_ratio_hv": "f8",  # not in create method call
-            "leakage_reactance_ratio_hv": "f8",  # not in create method call
+            "leakage_resistance_ratio_hv": "f8",
+            "leakage_reactance_ratio_hv": "f8",
         },
         "trafo3w": {  # in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
             "name": dtype(str),

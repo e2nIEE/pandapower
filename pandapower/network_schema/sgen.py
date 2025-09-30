@@ -1,8 +1,6 @@
 import pandera.pandas as pa
 
-import pandapower as pp
-
-schema = pa.DataFrameSchema(
+schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: generator_type, max_i_ka, kappa, lrc_pu
     {
         "name": pa.Column(str),
         "bus": pa.Column(int, pa.Check.ge(0)),
@@ -21,14 +19,8 @@ schema = pa.DataFrameSchema(
         "id_q_capability_characteristic": pa.Column(int, nullable=True),
         "curve_style": pa.Column(str, nullable=True),
         "reactive_capability_curve": pa.Column(bool),
-        "type": pa.Column(str),
-        "current_source": pa.Column(bool),
+        "type": pa.Column(str),  # missing in docu
+        "current_source": pa.Column(bool),  # missing in docu
     },
     strict=False,
 )
-
-
-net = pp.networks.mv_oberrhein()
-
-# This will pass validation
-validated_df = schema.validate(net.sgen)

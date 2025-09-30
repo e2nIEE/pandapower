@@ -1,7 +1,5 @@
 import pandera.pandas as pa
 
-import pandapower as pp
-
 schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str),
@@ -25,9 +23,3 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
-
-
-net = pp.networks.mv_oberrhein()
-
-# This will pass validation
-validated_df = schema.validate(net.load)
