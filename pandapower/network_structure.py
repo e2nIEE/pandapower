@@ -8,6 +8,7 @@ from pandapower.network_schema.sgen import schema as sgen_schema
 from pandapower.network_schema.switch import schema as switch_schema
 from pandapower.network_schema.ext_grid import schema as ext_grid_schema
 from pandapower.network_schema.line import schema as line_schema
+from pandapower.network_schema.trafo import schema as trafo_schema
 
 def get_structure_dict() -> dict:
     """
@@ -183,52 +184,7 @@ def get_structure_dict() -> dict:
             "in_service": "bool",
             "geo": dtype(str),  # missing in docu
         },
-        "trafo": {  # in methodcall but not parameter docu: xn_ohm, pt_percent
-            "name": dtype(str),
-            "std_type": dtype(str),
-            "hv_bus": "i8",
-            "lv_bus": "i8",
-            "sn_mva": "f8",
-            "vn_hv_kv": "f8",
-            "vn_lv_kv": "f8",
-            "vk_percent": "f8",
-            "vkr_percent": "f8",
-            "pfe_kw": "f8",
-            "i0_percent": "f8",
-            "vk0_percent": "f8",
-            "vkr0_percent": "f8",
-            "mag0_percent": "f8",
-            "mag0_rx": "f8",
-            "si0_hv_partial": "f8",
-            "vector_group": dtype(str),
-            "shift_degree": "f8",
-            "tap_side": dtype(str),
-            "tap_neutral": "i8",
-            "tap_min": "i8",
-            "tap_max": "i8",
-            "tap_step_percent": "f8",
-            "tap_step_degree": "f8",
-            "tap_pos": "i8",
-            "tap_changer_type": dtype(str),
-            "tap_dependency_table": "bool",
-            "id_characteristic_table": "i8",
-            "max_loading_percent": "i8",
-            "parallel": "i8",
-            "df": "f8",
-            "in_service": "bool",
-            "oltc": "bool",
-            "power_station_unit": "bool",
-            "tap2_side": "i8",
-            "tap2_neutral": "i8",
-            "tap2_min": "i8",
-            "tap2_max": "i8",
-            "tap2_step_percent": "f8",
-            "tap2_step_degree": "f8",
-            "tap2_pos": "i8",
-            "tap2_changer_type": "f8",
-            "leakage_resistance_ratio_hv": "f8",
-            "leakage_reactance_ratio_hv": "f8",
-        },
+        "trafo": get_dtypes(trafo_schema),
         "trafo3w": {  # in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
             "name": dtype(str),
             "std_type": dtype(str),
