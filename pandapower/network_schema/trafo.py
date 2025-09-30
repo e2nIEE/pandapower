@@ -35,9 +35,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
         "df": pa.Column(float),
         "in_service": pa.Column(bool),
         "oltc": pa.Column(bool, required=False),
-        "power_station_unit": pa.Column(
-            bool, required=False
-        ),  # not in create method call
+        "power_station_unit": pa.Column(bool, required=False),  # not in create method call
         "tap2_side": pa.Column(int, required=False),
         "tap2_neutral": pa.Column(int, required=False),
         "tap2_min": pa.Column(int, required=False),
@@ -46,12 +44,8 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
         "tap2_step_degree": pa.Column(float, required=False),
         "tap2_pos": pa.Column(int, required=False),
         "tap2_changer_type": pa.Column(float, required=False),
-        "leakage_resistance_ratio_hv": pa.Column(
-            float, required=False
-        ),  # not in create method call
-        "leakage_reactance_ratio_hv": pa.Column(
-            float, required=False
-        ),  # not in create method call
+        "leakage_resistance_ratio_hv": pa.Column(float, required=False),  # not in create method call
+        "leakage_reactance_ratio_hv": pa.Column(float, required=False),  # not in create method call
     },
     strict=False,
 )

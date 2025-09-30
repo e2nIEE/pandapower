@@ -9,9 +9,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, c
         "max_vm_pu": pa.Column(float, required=False),
         "min_vm_pu": pa.Column(float, required=False),
         "in_service": pa.Column(bool),
-        "geo": pa.Column(
-            str
-        ),  # missing in docu, not a create method parameter, kwargs?
+        "geo": pa.Column(str),  # missing in docu, not a create method parameter, kwargs?
     },
     strict=False,
 )
