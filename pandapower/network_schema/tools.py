@@ -8,7 +8,7 @@ from pandapower import pandapowerNet
 
 
 def get_dtypes(schema: pa.DataFrameSchema):
-    return {name: col.dtype.type for name, col in schema.columns.items()}
+    return {name: dtype.type for name, dtype in schema.dtype.items()}
 
 
 def validate_dataframes_for_network(net: pandapowerNet):
