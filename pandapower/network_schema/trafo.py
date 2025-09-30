@@ -25,7 +25,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
         "tap_min": pa.Column(int),
         "tap_max": pa.Column(int),
         "tap_step_percent": pa.Column(float),
-        "tap_step_degree": pa.Column(float),
+        "tap_step_degree": pa.Column(float, nullable=True),
         "tap_pos": pa.Column(int),
         "tap_changer_type": pa.Column(str),
         "tap_dependency_table": pa.Column(bool, required=False),
