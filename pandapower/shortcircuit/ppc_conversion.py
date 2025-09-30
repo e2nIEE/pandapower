@@ -94,6 +94,11 @@ def _add_ward_sc_z(net, ppc):
         # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
         # z_base_ohm = (vn_net ** 2)# / base_sn_mva)
         # z_ward_ohm = z_ward_pu * z_base_ohm
+        z_ward_ohm = (ward["rn_ohm"].values + ward["xn_ohm"].values * 1j)
+        vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+        z_base_ohm = (vn_net ** 2)  # / base_sn_mva)
+        z_ward_pu = z_ward_ohm / z_base_ohm
+        y_ward_pu = 1 / z_ward_pu
 
         buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
         ppc["bus"][buses, GS] += gs

@@ -310,8 +310,8 @@ if __name__ == "__main__":
     ## show panadpower and powerfactory results for specified grid and location
     # net_name = '2_five_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
     net_name = '4_twenty_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
-    fault_location = 18  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
-    grounding_type = "resonant"
+    fault_location = 8  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
+    grounding_type = "resistance"
     grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated", "resonant"]
     gen_active = False
 
