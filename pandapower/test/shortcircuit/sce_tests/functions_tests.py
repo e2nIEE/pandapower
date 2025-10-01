@@ -10,6 +10,7 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower import pp_dir
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.file_io import from_json
+from pandapower.create import create_ward
 
 import warnings
 import logging
@@ -231,29 +232,38 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
 
     net = load_test_case(net_name)
 
+    xn = None
+    rn = None
     if grounding_type is not None:
         if grounding_type == "solid":
-            net.trafo['xn_ohm'] = 0
-            net.trafo['rn_ohm'] = 0
+            xn = 0
+            rn = 0
         elif grounding_type == "resistance":
-            net.trafo['xn_ohm'] = 0
-            net.trafo['rn_ohm'] = 5
+            xn = 0
+            rn = 5
         elif grounding_type == "inductance":
-            net.trafo['xn_ohm'] = 5
-            net.trafo['rn_ohm'] = 0
+            xn = 5
+            rn = 0
         elif grounding_type == "impedance":
-            net.trafo['xn_ohm'] = 5
-            net.trafo['rn_ohm'] = 5
+            xn = 5
+            rn = 5
         elif grounding_type == "isolated":
-            net.trafo['xn_ohm'] = 1e99
-            net.trafo['rn_ohm'] = 1e99
+            xn = 1e99
+            rn = 1e99
         elif grounding_type == "resonant":
-            net.trafo['xn_ohm'] = 777
-            net.trafo['rn_ohm'] = 0
+            xn = 777
+            rn = 0
+
+        net.trafo['xn_ohm'] = xn
+        net.trafo['rn_ohm'] = rn
 
     if grounding_bank_idx is not None:
         net.trafo['xn_ohm'] = 1e99
         net.trafo['rn_ohm'] = 1e99
+        # ToDo: Only temporary, ward should be created internally and not only for testing!
+        for ward_idx in grounding_bank_idx:
+            create_ward(net, ward_idx, 0, 0, 0, 0, "grounding_element",
+                        True, rn_ohm=rn, xn_ohm=xn)
 
     if is_gen:
         if gen_mode == "sgen" or gen_mode == "all":
