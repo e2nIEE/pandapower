@@ -41,7 +41,7 @@ def _init_ppc(net, sequence=1):
     _add_kt(net, ppc)
     _add_gen_sc_z_kg_ks(net, ppc, sequence)
     _add_sgen_sc_z(net, ppc)
-    _add_ward_sc_z(net, ppc)
+    add_ward_sc_z(net, ppc)
 
     ppci = _ppc2ppci(ppc, net)
 
@@ -78,7 +78,7 @@ def _add_kt(net, ppc):
         branch[f:t, K_T] = kt
 
 
-def _add_ward_sc_z(net, ppc):
+def add_ward_sc_z(net, ppc):
     for element in ("ward", "xward"):
         ward = net[element][net._is_elements_final[element]]
         if len(ward) == 0:
@@ -88,17 +88,20 @@ def _add_ward_sc_z(net, ppc):
         bus_lookup = net["_pd2ppc_lookups"]["bus"]
         ward_buses_ppc = bus_lookup[ward_buses]
 
-        y_ward_pu = (ward["pz_mw"].values + ward["qz_mvar"].values * 1j)
-        # how to calculate r and x in Ohm:
-        # z_ward_pu = 1/y_ward_pu
-        # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
-        # z_base_ohm = (vn_net ** 2)# / base_sn_mva)
-        # z_ward_ohm = z_ward_pu * z_base_ohm
-        z_ward_ohm = (ward["rn_ohm"].values + ward["xn_ohm"].values * 1j)
-        vn_net = net.bus.loc[ward_buses, "vn_kv"].values
-        z_base_ohm = (vn_net ** 2)  # / base_sn_mva)
-        z_ward_pu = z_ward_ohm / z_base_ohm
-        y_ward_pu = 1 / z_ward_pu
+        if all(col in ward.columns for col in ['rn_ohm', 'xn_ohm']) and (ward[['rn_ohm', 'xn_ohm']] != 0).any().any():
+            z_ward_ohm = (ward["rn_ohm"].values + ward["xn_ohm"].values * 1j)
+            vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+            z_base_ohm = (vn_net ** 2)  # / base_sn_mva)
+            z_ward_pu = z_ward_ohm / z_base_ohm
+            y_ward_pu = 1 / z_ward_pu
+
+        else:
+            y_ward_pu = (ward["pz_mw"].values + ward["qz_mvar"].values * 1j)
+            # how to calculate r and x in Ohm:
+            # z_ward_pu = 1/y_ward_pu
+            # vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+            # z_base_ohm = (vn_net ** 2)# / base_sn_mva)
+            # z_ward_ohm = z_ward_pu * z_base_ohm
 
         buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
         ppc["bus"][buses, GS] += gs
