@@ -29,6 +29,7 @@ from pandapower.shortcircuit.ppc_conversion import _add_gen_sc_z_kg_ks
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, K_G, K_SG, V_G, \
     PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
 from pandapower.pypower.idx_brch_sc import K_T, K_ST
+from pandapower.shortcircuit.ppc_conversion import add_ward_sc_z
 
 BIG_NUMBER = 1e20
 
@@ -56,6 +57,7 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     _add_ext_grid_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc, k_st)
     _build_branch_dc_ppc(net, ppc)  # needed for shape reasons
+    add_ward_sc_z(net, ppc)
 
     # adds auxilary buses for open switches at branches
     _switch_branches(net, ppc)
@@ -99,8 +101,7 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     mode = net._options["mode"]
     ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
     if mode == "sc":
-        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=float)
-        branch_sc.fill(np.nan)
+        branch_sc = np.zeros(shape=(length, branch_cols_sc), dtype=np.complex128)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
