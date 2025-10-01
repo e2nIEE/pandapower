@@ -337,23 +337,23 @@ class PFShortCircuitAnalysis:
             return
 
         trafo.cgnd_l = 1  # set trafo grounding as isolated
-        r1 = 0
-        x1 = 0
+        r0 = 0
+        x0 = 0
         if grounding_type == 'solid':
-            r1 = 0
-            x1 = 0
+            r0 = 0
+            x0 = 0
         elif grounding_type == 'resistance':
-            r1 = 5
-            x1 = 0
+            r0 = 5
+            x0 = 0
         elif grounding_type == 'inductance':
-            r1 = 0
-            x1 = 5
+            r0 = 0
+            x0 = 5
         elif grounding_type == 'impedance':
-            r1 = 5
-            x1 = 5
+            r0 = 5
+            x0 = 5
         elif grounding_type == 'resonant':
-            r1 = 0
-            x1 = 777
+            r0 = 0
+            x0 = 777
 
         if isinstance(grounding_bank, int):
             grounding_bank = [grounding_bank]
@@ -365,8 +365,12 @@ class PFShortCircuitAnalysis:
             bus_name = bus.loc_name[4:] if '_' in bus.loc_name else bus.loc_name
             if int(bus_name) in grounding_bank:
                 ward.outserv = 0
-                ward.R1 = r1
-                ward.X1 = x1
+                ward.R1 = 0
+                ward.X1 = 1e99
+                ward.R0 = r0
+                ward.X0 = x0
+                ward.R2 = 0
+                ward.X2 = 1e99
                 for sw in switches:
                     sw_sta_cubic = sw.GetParent()
                     sw_bus = sw_sta_cubic.GetParent()
