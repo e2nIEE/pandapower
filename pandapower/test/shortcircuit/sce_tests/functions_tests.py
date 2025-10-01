@@ -117,8 +117,53 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
             fl_buses, is_branch_test, grounding_types
         ))
 
+    # parameter list for WP 2.5 with grounding bank
+    base_wp25 = []
+    for net_name in net_names:
+        if "twenty_bus" in net_name:
+            fl_buses = [0, 8, 18]
+        else:
+            fl_buses = fault_location_buses
+
+        base_wp25 += list(product(
+            [net_name[10:]],
+            faults[2:],
+            cases,
+            values,
+            lv_tol_percents,
+            vector_groups,
+            fl_buses,
+            is_branch_test,
+            grounding_types,
+            [None]
+        ))
+
+    parametrize_values_vector_wp25_with_ward = []
+    for params in base_wp25:
+        (
+            short_name, fault, case, value, tol, vgroup,
+            fault_loc, branch_test, grounding, ward_id
+        ) = params
+
+        if "five_bus" in short_name:
+            ward_id = [3, 4]
+
+        if "twenty_bus" in short_name:
+            if vgroup == "Dyn":
+                ward_id = [4]
+            elif vgroup == "Yyn":
+                ward_id = [4, 7, 14]
+            elif vgroup == "YNyn":
+                ward_id = [4, 7, 14, 19]
+
+        parametrize_values_vector_wp25_with_ward.append((
+            short_name, fault, case, value, tol, vgroup,
+            fault_loc, branch_test, grounding, ward_id
+        ))
+
     return (parametrize_values_wp21, parametrize_values_vector_wp21,
-            parametrize_values_wp22, parametrize_values_vector_wp22, parametrize_values_vector_wp25)
+            parametrize_values_wp22, parametrize_values_vector_wp22, parametrize_values_vector_wp25,
+            parametrize_values_vector_wp25_with_ward)
 
 
 def compare_results(columns_to_check, net_df, pf_results):
@@ -164,7 +209,7 @@ def load_test_case(net_name: str) -> pandapowerNet:
 
 
 def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx=None, is_active_current=False,
-                        gen_mode=None, grounding_type=None):
+                        gen_mode=None, grounding_type=None, grounding_bank_idx=None):
     is_gen = gen_idx is not None
 
     if is_gen:
@@ -206,6 +251,10 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
             net.trafo['xn_ohm'] = 777
             net.trafo['rn_ohm'] = 0
 
+    if grounding_bank_idx is not None:
+        net.trafo['xn_ohm'] = 1e99
+        net.trafo['rn_ohm'] = 1e99
+
     if is_gen:
         if gen_mode == "sgen" or gen_mode == "all":
             net.sgen["k"] = 1.25 if is_active_current else 1.2
@@ -230,6 +279,13 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
         net.gen['in_service'] = False
         gen_str = ''
 
+    ward_str = ''
+    if grounding_bank_idx is not None:
+        if isinstance(grounding_bank_idx, list) | isinstance(grounding_bank_idx, tuple):
+            ward_str = f"_ward{''.join(str(idx) for idx in grounding_bank_idx)}"
+        else:
+            ward_str = f"_ward{grounding_bank_idx}"
+
     if is_active_current:
         net.sgen["active_current"] = True
     else:
@@ -240,6 +296,8 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
         file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}.xlsx"
         if grounding_type is not None:
             file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}_{grounding_type}.xlsx"
+            if grounding_bank_idx is not None:
+                file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{ward_str}_{grounding_type}.xlsx"
         if gen_mode == 'sgen':
             file_name = file_name.replace('_gen_', '_sgen_')
         try:
