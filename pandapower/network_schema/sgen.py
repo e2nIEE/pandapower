@@ -4,7 +4,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: generator_
     {
         "name": pa.Column(str),
         "bus": pa.Column(int, pa.Check.ge(0)),
-        "p_mw": pa.Column(float, pa.Check.lt(0)),  # surely the docu must be wrong for lt0
+        "p_mw": pa.Column(float, pa.Check.le(0)),  # surely the docu must be wrong for le0
         "q_mvar": pa.Column(float),
         "sn_mva": pa.Column(float, pa.Check.gt(0)),
         "scaling": pa.Column(float, pa.Check.ge(0)),

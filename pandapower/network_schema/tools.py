@@ -39,3 +39,48 @@ def validate_dataframes_for_network(net: pandapowerNet):
         except Exception as e:
             print(element)
             print(e)
+
+
+def create_docu_csv_from_schema(schema):
+    import pandas as pd
+    import json
+    schema_json = schema.to_json()
+    schema_dict = json.loads(schema_json)
+
+    columns_info = []
+
+    def get_checks(checks):
+        if checks is None:
+            return ''
+
+        for check in checks:
+            if check['options']['check_name'] == 'greater_than':
+                return f'>{check["value"]}'
+            elif check['options']['check_name'] == 'greater_than_or_equal_to':
+                return f'>={check["value"]}'
+            elif check['options']['check_name'] == 'less_than':
+                return f'<{check["value"]}'
+            elif check['options']['check_name'] == 'less_than_or_equal_to':
+                return f'<={check["value"]}'
+            elif check['options']['check_name'] == 'in_range':
+                return f'[{check["min_value"]}, {check["max_value"]}]'
+            elif check['options']['check_name'] == 'isin':
+                return f'{check["value"]}'
+        return ''
+
+    for col_name, col_details in schema_dict['columns'].items():
+        columns_info.append({
+            'Parameter': col_name,
+            'Datatype': col_details.get('dtype', ''),
+            'Value Range': get_checks(col_details.get('checks')),
+            'nullable': col_details.get('nullable', True),
+            'required': col_details.get('required', False),
+            'Explanation': col_details.get('description', ''),
+        })
+
+    # Create CSV with column metadata
+    df = pd.DataFrame(columns_info)
+
+    pd.set_option('display.max_columns', None)
+    print(df)
+    df.to_csv('column_schema.csv', index=False)
