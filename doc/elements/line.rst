@@ -53,14 +53,6 @@ necessary for executing a three phase power flow  / single phase short circuit
     Defining a line with length zero leads to a division by zero in the power flow and is therefore not allowed. Lines with a very low impedance might lead to convergence problems in the power flow
     for the same reason. If you want to directly connect two buses, please use the switch element instead of a line with a small impedance!
 
-*net.line_geodata*
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: line_geo.csv
-   :delim: ;
-   :widths: 10, 10, 55
-
    
 Electric Model
 =================
