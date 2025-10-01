@@ -115,22 +115,22 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
 
 ## get results for single project
 # proj_names = ['2_five_bus_radial_grid_dyn_gen']
-fault_location = [0, 1, 2, 3]
-# fault_location = [0, 8, 18]
-activate_sgen = None
-activate_gen = None
-grounding_bank = [3, 4]
-grounding_types = ["solid", "resistance", "inductance", "impedance", "resonant", "isolated"]
-# proj_names = ['4_twenty_bus_radial_grid_dyn_gen', '4_twenty_bus_radial_grid_yyn_gen', '4_twenty_bus_radial_grid_ynyn_gen']
-proj_names = ['2_five_bus_radial_grid_dyn_gen', '2_five_bus_radial_grid_yyn_gen', '2_five_bus_radial_grid_ynyn_gen',
-              '3_five_bus_meshed_grid_dyn_gen', '3_five_bus_meshed_grid_yyn_gen', '3_five_bus_meshed_grid_ynyn_gen']
-
-for proj_name in proj_names:
-    for fl in fault_location:
-        for grounding_type in grounding_types:
-            pf_dict = get_all_pf_sc_results(proj_name, fl, activate_sgen=activate_sgen, activate_gen=activate_gen,
-                                            grounding_type=grounding_type, grounding_bank=grounding_bank,
-                                            save_to_excel=True)
+# fault_location = [0, 1, 2, 3]
+# # fault_location = [0, 8, 18]
+# activate_sgen = None
+# activate_gen = None
+# grounding_bank = [3, 4]
+# grounding_types = ["solid", "resistance", "inductance", "impedance", "resonant", "isolated"]
+# # proj_names = ['4_twenty_bus_radial_grid_dyn_gen', '4_twenty_bus_radial_grid_yyn_gen', '4_twenty_bus_radial_grid_ynyn_gen']
+# proj_names = ['2_five_bus_radial_grid_dyn_gen', '2_five_bus_radial_grid_yyn_gen', '2_five_bus_radial_grid_ynyn_gen',
+#               '3_five_bus_meshed_grid_dyn_gen', '3_five_bus_meshed_grid_yyn_gen', '3_five_bus_meshed_grid_ynyn_gen']
+#
+# for proj_name in proj_names:
+#     for fl in fault_location:
+#         for grounding_type in grounding_types:
+#             pf_dict = get_all_pf_sc_results(proj_name, fl, activate_sgen=activate_sgen, activate_gen=activate_gen,
+#                                             grounding_type=grounding_type, grounding_bank=grounding_bank,
+#                                             save_to_excel=True)
 
 ## get results for all projects
 folder = os.path.join(testfiles_path, "test_grids", "wp_2.2_2.4")

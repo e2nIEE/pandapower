@@ -327,6 +327,7 @@ class PFShortCircuitAnalysis:
     def initialize_grounding_bank(self):
         app = self.app
         grounding_bank = self.grounding_bank
+        grounding_type = self.grounding_type
         trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
         wards = app.GetCalcRelevantObjects('*.ElmVac')
         switches = app.GetCalcRelevantObjects('*.StaSwitch')
