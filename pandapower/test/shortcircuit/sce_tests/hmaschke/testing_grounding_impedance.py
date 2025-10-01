@@ -52,7 +52,7 @@ elif grounding_type == "resonant":
     net.trafo['xn_ohm'] = 777
     net.trafo['rn_ohm'] = 0
 
-# pp.create.create_ward(net, 1, 0, 0, 0, 0, "grounding_element", True, rn_ohm=15, xn_ohm=15)
+pp.create.create_ward(net, 1, 0, 0, 0, 0, "grounding_element", True, rn_ohm=0, xn_ohm=0)
 
 ward = net.ward
 ward_buses = ward.bus.values

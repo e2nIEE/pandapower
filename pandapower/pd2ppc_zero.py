@@ -62,7 +62,6 @@ from pandapower.shortcircuit.ppc_conversion import _add_gen_sc_z_kg_ks
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, K_G, K_SG, V_G, \
     PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
 from pandapower.pypower.idx_brch_sc import K_T, K_ST
-from pandapower.shortcircuit.ppc_conversion import add_ward_sc_z
 
 BIG_NUMBER = 1e20
 
@@ -88,9 +87,10 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     _build_vsc_ppc(net, ppc, "sc")  # needed for shape reasons
     _add_gen_sc_impedance_zero(net, ppc)
     _add_ext_grid_sc_impedance_zero(net, ppc)
+    _add_ward_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc, k_st)
     _build_branch_dc_ppc(net, ppc)  # needed for shape reasons
-    add_ward_sc_z(net, ppc)
+
 
     # adds auxilary buses for open switches at branches
     _switch_branches(net, ppc)
@@ -799,3 +799,28 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
+
+
+def _add_ward_sc_impedance_zero(net, ppc):
+    for element in ("ward", "xward"):
+        ward = net[element][net._is_elements_final[element]]
+        if len(ward) == 0:
+            continue
+
+        ward_buses = ward.bus.values
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        ward_buses_ppc = bus_lookup[ward_buses]
+
+        if all(col in ward.columns for col in ['rn_ohm', 'xn_ohm']) and (ward[['rn_ohm', 'xn_ohm']] != 0).any().any():
+            z_ward_ohm = (ward["rn_ohm"].values + ward["xn_ohm"].values * 1j)
+            vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+            z_base_ohm = (vn_net ** 2)  # / base_sn_mva)
+            z_ward_pu = z_ward_ohm / z_base_ohm
+            y_ward_pu = 1 / z_ward_pu
+
+        else:
+            continue
+
+        buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
+        ppc["bus"][buses, GS] += gs
+        ppc["bus"][buses, BS] += bs
