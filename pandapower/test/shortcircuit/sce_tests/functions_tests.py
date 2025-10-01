@@ -260,11 +260,10 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
     if grounding_bank_idx is not None:
         net.trafo['xn_ohm'] = 1e99
         net.trafo['rn_ohm'] = 1e99
-        if grounding_type != "solid":
-            # ToDo: Only temporary, ward should be created internally and not only for testing!
-            for ward_idx in grounding_bank_idx:
-                create_ward(net, ward_idx, 0, 0, 0, 0, "grounding_element",
-                            True, rn_ohm=rn, xn_ohm=xn)
+        # ToDo: Only temporary, ward should be created internally and not only for testing!
+        for ward_idx in grounding_bank_idx:
+            create_ward(net, ward_idx, 0, 0, 0, 0, "grounding_element",
+                        True, rn_ohm=rn, xn_ohm=xn)
 
     if is_gen:
         if gen_mode == "sgen" or gen_mode == "all":
