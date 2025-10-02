@@ -6,7 +6,6 @@
 import copy
 import os
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -29,13 +28,13 @@ def test_data_source():
     my_data_source = DFData(df)
     copy.deepcopy(my_data_source)
 
-    assert np.isclose(
-        my_data_source.get_time_step_value(time_step=0,
-                                           profile_name="my_profilename"), 0.0
+    assert (
+        my_data_source.get_time_step_value(time_step=0, profile_name="my_profilename")
+        == 0.0
     )
-    assert np.isclose(
-        my_data_source.get_time_step_value(time_step=3,
-                                           profile_name="my_profilename"), 0.0
+    assert (
+        my_data_source.get_time_step_value(time_step=3, profile_name="my_profilename")
+        == 0.0
     )
     assert (
         abs(

@@ -81,7 +81,7 @@ def _kappa_method_c(net, ppc):
 def _kappa_method_b(net, ppc):
     topology = net._options["topology"]
     kappa_max = np.full(ppc["bus"].shape[0], 2.0)
-    lv_buses = np.nonzero(ppc["bus"][:, BASE_KV] < 1.0)
+    lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.0)
     if len(lv_buses) > 0:
         kappa_max[lv_buses] = 1.8
 

@@ -9,7 +9,7 @@
 
 
 """Runs a power flow."""
-import numpy as np
+
 from time import perf_counter
 from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d, int64
 
@@ -186,8 +186,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
         qg_max_lim = gen[:, QG] > gen[:, QMAX]
         qg_min_lim = gen[:, QG] < gen[:, QMIN]
 
-        non_refs = ((~np.isclose(gen[:, QMAX], 0.0)) &
-                    (~np.isclose(gen[:, QMIN], 0.0)))
+        non_refs = (gen[:, QMAX] != 0.0) & (gen[:, QMIN] != 0.0)
         mx = find(gen_status & qg_max_lim & non_refs)
         mn = find(gen_status & qg_min_lim & non_refs)
 

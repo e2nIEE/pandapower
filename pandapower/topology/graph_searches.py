@@ -205,7 +205,9 @@ def find_basic_graph_characteristics(g, roots, characteristics):
         "notn1_starts": set(),
     }
 
-    discovery = dict.fromkeys(roots,0)  # "time" of first discovery of node during search
+    discovery = {
+        root: 0 for root in roots
+    }  # "time" of first discovery of node during search
     low = {root: 0 for root in roots}
     visited = set(roots)
     path = []

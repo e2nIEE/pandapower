@@ -133,9 +133,9 @@ def test_set_user_pf_options():
     # priority
     set_user_pf_options(net, tolerance_mva=1e-6, max_iteration=20)
     runpp(net, tolerance_mva=1e-2)
-    assert np.isclose(net.user_pf_options["tolerance_mva"], 1e-6)
-    assert np.isclose(net._options["tolerance_mva"], 1e-2)
-    assert np.isclose(net._options["max_iteration"], 20)
+    assert net.user_pf_options["tolerance_mva"] == 1e-6
+    assert net._options["tolerance_mva"] == 1e-2
+    assert net._options["max_iteration"] == 20
 
 
 def test_kwargs_with_user_options():
@@ -1446,10 +1446,10 @@ def test_no_branches():
     create_sgen(net, 1, 10)
     create_load(net, 2, 10)
     runpp(net)
-    assert np.isclose(net.res_ext_grid.p_mw.at[0], 0.0)
-    assert np.isclose(net.res_ext_grid.q_mvar.at[0], 0.0)
-    assert np.isclose(net.res_bus.vm_pu.at[0], 1.0)
-    assert np.isclose(net.res_bus.va_degree.at[0], 0.0)
+    assert net.res_ext_grid.p_mw.at[0] == 0.0
+    assert net.res_ext_grid.q_mvar.at[0] == 0.0
+    assert net.res_bus.vm_pu.at[0] == 1.0
+    assert net.res_bus.va_degree.at[0] == 0.0
     assert np.all(pd.isnull(net.res_bus.loc[[1, 2], "vm_pu"]))
 
 
@@ -1469,11 +1469,11 @@ def test_only_ref_buses():
     create_ext_grid(net, bus=0, vm_pu=1)
     create_ext_grid(net, bus=1, vm_pu=1)
     runpp(net)
-    assert np.all(np.isclose(net.res_bus.vm_pu, 1.0))
-    assert np.all(np.isclose(net.res_bus.va_degree, 0.0))
-    assert np.isclose(net.res_line.loading_percent.at[0], 0.0)
-    assert np.all(np.isclose(net.res_ext_grid.p_mw, 0.0))
-    assert np.all(np.isclose(net.res_ext_grid.q_mvar, 0.0))
+    assert np.all(net.res_bus.vm_pu == 1.0)
+    assert np.all(net.res_bus.va_degree == 0.0)
+    assert net.res_line.loading_percent.at[0] == 0.0
+    assert np.all(net.res_ext_grid.p_mw == 0.0)
+    assert np.all(net.res_ext_grid.q_mvar == 0.0)
 
     net.ext_grid.at[1, "vm_pu"] = 0.5
     runpp(net)
@@ -2004,7 +2004,7 @@ def test_at_isolated_bus():
     create_gen(net, 3, 0, vm_pu=0, in_service=False)
 
     runpp(net)
-    assert np.isclose(net._options["init_vm_pu"], 1.0)
+    assert net._options["init_vm_pu"] == 1.0
 
 
 def test_shunt_with_missing_vn_kv():

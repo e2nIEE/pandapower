@@ -101,7 +101,8 @@ def get_isolated(net):
         trafo_model="t",
         check_connectivity=False,
         mode="pf",
-        switch_rx_ratio=0.0,
+        r_switch=0.0,
+        init="flat",
         enforce_q_lims=False,
         recycle=None,
     )

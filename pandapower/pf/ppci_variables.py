@@ -12,7 +12,7 @@ from numpy import flatnonzero as find, pi, exp, int64, hstack, zeros, float64
 def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     ## default arguments
     if ppci is None:
-        raise ValueError("ppci is empty")
+        ValueError("ppci is empty")
     # ppopt = ppoption(ppopt)
 
     # get data for calc

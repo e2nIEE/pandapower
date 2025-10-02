@@ -392,7 +392,7 @@ def test_QModels_with_2Dim_timeseries():
     # p values are taken from input data (no PQV area is falsifies the input)
     for ow in ows:
         pd.testing.assert_frame_equal(
-            pd.DataFrame(ts_data.to_numpy()), ow.output["res_sgen.p_mw"], atol=1e-4
+            pd.DataFrame(ts_data.values), ow.output["res_sgen.p_mw"], atol=1e-4
         )
     # q of ow2 is as expected
     p = ow2.output["res_sgen.p_mw"].values.reshape((-1,))

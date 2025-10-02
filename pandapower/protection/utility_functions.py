@@ -902,17 +902,17 @@ def switch_geodatas(net, size, distance_to_bus):
 
         pos_sb = _get_coords_from_bus_idx(net, sb)
         if len(pos_sb) > 1:
-            raise ValueError(f"Bus {sb} has multiple geodata entries: {pos_sb}")
+            ValueError(f"Bus {sb} has multiple geodata entries: {pos_sb}")
         if len(pos_sb) == 0:
-            raise ValueError(f"Bus {sb} has no geodata entry.")
+            ValueError(f"Bus {sb} has no geodata entry.")
         pos_sb = pos_sb[0]
         pos_tb = np.zeros(2)
 
         pos_tb = _get_coords_from_bus_idx(net, target_bus)
         if len(pos_sb) > 1:
-            raise ValueError(f"Bus {sb} has multiple geodata entries: {pos_sb}")
+            ValueError(f"Bus {sb} has multiple geodata entries: {pos_sb}")
         if len(pos_sb) == 0:
-            raise ValueError(f"Bus {sb} has no geodata entry.")
+            ValueError(f"Bus {sb} has no geodata entry.")
         pos_tb = pos_tb[0]
 
         # position of switch symbol
