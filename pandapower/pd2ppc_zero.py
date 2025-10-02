@@ -54,8 +54,10 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     _build_vsc_ppc(net, ppc, "sc")  # needed for shape reasons
     _add_gen_sc_impedance_zero(net, ppc)
     _add_ext_grid_sc_impedance_zero(net, ppc)
+    _add_ward_sc_impedance_zero(net, ppc)
     _build_branch_ppc_zero(net, ppc, k_st)
     _build_branch_dc_ppc(net, ppc)  # needed for shape reasons
+
 
     # adds auxilary buses for open switches at branches
     _switch_branches(net, ppc)
@@ -99,8 +101,7 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     mode = net._options["mode"]
     ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
     if mode == "sc":
-        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=float)
-        branch_sc.fill(np.nan)
+        branch_sc = np.zeros(shape=(length, branch_cols_sc), dtype=np.complex128)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 
@@ -125,6 +126,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         trafo_df["xn_ohm"] = 0.
     if "rn_ohm" not in trafo_df.columns:
         trafo_df["rn_ohm"] = 0.
+    if "xn_ohm_hv" not in trafo_df.columns:
+        trafo_df["xn_ohm_hv"] = 0.
+    if "rn_ohm_hv" not in trafo_df.columns:
+        trafo_df["rn_ohm_hv"] = 0.
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if "trafo" not in branch_lookup:
         return
@@ -251,10 +256,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_bus_hv
         # z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
         z0_k = (r_sc + x_sc * 1j) / parallel
-        z_n_ohm = trafos["xn_ohm"].fillna(0).values
-        # TODO chek calculation of z_n_ohm
-        #z_n_ohm = trafos["rn_ohm"].fillna(0).values + 1j * trafos["xn_ohm"].fillna(0).values
+        # z_n_ohm = trafos["xn_ohm"].fillna(0).values
+        z_n_ohm = trafos["rn_ohm"] + 1j * trafos["xn_ohm"]
+        z_n_ohm_hv = trafos["rn_ohm_hv"] + 1j * trafos["xn_ohm_hv"]
         k_st_tr = trafos["k_st"].fillna(1).values
+        # if no grounding type is specified solid grounding with 0 ohm on both sides of the transformer is assumed
+        z0_k_hv = z0_k
 
         if mode == "sc":  # or trafo_model == "pi":
             case = net._options["case"]
@@ -276,10 +283,22 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             # grounding impedance: for power system unit, the neutral grounding is set at the HV side.
             # for petersen coil and power transformers, the neutral grounding is at the LV side
             z_petersen_pu = 3 * z_n_ohm / ((vn_bus_lv ** 2) / net.sn_mva)
+            # Calculate the grounding impedance for the ynyn vector group, which can be at either at the HV or LV side
+            if vector_group.lower() == "ynyn":
+                # Calculate the Petersen coil impedance in per unit (pu) on the HV side
+                z_petersen_pu_hv = 3 * z_n_ohm_hv / (vn_bus_hv ** 2 / net.sn_mva)
+                z_petersen_pu_hv /= si0_hv_partial  # Normalize by the HV partial component
+                z0_k_hv = z0_k + z_petersen_pu_hv.values  # Combine with the base zero-sequence impedance
+                z_petersen_pu /= (1 - si0_hv_partial) # Normalize by the LV partial component
+                z0_k += z_petersen_pu.values
+            else:
+                # Update the zero-sequence impedance, adding the Petersen coil impedance of the low voltage side
+                z0_k += z_petersen_pu.values
+                z0_k_hv = z0_k  # Use the base zero-sequence impedance if not ynyn for both sides (hv and lv)
             # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
             # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_trafo_hv ** 2) / net.sn_mva)
             z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
-            z0_k = np.where(power_station_unit, z0_k_psu, z0_k + z_petersen_pu)
+            z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
         # y0_k = 1 / (z0_k * k_st_tr + 3 * z_n_ohm)  # adding admittance for "pi" model
@@ -300,7 +319,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         #     za=ZAN|_|                  |_| zb=ZBN
         #            |                    |
         # =============================================================================
-        z1 = si0_hv_partial * z0_k
+        z1 = si0_hv_partial * z0_k_hv
         z2 = (1 - si0_hv_partial) * z0_k
         z3 = z0_mag
         z_temp = z1 * z2 + z2 * z3 + z1 * z3
@@ -693,3 +712,28 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch[f:t, TAP] = ratio
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
+
+
+def _add_ward_sc_impedance_zero(net, ppc):
+    for element in ("ward", "xward"):
+        ward = net[element][net._is_elements_final[element]]
+        if len(ward) == 0:
+            continue
+
+        ward_buses = ward.bus.values
+        bus_lookup = net["_pd2ppc_lookups"]["bus"]
+        ward_buses_ppc = bus_lookup[ward_buses]
+
+        if all(col in ward.columns for col in ['rn_ohm', 'xn_ohm']) and (ward[['rn_ohm', 'xn_ohm']] != 0).any().any():
+            z_ward_ohm = (ward["rn_ohm"].values + ward["xn_ohm"].values * 1j)
+            vn_net = net.bus.loc[ward_buses, "vn_kv"].values
+            z_base_ohm = (vn_net ** 2)  # / base_sn_mva)
+            z_ward_pu = z_ward_ohm / z_base_ohm
+            y_ward_pu = 1 / z_ward_pu
+
+        else:
+            continue
+
+        buses, gs, bs = _sum_by_group(ward_buses_ppc, y_ward_pu.real, y_ward_pu.imag)
+        ppc["bus"][buses, GS] += gs
+        ppc["bus"][buses, BS] += bs

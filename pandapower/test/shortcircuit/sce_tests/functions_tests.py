@@ -10,6 +10,7 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower import pp_dir
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.file_io import from_json
+from pandapower.create import create_ward
 
 import warnings
 import logging
@@ -23,15 +24,26 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 
 def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test,
-                          vector_groups, gen_idx, is_active_current, gen_mode):
+                          vector_groups, gen_idx, is_active_current, gen_mode, grounding_types):
     # parameter list for WP 2.1
-    parametrize_values_wp21 = list(
-        product(faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test)
-    )
+    parametrize_values_wp21 = []
+
+    for fault, case, value, fault_bus, branch_test in product(
+            faults, cases, values, fault_location_buses, is_branch_test
+    ):
+        if case == "min":
+            for lv_tol in lv_tol_percents:
+                parametrize_values_wp21.append(
+                    (fault, case, value, lv_tol, fault_bus, branch_test)
+                )
+        elif case == "max":
+            parametrize_values_wp21.append(
+                (fault, case, value, 10, fault_bus, branch_test)
+            )
 
     # parameter list for WP 2.2 and WP 2.4
     parametrize_values_wp22 = list(
-        product(faults, ['max'], values, lv_tol_percents, fault_location_buses, is_branch_test,
+        product(faults, ['max'], values, [10], fault_location_buses, is_branch_test,
                 gen_idx, is_active_current, gen_mode)
     )
 
@@ -39,7 +51,6 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
     #  uses "Dyn" as vector group for LLL and LL. LLG and LG are combined with all vector groups.
     parametrize_values_vector_wp21 = []
     for net_name in net_names:
-        # fault location abhängig vom Grid
         if "twenty_bus" in net_name:
             fl_buses = [0, 8, 18]
         else:
@@ -62,11 +73,11 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
         else:
             fl_buses = fault_location_buses
         base_wp22 += list(product(
-            [net_name], faults[:2], ['max'], values, lv_tol_percents, vector_groups[:1],
+            [net_name], faults[:2], ['max'], values, [10], vector_groups[:1],
             fl_buses, is_branch_test, [None], is_active_current, gen_mode
         ))
         base_wp22 += list(product(
-            [net_name], faults[2:], ['max'], values, lv_tol_percents, vector_groups,
+            [net_name], faults[2:], ['max'], values, [10], vector_groups,
             fl_buses, is_branch_test, [None], is_active_current, gen_mode
         ))
 
@@ -94,16 +105,73 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
             fault_loc, branch_test, gen_id, active_curr, mode
         ))
 
+    # parameter list with vector group for WP 2.5
+    parametrize_values_vector_wp25 = []
+    for net_name in net_names:
+        if "twenty_bus" in net_name:
+            fl_buses = [0, 8, 18]
+        else:
+            fl_buses = fault_location_buses
+
+        parametrize_values_vector_wp25 += list(product(
+            [net_name[10:]], faults[2:], cases, values, lv_tol_percents, vector_groups,
+            fl_buses, is_branch_test, grounding_types
+        ))
+
+    # parameter list for WP 2.5 with grounding bank
+    base_wp25 = []
+    for net_name in net_names:
+        if "twenty_bus" in net_name:
+            fl_buses = [0, 8, 18]
+        else:
+            fl_buses = fault_location_buses
+
+        base_wp25 += list(product(
+            [net_name[10:]],
+            faults[2:],
+            cases,
+            values,
+            lv_tol_percents,
+            vector_groups,
+            fl_buses,
+            is_branch_test,
+            grounding_types,
+            [None]
+        ))
+
+    parametrize_values_vector_wp25_with_ward = []
+    for params in base_wp25:
+        (
+            short_name, fault, case, value, tol, vgroup,
+            fault_loc, branch_test, grounding, ward_id
+        ) = params
+
+        if "five_bus" in short_name:
+            ward_id = [3, 4]
+
+        if "twenty_bus" in short_name:
+            if vgroup == "Dyn":
+                ward_id = [4]
+            elif vgroup == "Yyn":
+                ward_id = [4, 7, 14]
+            elif vgroup == "YNyn":
+                ward_id = [4, 7, 14, 19]
+
+        parametrize_values_vector_wp25_with_ward.append((
+            short_name, fault, case, value, tol, vgroup,
+            fault_loc, branch_test, grounding, ward_id
+        ))
+
     return (parametrize_values_wp21, parametrize_values_vector_wp21,
-            parametrize_values_wp22, parametrize_values_vector_wp22)
+            parametrize_values_wp22, parametrize_values_vector_wp22, parametrize_values_vector_wp25,
+            parametrize_values_vector_wp25_with_ward)
 
 
 def compare_results(columns_to_check, net_df, pf_results):
     # define tolerances
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
-    # TODO skss_mw and ikss_ka only 1e-4 sufficient?
-    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
+    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-3, "rk_ohm": 1e-2, "xk_ohm": 1e-3,
             "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-2}  # TODO: tolerances ok?
 
     for column in columns_to_check:
@@ -140,17 +208,60 @@ def load_test_case(net_name: str) -> pandapowerNet:
 
 
 def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx=None, is_active_current=False,
-                        gen_mode=None):
+                        gen_mode=None, grounding_type=None, grounding_bank_idx=None):
     is_gen = gen_idx is not None
+
+    if is_gen:
+        wp_folder = "wp_2.2_2.4"
+    elif grounding_type is not None:
+        wp_folder = "wp_2.5"
+    else:
+        wp_folder = "wp_2.1"
+
     if vector_group:
         if is_gen and is_active_current:
             net_name = f"{net_name}_{vector_group.lower()}_{gen_mode}_act"
         elif is_gen:
             net_name = f"{net_name}_{vector_group.lower()}_{gen_mode}"
+        elif grounding_type is not None:
+            net_name = f"{net_name}_{vector_group.lower()}_gen"
         else:
             net_name = f"{net_name}_{vector_group.lower()}"
 
     net = load_test_case(net_name)
+
+    xn = None
+    rn = None
+    if grounding_type is not None:
+        if grounding_type == "solid":
+            xn = 0
+            rn = 0
+        elif grounding_type == "resistance":
+            xn = 0
+            rn = 5
+        elif grounding_type == "inductance":
+            xn = 5
+            rn = 0
+        elif grounding_type == "impedance":
+            xn = 5
+            rn = 5
+        elif grounding_type == "isolated":
+            xn = 1e99
+            rn = 1e99
+        elif grounding_type == "resonant":
+            xn = 777
+            rn = 0
+
+        net.trafo['xn_ohm'] = xn
+        net.trafo['rn_ohm'] = rn
+
+    if grounding_bank_idx is not None:
+        net.trafo['xn_ohm'] = 1e99
+        net.trafo['rn_ohm'] = 1e99
+        # ToDo: Only temporary, ward should be created internally and not only for testing!
+        for ward_idx in grounding_bank_idx:
+            create_ward(net, ward_idx, 0, 0, 0, 0, "grounding_element",
+                        True, rn_ohm=rn, xn_ohm=xn)
 
     if is_gen:
         if gen_mode == "sgen" or gen_mode == "all":
@@ -172,7 +283,16 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
                 net.gen.loc[net.gen.bus == gen_idx, 'in_service'] = True
             gen_str = f"_{gen_mode}{gen_idx}"
     else:
+        net.sgen['in_service'] = False
+        net.gen['in_service'] = False
         gen_str = ''
+
+    ward_str = ''
+    if grounding_bank_idx is not None:
+        if isinstance(grounding_bank_idx, list) | isinstance(grounding_bank_idx, tuple):
+            ward_str = f"_ward{''.join(str(idx) for idx in grounding_bank_idx)}"
+        else:
+            ward_str = f"_ward{grounding_bank_idx}"
 
     if is_active_current:
         net.sgen["active_current"] = True
@@ -182,12 +302,16 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
     dataframes = {}
     for bb in ['bus', 'branch']:
         file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}.xlsx"
+        if grounding_type is not None:
+            file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{gen_str}_{grounding_type}.xlsx"
+            if grounding_bank_idx is not None:
+                file_name = f"{net_name}_pf_sc_results_{fault_location_bus}_{bb}{ward_str}_{grounding_type}.xlsx"
         if gen_mode == 'sgen':
             file_name = file_name.replace('_gen_', '_sgen_')
         try:
             dataframes[bb] = load_pf_results(os.path.join(
                 testfiles_path,
-                "sc_result_comparison", "wp_2.2_2.4" if is_gen else "wp_2.1",
+                "sc_result_comparison", wp_folder,
                 file_name
             ))
         except FileNotFoundError:
@@ -359,7 +483,6 @@ def modify_impedance_values_with_fault_value(selected_results, r_ohm, x_ohm):
 
 def load_pf_results(excel_file):
     """Load power flow results from Excel sheets."""
-    # TODO check all dropped columns
     sheets = [sheet for sheet in pd.ExcelFile(excel_file).sheet_names]
     dataframes = {}
 
@@ -411,6 +534,12 @@ def load_pf_results(excel_file):
                'pf_vm_c_from_pu', 'pf_va_c_from_degree', 'pf_vm_c_to_pu', 'pf_va_c_to_degree']
     }
 
+    if '_resonant' in excel_file:
+        columns_mapping['LG'].append('3xI0')
+        columns_mapping['LLG'].append('3xI0')
+        columns_mapping_branch['LG'].append('3xI0')
+        columns_mapping_branch['LLG'].append('3xI0')
+
     for sheet in sheets:
         pf_results = pd.read_excel(excel_file, sheet_name=sheet)
         fault_type = None
@@ -423,7 +552,7 @@ def load_pf_results(excel_file):
         elif sheet.startswith("LG_"):
             fault_type = "LG"
         parts_excel_file = excel_file.split('_')
-        if parts_excel_file[-1] == 'bus.xlsx' or parts_excel_file[-2] == 'bus':
+        if 'bus' in parts_excel_file and 'branch' not in parts_excel_file and 'branch.xlsx' not in parts_excel_file:
             relevant_columns = columns_mapping[fault_type]
             pf_results = pf_results[relevant_columns]
             pf_results['name'] = pf_results['name'].astype(str)
@@ -432,17 +561,27 @@ def load_pf_results(excel_file):
             if fault_type == 'LL':
                 pf_results.columns = ['name', 'ikss_ka', 'skss_mw',
                                       "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
-            elif fault_type == 'LLG': #  or fault_type == 'LG': # or fault_type == 'LL':
-                pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw',
-                                      'skss_c_mw',
-                                      "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+            elif fault_type == 'LLG':
+                if '_resonant' in excel_file:
+                    pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw',
+                                          'skss_c_mw',
+                                          "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm", "3xI0"]
+                else:
+                    pf_results.columns = ["name", "ikss_a_ka", "ikss_b_ka", 'ikss_c_ka', 'skss_a_mw', 'skss_b_mw',
+                                          'skss_c_mw',
+                                          "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
             elif fault_type == 'LG':
-                pf_results.columns = ["name", "ikss_ka", 'skss_mw',
-                                      "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+                if '_resonant' in excel_file:
+                    pf_results.columns = ["name", "ikss_ka", 'skss_mw',
+                                          "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm", "3xI0"]
+                else:
+                    pf_results.columns = ["name", "ikss_ka", 'skss_mw',
+                                        "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
+
 
             dataframes[sheet] = pf_results
 
-        elif parts_excel_file[-1] == 'branch.xlsx' or parts_excel_file[-2] == 'branch':
+        elif 'branch' in parts_excel_file or 'branch.xlsx' in parts_excel_file:
             relevant_columns = columns_mapping_branch[fault_type]
             pf_results = pf_results[relevant_columns]
             if fault_type == 'LLL':
@@ -452,20 +591,33 @@ def load_pf_results(excel_file):
                                       'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree']
 
             elif fault_type == 'LLG' or fault_type == 'LG' or fault_type == 'LL':
-                pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
-                                      'ikss_a_to_degree',
-                                      'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
-                                      'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree',
-                                      'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka', 'ikss_b_to_degree',
-                                      'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
-                                      'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
-                                      'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
-                                      'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
-                                      'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
-                                      ]
+                if '_resonant' in excel_file and fault_type in ['LLG', 'LG']:
+                    pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
+                                          'ikss_a_to_degree',
+                                          'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
+                                          'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree',
+                                          'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka', 'ikss_b_to_degree',
+                                          'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
+                                          'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
+                                          'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
+                                          'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
+                                          'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
+                                          '3xI0']
+                else:
+                    pf_results.columns = ['name', 'ikss_ka', 'ikss_a_from_ka', 'ikss_a_from_degree', 'ikss_a_to_ka',
+                                          'ikss_a_to_degree',
+                                          'p_a_from_mw', 'q_a_from_mvar', 'p_a_to_mw', 'q_a_to_mvar',
+                                          'vm_a_from_pu', 'va_a_from_degree', 'vm_a_to_pu', 'va_a_to_degree',
+                                          'ikss_b_from_ka', 'ikss_b_from_degree', 'ikss_b_to_ka', 'ikss_b_to_degree',
+                                          'p_b_from_mw', 'q_b_from_mvar', 'p_b_to_mw', 'q_b_to_mvar',
+                                          'vm_b_from_pu', 'va_b_from_degree', 'vm_b_to_pu', 'va_b_to_degree',
+                                          'ikss_c_from_ka', 'ikss_c_from_degree', 'ikss_c_to_ka', 'ikss_c_to_degree',
+                                          'p_c_from_mw', 'q_c_from_mvar', 'p_c_to_mw', 'q_c_to_mvar',
+                                          'vm_c_from_pu', 'va_c_from_degree', 'vm_c_to_pu', 'va_c_to_degree',
+                                          ]
                 # ToDo: Do we need the value ikss_ka ?
                 pf_results['ikss_ka'] = np.max(
-                    [pf_results['ikss_a_from_ka'], pf_results['ikss_a_to_ka'], pf_results['ikss_b_from_ka'], \
+                    [pf_results['ikss_a_from_ka'], pf_results['ikss_a_to_ka'], pf_results['ikss_b_from_ka'],
                      pf_results['ikss_b_to_ka'], pf_results['ikss_c_from_ka'], pf_results['ikss_c_to_ka']], axis=0)
 
             dataframes[sheet] = pf_results

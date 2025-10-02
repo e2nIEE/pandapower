@@ -4,13 +4,16 @@ import pandas as pd
 import numpy as np
 import os
 
+from pandapower.test.shortcircuit.sce_tests.hmaschke.testing_grounding_impedance import grounding_type
+
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 
 class PFShortCircuitAnalysis:
     def __init__(self, app, proj_name, fault_type='LLL', calc_mode='max',
                  fault_impedance_rf=0.0, fault_impedance_xf=0.0,
-                 lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None, activate_gens_at_bus=None):
+                 lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None, activate_gens_at_bus=None,
+                 grounding_type=None, grounding_bank=None):
         """
                 Parameters:
                 - app: powerfactory.Application
@@ -21,6 +24,10 @@ class PFShortCircuitAnalysis:
                 - fault_impedance_xf: float
                 - lv_tol_percent: float
                 - fault_location_index: int or None
+                - activate_sgens_at_bus: list of int or None
+                - activate_gens_at_bus: list of int or None
+                - grounding_type: str or None ("solid", "resistance", "inductance", "impedance", "resonant", "isolated")
+                # grounding_bank: list of int or None
         """
 
         self.app = app
@@ -33,6 +40,8 @@ class PFShortCircuitAnalysis:
         self.fault_location_index = fault_location_index
         self.activate_sgens_at_bus = activate_sgens_at_bus
         self.activate_gens_at_bus = activate_gens_at_bus
+        self.grounding_type = grounding_type
+        self.grounding_bank = grounding_bank
         self.pf_results_bus_sc = None
         self.pf_results_branch_sc = None
 
@@ -64,6 +73,8 @@ class PFShortCircuitAnalysis:
         fault_location_index = self.fault_location_index
 
         self.activate_elements()
+        self.initialize_grounding()
+        self.initialize_grounding_bank()
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
                                 lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
@@ -105,6 +116,8 @@ class PFShortCircuitAnalysis:
 
         if fault_type == 'LLL':
             result_variables = result_variables_3ph
+        elif fault_type == 'LLG' or fault_type == 'LG':
+            result_variables["3xI0"] = "m:I0x3"
 
         for bus in bus_elements:
             if bus.HasResults(0):
@@ -131,6 +144,8 @@ class PFShortCircuitAnalysis:
         fault_location_index = self.fault_location_index
 
         self.activate_elements()
+        self.initialize_grounding()
+        self.initialize_grounding_bank()
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
                                 lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
@@ -190,6 +205,8 @@ class PFShortCircuitAnalysis:
 
         if fault_type == 'LLL':
             result_variables_lines = result_variables_lines_3ph
+        elif fault_type == 'LLG' or fault_type == 'LG':
+            result_variables_lines["3xI0"] = "m:I0x3"
 
         for line in line_elements:
             if line.HasResults(0):
@@ -232,15 +249,12 @@ class PFShortCircuitAnalysis:
         case = self.calc_mode
         fault_impedance = self.fault_impedance_rf, self.fault_impedance_xf
         lv_tol_percent = self.lv_tol_percent
-        # fault_location = self.fault_location_index
 
         if fault_impedance[0] > 0:
             sheet_name_base = f"{fault_type.upper()}_{case}_fault"
         else:
             sheet_name_base = f"{fault_type.upper()}_{case}"
         sheet_name_base = f"{sheet_name_base}_{lv_tol_percent}"
-        # if fault_location is not None:
-        #     sheet_name_base = f"{sheet_name_base}_bus_{fault_location}"
         sheet_name_base = sheet_name_base[:25]
         return sheet_name_base
 
@@ -279,3 +293,90 @@ class PFShortCircuitAnalysis:
                 else:
                     elm.outserv = 1
 
+    def initialize_grounding(self):
+        if self.grounding_bank is not None:
+            return
+        app = self.app
+        grounding_type = self.grounding_type
+        trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
+        if grounding_type is None:
+            trafo.cgnd_l = 0
+            trafo.re0tr_l = 0
+            trafo.xe0tr_l = 0
+            return
+
+        trafo.cgnd_l = 1 if grounding_type == 'isolated' else 0
+        trafo.cpeter_l = 0
+        if grounding_type == 'solid':
+            trafo.re0tr_l = 0
+            trafo.xe0tr_l = 0
+        elif grounding_type == 'resistance':
+            trafo.re0tr_l = 5
+            trafo.xe0tr_l = 0
+        elif grounding_type == 'inductance':
+            trafo.re0tr_l = 0
+            trafo.xe0tr_l = 5
+        elif grounding_type == 'impedance':
+            trafo.re0tr_l = 5
+            trafo.xe0tr_l = 5
+        elif grounding_type == 'resonant':
+            trafo.re0tr_l = 0
+            trafo.xe0tr_l = 777
+            trafo.cpeter_l = 1
+
+    def initialize_grounding_bank(self):
+        app = self.app
+        grounding_bank = self.grounding_bank
+        grounding_type = self.grounding_type
+        trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
+        wards = app.GetCalcRelevantObjects('*.ElmVac')
+        switches = app.GetCalcRelevantObjects('*.StaSwitch')
+
+        if grounding_bank is None or grounding_bank == [None]:
+            for ward in wards:
+                ward.outserv = 1
+            return
+
+        trafo.cgnd_l = 1  # set trafo grounding as isolated
+        r0 = 0
+        x0 = 0
+        if grounding_type == 'solid':
+            r0 = 0
+            x0 = 0
+        elif grounding_type == 'resistance':
+            r0 = 5
+            x0 = 0
+        elif grounding_type == 'inductance':
+            r0 = 0
+            x0 = 5
+        elif grounding_type == 'impedance':
+            r0 = 5
+            x0 = 5
+        elif grounding_type == 'resonant':
+            r0 = 0
+            x0 = 777
+
+        if isinstance(grounding_bank, int):
+            grounding_bank = [grounding_bank]
+
+        for ward in wards:
+            bus = ward.bus1.GetParent()
+            if not bus:
+                continue
+            bus_name = bus.loc_name[4:] if '_' in bus.loc_name else bus.loc_name
+            if int(bus_name) in grounding_bank:
+                ward.outserv = 0
+                ward.R1 = 0
+                ward.X1 = 1e99
+                ward.R0 = r0
+                ward.X0 = x0
+                ward.R2 = 0
+                ward.X2 = 1e99
+                for sw in switches:
+                    sw_sta_cubic = sw.GetParent()
+                    sw_bus = sw_sta_cubic.GetParent()
+                    if sw_sta_cubic.obj_id == ward and sw_bus == bus:
+                        sw.on_off = 1
+                        break
+            else:
+                ward.outserv = 1
