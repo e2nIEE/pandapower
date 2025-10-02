@@ -45,14 +45,14 @@ elif grounding_type == "impedance":
     net.trafo['xn_ohm'] = 5
     net.trafo['rn_ohm'] = 5
 elif grounding_type == "isolated":
-    net.trafo['xn_ohm'] = 1e20
-    net.trafo['rn_ohm'] = 1e20
+    net.trafo['xn_ohm'] = 1e8
+    net.trafo['rn_ohm'] = 1e8
 elif grounding_type == "resonant":
     # 20000 / np.sqrt(3) / 14.84958 = 777.598
     net.trafo['xn_ohm'] = 777
     net.trafo['rn_ohm'] = 0
 
-pp.create.create_ward(net, 1, 0, 0, 0, 0, "grounding_element", True, rn_ohm=15, xn_ohm=15)
+pp.create.create_ward(net, 1, 0, 0, 0, 0, "grounding_element", True, rn_ohm=0, xn_ohm=0)
 
 ward = net.ward
 ward_buses = ward.bus.values
