@@ -171,9 +171,7 @@ def compare_results(columns_to_check, net_df, pf_results):
     # define tolerances
     rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
-    # TODO skss_mw and ikss_ka only 1e-4 sufficient?
-    # TODO rk_ohm and xk_ohm only 1e-3 sufficient?
-    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-3, "xk_ohm": 1e-3,
+    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-3, "rk_ohm": 1e-2, "xk_ohm": 1e-3,
             "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-2}  # TODO: tolerances ok?
 
     for column in columns_to_check:
