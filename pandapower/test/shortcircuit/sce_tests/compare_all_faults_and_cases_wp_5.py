@@ -310,21 +310,21 @@ if __name__ == "__main__":
     ## show panadpower and powerfactory results for specified grid and location
     # net_name = '2_five_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
     net_name = '4_twenty_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
-    fault_location = 8  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
+    fault_location = 1  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
     grounding_type = "resistance"
     grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated", "resonant"]
     gen_active = False
 
     diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, grounding_type, gen_active=gen_active)
 
-    """fault_location = [fault_location]
+    fault_location = [0]
     ## detailed overview for all grids
     df_bus, df_branch = generate_summary_tables(names, fault_location, grounding_types, detailed=True,
                                                 gen_active=gen_active)
 
     ## simple overview for all grids
     df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, grounding_types, detailed=False,
-                                                              gen_active=gen_active)"""
+                                                              gen_active=gen_active)
 
 
 
