@@ -31,7 +31,7 @@ sys.path.append(os.path.abspath("..\\network_generator"))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.intersphinx', 'sphinx.ext.mathjax', 'sphinx.ext.autodoc', 'numpydoc',
-              'sphinx.ext.autosummary', 'sphinxcontrib.imagesvg'] #sphinx.ext.mathjax and sphinx.ext.imgmath don't comply with each other anymore., pngmath will be replaced by imgmath in new sphinx version
+              'sphinx.ext.autosummary'] #sphinx.ext.mathjax and sphinx.ext.imgmath don't comply with each other anymore., pngmath will be replaced by imgmath in new sphinx version
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -20,15 +20,6 @@ from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_res
 
 
 def _run_dc_pf(ppci, recycle=False):
-    """
-    Runs a decoupled (dc) powerflow to initalize all the values
-    Args:
-        ppci:
-        recycle:
-
-    Returns:
-
-    """
     t0 = perf_counter()
 
     # if TAP is changed, the Bbus and Bf must be calculated from scratch

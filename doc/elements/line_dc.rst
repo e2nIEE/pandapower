@@ -56,9 +56,9 @@ Electric Model
 DC lines are modelled with the :math:`\pi`-equivalent circuit:
 
 .. image:: line_dc.png
-    :width: 25em
-    :alt: alternate Text
-    :align: center
+	:width: 25em
+	:alt: alternate Text
+	:align: center
 
 The elements in the equivalent circuit are calculated from the parameters in the net.line_dc dataframe as:
 
@@ -66,8 +66,8 @@ The elements in the equivalent circuit are calculated from the parameters in the
    :nowrap:
 
    \begin{align*}
-    R &= r\_ohm\_per\_km \cdot \frac{length\_km}{parallel} \\
-    G &= g\_us\_per\_km \cdot 10^-6 \cdot length\_km \cdot parallel \\
+    \{R} &= (r\_ohm\_per\_km) \cdot \frac{length\_km}{parallel}  \\
+    \{G} &= g\_us\_per\_km \cdot 10^-6 \cdot length\_km \cdot parallel\\
     \end{align*}
 
 The parameters are then transformed in the per unit system:
@@ -106,7 +106,7 @@ The power flow results in the net.res_line_dc table are defined as:
    \begin{align*}
     p\_from\_mw &= v_{from} \cdot i_{from} \\
     p\_to\_mw &= v_{to} \cdot i_{to} \\
-    pl\_mw &= p\_from\_mw + p\_to\_mw \\
+	pl\_mw &= p\_from\_mw + p\_to\_mw \\
     i\_from\_ka &= i_{from} \\
     i\_to\_ka &= i_{to} \\
     i\_ka &= max(i_{from}, i_{to}) \\

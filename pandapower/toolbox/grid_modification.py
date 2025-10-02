@@ -297,83 +297,41 @@ def set_element_status(net, buses, in_service):
             except:
                 pass
 
-def __close_switches_for_oos(closed_switches, switches, et_label, elements_oos_idx):
-    if len(elements_oos_idx) == 0:
-        return
-    mask = (switches['et'] == et_label) & (switches['element'].isin(elements_oos_idx))
-    newly_closed = switches.index[mask & (~switches['closed'])]
-    if len(newly_closed):
-        closed_switches.update(newly_closed.tolist())
-    switches.loc[mask, 'closed'] = True
 
 def set_isolated_areas_out_of_service(net, respect_switches=True):
     """
     Set all isolated buses and all elements connected to isolated buses out of service.
     """
     from pandapower.topology import unsupplied_buses
-    bus = net.bus
-    switches = net.switch
-
-    unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
-    if len(unsupplied):
-        already_oos = (~bus.loc[list(unsupplied), 'in_service']).sum()
-        logger.info(f"Set {already_oos} of {len(unsupplied)} unsupplied buses out of service")
-        set_element_status(net, list(unsupplied), False)
-
-    bus_in_service = bus['in_service']
-
-    if len(net.trafo3w):
-        trafo3ws = net.trafo3w
-        status = trafo3ws[['hv_bus', 'mv_bus', 'lv_bus']].apply(lambda col: bus_in_service.loc[col].values)
-        mask_bus_oos = ~status.all(axis=1)
-
-        trafo3ws_sw = switches[(switches['et'] == 't3') & (~switches['closed'])]
-        open_counts = trafo3ws_sw.groupby('element').size()
-        mask_all3_open = trafo3ws.index.to_series().map(open_counts).fillna(0).eq(3).values
-
-        t3_oos = mask_bus_oos | mask_all3_open
-        if t3_oos.any():
-            trafo3ws.loc[t3_oos, 'in_service'] = False
-
     closed_switches = set()
+    unsupplied = unsupplied_buses(net, respect_switches=respect_switches)
+    logger.info("set %d of %d unsupplied buses out of service" % (
+        len(net.bus.loc[list(unsupplied)].query('~in_service')), len(unsupplied)))
+    set_element_status(net, list(unsupplied), False)
 
-    if len(net['line']):
-        oos_idx = net['line'].index[~net['line']['in_service']]
-        __close_switches_for_oos(closed_switches, switches, 'l', oos_idx)
+    for tr3w in net.trafo3w.index.values:
+        tr3w_buses = net.trafo3w.loc[tr3w, ['hv_bus', 'mv_bus', 'lv_bus']].values
+        if not all(net.bus.loc[tr3w_buses, 'in_service'].values):
+            net.trafo3w.at[tr3w, 'in_service'] = False
+        open_tr3w_switches = net.switch.loc[(net.switch.et == 't3') & ~net.switch.closed & (
+            net.switch.element == tr3w)]
+        if len(open_tr3w_switches) == 3:
+            net.trafo3w.at[tr3w, 'in_service'] = False
 
-    if len(net['trafo']):
-        oos_idx = net['trafo'].index[~net['trafo']['in_service']]
-        __close_switches_for_oos(closed_switches, switches, 't', oos_idx)
+    for element, et in zip(["line", "trafo"], ["l", "t"]):
+        oos_elements = net[element].query("not in_service").index
+        oos_switches = net.switch[(net.switch.et == et) & net.switch.element.isin(
+            oos_elements)].index
 
-    open_l = switches[(switches['et'] == 'l') & (~switches['closed'])]
+        closed_switches.update([i for i in oos_switches.values if not net.switch.at[i, 'closed']])
+        net.switch.loc[oos_switches, "closed"] = True
 
-    if len(open_l) and len(net.line):
-        j = open_l[['element', 'bus']].merge(
-            net.line[['from_bus', 'to_bus', 'in_service']],
-            left_on='element', right_index=True, how='left'
-        )
-        other_bus = np.where(j['bus'].values == j['from_bus'].values, j['to_bus'].values, j['from_bus'].values)
-        other_bus_oos = ~bus_in_service.loc[other_bus].values
-        to_oos = j.loc[other_bus_oos, 'element'].unique()
-
-        if len(to_oos):
-            net.line.loc[to_oos, 'in_service'] = False
-
-    open_t = switches[(switches['et'] == 't') & (~switches['closed'])]
-    if len(open_t) and len(net.trafo):
-        j = open_t[['element', 'bus']].merge(
-            net.trafo[['hv_bus', 'lv_bus', 'in_service']],
-            left_on='element', right_index=True, how='left'
-        )
-        other_bus = np.where(j['bus'].values == j['hv_bus'].values, j['lv_bus'].values, j['hv_bus'].values)
-        other_bus_oos = ~bus_in_service.loc[other_bus].values
-        to_oos = j.loc[other_bus_oos, 'element'].unique()
-
-        if len(to_oos):
-            net.trafo.loc[to_oos, 'in_service'] = False
-
-    if closed_switches:
-        logger.info(f"closed {len(closed_switches)} switches: {sorted(closed_switches)}")
+        for idx, bus in net.switch.loc[~net.switch.closed & (net.switch.et == et)][[
+                "element", "bus"]].values:
+            if not net.bus.in_service.at[next_bus(net, bus, idx, element)]:
+                net[element].at[idx, "in_service"] = False
+    if len(closed_switches) > 0:
+        logger.info('closed %d switches: %s' % (len(closed_switches), closed_switches))
 
 
 def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
@@ -703,9 +661,6 @@ def drop_buses(net, buses, drop_elements=True):
     Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
     """
-    if not len(buses):
-        return
-
     detach_from_groups(net, "bus", buses)
     net["bus"].drop(buses, inplace=True)
     res_buses = net.res_bus.index.intersection(buses)
@@ -721,9 +676,6 @@ def drop_trafos(net, trafos, table="trafo"):
     Deletes all trafos and in the given list of indices and removes
     any switches connected to it.
     """
-    if not len(trafos):
-        return
-
     if table not in ('trafo', 'trafo3w'):
         raise UserWarning("parameter 'table' must be 'trafo' or 'trafo3w'")
     # drop any switches
@@ -750,9 +702,6 @@ def drop_lines(net, lines):
     Deletes all lines and their geodata in the given list of indices and removes
     any switches connected to it.
     """
-    if not len(lines):
-        return
-
     # drop connected switches
     i = net["switch"][(net["switch"]["element"].isin(lines)) & (net["switch"]["et"] == "l")].index
     detach_from_groups(net, "switch", i)
@@ -950,47 +899,6 @@ def drop_inner_branches(net, buses, branch_elements=None):
     """
     _inner_branches(net, buses, "drop", branch_elements=branch_elements)
 
-def __drop_inactive_elements_other(net):
-    """
-    Drops inactive elements other than branches and buses
-    """
-    non_branch_bus_and_others = pp_elements(
-        bus=False, bus_elements=True, branch_elements=False, other_elements=True
-    )
-
-    for elm in non_branch_bus_and_others:
-        df = net[elm]
-
-        if not len(df):
-            continue
-
-        if "in_service" not in df.columns:
-            if elm not in {"measurement", "switch"}:
-                logger.info(
-                    "Out-of-service elements cannot be dropped since 'in_service' "
-                    f"is not in net[{elm}].columns"
-                )
-            continue
-
-        idx = df.index[~df.in_service]
-        if len(idx):
-            drop_elements_simple(net, elm, idx)
-
-def __drop_inactive_other_branches(net):
-    """
-    Cleans up a pandapower network by removing all out-of-service “other branch elements”.
-    """
-    other_branch_elms = (
-            pp_elements(bus=False, bus_elements=False, branch_elements=True, other_elements=False)
-            - ({"line", "trafo", "trafo3w", "switch"})
-    )
-
-    for elm in other_branch_elms:
-        df = net[elm]
-        if len(df) and "in_service" in df.columns:
-            idx = df.index[~df.in_service]
-            if len(idx):
-                drop_elements_simple(net, elm, idx)
 
 def drop_out_of_service_elements(net):
     """
@@ -1000,39 +908,40 @@ def drop_out_of_service_elements(net):
     """
 
     # --- drop inactive branches
-    if len(net.line):
-        inactive_lines = net.line.index[~net.line.in_service]
-        drop_lines(net, inactive_lines)
+    inactive_lines = net.line[~net.line.in_service].index
+    drop_lines(net, inactive_lines)
 
-    if len(net.trafo):
-        inactive_trafos = net.trafo.index[~net.trafo.in_service]
-        drop_trafos(net, inactive_trafos, table="trafo")
+    inactive_trafos = net.trafo[~net.trafo.in_service].index
+    drop_trafos(net, inactive_trafos, table='trafo')
 
-    if len(net.trafo3w):
-        inactive_trafos3w = net.trafo3w.index[~net.trafo3w.in_service]
-        drop_trafos(net, inactive_trafos3w, table="trafo3w")
+    inactive_trafos3w = net.trafo3w[~net.trafo3w.in_service].index
+    drop_trafos(net, inactive_trafos3w, table='trafo3w')
 
-    __drop_inactive_other_branches(net)
-
-    ebt = [(elm, bus_col) for (elm, bus_col) in element_bus_tuples(bus_elements=False)
-           if elm != "switch" and len(net[elm])]
+    other_branch_elms = pp_elements(bus=False, bus_elements=False, branch_elements=True,
+                                    other_elements=False) - {"line", "trafo", "trafo3w", "switch"}
+    for elm in other_branch_elms:
+        drop_elements_simple(net, elm, net[elm][~net[elm].in_service].index)
 
     # --- drop inactive buses (safely)
     # do not delete buses connected to branches
-    do_not_delete = pd.Index([])
-
-    if ebt:
-        bus_series_list = [net[elm][bus_col] for elm, bus_col in ebt if bus_col in net[elm].columns]
-        if bus_series_list:
-            do_not_delete = pd.Index(pd.concat(bus_series_list, ignore_index=True).unique())
+    do_not_delete = set()
+    for elm, bus_col in element_bus_tuples(bus_elements=False):
+        if elm != "switch":
+            do_not_delete |= set(net[elm][bus_col].values)
 
     # remove inactive buses (safely)
-    if len(net.bus):
-        inactive_buses = net.bus.index[~net.bus.in_service]
-        safe_to_drop = inactive_buses.difference(do_not_delete)
-        drop_buses(net, safe_to_drop, drop_elements=True)
+    inactive_buses = set(net.bus[~net.bus.in_service].index) - do_not_delete
+    drop_buses(net, inactive_buses, drop_elements=True)
 
-    __drop_inactive_elements_other(net)
+    # --- drop inactive elements other than branches and buses
+    for elm in pp_elements(bus=False, bus_elements=True, branch_elements=False,
+                           other_elements=True):
+        if "in_service" not in net[elm].columns:
+            if elm not in ["measurement", "switch"]:
+                logger.info("Out-of-service elements cannot be dropped since 'in_service' is " +
+                            "not in net[%s].columns" % elm)
+        else:
+            drop_elements_simple(net, elm, net[elm][~net[elm].in_service].index)
 
 
 def drop_inactive_elements(net, respect_switches=True):

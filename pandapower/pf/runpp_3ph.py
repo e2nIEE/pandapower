@@ -421,8 +421,8 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # Construct Sequence Frame Bus admittance matrices Ybus
     # =========================================================================
 
-    ppci0, ppci1, ppci2, y_0_pu, y_1_pu, y_2_pu, y_0_f, y_1_f, y_2_f,\
-        y_0_t, y_1_t, y_2_t = _get_y_bus(ppci0, ppci1, ppci2, recycle)
+    ppci0, ppci1, ppci2, y_0_pu, y_1_pu, y_2_pu, y_0_f, y_1_f, _,\
+        y_0_t, y_1_t, _ = _get_y_bus(ppci0, ppci1, ppci2, recycle)
     # =========================================================================
     # Initial voltage values
     # =========================================================================
@@ -449,9 +449,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
                            [0, -1, 1]])
     v_abc_it = sequence_to_phase(v_012_it)
 
-    s_abc_pu = -np.divide(s_abc, ppci1["baseMVA"])
-    s_abc_delta_pu = -np.divide(s_abc_delta, ppci1["baseMVA"])
-
     # =========================================================================
     #             Iteration using Power mismatch criterion
     # =========================================================================
@@ -463,6 +460,9 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         # =====================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =====================================================================
+        s_abc_pu = -np.divide(s_abc, ppci1["baseMVA"])
+        s_abc_delta_pu = -np.divide(s_abc_delta, ppci1["baseMVA"])
+
         i_abc_it_wye = (np.divide(s_abc_pu, v_abc_it)).conjugate()
         i_abc_it_delta = np.matmul(i_del_xfmn, (np.divide(s_abc_delta_pu, np.matmul
                                                           (v_del_xfmn, v_abc_it))).conjugate())
@@ -473,27 +473,17 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         i012_it = phase_to_sequence(i_abc_it)
         v1_for_s1 = v_012_it[1, :]
         i1_for_s1 = -i012_it[1, :]
-        v2_for_s2 = v_012_it[2, :]
-        i2_for_s2 = -i012_it[2, :]
-        v0_for_s0 = v_012_it[0, :]
-        i0_for_s0 = -i012_it[0, :]
         v0_pu_it = X012_to_X0(v_012_it)
         v2_pu_it = X012_to_X2(v_012_it)
         i0_pu_it = X012_to_X0(i012_it)
         i2_pu_it = X012_to_X2(i012_it)
         s1 = np.multiply(v1_for_s1, i1_for_s1.conjugate())
-        s2 = np.multiply(v2_for_s2, i2_for_s2.conjugate())
-        s0 = np.multiply(v0_for_s0, i0_for_s0.conjugate())
         # =============================================================================
         # Current used to find S1 Positive sequence power
         # =============================================================================
 
         ppci1["bus"][pq_bus, PD] = np.real(s1[pq_bus]) * ppci1["baseMVA"]
         ppci1["bus"][pq_bus, QD] = np.imag(s1[pq_bus]) * ppci1["baseMVA"]
-        ppci2["bus"][pq_bus, PD] = np.real(s2[pq_bus]) * ppci2["baseMVA"]
-        ppci2["bus"][pq_bus, QD] = np.imag(s2[pq_bus]) * ppci2["baseMVA"]
-        ppci0["bus"][pq_bus, PD] = np.real(s0[pq_bus]) * ppci0["baseMVA"]
-        ppci0["bus"][pq_bus, QD] = np.imag(s0[pq_bus]) * ppci0["baseMVA"]
         # =============================================================================
         # Conduct Positive sequence power flow
         # =============================================================================
@@ -510,8 +500,10 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         s_from_voltage = S_from_VI_elementwise(v1_for_s1, i1_from_v_it)
         v1_pu_it = V1_from_ppc(ppci1)
 
+        v_012_new = combine_X012(v0_pu_it, v1_pu_it, v2_pu_it)
+
         s_mismatch = np.abs(np.abs(s1[pq_bus]) - np.abs(s_from_voltage[pq_bus]))
-        v_012_it = combine_X012(v0_pu_it, v1_pu_it, v2_pu_it)
+        v_012_it = v_012_new
         v_abc_it = sequence_to_phase(v_012_it)
         count += 1
     et = perf_counter() - t0
@@ -526,15 +518,10 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     ref_gens = ppci0["internal"]["ref_gens"]
     ppci0["bus"][ref, GS] -= gs_eg
     ppci0["bus"][ref, BS] -= bs_eg
-    ppci2["bus"][ref, GS] -= gs_eg
-    ppci2["bus"][ref, BS] -= bs_eg
     y_0_pu, y_0_f, y_0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
-    y_2_pu, y_2_f, y_2_t = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
     # revert the change, otherwise repeated calculation with recycled elements will fail
     ppci0["bus"][ref, GS] += gs_eg
     ppci0["bus"][ref, BS] += bs_eg
-    ppci2["bus"][ref, GS] += gs_eg
-    ppci2["bus"][ref, BS] += bs_eg
     # Bus, Branch, and Gen  power values
     svc = ppci0["svc"]  # placeholder
     tcsc = ppci0["tcsc"]  # placeholder
@@ -544,12 +531,12 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
                                  v_012_it[0, :].flatten(), sl_bus, ref_gens)
     bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,
                                  v_012_it[1, :].flatten(), sl_bus, ref_gens)
-    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, svc, tcsc, ssc, vsc, y_2_pu, y_2_f, y_2_t,
+    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,
                                  v_012_it[2, :].flatten(), sl_bus, ref_gens)
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
     ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)
-    i_012_res = _current_from_voltage_results(y_0_pu, y_1_pu, y_2_pu, v_012_it)
+    i_012_res = _current_from_voltage_results(y_0_pu, y_1_pu, v_012_it)
     s_012_res = S_from_VI_elementwise(v_012_it, i_012_res) * ppci1["baseMVA"]
     eg_is_mask = net["_is_elements"]['ext_grid']
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
@@ -588,10 +575,10 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     _clean_up(net)
 
 
-def _current_from_voltage_results(y_0_pu, y_1_pu, y_2_pu, v_012_pu):
+def _current_from_voltage_results(y_0_pu, y_1_pu, v_012_pu):
     I012_pu = combine_X012(I0_from_V012(v_012_pu, y_0_pu),
                            I1_from_V012(v_012_pu, y_1_pu),
-                           I2_from_V012(v_012_pu, y_2_pu))
+                           I2_from_V012(v_012_pu, y_1_pu))
     return I012_pu
 
 

@@ -19,25 +19,44 @@ are::
 The index, name and meaning of each column of the branch matrix is given
 below:
 
-columns 0-7 must be included in input matrix (in case file)
+columns 0-10 must be included in input matrix (in case file)
     0.  C{F_BUS}       from bus number
     1.  C{T_BUS}       to bus number
     2.  C{BR_R}        resistance (p.u.)
-    3.  C{BR_G}        reactance (p.u.)
-    4.  C{RATE_A}      MVA rating A (long term rating)
-    5.  C{RATE_B}      MVA rating B (short term rating)
-    6.  C{RATE_C}      MVA rating C (emergency rating)
-    7.  C{BR_STATUS}   initial branch status, 1 - in service, 0 - out of service
+    3.  C{BR_X}        reactance (p.u.)
+    4.  C{BR_B}        total line charging susceptance (p.u.)
+    5.  C{RATE_A}      MVA rating A (long term rating)
+    6.  C{RATE_B}      MVA rating B (short term rating)
+    7.  C{RATE_C}      MVA rating C (emergency rating)
+    8.  C{TAP}         transformer off nominal turns ratio
+    9.  C{SHIFT}       transformer phase shift angle (degrees)
+    10. C{BR_STATUS}   initial branch status, 1 - in service, 0 - out of service
+    11. C{ANGMIN}      minimum angle difference, angle(Vf) - angle(Vt) (degrees)
+    12. C{ANGMAX}      maximum angle difference, angle(Vf) - angle(Vt) (degrees)
 
-columns 8-16 are added to matrix after power flow or OPF solution
+columns 13-16 are added to matrix after power flow or OPF solution
 they are typically not present in the input matrix
-     8. C{PF}          real power injected at "from" bus end (MW)
-     9. C{IF}          current injected at "from" bus end (p.u.)
-    10. C{PT}          real power injected at "to" bus end (MW)
-    11. C{IT}          current injected at "to" bus end (p.u.)
+    13. C{PF}          real power injected at "from" bus end (MW)
+    14. C{QF}          reactive power injected at "from" bus end (MVAr)
+    15. C{PT}          real power injected at "to" bus end (MW)
+    16. C{QT}          reactive power injected at "to" bus end (MVAr)
 
-@author: Roman Bolgarin
-@author: Mike Vogt
+columns 17-18 are added to matrix after OPF solution
+they are typically not present in the input matrix
+
+(assume OPF objective function has units, C{u})
+    17. C{MU_SF}       Kuhn-Tucker multiplier on MVA limit at "from" bus (u/MVA)
+    18. C{MU_ST}       Kuhn-Tucker multiplier on MVA limit at "to" bus (u/MVA)
+
+columns 19-20 are added to matrix after SCOPF solution
+they are typically not present in the input matrix
+
+(assume OPF objective function has units, C{u})
+    19. C{MU_ANGMIN}   Kuhn-Tucker multiplier lower angle difference limit
+    20. C{MU_ANGMAX}   Kuhn-Tucker multiplier upper angle difference limit
+
+@author: Ray Zimmerman (PSERC Cornell)
+@author: Richard Lincoln
 """
 
 # define the indices

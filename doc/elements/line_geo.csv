@@ -1,0 +1,2 @@
+**Parameter**;**Datatype**;**Explanation**
+coords;list;List of (x,y) tuples that mark the inflexion points of the line

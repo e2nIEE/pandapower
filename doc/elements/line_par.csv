@@ -21,4 +21,3 @@ type;string;"| Naming conventions:
 max_loading_percent**;float;:math:`>` 0   ;Maximum loading of the line
 endtemp_degree***;float;:math:`>` 0   ;Short-Circuit end temperature of the line
 in_service*;boolean;True / False;specifies if the line is in service.
-geo;string / object; ; geojson.LineString object or its string representation

@@ -362,7 +362,7 @@ def _check_voltage_angles_at_same_bus(net, ppc):
 
 def _check_for_reference_bus(ppc):
     # todo implement VSC also as slack
-    ref, _, _ = bustypes(ppc["bus"], ppc["gen"], ppc['vsc'])
+    ref, _, _ = bustypes(ppc["bus"], ppc["gen"])
     # throw an error since no reference bus is defined
     if len(ref) == 0:
         raise UserWarning("No reference bus is available. Either add an ext_grid or a gen with slack=True")

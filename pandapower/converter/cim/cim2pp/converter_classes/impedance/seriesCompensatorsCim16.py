@@ -29,7 +29,7 @@ class SeriesCompensatorsCim16:
                     (eq_sc.index.size, time.time() - time_start)))
 
     def _prepare_series_compensators_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim:
+        if 'sc' in self.cimConverter.cim.keys():
             ser_comp = self.cimConverter.merge_eq_sc_profile('SeriesCompensator')
         else:
             ser_comp = self.cimConverter.cim['eq']['SeriesCompensator']

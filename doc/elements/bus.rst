@@ -30,6 +30,14 @@ Input Parameters
 \*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
 
 .. note:: Bus voltage limits can not be set for slack buses and will be ignored by the optimal power flow.
+
+*net.bus_geodata*
+
+.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.30\linewidth}|
+.. csv-table:: 
+   :file: bus_geo.csv
+   :delim: ;
+   :widths: 10, 10, 30
  
    
 Electric Model

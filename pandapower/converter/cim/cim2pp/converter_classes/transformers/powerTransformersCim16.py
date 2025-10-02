@@ -57,7 +57,7 @@ class PowerTransformersCim16:
     def _create_trafo_characteristic_table(self, trafo_type, trafo_df_origin):
         if 'id_characteristic_table' not in trafo_df_origin.columns:
             trafo_df_origin['id_characteristic_table'] = float("NaN")
-        if 'trafo_characteristic_table' not in self.cimConverter.net:
+        if 'trafo_characteristic_table' not in self.cimConverter.net.keys():
             self.cimConverter.net['trafo_characteristic_table'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent',
                          'vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent',
@@ -285,14 +285,14 @@ class PowerTransformersCim16:
             self.cimConverter.net['trafo_characteristic_table']['step'].astype(int)
 
     def _prepare_power_transformers_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim:
+        if 'sc' in self.cimConverter.cim.keys():
             power_transformers = self.cimConverter.merge_eq_sc_profile('PowerTransformer')
         else:
             power_transformers = self.cimConverter.cim['eq']['PowerTransformer']
         power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
         power_transformers[sc['o_cl']] = 'PowerTransformer'
 
-        if 'sc' in self.cimConverter.cim:
+        if 'sc' in self.cimConverter.cim.keys():
             power_transformer_ends = self.cimConverter.merge_eq_sc_profile('PowerTransformerEnd')
         else:
             power_transformer_ends = self.cimConverter.cim['eq']['PowerTransformerEnd']
@@ -386,7 +386,7 @@ class PowerTransformersCim16:
             eq_ssh_tap_controllers[['rdfId', 'Terminal', 'discrete', 'enabled', 'targetValue', 'targetDeadband']]
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'rdfId': 'TapChangerControl'})
         # first merge with the VoltageLimits
-        if 'VoltageLimit' in self.cimConverter.cim['ssh']:
+        if 'VoltageLimit' in self.cimConverter.cim['ssh'].keys():
             vl = self.cimConverter.merge_eq_ssh_profile('VoltageLimit')[['OperationalLimitSet', 'OperationalLimitType',
                                                                          'value']]
         else:

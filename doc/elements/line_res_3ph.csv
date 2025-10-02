@@ -26,7 +26,4 @@ i_b_to_ka;float;Current at to bus: Phase B [kA]
 i_c_to_ka;float;Current at to bus: Phase C [kA]
 i_n_to_ka;float;Current at to bus: Neutral [kA]
 i_ka;float;Maximum of i_from_ka and i_to_ka [kA]
-loading_a_percent;float;line a loading [%]
-loading_b_percent;float;line b loading [%]
-loading_c_percent;float;line c loading [%]
-loading_percent;float;line loading in [%], is the maximum of all three phases
+loading_percent;float;line loading [%]

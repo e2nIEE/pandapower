@@ -68,7 +68,6 @@ except ImportError:
 
 from pandapower.auxiliary import pandapowerNet, get_free_id, soft_dependency_error, _preserve_dtypes
 from pandapower.create import create_empty_network
-from pandapower.network_structure import get_std_type_structure_dict
 
 from functools import singledispatch
 
@@ -125,17 +124,12 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
         elif item == "std_types":
             if not include_std_types:
                 continue
-            std_type_structure_dict = get_std_type_structure_dict()
             for t in net.std_types.keys():  # which are ["line", "trafo", "trafo3w", "fuse"]
                 if net.std_types[t]:  # avoid empty Excel sheets for std_types if empty
                     type_df = pd.DataFrame(net.std_types[t]).T
                     if t == "fuse":
                         for c in type_df.columns:
                             type_df[c] = type_df[c].apply(lambda x: str(x) if isinstance(x, list) else x)
-                    std_type_structure = std_type_structure_dict[t]
-                    for el in std_type_structure.keys():
-                        if el in type_df.columns:
-                            type_df[el] = type_df[el].astype(std_type_structure[el])
                     dodfs["%s_std_types" % t] = type_df
             continue
         elif item == "profiles":

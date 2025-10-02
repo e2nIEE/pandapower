@@ -9,11 +9,12 @@ import pickle
 import os
 import sys
 import json
-from typing import Union, TextIO, overload as function_overload
+from typing import Union
 from warnings import warn
 import numpy
 import pandas as pd
 from packaging.version import Version
+
 
 try:
     import xlsxwriter
@@ -79,7 +80,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         >>> to_excel(net, "example2.xlsx")  # relative path
     """
     if not xlsxwriter_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "xlsxwriter")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "xlsxwriter")
     dict_net = to_dict_of_dfs(
         net,
         include_results=include_results,
@@ -90,23 +91,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
             table.to_excel(writer, sheet_name=item)
 
 
-@function_overload
-def to_json(net: pandapowerNet, filename: None = ..., encryption_key: Union[str, None] = ...,
-            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> str: ...
-
-
-@function_overload
-def to_json(net: pandapowerNet, filename: Union[str, TextIO], encryption_key: Union[str, None] = ...,
-            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
-
-
-def to_json(
-        net: pandapowerNet,
-        filename: Union[str, TextIO, None] = None,
-        encryption_key: Union[str, None] = None,
-        indent: Union[int, str, None] = 2,
-        sort_keys: bool = False,
-) -> Union[str, None]:
+def to_json(net, filename=None, encryption_key=None, store_index_names=None, indent: Union[int, str] = 2):
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -119,16 +104,21 @@ def to_json(
         :param encryption_key: If given, the pandapower network is stored as an encrypted json string, default None
         :type encryption_key: str or None
         :param indent: indentation to use for the json. String or amount of spaces to use, defaut 2
-        :type indent: int or str or None
-        :param sort_keys: sort dictionaries by key, default False
-        :type sort_keys: bool
+        :type indent: int or str
 
         :example:
              >>> from pandapower.file_io import to_json
              >>> to_json(net, "example.json")
     """
+    # --- store index names
+    if store_index_names is not None:
+        msg = "The input parameter 'store_index_names' of function 'to_json()' is deprecated."
+        if Version(pp_version) < Version("2.15"):
+            warn(msg)
+        else:
+            raise DeprecationWarning(msg)
 
-    json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent, sort_keys=sort_keys)
+    json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent)
     if encryption_key is not None:
         json_string = encrypt_string(json_string, encryption_key)
 
@@ -140,7 +130,6 @@ def to_json(
     else:
         with open(filename, "w") as fp:
             fp.write(json_string)
-    return None
 
 
 def from_pickle(filename, convert=True):
@@ -193,7 +182,7 @@ def from_excel(filename, convert=True):
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
     if not openpyxl_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "openpyxl")
+        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:

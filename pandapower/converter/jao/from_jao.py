@@ -179,7 +179,6 @@ def _data_correction(
     rename_locnames = [("PSTMIKULOWA", "PST MIKULOWA"),
                        ("Chelm", "CHELM"),
                        ("OLSZTYN-MATK", "OLSZTYN-MATKI"),
-                       ("OLSZTYN-MATKII", "OLSZTYN-MATKI"),
                        ("STANISLAWOW", "Stanislawow"),
                        ("VIERRADEN", "Vierraden")]
 
@@ -969,8 +968,7 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
 
 def _multi_str_repl(st: str, repl: list[tuple]) -> str:
     for (old, new) in repl:
-        st = st.replace(old, new)
-    return st
+        return st.replace(old, new)
 
 
 if __name__ == "__main__":

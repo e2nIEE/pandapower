@@ -1,0 +1,3 @@
+**Parameter**;**Datatype**;**Explanation**
+x;float;x coordinate of bus location
+y;float;y coordinate of bus location

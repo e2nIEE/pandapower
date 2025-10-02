@@ -48,7 +48,7 @@ class CimConverter:
                                 add_cim_type_column: bool = False) -> pd.DataFrame:
         df = self.cim['eq'][cim_type]
         for other_profile in other_profiles:
-            if cim_type not in self.cim[other_profile]:
+            if cim_type not in self.cim[other_profile].keys():
                 self.logger.debug("No entries found in %s profile for cim object %s", other_profile, cim_type)
                 return self.cim['eq'][cim_type].copy()
             df = pd.merge(df, self.cim[other_profile][cim_type], how='left', on='rdfId')
@@ -58,7 +58,7 @@ class CimConverter:
 
     def copy_to_pp(self, pp_type: str, input_df: pd.DataFrame):
         self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
-        if pp_type not in self.net:
+        if pp_type not in self.net.keys():
             self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
             self.report_container.add_log(Report(
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
@@ -89,12 +89,12 @@ class CimConverter:
         # create the empty pandapower net and add the additional columns
         self.net = cim_tools.extend_pp_net_cim(self.net, override=False)
 
-        if 'sn_mva' in kwargs:
+        if 'sn_mva' in kwargs.keys():
             self.net['sn_mva'] = kwargs.get('sn_mva')
 
         # add the CIM IDs to the pandapower network
         for one_prf, one_profile_dict in self.cim.items():
-            if 'FullModel' in one_profile_dict and one_profile_dict['FullModel'].index.size > 0:
+            if 'FullModel' in one_profile_dict.keys() and one_profile_dict['FullModel'].index.size > 0:
                 self.net['CGMES'][one_prf] = one_profile_dict['FullModel'].set_index('rdfId').to_dict(orient='index')
         # store the BaseVoltage IDs
         self.net['CGMES']['BaseVoltage'] = \
@@ -113,7 +113,7 @@ class CimConverter:
         # --------- convert switches ---------
         self.classes_dict['switchesCim16'](cimConverter=self).convert_switches_cim16()
         # --------- convert loads ---------
-        self.classes_dict['energyConsumersCim16'](cimConverter=self).convert_energy_consumers_cim16()
+        self.classes_dict['energyConcumersCim16'](cimConverter=self).convert_energy_consumers_cim16()  #todo  correction of spelling mistake
         self.classes_dict['conformLoadsCim16'](cimConverter=self).convert_conform_loads_cim16()
         self.classes_dict['nonConformLoadsCim16'](cimConverter=self).convert_non_conform_loads_cim16()
         self.classes_dict['stationSuppliesCim16'](cimConverter=self).convert_station_supplies_cim16()

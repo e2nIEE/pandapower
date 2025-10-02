@@ -91,7 +91,7 @@ def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: Li
         max_voltage = busses['vn_kv'].max()
         logger.info("Highest voltage level: %skV" % max_voltage)
         voltage_levels = [max_voltage]
-    create_std_type(net, data={'r_ohm_per_km': 0, 'x_ohm_per_km': .05, 'c_nf_per_km': 0, 'max_i_ka': 9999},
+    create_std_type(net, data=dict({'r_ohm_per_km': 0, 'x_ohm_per_km': .05, 'c_nf_per_km': 0, 'max_i_ka': 9999}),
                     name='low_impedance_line', element='line')
     for one_voltage_level in voltage_levels:
         logger.info("Processing voltage level %skV" % one_voltage_level)

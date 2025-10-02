@@ -9,4 +9,3 @@ zone;string;;can be used to group buses, for example network groups / regions
 max_vm_pu**;float;:math:`>` 0;Maximum voltage
 min_vm_pu**;float;:math:`>` 0;Minimum voltage
 in_service*;boolean;True / False;specifies if the bus is in service.
-geo;string / object; ; geojson.Point as object or string

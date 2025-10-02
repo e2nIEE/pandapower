@@ -71,7 +71,7 @@ def get_converter_classes():
         'acLineSegmentsCim16': std_converter_classes.lines.acLineSegmentsCim16.AcLineSegmentsCim16,
         'dcLineSegmentsCim16': std_converter_classes.lines.dcLineSegmentsCim16.DcLineSegmentsCim16,
         'switchesCim16': std_converter_classes.switches.switchesCim16.SwitchesCim16,
-        'energyConsumersCim16': std_converter_classes.loads.energyConsumersCim16.EnergyConsumersCim16,
+        'energyConcumersCim16': std_converter_classes.loads.energyConcumersCim16.EnergyConsumersCim16,
         'conformLoadsCim16': std_converter_classes.loads.conformLoadsCim16.ConformLoadsCim16,
         'nonConformLoadsCim16': std_converter_classes.loads.nonConformLoadsCim16.NonConformLoadsCim16,
         'stationSuppliesCim16': std_converter_classes.loads.stationSuppliesCim16.StationSuppliesCim16,

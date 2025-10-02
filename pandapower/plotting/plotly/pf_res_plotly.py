@@ -159,13 +159,11 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
                                       cmap=cmap_lines, cmin=0, cmax=100)
 
     # ----- Ext grid ------
-    ext_grid_trace = []
     # get external grid from create_bus_trace
-    if 'ext_grid' in net and len(net.ext_grid):
-        marker_type = 'circle' if on_map else 'square'
-        ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
-                                          color='grey', size=bus_size * 2, trace_name='external_grid',
-                                          patch_type=marker_type)
+    marker_type = 'circle' if on_map else 'square'
+    ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
+                                      color='grey', size=bus_size * 2, trace_name='external_grid',
+                                      patch_type=marker_type)
 
     return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
                        showlegend=False, aspectratio=aspectratio, on_map=on_map,

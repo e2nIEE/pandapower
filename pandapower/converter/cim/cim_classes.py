@@ -25,17 +25,17 @@ class CimParser:
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
 
         :param cim: CIM profile structure used for parsing
-        :param cgmes_version: CGMES version to use, '2.4.15' or '3.0', default '2.4.15'
+        :param cgmes_version: CIM version to use, '2.4.15' or '3.0', default '2.4.15'
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
         self.__cim_blueprint = self._initialize_cim_data_structure(self.cgmes_version)
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
-        self.file_names: Dict[str, str] = {}
+        self.file_names: Dict[str, str] = dict()
         self.report_container = ReportContainer()
         self.ignore_errors = bool(kwargs.get("ignore_errors", False))
 
-    def parse_files(self, file_list: List[str] | str = None, encoding: str = None, prepare_cim_net: bool = False,
+    def parse_files(self, file_list: List[str] or str = None, encoding: str = None, prepare_cim_net: bool = False,
                     set_data_types: bool = False) -> CimParser:
         """
         Parse CIM XML files from a storage.
@@ -74,33 +74,34 @@ class CimParser:
         only elements required for the CGMES converter are set.
         """
         self.logger.info("Setting the cim data types.")
-        default_values = {'positiveFlowIn': True, 'connected': True, 'length': 1., 'sections': 1, 'maximumSections': 1,
-                          'referencePriority': 999999, 'gch': 0., 'g0ch': 0.}  # todo check gch g0ch sections maximumSections
-        to_bool = {'True': True, 'true': True, 'TRUE': True, True: True,
-                   'False': False, 'false': False, 'FALSE': False, False: False,
-                   'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.nan: False}
+        default_values = dict(
+            {'positiveFlowIn': True, 'connected': True, 'length': 1., 'sections': 1, 'maximumSections': 1,
+             'referencePriority': 999999, 'gch': 0., 'g0ch': 0.})  # todo check gch g0ch sections maximumSections
+        to_bool = dict({'True': True, 'true': True, 'TRUE': True, True: True,
+                        'False': False, 'false': False, 'FALSE': False, False: False,
+                        'nan': False, 'NaN': False, 'NAN': False, 'Nan': False, np.nan: False})
         float_type = float
         int_type = pd.Int64Dtype()
         bool_type = pd.BooleanDtype()
-        data_types_map = {'Float': float_type, 'Integer': int_type, 'Boolean': bool_type}
+        data_types_map = dict({'Float': float_type, 'Integer': int_type, 'Boolean': bool_type})
         cim_schema = get_cim_schema(self.cgmes_version)
-        for profile in self.cim:
+        for profile in self.cim.keys():
             for cim_element_type, item in self.cim[profile].items():
                 for col in item.columns:
                     # skip elements which are not available in the schema like FullModel
                     if cim_element_type not in cim_schema[profile]:
                         self.logger.debug("Skipping CIM element type %s from profile %s." % (cim_element_type, profile))
                         continue
-                    if col in cim_schema[profile][cim_element_type]['fields'] and \
-                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col]:
+                    if col in cim_schema[profile][cim_element_type]['fields'].keys() and \
+                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col].keys():
                         data_type_col_str = cim_schema[profile][cim_element_type]['fields'][col]['data_type_prim']
-                        if data_type_col_str in data_types_map:
+                        if data_type_col_str in data_types_map.keys():
                             data_type_col = data_types_map[data_type_col_str]
                         else:
                             continue
                         self.logger.debug("Setting data type of %s from CIM element %s as type %s" %
                                           (col, cim_element_type, data_type_col_str))
-                        if col in default_values:  # todo deprecated due to repair function?
+                        if col in default_values.keys():  # todo deprecated due to repair function?
                             self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(
                                 value=default_values[col])
                         if data_type_col == bool_type:
@@ -130,15 +131,15 @@ class CimParser:
         """
         self.logger.info("Start preparing the cim data.")
         cim_data_structure = self.get_cim_data_structure()
-        for profile in list(self.cim):
-            if profile not in cim_data_structure:
+        for profile in list(self.cim.keys()):
+            if profile not in cim_data_structure.keys():
                 # this profile is not used by the converter, drop it
                 del self.cim[profile]
                 continue
-            for cim_element_type in self.cim[profile]:
+            for cim_element_type in list(self.cim[profile].keys()):
                 # check if the CIM element type is a pd.DataFrame
                 if not isinstance(self.cim[profile][cim_element_type], pd.DataFrame):
-                    if profile in cim_data_structure and cim_element_type in cim_data_structure[profile]:
+                    if profile in cim_data_structure.keys() and cim_element_type in cim_data_structure[profile].keys():
                         # replace the cim element type with the default empty DataFrame from the cim_data_structure
                         self.cim[profile][cim_element_type] = cim_data_structure[profile][cim_element_type]
                     else:
@@ -147,12 +148,12 @@ class CimParser:
                     self.logger.warning("%s isn't a DataFrame! The data won't be used!" % cim_element_type)
 
         # append missing columns to the CIM net
-        for profile in cim_data_structure:
-            if profile not in self.cim:
+        for profile in cim_data_structure.keys():
+            if profile not in self.cim.keys():
                 self.cim[profile] = cim_data_structure[profile]
                 continue
             for cim_element_type, item in cim_data_structure[profile].items():
-                if cim_element_type not in self.cim[profile]:
+                if cim_element_type not in self.cim[profile].keys():
                     self.cim[profile][cim_element_type] = cim_data_structure[profile][cim_element_type]
                     continue
                 for column in item.columns:
@@ -161,8 +162,8 @@ class CimParser:
                         self.cim[profile][cim_element_type][column] = np.nan
 
         # now remove columns which are not needed by the converter (to avoid renaming problems when merging DataFrames)
-        for profile in cim_data_structure:
-            for cim_element_type in cim_data_structure[profile]:
+        for profile in cim_data_structure.keys():
+            for cim_element_type in cim_data_structure[profile].keys():
                 self.cim[profile][cim_element_type] = \
                     self.cim[profile][cim_element_type][cim_data_structure[profile][cim_element_type].columns]
         self.logger.info("Finished preparing the cim data.")
@@ -183,7 +184,6 @@ class CimParser:
                 'ConnectivityNode': pd.DataFrame(columns=['rdfId', 'name', 'description', 'ConnectivityNodeContainer']),
                 'Bay': pd.DataFrame(columns=['rdfId', 'VoltageLevel']),
                 'BusbarSection': pd.DataFrame(columns=['rdfId', 'name']),
-                'Junction': pd.DataFrame(columns=['rdfId', 'name']),
                 'Substation': pd.DataFrame(columns=['rdfId', 'name', 'Region']),
                 'GeographicalRegion': pd.DataFrame(columns=['rdfId', 'name']),
                 'SubGeographicalRegion': pd.DataFrame(columns=['rdfId', 'name', 'Region']),
@@ -379,7 +379,7 @@ class CimParser:
 
     def _parse_element(self, element, parsed=None):
         if parsed is None:
-            parsed = {}
+            parsed = dict()
         for key in element.keys():
             combined_key = element.tag + '-' + key
             if combined_key not in parsed:
@@ -390,7 +390,7 @@ class CimParser:
                 parsed[combined_key].append(element.attrib.get(key))
         if element.tag not in parsed and element.text is not None and element.text.strip(' \t\n\r'):
             parsed[element.tag] = element.text
-        for child in element:
+        for child in list(element):
             self._parse_element(child, parsed)
         return parsed
 
@@ -408,7 +408,7 @@ class CimParser:
         'ssh' for SteadyStateHypothesis, 'sv' for StateVariables,
         'tp' for Topology, 'tp_bd' for TopologyBoundary
         """
-        element_types = pd.Series([ele.tag for ele in root])
+        element_types = pd.Series([ele.tag for ele in list(root)])
         element_types = element_types.drop_duplicates()
         full_model = element_types.str.find('FullModel')
         if full_model.max() >= 0:
@@ -505,21 +505,21 @@ class CimParser:
     def _parse_xml_tree(self, xml_tree: etree.ElementTree, profile_name: str, output: Dict | None = None):
         output = self.cim if output is None else output
         # get all CIM elements to parse
-        element_types = pd.Series([ele.tag for ele in xml_tree])
+        element_types = pd.Series([ele.tag for ele in list(xml_tree)])
         element_types = element_types.drop_duplicates()
-        prf_content: Dict[str, pd.DataFrame] = {}
-        ns_dict = {}
+        prf_content: Dict[str, pd.DataFrame] = dict()
+        ns_dict = dict()
         prf = profile_name
-        if prf not in ns_dict:
-            ns_dict[prf] = {}
+        if prf not in ns_dict.keys():
+            ns_dict[prf] = dict()
         for _, element_type in element_types.items():
             if not isinstance(element_type, str):
                 continue
             element_type_c = re.sub('{.*}', '', element_type)
             prf_content[element_type_c] = self._get_df(xml_tree.findall(element_type))
             # rename the columns (remove the namespaces)
-            if element_type_c not in ns_dict[prf]:
-                ns_dict[prf][element_type_c] = {}
+            if element_type_c not in ns_dict[prf].keys():
+                ns_dict[prf][element_type_c] = dict()
             for col in prf_content[element_type_c].columns:
                 col_new = re.sub('[{].*?[}]', '', col)
                 col_new = col_new.split('.')[-1]
@@ -545,11 +545,11 @@ class CimParser:
                     col_new = 'rdfId'
                 ns_dict[prf][element_type_c][col] = col_new
             prf_content[element_type_c] = prf_content[element_type_c].rename(columns={**ns_dict[prf][element_type_c]})
-        if prf not in output:
+        if prf not in output.keys():
             output[prf] = prf_content
         else:
             for ele, df in prf_content.items():
-                if ele not in output[prf]:
+                if ele not in output[prf].keys():
                     concat_list = [prf_content[ele]]
                 else:
                     concat_list = [output[prf][ele], prf_content[ele]]

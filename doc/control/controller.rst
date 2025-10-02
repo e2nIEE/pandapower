@@ -110,8 +110,7 @@ SplineCharacteristic
 
 Station Controller
 ==================
-The following controllers are used for the representation of station controllers as used in PowerFactory. The Vdroop is
-a new controller class used for the local droop voltage control.
+The following controllers are used for the representation of station controllers as used in PowerFactory
 
 **********************
 Binary Search Control
@@ -125,13 +124,6 @@ Droop Control
 ***************
 
 .. autoclass:: pandapower.control.controller.station_control.DroopControl
-    :members:
-
-**********************
-Local VDroop Control
-**********************
-
-.. autoclass:: pandapower.control.controller.station_control.VDroopControl_local
     :members:
 
 Shunt Controller

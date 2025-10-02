@@ -6,11 +6,9 @@
 
 import numpy as np
 from numpy import complex128
-
 from pandapower.pypower.idx_bus import VM, VA,BASE_KV
-from pandapower.pypower.idx_bus_dc import DC_PD, DC_REF, DC_BUS_TYPE
+from pandapower.pypower.idx_bus_dc import DC_PD
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
-from pandapower.pypower.idx_source_dc import SOURCE_DC_STATUS, SOURCE_DC_BUS
 
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
     I_from_SV_elementwise, S_from_VI_elementwise, SVabc_from_SV012
@@ -80,38 +78,26 @@ def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
 
 
 def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
-    #ac = net["_options"]["ac"]
+    ac = net["_options"]["ac"]
 
-    #eg_end = sum(net['source_dc'].in_service)
-    #gen_end = eg_end + len(net['vsc'])
+    eg_end = sum(net['ext_grid'].in_service)
+    gen_end = eg_end + len(net['gen'])
 
-    # TODO: Check why this code is NOT needed.
-    # vsc_slack = net["_is_elements"]['vsc'] & (net.vsc.control_mode_dc == "vm_pu")
-    # bus_dc_slack = net.vsc.loc[vsc_slack, "bus_dc"].values
-    #
-    # if len(bus_dc_slack) > 0:
-    #     p = ppc["bus_dc"][bus_dc_lookup_aranged[bus_dc_slack], DC_PD]
-    #     #p = np.array([2])
-    #     # todo: check fro different vsc connected at the same bus and obtain the p for the vsc with V DC mode
-    #     net.res_vsc.loc[vsc_slack, "p_dc_mw"] = -p  # todo: divide by number of slack vsc's at the same bus
-    #     net["res_vsc"].index = net['vsc'].index
-    # else:
-    #     return
+    vsc_slack = net["_is_elements"]['vsc'] & (net.vsc.control_mode_dc == "vm_pu")
+    bus_dc_slack = net.vsc.loc[vsc_slack, "bus_dc"].values
 
-    scd_relevant = net["_is_elements"]['source_dc'] & (ppc["source_dc"][:, SOURCE_DC_STATUS] > 0)
+    if len(bus_dc_slack) > 0:
+        p = ppc["bus_dc"][bus_dc_lookup_aranged[bus_dc_slack], DC_PD]
+        #p = np.array([2])
+        # todo: check fro different vsc connected at the same bus and obtain the p for the vsc with V DC mode
+        net.res_vsc.loc[vsc_slack, "p_dc_mw"] = -p  # todo: divide by number of slack vsc's at the same bus
+        net["res_vsc"].index = net['vsc'].index
+    else:
+        return
 
-    p = np.zeros(len(net['source_dc']))
-
-    # read results from ppc for these buses
-    scd_bus = ppc["source_dc"][scd_relevant, SOURCE_DC_BUS].astype(int).tolist()
-    p[scd_relevant] = ppc["bus_dc"][scd_bus, DC_PD]
-    net['res_source_dc']['p_dc_mw'] = p
-
-    #bus_dc_slack = ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF
-
-    #b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
-    #b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]
-    #bus_p_dc[b, 0] -= p_sum
+    b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
+    b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]
+    bus_p_dc[b, 0] -= p_sum
 
 
 def _get_vsc_slack_results(net, ppc, b, p, q):

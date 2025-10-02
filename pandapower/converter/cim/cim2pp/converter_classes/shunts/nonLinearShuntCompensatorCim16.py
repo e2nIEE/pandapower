@@ -74,7 +74,7 @@ class NonLinearShuntCompensatorCim16:
     def _create_shunt_characteristic_table(self, eqssh_shunts):
         if 'id_characteristic_table' not in eqssh_shunts.columns:
             eqssh_shunts['id_characteristic_table'] = np.nan
-        if 'shunt_characteristic_table' not in self.cimConverter.net:
+        if 'shunt_characteristic_table' not in self.cimConverter.net.keys():
             self.cimConverter.net['shunt_characteristic_table'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'q_mvar', 'p_mw'])
         char_temp = eqssh_shunts.drop(columns=['p_mw', 'q_mvar', 'step'])

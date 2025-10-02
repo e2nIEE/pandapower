@@ -48,8 +48,8 @@ class EnergySourceCim16:
                                         on='EnergySchedulingType')
         eqssh_energy_sources = pd.merge(eqssh_energy_sources, self.cimConverter.bus_merge, how='left', on='rdfId')
         eqssh_energy_sources = eqssh_energy_sources.drop_duplicates(['rdfId'], keep='first')
-        sgen_type = {'WP': 'WP', 'Wind': 'WP', 'PV': 'PV', 'SolarPV': 'PV', 'BioGas': 'BioGas',
-                     'OtherRES': 'OtherRES', 'CHP': 'CHP'}  # todo move?
+        sgen_type = dict({'WP': 'WP', 'Wind': 'WP', 'PV': 'PV', 'SolarPV': 'PV', 'BioGas': 'BioGas',
+                          'OtherRES': 'OtherRES', 'CHP': 'CHP'})  # todo move?
         eqssh_energy_sources['type'] = eqssh_energy_sources['type'].map(sgen_type)
         eqssh_energy_sources['p_mw'] = -eqssh_energy_sources['activePower']
         eqssh_energy_sources['q_mvar'] = -eqssh_energy_sources['reactivePower']
