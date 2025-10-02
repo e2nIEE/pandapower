@@ -172,6 +172,8 @@ def test_wp25_trafo_grounding(net_name, fault, case, fault_values, lv_tol_percen
     param_vec_wp25_ward, ids=lambda val: str(val))
 def test_wp25_grounding_bank(net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus,
                                is_branch, grounding_type, ward_loc):
+    if grounding_type in ["solid", "isolated"]:  # Not necessary for these grounding types
+        return
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, grounding_type=grounding_type,
                                           grounding_bank_idx=ward_loc)
     results = run_test_cases(

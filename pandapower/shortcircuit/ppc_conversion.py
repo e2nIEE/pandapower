@@ -41,7 +41,7 @@ def _init_ppc(net, sequence=1):
     _add_kt(net, ppc)
     _add_gen_sc_z_kg_ks(net, ppc, sequence)
     _add_sgen_sc_z(net, ppc)
-    _add_ward_sc_z(net, ppc)
+    # _add_ward_sc_z(net, ppc)
 
     ppci = _ppc2ppci(ppc, net)
 
