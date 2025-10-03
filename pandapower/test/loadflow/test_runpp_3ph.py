@@ -466,23 +466,40 @@ def test_trafo_asym():
         assert net['converged']
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
-def test_trafo_asym__with_shift():
-    nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
+def _test_trafo_shifts(net, rtol):
     # Dyn
     for clock in [-30, 30, 150, 210, -150]:
-        net = from_json(nw_dir + '/runpp_3ph Validation.json')
-        net['trafo'].vector_group = "Dyn"
-        net['trafo'].shift_degree = clock
-        runpp_3ph_with_consistency_checks(net)
-        assert net['converged']
+        net.trafo.vector_group = "Dyn"
+        net.trafo.shift_degree = clock
+        runpp_3ph_with_consistency_checks(net, rtol)
 
     # YNyn
     for clock in [0, 180, -180]:
-        net = from_json(nw_dir + '/runpp_3ph Validation.json')
         net['trafo'].vector_group = "YNyn"
         net['trafo'].shift_degree = clock
-        runpp_3ph_with_consistency_checks(net)
+        runpp_3ph_with_consistency_checks(net, rtol)
         assert net['converged']
+
+def test_trafo_asym__with_shift():
+    nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
+    net = from_json(nw_dir + '/runpp_3ph Validation.json')
+    _test_trafo_shifts(net, rtol=1e-2)
+
+def test_trafo_asym__high_neg_seq():
+    net = create_empty_network()
+    add_zero_impedance_parameters(net)
+    create_bus(net, 11, "source")
+    create_bus(net, 11, "HT")
+    create_bus(net, 0.4, "LT")
+    create_ext_grid(net, bus=0, vm_pu=1.0, s_sc_max_mva=9.99e20, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    create_line_from_parameters(net, 0, 1, 1, 0.2, 0.33, 0, max_i_ka=10, r0_ohm_per_km=0.2, x0_ohm_per_km=0.33,
+                                   c0_nf_per_km=0, g0_gs_per_km=0)
+    create_transformer_from_parameters(net=net, hv_bus=1, lv_bus=2, sn_mva=10, vn_hv_kv=11, vn_lv_kv=0.415,
+                                          vkr_percent=0, vk_percent=4, pfe_kw=0, i0_percent=0,
+                                          shift_degree=-30, vector_group="Dyn",
+                                          vk0_percent=4, vkr0_percent=0, mag0_percent=100, mag0_rx=0, si0_hv_partial=50)
+    create_asymmetric_load(net, 2, 1.6, 0.44019238, 0.95980762, 0.8, 0.86961524, -0.16961524)
+    _test_trafo_shifts(net, rtol=1e-9)
 
 
 def test_2trafos():

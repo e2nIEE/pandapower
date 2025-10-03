@@ -21,9 +21,9 @@ def runpp_with_consistency_checks(net, **kwargs):
     consistency_checks(net)
     return True
 
-def runpp_3ph_with_consistency_checks(net, **kwargs):
+def runpp_3ph_with_consistency_checks(net, rtol=2e-3, **kwargs):
     runpp_3ph(net, **kwargs)
-    consistency_checks_3ph(net)
+    consistency_checks_3ph(net, rtol)
     return True
 
 def rundcpp_with_consistency_checks(net, **kwargs):
@@ -168,11 +168,12 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
 
 
-def consistency_checks_3ph(net, rtol=2e-3):
+def consistency_checks_3ph(net, rtol):
+    assert net.converged
     indices_consistent_3ph(net)
     branch_loss_consistent_with_bus_feed_in_3ph(net, rtol)
     element_power_consistent_with_bus_power_3ph(net, rtol)
-    trafo_currents_consistent_3ph(net)
+    trafo_currents_consistent_3ph(net, rtol)
 
 def indices_consistent_3ph(net):
     elements = get_relevant_elements("pf_3ph")
@@ -330,11 +331,10 @@ def check_ynyn_traformer_currents(i_hv, i_lv, ratio, shift_degree, rtol):
         assert isclose(i_hv[1], -i_lv[1] / ratio, rtol)
         assert isclose(i_hv[2], -i_lv[2] / ratio, rtol)
 
-def trafo_currents_consistent_3ph(net):
+def trafo_currents_consistent_3ph(net, rtol):
     """
     The HV and LV currents of the transformer has to be related in accordance with trafo vector_group and clock
     """
-    rtol = 1e-1
     if "vector_group" not in net.trafo:
         return
     for vector_group, trafo_df in net.trafo.groupby('vector_group'):
