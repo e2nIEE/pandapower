@@ -212,7 +212,7 @@ if __name__ == '__main__':
                               net.line.to_bus.isin(buses_vl)].index.tolist()
         print(vlev_lines)
         line_trace_vlev = create_line_trace(
-            net, lines=vlev_lines, use_line_geodata=use_line_geodata,
+            net, lines=vlev_lines, use_line_geo=use_line_geodata,
             respect_switches=respect_switches, legendgroup=str(vn_kv), color="r",
             width=line_width, trace_name='lines {0} kV'.format(vn_kv))
         if line_trace_vlev is not None:
