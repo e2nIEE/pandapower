@@ -3,7 +3,6 @@
 import copy
 from typing import List, Tuple
 
-from Demos.win32cred_demo import target
 from matplotlib.collections import PatchCollection
 from typing_extensions import deprecated
 
