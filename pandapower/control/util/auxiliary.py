@@ -389,7 +389,6 @@ def _set_reactive_capability_curve_flag(net, element):
     if element not in ["gen", "sgen"]:
         raise UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
                           f"Please give gen or sgen as an argument of the function")
-        return
     # Quick checks for element table and required columns
     if (len(net[element]) == 0 or
             not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
