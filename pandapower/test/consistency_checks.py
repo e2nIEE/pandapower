@@ -21,9 +21,9 @@ def runpp_with_consistency_checks(net, **kwargs):
     consistency_checks(net)
     return True
 
-def runpp_3ph_with_consistency_checks(net, rtol=2e-3, **kwargs):
+def runpp_3ph_with_consistency_checks(net, **kwargs):
     runpp_3ph(net, **kwargs)
-    consistency_checks_3ph(net, rtol)
+    consistency_checks_3ph(net)
     return True
 
 def rundcpp_with_consistency_checks(net, **kwargs):
@@ -168,12 +168,11 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
 
 
-def consistency_checks_3ph(net, rtol):
+def consistency_checks_3ph(net, rtol=2e-3):
     assert net.converged
     indices_consistent_3ph(net)
     branch_loss_consistent_with_bus_feed_in_3ph(net, rtol)
     element_power_consistent_with_bus_power_3ph(net, rtol)
-    trafo_currents_consistent_3ph(net, rtol)
 
 def indices_consistent_3ph(net):
     elements = get_relevant_elements("pf_3ph")

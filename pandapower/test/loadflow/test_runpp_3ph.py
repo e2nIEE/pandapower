@@ -19,7 +19,8 @@ from pandapower.file_io import from_json
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type, add_zero_impedance_parameters
-from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks
+from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks, \
+    trafo_currents_consistent_3ph
 from pandapower.test.loadflow.PF_Results import get_PF_Results
 from pandapower.toolbox import dataframes_equal
 
@@ -471,21 +472,23 @@ def _test_trafo_shifts(net, rtol):
     for clock in [-30, 30, 150, 210, -150]:
         net.trafo.vector_group = "Dyn"
         net.trafo.shift_degree = clock
-        runpp_3ph_with_consistency_checks(net, rtol)
+        runpp_3ph_with_consistency_checks(net)
+        trafo_currents_consistent_3ph(net, rtol)
 
     # YNyn
     for clock in [0, 180, -180]:
         net['trafo'].vector_group = "YNyn"
         net['trafo'].shift_degree = clock
-        runpp_3ph_with_consistency_checks(net, rtol)
-        assert net['converged']
+        runpp_3ph_with_consistency_checks(net)
+        trafo_currents_consistent_3ph(net, rtol)
 
-def test_trafo_asym__with_shift():
-    nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
-    net = from_json(nw_dir + '/runpp_3ph Validation.json')
-    _test_trafo_shifts(net, rtol=1e-2)
-
-def test_trafo_asym__high_neg_seq():
+def test_trafo_asym_currents__high_neg_seq():
+    """
+    Tests trafo currents consistency in asymmetric load flow.
+    In order to verify current consistency between HT and LT side, we need to make
+    shunt admittance zero, so that no load currents do not disturb HT side currents.
+    For this reason, pfe_kw = 0, i0_percent = 0, mag0_percent = BIG_NUMBER.
+    """
     net = create_empty_network()
     add_zero_impedance_parameters(net)
     create_bus(net, 11, "source")
@@ -497,10 +500,9 @@ def test_trafo_asym__high_neg_seq():
     create_transformer_from_parameters(net=net, hv_bus=1, lv_bus=2, sn_mva=10, vn_hv_kv=11, vn_lv_kv=0.415,
                                           vkr_percent=0, vk_percent=4, pfe_kw=0, i0_percent=0,
                                           shift_degree=-30, vector_group="Dyn",
-                                          vk0_percent=4, vkr0_percent=0, mag0_percent=100, mag0_rx=0, si0_hv_partial=50)
+                                          vk0_percent=4, vkr0_percent=0, mag0_percent=1e20, mag0_rx=0, si0_hv_partial=50)
     create_asymmetric_load(net, 2, 1.6, 0.44019238, 0.95980762, 0.8, 0.86961524, -0.16961524)
     _test_trafo_shifts(net, rtol=1e-9)
-
 
 def test_2trafos():
     net = create_empty_network()
