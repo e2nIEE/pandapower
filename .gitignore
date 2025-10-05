@@ -33,4 +33,3 @@ pandapower/test/buffer_file.json
 /pandapower/test/test_files/postgresql_connect_data.json
 sonar-project.properties
 .scannerwork/
-pandapower_env/
