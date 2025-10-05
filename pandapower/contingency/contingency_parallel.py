@@ -1,8 +1,9 @@
 import copy
 import numpy as np
-from pandapower.run import runpp
+from typing import Optional
 import multiprocessing as mp
 from functools import partial
+from pandapower.run import runpp
 from pandapower.auxiliary import pandapowerNet
 
 import logging
@@ -42,8 +43,8 @@ def _run_single_contingency(contingency_case, net, pf_options_nminus1, result_va
 
 def run_contingency_parallel(net: pandapowerNet,
                              nminus1_cases: dict,
-                             pf_options: dict|None = None,
-                             pf_options_nminus1: dict|None = None,
+                             pf_options: Optional[dict] = None,
+                             pf_options_nminus1: Optional[dict] = None,
                              write_to_net: bool = True,
                              contingency_evaluation_function=runpp,
                              n_procs: int = 1,
