@@ -5895,7 +5895,6 @@ def create_dcline(
     max_q_from_mvar: float = nan,
     max_q_to_mvar: float = nan,
     in_service: bool = True,
-    mode = None,
     **kwargs
 ) -> Int:
     """
@@ -5946,12 +5945,11 @@ def create_dcline(
 
     _check_branch_element(net, "DCLine", index, from_bus, to_bus)
 
-    columns = ["name", "from_bus", "to_bus", "p_mw", "loss_percent", "loss_mw", "vm_from_pu",
-               "vm_to_pu", "max_p_mw", "min_q_from_mvar", "min_q_to_mvar", "max_q_from_mvar",
-               "max_q_to_mvar", "in_service", "mode"]
-    values = [name, from_bus, to_bus, p_mw, loss_percent, loss_mw, vm_from_pu, vm_to_pu, max_p_mw,
-              min_q_from_mvar, min_q_to_mvar, max_q_from_mvar, max_q_to_mvar, in_service, mode]
-    _set_entries(net, "dcline", index, **dict(zip(columns, values)), **kwargs)
+    entries = {"name": name, "from_bus": from_bus, "to_bus": to_bus, "p_mw": p_mw, "loss_percent": loss_percent,
+               "loss_mw": loss_mw, "vm_from_pu": vm_from_pu, "vm_to_pu": vm_to_pu, "max_p_mw": max_p_mw,
+               "min_q_from_mvar": min_q_from_mvar, "max_q_from_mvar": max_q_from_mvar, "max_q_to_mvar": max_q_to_mvar,
+                "min_q_to_mvar": min_q_to_mvar, "in_service": in_service, **kwargs}
+    _set_entries(net, "dcline", index, entries=entries)
 
     return index
 
