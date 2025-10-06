@@ -10,7 +10,11 @@ from pandapower.network_schema.switch import schema as switch_schema
 from pandapower.network_schema.ext_grid import schema as ext_grid_schema
 from pandapower.network_schema.line import schema as line_schema
 from pandapower.network_schema.trafo import schema as trafo_schema
-
+from pandapower.network_schema.dcline import schema as dcline
+from pandapower.network_schema.ward import schema as ward
+from pandapower.network_schema.xward import schema as xward
+from pandapower.network_schema.measurement import schema as measurement
+from pandapower.network_schema.source_dc import schema as source_dc
 from pandapower.network_schema.load_dc import schema as load_dc
 from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
 
@@ -253,56 +257,10 @@ def get_structure_dict() -> dict:
             "min_angle_degree": "f8",
             "max_angle_degree": "f8",
         },
-        "dcline": {
-            "name": dtype(str),
-            "from_bus": "i8",
-            "to_bus": "i8",
-            "p_mw": "f8",
-            "loss_percent": "f8",
-            "loss_mw": "f8",
-            "vm_from_pu": "f8",
-            "vm_to_pu": "f8",
-            "max_p_mw": "f8",  # no min_p_mw ?
-            "min_q_from_mvar": "f8",
-            "max_q_from_mvar": "f8",
-            "min_q_to_mvar": "f8",
-            "max_q_to_mvar": "f8",
-            "in_service": "bool",
-        },
-        "ward": {
-            "name": dtype(str),
-            "bus": "i8",
-            "ps_mw": "f8",
-            "qs_mvar": "f8",
-            "pz_mw": "f8",
-            "qz_mvar": "f8",
-            "in_service": "bool",
-        },
-        "xward": {
-            "name": dtype(str),
-            "bus": "i8",
-            "ps_mw": "f8",
-            "qs_mvar": "f8",
-            "pz_mw": "f8",
-            "qz_mvar": "f8",
-            "r_ohm": "f8",
-            "x_ohm": "f8",
-            "vm_pu": "f8",
-            "slack_weight": "f8",
-            "in_service": "bool",  # missing in docu
-        },
-        "measurement": {
-            "name": dtype(str),
-            "measurement_type": dtype(str),  # missing in docu
-            "element_type": dtype(str),
-            "value": "f8",
-            "std_dev": "f8",
-            "bus": "i8",
-            "element": "i8",
-            "check_existing": "bool",
-            "index": "i8",
-            "side": dtype(str),  # missing in docu
-        },
+        "dcline": get_dtypes(dcline),
+        "ward": get_dtypes(ward),
+        "xward": get_dtypes(xward),
+        "measurement": get_dtypes(measurement),
         "pwl_cost": {  # not a datastructure or element?
             "power_type": dtype(object),
             "element": "u4",
@@ -333,15 +291,7 @@ def get_structure_dict() -> dict:
             "element_index": dtype(object),
             "reference_column": dtype(object),
         },
-        "source_dc": {  # docu hat sehr viele fehler...
-            "name": dtype(str),
-            "type": dtype(str),
-            "bus_dc": "i8",  # not the same name in docu
-            "p_mw": "f8",
-            "scaling": "f8",  # not in create method
-            "vm_pu": "f8",  # missing in docu
-            "in_service": "bool",
-        },
+        "source_dc": get_dtypes(source_dc),
         "load_dc": get_dtypes(load_dc),
         "b2b_vsc": get_dtypes(b2b_vsc),
         "_empty_res_b2b_vsc": {
