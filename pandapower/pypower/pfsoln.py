@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -19,7 +19,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import VM, VA, PD, QD
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, SL_FAC
 
-EPS = finfo(float).eps
+EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
 def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):

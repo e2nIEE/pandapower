@@ -16,16 +16,13 @@ from pandapower.pypower.idx_bus_sc import C_MAX, K_G, K_SG, V_G, \
     PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
 from pandapower.pypower.idx_brch_sc import K_T, K_ST
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
 
 def _get_is_ppci_bus(net, bus):
-    is_bus = bus[np.in1d(bus, net._is_elements_final["bus_is_idx"])]
+    is_bus = bus[np.isin(bus, net._is_elements_final["bus_is_idx"])]
     ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
     return ppci_bus
 

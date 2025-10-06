@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,10 +13,7 @@ from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _powerflow, _recycled_powerflow
 from pandapower.optimal_powerflow import _optimal_powerflow
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 try:
     from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
@@ -156,7 +153,10 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are set out of service in the ppc
 
-        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. If False, net.load.const_z_percent and net.load.const_i_percent are not considered, i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
+        **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. 
+            If False, net.load.const_z_p_percent, net.load.const_i_p_percent, 
+            net.load.const_z_q_percent and net.load.const_i_q_percent are not considered,
+            i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
         **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided
             line temperature. If True, net.line must contain a column "temperature_degree_celsius".
@@ -174,12 +174,12 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
         **KWARGS**:
 
-        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power flow backend
+        **lightsim2grid** ((bool,str), "auto") - whether to use the package lightsim2grid for power
+        flow backend. For more details on compatibility, check out pandapower's documentation.
 
-        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver
-
-            If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
-            which leads to significant speed improvements.
+        **numba** (bool, True) - Activation of numba JIT compiler in the newton solver.
+        If set to True, the numba JIT compiler is used to generate matrices for the powerflow,
+        which leads to significant speed improvements.
 
         **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
         defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
@@ -221,7 +221,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         **neglect_open_switch_branches** (bool, False) - If True no auxiliary buses are created for branches when switches are opened at the branch. Instead branches are set out of service
 
         **tdpf_update_r_theta** (bool, True) - TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
-
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net._options

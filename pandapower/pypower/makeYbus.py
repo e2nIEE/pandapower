@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -99,7 +99,7 @@ def branch_vectors(branch, nl):
                       1j * (branch[:, BR_B] + branch[:, BR_B_ASYM]))
     else:
         Bct = Bcf
-    
+
     tap = ones(nl)  # default tap ratio = 1
     i = nonzero(real(branch[:, TAP]))  # indices of non-zero tap ratios
     tap[i] = real(branch[i, TAP])  # assign non-zero tap ratios

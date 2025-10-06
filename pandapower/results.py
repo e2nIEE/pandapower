@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -38,13 +38,51 @@ def _extract_results(net, ppc):
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_bus_results(net, ppc, bus_pq)
     bus_p_dc = _get_p_dc_results(net, ppc, bus_dc_lookup_aranged)
-    # _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
+    _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
+    # _get_branch_dc_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc) # not needed since it is calculated in _get_branch_results
     _get_bus_dc_results(net, bus_p_dc)
+    _get_b2b_vsc_results(net)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
         _remove_costs(net)
 
+
+def _get_b2b_vsc_results(net):
+    """
+    Extract the results for the bipolar VSC from the monopolar VSC table.
+    This done via the indexes, since we have created at the beginning two net.vsc entries, for every net.b2b_vsc entry.
+    The idea is, to first lookup the indexes and recreate the naming scheme, then cut out the part needed form the
+    net.res_vsc table and afterwards grouping and aggregating everything together.
+    """
+    if len(net["b2b_vsc"]) > 0:
+        # create an index of the b2b_vsc's
+        indices = net.b2b_vsc.index.values
+        # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
+        naming_scheme = 'b2b_' + np.repeat(indices, 2).astype(str) + np.tile(['+', '-'], len(indices))
+        vsc_idx = net.vsc[net.vsc['name'].isin(naming_scheme)].index
+        res_vsc = net.res_vsc.loc[vsc_idx]
+
+        # Add a grouping index to split rows into pairs (0,1), (2,3), etc.
+        res_vsc['group'] = res_vsc.index // 2
+
+        net.res_b2b_vsc = res_vsc.groupby('group').agg(
+            p_mw=('p_mw', 'sum'),                               # p_mw gets summed since this is the AC power
+            q_mvar=('q_mvar', 'sum'),                           # q_mvar also gets summed
+            p_dc_mw_p=('p_dc_mw', 'first'),                     # MW of the plus DC bus
+            p_dc_mw_m=('p_dc_mw', 'last'),                      # MW of the minus DC bus
+            vm_internal_pu=('vm_internal_pu', 'mean'),          # The internal vm_pu is the average of both vsc
+            va_internal_degree=('va_internal_degree', 'mean'),  # Same for the angle
+            vm_pu=('vm_pu', 'mean'),                            # Mean of the vm_pu set point
+            va_degree = ('va_degree', 'mean'),                  # Mean of the va_degree set point
+            vm_internal_dc_pu_p=('vm_internal_dc_pu', 'first'), # Internal dc set point for the plus bus
+            vm_internal_dc_pu_m=('vm_internal_dc_pu', 'last'),  # Same for the minus bus
+            vm_dc_pu_p=('vm_dc_pu', 'first'),                   # And also for the external pu set point
+            vm_dc_pu_m=('vm_dc_pu', 'last'),                    # also for the minus bus
+        )
+
+        # remove the b2b_vsc results from the res table
+        net.res_vsc.drop(vsc_idx, axis=0, inplace=True)
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     # reset_results(net, False)
@@ -147,13 +185,13 @@ def init_element(net, element, suffix=None):
 def get_relevant_elements(mode="pf"):
     if mode == "pf" or mode == "opf":
         return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
-                "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
-                "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
-                "switch", "tcsc", "svc", "ssc", "vsc"]
+                "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
+                "xward", "dcline", "asymmetric_load", "asymmetric_sgen", "source_dc",
+                "switch", "tcsc", "svc", "ssc", "vsc", "b2b_vsc"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":
-        return ["bus", "line", "trafo", "trafo3w", "impedance", "switch"]
+        return ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"]
     elif mode == "pf_3ph":
         return ["bus", "line", "trafo", "ext_grid", "shunt",
                 "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]

@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -19,7 +19,7 @@ from scipy.sparse import vstack, hstack, eye, csr_matrix as sparse
 from scipy.sparse.linalg import spsolve
 
 
-EPS = finfo(float).eps
+EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
 def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,

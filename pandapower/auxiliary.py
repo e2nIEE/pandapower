@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -27,39 +27,47 @@
 # (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
 
 import copy
-from collections.abc import MutableMapping
+import numbers
 import warnings
-from importlib.metadata import version as version_str
+from collections.abc import MutableMapping
 from importlib.metadata import PackageNotFoundError
-from typing_extensions import deprecated
+from importlib.metadata import version as version_str
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
+# from pandas.api.types import is_integer_dtype, is_float_dtype
 import scipy as sp
-import numbers
+from geojson import loads, GeoJSON
 from packaging.version import Version
+from typing_extensions import deprecated
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, PQ, VMIN, VMAX, PV
+from pandapower.pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
-from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_MODE_AC, VSC_MODE_AC_SL, \
-    VSC_INTERNAL_BUS_DC
-from .pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B, DC_P
+from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS_DC
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
+
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
+import logging
 try:
-    import pandaplan.core.pplog as logging
+    from geopandas import GeoSeries
+    from shapely import from_geojson
+
+    geopandas_available = True
 except ImportError:
-    import logging
+    geopandas_available = False
 
 logger = logging.getLogger(__name__)
+
 
 def log_to_level(msg, passed_logger, level):
     if level == "error":
@@ -77,10 +85,9 @@ def log_to_level(msg, passed_logger, level):
 
 
 def version_check(package_name, level="UserWarning", ignore_not_installed=False):
-
     minimum_version = {'plotly': "3.1.1",
                        'numba': "0.25",
-                      }
+                       }
     if ignore_not_installed and package_name not in minimum_version.keys():
         return
 
@@ -100,6 +107,7 @@ def version_check(package_name, level="UserWarning", ignore_not_installed=False)
 
 try:
     from numba import jit
+
     try:
         version_check("numba")
         NUMBA_INSTALLED = True
@@ -109,6 +117,7 @@ try:
         NUMBA_INSTALLED = False
 except ImportError:
     from .pf.no_numba import jit
+
     NUMBA_INSTALLED = False
 
 
@@ -298,6 +307,10 @@ class ADict(dict, MutableMapping):
 
 
 class pandapowerNet(ADict):
+    """
+    pandapowerNet constructor
+    given dict needs to contain the pandapower network dataframes, for example use classmethod create_dataframes
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if isinstance(args[0], self.__class__):
@@ -306,9 +319,15 @@ class pandapowerNet(ADict):
             self.update(**copy.deepcopy(net))
 
         for key in self:
-            if isinstance(self[key], list):
-                self[key] = pd.DataFrame(np.zeros(0, dtype=self[key]), index=pd.Index([],
-                                         dtype=np.int64))
+            if isinstance(self[key], list) and len(self[key]) == 1:
+                self[key] = self[key][0]
+
+    @classmethod
+    def create_dataframes(cls, data):
+        for key in data: #TODO: change index dtype to np.uint32
+            if isinstance(data[key], dict):
+                data[key] = pd.DataFrame(columns=data[key].keys(), index=pd.Index([], dtype=np.int64)).astype(data[key])
+        return data
 
     @deprecated("Use copy.deepcopy(net) instead of net.deepcopy()")
     def deepcopy(self):
@@ -339,13 +358,93 @@ class pandapowerNet(ADict):
         if len(res):
             res = [" and the following results tables:"] + res
         lines = ["This pandapower network includes the following parameter tables:"] + \
-            par + res + res_cost
+                par + res + res_cost
         return "\n".join(lines)
+
+
+@pd.api.extensions.register_series_accessor("geojson")
+class GeoAccessor:
+    """
+    pandas Series accessor for the geo column. It facilitates the use of geojson strings.
+    NaN entrys are dropped using the accessor!
+    """
+
+    def __init__(self, pandas_obj):
+        self._validate(pandas_obj)
+        self._obj = pandas_obj
+
+    @staticmethod
+    def _validate(obj):
+        try:
+            if not obj.dropna().apply(loads).apply(isinstance, args=(GeoJSON,)).all():
+                raise AttributeError("Can only use .geojson accessor with geojson string values!")
+        except Exception as e:
+            raise AttributeError(f"Can only use .geojson accessor with geojson string values!: {e}")
+        if not geopandas_available:
+            soft_dependency_error("GeoAccessor", "geopandas")
+
+    @staticmethod
+    def _extract_coords(x):
+        if x["type"] == "Point":
+            return np.array(x["coordinates"])
+        return [np.array(y) for y in x["coordinates"]]
+
+    @property
+    def _coords(self):
+        """
+        Extracts the geometry coordinates from the GeoJSON strings.
+        It is not recommended to use the standalone coordinates.
+        Important informations like the crs or latlon/lonlat are lost as a result.
+        """
+        return self._obj.dropna().apply(loads).apply(self._extract_coords)
+
+    @property
+    def as_geo_obj(self):
+        """
+        Loads the GeoJSON objects.
+        """
+        return self._obj.dropna().apply(loads)
+
+    @property
+    def type(self):
+        """
+        Extracts the geometry type of the GeoJSON string.
+        """
+        return self._obj.dropna().apply(loads).apply(lambda x: str(x["type"]))
+
+    @property
+    def as_shapely_obj(self):
+        """
+        Converts the GeoJSON strings to shapely geometrys.
+        """
+        return self._obj.dropna().apply(from_geojson)
+
+    @property
+    def as_geoseries(self):
+        """
+        Converts the PandasSeries to a GeoSeries with shapely geometrys.
+        """
+        return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.dropna().index)
+
+    def __getattr__(self, item):
+        """
+        Enables access to all methods or attribute calls from a GeoSeries.
+        """
+        geoms = self.as_geoseries
+        if hasattr(geoms, item):
+            geoms_item = getattr(geoms, item)
+            if callable(geoms_item):
+                def wrapper(*args, **kwargs):
+                    return geoms_item(*args, **kwargs)
+
+                return wrapper
+            else:
+                return geoms_item
+        raise AttributeError(f"'GeoAccessor' object has no attribute '{item}'")
 
 
 def plural_s(number):
     return "" if number == 1 else "s"
-
 
 
 def ets_to_element_types(ets=None):
@@ -364,10 +463,21 @@ def element_types_to_ets(element_types=None):
     ser2 = pd.Series(ser1.index, index=list(ser1))
     if element_types is None:
         return ser2
-    elif isinstance(ets, str):
+    elif isinstance(element_types, str):
         return ser2.at[element_types]
     else:
         return list(ser2.loc[element_types])
+
+
+def empty_defaults_per_dtype(dtype):
+    if is_numeric_dtype(dtype):
+        return np.nan
+    elif is_string_dtype(dtype):
+        return ""
+    elif is_object_dtype(dtype):
+        return None
+    else:
+        raise NotImplementedError(f"{dtype=} is not implemented in _empty_defaults()")
 
 
 def _preserve_dtypes(df, dtypes):
@@ -672,7 +782,7 @@ def _write_to_object_attribute(net, element, index, variable, values):
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable, dc=False):
     isolated_nodes = np.where(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network! (%i nodes in the PPC)"%len(isolated_nodes))
+        logger.debug("There are isolated buses in the network! (%i nodes in the PPC)" % len(isolated_nodes))
         # set buses in ppc out of service
         if dc:
             ppc['bus_dc'][isolated_nodes, DC_BUS_TYPE] = DC_NONE
@@ -924,17 +1034,15 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
     #    mode = net["_options"]["mode"]
     elements_ac = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
                    "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
-    elements_dc = ["vsc"]
+    elements_dc = ["vsc", "load_dc", "source_dc"]
     is_elements = dict()
-    for element_table_list, bus_table, bis in zip((elements_ac, elements_dc),
-                                                  ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
+    for element_table_list, bus_table, bis in zip((elements_ac, elements_dc), ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
         for element_table in element_table_list:
             num_elements = len(net[element_table].index)
             element_in_service = np.zeros(num_elements, dtype=bool)
             if num_elements > 0:
                 element_df = net[element_table]
-                set_elements_oos(element_df[bus_table].values, element_df["in_service"].values,
-                                 bis, element_in_service)
+                set_elements_oos(element_df[bus_table].values, element_df["in_service"].values, bis, element_in_service)
             # load, sgen, storage only in elements_ac so this will only be executed once:
             if net["_options"]["mode"] == "opf" and element_table in ["load", "sgen", "storage"]:
                 if "controllable" in net[element_table]:
@@ -957,11 +1065,16 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
         #                    ppc_bus_isolated[net["_pd2ppc_lookups"]["aux"]["vsc"]] |
         #                    ppc_bus_isolated[net._ppc["vsc"][:, VSC_BUS].astype(np.int64)]]
         net._ppc["bus"][vsc_aux_isolated, BUS_TYPE] = NONE
+
         # if there are no in service VSC that define the DC slack node, we must change the DC slack to type P
         bus_dc_slack = net._ppc["bus_dc"][:, DC_BUS_TYPE] == DC_REF
-        bus_dc_with_vsc = np.r_[net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC], net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC]]
+        bus_dc_with_vsc = np.r_[
+            net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC],
+            net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC]
+        ]
         bus_dc_to_change = bus_dc_slack & (~np.isin(net._ppc["bus_dc"][:, DC_BUS_I], bus_dc_with_vsc))
-        net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
+        # TODO: changing this will also delete all voltage sources but there seems to be a problem
+        #net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
 
         # if the AC bus is defined as REF only because it is connected to a vsc, and the vsc is out of service,
         # it cannot be a REF bus anymore
@@ -1139,17 +1252,26 @@ def _clean_up(net, res=True):
         if res:
             net.res_gen = net.res_gen.drop(dc_gens)
 
+    if len(net["b2b_vsc"]) > 0:
+        # remove vsc's which were only created for the b2b_vsc's
+        indices = net.b2b_vsc.index.values
+        # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
+        naming_scheme = 'b2b_' + np.repeat(indices, 2).astype(str) + np.tile(['+', '-'], len(indices))
+        vsc_idx = net.vsc[net.vsc['name'].isin(naming_scheme)]
+        # drop the vsc's
+        net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
+
 
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
     # first check if buses are connected to branches
     # I don't know why this dance with [X, :][:, [Y, Z]] (instead of [X, [Y, Z]]) is necessary:
     disco = np.setxor1d(ppc["bus"][:, BUS_I].astype(np.int64),
-                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, :][:, [F_BUS,T_BUS]].real.astype(np.int64).flatten())
+                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, :][:, [F_BUS, T_BUS]].real.astype(
+                            np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF,
-                                                         BUS_I].real.astype(np.int64))
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I].real.astype(np.int64))
     ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
 
     # check DC buses - not connected to DC lines and not connected to VSC DC side
@@ -1159,8 +1281,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
                                       ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64)))
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF,
-                                                         DC_BUS_I].real.astype(np.int64))
+    net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF, DC_BUS_I].real.astype(np.int64))
     ppc["bus_dc"][net._isolated_buses_dc, DC_BUS_TYPE] = DC_NONE
 
 
@@ -1183,12 +1304,13 @@ def _check_if_numba_is_installed(level="warning"):
     return NUMBA_INSTALLED
 
 
-
 def _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack, tdpf):
-    """
-    Implement some checks to decide whether the package lightsim2grid can be used. The package implements a backend for
-     power flow calculation in C++ and provides a speed-up. If lightsim2grid is "auto" (default), we don't bombard the
-     user with messages. Otherwise, if lightsim2grid is True bus cannot be used, we inform the user abot it.
+    r"""
+    Implement some checks to decide whether the package lightsim2grid can be used. These checks are
+    documentated in :code:`doc\powerflow\ac.rst` The package implements a backend for power flow
+    calculation in C++ and provides a speed-up. If lightsim2grid
+    is "auto" (default), we don't bombard the user with messages. Otherwise, if lightsim2grid is
+    True bus cannot be used, we inform the user abot it.
     """
     if not lightsim2grid:
         return False  # early return :)
@@ -1463,25 +1585,87 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
     return Sabc, Vabc
 
 
-def _add_auxiliary_elements(net):
+def _add_dcline_gens(net: pandapowerNet):
+    from pandapower.create import create_gen
+    for dctab in net.dcline.itertuples():
+        p_mw = np.abs(dctab.p_mw)
+        p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw
+
+        if np.sign(dctab.p_mw) > 0:
+            p_to = p_loss
+            p_from = -p_mw
+            p_max = dctab.max_p_mw
+            p_min = 0
+        else:
+            p_to = -p_mw
+            p_from = p_loss
+            p_max = 0
+            p_min = -dctab.max_p_mw
+
+        create_gen(net, bus=dctab.to_bus, p_mw=p_to, vm_pu=dctab.vm_to_pu,
+                   min_p_mw=p_min, max_p_mw=p_max,
+                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
+                   in_service=dctab.in_service)
+
+        create_gen(net, bus=dctab.from_bus, p_mw=p_from, vm_pu=dctab.vm_from_pu,
+                   min_p_mw=-p_max, max_p_mw=-p_min,
+                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
+                   in_service=dctab.in_service)
+
+
+def _add_b2b_vsc(net: pandapowerNet):
+    from pandapower.create import create_vsc
+    for i, b2b_vsc in net.b2b_vsc.iterrows():
+        ac_bus = b2b_vsc.bus
+        bus_dc_plus = b2b_vsc.bus_dc_plus
+        bus_dc_minus = b2b_vsc.bus_dc_minus
+        control_mode_ac = b2b_vsc.control_mode_ac
+        control_mode_dc = b2b_vsc.control_mode_dc
+        control_value_ac = b2b_vsc.control_value_ac
+        control_value_dc = b2b_vsc.control_value_dc
+        r_ohm = b2b_vsc.r_ohm
+        x_ohm = b2b_vsc.x_ohm
+        r_dc_ohm = b2b_vsc.r_dc_ohm
+        pl_dc_mw = b2b_vsc.pl_dc_mw
+        # idx = int(i)
+        name = "b2b_" + str(b2b_vsc.name)
+
+        # TODO: currently not working. If in voltage control mode, the voltage is split equally between the VSCs
+        ref_bus = None
+        if control_mode_dc == 'vm_pu_diff':
+            ref_bus = bus_dc_minus
+            control_mode_dc = 'vm_pu_diff_p'
+
+        create_vsc(net, ac_bus, bus_dc_plus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
+                   control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"+",
+                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc, ref_bus=ref_bus)
+
+        ref_bus = None
+        if control_mode_dc == 'vm_pu_diff_p':
+            ref_bus = bus_dc_plus
+            control_mode_dc = 'vm_pu_diff_m'
+            control_value_dc = -control_value_dc
+
+        create_vsc(net, ac_bus, bus_dc_minus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
+                   control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"-",
+                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc, ref_bus=ref_bus)
+
+
+def _add_auxiliary_elements(net: pandapowerNet):
+    """
+    Add auxiliary elements to net, convert the HVDC links to a gen pair and
+    convert the back2back VSC to two monopol VSCs
+    Args:
+        net:
+
+    Returns:
+
+    """
     if len(net.dcline) > 0:
         _add_dcline_gens(net)
 
-
-def _add_dcline_gens(net):
-    from pandapower.create import create_gen
-    for dctab in net.dcline.itertuples():
-        pfrom = dctab.p_mw
-        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
-        pmax = dctab.max_p_mw
-        create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
-                   min_p_mw=0, max_p_mw=pmax,
-                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
-                   in_service=dctab.in_service)
-        create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
-                   min_p_mw=-pmax, max_p_mw=0,
-                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
-                   in_service=dctab.in_service)
+    if len(net.b2b_vsc) > 0:
+        _add_b2b_vsc(net)
 
 
 def _replace_nans_with_default_limits(net, ppc):
@@ -1548,8 +1732,10 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         numba = _check_if_numba_is_installed()
 
     if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_percent"].values)
-                or np.any(net["load"]["const_i_percent"].values)):
+        if not (np.any(net["load"]["const_z_p_percent"].values)
+                or np.any(net["load"]["const_i_p_percent"].values)
+                or np.any(net["load"]["const_z_q_percent"].values)
+                or np.any(net["load"]["const_i_q_percent"].values)):
             voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
@@ -1569,7 +1755,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or \
-                 net.ssc.in_service.any() or net.vsc.in_service.any()
+                 net.ssc.in_service.any() or net.vsc.in_service.any() or \
+                 net.b2b_vsc.in_service.any()
 
     if with_facts and algorithm != "nr":
         if algorithm != 'nr':
@@ -1737,7 +1924,6 @@ def _init_rundcopp_options(net, check_connectivity, switch_rx_ratio, delta, traf
 
 def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
                         **kwargs):
-
     check_connectivity = kwargs.get("check_connectivity", True)
     trafo_model = kwargs.get("trafo_model", "t")
     trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
@@ -1746,11 +1932,11 @@ def _init_runse_options(net, v_start, delta_start, calculate_voltage_angles,
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="pf", switch_rx_ratio=switch_rx_ratio, init_vm_pu=v_start,
+                     mode="se", switch_rx_ratio=switch_rx_ratio, init_vm_pu=v_start,
                      init_va_degree=delta_start, enforce_q_lims=False, recycle=None,
                      voltage_depend_loads=False, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva="1e-8", trafo_loading="power",
-                    numba=False, ac=True, algorithm="nr", max_iteration="auto",
+                    numba=True, ac=True, algorithm="nr", max_iteration="auto",
                     only_v_results=False)
 
 

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
-import pandapower.auxiliary as aux
+from pandapower.auxiliary import _select_is_elements_numba, _check_connectivity_opf, _check_connectivity, \
+    _set_isolated_buses_out_of_service, _replace_nans_with_default_limits, _write_lookup_to_net
 from pandapower.build_branch import _switch_branches, _branches_with_oos_buses, \
     _build_branch_ppc, _build_tcsc_ppc, _build_branch_dc_ppc
 from pandapower.build_bus import _build_bus_ppc, _calc_pq_elements_and_add_on_ppc, \
@@ -24,12 +25,13 @@ from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
 from pandapower.pypower.idx_vsc import VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_STATUS, VSC_MODE_AC, VSC_MODE_AC_V, \
     VSC_MODE_AC_Q, VSC_MODE_AC_SL, VSC_INTERNAL_BUS_DC
+from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS
 from pandapower.pypower.run_userfcn import run_userfcn
 from itertools import combinations
 
 
 def _pd2ppc_recycle(net, sequence, recycle):
-    # todo for FACTS and DC elements: SVC, TCSC, SSC, VSC
+    # TODO: for FACTS and DC elements: SVC, TCSC, SSC, VSC
     key = "_ppc" if sequence is None else "_ppc%d" % sequence
     if not recycle or not net.get(key, None):
         return _pd2ppc(net, sequence=sequence)
@@ -77,7 +79,9 @@ def _check_vsc_different_ac_control_modes_at_same_bus(ppci):
     ac_vm_pu_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_V, VSC_BUS]
     ac_q_mvar_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_Q, VSC_BUS]
     ac_slack_buses = ppci["vsc"][ppci["vsc"][:, VSC_MODE_AC] == VSC_MODE_AC_SL, VSC_BUS]
-    ac_bus_intersection = np.hstack([np.intersect1d(a, b) for a, b in combinations([ac_vm_pu_buses, ac_q_mvar_buses, ac_slack_buses], r=2)])
+    ac_bus_intersection = np.hstack(
+        [np.intersect1d(a, b) for a, b in combinations([ac_vm_pu_buses, ac_q_mvar_buses, ac_slack_buses], r=2)])
+    # TODO: there are working combinations, for example a slack converter can work together with a vm_pu, so maybe just print a message?
     if len(ac_bus_intersection) != 0:
         raise NotImplementedError("Found multiple VSC converters that share the same AC bus and have "
                                   "different AC control modes - not implemented. VSC converters can only "
@@ -93,7 +97,7 @@ def _check_slack_at_vsc_bus(ppci):
                                   "this configuration is not implemented.")
 
 
-def _pd2ppc(net, sequence=None):
+def _pd2ppc(net, sequence=None, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -134,7 +138,7 @@ def _pd2ppc(net, sequence=None):
 
     """
     # select elements in service (time consuming, so we do it once)
-    net["_is_elements"] = aux._select_is_elements_numba(net, sequence=sequence)
+    net["_is_elements"] = _select_is_elements_numba(net, sequence=sequence)
 
     # Gets network configurations
     mode = net["_options"]["mode"]
@@ -154,7 +158,7 @@ def _pd2ppc(net, sequence=None):
         _build_branch_ppc_zero(net, ppc)
     else:
         # Calculates ppc1/ppc2 branch impedances from branch elements
-        _build_branch_ppc(net, ppc)
+        _build_branch_ppc(net, ppc, sequence)
     _build_branch_dc_ppc(net, ppc)
 
     _build_tcsc_ppc(net, ppc, mode)
@@ -186,26 +190,26 @@ def _pd2ppc(net, sequence=None):
         if sequence in [None, 1, 2]:
             # sets islands (multiple isolated nodes) out of service
             if mode == "opf":
-                net["_isolated_buses"], _, _ = aux._check_connectivity_opf(ppc)
+                net["_isolated_buses"], _, _ = _check_connectivity_opf(ppc)
                 net["_isolated_buses_dc"] = np.array([], dtype=np.int64)
             else:
-                net["_isolated_buses"], _, _, net["_isolated_buses_dc"], _, _ = aux._check_connectivity(ppc)
-            net["_is_elements_final"] = aux._select_is_elements_numba(net, net._isolated_buses,
-                                                                      net._isolated_buses_dc, sequence)
+                net["_isolated_buses"], _, _, net["_isolated_buses_dc"], _, _ = _check_connectivity(ppc)
+            net["_is_elements_final"] = _select_is_elements_numba(net, net._isolated_buses,
+                                                                  net._isolated_buses_dc, sequence)
         else:
             ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
         net["_is_elements"] = net["_is_elements_final"]
     else:
         # sets buses out of service, which aren't connected to branches / REF buses
-        aux._set_isolated_buses_out_of_service(net, ppc)
+        _set_isolated_buses_out_of_service(net, ppc)
 
     # we need to check this after checking connectivity (isolated vsc as DC slack cause change of DC_REF to DC_P)
-    if "pf" in mode:
+    if "pf" in mode or "se" in mode:
         _check_for_reference_bus(ppc)
 
     _build_gen_ppc(net, ppc)
 
-    aux._replace_nans_with_default_limits(net, ppc)
+    _replace_nans_with_default_limits(net, ppc)
 
     # generates "internal" ppci format (for powerflow calc)
     # from "external" ppc format and updates the bus lookup
@@ -231,28 +235,30 @@ def _pd2ppc(net, sequence=None):
 
 def _init_ppc(net, mode="pf", sequence=None):
     # init empty ppc
-    ppc = {"baseMVA": net.sn_mva,
-           "version": 2,
-           "bus": np.array([], dtype=float),
-           "bus_dc": np.array([], dtype=np.float64),
-           "branch": np.array([], dtype=np.complex128),
-           "branch_dc": np.array([], dtype=np.float64),
-           "tcsc": np.array([], dtype=np.complex128),
-           "svc": np.array([], dtype=np.complex128),
-           "ssc": np.array([], dtype=np.complex128),
-           "vsc": np.array([], dtype=np.float64),
-           "gen": np.array([], dtype=float),
-           "internal": {
-               "Ybus": np.array([], dtype=np.complex128),
-               "Yf": np.array([], dtype=np.complex128),
-               "Yt": np.array([], dtype=np.complex128),
-               "branch_is": np.array([], dtype=bool),
-               "branch_dc_is": np.array([], dtype=bool),
-               "gen_is": np.array([], dtype=bool),
-               "DLF": np.array([], dtype=np.complex128),
-               "buses_ord_bfs_nets": np.array([], dtype=float)
-               }
-           }
+    ppc = {
+        "baseMVA": net.sn_mva,
+        "version": 2,
+        "bus": np.array([], dtype=float),
+        "bus_dc": np.array([], dtype=np.float64),
+        "branch": np.array([], dtype=np.complex128),
+        "branch_dc": np.array([], dtype=np.float64),
+        "tcsc": np.array([], dtype=np.complex128),
+        "svc": np.array([], dtype=np.complex128),
+        "ssc": np.array([], dtype=np.complex128),
+        "vsc": np.array([], dtype=np.float64),
+        "gen": np.array([], dtype=float),
+        "source_dc": np.array([], dtype=float),
+        "internal": {
+            "Ybus": np.array([], dtype=np.complex128),
+            "Yf": np.array([], dtype=np.complex128),
+            "Yt": np.array([], dtype=np.complex128),
+            "branch_is": np.array([], dtype=bool),
+            "branch_dc_is": np.array([], dtype=bool),
+            "gen_is": np.array([], dtype=bool),
+            "DLF": np.array([], dtype=np.complex128),
+            "buses_ord_bfs_nets": np.array([], dtype=float)
+        }
+    }
     if mode == "opf":
         # additional fields in ppc
         ppc["gencost"] = np.array([], dtype=float)
@@ -290,13 +296,13 @@ def _ppc2ppci(ppc, net, ppci=None):
     # get bus_lookup
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     bus_dc_lookup = net["_pd2ppc_lookups"]["bus_dc"]
-    # get OOS busses and place them at the end of the bus array
+    # get OOS buses and place them at the end of the bus array
     # (there are no OOS busses in the ppci)
     oos_buses = ppc['bus'][:, BUS_TYPE] == NONE
     oos_buses_dc = ppc['bus_dc'][:, BUS_TYPE] == DC_NONE
     ppci['bus'] = ppc['bus'][~oos_buses]
     ppci['bus_dc'] = ppc['bus_dc'][~oos_buses_dc]
-    # in ppc the OOS busses are included and at the end of the array
+    # in ppc the OOS buses are included and at the end of the array
     ppc['bus'] = np.vstack([ppc['bus'][~oos_buses], ppc['bus'][oos_buses]])
     ppc['bus_dc'] = np.vstack([ppc['bus_dc'][~oos_buses_dc], ppc['bus_dc'][oos_buses_dc]])
 
@@ -340,6 +346,7 @@ def _ppc2ppci(ppc, net, ppci=None):
 
     # update branch, gen and areas bus numbering
     ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)].copy()
+    ppc['source_dc'][:, SOURCE_DC_BUS] = e2i_dc[np.real(ppc['source_dc'][:, SOURCE_DC_BUS]).astype(np.int64)].copy()
     ppc['svc'][:, SVC_BUS] = e2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_BUS] = e2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)].copy()
     ppc['ssc'][:, SSC_INTERNAL_BUS] = e2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)].copy()
@@ -381,19 +388,19 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppci["internal"]["gen_is"] = gs
 
     svcs = ((ppc["svc"][:, SVC_STATUS] > 0) &  # gen status
-          bs[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)]])
+            bs[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)]])
     ppci["internal"]["svc_is"] = svcs
 
     sscs = ((ppc["ssc"][:, SSC_STATUS] > 0) &  # ssc status
-          bs[n2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)]] &
-          bs[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
+            bs[n2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)]] &
+            bs[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
     ppci["internal"]["ssc_is"] = sscs
 
     vscs = ((ppc["vsc"][:, VSC_STATUS] > 0) &  # vsc status
-          bs[n2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)]] &
-          bs[n2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)]] &
-          bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)]] &
-          bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)]])
+            bs[n2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)]] &
+            bs[n2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)]] &
+            bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)]] &
+            bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)]])
     ppci["internal"]["vsc_is"] = vscs
 
     brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status
@@ -402,14 +409,19 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppci["internal"]["branch_is"] = brs
 
     brs_dc = (np.real(ppc["branch_dc"][:, DC_BR_STATUS]).astype(np.int64) &  # branch status
-           bs_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_F_BUS]).astype(np.int64)]] &
-           bs_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_T_BUS]).astype(np.int64)]]).astype(bool)
+              bs_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_F_BUS]).astype(np.int64)]] &
+              bs_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["branch_dc_is"] = brs_dc
 
     trs = (np.real(ppc["tcsc"][:, TCSC_STATUS]).astype(np.int64) &  # branch status
            bs[n2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)]] &
            bs[n2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["tcsc_is"] = trs
+
+    # source_dc in service list
+    srcs = ((ppc["source_dc"][:, SOURCE_DC_STATUS] > 0) &  # source_dc status
+             bs_dc[n2i_dc[np.real(ppc["source_dc"][:, SOURCE_DC_BUS]).astype(np.int64)]])
+    ppci["internal"]["source_dc_is"] = srcs
 
     if 'areas' in ppc:
         ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(np.int64)]]
@@ -425,6 +437,7 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppci["svc"] = ppc["svc"][svcs]
     ppci["ssc"] = ppc["ssc"][sscs]
     ppci["vsc"] = ppc["vsc"][vscs]
+    ppci["source_dc"] = ppc["source_dc"][srcs]
 
     if 'dcline' in ppc:
         ppci['dcline'] = ppc['dcline']
@@ -448,7 +461,7 @@ def _update_lookup_entries(net, lookup, e2i, element):
     valid_bus_lookup_entries = lookup >= 0
     # update entries
     lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
-    aux._write_lookup_to_net(net, element, lookup)
+    _write_lookup_to_net(net, element, lookup)
 
 
 def _build_gen_lookups(net, element, f, t):
@@ -469,4 +482,4 @@ def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
     # update lookup
     lookup[pandapower_index] = ppc_index
 
-    aux._write_lookup_to_net(net, lookup_name, lookup)
+    _write_lookup_to_net(net, lookup_name, lookup)

@@ -13,15 +13,12 @@ try:
 except ImportError:
     GRAPHS_EQUAL_POSSIBLE = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
 
-def dataframes_equal(df1, df2, ignore_index_order=True, **kwargs):
+def dataframes_equal(df1, df2, ignore_index_order=True, assume_geojson_strings=True, **kwargs):
     """
     Returns a boolean whether the given two dataframes are equal or not.
     """
@@ -37,12 +34,18 @@ def dataframes_equal(df1, df2, ignore_index_order=True, **kwargs):
         df2 = df2.sort_index().sort_index(axis=1)
 
     # geo columns are compared later
-    df1_cols = df1.columns.difference({"geo"})
-    df2_cols = df2.columns.difference({"geo"})
+    if assume_geojson_strings:
+        df1_cols = df1.columns.difference({"geo"})
+        df2_cols = df2.columns.difference({"geo"})
+    else:
+        df1_cols = df1.columns
+        df2_cols = df2.columns
 
     # --- pandas implementation
     try:
         pdt.assert_frame_equal(df1[df1_cols], df2[df2_cols], **kwargs)
+        if not assume_geojson_strings:
+            return True
     except AssertionError:
         return False
 
@@ -50,7 +53,9 @@ def dataframes_equal(df1, df2, ignore_index_order=True, **kwargs):
     if "geo" in df1.columns and "geo" in df2.columns:
         not_eq_warn = "DataFrames do not match in column 'geo'."
         notnull1 = df1.geo.index[~df1.geo.isnull()]
+        notnull1 = df1.geo.loc[notnull1].index[df1.geo.loc[notnull1].apply(len).astype(bool)]
         notnull2 = df2.geo.index[~df2.geo.isnull()]
+        notnull2 = df2.geo.loc[notnull2].index[df2.geo.loc[notnull2].apply(len).astype(bool)]
 
         if len(notnull1) + len(notnull2) == 0:
             return True
@@ -104,7 +109,7 @@ def compare_arrays(x, y):
 
 
 def nets_equal(net1, net2, check_only_results=False, check_without_results=False, exclude_elms=None,
-               name_selection=None, **kwargs):
+               name_selection=None, assume_geojson_strings=True, **kwargs):
     """
     Returns a boolean whether the two given pandapower networks are equal.
 
@@ -137,7 +142,7 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
         return False
     not_equal, not_checked_keys = nets_equal_keys(
         net1, net2, check_only_results, check_without_results, exclude_elms, name_selection,
-        **kwargs)
+        assume_geojson_strings, **kwargs)
     if len(not_checked_keys) > 0:
         logger.warning("These keys were ignored by the comparison of the networks: %s" % (', '.join(
             not_checked_keys)))
@@ -150,7 +155,7 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 
 
 def nets_equal_keys(net1, net2, check_only_results, check_without_results, exclude_elms,
-                     name_selection, **kwargs):
+                     name_selection, assume_geojson_strings, **kwargs):
     """ Returns a lists of keys which are 1) not equal and 2) not checked.
     Used within nets_equal(). """
     if check_without_results and check_only_results:
@@ -189,7 +194,8 @@ def nets_equal_keys(net1, net2, check_only_results, check_without_results, exclu
 
         if isinstance(net1[key], pd.DataFrame):
             if not isinstance(net2[key], pd.DataFrame) or not dataframes_equal(
-                    net1[key], net2[key], **kwargs):
+                    net1[key], net2[key], assume_geojson_strings=assume_geojson_strings,
+                    **kwargs):
                 not_equal.append(key)
 
         elif isinstance(net1[key], np.ndarray):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -21,7 +21,7 @@ from pandapower.pypower.newtonpf import _evaluate_Fx, _check_for_convergence
 from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _get_Y_bus
 from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 
 def _make_bibc_bcbv(bus, branch, graph):
@@ -73,8 +73,8 @@ def _make_bibc_bcbv(bus, branch, graph):
 
         # if multiple networks get subnetwork branches
         if norefs > 1:
-            branches_sub_mask = (np.in1d(branches_arr[:, 0], buses_ordered_bfs) &
-                                 np.in1d(branches_arr[:, 1], buses_ordered_bfs))
+            branches_sub_mask = (np.isin(branches_arr[:, 0], buses_ordered_bfs) &
+                                 np.isin(branches_arr[:, 1], buses_ordered_bfs))
             branches = np.sort(branches_arr[branches_sub_mask, :], axis=1)
         else:
             branches = np.sort(branches_arr, axis=1)
@@ -252,7 +252,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     Ysh = _makeYsh_bfsw(bus, branch, baseMVA)
 
     # detect generators on PV buses which have status ON
-    gen_pv = np.in1d(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
+    gen_pv = np.isin(gen[:, GEN_BUS], pv) & (gen[:, GEN_STATUS] > 0)
     qg_lim = np.zeros(ngen, dtype=bool)  # initialize generators which violated Q limits
 
     Iinj = np.conj(Sbus / V0) - Ysh * V0   # Initial current injections
@@ -344,7 +344,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
         # updating injected currents
         Iinj = np.conj(Sbus / V) - Ysh * V
 
-    return V, converged
+    return V, converged, n_iter
 
 
 def _get_options(options):
@@ -366,7 +366,7 @@ def _run_bfswpf(ppci, options, **kwargs):
 
     :param ppci: matpower-style case data
     :param options: pf options
-    :return: results (pypower style), success (flag about PF convergence)
+    :return: ppci (dict)
     """
     time_start = perf_counter()  # starting pf calculation timing
 
@@ -409,7 +409,7 @@ def _run_bfswpf(ppci, options, **kwargs):
         Ybus_noshift = Ybus.copy()
 
     # #-----  run the power flow  -----
-    V_final, success = _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus_noshift,
+    V_final, success, iterations = _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus_noshift,
                                Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
                                options, **kwargs)
 
@@ -441,13 +441,11 @@ def _run_bfswpf(ppci, options, **kwargs):
             V_final[buses_shifted_from_root] *= np.exp(1j * np.pi / 180 * shift_degree)
 
     # #----- output results to ppc ------
-    ppci["et"] = perf_counter() - time_start  # pf time end
+    et = perf_counter() - time_start  # pf time end
 
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V_final, ref, ref_gens)
     # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)
 
-    ppci["success"] = success
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
 
-    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
-
-    return ppci, success
+    return ppci

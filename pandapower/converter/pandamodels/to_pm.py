@@ -29,10 +29,7 @@ from pandapower.results import init_results
 
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -105,7 +102,8 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
         **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
 
         **voltage_depend_loads** (bool, False) - consideration of voltage-dependent loads.
-        If False, net.load.const_z_percent and net.load.const_i_percent are not considered,
+        If False, net.load.const_z_p_percent, net.load.const_i_p_percent, 
+        net.load.const_z_q_percent and net.load.const_i_q_percent are not considered,
         i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
     Returns
@@ -140,8 +138,10 @@ logger = logging.getLogger(__name__)
 def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_step=None, 
                             **kwargs):
     if net["_options"]["voltage_depend_loads"] and not (
-            np.allclose(net.load.const_z_percent.values, 0) and
-            np.allclose(net.load.const_i_percent.values, 0)):
+            np.allclose(net.load.const_z_p_percent.values, 0) and
+            np.allclose(net.load.const_i_p_percent.values, 0) and
+            np.allclose(net.load.const_z_q_percent.values, 0) and
+            np.allclose(net.load.const_i_q_percent.values, 0)):
         logger.error("pandapower optimal_powerflow does not support voltage depend loads.")
     net["OPF_converged"] = False
     net["converged"] = False
@@ -151,6 +151,7 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
+    # todo: somewhere here should RATE_A be converted to 0., because only PowerModels uses 0 as no limits (pypower opf converts the zero to inf)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
     if from_time_step is not None and to_time_step is not None:
