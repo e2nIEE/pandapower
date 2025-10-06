@@ -12,6 +12,7 @@ from pandapower.network_schema.trafo import schema as trafo_schema
 from pandapower.network_schema.motor import schema as motor_schema
 from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema
 from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema
+from pandapower.network_schema.storage import schema as storage_schema
 
 def get_structure_dict() -> dict:
     """
@@ -33,24 +34,7 @@ def get_structure_dict() -> dict:
         "motor": get_dtypes(motor_schema),
         "asymmetric_load": get_dtypes(asymmetric_load_schema),
         "asymmetric_sgen": get_dtypes(asymmetric_sgen_schema),
-        "storage": {
-            "name": dtype(str),
-            "bus": "i8",
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "sn_mva": "f8",
-            "scaling": "f8",
-            "max_e_mwh": "f8",
-            "min_e_mwh": "f8",
-            "max_p_mw": "f8",
-            "min_p_mw": "f8",
-            "soc_percent": "f8",
-            "max_q_mvar": "f8",
-            "min_q_mvar": "f8",
-            "controllable": "bool",
-            "in_service": "bool",
-            "type": dtype(str),  # missing in docu
-        },
+        "storage": get_dtypes(storage_schema),
         "gen": {
             "name": dtype(str),
             "type": dtype(str),
