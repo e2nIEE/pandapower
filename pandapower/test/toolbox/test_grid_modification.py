@@ -4,11 +4,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
+from unittest import mock
 from pandas._testing import assert_series_equal
 
 from pandapower.create import create_transformer, create_line, create_transformer3w_from_parameters, create_pwl_cost, \
     create_poly_cost, create_group, create_transformer3w, create_measurement, create_buses, create_loads, \
-    create_xward, create_group_from_dict
+    create_xward, create_group_from_dict, create_transformer_from_parameters
 from pandapower.groups import group_element_index, count_group_elements
 from pandapower.networks.cigre_networks import create_cigre_network_mv, create_cigre_network_lv
 from pandapower.networks.create_examples import example_simple, example_multivoltage
@@ -16,7 +17,6 @@ from pandapower.networks.ieee_europen_lv_asymmetric import ieee_european_lv_asym
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
-from pandapower.run import runpp
 from pandapower.test.helper_functions import assert_net_equal
 from pandapower.toolbox.comparison import nets_equal, dataframes_equal
 from pandapower.toolbox.data_modification import reindex_buses, add_zones_to_elements
@@ -24,25 +24,35 @@ from pandapower.toolbox.element_selection import count_elements
 from pandapower.toolbox.grid_modification import *
 
 
+@pytest.fixture
+def mock_logger(monkeypatch):
+    from unittest.mock import MagicMock
+    mock = MagicMock()
+    monkeypatch.setattr("pandapower.toolbox.grid_modification.logger", mock)
+    return mock
+
+def __create_trafo3w(net, bus_sl, service: bool = True):
+    create_ext_grid(net, bus_sl, in_service=service)
+    bus0 = create_bus(net, vn_kv=.4, in_service=service)
+    create_switch(net, bus_sl, bus0, 'b', not service)
+    bus1 = create_bus(net, vn_kv=.4, in_service=service)
+    create_transformer(net, bus0, bus1, in_service=service,
+                       std_type='63 MVA 110/20 kV')
+    bus2 = create_bus(net, vn_kv=.4, in_service=service)
+    create_line(net, bus1, bus2, length_km=1, in_service=service,
+                std_type='149-AL1/24-ST1A 10.0')
+    create_load(net, bus2, p_mw=0., in_service=service)
+    create_sgen(net, bus2, p_mw=0., in_service=service)
+    bus3 = create_bus(net, vn_kv=.4, in_service=service)
+    bus4 = create_bus(net, vn_kv=.4, in_service=service)
+    create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
+                                         3, 3, 3, 1, 1, 1, 5, 1)
+
 def test_drop_inactive_elements():
     for service in (False, True):
         net = create_empty_network()
         bus_sl = create_bus(net, vn_kv=.4, in_service=service)
-        create_ext_grid(net, bus_sl, in_service=service)
-        bus0 = create_bus(net, vn_kv=.4, in_service=service)
-        create_switch(net, bus_sl, bus0, 'b', not service)
-        bus1 = create_bus(net, vn_kv=.4, in_service=service)
-        create_transformer(net, bus0, bus1, in_service=service,
-                           std_type='63 MVA 110/20 kV')
-        bus2 = create_bus(net, vn_kv=.4, in_service=service)
-        create_line(net, bus1, bus2, length_km=1, in_service=service,
-                    std_type='149-AL1/24-ST1A 10.0')
-        create_load(net, bus2, p_mw=0., in_service=service)
-        create_sgen(net, bus2, p_mw=0., in_service=service)
-        bus3 = create_bus(net, vn_kv=.4, in_service=service)
-        bus4 = create_bus(net, vn_kv=.4, in_service=service)
-        create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
-                                             3, 3, 3, 1, 1, 1, 5, 1)
+        __create_trafo3w(net, bus_sl, service=service)
         # drop them
         drop_inactive_elements(net)
 
@@ -80,6 +90,78 @@ def test_drop_inactive_elements():
     drop_inactive_elements(net)
 
     assert gen0 not in net.gen.index
+
+
+def test_drop_inactive_elements_with_empty_net():
+    net = create_empty_network()
+    try:
+        drop_inactive_elements(net)
+    except Exception:
+        pytest.fail("Unexpected Exception.")
+
+
+def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
+    net = create_empty_network()
+    bus_sl = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus_sl)
+    bus0 = create_bus(net, vn_kv=.4)
+    create_ward(
+        net, bus0, ps_mw=0,
+        qs_mvar=0,
+        pz_mw=0,
+        qz_mvar=0,
+    )
+    net.ward.drop("in_service", axis=1, inplace=True)
+
+    # drop them
+    drop_inactive_elements(net)
+    mock_logger.info.assert_called_with(
+        'Set 0 of 1 unsupplied buses out of service'
+    )
+
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus0)
+    bus1 = create_bus(net, vn_kv=.4)
+    create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+    gen0 = create_gen(net, bus=bus1, p_mw=0.001, in_service=False)
+
+    drop_inactive_elements(net)
+
+    assert gen0 not in net.gen.index
+
+
+def test_drop_inactive_elements_other_branches():
+    net = create_empty_network()
+
+    bus0 = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus0)
+    bus1 = create_bus(net, vn_kv=.4)
+    create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+
+    impedance0 = create_impedance(
+        net, from_bus=bus0,
+        to_bus=bus1,
+        rft_pu=0.0,
+        xft_pu=0.0,
+        sn_mva=0.0, in_service=False
+    )
+
+    drop_inactive_elements(net)
+
+    assert impedance0 not in net.motor.index
+
+def test_drop_elements_simple_with_trafo(mock_logger):
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus0)
+    drop_elements_simple(net, "bus", 0)
+
+    drop_inactive_elements(net)
+    mock_logger.warning.assert_called_with(
+        "drop_elements_simple() is not appropriate to drop buss. It is recommended to use drop_elements() instead."
+    )
+    assert bus0 not in net.bus.index
 
 
 def test_merge_indices():
@@ -577,7 +659,7 @@ def test_drop_elements_at_buses():
     # bus id needs to be entered as iterable, not done in the function
 
     for b in net.bus.index.values:
-        net1 = net.deepcopy()
+        net1 = copy.deepcopy(net)
         cd = get_connected_elements_dict(net1, b, connected_buses=False)
         swt3w = set(net1.switch.loc[net1.switch.element.isin(cd.get('trafo3w', [1000])) &
                                     (net1.switch.et == 't3')].index)
@@ -1047,6 +1129,93 @@ def test_set_isolated_areas_out_of_service():
     assert not np.any(net.line.loc[isolated_lines, 'in_service'])
     assert np.all(net.line.loc[np.setdiff1d(net.line.index, isolated_lines), 'in_service'])
 
+def test_drop_trafos_incorrect_table_names():
+    net = create_empty_network()
+    bus_sl = create_bus(net, vn_kv=.4)
+    create_ext_grid(net, bus_sl)
+    bus0 = create_bus(net, vn_kv=.4)
+    create_switch(net, bus_sl, bus0, 'b')
+    bus1 = create_bus(net, vn_kv=.4)
+    create_transformer(net, bus0, bus1,
+                       std_type='63 MVA 110/20 kV')
+    bus2 = create_bus(net, vn_kv=.4)
+    create_line(net, bus1, bus2, length_km=1,
+                std_type='149-AL1/24-ST1A 10.0')
+    create_load(net, bus2, p_mw=0.)
+    create_sgen(net, bus2, p_mw=0.)
+    bus3 = create_bus(net, vn_kv=.4)
+    bus4 = create_bus(net, vn_kv=.4)
+    create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
+                                         3, 3, 3, 1, 1, 1, 5, 1)
+
+    with pytest.raises(UserWarning) as exc:
+        drop_trafos(net, net.trafo3w, table="bus")
+
+    assert exc.value.args[0] == "parameter 'table' must be 'trafo' or 'trafo3w'"
+
+def test_drop_elements_buses():
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=.4)
+    drop_elements(net, "bus", element_index=[0])
+    assert bus0 not in net.bus.index
+
+def test_drop_elements_lines():
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=.4)
+    bus1 = create_bus(net, vn_kv=.4)
+    line0 = create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+    drop_elements(net, "line", element_index=[0])
+    assert line0 not in net.line.index
+
+def test_drop_elements_trafos():
+    net = create_empty_network()
+    bus_sl = create_bus(net, vn_kv=.4, in_service=True)
+    __create_trafo3w(net, bus_sl, service=True)
+    drop_elements(net, "trafo", element_index=[0])
+    assert 0 not in net.trafo.index
+
+
+def _simple_line_net():
+    """
+    Two buses connected by one line.
+    """
+    net = create_empty_network()
+    bus0 = create_bus(net, vn_kv=20.)
+    bus1 = create_bus(net, vn_kv=20.)
+    create_line_from_parameters(
+        net, from_bus=bus0, to_bus=bus1, length_km=1.0,
+        r_ohm_per_km=0.1, x_ohm_per_km=0.1, c_nf_per_km=0.0,
+        max_i_ka=1.0, name="L01"
+    )
+    return net, bus0, bus1, net.line.index[0]
+
+def test_set_isolated_areas_out_of_service_switch_marks_line():
+    net, bus0, bus1, line_idx = _simple_line_net()
+    net.bus.at[bus1, "in_service"] = False
+    create_switch(net, bus=bus0, element=line_idx, et="l", closed=False)
+    assert net.line.at[line_idx, "in_service"]
+
+    set_isolated_areas_out_of_service(net)
+
+    assert bool(net.line.at[line_idx, "in_service"]) is False
+
+def test_set_isolated_areas_out_of_service_marks_trafo_oos():
+    net = create_empty_network()
+    b_hv = create_bus(net, vn_kv=110.)
+    b_lv = create_bus(net, vn_kv=20.)
+    t_idx = create_transformer_from_parameters(
+        net, hv_bus=b_hv, lv_bus=b_lv,
+        sn_mva=40, vn_hv_kv=110, vn_lv_kv=20,
+        vk_percent=10, vkr_percent=0.5,
+        pfe_kw=0, i0_percent=0.1
+    )
+    net.bus.at[b_lv, "in_service"] = False
+    create_switch(net, bus=b_hv, element=t_idx, et="t", closed=False)
+
+    assert net.trafo.at[t_idx, "in_service"]
+
+    set_isolated_areas_out_of_service(net)
+    assert bool(net.trafo.at[t_idx, "in_service"]) is False
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

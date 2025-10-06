@@ -45,7 +45,7 @@ from typing_extensions import deprecated
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, PQ, VMIN, VMAX, PV
-from pandapower.pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B, DC_P
+from pandapower.pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
@@ -1034,17 +1034,15 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
     #    mode = net["_options"]["mode"]
     elements_ac = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
                    "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
-    elements_dc = ["vsc"]
+    elements_dc = ["vsc", "load_dc", "source_dc"]
     is_elements = dict()
-    for element_table_list, bus_table, bis in zip((elements_ac, elements_dc),
-                                                  ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
+    for element_table_list, bus_table, bis in zip((elements_ac, elements_dc), ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
         for element_table in element_table_list:
             num_elements = len(net[element_table].index)
             element_in_service = np.zeros(num_elements, dtype=bool)
             if num_elements > 0:
                 element_df = net[element_table]
-                set_elements_oos(element_df[bus_table].values, element_df["in_service"].values,
-                                 bis, element_in_service)
+                set_elements_oos(element_df[bus_table].values, element_df["in_service"].values, bis, element_in_service)
             # load, sgen, storage only in elements_ac so this will only be executed once:
             if net["_options"]["mode"] == "opf" and element_table in ["load", "sgen", "storage"]:
                 if "controllable" in net[element_table]:
@@ -1067,12 +1065,16 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
         #                    ppc_bus_isolated[net["_pd2ppc_lookups"]["aux"]["vsc"]] |
         #                    ppc_bus_isolated[net._ppc["vsc"][:, VSC_BUS].astype(np.int64)]]
         net._ppc["bus"][vsc_aux_isolated, BUS_TYPE] = NONE
+
         # if there are no in service VSC that define the DC slack node, we must change the DC slack to type P
         bus_dc_slack = net._ppc["bus_dc"][:, DC_BUS_TYPE] == DC_REF
         bus_dc_with_vsc = np.r_[
-            net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC], net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC]]
+            net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC],
+            net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC]
+        ]
         bus_dc_to_change = bus_dc_slack & (~np.isin(net._ppc["bus_dc"][:, DC_BUS_I], bus_dc_with_vsc))
-        net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
+        # TODO: changing this will also delete all voltage sources but there seems to be a problem
+        #net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
 
         # if the AC bus is defined as REF only because it is connected to a vsc, and the vsc is out of service,
         # it cannot be a REF bus anymore
@@ -1250,6 +1252,15 @@ def _clean_up(net, res=True):
         if res:
             net.res_gen = net.res_gen.drop(dc_gens)
 
+    if len(net["b2b_vsc"]) > 0:
+        # remove vsc's which were only created for the b2b_vsc's
+        indices = net.b2b_vsc.index.values
+        # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
+        naming_scheme = 'b2b_' + np.repeat(indices, 2).astype(str) + np.tile(['+', '-'], len(indices))
+        vsc_idx = net.vsc[net.vsc['name'].isin(naming_scheme)]
+        # drop the vsc's
+        net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
+
 
 def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
@@ -1260,8 +1271,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
                             np.int64).flatten())
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF,
-    BUS_I].real.astype(np.int64))
+    net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I].real.astype(np.int64))
     ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
 
     # check DC buses - not connected to DC lines and not connected to VSC DC side
@@ -1271,8 +1281,7 @@ def _set_isolated_buses_out_of_service(net, ppc):
                                       ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64)))
 
     # but also check if they may be the only connection to an ext_grid
-    net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF,
-    DC_BUS_I].real.astype(np.int64))
+    net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF, DC_BUS_I].real.astype(np.int64))
     ppc["bus_dc"][net._isolated_buses_dc, DC_BUS_TYPE] = DC_NONE
 
 
@@ -1576,25 +1585,87 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
     return Sabc, Vabc
 
 
-def _add_auxiliary_elements(net):
+def _add_dcline_gens(net: pandapowerNet):
+    from pandapower.create import create_gen
+    for dctab in net.dcline.itertuples():
+        p_mw = np.abs(dctab.p_mw)
+        p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw
+
+        if np.sign(dctab.p_mw) > 0:
+            p_to = p_loss
+            p_from = -p_mw
+            p_max = dctab.max_p_mw
+            p_min = 0
+        else:
+            p_to = -p_mw
+            p_from = p_loss
+            p_max = 0
+            p_min = -dctab.max_p_mw
+
+        create_gen(net, bus=dctab.to_bus, p_mw=p_to, vm_pu=dctab.vm_to_pu,
+                   min_p_mw=p_min, max_p_mw=p_max,
+                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
+                   in_service=dctab.in_service)
+
+        create_gen(net, bus=dctab.from_bus, p_mw=p_from, vm_pu=dctab.vm_from_pu,
+                   min_p_mw=-p_max, max_p_mw=-p_min,
+                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
+                   in_service=dctab.in_service)
+
+
+def _add_b2b_vsc(net: pandapowerNet):
+    from pandapower.create import create_vsc
+    for i, b2b_vsc in net.b2b_vsc.iterrows():
+        ac_bus = b2b_vsc.bus
+        bus_dc_plus = b2b_vsc.bus_dc_plus
+        bus_dc_minus = b2b_vsc.bus_dc_minus
+        control_mode_ac = b2b_vsc.control_mode_ac
+        control_mode_dc = b2b_vsc.control_mode_dc
+        control_value_ac = b2b_vsc.control_value_ac
+        control_value_dc = b2b_vsc.control_value_dc
+        r_ohm = b2b_vsc.r_ohm
+        x_ohm = b2b_vsc.x_ohm
+        r_dc_ohm = b2b_vsc.r_dc_ohm
+        pl_dc_mw = b2b_vsc.pl_dc_mw
+        # idx = int(i)
+        name = "b2b_" + str(b2b_vsc.name)
+
+        # TODO: currently not working. If in voltage control mode, the voltage is split equally between the VSCs
+        ref_bus = None
+        if control_mode_dc == 'vm_pu_diff':
+            ref_bus = bus_dc_minus
+            control_mode_dc = 'vm_pu_diff_p'
+
+        create_vsc(net, ac_bus, bus_dc_plus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
+                   control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"+",
+                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc, ref_bus=ref_bus)
+
+        ref_bus = None
+        if control_mode_dc == 'vm_pu_diff_p':
+            ref_bus = bus_dc_plus
+            control_mode_dc = 'vm_pu_diff_m'
+            control_value_dc = -control_value_dc
+
+        create_vsc(net, ac_bus, bus_dc_minus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
+                   control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"-",
+                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc, ref_bus=ref_bus)
+
+
+def _add_auxiliary_elements(net: pandapowerNet):
+    """
+    Add auxiliary elements to net, convert the HVDC links to a gen pair and
+    convert the back2back VSC to two monopol VSCs
+    Args:
+        net:
+
+    Returns:
+
+    """
     if len(net.dcline) > 0:
         _add_dcline_gens(net)
 
-
-def _add_dcline_gens(net):
-    from pandapower.create import create_gen
-    for dctab in net.dcline.itertuples():
-        pfrom = dctab.p_mw
-        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
-        pmax = dctab.max_p_mw
-        create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
-                   min_p_mw=0, max_p_mw=pmax,
-                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
-                   in_service=dctab.in_service)
-        create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
-                   min_p_mw=-pmax, max_p_mw=0,
-                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
-                   in_service=dctab.in_service)
+    if len(net.b2b_vsc) > 0:
+        _add_b2b_vsc(net)
 
 
 def _replace_nans_with_default_limits(net, ppc):
@@ -1684,7 +1755,8 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
                              "fdbx": 30}
     with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or \
-                 net.ssc.in_service.any() or net.vsc.in_service.any()
+                 net.ssc.in_service.any() or net.vsc.in_service.any() or \
+                 net.b2b_vsc.in_service.any()
 
     if with_facts and algorithm != "nr":
         if algorithm != 'nr':

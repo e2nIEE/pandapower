@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
         group: [ 1, 2 ]
@@ -37,14 +37,14 @@ jobs:
           uv pip install pytest-split
           if ${{ matrix.python-version == '3.9' }}; then uv pip install pypower; fi
           if ${{ matrix.python-version != '3.9' }}; then uv pip install numba; fi
-          if ${{ matrix.python-version == '3.10' }}; then uv pip install lightsim2grid; fi
+          if ${{ matrix.python-version == '3.13' }}; then uv pip install lightsim2grid; fi
       - name: List of installed packages
         run: |
           uv pip list
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.9' }}
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }}
+          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }}
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.9' }}
         run: |
@@ -59,19 +59,23 @@ jobs:
           path: ./coverage-${{ matrix.group }}.xml
 
   julia:
-    needs: build
+    # needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 60
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ['3.9']
+        python-version: ['3.13']
+        julia-version: ['1.10']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
-        group: [ 1, 2 ]
+        group: [ 1 ]
     steps:
-      - uses: actions/checkout@v4
-      #- uses: julia-actions/setup-julia@v1.5
+      - uses: actions/checkout@v5
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: ${{ matrix.julia-version }}
+          arch: 'x64'
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
         with:
@@ -79,20 +83,27 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --all-extras
-          uv pip install pypower pytest-split
+          uv pip install pypower pytest-split pytest-cov julia
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-      - name: Install Julia
+      #- name: Install Julia
+      #  run: |
+      #    ./.install_julia.sh 1.10.4
+      #    uv pip install julia
+      #    uv run python ./.install_pycall.py
+      - name: Install PandaModels.jl
         run: |
-          ./.install_julia.sh 1.10.4
-          uv pip install julia
-          uv run python ./.install_pycall.py
+          julia -e 'using Pkg; Pkg.add("PandaModels")'
+          julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
+          uv run python -c "import julia; julia.install(color=True)"
       - name: List of installed packages
         run: |
+          uv python find
           uv pip list
+          julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv pip install pytest-cov
-          uv run pytest -n=auto --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }}
+          # uv run pytest -n=auto --cov=./ --cov-report=xml
+          uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
   upload-coverage:
@@ -120,10 +131,10 @@ jobs:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage-1.xml,./coverage-2.xml
+          files: ./coverage-1.xml,./coverage-2.xml
           verbose: true
 
   warnings:
@@ -133,7 +144,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ['3.13']
         group: [ 1, 2 ]
     steps:
     - uses: actions/checkout@v4
@@ -158,7 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
     steps:
     - uses: actions/checkout@v4
     - name: Install uv
@@ -222,10 +233,43 @@ jobs:
     # for the one test to cover postgresql
     needs: build
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: sandbox
+        ports:
+          - 5432:5432
+          - 55432:5432 # custom port to test against.
+        options: >-
+          --name postgres
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     strategy:
       matrix:
-        python-version: ['3.12']
+        python-version: ['3.13']
     steps:
+    - name: Wait for PostgreSQL database to be ready
+      run: |
+        until pg_isready -h localhost -U test_user; do
+          echo "Waiting for Postgres…"
+          sleep 2
+        done
+    - name: Check psql and service version compatibility
+      run: |
+        SERVER_VERSION=$(docker exec postgres psql -U test_user -d sandbox -tA -c "SHOW server_version;")
+        CLIENT_VERSION=$(psql --version | awk '{print $3}')
+        SERVER_MAJOR=${SERVER_VERSION%%.*}
+        CLIENT_MAJOR=${CLIENT_VERSION%%.*}
+        echo "PostgreSQL Server Version: $SERVER_MAJOR - Client Version: $CLIENT_MAJOR"
+        if [ "$SERVER_MAJOR" != "$CLIENT_MAJOR" ]; then
+          echo "::error::psql version mismatch - server=$SERVER_MAJOR vs client=$CLIENT_MAJOR"
+          exit 1
+        fi
     - uses: actions/checkout@v4
     - name: Install uv
       uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
@@ -237,18 +281,20 @@ jobs:
     - name: List of installed packages
       run: |
         uv pip list
-    - name: Create PostgreSQL database
+    - name: Create test_schema in sandbox database
+      env:
+        PGPASSWORD: secret
       run: |
-        sudo systemctl start postgresql.service
-        pg_isready
-        sudo -u postgres psql --command="CREATE USER test_user PASSWORD 'secret'" --command="\du"
-        sudo -u postgres createdb --owner=test_user sandbox
-        sudo -u postgres psql --command="\c sandbox" --command="CREATE SCHEMA test_schema AUTHORIZATION test_user"
-        PGPASSWORD=secret psql --username=test_user --host=localhost --list sandbox
+        psql -h localhost -U test_user -d sandbox -c "CREATE SCHEMA test_schema AUTHORIZATION test_user"
+        psql -h localhost -U test_user --list sandbox
     - name: Test pandapower File I/O
       run: |
         uv run python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema'}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
-        uv run python -c 'from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,"test","api","test_sql_io.py")]); sys.exit(ec)'
+        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
+    - name: Test pandapower File I/O against alternative port
+      run: |
+        uv run python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema', 'port': 55432}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
+        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
 
   tutorial_tests:
     needs: build
@@ -314,7 +360,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        python-version: ['3.9']
+        python-version: ['3.13']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
     steps:
