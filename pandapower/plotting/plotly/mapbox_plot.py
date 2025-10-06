@@ -58,6 +58,7 @@ def _get_mapbox_token():
     filename = os.path.join(path, 'mapbox_token.txt')
     try:
         with open(filename, "r") as mapbox_file:
-            return mapbox_file.read()
+            token = mapbox_file.read()
     except FileNotFoundError:
-        return "no_token"
+        token = "no_token"
+    return token
