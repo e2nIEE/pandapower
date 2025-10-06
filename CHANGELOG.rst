@@ -40,6 +40,7 @@ Change Log
 - [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [FIXED] saturate_sn_mva parameter in DER controller
 - [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
 - [FIXED] cim2pp: use pandapower network pandas structure dict to set needed dtypes instead of hardcoded values
 - [ADDED] cim2pp: export trafo `tap_step_degree` parameter
@@ -58,12 +59,17 @@ Change Log
 - [FIXED] json io test with new network structure dict
 - [FIXED] DC OPF bug if verbose = True
 - [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
+- [ADDED] Parellel contingency analysis using multiple cores through a multiprocessing worker pool
+- [Changed] DC-line mode to handle negative values in 2 different ways, inversing the line direction or considering powerflow always to correlate with the given from_bus 
 - [FIXED] type annotations in create methods
 - [CHANGED] drop_inactive_elements performance improvements: using pandas methods instead of looping
 - [ADDED] add a few more tests for the grid modification functions
 - [FIXED] cim2pp: minor speed increase through faster dict creation and removal of not needed .keys() call
 - [Fixed] JAO converter: rename_locnames table updated to suit newest JAO network, _multi_str_repl function was refactored
 - [CHANGED] file_io.to_json: allow passing through sort_keys argument
+- [FIXED] create.py: remove needlessly slow dict(zip) constructs in favor of fast literal dict creation, some other small code refactoring
+- [ADDED] cim2pp: new shema files, added Junctions and shorcuts for busbars
+- [FIXED] create.pu set_multiple_entries remove not needed dict translation
 
 [3.1.2] - 2025-06-16
 -------------------------------
