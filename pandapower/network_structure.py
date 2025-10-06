@@ -9,6 +9,7 @@ from pandapower.network_schema.switch import schema as switch_schema
 from pandapower.network_schema.ext_grid import schema as ext_grid_schema
 from pandapower.network_schema.line import schema as line_schema
 from pandapower.network_schema.trafo import schema as trafo_schema
+from pandapower.network_schema.motor import schema as motor_schema
 
 def get_structure_dict() -> dict:
     """
@@ -27,21 +28,7 @@ def get_structure_dict() -> dict:
         },
         "load": get_dtypes(load_schema),
         "sgen": get_dtypes(sgen_schema),
-        "motor": {
-            "name": dtype(str),
-            "bus": "i8",
-            "pn_mech_mw": "f8",
-            "cos_phi": "f8",
-            "cos_phi_n": "f8",
-            "efficiency_percent": "f8",
-            "efficiency_n_percent": "f8",
-            "loading_percent ": "f8",  # marco says this parameter does not make sense
-            "scaling": "f8",
-            "lrc_pu": "f8",
-            "rx": "f8",
-            "vn_kv": "f8",
-            "in_service": "bool",
-        },
+        "motor": get_dtypes(motor_schema),
         "asymmetric_load": {
             "name": dtype(str),
             "bus": "i8",
