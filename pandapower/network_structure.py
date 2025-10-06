@@ -3,12 +3,16 @@ from numpy import dtype
 from pandapower._version import __version__, __format_version__
 from pandapower.network_schema.tools import get_dtypes
 from pandapower.network_schema.bus import schema as bus_schema
+from pandapower.network_schema.bus_dc import schema as bus_dc_schema
 from pandapower.network_schema.load import schema as load_schema
 from pandapower.network_schema.sgen import schema as sgen_schema
 from pandapower.network_schema.switch import schema as switch_schema
 from pandapower.network_schema.ext_grid import schema as ext_grid_schema
 from pandapower.network_schema.line import schema as line_schema
 from pandapower.network_schema.trafo import schema as trafo_schema
+
+from pandapower.network_schema.load_dc import schema as load_dc
+from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
 
 def get_structure_dict() -> dict:
     """
@@ -17,14 +21,7 @@ def get_structure_dict() -> dict:
     return {
         # structure data
         "bus": get_dtypes(bus_schema),
-        "bus_dc": {  # in methodcall but not parameter docu: geodata, coords
-            "name": dtype(str),
-            "vn_kv": "f8",
-            "type": dtype(str),
-            "zone": dtype(str),
-            "in_service": "bool",
-            "geo": dtype(str),  # missing in docu, not a create method parameter, kwargs?
-        },
+        "bus_dc": get_dtypes(bus_dc_schema),
         "load": get_dtypes(load_schema),
         "sgen": get_dtypes(sgen_schema),
         "motor": {
@@ -345,31 +342,8 @@ def get_structure_dict() -> dict:
             "vm_pu": "f8",  # missing in docu
             "in_service": "bool",
         },
-        "load_dc": {
-            "name": dtype(str),
-            "bus_dc": "i8",
-            "p_dc_mw": "f8",
-            "scaling": "f8",
-            "in_service": "bool",
-            "type": dtype(str),
-            "controllable": "bool",
-        },
-        "b2b_vsc": {
-            "name": dtype(str),
-            "bus": "i8",
-            "bus_dc_plus": "i8",
-            "bus_dc_minus": "i8",
-            "r_ohm": "f8",
-            "x_ohm": "f8",
-            "r_dc_ohm": "f8",
-            "pl_dc_mw": "f8",
-            "control_mode_ac": dtype(str),
-            "control_value_ac": "f8",
-            "control_mode_dc": dtype(str),
-            "control_value_dc": "f8",
-            "controllable": "bool",
-            "in_service": "bool",
-        },
+        "load_dc": get_dtypes(load_dc),
+        "b2b_vsc": get_dtypes(b2b_vsc),
         "_empty_res_b2b_vsc": {
             "p_mw": "f8",
             "q_mvar": "f8",
