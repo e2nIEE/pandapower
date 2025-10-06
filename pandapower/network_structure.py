@@ -13,6 +13,7 @@ from pandapower.network_schema.motor import schema as motor_schema
 from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema
 from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema
 from pandapower.network_schema.storage import schema as storage_schema
+from pandapower.network_schema.gen import schema as gen_schema
 
 def get_structure_dict() -> dict:
     """
@@ -35,31 +36,7 @@ def get_structure_dict() -> dict:
         "asymmetric_load": get_dtypes(asymmetric_load_schema),
         "asymmetric_sgen": get_dtypes(asymmetric_sgen_schema),
         "storage": get_dtypes(storage_schema),
-        "gen": {
-            "name": dtype(str),
-            "type": dtype(str),
-            "bus": "i8",
-            "p_mw": "f8",
-            "vm_pu": "f8",
-            "sn_mva": "f8",
-            "max_q_mvar": "f8",
-            "min_q_mvar": "f8",
-            "scaling": "f8",
-            "max_p_mw": "f8",
-            "min_p_mw": "f8",
-            "vn_kv": "f8",
-            "xdss_pu": "f8",
-            "rdss_ohm": "f8",
-            "cos_phi": "f8",
-            "in_service": "bool",
-            "power_station_trafo": "i8",
-            "id_q_capability_characteristic": "i8",
-            "curve_style": dtype(str),
-            "reactive_capability_curve": "bool",
-            "slack_weight": "f8",  # missing in docu
-            "slack": "bool",  # missing in docu
-            "controllable": "bool",  # missing in docu
-        },
+        "gen": get_dtypes(gen_schema),
         "switch": get_dtypes(switch_schema),
         "shunt": {
             "name": dtype(str),
