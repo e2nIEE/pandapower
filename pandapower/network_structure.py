@@ -10,6 +10,7 @@ from pandapower.network_schema.ext_grid import schema as ext_grid_schema
 from pandapower.network_schema.line import schema as line_schema
 from pandapower.network_schema.trafo import schema as trafo_schema
 from pandapower.network_schema.motor import schema as motor_schema
+from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema
 
 def get_structure_dict() -> dict:
     """
@@ -43,21 +44,7 @@ def get_structure_dict() -> dict:
             "in_service": "bool",
             "type": dtype(str),
         },
-        "asymmetric_sgen": {
-            "name": dtype(str),
-            "type": dtype(str),
-            "bus": "i8",
-            "p_a_mw": "f8",
-            "q_a_mvar": "f8",
-            "p_b_mw": "f8",
-            "q_b_mvar": "f8",
-            "p_c_mw": "f8",
-            "q_c_mvar": "f8",
-            "sn_mva": "f8",
-            "scaling": "f8",
-            "in_service": "bool",
-            "current_source": "bool",  # missing in docu, not a create method parameter, kwargs?
-        },
+        "asymmetric_sgen": get_dtypes(asymmetric_load_schema),
         "storage": {
             "name": dtype(str),
             "bus": "i8",
