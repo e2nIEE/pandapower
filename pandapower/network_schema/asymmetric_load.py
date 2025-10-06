@@ -14,7 +14,7 @@ schema = pa.DataFrameSchema(
         "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
         "in_service": pa.Column(bool, description="specifies if the load is in service."),
         "type": pa.Column(str, pa.Check.isin(["wye", "delta"]),description="type of load"),
-        "current_source": pa.Column(bool, description="")  # missing in docu, not a create method parameter, kwargs?
+
     },
     strict=False,
 )

@@ -30,21 +30,22 @@ def get_structure_dict() -> dict:
         "load": get_dtypes(load_schema),
         "sgen": get_dtypes(sgen_schema),
         "motor": get_dtypes(motor_schema),
-        "asymmetric_load": {
+        "asymmetric_load": get_dtypes(asymmetric_load_schema),
+        "asymmetric_sgen": {
             "name": dtype(str),
+            "type": dtype(str),
             "bus": "i8",
             "p_a_mw": "f8",
-            "p_b_mw": "f8",
-            "p_c_mw": "f8",
             "q_a_mvar": "f8",
+            "p_b_mw": "f8",
             "q_b_mvar": "f8",
+            "p_c_mw": "f8",
             "q_c_mvar": "f8",
             "sn_mva": "f8",
             "scaling": "f8",
             "in_service": "bool",
-            "type": dtype(str),
+            "current_source": "bool",  # missing in docu, not a create method parameter, kwargs?
         },
-        "asymmetric_sgen": get_dtypes(asymmetric_load_schema),
         "storage": {
             "name": dtype(str),
             "bus": "i8",
