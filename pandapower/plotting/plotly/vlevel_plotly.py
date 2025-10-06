@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-                  bus_size=10, filename="temp-plot.html", auto_open=True,zoomlevel=11):
+                  bus_size=10, filename="temp-plot.html", auto_open=True, zoomlevel=11):
     """
     Plots a pandapower network in plotly
     using lines/buses colors according to the voltage level they belong to.

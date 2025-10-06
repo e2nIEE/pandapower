@@ -315,9 +315,8 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):
-        marker_type = 'circle' if settings['on_map'] else 'square'  
-        # workaround because doesn't appear on mapbox if square 
-        # --> Maybe fixed through maplibre ? 
+        marker_type = 'circle' if settings['on_map'] else 'square'  # better would be square-x
+        # FIXME: workaround because doesn't appear on mapbox if square
         hoverinfo = hoverinfo_func(net, element="ext_grid")
         ext_grid_trace = _create_node_trace(
             net,

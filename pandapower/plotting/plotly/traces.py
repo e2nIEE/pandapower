@@ -11,9 +11,9 @@ import pandas as pd
 import geojson
 from collections.abc import Iterable
 
-from pandapower.auxiliary import soft_dependency_error, version_check, MapboxTokenMissing
+from pandapower.auxiliary import soft_dependency_error, version_check
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
-from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token
+from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
 import logging
 logger = logging.getLogger(__name__)
@@ -290,13 +290,15 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
         cmin = cmap_vals.min() if cmin is None else cmin
         cmax = cmap_vals.max() if cmax is None else cmax
 
-        node_trace['marker'] = Marker(size=size,
-                                      color=cmap_vals, cmin=cmin, cmax=cmax,
-                                      colorscale=cmap,
-                                      colorbar=ColorBar(thickness=10,
-                                                        x=cpos),
-                                      symbol=patch_type
-                                      )
+        node_trace['marker'] = Marker(
+            size=size,
+            color=cmap_vals,
+            cmin=cmin,
+            cmax=cmax,
+            colorscale=cmap,
+            colorbar=ColorBar(thickness=10, x=cpos),
+            symbol=patch_type
+        )
 
         if cbar_title:
             node_trace['marker']['colorbar']['title'] = cbar_title
@@ -1150,15 +1152,6 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
 
     # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map:
-        try: #Token still working but useless/deprecated
-            mapbox_access_token = _get_mapbox_token()
-        except Exception:
-            logger.exception('mapbox token required for map plots. '
-                             'Get Mapbox token by signing in to https://www.mapbox.com/.\n'
-                             'After getting a token, set it to pandapower using:\n'
-                             'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
-            raise MapboxTokenMissing
-        
         fig['layout']['map'] = dict(   bearing=0,
                                        center=dict(lat=pd.Series(traces[0]['lat']).dropna().mean(),
                                                    lon=pd.Series(traces[0]['lon']).dropna().mean()),
