@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
+from typing import Optional
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pandas as pd
 import numpy as np
 
-from pandapower import io_utils
+from pandapower import io_utils, pandapowerNet
 
 try:
     import psycopg2
@@ -16,7 +17,7 @@ try:
 
     PSYCOPG2_INSTALLED = True
 except ImportError:
-    psycopg2 = None
+    psycopg2 = None  # type: ignore[assignment]
     PSYCOPG2_INSTALLED = False
 
 try:
@@ -24,13 +25,10 @@ try:
 
     SQLITE_INSTALLED = True
 except ImportError:
-    sqlite3 = None
+    sqlite3 = None  # type: ignore[assignment]
     SQLITE_INSTALLED = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +36,7 @@ logger = logging.getLogger(__name__)
 def match_sql_type(dtype):
     if dtype in ("float", "float32", "float64"):
         return "double precision"
-    elif dtype in ("int", "int32", "int64", "uint32", "uint64"):
+    elif dtype in ("int", "int32", "int64", "uint32", "uint64", "Int64"):
         return "bigint"
     elif dtype in ("object", "str"):
         return "varchar"
@@ -117,6 +115,8 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
                   for x in table[table_columns].itertuples(index=tuples_index)]
     else:
         tuples = [tuple(x) for x in table[table_columns].itertuples(index=tuples_index)]
+    # Replace pd.NA values with None for conversion to postgres NULL
+    tuples = [tuple(None if value is pd.NA else value for value in row) for row in tuples]
 
     # Comma-separated dataframe columns
     sql_columns = [index_name, *table_columns, *id_columns.keys()]
@@ -203,36 +203,35 @@ def create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, cat
     conn.commit()
 
 
-def delete_postgresql_net(grid_id, host, user, password, database, schema, grid_id_column="grid_id",
-                          grid_catalogue_name="grid_catalogue"):
+def delete_postgresql_net(
+        grid_id: int,
+        host: str,
+        user: str,
+        password: str,
+        database: str,
+        schema: str,
+        grid_id_column: str = "grid_id",
+        grid_catalogue_name: str = "grid_catalogue",
+        port: Optional[int] = None
+) -> None:
     """
     Removes a grid model from the PostgreSQL database.
 
-    Parameters
-    ----------
-    grid_id : int
-        unique grid_id that will be used to identify the data for the grid model
-    host : str
-        hostname for the DB, e.g. "localhost"
-    user : str
-    password : str
-    database : str
-        name of the database
-    schema : str
-        name of the database schema (e.g. 'postgres')
-    grid_id_column : str
-        name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
-    grid_catalogue_name : str
-        name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
-
-    Returns
-    -------
-
+    :param grid_id: unique grid_id that will be used to identify the data for the grid model
+    :param host: hostname for the DB, e.g. "localhost"
+    :param user:
+    :param password:
+    :param database: name of the database
+    :param schema: name of the database schema (e.g. 'postgres')
+    :param grid_id_column: name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
+    :param grid_catalogue_name: name of the catalogue table that includes all grid_id values and the timestamp when the
+        grid data were added
+    :param port: port at which the database is listening
     """
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 
-    conn = psycopg2.connect(host=host, user=user, password=password, database=database)
+    conn = psycopg2.connect(host=host, user=user, password=password, database=database, port=port)
     cursor = conn.cursor()
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
@@ -391,80 +390,81 @@ def from_sqlite(filename):
     return net
 
 
-def to_postgresql(net, host, user, password, database, schema, include_results=False,
-                  grid_id=None, grid_id_column="grid_id", grid_catalogue_name="grid_catalogue", index_name=None):
+def to_postgresql(
+        net: pandapowerNet,
+        host: str,
+        user: str,
+        password: str,
+        database: str,
+        schema: str,
+        include_results: bool = False,
+        grid_id: Optional[int] = None,
+        grid_id_column: str = "grid_id",
+        grid_catalogue_name: str = "grid_catalogue",
+        index_name=None,
+        port: Optional[int] = None
+    ) -> int:
     """
     Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
     are created if they do not exist.
     JSON serialization (e.g. for controller objects) is not implemented yet.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        the grid model to be uploaded to the database
-    host : str
-        hostname for connecting to the database
-    user : str
-        username for logging in
-    password : str
-    database : str
-        name of the database
-    schema : str
-        name of the database schema (e.g. 'postgres')
-    include_results : bool
-        specify whether the power flow results are included when the grid is uploaded, default=False
-    grid_id : int
-        unique grid_id that will be used to identify the data for the grid model, default None.
+    :param pandapowerNet net: the grid model to be uploaded to the database
+    :param str host: hostname for connecting to the database
+    :param str user: username for logging in
+    :param str password:
+    :param str database: name of the database
+    :param str schema: name of the database schema (e.g. 'postgres')
+    :param bool include_results: specify whether the power flow results are included when the grid is uploaded
+    :param int grid_id: unique grid_id that will be used to identify the data for the grid model, default None.
         If None, it will be set automatically by PostgreSQL
-    grid_id_column : str
-        name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
-    grid_catalogue_name : str
-        name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
-    index_name : str
-        name of the custom column to be used inplace of index in the element tables if it is not the standard DataFrame index
-
-    Returns
-    -------
-    grid_id: int
-        returns either the user-specified grid_id or the automatically generated grid_id of the grid model
+    :param str grid_id_column: name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
+    :param str grid_catalogue_name: name of the catalogue table that includes all grid_id values and the timestamp when
+        the grid data were added
+    :param str index_name: name of the custom column to be used inplace of index in the element tables if it is not the
+        standard DataFrame index
+    :param port: the port to use for the PostgreSQL connection
+    :return: returns either the user-specified grid_id or the automatically generated grid_id of the grid model
     """
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
     logger.debug(f"Uploading the grid data to the DB schema {schema}")
-    with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
+    with psycopg2.connect(host=host, user=user, password=password, database=database, port=port) as conn:
         grid_id = to_sql(net, conn, schema, include_results, grid_id, grid_id_column, grid_catalogue_name, index_name)
     return grid_id
 
 
-def from_postgresql(grid_id, host, user, password, database, schema, grid_id_column="grid_id",
-                    grid_catalogue_name="grid_catalogue", empty_dict_like_object=None, grid_tables=None):
+def from_postgresql(
+        grid_id: int,
+        host: str,
+        user: str,
+        password: str,
+        database: str,
+        schema: str,
+        grid_id_column: str = "grid_id",
+        grid_catalogue_name: str = "grid_catalogue",
+        empty_dict_like_object: Optional[dict] = None,
+        grid_tables = None,
+        port: Optional[int] = None
+):
     """
     Downloads an existing pandapowerNet from a PostgreSQL database.
 
-    Parameters
-    ----------
-    grid_id : int
-        unique grid_id that will be used to identify the data for the grid model
-    host : str
-        hostname for connecting to the database
-    user : str
-        username for logging in
-    password : str
-    database : str
-        name of the database
-    schema : str
-        name of the database schema (e.g. 'postgres')
-    grid_id_column : str
-        name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
-    grid_catalogue_name : str
-        name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
-    empty_dict_like_object : dict-like
-        If None, the output of pandapower.create_empty_network() is used as an empty element to be filled by
-        the grid data. Give another dict-like object to start filling that alternative object with the data.
-
-    Returns
-    -------
-    net : pandapowerNet
+    :param int grid_id: unique grid_id that will be used to identify the data for the grid model
+    :param str host: hostname for connecting to the database
+    :param str user: username for logging in
+    :param str password:
+    :param str database: name of the database
+    :param str schema: name of the database schema (e.g. 'postgres')
+    :param str grid_id_column: name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
+    :param str grid_catalogue_name: name of the catalogue table that includes all grid_id values and the timestamp when
+        the grid data were added
+    :param empty_dict_like_object: If None, the output of pandapower.create_empty_network() is used as an empty element
+        to be filled by the grid data.
+        Give another dict-like object to start filling that alternative object with the data.
+    :param grid_tables:
+    :param port: port for connecting to the database
+    :return: the loaded pandapower network
     """
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")

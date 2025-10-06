@@ -53,14 +53,6 @@ necessary for executing a three phase power flow  / single phase short circuit
     Defining a line with length zero leads to a division by zero in the power flow and is therefore not allowed. Lines with a very low impedance might lead to convergence problems in the power flow
     for the same reason. If you want to directly connect two buses, please use the switch element instead of a line with a small impedance!
 
-*net.line_geodata*
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: line_geo.csv
-   :delim: ;
-   :widths: 10, 10, 55
-
    
 Electric Model
 =================
@@ -95,7 +87,7 @@ The power system frequency :math:`f` is defined when creating an empty network, 
 
 .. note::
 
-	For three phase load flow, three decoupled sequence networks ( zero , positive and negtive) are considered.
+	For three phase load flow, three decoupled sequence networks ( zero , positive and negative) are considered.
 	
 	**Positive and Negative sequence impedances** are given by r_ohm_per_km, x_ohm_per_km, and c_nf_per_km
 	

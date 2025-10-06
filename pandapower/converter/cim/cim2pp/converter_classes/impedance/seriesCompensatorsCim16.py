@@ -29,13 +29,15 @@ class SeriesCompensatorsCim16:
                     (eq_sc.index.size, time.time() - time_start)))
 
     def _prepare_series_compensators_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             ser_comp = self.cimConverter.merge_eq_sc_profile('SeriesCompensator')
         else:
             ser_comp = self.cimConverter.cim['eq']['SeriesCompensator']
 
         ser_comp = pd.merge(ser_comp,
-                            self.cimConverter.cim['eq']['BaseVoltage'][['rdfId','nominalVoltage']].rename(
+                            pd.concat([self.cimConverter.cim['eq']['BaseVoltage'],
+                                       self.cimConverter.cim['eq_bd']['BaseVoltage']],
+                                      ignore_index=True)[['rdfId','nominalVoltage']].rename(
                                 columns={'rdfId': 'BaseVoltage'}),
                             how='left', on='BaseVoltage')
         # fill the r21 and x21 values for impedance creation

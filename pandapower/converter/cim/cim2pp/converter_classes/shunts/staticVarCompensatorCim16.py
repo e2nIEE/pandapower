@@ -32,14 +32,17 @@ class StaticVarCompensatorCim16:
         eq_stat_coms = self.cimConverter.merge_eq_ssh_profile('StaticVarCompensator', True)
         eq_stat_coms = pd.merge(eq_stat_coms, self.cimConverter.bus_merge, how='left', on='rdfId')
         eq_stat_coms = eq_stat_coms.rename(columns={'q': 'q_mvar'})
-        # get the active power and reactive power from SV profile
-        eq_stat_coms = pd.merge(eq_stat_coms, self.cimConverter.cim['sv']['SvPowerFlow'][['p', 'q', 'Terminal']],
-                                how='left', left_on='rdfId_Terminal', right_on='Terminal')
-        eq_stat_coms['q_mvar'] = eq_stat_coms['q_mvar'].fillna(eq_stat_coms['q'])
+        # the reactive power value is specified in the SSH profile, while the active power is not, as it is negligibly small 
+        # therefore p is set to 0
+        eq_stat_coms['p_mw'] = 0.0
+        eq_stat_coms.loc[eq_stat_coms['sVCControlMode'] == 'reactivePower', 'voltageSetPoint'] = float('NaN')
         if 'inService' in eq_stat_coms.columns:
             eq_stat_coms['connected'] = eq_stat_coms['connected'] & eq_stat_coms['inService']
-        eq_stat_coms = eq_stat_coms.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'p': 'p_mw',
-                                           'voltageSetPoint': 'vn_kv', 'index_bus': 'bus', 'connected': 'in_service'})
+        eq_stat_coms = eq_stat_coms.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 
+                                                    'voltageSetPoint': 'vn_kv', 'index_bus': 'bus', 'connected': 'in_service'})
         eq_stat_coms['step'] = 1
         eq_stat_coms['max_step'] = 1
+        # create step_dependency_table flag
+        if 'step_dependency_table' not in eq_stat_coms.columns:
+            eq_stat_coms["step_dependency_table"] = False
         return eq_stat_coms

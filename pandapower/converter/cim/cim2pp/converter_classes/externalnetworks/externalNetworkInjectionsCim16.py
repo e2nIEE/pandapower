@@ -42,6 +42,16 @@ class ExternalNetworkInjectionsCim16:
         eni_gens = eqssh_eni.loc[(eqssh_eni['slack_weight'] != ref_prio_min) & (eqssh_eni['controllable'])]
         eni_sgens = eqssh_eni.loc[~eqssh_eni['controllable']]
 
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_gens.columns:
+            eni_gens['reactive_capability_curve'] = False
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_sgens.columns:
+            eni_sgens['reactive_capability_curve'] = False
+        # create reactive_capability_curve flag
+        if 'reactive_capability_curve' not in eni_slacks.columns:
+            eni_slacks['reactive_capability_curve'] = False
+
         self.cimConverter.copy_to_pp('ext_grid', eni_slacks)
         self.cimConverter.copy_to_pp('gen', eni_gens)
         self.cimConverter.copy_to_pp('sgen', eni_sgens)
@@ -55,7 +65,7 @@ class ExternalNetworkInjectionsCim16:
                     (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start)))
 
     def _prepare_external_network_injections_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             eni = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'], 'ExternalNetworkInjection',
                                                         add_cim_type_column=True)
         else:
@@ -86,11 +96,8 @@ class ExternalNetworkInjectionsCim16:
         eni = pd.merge(eni,
                        self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
                        how='left', left_on='ConnectivityNode', right_on='b_id')
-
-        # convert pu generators with prio = 0 to pq generators (PowerFactory does it same)
-        eni.loc[eni['referencePriority'] == 0, 'referencePriority'] = -1
+        
         eni['referencePriority'] = eni['referencePriority'].astype(float)
-        eni.loc[eni['referencePriority'] == -1, 'controlEnabled'] = False
         eni['p'] = -eni['p']
         eni['q'] = -eni['q']
         eni['x0x_max'] = ((eni['maxR1ToX1Ratio'] + 1j) /
@@ -108,6 +115,7 @@ class ExternalNetworkInjectionsCim16:
         eni['scaling'] = 1.
         eni['type'] = None
         eni['slack'] = False
+        eni['controllable'] = eni['controllable'].fillna(False)
 
         return eni
 

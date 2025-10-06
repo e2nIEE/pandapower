@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import warnings
 from sys import stdout
-from numpy import allclose
+from numpy import allclose, concatenate
 
 from pandapower.pypower.add_userfcn import add_userfcn
 from pandapower.pypower.ppoption import ppoption
@@ -21,10 +21,7 @@ from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.results import _copy_results_ppci_to_ppc, init_results, verify_results, \
     _extract_results
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +34,8 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
         kwargs["OPF_FLOW_LIM"] = 2
 
     if net["_options"]["voltage_depend_loads"] and not (
-            allclose(net.load.const_z_percent.values, 0) and
-            allclose(net.load.const_i_percent.values, 0)):
+            allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0) and
+            allclose(concatenate((net.load.const_i_p_percent.values, net.load.const_i_q_percent.values)), 0)):
         logger.error("pandapower optimal_powerflow does not support voltage depend loads.")
 
     ppopt = ppoption(VERBOSE=verbose, PF_DC=not ac, INIT=init, **kwargs)

@@ -10,13 +10,10 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_trafo_trace, draw_traces
 from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
-from pandapower.plotting.plotly.mapbox_plot import geo_data_to_latlong
+from pandapower.plotting.geo import convert_crs
 from pandapower.topology import create_nxgraph, connected_components
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -121,7 +118,7 @@ def _draw_colored_bus_groups_plotly(
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
-        geo_data_to_latlong(net, projection=projection)
+        convert_crs(net, epsg_out=projection)
 
     # if bus geodata is available, but no line geodata
     if use_line_geo is None:

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -135,13 +135,6 @@ def _get_numba_functions(ppci, options):
     return makeYbus, pfsoln
 
 
-def _store_internal(ppci, internal_storage):
-    # internal storage is a dict with the variables to store in net["_ppc"]["internal"]
-    for key, val in internal_storage.items():
-        ppci["internal"][key] = val
-    return ppci
-
-
 def _get_Sbus(ppci, recycle=None):
     baseMVA, bus, gen = ppci["baseMVA"], ppci["bus"], ppci["gen"]
     if not isinstance(recycle, dict) or "Sbus" not in ppci["internal"]:
@@ -171,15 +164,17 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
         V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
         # due to TPDF, SVC, TCSC, the Ybus matrices can be updated in the newtonpf and stored in ppci["internal"],
         # so we extract them here for later use:
-        Ybus, Ybus_svc, Ybus_tcsc, Ybus_ssc, Ybus_vsc = (ppci["internal"].get(key) for key in ("Ybus", "Ybus_svc", "Ybus_tcsc", "Ybus_ssc", "Ybus_vsc"))
-        Ybus = Ybus + Ybus_svc + Ybus_tcsc + Ybus_ssc + Ybus_vsc
+        Ybus = ppci["internal"]["Ybus"] + ppci["internal"]["Ybus_svc"] + ppci["internal"]["Ybus_tcsc"] + \
+               ppci["internal"]["Ybus_ssc"] + ppci["internal"]["Ybus_vsc"]
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
-    ppci = _store_internal(ppci, {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
-                                  "svc": svc, "tcsc": tcsc, "ssc": ssc, "vsc": vsc, "baseMVA": baseMVA, "V": V,
-                                  "pv": pv, "pq": pq, "ref": ref,
-                                  "Sbus": Sbus, "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
-                                  "r_theta_kelvin_per_mw": r_theta_kelvin_per_mw, "T": T})
+    ppci['internal'].update(
+        {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
+         "svc": svc, "tcsc": tcsc, "ssc": ssc, "vsc": vsc, "baseMVA": baseMVA, "V": V,
+         "pv": pv, "pq": pq, "ref": ref,
+         "Sbus": Sbus, "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
+         "r_theta_kelvin_per_mw": r_theta_kelvin_per_mw, "T": T}
+    )
 
     return ppci, success, iterations
 

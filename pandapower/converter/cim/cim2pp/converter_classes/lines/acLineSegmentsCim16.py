@@ -30,7 +30,7 @@ class AcLineSegmentsCim16:
             line_df = line_df.rename(columns={
                 'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'],
                 'index_bus': 'from_bus', 'index_bus2': 'to_bus', 'length': 'length_km',
-                'shortCircuitEndTemperature': 'endtemp_degree'})
+                'shortCircuitEndTemperature': 'endtemp_degree', 'EquipmentContainer': 'EquipmentContainer_id'})
             line_df[sc['o_cl']] = 'ACLineSegment'
             line_df['in_service'] = line_df.connected & line_df.connected2
             line_df['r_ohm_per_km'] = abs(line_df.r) / line_df.length_km
@@ -73,7 +73,7 @@ class AcLineSegmentsCim16:
 
     def _prepare_ac_line_segments_cim16(self, convert_line_to_switch, line_r_limit, line_x_limit) -> pd.DataFrame:
 
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             ac_line_segments = self.cimConverter.merge_eq_sc_profile('ACLineSegment')
         else:
             ac_line_segments = self.cimConverter.cim['eq']['ACLineSegment']
@@ -117,7 +117,7 @@ class AcLineSegmentsCim16:
                                                   'Terminal': 'rdfId_Terminal'})
         ac_line_segments = pd.merge(ac_line_segments, eq_operational_limit_sets, how='left',
                                        on='rdfId_Terminal')
-        if 'CurrentLimit' in self.cimConverter.cim['ssh'].keys():
+        if 'CurrentLimit' in self.cimConverter.cim['ssh']:
             current_limits = self.cimConverter.merge_eq_ssh_profile('CurrentLimit')[['rdfId', 'OperationalLimitSet',
                                                                                      'value']]
         else:

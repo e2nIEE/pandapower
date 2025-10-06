@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -30,7 +30,7 @@ try:
 except ImportError:
     from pandapower.pf.no_numba import jit
 
-EPS = finfo(float).eps
+EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
 def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None,
@@ -73,7 +73,7 @@ def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybu
     faster version of pfsoln for a grid with a single slack bus
 
     NOTE: Do not use in combination with shunts (check if ppc["bus"][:, GS/BS] are != 0.)
-    NOTE: Do not use in combination with voltage dependend loads
+    NOTE: Do not use in combination with voltage dependent loads
 
     """
 

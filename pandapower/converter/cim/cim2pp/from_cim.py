@@ -2,14 +2,16 @@
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
 import time
 from typing import Union, List, Type, Dict
-import pandapower.auxiliary
+
+from pandapower.auxiliary import pandapowerNet
 from . import build_pp_net
+from . import converter_classes as std_converter_classes
 from .. import cim_classes
 from .. import interfaces
-from . import converter_classes as std_converter_classes
 
 logger = logging.getLogger('cim.cim2pp.from_cim')
 
@@ -21,9 +23,9 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
                   repair_pp: Union[str, interfaces.PandapowerRepair] = None,
                   repair_pp_class: Type[interfaces.PandapowerRepair] = None,
                   custom_converter_classes: Dict = None,
-                  **kwargs) -> pandapower.auxiliary.pandapowerNet:
+                  **kwargs) -> pandapowerNet:
     """
-    Create a pandapower net from a CIM data structure.
+    Creates a pandapower net from a CIM data structure.
 
     :param cim_parser: The CimParser with parsed cim data.
     :param log_debug: Set this parameter to True to enable logging at debug level. Optional, default: False
@@ -62,14 +64,14 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
 
 
 def get_converter_classes():
-    converter_classes: Dict[str,classmethod] = {
+    converter_classes: Dict[str, classmethod] = {
         'ConnectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16.ConnectivityNodesCim16,
         'externalNetworkInjectionsCim16':
             std_converter_classes.externalnetworks.externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16,
         'acLineSegmentsCim16': std_converter_classes.lines.acLineSegmentsCim16.AcLineSegmentsCim16,
         'dcLineSegmentsCim16': std_converter_classes.lines.dcLineSegmentsCim16.DcLineSegmentsCim16,
         'switchesCim16': std_converter_classes.switches.switchesCim16.SwitchesCim16,
-        'energyConcumersCim16': std_converter_classes.loads.energyConcumersCim16.EnergyConsumersCim16,
+        'energyConsumersCim16': std_converter_classes.loads.energyConsumersCim16.EnergyConsumersCim16,
         'conformLoadsCim16': std_converter_classes.loads.conformLoadsCim16.ConformLoadsCim16,
         'nonConformLoadsCim16': std_converter_classes.loads.nonConformLoadsCim16.NonConformLoadsCim16,
         'stationSuppliesCim16': std_converter_classes.loads.stationSuppliesCim16.StationSuppliesCim16,
@@ -101,11 +103,9 @@ def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_
              repair_pp: Union[str, interfaces.PandapowerRepair] = None,
              repair_pp_class: Type[interfaces.PandapowerRepair] = None,
              custom_converter_classes: Dict = None,
-             cgmes_version: str = '2.4.15', **kwargs) -> \
-        pandapower.auxiliary.pandapowerNet:
-    # Nur zum Testen, kann wieder gelöscht werden
+             cgmes_version: str = '2.4.15', **kwargs) -> pandapowerNet:
     """
-    Convert a CIM net to a pandapower net from XML files.
+    Converts a CIM net to a pandapower net from XML files.
     Additional parameters for kwargs:
     - create_measurements (str): Set this parameter to 'SV' to create measurements for the pandapower net from the SV
     profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None, no
@@ -139,7 +139,7 @@ def from_cim(file_list: List[str] = None, encoding: str = None, convert_line_to_
     """
     time_start_parsing = time.time()
 
-    cim_parser = cim_classes.CimParser(cgmes_version=cgmes_version)
+    cim_parser = cim_classes.CimParser(cgmes_version=cgmes_version, **kwargs)
     cim_parser.parse_files(file_list=file_list, encoding=encoding, prepare_cim_net=True, set_data_types=True)
 
     time_start_converting = time.time()

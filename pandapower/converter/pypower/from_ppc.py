@@ -18,10 +18,7 @@ from pandapower.create import create_empty_network, create_buses, create_ext_gri
     create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs, create_impedances
 from pandapower.run import runpp
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 ppc_elms = ["bus", "branch", "gen"]
@@ -286,14 +283,17 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         vkr_percent = rk * sn * 100 / baseMVA
         vkr_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
 
+        tap_step_percent = np.abs(ratio_1)*100
+        tap_changer_type = np.where(tap_step_percent > 0, "Ratio", None)
+
         idx_trafo = create_transformers_from_parameters(
             net, hv_buses=net.bus.index[hv_bus], lv_buses=net.bus.index[lv_bus], sn_mva=sn,
             vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv, name=bra_name[is_trafo],
             vk_percent=vk_percent, vkr_percent=vkr_percent,
             max_loading_percent=100, pfe_kw=pfe_kw, i0_percent=i0_percent,
             shift_degree=ppc['branch'][is_trafo, SHIFT],
-            tap_step_percent=np.abs(ratio_1)*100, tap_pos=np.sign(ratio_1),
-            tap_side=tap_side, tap_neutral=0)
+            tap_step_percent=tap_step_percent, tap_pos=np.sign(ratio_1),
+            tap_side=tap_side, tap_neutral=0, tap_changer_type=tap_changer_type)
     else:
         idx_trafo = []
     # unused data from ppc: rateB, rateC
