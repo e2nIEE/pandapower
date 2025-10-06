@@ -8,7 +8,7 @@ from pandapower import pandapowerNet
 
 
 def get_dtypes(schema: pa.DataFrameSchema):
-    return {name: col.dtype.type for name, col in schema.columns.items()}
+    return {name: col.dtype.type for name, col in schema.columns.items() if schema.columns[name].required}
     # return {name: dtype.type for name, dtype in schema.dtype.items()} # faster but not working for nonetype
 
 
