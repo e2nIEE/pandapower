@@ -11,15 +11,23 @@ The different collections for lines, buses or transformers can than be drawn.
 In order to get idea about interactive plot features and possibilities see the `tutorial <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_.
 
 
-If a network has geocoordinates, there is a possibility to represent interactive plots on `Mapbox <https://www.mapbox.com/>`_ maps.
+If a network has geocoordinates, there is a possibility to represent interactive plots on `MapLibre <https://maplibre.org/>`_ maps.
 
 .. note::
 
-    Plots on Mapbox maps are available only considering you have a Mapbox account and a `Mapbox Access Token <https://www.mapbox.com/studio>`_.
-    After getting a mabox token it can be set to pandapower as the following ::
+    Plots on MapLibre maps are free.
+    Previously Plotly library used `Mapbox <https://www.mapbox.com/>`_ services which were working 
+    only considering you have a Mapbox account and a `Mapbox Access Token <https://www.mapbox.com/studio>`_.
+    
+    In previous pandapower versions (until v3.1.3) there was a functionality to 
+    set and get a Mapbox token in pandapower.
+    After getting a mapbox token it can be set to pandapower as the following ::
 
         from pandapower.plotting.plotly.mapbox_plot import set_mapbox_token
         set_mapbox_token('<token>')
+
+    This functionality is still working but deprecated and useless in future 
+    pandapower releases.
 
 .. toctree::
     :maxdepth: 1
