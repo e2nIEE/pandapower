@@ -48,3 +48,10 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: generator_
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_mw": pa.Column(float, description="resulting active power demand after scaling [MW]"),
+        "q_mvar": pa.Column(float, description="resulting reactive power demand after scaling [MVAr]"),
+    },
+)

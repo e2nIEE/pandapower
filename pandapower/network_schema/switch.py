@@ -30,3 +30,14 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "i_ka": pa.Column(float, description="active power from bus [MW]"),
+        "loading_percent": pa.Column(float, description="reactive power from bus [MVAr]"),
+        "p_from_mw": pa.Column(float, description="active power to element [MW]"),
+        "q_from_mvar": pa.Column(float, description="reactive power to element [MVAr]"),
+        "p_to_mw": pa.Column(float, description="current on switch [kA]"),
+        "q_to_mvar": pa.Column(float, description="loading of switch in percent of maximum current [%]"),
+    },
+)

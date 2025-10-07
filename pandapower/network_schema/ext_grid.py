@@ -56,3 +56,10 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_mw": pa.Column(float, description="active power supply at the external grid [MW]"),
+        "q_mvar": pa.Column(float, description="reactive power supply at the external grid [MVar]"),
+    },
+)

@@ -19,3 +19,13 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, c
     },
     strict=False,
 )
+
+
+res_schema = pa.DataFrameSchema(
+    {
+        "vm_pu": pa.Column(float, description="voltage magnitude [p.u]"),
+        "va_degree": pa.Column(float, description="voltage angle [degree]"),
+        "p_mw": pa.Column(float, description="resulting active power demand [MW]"),
+        "q_mvar": pa.Column(float, description="resulting reactive power demand [Mvar]"),
+    },
+)

@@ -2,27 +2,27 @@ from numpy import dtype
 
 from pandapower._version import __version__, __format_version__
 from pandapower.network_schema.tools import get_dtypes
-from pandapower.network_schema.bus import schema as bus_schema
-from pandapower.network_schema.bus_dc import schema as bus_dc_schema
-from pandapower.network_schema.load import schema as load_schema
-from pandapower.network_schema.sgen import schema as sgen_schema
-from pandapower.network_schema.switch import schema as switch_schema
-from pandapower.network_schema.ext_grid import schema as ext_grid_schema
-from pandapower.network_schema.line import schema as line_schema
-from pandapower.network_schema.trafo import schema as trafo_schema
+from pandapower.network_schema.bus import schema as bus_schema, res_schema as res_bus_schema
+from pandapower.network_schema.bus_dc import schema as bus_dc_schema, res_schema as res_bus_dc_schema
+from pandapower.network_schema.load import schema as load_schema, res_schema as res_load_schema
+from pandapower.network_schema.sgen import schema as sgen_schema, res_schema as res_sgen_schema
+from pandapower.network_schema.switch import schema as switch_schema, res_schema as res_switch_schema
+from pandapower.network_schema.ext_grid import schema as ext_grid_schema, res_schema as res_ext_grid_schema
+from pandapower.network_schema.line import schema as line_schema, res_schema as res_line_schema
+from pandapower.network_schema.trafo import schema as trafo_schema, res_schema as res_trafo_schema
 
-from pandapower.network_schema.trafo3w import schema as trafo3w
-from pandapower.network_schema.line_dc import schema as line_dc
-from pandapower.network_schema.impedance import schema as impedance
-from pandapower.network_schema.tcsc import schema as tcsc
-from pandapower.network_schema.dcline import schema as dcline
-from pandapower.network_schema.ward import schema as ward
-from pandapower.network_schema.xward import schema as xward
-from pandapower.network_schema.measurement import schema as measurement
-from pandapower.network_schema.source_dc import schema as source_dc
-from pandapower.network_schema.load_dc import schema as load_dc
-from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
-from pandapower.network_schema.bi_vsc import schema as bi_vsc
+from pandapower.network_schema.trafo3w import schema as trafo3w_schema, res_schema as res_trafo3w_schema
+from pandapower.network_schema.line_dc import schema as line_dc_schema, res_schema as res_line_dc_schema
+from pandapower.network_schema.impedance import schema as impedance_schema, res_schema as res_impedance_schema
+from pandapower.network_schema.tcsc import schema as tcsc_schema, res_schema as res_tcsc_schema
+from pandapower.network_schema.dcline import schema as dcline_schema, res_schema as res_dcline_schema
+from pandapower.network_schema.ward import schema as ward_schema, res_schema as res_ward_schema
+from pandapower.network_schema.xward import schema as xward_schema, res_schema as res_xward_schema
+from pandapower.network_schema.measurement import schema as measurement_schema
+from pandapower.network_schema.source_dc import schema as source_dc_schema, res_schema as res_source_dc_schema
+from pandapower.network_schema.load_dc import schema as load_dc_schema, res_schema as res_load_dc_schema
+from pandapower.network_schema.b2b_vsc import schema as b2b_vsc_schema, res_schema as res_b2b_vsc_schema
+from pandapower.network_schema.bi_vsc import schema as bi_vsc_schema, res_schema as res_bi_vsc_schema
 
 def get_structure_dict() -> dict:
     """
@@ -175,15 +175,15 @@ def get_structure_dict() -> dict:
         },
         "ext_grid": get_dtypes(ext_grid_schema),
         "line": get_dtypes(line_schema),
-        "line_dc": get_dtypes(line_dc),
+        "line_dc": get_dtypes(line_dc_schema),
         "trafo": get_dtypes(trafo_schema),
-        "trafo3w": get_dtypes(trafo3w),
-        "impedance": get_dtypes(impedance),
-        "tcsc": get_dtypes(tcsc),
-        "dcline": get_dtypes(dcline),
-        "ward": get_dtypes(ward),
-        "xward": get_dtypes(xward),
-        "measurement": get_dtypes(measurement),
+        "trafo3w": get_dtypes(trafo3w_schema),
+        "impedance": get_dtypes(impedance_schema),
+        "tcsc": get_dtypes(tcsc_schema),
+        "dcline": get_dtypes(dcline_schema),
+        "ward": get_dtypes(ward_schema),
+        "xward": get_dtypes(xward_schema),
+        "measurement": get_dtypes(measurement_schema),
         "pwl_cost": {  # not a datastructure or element?
             "power_type": dtype(object),
             "element": "u4",
@@ -214,68 +214,18 @@ def get_structure_dict() -> dict:
             "element_index": dtype(object),
             "reference_column": dtype(object),
         },
-        "source_dc": get_dtypes(source_dc),
-        "load_dc": get_dtypes(load_dc),
-        "b2b_vsc": get_dtypes(b2b_vsc),
-        "bi_vsc": get_dtypes(bi_vsc),
+        "source_dc": get_dtypes(source_dc_schema),
+        "load_dc": get_dtypes(load_dc_schema),
+        "b2b_vsc": get_dtypes(b2b_vsc_schema),
+        "bi_vsc": get_dtypes(bi_vsc_schema),
         # result tables
-        "_empty_res_bus": {
-            "vm_pu": "f8",
-            "va_degree": "f8",
-            "p_mw": "f8",
-            "q_mvar": "f8"},
-        "_empty_res_bus_dc": {
-            "vm_pu": "f8",
-            "p_mw": "f8"},
-        "_empty_res_ext_grid": {
-            "p_mw": "f8",
-            "q_mvar": "f8"},
-        "_empty_res_line": {
-            "p_from_mw": "f8",
-            "q_from_mvar": "f8",
-            "p_to_mw": "f8",
-            "q_to_mvar": "f8",
-            "pl_mw": "f8",
-            "ql_mvar": "f8",
-            "i_from_ka": "f8",
-            "i_to_ka": "f8",
-            "i_ka": "f8",
-            "vm_from_pu": "f8",
-            "va_from_degree": "f8",
-            "vm_to_pu": "f8",
-            "va_to_degree": "f8",
-            "loading_percent": "f8",
-        },
-        "_empty_res_line_dc": {
-            "p_from_mw": "f8",
-            "p_to_mw": "f8",
-            "pl_mw": "f8",
-            "i_from_ka": "f8",
-            "i_to_ka": "f8",
-            "i_ka": "f8",
-            "vm_from_pu": "f8",
-            "vm_to_pu": "f8",
-            "loading_percent": "f8",
-        },
-        "_empty_res_trafo": {
-            "p_hv_mw": "f8",
-            "q_hv_mvar": "f8",
-            "p_lv_mw": "f8",
-            "q_lv_mvar": "f8",
-            "pl_mw": "f8",
-            "ql_mvar": "f8",
-            "i_hv_ka": "f8",
-            "i_lv_ka": "f8",
-            "vm_hv_pu": "f8",
-            "va_hv_degree": "f8",
-            "vm_lv_pu": "f8",
-            "va_lv_degree": "f8",
-            "loading_percent": "f8",
-        },
-        "_empty_res_load": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
+        "_empty_res_bus": get_dtypes(res_bus_schema),
+        "_empty_res_bus_dc": get_dtypes(res_bus_dc_schema),
+        "_empty_res_ext_grid": get_dtypes(res_ext_grid_schema),
+        "_empty_res_line": get_dtypes(res_line_schema),
+        "_empty_res_line_dc": get_dtypes(res_line_dc_schema),
+        "_empty_res_trafo": get_dtypes(res_trafo_schema),
+        "_empty_res_load": get_dtypes(res_load_schema),
         "_empty_res_asymmetric_load": {
             "p_mw": "f8",
             "q_mvar": "f8"
@@ -288,10 +238,7 @@ def get_structure_dict() -> dict:
             "p_mw": "f8",
             "q_mvar": "f8"
         },
-        "_empty_res_sgen": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
+        "_empty_res_sgen": get_dtypes(res_sgen_schema),
         "_empty_res_shunt": {
             "p_mw": "f8",
             "q_mvar": "f8",
@@ -322,68 +269,14 @@ def get_structure_dict() -> dict:
             "vm_internal_dc_pu": "f8",
             "vm_dc_pu": "f8",
         },
-        "_empty_res_switch": {
-            "i_ka": "f8",
-            "loading_percent": "f8",
-            "p_from_mw": "f8",
-            "q_from_mvar": "f8",
-            "p_to_mw": "f8",
-            "q_to_mvar": "f8",
-        },
-        "_empty_res_impedance": {
-            "p_from_mw": "f8",
-            "q_from_mvar": "f8",
-            "p_to_mw": "f8",
-            "q_to_mvar": "f8",
-            "pl_mw": "f8",
-            "ql_mvar": "f8",
-            "i_from_ka": "f8",
-            "i_to_ka": "f8",
-        },
-        "_empty_res_tcsc": {
-            "thyristor_firing_angle_degree": "f8",
-            "x_ohm": "f8",
-            "p_from_mw": "f8",
-            "q_from_mvar": "f8",
-            "p_to_mw": "f8",
-            "q_to_mvar": "f8",
-            "pl_mw": "f8",
-            "ql_mvar": "f8",
-            "i_ka": "f8",
-            "vm_from_pu": "f8",
-            "va_from_degree": "f8",
-            "vm_to_pu": "f8",
-            "va_to_degree": "f8",
-        },
-        "_empty_res_dcline": {
-            "p_from_mw": "f8",
-            "q_from_mvar": "f8",
-            "p_to_mw": "f8",
-            "q_to_mvar": "f8",
-            "pl_mw": "f8",
-            "vm_from_pu": "f8",
-            "va_from_degree": "f8",
-            "vm_to_pu": "f8",
-            "va_to_degree": "f8",
-        },
-        "_empty_res_source_dc": {
-            "p_dc_mw": "f8"
-        },
-        "_empty_res_load_dc": {
-            "p_dc_mw": "f8"
-        },
-        "_empty_res_ward": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "vm_pu": "f8"
-        },
-        "_empty_res_xward": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "vm_pu": "f8",
-            "va_internal_degree": "f8",
-            "vm_internal_pu": "f8",
-        },
+        "_empty_res_switch": get_dtypes(res_switch_schema),
+        "_empty_res_impedance": get_dtypes(res_impedance_schema),
+        "_empty_res_tcsc": get_dtypes(res_tcsc_schema),
+        "_empty_res_dcline": get_dtypes(res_dcline_schema),
+        "_empty_res_source_dc": get_dtypes(res_source_dc_schema),
+        "_empty_res_load_dc": get_dtypes(res_load_dc_schema),
+        "_empty_res_ward": get_dtypes(res_ward_schema),
+        "_empty_res_xward": get_dtypes(res_xward_schema),
         "_empty_res_trafo_3ph": {
             "p_a_hv_mw": "f8",
             "q_a_hv_mvar": "f8",
@@ -414,28 +307,7 @@ def get_structure_dict() -> dict:
             "loading_c_percent": "f8",
             "loading_percent": "f8",
         },
-        "_empty_res_trafo3w": {
-            "p_hv_mw": "f8",
-            "q_hv_mvar": "f8",
-            "p_mv_mw": "f8",
-            "q_mv_mvar": "f8",
-            "p_lv_mw": "f8",
-            "q_lv_mvar": "f8",
-            "pl_mw": "f8",
-            "ql_mvar": "f8",
-            "i_hv_ka": "f8",
-            "i_mv_ka": "f8",
-            "i_lv_ka": "f8",
-            "vm_hv_pu": "f8",
-            "va_hv_degree": "f8",
-            "vm_mv_pu": "f8",
-            "va_mv_degree": "f8",
-            "vm_lv_pu": "f8",
-            "va_lv_degree": "f8",
-            "va_internal_degree": "f8",
-            "vm_internal_pu": "f8",
-            "loading_percent": "f8",
-        },
+        "_empty_res_trafo3w": get_dtypes(res_trafo3w_schema),
         "_empty_res_bus_3ph": {
             "vm_a_pu": "f8",
             "va_a_degree": "f8",
@@ -535,34 +407,8 @@ def get_structure_dict() -> dict:
             "act_param_val": "f8",
             "trip_melt_time_s": "f8",
         },
-        "_empty_res_b2b_vsc": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "p_dc_mw_p": "f8",
-            "p_dc_mw_m": "f8",
-            "vm_internal_pu": "f8",
-            "vm_internal_degree": "f8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-            "vm_internal_dc_pu_p": "f8",
-            "vm_internal_dc_pu_m": "f8",
-            "vm_dc_pu_p": "f8",
-            "vm_dc_pu_m": "f8",
-        },
-        "_empty_res_bi_vsc": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "p_dc_mw_p": "f8",
-            "p_dc_mw_m": "f8",
-            "vm_internal_pu": "f8",
-            "vm_internal_degree": "f8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-            "vm_internal_dc_pu_p": "f8",
-            "vm_internal_dc_pu_m": "f8",
-            "vm_dc_pu_p": "f8",
-            "vm_dc_pu_m": "f8",
-        },
+        "_empty_res_b2b_vsc": get_dtypes(res_b2b_vsc_schema),
+        "_empty_res_bi_vsc": get_dtypes(res_bi_vsc_schema),
         # internal
         "_ppc": None,
         "_ppc0": None,

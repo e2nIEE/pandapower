@@ -49,3 +49,22 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, a
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_from_mw": pa.Column(float, description="active power flow into the line at “from” bus [MW]"),
+        "q_from_mvar": pa.Column(float, description="reactive power flow into the line at “from” bus [MVar]"),
+        "p_to_mw": pa.Column(float, description="active power flow into the line at “to” bus [MW]"),
+        "q_to_mvar": pa.Column(float, description="reactive power flow into the line at “to” bus [MVar]"),
+        "pl_mw": pa.Column(float, description="active power losses of the line [MW]"),
+        "ql_mvar": pa.Column(float, description="reactive power consumption of the line [MVar]"),
+        "i_from_ka": pa.Column(float, description="Current at from bus [kA]"),
+        "i_to_ka": pa.Column(float, description="Current at to bus [kA]"),
+        "i_ka": pa.Column(float, description="Maximum of i_from_ka and i_to_ka [kA]"),
+        "vm_from_pu": pa.Column(float, description="voltage magnitude at from bus"),
+        "va_from_degree": pa.Column(float, description="voltage magnitude at to bus"),
+        "vm_to_pu": pa.Column(float, description="voltage angle at from bus [degrees]"),
+        "va_to_degree": pa.Column(float, description="voltage angle at to bus [degrees]"),
+        "loading_percent": pa.Column(float, description="line loading [%]"),
+    },
+)

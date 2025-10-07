@@ -68,3 +68,28 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_hv_mw": pa.Column(float, description="active power flow at the high voltage transformer bus [MW]"),
+        "q_hv_mvar": pa.Column(float, description="reactive power flow at the high voltage transformer bus [kVar]"),
+        "p_mv_mw": pa.Column(float, description="active power flow at the medium voltage transformer bus [MW]"),
+        "q_mv_mvar": pa.Column(float, description="reactive power flow at the medium voltage transformer bus [kVar]"),
+        "p_lv_mw": pa.Column(float, description="active power flow at the low voltage transformer bus [MW]"),
+        "q_lv_mvar": pa.Column(float, description="reactive power flow at the low voltage transformer bus [kVar]"),
+        "pl_mw": pa.Column(float, description="active power losses of the transformer [MW]"),
+        "ql_mvar": pa.Column(float, description="reactive power consumption of the transformer [Mvar]"),
+        "i_hv_ka": pa.Column(float, description="current at the high voltage side of the transformer [kA]"),
+        "i_mv_ka": pa.Column(float, description="current at the medium voltage side of the transformer [kA]"),
+        "i_lv_ka": pa.Column(float, description="current at the low voltage side of the transformer [kA]"),
+        "vm_hv_pu": pa.Column(float, description="voltage magnitude at the high voltage bus [pu]"),
+        "va_hv_degree": pa.Column(float, description="voltage magnitude at the medium voltage bus [pu]"),
+        "vm_mv_pu": pa.Column(float, description="voltage magnitude at the low voltage bus [pu]"),
+        "va_mv_degree": pa.Column(float, description="voltage angle at the high voltage bus [degrees]"),
+        "vm_lv_pu": pa.Column(float, description="voltage angle at the medium voltage bus [degrees]"),
+        "va_lv_degree": pa.Column(float, description="voltage angle at the low voltage bus [degrees]"),
+        "va_internal_degree": pa.Column(float, description=""),  # missing in docu
+        "vm_internal_pu": pa.Column(float, description=""),  # missing in docu
+        "loading_percent": pa.Column(float, description="transformer utilization [%]"),
+    },
+)
