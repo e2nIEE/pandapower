@@ -10,9 +10,10 @@ from pandapower.network_schema.switch import schema as switch_schema
 from pandapower.network_schema.ext_grid import schema as ext_grid_schema
 from pandapower.network_schema.line import schema as line_schema
 from pandapower.network_schema.trafo import schema as trafo_schema
-from pandapower.network_schema.motor import schema as motor_schema
-from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema
-from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema
+
+from pandapower.network_schema.motor import schema as motor_schema, res_schema as res_motor_schema
+from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema, res_schema as res_asymmetric_load_schema
+from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema, res_schema as res_asymmetric_sgen_schema
 from pandapower.network_schema.storage import schema as storage_schema
 from pandapower.network_schema.gen import schema as gen_schema
 from pandapower.network_schema.shunt import schema as shunt_schema
@@ -28,8 +29,10 @@ from pandapower.network_schema.measurement import schema as measurement
 from pandapower.network_schema.source_dc import schema as source_dc
 from pandapower.network_schema.load_dc import schema as load_dc
 from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
+
 from pandapower.network_schema.svc import schema as svc_schema, res_schema as res_svc_schema
 from pandapower.network_schema.vsc import schema as vsc_schema, res_schema as res_vsc_schema
+
 from pandapower.network_schema.bi_vsc import schema as bi_vsc
 
 def get_structure_dict() -> dict:
@@ -165,18 +168,9 @@ def get_structure_dict() -> dict:
             "p_mw": "f8",
             "q_mvar": "f8"
         },
-        "_empty_res_asymmetric_load": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_asymmetric_sgen": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_motor": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
+        "_empty_res_asymmetric_load": get_dtypes(res_asymmetric_load_schema),
+        "_empty_res_asymmetric_sgen": get_dtypes(res_asymmetric_sgen_schema),
+        "_empty_res_motor": get_dtypes(res_motor_schema),
         "_empty_res_sgen": {
             "p_mw": "f8",
             "q_mvar": "f8"

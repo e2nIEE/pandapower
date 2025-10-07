@@ -18,3 +18,21 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+
+#( ꩜ ᯅ ꩜)
+res_schema = pa.DataFrameSchema(
+    {
+        "p_mw": pa.Column(float, description=""), #not in docu
+        "q_mvar": pa.Column(float, description=""), #not in docu
+
+        "p_a_mw": pa.Column(float, description="resulting active power demand after scaling : Phase A [MW"), #only in docu
+        "q_a_mvar": pa.Column(float, description="resulting reactive power demand after scaling : Phase A [MVar]"), #only in docu
+        "p_b_mw": pa.Column(float, description="resulting active power demand after scaling : Phase B [MW]"), #only in docu
+        "q_b_mvar": pa.Column(float, description="resulting reactive power demand after scaling : Phase B [MVar]"), #only in docu
+        "p_c_mw": pa.Column(float, description="resulting active power demand after scaling : Phase C [MW]"), #only in docu
+        "q_c_mvar": pa.Column(float, description="resulting reactive power demand after scaling : Phase C [MVar]") #only in docu
+
+    },
+    strict=False,
+)
