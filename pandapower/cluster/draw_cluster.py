@@ -12,8 +12,7 @@ from packaging import version
 from collections.abc import Iterable
 
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
-from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token, \
-    MapboxTokenMissing
+from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
 try:
     import pandaplan.core.pplog as logging
