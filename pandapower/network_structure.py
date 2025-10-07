@@ -14,6 +14,7 @@ from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_
 from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema
 from pandapower.network_schema.storage import schema as storage_schema
 from pandapower.network_schema.gen import schema as gen_schema
+from pandapower.network_schema.shunt import schema as shunt_schema
 
 def get_structure_dict() -> dict:
     """
@@ -38,18 +39,7 @@ def get_structure_dict() -> dict:
         "storage": get_dtypes(storage_schema),
         "gen": get_dtypes(gen_schema),
         "switch": get_dtypes(switch_schema),
-        "shunt": {
-            "name": dtype(str),
-            "bus": "i8",
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "vn_kv": "f8",
-            "step": "i8",
-            "max_step": "i8",
-            "in_service": "bool",
-            "step_dependency_table": "bool",
-            "id_characteristic_table": "i8",
-        },
+        "shunt": get_dtypes(shunt_schema),
         "svc": {
             "name": dtype(str),
             "bus": "i8",
