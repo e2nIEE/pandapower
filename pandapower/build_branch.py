@@ -492,14 +492,14 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         return r, x, g, b, 0, 0  # g_asym and b_asym are 0 here
     elif trafo_model == "t":
         if "leakage_resistance_ratio_hv" in trafo_df:
-            trafo_df["leakage_resistance_ratio_hv"].fillna(0.5, inplace=True)
+            trafo_df["leakage_resistance_ratio_hv"] = trafo_df["leakage_resistance_ratio_hv"].fillna(0.5)
         else:
             trafo_df["leakage_resistance_ratio_hv"] = 0.5
 
         r_ratio = get_trafo_values(trafo_df, "leakage_resistance_ratio_hv")
 
         if "leakage_reactance_ratio_hv" in trafo_df:
-            trafo_df["leakage_reactance_ratio_hv"].fillna(0.5, inplace=True)
+            trafo_df["leakage_reactance_ratio_hv"] = trafo_df["leakage_reactance_ratio_hv"].fillna(0.5)
         else:
             trafo_df["leakage_reactance_ratio_hv"] = 0.5
 
