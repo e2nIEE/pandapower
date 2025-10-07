@@ -1,3 +1,5 @@
+from importlib.metadata import metadata
+
 import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(
@@ -10,12 +12,12 @@ schema = pa.DataFrameSchema(
         "scaling": pa.Column(float, pa.Check.ge(0), description="Scaling factor for the active and reactive power"),
         "max_e_mwh": pa.Column(float, description="The maximum energy content of the storage (maximum charge level)"),
         "min_e_mwh": pa.Column(float, description="The minimum energy content of the storage (minimum charge level)"),
-        "max_p_mw": pa.Column(float, description="Maximum active power"),
-        "min_p_mw": pa.Column(float, description="Minimum active power"),
+        "max_p_mw": pa.Column(float, description="Maximum active power", metadata={"opf": True}),
+        "min_p_mw": pa.Column(float, description="Minimum active power", metadata={"opf": True}),
         "soc_percent": pa.Column(float, pa.Check.between(min_value=0, max_value=100), description="The state of charge of the storage"),
-        "max_q_mvar": pa.Column(float, description="Maximum reactive power [MVar]"),
-        "min_q_mvar": pa.Column(float, description="Minimum reactive power [MVar]"),
-        "controllable": pa.Column(bool, description="States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable"),
+        "max_q_mvar": pa.Column(float, description="Maximum reactive power [MVar]", metadata={"opf": True}),
+        "min_q_mvar": pa.Column(float, description="Minimum reactive power [MVar]", metadata={"opf": True}),
+        "controllable": pa.Column(bool, description="States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable", metadata={"opf": True}),
         "in_service": pa.Column(bool, description="Specifies if the generator is in service"),
         "type": pa.Column(str, description="")  # missing in docu
     },
