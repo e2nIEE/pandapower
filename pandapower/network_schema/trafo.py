@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt_percent
+schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: xn_ohm, pt_percent
     {
         "name": pa.Column(str, description="name of the transformer"),
         "std_type": pa.Column(str, description="transformer standard type name"),
@@ -98,7 +98,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
         "oltc": pa.Column(
             bool, required=False, description="specifies if the transformer has an OLTC (short-circuit relevant)"
         ),
-        "power_station_unit": pa.Column(bool, required=False, description=""),  # not in create method call
+        "power_station_unit": pa.Column(bool, required=False, description=""),  # TODO: not in create method call
         "tap2_side": pa.Column(int, pa.Check.isin(["hv", "lv"]), required=False, description=""),
         "tap2_neutral": pa.Column(int, required=False, description="rated tap position"),
         "tap2_min": pa.Column(int, required=False, description="minimum tap position"),
@@ -121,13 +121,13 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
             pa.Check.between(min_value=0, max_value=1),
             required=False,
             description="ratio of transformer short-circuit resistance on HV side (default 0.5)",
-        ),  # not in create method call
+        ),  # TODO: not in create method call
         "leakage_reactance_ratio_hv": pa.Column(
             float,
             pa.Check.between(min_value=0, max_value=1),
             required=False,
             description="ratio of transformer short-circuit reactance on HV side (default 0.5)",
-        ),  # not in create method call
+        ),  # TODO: not in create method call
     },
     strict=False,
 )

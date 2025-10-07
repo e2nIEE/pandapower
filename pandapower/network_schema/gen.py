@@ -40,9 +40,9 @@ schema = pa.DataFrameSchema(
         "reactive_capability_curve": pa.Column(
             bool, description="True if generator has dependency on q characteristic"
         ),
-        "slack_weight": pa.Column(bool, description=""),  # missing in docu
-        "slack": pa.Column(bool, description=""),  # missing in docu
-        "controllable": pa.Column(bool, description=""),  # missing in docu
+        "slack_weight": pa.Column(bool, description=""),  # TODO: missing in docu
+        "slack": pa.Column(bool, description=""),  # TODO: missing in docu
+        "controllable": pa.Column(bool, description=""),  # TODO: missing in docu
     },
     strict=False,
 )

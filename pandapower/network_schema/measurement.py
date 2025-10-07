@@ -2,10 +2,10 @@ import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description=""),  # missing in docu
+        "name": pa.Column(str, description=""),  # TODO: missing in docu
         "measurement_type": pa.Column(
             str, pa.Check.isin(["p", "q", "i", "v"]), description="Defines what physical quantity is measured"
-        ),  #  other name in docu
+        ),  # TODO:  other name in docu
         "element_type": pa.Column(
             str,
             pa.Check.isin(
@@ -26,7 +26,7 @@ schema = pa.DataFrameSchema(
             description="Checks if a measurement of the type already exists and overwrites it. If set to False, the measurement may be added twice (unsafe behaviour), but the performance increases",
         ),
         "index": pa.Column(int, description="Defines a specific index for the new measurement (if possible)"),
-        "side": pa.Column(str, description=""),  # missing in docu
+        "side": pa.Column(str, description=""),  # TODO: missing in docu
     },
     strict=False,
 )

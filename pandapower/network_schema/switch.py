@@ -26,7 +26,7 @@ schema = pa.DataFrameSchema(
             nullable=True,
             description="maximum current that the switch can carry under normal operating conditions without tripping",
         ),
-        "z_ohm": pa.Column(float, description=""),  # missing in docu
+        "z_ohm": pa.Column(float, description=""),  # TODO: missing in docu
     },
     strict=False,
 )

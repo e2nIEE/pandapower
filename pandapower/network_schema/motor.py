@@ -27,7 +27,7 @@ schema = pa.DataFrameSchema(
             float,
             pa.Check.between(min_value=0, max_value=100),
             description="Efficiency in percent at rated power for short-circuit calculation [%] [%]",
-        ),  # marco says this parameter does not make sense
+        ),  # TODO: marco says this parameter does not make sense
         "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
         "lrc_pu": pa.Column(
             float, pa.Check.ge(0), description="locked rotor current in relation to the rated motor current [pu]"

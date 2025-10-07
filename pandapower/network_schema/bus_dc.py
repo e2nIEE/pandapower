@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, coords
+schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geodata, coords
     {
         "name": pa.Column(str, description="name of the dc bus"),
         "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the dc bus [kV]"),
@@ -11,7 +11,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, c
         "in_service": pa.Column(bool, description="specifies if the dc bus is in service"),
         "geo": pa.Column(
             str, description="geojson.Point as object or string"
-        ),  # missing in docu, not a create method parameter, kwargs?
+        ),  # TODO: missing in docu, not a create method parameter, kwargs?
     },
     strict=False,
 )

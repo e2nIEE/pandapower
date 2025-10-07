@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, coords
+schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, coords #TODO:
     {
         "name": pa.Column(str, description="name of the bus"),
         "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the bus [kV]"),
@@ -44,9 +44,9 @@ res_schema_3ph = pa.DataFrameSchema(
         "q_b_mvar": pa.Column(float, description="resulting reactive power demand:Phase B [Mvar]"),
         "p_c_mw": pa.Column(float, description="resulting active power demand:Phase C [MW]"),
         "q_c_mvar": pa.Column(float, description="resulting reactive power demand:Phase C [Mvar]"),
-        "unbalance_percent": pa.Column(
-            float, description="unbalance in percent defined as the ratio of V2 and V1 according to IEC 62749"
-        ),  # was only in docu
+        # "unbalance_percent": pa.Column(
+        #     float, description="unbalance in percent defined as the ratio of V2 and V1 according to IEC 62749"
+        # ),  #TODO: was only in docu
     },
 )
 

@@ -29,7 +29,7 @@ schema = pa.DataFrameSchema(
         "control_value_dc": pa.Column(float, description="the value of the controlled parameter at the dc bus"),
         "controllable": pa.Column(bool, description="whether the element is considered as actively controlling"),
         "in_service": pa.Column(bool, description="specifies if the VSC is in service."),
-        "ref_bus": pa.Column(int, description=""),  # missing in docu
+        "ref_bus": pa.Column(int, description=""),  # TODO: missing in docu
     },
     strict=False,
 )
@@ -39,12 +39,12 @@ res_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description="active power consumption of vsc [MW]"),
         "q_mvar": pa.Column(float, description="reactive power consumption of vsc [MVAr]"),
-        "p_dc_mw": pa.Column(float, description=""),  # missing in docu
+        "p_dc_mw": pa.Column(float, description=""),  # TODO: missing in docu
         "vm_internal_pu": pa.Column(float, description="voltage magnitude at vsc internal bus [pu]"),
         "va_internal_degree": pa.Column(float, description="voltage angle at vsc internal bus [degree]"),
         "vm_pu": pa.Column(float, description="voltage magnitude at vsc ac bus [pu]"),
         "va_degree": pa.Column(float, description="voltage angle at vsc ac bus [degree]"),
-        "vm_internal_dc_pu": pa.Column(float, description=""),  # missing in docu
-        "vm_dc_pu": pa.Column(float, description=""),  # missing in docu
+        "vm_internal_dc_pu": pa.Column(float, description=""),  # TODO: missing in docu
+        "vm_dc_pu": pa.Column(float, description=""),  # TODO: missing in docu
     },
 )

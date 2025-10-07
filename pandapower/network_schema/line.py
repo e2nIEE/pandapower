@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
+schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
     {
         "name": pa.Column(str, description="name of the line"),
         "std_type": pa.Column(
@@ -108,17 +108,17 @@ res_schema_3ph = pa.DataFrameSchema(
         "i_b_to_ka": pa.Column(float, description="Current at to bus: Phase B [kA]"),
         "i_c_from_ka": pa.Column(float, description="Current at from bus: Phase C [kA]"),
         "i_c_to_ka": pa.Column(float, description="Current at to bus: Phase C [kA]"),
-        "i_a_ka": pa.Column(float, description=""),  # missing in docu
-        "i_b_ka": pa.Column(float, description=""),  # missing in docu
-        "i_c_ka": pa.Column(float, description=""),  # missing in docu
+        "i_a_ka": pa.Column(float, description=""),  # TODO: missing in docu
+        "i_b_ka": pa.Column(float, description=""),  # TODO: missing in docu
+        "i_c_ka": pa.Column(float, description=""),  # TODO: missing in docu
         "i_n_from_ka": pa.Column(float, description="Current at from bus: Neutral [kA]"),
         "i_n_to_ka": pa.Column(float, description="Current at to bus: Neutral [kA]"),
-        "i_ka": pa.Column(float, description="Maximum of i_from_ka and i_to_ka [kA]"),  # was only in docu
-        "i_n_ka": pa.Column(float, description=""),  # missing in docu
+        # "i_ka": pa.Column(float, description="Maximum of i_from_ka and i_to_ka [kA]"),  #TODO: was only in docu
+        "i_n_ka": pa.Column(float, description=""),  # TODO: missing in docu
         "loading_a_percent": pa.Column(float, description="line a loading [%]"),
         "loading_b_percent": pa.Column(float, description="line b loading [%]"),
         "loading_c_percent": pa.Column(float, description="line c loading [%]"),
-        "loading_n_percent": pa.Column(float, description=""),  # was only in docu
+        # "loading_n_percent": pa.Column(float, description=""),  #TODO: was only in docu
     },
 )
 

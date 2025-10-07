@@ -6,7 +6,7 @@ schema = pa.DataFrameSchema(
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
         "p_mw": pa.Column(
             float, pa.Check.ge(0), description="active power of the load [MW]"
-        ),  # surely the docu must be wrong for ge0
+        ),  # TODO: surely the docu must be wrong for ge0
         "q_mvar": pa.Column(float, description="reactive power of the load [MVar]"),
         "const_z_p_percent": pa.Column(
             float,
@@ -41,7 +41,7 @@ schema = pa.DataFrameSchema(
             required=False,
             description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
         ),
-        "zone": pa.Column(str, nullable=True, required=False, description=""),  # missing in docu
+        "zone": pa.Column(str, nullable=True, required=False, description=""),  # TODO: missing in docu
         "max_p_mw": pa.Column(float, required=False, description="Maximum active power"),
         "min_p_mw": pa.Column(float, required=False, description="Minimum active power"),
         "max_q_mvar": pa.Column(float, required=False, description="Maximum reactive power"),

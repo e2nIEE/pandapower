@@ -1,12 +1,12 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: generator_type, max_i_ka, kappa, lrc_pu
+schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: generator_type, max_i_ka, kappa, lrc_pu
     {
         "name": pa.Column(str, description="name of the static generator"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
         "p_mw": pa.Column(
             float, pa.Check.le(0), description="active power of the static generator [MW]"
-        ),  # surely the docu must be wrong for le0
+        ),  # TODO: surely the docu must be wrong for le0
         "q_mvar": pa.Column(float, description="reactive power of the static generator [MVAr]"),
         "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated power ot the static generator [MVA]"),
         "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for the active and reactive power"),
@@ -53,7 +53,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: generator_
             bool, description="True if static generator has dependency on q characteristic"
         ),
         "type": pa.Column(str, pa.Check.isin(["PV", "WP", "CHP"]), description="type of generator"),
-        "current_source": pa.Column(bool, description=""),  # missing in docu
+        "current_source": pa.Column(bool, description=""),  # TODO: missing in docu
     },
     strict=False,
 )

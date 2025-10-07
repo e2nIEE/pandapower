@@ -3,7 +3,7 @@ import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(
     {
-        # in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
+        # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
         "name": pa.Column(str, description="name of the transformer"),
         "std_type": pa.Column(str, description="transformer standard type name"),
         "hv_bus": pa.Column(int, pa.Check.ge(0), description="high voltage bus index of the transformer"),
@@ -89,8 +89,8 @@ res_schema = pa.DataFrameSchema(
         "va_mv_degree": pa.Column(float, description="voltage angle at the high voltage bus [degrees]"),
         "vm_lv_pu": pa.Column(float, description="voltage angle at the medium voltage bus [degrees]"),
         "va_lv_degree": pa.Column(float, description="voltage angle at the low voltage bus [degrees]"),
-        "va_internal_degree": pa.Column(float, description=""),  # missing in docu
-        "vm_internal_pu": pa.Column(float, description=""),  # missing in docu
+        "va_internal_degree": pa.Column(float, description=""),  # TODO: missing in docu
+        "vm_internal_pu": pa.Column(float, description=""),  # TODO: missing in docu
         "loading_percent": pa.Column(float, description="transformer utilization [%]"),
     },
 )
