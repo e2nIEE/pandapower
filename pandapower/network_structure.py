@@ -27,6 +27,29 @@ from pandapower.network_schema.trafo import (
     res_schema_3ph as res_trafo_3ph_schema,
 )
 
+from pandapower.network_schema.motor import schema as motor_schema, res_schema as res_motor_schema
+from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema, res_schema as res_asymmetric_load_schema, res_schema_3ph as res_asymmetric_load_3ph_schema
+from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema, res_schema as res_asymmetric_sgen_schema, res_schema_3ph as res_asymmetric_sgen_3ph_schema
+from pandapower.network_schema.storage import schema as storage_schema, res_schema as res_storage_schema, res_schema_3ph as res_storage_3ph_schema
+from pandapower.network_schema.gen import schema as gen_schema, res_schema as res_gen_schema
+from pandapower.network_schema.shunt import schema as shunt_schema, res_schema as res_shunt_schema
+
+from pandapower.network_schema.trafo3w import schema as trafo3w
+from pandapower.network_schema.line_dc import schema as line_dc
+from pandapower.network_schema.impedance import schema as impedance
+from pandapower.network_schema.tcsc import schema as tcsc
+from pandapower.network_schema.dcline import schema as dcline
+from pandapower.network_schema.ward import schema as ward
+from pandapower.network_schema.xward import schema as xward
+from pandapower.network_schema.measurement import schema as measurement
+from pandapower.network_schema.source_dc import schema as source_dc
+from pandapower.network_schema.load_dc import schema as load_dc
+from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
+
+from pandapower.network_schema.svc import schema as svc_schema, res_schema as res_svc_schema
+from pandapower.network_schema.vsc import schema as vsc_schema, res_schema as res_vsc_schema
+
+from pandapower.network_schema.bi_vsc import schema as bi_vsc
 from pandapower.network_schema.trafo3w import schema as trafo3w_schema, res_schema as res_trafo3w_schema
 from pandapower.network_schema.line_dc import schema as line_dc_schema, res_schema as res_line_dc_schema
 from pandapower.network_schema.impedance import schema as impedance_schema, res_schema as res_impedance_schema
@@ -51,118 +74,14 @@ def get_structure_dict() -> dict:
         "bus_dc": get_dtypes(bus_dc_schema),
         "load": get_dtypes(load_schema),
         "sgen": get_dtypes(sgen_schema),
-        "motor": {
-            "name": dtype(str),
-            "bus": "i8",
-            "pn_mech_mw": "f8",
-            "cos_phi": "f8",
-            "cos_phi_n": "f8",
-            "efficiency_percent": "f8",
-            "efficiency_n_percent": "f8",
-            "loading_percent ": "f8",  # marco says this parameter does not make sense
-            "scaling": "f8",
-            "lrc_pu": "f8",
-            "rx": "f8",
-            "vn_kv": "f8",
-            "in_service": "bool",
-        },
-        "asymmetric_load": {
-            "name": dtype(str),
-            "bus": "i8",
-            "p_a_mw": "f8",
-            "p_b_mw": "f8",
-            "p_c_mw": "f8",
-            "q_a_mvar": "f8",
-            "q_b_mvar": "f8",
-            "q_c_mvar": "f8",
-            "sn_mva": "f8",
-            "scaling": "f8",
-            "in_service": "bool",
-            "type": dtype(str),
-        },
-        "asymmetric_sgen": {
-            "name": dtype(str),
-            "type": dtype(str),
-            "bus": "i8",
-            "p_a_mw": "f8",
-            "q_a_mvar": "f8",
-            "p_b_mw": "f8",
-            "q_b_mvar": "f8",
-            "p_c_mw": "f8",
-            "q_c_mvar": "f8",
-            "sn_mva": "f8",
-            "scaling": "f8",
-            "in_service": "bool",
-            "current_source": "bool",  # missing in docu, not a create method parameter, kwargs?
-        },
-        "storage": {
-            "name": dtype(str),
-            "bus": "i8",
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "sn_mva": "f8",
-            "scaling": "f8",
-            "max_e_mwh": "f8",
-            "min_e_mwh": "f8",
-            "max_p_mw": "f8",
-            "min_p_mw": "f8",
-            "soc_percent": "f8",
-            "max_q_mvar": "f8",
-            "min_q_mvar": "f8",
-            "controllable": "bool",
-            "in_service": "bool",
-            "type": dtype(str),  # missing in docu
-        },
-        "gen": {
-            "name": dtype(str),
-            "type": dtype(str),
-            "bus": "i8",
-            "p_mw": "f8",
-            "vm_pu": "f8",
-            "sn_mva": "f8",
-            "max_q_mvar": "f8",
-            "min_q_mvar": "f8",
-            "scaling": "f8",
-            "max_p_mw": "f8",
-            "min_p_mw": "f8",
-            "vn_kv": "f8",
-            "xdss_pu": "f8",
-            "rdss_ohm": "f8",
-            "cos_phi": "f8",
-            "in_service": "bool",
-            "power_station_trafo": "i8",
-            "id_q_capability_characteristic": "i8",
-            "curve_style": dtype(str),
-            "reactive_capability_curve": "bool",
-            "slack_weight": "f8",  # missing in docu
-            "slack": "bool",  # missing in docu
-            "controllable": "bool",  # missing in docu
-        },
+        "motor": get_dtypes(motor_schema),
+        "asymmetric_load": get_dtypes(asymmetric_load_schema),
+        "asymmetric_sgen": get_dtypes(asymmetric_sgen_schema),
+        "storage": get_dtypes(storage_schema),
+        "gen": get_dtypes(gen_schema),
         "switch": get_dtypes(switch_schema),
-        "shunt": {
-            "name": dtype(str),
-            "bus": "i8",
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "vn_kv": "f8",
-            "step": "i8",
-            "max_step": "i8",
-            "in_service": "bool",
-            "step_dependency_table": "bool",
-            "id_characteristic_table": "i8",
-        },
-        "svc": {
-            "name": dtype(str),
-            "bus": "i8",
-            "x_l_ohm": "f8",
-            "x_cvar_ohm": "f8",
-            "set_vm_pu": "f8",
-            "thyristor_firing_angle_degree": "f8",
-            "controllable": "bool",
-            "in_service": "bool",
-            "min_angle_degree": "f8",
-            "max_angle_degree": "f8",
-        },
+        "shunt": get_dtypes(shunt_schema),
+        "svc": get_dtypes(svc_schema),
         "ssc": {
             "name": dtype(str),
             "bus": "i8",
@@ -174,22 +93,7 @@ def get_structure_dict() -> dict:
             "controllable": "bool",
             "in_service": "bool",
         },
-        "vsc": {
-            "name": dtype(str),
-            "bus": "i8",
-            "bus_dc": "i8",
-            "r_ohm": "f8",
-            "x_ohm": "f8",
-            "r_dc_ohm": "f8",
-            "pl_dc_mw": "f8",
-            "control_mode_ac": dtype(str),
-            "control_value_ac": "f8",
-            "control_mode_dc": dtype(str),
-            "control_value_dc": "f8",
-            "controllable": "bool",
-            "in_service": "bool",
-            "ref_bus": "u4",  # missing in docu
-        },
+        "vsc": get_dtypes(vsc_schema),
         "ext_grid": get_dtypes(ext_grid_schema),
         "line": get_dtypes(line_schema),
         "line_dc": get_dtypes(line_dc_schema),
@@ -243,31 +147,12 @@ def get_structure_dict() -> dict:
         "_empty_res_line_dc": get_dtypes(res_line_dc_schema),
         "_empty_res_trafo": get_dtypes(res_trafo_schema),
         "_empty_res_load": get_dtypes(res_load_schema),
-        "_empty_res_asymmetric_load": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_asymmetric_sgen": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_motor": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
+        "_empty_res_asymmetric_load": get_dtypes(res_asymmetric_load_schema),
+        "_empty_res_asymmetric_sgen": get_dtypes(res_asymmetric_sgen_schema),
+        "_empty_res_motor": get_dtypes(res_motor_schema),
         "_empty_res_sgen": get_dtypes(res_sgen_schema),
-        "_empty_res_shunt": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "vm_pu": "f8"
-        },
-        "_empty_res_svc": {
-            "thyristor_firing_angle_degree": "f8",
-            "x_ohm": "f8",
-            "q_mvar": "f8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-        },
+        "_empty_res_shunt": get_dtypes(res_shunt_schema),
+        "_empty_res_svc": get_dtypes(res_svc_schema),
         "_empty_res_ssc": {
             "q_mvar": "f8",
             "vm_internal_pu": "f8",
@@ -275,17 +160,7 @@ def get_structure_dict() -> dict:
             "vm_pu": "f8",
             "va_degree": "f8",
         },
-        "_empty_res_vsc": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "p_dc_mw": "f8",
-            "vm_internal_pu": "f8",
-            "va_internal_degree": "f8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-            "vm_internal_dc_pu": "f8",
-            "vm_dc_pu": "f8",
-        },
+        "_empty_res_vsc": get_dtypes(res_vsc_schema),
         "_empty_res_switch": get_dtypes(res_switch_schema),
         "_empty_res_impedance": get_dtypes(res_impedance_schema),
         "_empty_res_tcsc": get_dtypes(res_tcsc_schema),
@@ -299,40 +174,11 @@ def get_structure_dict() -> dict:
         "_empty_res_bus_3ph": get_dtypes(res_bus_3ph_schema),
         "_empty_res_ext_grid_3ph": get_dtypes(res_ext_grid_3ph_schema),
         "_empty_res_line_3ph": get_dtypes(res_line_3ph_schema),
-        "_empty_res_asymmetric_load_3ph": {
-            "p_a_mw": "f8",
-            "q_a_mvar": "f8",
-            "p_b_mw": "f8",
-            "q_b_mvar": "f8",
-            "p_c_mw": "f8",
-            "q_c_mvar": "f8",
-        },
-        "_empty_res_asymmetric_sgen_3ph": {
-            "p_a_mw": "f8",
-            "q_a_mvar": "f8",
-            "p_b_mw": "f8",
-            "q_b_mvar": "f8",
-            "p_c_mw": "f8",
-            "q_c_mvar": "f8",
-        },
-        "_empty_res_storage": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
-        "_empty_res_storage_3ph": {
-            "p_a_mw": "f8",
-            "p_b_mw": "f8",
-            "p_c_mw": "f8",
-            "q_a_mvar": "f8",
-            "q_b_mvar": "f8",
-            "q_c_mvar": "f8",
-        },
-        "_empty_res_gen": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "va_degree": "f8",
-            "vm_pu": "f8",
-        },
+        "_empty_res_asymmetric_load_3ph": get_dtypes(res_asymmetric_load_3ph_schema),
+        "_empty_res_asymmetric_sgen_3ph": get_dtypes(res_asymmetric_sgen_3ph_schema),
+        "_empty_res_storage": get_dtypes(res_storage_schema),
+        "_empty_res_storage_3ph": get_dtypes(res_storage_3ph_schema),
+        "_empty_res_gen": get_dtypes(res_gen_schema),
         "_empty_res_protection": {
             "switch_id": "f8",
             "prot_type": dtype(object),
