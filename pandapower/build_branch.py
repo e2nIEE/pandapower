@@ -1387,8 +1387,8 @@ def _trafo_df_from_trafo3w(net, sequence=1):
         if mode != "sc":
             raise NotImplementedError(
                 "0 seq impedance calculation only implemented for short-circuit calculation!")
-        case = net._options.get("case", False) if "case" in net._options else "max"
-        _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2, case)
+        case = net._options.get("case", 'max')
+        _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2, case=case)
     else:
         raise UserWarning("Unsupported sequence for trafo3w convertion")
     _calculate_3w_tap_changers(t3, trafo2, sides)
@@ -1422,8 +1422,7 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers(
-        t3, t2, mode, characteristic=None, net=None):
+def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characteristic=None, net=None):
     if "tap_dependency_table" in t3:
         tap_dependency_table = get_trafo_values(t3, "tap_dependency_table")
         tap_dependency_table = np.array(
@@ -1450,6 +1449,7 @@ def _calculate_sc_voltages_of_equivalent_transformers(
     vk_2w_delta = z_br_to_bus_vector(vk_3w, sn)
     vkr_2w_delta = z_br_to_bus_vector(vkr_3w, sn)
     if mode == "sc":
+        case = net._options.get("case", 'max')
         kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, case)
         vk_2w_delta *= kt
         vkr_2w_delta *= kt
