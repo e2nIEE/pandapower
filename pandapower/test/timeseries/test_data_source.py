@@ -7,6 +7,7 @@ import copy
 import os
 
 import pandas as pd
+import numpy as np
 import pytest
 
 from pandapower import pp_dir
@@ -26,8 +27,8 @@ def test_data_source():
     my_data_source = DFData(df)
     copy.deepcopy(my_data_source)
 
-    assert my_data_source.get_time_step_value(time_step=0, profile_name="my_profilename") == 0.0
-    assert my_data_source.get_time_step_value(time_step=3, profile_name="my_profilename") == 0.0
+    assert np.isclose(my_data_source.get_time_step_value(time_step=0, profile_name="my_profilename"), 0.0)
+    assert np.isclose(my_data_source.get_time_step_value(time_step=3, profile_name="my_profilename"), 0.0)
     assert abs(my_data_source.get_time_step_value(time_step=4, profile_name="my_profilename")
                - -3.97E-1) < epsilon
     assert abs(my_data_source.get_time_step_value(time_step=8, profile_name="constload3")
