@@ -12,9 +12,9 @@ from pandapower.network_schema.line import schema as line_schema
 from pandapower.network_schema.trafo import schema as trafo_schema
 
 from pandapower.network_schema.motor import schema as motor_schema, res_schema as res_motor_schema
-from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema, res_schema as res_asymmetric_load_schema
-from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema, res_schema as res_asymmetric_sgen_schema
-from pandapower.network_schema.storage import schema as storage_schema, res_schema as res_storage_schema
+from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema, res_schema as res_asymmetric_load_schema, res_schema_3ph as res_asymmetric_load_3ph_schema
+from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema, res_schema as res_asymmetric_sgen_schema, res_schema_3ph as res_asymmetric_sgen_3ph_schema
+from pandapower.network_schema.storage import schema as storage_schema, res_schema as res_storage_schema, res_schema_3ph as res_storage_3ph_schema
 from pandapower.network_schema.gen import schema as gen_schema, res_schema as res_gen_schema
 from pandapower.network_schema.shunt import schema as shunt_schema, res_schema as res_shunt_schema
 
@@ -356,31 +356,10 @@ def get_structure_dict() -> dict:
             "loading_b_percent": "f8",
             "loading_c_percent": "f8",
         },
-        "_empty_res_asymmetric_load_3ph": {
-            "p_a_mw": "f8",
-            "q_a_mvar": "f8",
-            "p_b_mw": "f8",
-            "q_b_mvar": "f8",
-            "p_c_mw": "f8",
-            "q_c_mvar": "f8",
-        },
-        "_empty_res_asymmetric_sgen_3ph": {
-            "p_a_mw": "f8",
-            "q_a_mvar": "f8",
-            "p_b_mw": "f8",
-            "q_b_mvar": "f8",
-            "p_c_mw": "f8",
-            "q_c_mvar": "f8",
-        },
+        "_empty_res_asymmetric_load_3ph": get_dtypes(res_asymmetric_load_3ph_schema),
+        "_empty_res_asymmetric_sgen_3ph": get_dtypes(res_asymmetric_sgen_3ph_schema),
         "_empty_res_storage": get_dtypes(res_storage_schema),
-        "_empty_res_storage_3ph": {
-            "p_a_mw": "f8",
-            "p_b_mw": "f8",
-            "p_c_mw": "f8",
-            "q_a_mvar": "f8",
-            "q_b_mvar": "f8",
-            "q_c_mvar": "f8",
-        },
+        "_empty_res_storage_3ph": get_dtypes(res_storage_3ph_schema),
         "_empty_res_gen": get_dtypes(res_gen_schema),
         "_empty_res_protection": {
             "switch_id": "f8",

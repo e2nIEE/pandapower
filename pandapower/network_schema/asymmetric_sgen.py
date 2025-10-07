@@ -35,3 +35,16 @@ res_schema = pa.DataFrameSchema(
 
     },
 )
+
+
+
+res_schema_3ph = pa.DataFrameSchema(
+    {
+        "p_a_mw": pa.Column(float, description=""), #not in docu
+        "q_a_mvar": pa.Column(float, description=""), #not in docu
+        "p_b_mw": pa.Column(float, description=""), #not in docu
+        "q_b_mvar": pa.Column(float, description=""), #not in docu
+        "p_c_mw": pa.Column(float, description=""), #not in docu
+        "q_c_mvar": pa.Column(float, description=""), #not in docu
+    },
+)
