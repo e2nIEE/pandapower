@@ -97,9 +97,20 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
     """
     # color = get_plotly_color(color)
 
-    center_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
-                        marker=dict(color=color, size=size, symbol=patch_type),
-                        showlegend=showlegend, legendgroup=legendgroup)
+    center_trace = {
+        "type": 'scatter',
+        "text": [],
+        "mode": 'markers',
+        "hoverinfo": 'text',
+        "name": trace_name,
+        "marker": {
+            "color": color,
+            "size": size,
+            "symbol": patch_type
+        },
+        "showlegend": showlegend,
+        "legendgroup": legendgroup
+    }
     if hoverlabel is not None:
         center_trace.update({'hoverlabel': hoverlabel})
 
@@ -141,7 +152,8 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
-                - much more patch types at https://plot.ly/python/reference/#scatter-marker
+                - all types for plots at https://plotly.com/python/reference/#scatter-marker-symbol
+                - all types for maps at https://plotly.com/python/reference/#scatter-marker-symbol
 
         **infofunc** (pd.Series, None) - hoverinfo for bus elements. Indices should correspond to
         the pandapower element indices
@@ -248,8 +260,18 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
     if not PLOTLY_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
     color = get_plotly_color(color)
-    node_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
-                      marker=dict(color=color, size=size, symbol=patch_type))
+    node_trace = {
+        "type": 'scatter',
+        "text": [],
+        "mode": 'markers',
+        "hoverinfo": 'text',
+        "name": trace_name,
+        "marker": {
+            "color": color,
+            "size": size,
+            "symbol": patch_type
+        }
+    }
     nodes = net[node_element].index.tolist() if nodes is None else list(nodes)
     node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net[node_element]["geo"].index))]
     node_trace['x'], node_trace['y'] = zip(*net[node_element].loc[node_plot_index, 'geo'].dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list())
@@ -262,7 +284,7 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
         node_trace['legendgroup'] = legendgroup
     # if color map is set
     if cmap is not None:
-        # TODO introduce discrete colormaps (see contour plots in plotly)
+        # TODO: introduce discrete colormaps (see contour plots in plotly)
         # if cmap_vals are not given
 
         cmap = 'Jet' if cmap is True else cmap
@@ -598,7 +620,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
     if cmap is not None:
         # workaround: if colormap plot is used, each line need to be separate scatter object because
         # plotly still doesn't support appropriately colormap for line objects
-        # TODO correct this when plotly solves existing github issue about Line colorbar
+        # TODO: correct this when plotly solves existing github issue about Line colorbar
 
         cmap = 'jet' if cmap is True else cmap
 
@@ -1114,8 +1136,8 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                 trace['lat'] = trace.pop('y')
             trace['type'] = 'scattermap'
             if "line" in trace and isinstance(trace["line"], Line):
-                # scattermapboxplot lines do not support dash for some reason, make it a red line instead
-                # --> maybe Dash is working now ? 
+                # scattermap plot lines do not support dash for some reason, make it a red line instead
+                # TODO: maybe Dash is working now?
                 if "dash" in trace["line"]._props:
                     _prps = dict(trace["line"]._props)
                     _prps.pop("dash")
