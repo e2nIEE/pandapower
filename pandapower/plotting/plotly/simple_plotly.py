@@ -317,7 +317,8 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):
         marker_type = 'circle' if settings['on_map'] else 'square'  # better would be square-x
-        # FIXME: workaround because doesn't appear on mapbox if square
+        # FIXME: if on_map only maki 2.1 Icons are supported as patch_type due to plotly using them.
+        #  Only the circle can be colored and scaled. https://github.com/plotly/plotly.js/issues/6599
         hoverinfo = hoverinfo_func(net, element="ext_grid")
         ext_grid_trace = _create_node_trace(
             net,
