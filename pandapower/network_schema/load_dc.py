@@ -17,3 +17,12 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_dc_mw": pa.Column(
+            float,
+            description="resulting active power demand after scaling and after considering voltage dependence [MW]",
+        )
+    },
+)

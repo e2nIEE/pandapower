@@ -699,8 +699,16 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[[t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ynyy":
             # Correction for YNyy
-            x[[t3_ix, t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
-            r[[t3_ix, t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
+            x[[t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
+            r[[t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
+        elif t3.vector_group.lower() == "dynyn":
+            # Correction for Dynyn
+            ys = ppc["baseMVA"] / ((x[t3_ix] * 1j + r[t3_ix]) * ratio[t3_ix] ** 2)
+            aux_bus = bus_lookup[lv_bus[t3_ix]]
+            ppc["bus"][aux_bus, BS] += ys.imag
+            ppc["bus"][aux_bus, GS] += ys.real
+            x[t3_ix] = BIG_NUMBER
+            r[t3_ix] = BIG_NUMBER
         else:
             raise UserWarning(f"{t3.vector_group} not supported yet for trafo3w!")
 

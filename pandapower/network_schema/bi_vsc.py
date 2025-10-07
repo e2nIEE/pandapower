@@ -19,3 +19,20 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {  # where is the documentation?
+        "p_mw": pa.Column(float, description=""),
+        "q_mvar": pa.Column(float, description=""),
+        "p_dc_mw_p": pa.Column(float, description=""),
+        "p_dc_mw_m": pa.Column(float, description=""),
+        "vm_internal_pu": pa.Column(float, description=""),
+        "vm_internal_degree": pa.Column(float, description=""),
+        "vm_pu": pa.Column(float, description=""),
+        "va_degree": pa.Column(float, description=""),
+        "vm_internal_dc_pu_p": pa.Column(float, description=""),
+        "vm_internal_dc_pu_m": pa.Column(float, description=""),
+        "vm_dc_pu_p": pa.Column(float, description=""),
+        "vm_dc_pu_m": pa.Column(float, description=""),
+    },
+)

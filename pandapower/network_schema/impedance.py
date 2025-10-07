@@ -52,3 +52,17 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_from_mw": pa.Column(float, description="active power flow into the impedance at “from” bus [MW]"),
+        "q_from_mvar": pa.Column(float, description="reactive power flow into the impedance at “from” bus [MVAr]"),
+        "p_to_mw": pa.Column(float, description="active power flow into the impedance at “to” bus [MW]"),
+        "q_to_mvar": pa.Column(float, description="reactive power flow into the impedance at “to” bus [MVAr]"),
+        "pl_mw": pa.Column(float, description="active power losses of the impedance [MW]"),
+        "ql_mvar": pa.Column(float, description="reactive power consumption of the impedance [MVar]"),
+        "i_from_ka": pa.Column(float, description="current at from bus [kA]"),
+        "i_to_ka": pa.Column(float, description="current at to bus [kA]"),
+    },
+)

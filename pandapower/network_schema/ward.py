@@ -12,3 +12,11 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_mw": pa.Column(float, description="active power demand of the ward equivalent [MW]"),
+        "q_mvar": pa.Column(float, description="reactive power demand of the ward equivalent [kVar]"),
+        "vm_pu": pa.Column(float, description="voltage at the ward bus [p.u]"),
+    },
+)

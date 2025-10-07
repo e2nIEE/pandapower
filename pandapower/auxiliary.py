@@ -543,13 +543,6 @@ class OPFNotConverged(ppException):
     pass
 
 
-class MapboxTokenMissing(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
-
-
 def _sum_by_group(bus, first_val, second_val):
     order = np.argsort(bus)
     bus = bus[order]

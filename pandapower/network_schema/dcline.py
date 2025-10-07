@@ -12,12 +12,28 @@ schema = pa.DataFrameSchema(
         "loss_mw": pa.Column(float, pa.Check.gt(0), description="Total transmission loss in MW"),
         "vm_from_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at from bus"),
         "vm_to_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at to bus"),
-        "max_p_mw": pa.Column(float, pa.Check.gt(0), description="Maximum active power transmission"),  # no min_p_mw ?
-        "min_q_from_mvar": pa.Column(float, description="Minimum reactive power at from bus"),
-        "max_q_from_mvar": pa.Column(float, description="Maximum reactive power at from bus"),
-        "min_q_to_mvar": pa.Column(float, description="Minimum reactive power at to bus"),
-        "max_q_to_mvar": pa.Column(float, description="Maximum reactive power at to bus"),
+        "max_p_mw": pa.Column(
+            float, pa.Check.gt(0), description="Maximum active power transmission", metadata={"opf": True}
+        ),  # no min_p_mw ?
+        "min_q_from_mvar": pa.Column(float, description="Minimum reactive power at from bus", metadata={"opf": True}),
+        "max_q_from_mvar": pa.Column(float, description="Maximum reactive power at from bus", metadata={"opf": True}),
+        "min_q_to_mvar": pa.Column(float, description="Minimum reactive power at to bus", metadata={"opf": True}),
+        "max_q_to_mvar": pa.Column(float, description="Maximum reactive power at to bus", metadata={"opf": True}),
         "in_service": pa.Column(bool, description="specifies if the line is in service."),
     },
     strict=False,
+)
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_from_mw": pa.Column(float, description="active power flow into the line at ‘from_bus’ [MW]"),
+        "q_from_mvar": pa.Column(float, description="reactive power flow into the line at ‘from_bus’ [kVar]"),
+        "p_to_mw": pa.Column(float, description="active power flow into the line at ‘to_bus’ [MW]"),
+        "q_to_mvar": pa.Column(float, description="reactive power flow into the line at ‘to_bus’ [kVar]"),
+        "pl_mw": pa.Column(float, description="active power losses of the line [MW]"),
+        "vm_from_pu": pa.Column(float, description="voltage magnitude at ‘from_bus’ [p.u]"),
+        "va_from_degree": pa.Column(float, description="voltage angle at ‘from_bus’ [degree]"),
+        "vm_to_pu": pa.Column(float, description="voltage magnitude at ‘to_bus’ [p.u]"),
+        "va_to_degree": pa.Column(float, description="voltage angle at ‘to_bus’ [degree]"),
+    },
 )

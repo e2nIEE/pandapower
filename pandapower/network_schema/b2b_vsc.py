@@ -19,3 +19,20 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_mw": pa.Column(float, description="total active power consumption of B2B VSC [MW]"),
+        "q_mvar": pa.Column(float, description="total reactive power consumption of B2B VSC [MVAr]"),
+        "p_dc_mw_p": pa.Column(float, description="voltage magnitude at vsc internal bus [pu]"),
+        "p_dc_mw_m": pa.Column(float, description="voltage angle at vsc internal bus [degree]"),
+        "vm_internal_pu": pa.Column(float, description="voltage magnitude at B2B VSC ac bus [pu]"),
+        "vm_internal_degree": pa.Column(float, description="voltage angle at B2B VSC ac bus [degree]"),
+        "vm_pu": pa.Column(float, description="active power of the plus side of the B2B VSC [MW]"),
+        "va_degree": pa.Column(float, description="active power of the minus side of B2B VSC [MW]"),
+        "vm_internal_dc_pu_p": pa.Column(float, description="voltage angle at the plus B2B VSC ac bus [pu]"),
+        "vm_internal_dc_pu_m": pa.Column(float, description="voltage angle at the minus B2B VSC ac bus [pu]"),
+        "vm_dc_pu_p": pa.Column(float, description="voltage magnitude at the plus B2B VSC ac bus [pu]"),
+        "vm_dc_pu_m": pa.Column(float, description="voltage magnitude at the minus B2B VSC ac bus [pu]"),
+    },
+)

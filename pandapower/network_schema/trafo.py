@@ -14,29 +14,44 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
         "pfe_kw": pa.Column(float, pa.Check.ge(0), description="iron losses [kW]"),
         "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop losses in [%]"),
         "vk0_percent": pa.Column(
-            float, pa.Check.ge(0), required=False, description="zero sequence relative short-circuit voltage"
+            float,
+            pa.Check.ge(0),
+            required=False,
+            description="zero sequence relative short-circuit voltage",
+            metadata={"sc": True, "3ph": True},
         ),
         "vkr0_percent": pa.Column(
             float,
             pa.Check.ge(0),
             required=False,
             description="real part of zero sequence relative short-circuit voltage",
+            metadata={"sc": True, "3ph": True},
         ),
         "mag0_percent": pa.Column(
             float,
             pa.Check.ge(0),
             required=False,
             description="z_mag0 / z0 ratio between magnetizing and short circuit impedance (zero sequence)",
+            metadata={"sc": True, "3ph": True},
         ),
-        "mag0_rx": pa.Column(float, required=False, description="zero sequence magnetizing r/x  ratio"),
+        "mag0_rx": pa.Column(
+            float,
+            required=False,
+            description="zero sequence magnetizing r/x  ratio",
+            metadata={"sc": True, "3ph": True},
+        ),
         "si0_hv_partial": pa.Column(
             float,
             pa.Check.ge(0),
             required=False,
             description="zero sequence short circuit impedance  distribution in hv side",
+            metadata={"sc": True, "3ph": True},
         ),
         "vector_group": pa.Column(
-            str, required=False, description="Vector Groups ( required for zero sequence model of transformer )"
+            str,
+            required=False,
+            description="Vector Groups ( required for zero sequence model of transformer )",
+            metadata={"sc": True, "3ph": True},
         ),
         "shift_degree": pa.Column(float, description="transformer phase shift angle"),
         "tap_side": pa.Column(
@@ -70,6 +85,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
             int,
             required=False,
             description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
+            metadata={"opf": True},
         ),
         "parallel": pa.Column(int, pa.Check.gt(0), description="number of parallel transformers"),
         "df": pa.Column(
@@ -114,3 +130,82 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
     },
     strict=False,
 )
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_hv_mw": pa.Column(float, description="active power flow at the high voltage transformer bus [MW]"),
+        "q_hv_mvar": pa.Column(float, description="reactive power flow at the high voltage transformer bus [MVar]"),
+        "p_lv_mw": pa.Column(float, description="active power flow at the low voltage transformer bus [MW]"),
+        "q_lv_mvar": pa.Column(float, description="reactive power flow at the low voltage transformer bus [MVar]"),
+        "pl_mw": pa.Column(float, description="active power losses of the transformer [MW]"),
+        "ql_mvar": pa.Column(float, description="reactive power consumption of the transformer [Mvar]"),
+        "i_hv_ka": pa.Column(float, description="current at the high voltage side of the transformer [kA]"),
+        "i_lv_ka": pa.Column(float, description="current at the low voltage side of the transformer [kA]"),
+        "vm_hv_pu": pa.Column(float, description="voltage magnitude at the high voltage bus [pu]"),
+        "va_hv_degree": pa.Column(float, description="voltage magnitude at the low voltage bus [pu]"),
+        "vm_lv_pu": pa.Column(float, description="voltage angle at the high voltage bus [degrees]"),
+        "va_lv_degree": pa.Column(float, description="voltage angle at the low voltage bus [degrees]"),
+        "loading_percent": pa.Column(float, description="load utilization relative to rated power [%]"),
+    },
+)
+
+res_schema_3ph = pa.DataFrameSchema(
+    {
+        "p_a_hv_mw": pa.Column(
+            float, description="active power flow at the high voltage transformer bus : Phase A [MW]"
+        ),
+        "q_a_hv_mvar": pa.Column(
+            float, description="reactive power flow at the high voltage transformer bus : Phase A [MVar]"
+        ),
+        "p_b_hv_mw": pa.Column(
+            float, description="active power flow at the high voltage transformer bus : Phase B [MW]"
+        ),
+        "q_b_hv_mvar": pa.Column(
+            float, description="reactive power flow at the high voltage transformer bus : Phase B [MVar]"
+        ),
+        "p_c_hv_mw": pa.Column(
+            float, description="active power flow at the high voltage transformer bus : Phase C [MW]"
+        ),
+        "q_c_hv_mvar": pa.Column(
+            float, description="reactive power flow at the high voltage transformer bus : Phase C [MVar]"
+        ),
+        "p_a_lv_mw": pa.Column(
+            float, description="active power flow at the low voltage transformer bus : Phase A [MW]"
+        ),
+        "q_a_lv_mvar": pa.Column(
+            float, description="reactive power flow at the low voltage transformer bus : Phase A [MVar]"
+        ),
+        "p_b_lv_mw": pa.Column(
+            float, description="active power flow at the low voltage transformer bus : Phase B [MW]"
+        ),
+        "q_b_lv_mvar": pa.Column(
+            float, description="reactive power flow at the low voltage transformer bus : Phase B [MVar]"
+        ),
+        "p_c_lv_mw": pa.Column(
+            float, description="active power flow at the low voltage transformer bus : Phase C [MW]"
+        ),
+        "q_c_lv_mvar": pa.Column(
+            float, description="reactive power flow at the low voltage transformer bus : Phase C [MVar]"
+        ),
+        "pl_a_mw": pa.Column(float, description="active power losses of the transformer : Phase A [MW]"),
+        "ql_a_mvar": pa.Column(float, description="reactive power consumption of the transformer : Phase A [Mvar]"),
+        "pl_b_mw": pa.Column(float, description="active power losses of the transformer : Phase B [MW]"),
+        "ql_b_mvar": pa.Column(float, description="reactive power consumption of the transformer : Phase B [Mvar]"),
+        "pl_c_mw": pa.Column(float, description="active power losses of the transformer : Phase C [MW]"),
+        "ql_c_mvar": pa.Column(float, description="reactive power consumption of the transformer : Phase C [Mvar]"),
+        "i_a_hv_ka": pa.Column(float, description="current at the high voltage side of the transformer : Phase A [kA]"),
+        "i_a_lv_ka": pa.Column(float, description="current at the low voltage side of the transformer : Phase A [kA]"),
+        "i_b_hv_ka": pa.Column(float, description="current at the high voltage side of the transformer : Phase B [kA]"),
+        "i_b_lv_ka": pa.Column(float, description="current at the low voltage side of the transformer : Phase B [kA]"),
+        "i_c_hv_ka": pa.Column(float, description="current at the high voltage side of the transformer : Phase C [kA]"),
+        "i_c_lv_ka": pa.Column(float, description="current at the low voltage side of the transformer : Phase C [kA]"),
+        "loading_a_percent": pa.Column(float, description="load utilization relative to rated power: Phase A [%]"),
+        "loading_b_percent": pa.Column(float, description="load utilization relative to rated power: Phase B [%]"),
+        "loading_c_percent": pa.Column(float, description="load utilization relative to rated power: Phase C [%]"),
+        "loading_percent": pa.Column(
+            float, description="load utilization relative to rated power: Maximum of Phase A, B, C in [%]"
+        ),
+    },
+)
+
+# TODO: was ist mit res_trafo_sc
