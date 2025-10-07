@@ -35,7 +35,7 @@ def _get_pf_variables_from_ppci(ppci):
     """
     # default arguments
     if ppci is None:
-        ValueError('ppci is empty')
+        raise ValueError('ppci is empty')
     # get data for calc
     base_mva, bus, gen, branch = \
         ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
@@ -367,7 +367,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # scipy spsolve options in NR power flow
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
-    calculate_voltage_angles = True
     if init == "results" and net.res_bus_3ph.empty:
         init = "auto"
     if init == "auto":

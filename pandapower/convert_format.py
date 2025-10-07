@@ -103,8 +103,6 @@ def correct_dtypes(net, error):
     raised.
     """
     empty_net = create_empty_network()
-    empty_net.trafo['tap_changer_type'] = empty_net.trafo['tap_changer_type']
-    empty_net.trafo3w['tap_changer_type'] = empty_net.trafo3w['tap_changer_type']
     not_corrected = list()
     failed = dict()
     for key, table in empty_net.items():
