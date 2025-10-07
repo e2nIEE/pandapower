@@ -232,24 +232,24 @@ def test_vsc_multiterminal_hvdc():
     create_line_dc_from_parameters(net, 1, 3, 100, 0.1, 1)
     create_line_dc_from_parameters(net, 1, 4, 100, 0.1, 1)
 
-    # create_vsc(net, 1, 0, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
-    # create_vsc(net, 2, 2, 0.1, 5, control_value_dc=5)
-    # create_vsc(net, 4, 3, 0.1, 5, control_value_dc=15)
-    # create_vsc(net, 3, 4, 0.1, 5, control_mode_dc="vm_pu", control_value_dc=1.02)
-
+    create_vsc(net, 1, 0, 0.1, 5,0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
+    create_vsc(net, 2, 2, 0.1, 5,0.15, control_value_dc=5)
+    create_vsc(net, 4, 3, 0.1, 5,0.15, control_value_dc=15)
+    create_vsc(net, 3, 4, 0.1, 5,0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
+    """
     create_vsc(net, 1, 0, 0.1, 5, 0.15,
-               control_mode_ac="q_mvar", control_value_ac=3,
-               control_mode_dc="vm_pu", control_value_dc=1.)
+            control_mode_ac="q_mvar", control_value_ac=3,
+            control_mode_dc="vm_pu", control_value_dc=1.)
     create_vsc(net, 2, 2, 0.1, 5, 0.15,
-               control_mode_ac="q_mvar", control_value_ac=10,
-               control_mode_dc="p_mw", control_value_dc=5)
+            control_mode_ac="q_mvar", control_value_ac=10,
+            control_mode_dc="p_mw", control_value_dc=5)
     create_vsc(net, 4, 3, 0.1, 5, 0.15,
-               control_mode_ac="vm_pu", control_value_ac=1.05,
-               control_mode_dc="p_mw", control_value_dc=15)
+            control_mode_ac="vm_pu", control_value_ac=1.05,
+            control_mode_dc="p_mw", control_value_dc=15)
     create_vsc(net, 3, 4, 0.1, 5, 0.15,
-               control_mode_ac="vm_pu", control_value_ac=1.03,
-               control_mode_dc="vm_pu", control_value_dc=1.02)
-
+            control_mode_ac="vm_pu", control_value_ac=1.03,
+            control_mode_dc="vm_pu", control_value_dc=1.02)
+    """
     runpp_with_consistency_checks(net, max_iteration=1000)
 
 

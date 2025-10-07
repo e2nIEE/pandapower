@@ -17,8 +17,8 @@ def simple_network():
     net = create_empty_network()
     b1 = create_bus(net, name="bus1", vn_kv=10.)
     create_ext_grid(net, b1)
-    b2 = create_bus(net, name="bus2", geodata=(1, 2))
-    b3 = create_bus(net, name="bus3", geodata=(1, 3))
+    b2 = create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)
+    b3 = create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4)
     b4 = create_bus(net, name="bus4", vn_kv=10.)
     create_transformer(net, b4, b2,
                           std_type="0.25 MVA 10/0.4 kV",

@@ -12,7 +12,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_values
+from pandapower.auxiliary import get_values, pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, BR_G_ASYM, BR_B_ASYM, branch_cols
 from pandapower.pypower.idx_brch_dc import branch_dc_cols, DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS, DC_F_BUS, \
@@ -491,10 +491,19 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     if trafo_model == "pi":
         return r, x, g, b, 0, 0  # g_asym and b_asym are 0 here
     elif trafo_model == "t":
-        r_ratio = get_trafo_values(trafo_df, "leakage_resistance_ratio_hv") \
-            if "leakage_resistance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
-        x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv") \
-            if "leakage_reactance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
+        if "leakage_resistance_ratio_hv" in trafo_df:
+            trafo_df["leakage_resistance_ratio_hv"].fillna(0.5, inplace=True)
+        else:
+            trafo_df["leakage_resistance_ratio_hv"] = 0.5
+
+        r_ratio = get_trafo_values(trafo_df, "leakage_resistance_ratio_hv")
+
+        if "leakage_reactance_ratio_hv" in trafo_df:
+            trafo_df["leakage_reactance_ratio_hv"].fillna(0.5, inplace=True)
+        else:
+            trafo_df["leakage_reactance_ratio_hv"] = 0.5
+
+        x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv")
         return _wye_delta(r, x, g, b, r_ratio, x_ratio)
     else:
         raise ValueError("Unknown Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
@@ -1360,7 +1369,7 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net, sequence=1):
+def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> pd.DataFrame:
     trafo2 = dict()
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
@@ -1413,7 +1422,7 @@ def _trafo_df_from_trafo3w(net, sequence=1):
         side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
     if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
-    return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
+    return pd.DataFrame({var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()})
 
 
 def _calculate_sc_voltages_of_equivalent_transformers(

@@ -2,7 +2,7 @@
 name;string;;name of the generator
 from_bus*;integer;;Index of bus where the dc line starts
 to_bus*;integer;;Index of bus where the dc line ends
-p_mw*;float;:math:`>` 0;Active power transmitted from 'from_bus' to 'to_bus'
+p_mw*;float;"";Active power transmitted from 'from_bus' to 'to_bus'
 loss_percent*;float;:math:`>` 0;Relative transmission loss in percent of active power transmission
 loss_mw*;float;:math:`>` 0;Total transmission loss in MW
 vm_from_pu*;float;:math:`>` 0;Voltage setpoint at from bus

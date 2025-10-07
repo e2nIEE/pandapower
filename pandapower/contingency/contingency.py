@@ -524,3 +524,4 @@ def report_contingency_results(element_limits, contingency_results, branch_tol=1
                 _log_violation(element, var, val[index], limit["index"], mask_max)
                 mask_min = val[index] < limit['min_limit'] - tol
                 _log_violation(element, var, val[index], limit["index"], mask_min)
+
