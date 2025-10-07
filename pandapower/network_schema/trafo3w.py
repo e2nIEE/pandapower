@@ -1,3 +1,4 @@
+import pandas as pd
 import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(
@@ -60,7 +61,7 @@ schema = pa.DataFrameSchema(
             description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
         ),
         "id_characteristic_table": pa.Column(
-            int,
+            pd.Int64Dtype,
             pa.Check.ge(0),
             description="references the id_characteristic index from the trafo_characteristic_table",
         ),
