@@ -23,7 +23,8 @@ from pandapower.network_schema.measurement import schema as measurement
 from pandapower.network_schema.source_dc import schema as source_dc
 from pandapower.network_schema.load_dc import schema as load_dc
 from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
-from pandapower.network_schema.svc import schema as svc_schema, res_schema
+from pandapower.network_schema.svc import schema as svc_schema, res_schema as res_svc_schema
+from pandapower.network_schema.vsc import schema as vsc_schema, res_schema as res_vsc_schema
 
 def get_structure_dict() -> dict:
     """
@@ -54,22 +55,7 @@ def get_structure_dict() -> dict:
             "controllable": "bool",
             "in_service": "bool",
         },
-        "vsc": {
-            "name": dtype(str),
-            "bus": "i8",
-            "bus_dc": "i8",
-            "r_ohm": "f8",
-            "x_ohm": "f8",
-            "r_dc_ohm": "f8",
-            "pl_dc_mw": "f8",
-            "control_mode_ac": dtype(str),
-            "control_value_ac": "f8",
-            "control_mode_dc": dtype(str),
-            "control_value_dc": "f8",
-            "controllable": "bool",
-            "in_service": "bool",
-            "ref_bus": "u4",  # missing in docu
-        },
+        "vsc": get_dtypes(vsc_schema),
         "ext_grid": get_dtypes(ext_grid_schema),
         "line": get_dtypes(line_schema),
         "line_dc": {  # in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
@@ -320,7 +306,7 @@ def get_structure_dict() -> dict:
             "q_mvar": "f8",
             "vm_pu": "f8"
         },
-        "_empty_res_svc": get_dtypes(res_schema),
+        "_empty_res_svc": get_dtypes(res_svc_schema),
         "_empty_res_ssc": {
             "q_mvar": "f8",
             "vm_internal_pu": "f8",
@@ -328,17 +314,7 @@ def get_structure_dict() -> dict:
             "vm_pu": "f8",
             "va_degree": "f8",
         },
-        "_empty_res_vsc": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "p_dc_mw": "f8",
-            "vm_internal_pu": "f8",
-            "va_internal_degree": "f8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-            "vm_internal_dc_pu": "f8",
-            "vm_dc_pu": "f8",
-        },
+        "_empty_res_vsc": get_dtypes(res_vsc_schema),
         "_empty_res_switch": {
             "i_ka": "f8",
             "loading_percent": "f8",
