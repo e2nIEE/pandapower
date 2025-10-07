@@ -78,7 +78,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
         "id_characteristic_table": pa.Column(
             int,
             pa.Check.ge(0),
-            required=False,
+            nullable=True,
             description="references the id_characteristic index from the trafo_characteristic_table",
         ),
         "max_loading_percent": pa.Column(
