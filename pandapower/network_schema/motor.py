@@ -23,7 +23,7 @@ schema = pa.DataFrameSchema(
             pa.Check.between(min_value=0, max_value=100),
             description="Efficiency in percent at rated power for short-circuit calculation [%]",
         ),
-        "loading_percent ": pa.Column(
+        "loading_percent": pa.Column(
             float,
             pa.Check.between(min_value=0, max_value=100),
             description="Efficiency in percent at rated power for short-circuit calculation [%] [%]",
