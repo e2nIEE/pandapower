@@ -34,5 +34,5 @@ res_schema = pa.DataFrameSchema(
         "q_c_mvar": pa.Column(float, description="resulting Phase C reactive power demand after scaling and after considering voltage dependence [MVar]") #only in docu
 
     },
-    strict=False,
 )
+

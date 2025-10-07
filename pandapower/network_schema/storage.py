@@ -29,5 +29,4 @@ res_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, description="resulting active power after scaling [MW]"),
         "q_mvar": pa.Column(float, description="resulting reactive power after scaling [MVar]")
     },
-    strict=False,
 )

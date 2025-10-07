@@ -26,5 +26,4 @@ res_schema = pa.DataFrameSchema(
         "vm_pu": pa.Column(float, description="voltage magnitude at svc bus [pu]"),
         "va_degree": pa.Column(float, description="voltage angle at svc bus [degree]"),
     },
-    strict=False,
 )

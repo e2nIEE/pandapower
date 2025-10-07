@@ -34,5 +34,4 @@ res_schema = pa.DataFrameSchema(
         "vm_internal_dc_pu": pa.Column(float, description=""), # missing in docu
         "vm_dc_pu": pa.Column(float, description=""), # missing in docu
     },
-    strict=False,
 )

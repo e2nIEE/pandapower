@@ -24,5 +24,4 @@ res_schema = pa.DataFrameSchema(
         "q_mvar": pa.Column(float, description="shunt reactive power consumption [MVAr]"),
         "vm_pu": pa.Column(float, description="voltage magnitude at shunt bus [pu]")
     },
-    strict=False,
 )

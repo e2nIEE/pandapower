@@ -38,5 +38,4 @@ res_schema = pa.DataFrameSchema(
         "va_degree": pa.Column(float, description="generator voltage angle [degree]"),
         "vm_pu": pa.Column(float, description="voltage at the generator [p.u.]"),
     },
-    strict=False,
 )
