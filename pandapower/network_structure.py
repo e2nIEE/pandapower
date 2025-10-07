@@ -23,6 +23,7 @@ from pandapower.network_schema.measurement import schema as measurement
 from pandapower.network_schema.source_dc import schema as source_dc
 from pandapower.network_schema.load_dc import schema as load_dc
 from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
+from pandapower.network_schema.svc import schema as svc_schema
 
 def get_structure_dict() -> dict:
     """
@@ -41,18 +42,7 @@ def get_structure_dict() -> dict:
         "gen": get_dtypes(gen_schema),
         "switch": get_dtypes(switch_schema),
         "shunt": get_dtypes(shunt_schema),
-        "svc": {
-            "name": dtype(str),
-            "bus": "i8",
-            "x_l_ohm": "f8",
-            "x_cvar_ohm": "f8",
-            "set_vm_pu": "f8",
-            "thyristor_firing_angle_degree": "f8",
-            "controllable": "bool",
-            "in_service": "bool",
-            "min_angle_degree": "f8",
-            "max_angle_degree": "f8",
-        },
+        "svc": get_dtypes(svc_schema),
         "ssc": {
             "name": dtype(str),
             "bus": "i8",
