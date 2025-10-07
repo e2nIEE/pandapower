@@ -14,9 +14,9 @@ from pandapower.network_schema.trafo import schema as trafo_schema
 from pandapower.network_schema.motor import schema as motor_schema, res_schema as res_motor_schema
 from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema, res_schema as res_asymmetric_load_schema
 from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema, res_schema as res_asymmetric_sgen_schema
-from pandapower.network_schema.storage import schema as storage_schema
-from pandapower.network_schema.gen import schema as gen_schema
-from pandapower.network_schema.shunt import schema as shunt_schema
+from pandapower.network_schema.storage import schema as storage_schema, res_schema as res_storage_schema
+from pandapower.network_schema.gen import schema as gen_schema, res_schema as res_gen_schema
+from pandapower.network_schema.shunt import schema as shunt_schema, res_schema as res_shunt_schema
 
 from pandapower.network_schema.trafo3w import schema as trafo3w
 from pandapower.network_schema.line_dc import schema as line_dc
@@ -175,11 +175,7 @@ def get_structure_dict() -> dict:
             "p_mw": "f8",
             "q_mvar": "f8"
         },
-        "_empty_res_shunt": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "vm_pu": "f8"
-        },
+        "_empty_res_shunt": get_dtypes(res_shunt_schema),
         "_empty_res_svc": get_dtypes(res_svc_schema),
         "_empty_res_ssc": {
             "q_mvar": "f8",
@@ -376,10 +372,7 @@ def get_structure_dict() -> dict:
             "p_c_mw": "f8",
             "q_c_mvar": "f8",
         },
-        "_empty_res_storage": {
-            "p_mw": "f8",
-            "q_mvar": "f8"
-        },
+        "_empty_res_storage": get_dtypes(res_storage_schema),
         "_empty_res_storage_3ph": {
             "p_a_mw": "f8",
             "p_b_mw": "f8",
@@ -388,12 +381,7 @@ def get_structure_dict() -> dict:
             "q_b_mvar": "f8",
             "q_c_mvar": "f8",
         },
-        "_empty_res_gen": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "va_degree": "f8",
-            "vm_pu": "f8",
-        },
+        "_empty_res_gen": get_dtypes(res_gen_schema),
         "_empty_res_protection": {
             "switch_id": "f8",
             "prot_type": dtype(object),

@@ -28,3 +28,15 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+
+
+res_schema = pa.DataFrameSchema(
+    {
+        "p_mw": pa.Column(float, description="resulting active power demand after scaling [MW]"),
+        "q_mvar": pa.Column(float, description="resulting reactive power demand after scaling [MVAr]"),
+        "va_degree": pa.Column(float, description="generator voltage angle [degree]"),
+        "vm_pu": pa.Column(float, description="voltage at the generator [p.u.]"),
+    },
+    strict=False,
+)
