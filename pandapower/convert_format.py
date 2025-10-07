@@ -103,8 +103,6 @@ def correct_dtypes(net, error):
     raised.
     """
     empty_net = create_empty_network()
-    empty_net.trafo['tap_changer_type'] = empty_net.trafo['tap_changer_type']
-    empty_net.trafo3w['tap_changer_type'] = empty_net.trafo3w['tap_changer_type']
     not_corrected = list()
     failed = dict()
     for key, table in empty_net.items():
@@ -312,6 +310,29 @@ def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('controller', elements_to_deserialize):
         if "controller" in net:
             net["controller"] = net["controller"].rename(columns={"controller": "object"})
+
+    if _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize):
+        if "p_a_l_mw" in net.res_line_3ph:
+            net['res_line_3ph'] = net['res_line_3ph'].rename(columns={
+                'p_a_l_mw': 'pl_a_mw',
+                'p_b_l_mw': 'pl_b_mw',
+                'p_c_l_mw': 'pl_c_mw',
+                'q_a_l_mvar': 'ql_a_mvar',
+                'q_b_l_mvar': 'ql_b_mvar',
+                'q_c_l_mvar': 'ql_c_mvar',
+            })
+
+    if _check_elements_to_deserialize('res_trafo_3ph', elements_to_deserialize):
+        if "p_a_l_mw" in net.res_trafo_3ph:
+            net['res_trafo_3ph'] = net['res_trafo_3ph'].rename(columns={
+                'p_a_l_mw': 'pl_a_mw',
+                'p_b_l_mw': 'pl_b_mw',
+                'p_c_l_mw': 'pl_c_mw',
+                'q_a_l_mvar': 'ql_a_mvar',
+                'q_b_l_mvar': 'ql_b_mvar',
+                'q_c_l_mvar': 'ql_c_mvar',
+            })
+
     if "options" in net:
         if "recycle" in net["options"]:
             if "Ybus" in net["options"]["recycle"]:
@@ -476,6 +497,13 @@ def _add_missing_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('xward', elements_to_deserialize) and \
             "slack_weight" not in net.xward:
         net.xward['slack_weight'] = 0.0
+
+    if _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize) and \
+        "p_c_from_mw" not in net.res_line_3ph:
+            net.res_line_3ph['p_c_from_mw'] = np.nan
+            net.res_line_3ph['loading_a_percent'] = np.nan
+            net.res_line_3ph['loading_b_percent'] = np.nan
+            net.res_line_3ph['loading_c_percent'] = np.nan
 
 
 def _update_trafo_type_parameter_names(net):
