@@ -387,9 +387,8 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
 
 def _set_reactive_capability_curve_flag(net, element):
     if element not in ["gen", "sgen"]:
-        UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
-                    f"Please give gen or sgen as an argument of the function")
-        return
+        raise UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
+                          f"Please give gen or sgen as an argument of the function")
     # Quick checks for element table and required columns
     if (len(net[element]) == 0 or
             not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
