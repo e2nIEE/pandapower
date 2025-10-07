@@ -2,20 +2,20 @@ from numpy import dtype
 
 from pandapower._version import __version__, __format_version__
 from pandapower.network_schema.tools import get_dtypes
-from pandapower.network_schema.bus import schema as bus_schema
-from pandapower.network_schema.bus_dc import schema as bus_dc_schema
-from pandapower.network_schema.load import schema as load_schema
-from pandapower.network_schema.sgen import schema as sgen_schema
-from pandapower.network_schema.switch import schema as switch_schema
-from pandapower.network_schema.ext_grid import schema as ext_grid_schema
-from pandapower.network_schema.line import schema as line_schema
-from pandapower.network_schema.trafo import schema as trafo_schema
-from pandapower.network_schema.motor import schema as motor_schema
-from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema
-from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema
-from pandapower.network_schema.storage import schema as storage_schema
-from pandapower.network_schema.gen import schema as gen_schema
-from pandapower.network_schema.shunt import schema as shunt_schema
+from pandapower.network_schema.bus import schema as bus
+from pandapower.network_schema.bus_dc import schema as bus_dc
+from pandapower.network_schema.load import schema as load
+from pandapower.network_schema.sgen import schema as sgen
+from pandapower.network_schema.switch import schema as switch
+from pandapower.network_schema.ext_grid import schema as ext_grid
+from pandapower.network_schema.line import schema as line
+from pandapower.network_schema.trafo import schema as trafo
+from pandapower.network_schema.motor import schema as motor
+from pandapower.network_schema.asymmetric_load import schema as asymmetric_load
+from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen
+from pandapower.network_schema.storage import schema as storage
+from pandapower.network_schema.gen import schema as gen
+from pandapower.network_schema.shunt import schema as shunt
 from pandapower.network_schema.dcline import schema as dcline
 from pandapower.network_schema.ward import schema as ward
 from pandapower.network_schema.xward import schema as xward
@@ -23,7 +23,7 @@ from pandapower.network_schema.measurement import schema as measurement
 from pandapower.network_schema.source_dc import schema as source_dc
 from pandapower.network_schema.load_dc import schema as load_dc
 from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
-from pandapower.network_schema.svc import schema as svc_schema
+from pandapower.network_schema.svc import schema as svc, res_schema as res_scv
 
 def get_structure_dict() -> dict:
     """
@@ -31,18 +31,18 @@ def get_structure_dict() -> dict:
     """
     return {
         # structure data
-        "bus": get_dtypes(bus_schema),
-        "bus_dc": get_dtypes(bus_dc_schema),
-        "load": get_dtypes(load_schema),
-        "sgen": get_dtypes(sgen_schema),
-        "motor": get_dtypes(motor_schema),
-        "asymmetric_load": get_dtypes(asymmetric_load_schema),
-        "asymmetric_sgen": get_dtypes(asymmetric_sgen_schema),
-        "storage": get_dtypes(storage_schema),
-        "gen": get_dtypes(gen_schema),
-        "switch": get_dtypes(switch_schema),
-        "shunt": get_dtypes(shunt_schema),
-        "svc": get_dtypes(svc_schema),
+        "bus": get_dtypes(bus),
+        "bus_dc": get_dtypes(bus_dc),
+        "load": get_dtypes(load),
+        "sgen": get_dtypes(sgen),
+        "motor": get_dtypes(motor),
+        "asymmetric_load": get_dtypes(asymmetric_load),
+        "asymmetric_sgen": get_dtypes(asymmetric_sgen),
+        "storage": get_dtypes(storage),
+        "gen": get_dtypes(gen),
+        "switch": get_dtypes(switch),
+        "shunt": get_dtypes(shunt),
+        "svc": get_dtypes(svc),
         "ssc": {
             "name": dtype(str),
             "bus": "i8",
@@ -70,8 +70,8 @@ def get_structure_dict() -> dict:
             "in_service": "bool",
             "ref_bus": "u4",  # missing in docu
         },
-        "ext_grid": get_dtypes(ext_grid_schema),
-        "line": get_dtypes(line_schema),
+        "ext_grid": get_dtypes(ext_grid),
+        "line": get_dtypes(line),
         "line_dc": {  # in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
             "name": dtype(str),
             "std_type": dtype(str),
@@ -88,7 +88,7 @@ def get_structure_dict() -> dict:
             "in_service": "bool",
             "geo": dtype(str),  # missing in docu
         },
-        "trafo": get_dtypes(trafo_schema),
+        "trafo": get_dtypes(trafo),
         "trafo3w": {  # in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
             "name": dtype(str),
             "std_type": dtype(str),
@@ -320,13 +320,7 @@ def get_structure_dict() -> dict:
             "q_mvar": "f8",
             "vm_pu": "f8"
         },
-        "_empty_res_svc": {
-            "thyristor_firing_angle_degree": "f8",
-            "x_ohm": "f8",
-            "q_mvar": "f8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-        },
+        "_empty_res_svc": get_dtypes(res_scv),
         "_empty_res_ssc": {
             "q_mvar": "f8",
             "vm_internal_pu": "f8",

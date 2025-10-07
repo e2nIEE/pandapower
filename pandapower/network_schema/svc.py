@@ -15,3 +15,16 @@ schema = pa.DataFrameSchema(
     },
     strict=False,
 )
+
+
+
+res_schema = pa.DataFrameSchema(
+    {
+"thyristor_firing_angle_degree": pa.Column(float, description="the resulting value of thyristor firing angle of svc [degree]"),
+            "x_ohm": pa.Column(float, description="resulting value of the shunt impedance of svc [Ohm]"),
+            "q_mvar": pa.Column(float, description="shunt reactive power consumption of svc [MVAr]"),
+            "vm_pu": pa.Column(float, description="voltage magnitude at svc bus [pu]"),
+            "va_degree": pa.Column(float, description="voltage angle at svc bus [degree]"),
+    },
+    strict=False,
+)
