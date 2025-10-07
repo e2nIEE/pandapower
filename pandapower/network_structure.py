@@ -1,67 +1,63 @@
 from numpy import dtype
 
 from pandapower._version import __version__, __format_version__
-from pandapower.network_schema.tools import get_dtypes
+from pandapower.network_schema.asymmetric_load import (
+    schema as asymmetric_load_schema,
+    res_schema as res_asymmetric_load_schema,
+    res_schema_3ph as res_asymmetric_load_3ph_schema,
+)
+from pandapower.network_schema.asymmetric_sgen import (
+    schema as asymmetric_sgen_schema,
+    res_schema as res_asymmetric_sgen_schema,
+    res_schema_3ph as res_asymmetric_sgen_3ph_schema,
+)
+from pandapower.network_schema.b2b_vsc import schema as b2b_vsc_schema, res_schema as res_b2b_vsc_schema
+from pandapower.network_schema.bi_vsc import schema as bi_vsc_schema, res_schema as res_bi_vsc_schema
 from pandapower.network_schema.bus import (
     schema as bus_schema,
     res_schema as res_bus_schema,
     res_schema_3ph as res_bus_3ph_schema,
 )
 from pandapower.network_schema.bus_dc import schema as bus_dc_schema, res_schema as res_bus_dc_schema
-from pandapower.network_schema.load import schema as load_schema, res_schema as res_load_schema
-from pandapower.network_schema.sgen import schema as sgen_schema, res_schema as res_sgen_schema
-from pandapower.network_schema.switch import schema as switch_schema, res_schema as res_switch_schema
+from pandapower.network_schema.dcline import schema as dcline_schema, res_schema as res_dcline_schema
 from pandapower.network_schema.ext_grid import (
     schema as ext_grid_schema,
     res_schema as res_ext_grid_schema,
     res_schema_3ph as res_ext_grid_3ph_schema,
 )
+from pandapower.network_schema.gen import schema as gen_schema, res_schema as res_gen_schema
+from pandapower.network_schema.impedance import schema as impedance_schema, res_schema as res_impedance_schema
 from pandapower.network_schema.line import (
     schema as line_schema,
     res_schema as res_line_schema,
     res_schema_3ph as res_line_3ph_schema,
 )
+from pandapower.network_schema.line_dc import schema as line_dc_schema, res_schema as res_line_dc_schema
+from pandapower.network_schema.load import schema as load_schema, res_schema as res_load_schema
+from pandapower.network_schema.load_dc import schema as load_dc_schema, res_schema as res_load_dc_schema
+from pandapower.network_schema.measurement import schema as measurement_schema
+from pandapower.network_schema.motor import schema as motor_schema, res_schema as res_motor_schema
+from pandapower.network_schema.sgen import schema as sgen_schema, res_schema as res_sgen_schema
+from pandapower.network_schema.shunt import schema as shunt_schema, res_schema as res_shunt_schema
+from pandapower.network_schema.source_dc import schema as source_dc_schema, res_schema as res_source_dc_schema
+from pandapower.network_schema.storage import (
+    schema as storage_schema,
+    res_schema as res_storage_schema,
+    res_schema_3ph as res_storage_3ph_schema,
+)
+from pandapower.network_schema.svc import schema as svc_schema, res_schema as res_svc_schema
+from pandapower.network_schema.switch import schema as switch_schema, res_schema as res_switch_schema
+from pandapower.network_schema.tcsc import schema as tcsc_schema, res_schema as res_tcsc_schema
+from pandapower.network_schema.tools import get_dtypes
 from pandapower.network_schema.trafo import (
     schema as trafo_schema,
     res_schema as res_trafo_schema,
     res_schema_3ph as res_trafo_3ph_schema,
 )
-
-from pandapower.network_schema.motor import schema as motor_schema, res_schema as res_motor_schema
-from pandapower.network_schema.asymmetric_load import schema as asymmetric_load_schema, res_schema as res_asymmetric_load_schema, res_schema_3ph as res_asymmetric_load_3ph_schema
-from pandapower.network_schema.asymmetric_sgen import schema as asymmetric_sgen_schema, res_schema as res_asymmetric_sgen_schema, res_schema_3ph as res_asymmetric_sgen_3ph_schema
-from pandapower.network_schema.storage import schema as storage_schema, res_schema as res_storage_schema, res_schema_3ph as res_storage_3ph_schema
-from pandapower.network_schema.gen import schema as gen_schema, res_schema as res_gen_schema
-from pandapower.network_schema.shunt import schema as shunt_schema, res_schema as res_shunt_schema
-
-from pandapower.network_schema.trafo3w import schema as trafo3w
-from pandapower.network_schema.line_dc import schema as line_dc
-from pandapower.network_schema.impedance import schema as impedance
-from pandapower.network_schema.tcsc import schema as tcsc
-from pandapower.network_schema.dcline import schema as dcline
-from pandapower.network_schema.ward import schema as ward
-from pandapower.network_schema.xward import schema as xward
-from pandapower.network_schema.measurement import schema as measurement
-from pandapower.network_schema.source_dc import schema as source_dc
-from pandapower.network_schema.load_dc import schema as load_dc
-from pandapower.network_schema.b2b_vsc import schema as b2b_vsc
-
-from pandapower.network_schema.svc import schema as svc_schema, res_schema as res_svc_schema
-from pandapower.network_schema.vsc import schema as vsc_schema, res_schema as res_vsc_schema
-
-from pandapower.network_schema.bi_vsc import schema as bi_vsc
 from pandapower.network_schema.trafo3w import schema as trafo3w_schema, res_schema as res_trafo3w_schema
-from pandapower.network_schema.line_dc import schema as line_dc_schema, res_schema as res_line_dc_schema
-from pandapower.network_schema.impedance import schema as impedance_schema, res_schema as res_impedance_schema
-from pandapower.network_schema.tcsc import schema as tcsc_schema, res_schema as res_tcsc_schema
-from pandapower.network_schema.dcline import schema as dcline_schema, res_schema as res_dcline_schema
+from pandapower.network_schema.vsc import schema as vsc_schema, res_schema as res_vsc_schema
 from pandapower.network_schema.ward import schema as ward_schema, res_schema as res_ward_schema
 from pandapower.network_schema.xward import schema as xward_schema, res_schema as res_xward_schema
-from pandapower.network_schema.measurement import schema as measurement_schema
-from pandapower.network_schema.source_dc import schema as source_dc_schema, res_schema as res_source_dc_schema
-from pandapower.network_schema.load_dc import schema as load_dc_schema, res_schema as res_load_dc_schema
-from pandapower.network_schema.b2b_vsc import schema as b2b_vsc_schema, res_schema as res_b2b_vsc_schema
-from pandapower.network_schema.bi_vsc import schema as bi_vsc_schema, res_schema as res_bi_vsc_schema
 
 
 def get_structure_dict() -> dict:
