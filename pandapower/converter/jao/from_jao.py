@@ -626,7 +626,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                 lgd_bus.loc["EIC_Code"].index.get_level_values("identifier")),
             "name": ~line_excerpt.name.isin(
                 lgd_bus.loc["name"].index.get_level_values("identifier"))
-        }).set_axis(is_dupl.index)
+        }).set_axis(is_dupl.index, axis=0)
         is_tieline = pd.Series(net.line.loc[is_dupl.index.get_level_values("line_index"),
                                             "Tieline"].values, index=is_dupl.index)
 
