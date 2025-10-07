@@ -707,8 +707,11 @@ def test_trafo_3w():
     pass
 
 
-@pytest.fixture(scope='module')
-def test_trafo_impedance():
+# Todo: "min" case does not work, since parameters are missing.
+@pytest.mark.parametrize("trafo_impedance_case", ["max", "min"])
+def test_trafo_impedance(trafo_impedance_case):
+    case = trafo_impedance_case
+
     net = create_empty_network(sn_mva=0.16)
     create_bus(net, 20)
     create_buses(net, 2, 0.4)
@@ -720,10 +723,6 @@ def test_trafo_impedance():
 
     runpp(net)
     
-    calc_sc(net, case='max', lv_tol_percent=6., bus=2, branch_results=True, use_pre_fault_voltage=False)
-
-@pytest.fixture(scope='module')
-def trafo_impedance_base():
     # trafo:
     v_lv = 410
     z_tlv = 4 / 100 * v_lv ** 2 / (400 * 1e3)
@@ -734,16 +733,7 @@ def trafo_impedance_base():
     k_t = 0.95 * 1.05 / (1 + 0.6 * x_t)
     z_tk = k_t * z_tlv
 
-    return z_tk, case
-
-
-@pytest.mark.parametrize("trafo_impedance_case", ["max", "min"], indirect=["trafo_impedance_case"])
-def test_trafo_impedance(trafo_impedance_case, net_trafo_impedance):
-
-    z_tk, case = trafo_impedance_case
-    net = net_trafo_impedance
-
-    sc.calc_sc(net, case=case, lv_tol_percent=6., bus=2, branch_results=True, use_pre_fault_voltage=False)
+    calc_sc(net, case=case, lv_tol_percent=6., bus=2, branch_results=True, use_pre_fault_voltage=False)
 
     # assert np.allclose(net.res_bus_sc.rk_ohm * 1e3, 5.18, rtol=0, atol=1e-6)
     # assert np.allclose(net.res_bus_sc.xk_ohm * 1e3, 16.37, rtol=0, atol=1e-6)

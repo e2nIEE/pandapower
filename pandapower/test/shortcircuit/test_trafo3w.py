@@ -43,7 +43,7 @@ def test_trafo3w_max(trafo3w_net):
 
 def test_trafo3w_min(trafo3w_net):
     net = trafo3w_net
-    sc.calc_sc(net, case="min", lv_tol_percent=6., ip=True, ith=True)
+    calc_sc(net, case="min", lv_tol_percent=6., ip=True, ith=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, [0.10497277622, 0.56364359158, 1.5877756314])
     assert np.allclose(net.res_bus_sc.ip_ka.values, [0.25920082653, 1.3937300547, 3.9283892193])
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.10674892795, 0.57328848095, 1.6150713675])
