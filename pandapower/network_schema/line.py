@@ -16,16 +16,25 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, a
             float, pa.Check.ge(0), description="capacitance of the line (line-to-earth) [nano Farad per km]"
         ),
         "r0_ohm_per_km": pa.Column(
-            float, pa.Check.ge(0), required=False, description="zero sequence resistance of the line [Ohm per km]"
+            float,
+            pa.Check.ge(0),
+            required=False,
+            description="zero sequence resistance of the line [Ohm per km]",
+            metadata={"sc": True, "3ph": True},
         ),
         "x0_ohm_per_km": pa.Column(
-            float, pa.Check.ge(0), required=False, description="zero sequence reactance of the line [Ohm per km]"
+            float,
+            pa.Check.ge(0),
+            required=False,
+            description="zero sequence reactance of the line [Ohm per km]",
+            metadata={"sc": True, "3ph": True},
         ),
         "c0_nf_per_km": pa.Column(
             float,
             pa.Check.ge(0),
             required=False,
             description="zero sequence capacitance of the line [nano Farad per km]",
+            metadata={"sc": True, "3ph": True},
         ),
         "g_us_per_km": pa.Column(
             float, pa.Check.ge(0), description="dielectric conductance of the line [micro Siemens per km]"
@@ -39,10 +48,14 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, a
         ),
         "type": pa.Column(str, pa.Check.isin(["ol", "cs"]), description="type of line"),
         "max_loading_percent": pa.Column(
-            float, pa.Check.gt(0), required=False, description="Maximum loading of the line"
+            float, pa.Check.gt(0), required=False, description="Maximum loading of the line", metadata={"opf": True}
         ),
         "endtemp_degree": pa.Column(
-            float, pa.Check.gt(0), required=False, description="Short-Circuit end temperature of the line"
+            float,
+            pa.Check.gt(0),
+            required=False,
+            description="Short-Circuit end temperature of the line",
+            metadata={"sc": True},
         ),  # not in create method call
         "in_service": pa.Column(bool, description="specifies if the line is in service."),
         "geo": pa.Column(str, description="geojson.LineString object or its string representation"),

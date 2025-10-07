@@ -14,29 +14,44 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
         "pfe_kw": pa.Column(float, pa.Check.ge(0), description="iron losses [kW]"),
         "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop losses in [%]"),
         "vk0_percent": pa.Column(
-            float, pa.Check.ge(0), required=False, description="zero sequence relative short-circuit voltage"
+            float,
+            pa.Check.ge(0),
+            required=False,
+            description="zero sequence relative short-circuit voltage",
+            metadata={"sc": True, "3ph": True},
         ),
         "vkr0_percent": pa.Column(
             float,
             pa.Check.ge(0),
             required=False,
             description="real part of zero sequence relative short-circuit voltage",
+            metadata={"sc": True, "3ph": True},
         ),
         "mag0_percent": pa.Column(
             float,
             pa.Check.ge(0),
             required=False,
             description="z_mag0 / z0 ratio between magnetizing and short circuit impedance (zero sequence)",
+            metadata={"sc": True, "3ph": True},
         ),
-        "mag0_rx": pa.Column(float, required=False, description="zero sequence magnetizing r/x  ratio"),
+        "mag0_rx": pa.Column(
+            float,
+            required=False,
+            description="zero sequence magnetizing r/x  ratio",
+            metadata={"sc": True, "3ph": True},
+        ),
         "si0_hv_partial": pa.Column(
             float,
             pa.Check.ge(0),
             required=False,
             description="zero sequence short circuit impedance  distribution in hv side",
+            metadata={"sc": True, "3ph": True},
         ),
         "vector_group": pa.Column(
-            str, required=False, description="Vector Groups ( required for zero sequence model of transformer )"
+            str,
+            required=False,
+            description="Vector Groups ( required for zero sequence model of transformer )",
+            metadata={"sc": True, "3ph": True},
         ),
         "shift_degree": pa.Column(float, description="transformer phase shift angle"),
         "tap_side": pa.Column(
@@ -70,6 +85,7 @@ schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: xn_ohm, pt
             int,
             required=False,
             description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
+            metadata={"opf": True},
         ),
         "parallel": pa.Column(int, pa.Check.gt(0), description="number of parallel transformers"),
         "df": pa.Column(
