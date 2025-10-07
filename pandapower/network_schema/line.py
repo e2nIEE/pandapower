@@ -68,3 +68,45 @@ res_schema = pa.DataFrameSchema(
         "loading_percent": pa.Column(float, description="line loading [%]"),
     },
 )
+
+res_schema_3ph = pa.DataFrameSchema(
+    {
+        "p_a_from_mw": pa.Column(float, description="active power flow into the line at from bus: Phase A [MW]"),
+        "q_a_from_mvar": pa.Column(float, description="reactive power flow into the line at from bus : Phase A [MVar]"),
+        "p_b_from_mw": pa.Column(float, description="active power flow into the line at from bus: Phase B [MW]"),
+        "q_b_from_mvar": pa.Column(float, description="reactive power flow into the line at from bus : Phase B[MVar]"),
+        "p_c_from_mw": pa.Column(float, description="active power flow into the line at from bus: Phase C [MW]"),
+        "q_c_from_mvar": pa.Column(float, description="reactive power flow into the line at from bus : Phase C[MVar]"),
+        "p_a_to_mw": pa.Column(float, description="active power flow into the line at to bus: Phase A [MW]"),
+        "q_a_to_mvar": pa.Column(float, description="reactive power flow into the line at to bus : Phase A[MVar]"),
+        "p_b_to_mw": pa.Column(float, description="active power flow into the line at to bus: Phase B [MW]"),
+        "q_b_to_mvar": pa.Column(float, description="reactive power flow into the line at to bus : Phase B[MVar]"),
+        "p_c_to_mw": pa.Column(float, description="active power flow into the line at to bus: Phase C [MW]"),
+        "q_c_to_mvar": pa.Column(float, description="reactive power flow into the line at to bus : Phase C[MVar]"),
+        "pl_a_mw": pa.Column(float, description="active power losses of the line: Phase A [MW]"),
+        "ql_a_mvar": pa.Column(float, description="reactive power consumption of the line: Phase A [MVar]"),
+        "pl_b_mw": pa.Column(float, description="active power losses of the line: Phase B [MW]"),
+        "ql_b_mvar": pa.Column(float, description="reactive power consumption of the line: Phase B [MVar]"),
+        "pl_c_mw": pa.Column(float, description="active power losses of the line: Phase C [MW]"),
+        "ql_c_mvar": pa.Column(float, description="reactive power consumption of the line: Phase C [MVar]"),
+        "i_a_from_ka": pa.Column(float, description="Current at from bus: Phase A [kA]"),
+        "i_a_to_ka": pa.Column(float, description="Current at to bus: Phase A [kA]"),
+        "i_b_from_ka": pa.Column(float, description="Current at from bus: Phase B [kA]"),
+        "i_b_to_ka": pa.Column(float, description="Current at to bus: Phase B [kA]"),
+        "i_c_from_ka": pa.Column(float, description="Current at from bus: Phase C [kA]"),
+        "i_c_to_ka": pa.Column(float, description="Current at to bus: Phase C [kA]"),
+        "i_a_ka": pa.Column(float, description=""),  # missing in docu
+        "i_b_ka": pa.Column(float, description=""),  # missing in docu
+        "i_c_ka": pa.Column(float, description=""),  # missing in docu
+        "i_n_from_ka": pa.Column(float, description="Current at from bus: Neutral [kA]"),
+        "i_n_to_ka": pa.Column(float, description="Current at to bus: Neutral [kA]"),
+        "i_ka": pa.Column(float, description="Maximum of i_from_ka and i_to_ka [kA]"),  # was only in docu
+        "i_n_ka": pa.Column(float, description=""),  # missing in docu
+        "loading_a_percent": pa.Column(float, description="line a loading [%]"),
+        "loading_b_percent": pa.Column(float, description="line b loading [%]"),
+        "loading_c_percent": pa.Column(float, description="line c loading [%]"),
+        "loading_n_percent": pa.Column(float, description=""),  # was only in docu
+    },
+)
+
+# TODO: was ist mit res_line_est und res_line_sc

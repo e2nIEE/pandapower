@@ -63,3 +63,14 @@ res_schema = pa.DataFrameSchema(
         "q_mvar": pa.Column(float, description="reactive power supply at the external grid [MVar]"),
     },
 )
+
+res_schema_3ph = pa.DataFrameSchema(
+    {
+        "p_a_mw": pa.Column(float, description="active power supply at the external grid : Phase A [MW]"),
+        "q_a_mvar": pa.Column(float, description="reactive power supply at the external grid : Phase A [MVar]"),
+        "p_b_mw": pa.Column(float, description="active power supply at the external grid : Phase B [MW]"),
+        "q_b_mvar": pa.Column(float, description="reactive power supply at the external grid : Phase B [MVar]"),
+        "p_c_mw": pa.Column(float, description="active power supply at the external grid : Phase C [MW]"),
+        "q_c_mvar": pa.Column(float, description="reactive power supply at the external grid : Phase C [MVar]"),
+    },
+)

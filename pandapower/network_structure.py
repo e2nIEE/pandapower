@@ -2,14 +2,30 @@ from numpy import dtype
 
 from pandapower._version import __version__, __format_version__
 from pandapower.network_schema.tools import get_dtypes
-from pandapower.network_schema.bus import schema as bus_schema, res_schema as res_bus_schema
+from pandapower.network_schema.bus import (
+    schema as bus_schema,
+    res_schema as res_bus_schema,
+    res_schema_3ph as res_bus_3ph_schema,
+)
 from pandapower.network_schema.bus_dc import schema as bus_dc_schema, res_schema as res_bus_dc_schema
 from pandapower.network_schema.load import schema as load_schema, res_schema as res_load_schema
 from pandapower.network_schema.sgen import schema as sgen_schema, res_schema as res_sgen_schema
 from pandapower.network_schema.switch import schema as switch_schema, res_schema as res_switch_schema
-from pandapower.network_schema.ext_grid import schema as ext_grid_schema, res_schema as res_ext_grid_schema
-from pandapower.network_schema.line import schema as line_schema, res_schema as res_line_schema
-from pandapower.network_schema.trafo import schema as trafo_schema, res_schema as res_trafo_schema
+from pandapower.network_schema.ext_grid import (
+    schema as ext_grid_schema,
+    res_schema as res_ext_grid_schema,
+    res_schema_3ph as res_ext_grid_3ph_schema,
+)
+from pandapower.network_schema.line import (
+    schema as line_schema,
+    res_schema as res_line_schema,
+    res_schema_3ph as res_line_3ph_schema,
+)
+from pandapower.network_schema.trafo import (
+    schema as trafo_schema,
+    res_schema as res_trafo_schema,
+    res_schema_3ph as res_trafo_3ph_schema,
+)
 
 from pandapower.network_schema.trafo3w import schema as trafo3w_schema, res_schema as res_trafo3w_schema
 from pandapower.network_schema.line_dc import schema as line_dc_schema, res_schema as res_line_dc_schema
@@ -23,6 +39,7 @@ from pandapower.network_schema.source_dc import schema as source_dc_schema, res_
 from pandapower.network_schema.load_dc import schema as load_dc_schema, res_schema as res_load_dc_schema
 from pandapower.network_schema.b2b_vsc import schema as b2b_vsc_schema, res_schema as res_b2b_vsc_schema
 from pandapower.network_schema.bi_vsc import schema as bi_vsc_schema, res_schema as res_bi_vsc_schema
+
 
 def get_structure_dict() -> dict:
     """
@@ -277,94 +294,11 @@ def get_structure_dict() -> dict:
         "_empty_res_load_dc": get_dtypes(res_load_dc_schema),
         "_empty_res_ward": get_dtypes(res_ward_schema),
         "_empty_res_xward": get_dtypes(res_xward_schema),
-        "_empty_res_trafo_3ph": {
-            "p_a_hv_mw": "f8",
-            "q_a_hv_mvar": "f8",
-            "p_b_hv_mw": "f8",
-            "q_b_hv_mvar": "f8",
-            "p_c_hv_mw": "f8",
-            "q_c_hv_mvar": "f8",
-            "p_a_lv_mw": "f8",
-            "q_a_lv_mvar": "f8",
-            "p_b_lv_mw": "f8",
-            "q_b_lv_mvar": "f8",
-            "p_c_lv_mw": "f8",
-            "q_c_lv_mvar": "f8",
-            "pl_a_mw": "f8",
-            "ql_a_mvar": "f8",
-            "pl_b_mw": "f8",
-            "ql_b_mvar": "f8",
-            "pl_c_mw": "f8",
-            "ql_c_mvar": "f8",
-            "i_a_hv_ka": "f8",
-            "i_a_lv_ka": "f8",
-            "i_b_hv_ka": "f8",
-            "i_b_lv_ka": "f8",
-            "i_c_hv_ka": "f8",
-            "i_c_lv_ka": "f8",
-            "loading_a_percent": "f8",
-            "loading_b_percent": "f8",
-            "loading_c_percent": "f8",
-            "loading_percent": "f8",
-        },
+        "_empty_res_trafo_3ph": get_dtypes(res_trafo_3ph_schema),
         "_empty_res_trafo3w": get_dtypes(res_trafo3w_schema),
-        "_empty_res_bus_3ph": {
-            "vm_a_pu": "f8",
-            "va_a_degree": "f8",
-            "vm_b_pu": "f8",
-            "va_b_degree": "f8",
-            "vm_c_pu": "f8",
-            "va_c_degree": "f8",
-            "p_a_mw": "f8",
-            "q_a_mvar": "f8",
-            "p_b_mw": "f8",
-            "q_b_mvar": "f8",
-            "p_c_mw": "f8",
-            "q_c_mvar": "f8",
-        },
-        "_empty_res_ext_grid_3ph": {
-            "p_a_mw": "f8",
-            "q_a_mvar": "f8",
-            "p_b_mw": "f8",
-            "q_b_mvar": "f8",
-            "p_c_mw": "f8",
-            "q_c_mvar": "f8",
-        },
-        "_empty_res_line_3ph": {
-            "p_a_from_mw": "f8",
-            "q_a_from_mvar": "f8",
-            "p_b_from_mw": "f8",
-            "q_b_from_mvar": "f8",
-            "p_c_from_mw": "f8",
-            "q_c_from_mvar": "f8",
-            "p_a_to_mw": "f8",
-            "q_a_to_mvar": "f8",
-            "p_b_to_mw": "f8",
-            "q_b_to_mvar": "f8",
-            "p_c_to_mw": "f8",
-            "q_c_to_mvar": "f8",
-            "pl_a_mw": "f8",
-            "ql_a_mvar": "f8",
-            "pl_b_mw": "f8",
-            "ql_b_mvar": "f8",
-            "pl_c_mw": "f8",
-            "ql_c_mvar": "f8",
-            "i_a_from_ka": "f8",
-            "i_a_to_ka": "f8",
-            "i_b_from_ka": "f8",
-            "i_b_to_ka": "f8",
-            "i_c_from_ka": "f8",
-            "i_c_to_ka": "f8",
-            "i_a_ka": "f8",
-            "i_b_ka": "f8",
-            "i_c_ka": "f8",
-            "i_n_from_ka": "f8",
-            "i_n_to_ka": "f8",
-            "i_n_ka": "f8",
-            "loading_a_percent": "f8",
-            "loading_b_percent": "f8",
-            "loading_c_percent": "f8",
-        },
+        "_empty_res_bus_3ph": get_dtypes(res_bus_3ph_schema),
+        "_empty_res_ext_grid_3ph": get_dtypes(res_ext_grid_3ph_schema),
+        "_empty_res_line_3ph": get_dtypes(res_line_3ph_schema),
         "_empty_res_asymmetric_load_3ph": {
             "p_a_mw": "f8",
             "q_a_mvar": "f8",
