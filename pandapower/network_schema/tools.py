@@ -1,15 +1,14 @@
-import pandera.pandas as pa
-
 import importlib.util
 import os
 from pathlib import Path
+
+import pandera.pandas as pa
 
 from pandapower import pandapowerNet
 
 
 def get_dtypes(schema: pa.DataFrameSchema):
     return {name: col.dtype.type for name, col in schema.columns.items() if schema.columns[name].required}
-    # return {name: dtype.type for name, dtype in schema.dtype.items()} # faster but not working for nonetype
 
 
 def validate_dataframes_for_network(net: pandapowerNet):
@@ -50,7 +49,7 @@ def create_docu_csv_from_schema(schema):
 
     columns_info = []
 
-    def get_checks(checks):
+    def get_checks(checks: list):
         if checks is None:
             return ""
 
@@ -69,6 +68,12 @@ def create_docu_csv_from_schema(schema):
                 return f"{check['value']}"
         return ""
 
+    def get_metadata(schema: pa.DataFrameSchema, name: str, kind: str):
+        try:
+            return schema.columns[name].metadata[kind]
+        except:
+            return False
+
     for col_name, col_details in schema_dict["columns"].items():
         columns_info.append(
             {
@@ -77,6 +82,9 @@ def create_docu_csv_from_schema(schema):
                 "Value Range": get_checks(col_details.get("checks")),
                 "nullable": col_details.get("nullable", True),
                 "required": col_details.get("required", False),
+                "optimal power flow": get_metadata(schema, col_name, "opf"),
+                "short circuit": get_metadata(schema, col_name, "sc"),
+                "3ph": get_metadata(schema, col_name, "3ph"),
                 "Explanation": col_details.get("description", ""),
             }
         )
