@@ -65,7 +65,7 @@ class ExternalNetworkInjectionsCim16:
                     (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start)))
 
     def _prepare_external_network_injections_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             eni = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'], 'ExternalNetworkInjection',
                                                         add_cim_type_column=True)
         else:
@@ -82,7 +82,7 @@ class ExternalNetworkInjectionsCim16:
                        how='left', left_on='index_bus', right_index=True)
         eni = pd.merge(eni, self.cimConverter.cim['sv']['SvVoltage'][['TopologicalNode', 'v', 'angle']],
                        how='left', left_on=sc['ct'], right_on='TopologicalNode')
-        eni['controlEnabled'] = eni['controlEnabled'] & eni['enabled'].fillna(False)
+        eni['controlEnabled'] = eni['controlEnabled'] & eni['enabled']
         eni['vm_pu'] = eni['targetValue'] / eni['vn_kv']  # voltage from regulation
         eni['vm_pu'] = eni['vm_pu'].fillna(eni['v'] / eni['vn_kv'])  # voltage from measurement
         eni['vm_pu'] = eni['vm_pu'].fillna(1.)  # default voltage
@@ -115,6 +115,7 @@ class ExternalNetworkInjectionsCim16:
         eni['scaling'] = 1.
         eni['type'] = None
         eni['slack'] = False
+        eni['controllable'] = eni['controllable'].fillna(False)
 
         return eni
 

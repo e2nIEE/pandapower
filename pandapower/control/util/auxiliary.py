@@ -387,27 +387,26 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
 
 def _set_reactive_capability_curve_flag(net, element):
     if element not in ["gen", "sgen"]:
-        UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
-                    f"Please give gen or sgen as an argument of the function")
-        return
+        raise UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
+                          f"Please give gen or sgen as an argument of the function")
     # Quick checks for element table and required columns
     if (len(net[element]) == 0 or
-            not {"id_q_capability_curve_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
-            or (not net[element]['id_q_capability_curve_characteristic'].notna().any() and
+            not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
+            or (not net[element]['id_q_capability_characteristic'].notna().any() and
                 not net[element]['reactive_capability_curve'].any()) and not net[element]['curve_style'].any()):
         logger.info(f"No {element} with Q capability curve table found.")
     else:
         net[element]['reactive_capability_curve'] = (
-                net[element]['id_q_capability_curve_characteristic'].notna() &
-                (net[element]['id_q_capability_curve_characteristic'] >= 0) &
+                net[element]['id_q_capability_characteristic'].notna() &
+                (net[element]['id_q_capability_characteristic'] >= 0) &
                 net[element]['curve_style'].isin(["straightLineYValues", "constantYValue"])
         ).astype(bool)
 
 
-def create_q_capability_curve_characteristics_object(net):
+def create_q_capability_characteristics_object(net):
     # check if element_characteristic_spline table already exists & if so, delete & re-create
-    if "q_capability_curve_characteristic" in net:
-        del net["q_capability_curve_characteristic"]
+    if "q_capability_characteristic" in net:
+        del net["q_capability_characteristic"]
 
     # create characteristics
     if "q_capability_curve_table" in net.keys() and net['q_capability_curve_table'].index.size > 0:
@@ -418,16 +417,16 @@ def create_q_capability_curve_characteristics_object(net):
         _set_reactive_capability_curve_flag(net, "sgen")
 
         # Create Q capability curve characteristics dataframe
-        net["q_capability_curve_characteristic"] = pd.DataFrame({
+        net["q_capability_characteristic"] = pd.DataFrame({
             "id_q_capability_curve": pd.Series(dtype="Int64"),
             "q_min_characteristic": pd.Series(dtype="object"),
             "q_max_characteristic": pd.Series(dtype="object"),
         })
 
-        net["q_capability_curve_characteristic_temp"] = pd.DataFrame()
+        net["q_capability_characteristic_temp"] = pd.DataFrame()
         characteristic_df_temp = net['q_capability_curve_table']
         mydata_grouped = characteristic_df_temp.groupby('id_q_capability_curve')
-        net["q_capability_curve_characteristic"]["id_q_capability_curve"] = mydata_grouped.size().index
+        net["q_capability_characteristic"]["id_q_capability_curve"] = mydata_grouped.size().index
 
         # Prepare lists
         element_ids = []
@@ -442,9 +441,9 @@ def create_q_capability_curve_characteristics_object(net):
 
             # Compute Characteristic indices
             q_min_index = Characteristic(
-                net, p_mw_values, q_min_values, table="q_capability_curve_characteristic_temp").index
+                net, p_mw_values, q_min_values, table="q_capability_characteristic_temp").index
             q_max_index = Characteristic(
-                net, p_mw_values, q_max_values, table="q_capability_curve_characteristic_temp").index
+                net, p_mw_values, q_max_values, table="q_capability_characteristic_temp").index
 
             # Collect results
             element_ids.append(element_id)
@@ -458,22 +457,22 @@ def create_q_capability_curve_characteristics_object(net):
             "q_max_characteristic": q_max_indices,
         }).set_index("id_q_capability_curve")
 
-        net["q_capability_curve_characteristic"] = net[
-            "q_capability_curve_characteristic"].combine_first(characteristic_df)
+        net["q_capability_characteristic"] = net[
+            "q_capability_characteristic"].combine_first(characteristic_df)
 
         # Extract the temporary table containing the objects
-        temp_table = net["q_capability_curve_characteristic_temp"]
+        temp_table = net["q_capability_characteristic_temp"]
 
         # Map the indices in `q_min_index` and `q_max_index` to the corresponding objects in the temporary table
         if not temp_table.empty:
             object_map = temp_table["object"]  # Cache the mapping for efficiency
-            net["q_capability_curve_characteristic"]["q_min_characteristic"] = net[
-                "q_capability_curve_characteristic"]["q_min_characteristic"].map(object_map)
-            net["q_capability_curve_characteristic"]["q_max_characteristic"] = net[
-                "q_capability_curve_characteristic"]["q_max_characteristic"].map(object_map)
+            net["q_capability_characteristic"]["q_min_characteristic"] = net[
+                "q_capability_characteristic"]["q_min_characteristic"].map(object_map)
+            net["q_capability_characteristic"]["q_max_characteristic"] = net[
+                "q_capability_characteristic"]["q_max_characteristic"].map(object_map)
         logger.info(f"Finished creating p dependent q characteristic objects for capability curve in "
                     f"{time.time() - time_start}.")
-        del net["q_capability_curve_characteristic_temp"]
+        del net["q_capability_characteristic_temp"]
 
     else:
         logger.info("q_capability_curve_table is empty - no characteristic objects created.")
