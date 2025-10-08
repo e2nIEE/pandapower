@@ -1361,8 +1361,8 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> pd.DataFrame:
-    trafo2 = {}
+def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
+    trafo2: dict[str, dict] = {}
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
     t3 = net["trafo3w"]
