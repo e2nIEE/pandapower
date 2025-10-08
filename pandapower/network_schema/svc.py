@@ -3,7 +3,7 @@ import pandera.pandas as pa
 schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the SVC"),
-        "bus": pa.Column(int, description="index of bus where the SVC is connected"),
+        "bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the SVC is connected"),
         "x_l_ohm": pa.Column(float, pa.Check.ge(0), description="impedance of the reactor component of SVC"),
         "x_cvar_ohm": pa.Column(float, pa.Check.le(0), description="impedance of the fixed capacitor component of SVC"),
         "set_vm_pu": pa.Column(float, description="set-point for the bus voltage magnitude at the connection bus"),

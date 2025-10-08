@@ -25,7 +25,7 @@ schema = pa.DataFrameSchema(
         "check_existing": pa.Column(
             bool,
             description="Checks if a measurement of the type already exists and overwrites it. If set to False, the measurement may be added twice (unsafe behaviour), but the performance increases",
-        ),
+        ),  # TODO: only in docu
         "side": pa.Column(str, description=""),  # TODO: missing in docu
     },
     strict=False,

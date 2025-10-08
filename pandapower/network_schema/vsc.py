@@ -3,8 +3,8 @@ import pandera.pandas as pa
 schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the VSC"),
-        "bus": pa.Column(int, description="index of ac bus of the ac side of the VSC"),
-        "bus_dc": pa.Column(int, description="index of dc bus of the dc side of the VSC"),
+        "bus": pa.Column(int, pa.Check.ge(0), description="index of ac bus of the ac side of the VSC"),
+        "bus_dc": pa.Column(int, pa.Check.ge(0), description="index of dc bus of the dc side of the VSC"),
         "r_ohm": pa.Column(float, pa.Check.ge(0), description="resistance of the coupling transformer"),
         "x_ohm": pa.Column(float, pa.Check.ge(0), description="reactance of the coupling transformer"),
         "r_dc_ohm": pa.Column(float, description="resistance of the internal dc resistance component of VSC"),
@@ -29,7 +29,7 @@ schema = pa.DataFrameSchema(
         "control_value_dc": pa.Column(float, description="the value of the controlled parameter at the dc bus"),
         "controllable": pa.Column(bool, description="whether the element is considered as actively controlling"),
         "in_service": pa.Column(bool, description="specifies if the VSC is in service."),
-        "ref_bus": pa.Column(int, description=""),  # TODO: missing in docu
+        "ref_bus": pa.Column(int, pa.Check.ge(0), description=""),  # TODO: missing in docu
     },
     strict=False,
 )

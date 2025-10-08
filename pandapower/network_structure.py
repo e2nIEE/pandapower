@@ -40,6 +40,7 @@ from pandapower.network_schema.motor import schema as motor_schema, res_schema a
 from pandapower.network_schema.sgen import schema as sgen_schema, res_schema as res_sgen_schema
 from pandapower.network_schema.shunt import schema as shunt_schema, res_schema as res_shunt_schema
 from pandapower.network_schema.source_dc import schema as source_dc_schema, res_schema as res_source_dc_schema
+from pandapower.network_schema.ssc import schema as ssc_schema, res_schema as res_ssc_schema
 from pandapower.network_schema.storage import (
     schema as storage_schema,
     res_schema as res_storage_schema,
@@ -78,17 +79,7 @@ def get_structure_dict() -> dict:
         "switch": get_dtypes(switch_schema),
         "shunt": get_dtypes(shunt_schema),
         "svc": get_dtypes(svc_schema),
-        "ssc": {
-            "name": dtype(str),
-            "bus": "i8",
-            "r_ohm": "f8",
-            "x_ohm": "f8",
-            "set_vm_pu": "f8",
-            "vm_internal_pu": "f8",
-            "va_internal_degree": "f8",
-            "controllable": "bool",
-            "in_service": "bool",
-        },
+        "ssc": get_dtypes(ssc_schema),
         "vsc": get_dtypes(vsc_schema),
         "ext_grid": get_dtypes(ext_grid_schema),
         "line": get_dtypes(line_schema),
@@ -149,13 +140,7 @@ def get_structure_dict() -> dict:
         "_empty_res_sgen": get_dtypes(res_sgen_schema),
         "_empty_res_shunt": get_dtypes(res_shunt_schema),
         "_empty_res_svc": get_dtypes(res_svc_schema),
-        "_empty_res_ssc": {
-            "q_mvar": "f8",
-            "vm_internal_pu": "f8",
-            "va_internal_degree": "f8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-        },
+        "_empty_res_ssc": get_dtypes(res_ssc_schema),
         "_empty_res_vsc": get_dtypes(res_vsc_schema),
         "_empty_res_switch": get_dtypes(res_switch_schema),
         "_empty_res_impedance": get_dtypes(res_impedance_schema),

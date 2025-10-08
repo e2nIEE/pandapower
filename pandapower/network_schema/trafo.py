@@ -58,14 +58,14 @@ schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: xn_o
         "tap_side": pa.Column(
             str, pa.Check.isin(["hv", "lv"]), description="defines if tap changer is at the high- or low voltage side"
         ),
-        "tap_neutral": pa.Column(int, description="rated tap position"),
-        "tap_min": pa.Column(int, description="minimum tap position"),
-        "tap_max": pa.Column(int, description="maximum tap position"),
+        "tap_neutral": pa.Column(float, description="rated tap position"), #TODO: different type in docu
+        "tap_min": pa.Column(float, description="minimum tap position"), #TODO: different type in docu
+        "tap_max": pa.Column(float, description="maximum tap position"), #TODO: different type in docu
         "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size for voltage magnitude [%]"),
         "tap_step_degree": pa.Column(
             float, pa.Check.ge(0), nullable=True, description="tap step size for voltage angle"
         ),
-        "tap_pos": pa.Column(int, description="current position of tap changer"),
+        "tap_pos": pa.Column(float, description="current position of tap changer"), #TODO: different type in docu
         "tap_changer_type": pa.Column(
             str,
             pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
@@ -82,12 +82,12 @@ schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: xn_o
             nullable=True,
             description="references the id_characteristic index from the trafo_characteristic_table",
         ),
-        "max_loading_percent": pa.Column(
-            int,
-            required=False,
-            description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
-            metadata={"opf": True},
-        ),
+        # "max_loading_percent": pa.Column(
+        #     int,
+        #     required=False,
+        #     description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
+        #     metadata={"opf": True},
+        # ), #TODO: only in docu
         "parallel": pa.Column(int, pa.Check.gt(0), description="number of parallel transformers"),
         "df": pa.Column(
             float,
