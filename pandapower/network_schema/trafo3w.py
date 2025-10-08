@@ -42,9 +42,9 @@ schema = pa.DataFrameSchema(
             pa.Check.isin(["hv", "mv", "lv"]),
             description="defines if tap changer is positioned on high- medium- or low voltage side",
         ),
-        "tap_neutral": pa.Column(float, description=""), #TODO: different type in docu
-        "tap_min": pa.Column(float, description="minimum tap position"), #TODO: different type in docu
-        "tap_max": pa.Column(float, description="maximum tap position"), #TODO: different type in docu
+        "tap_neutral": pa.Column(float, description=""),  # TODO: different type in docu
+        "tap_min": pa.Column(float, description="minimum tap position"),  # TODO: different type in docu
+        "tap_max": pa.Column(float, description="maximum tap position"),  # TODO: different type in docu
         "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size [%]"),
         "tap_step_degree": pa.Column(float, description="tap step size for voltage angle"),
         "tap_at_star_point": pa.Column(

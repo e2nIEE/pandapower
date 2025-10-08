@@ -58,7 +58,7 @@ schema = pa.DataFrameSchema(
         ),
         "slack_weight": pa.Column(float, description=""),  # TODO: missing in docu
         "in_service": pa.Column(bool, description="specifies if the external grid is in service."),
-        "controllable": pa.Column(bool, required=False, description=""),  # TODO: missing in docu
+        "controllable": pa.Column(bool, description=""),  # TODO: missing in docu
     },
     strict=False,
 )
