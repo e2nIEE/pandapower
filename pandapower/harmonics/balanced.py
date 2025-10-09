@@ -1,14 +1,18 @@
 import math
 import cmath
 import numpy as np
-import pandapower as pp
+from pandapower import runpp
+from pandapower.auxiliary import pandapowerNet
 import pandapower.harmonics.harmonic_impedance_creator as hic
 
 
 # formatting harmonic voltages in table and calculation of THD
-def balanced_thd_voltage(net, harmonics, har, har_angle, analysis_type):
-    harmonics_voltage_0, harmonics_voltage = balanced_harmonic_current_voltage(net, harmonics, har,
-                                                                               har_angle, analysis_type)
+def balanced_thd_voltage(net: pandapowerNet,
+                         harmonics: list[int],
+                         har: list[float], har_angle: list[float],
+                         analysis_type: str):
+
+    harmonics_voltage_0, harmonics_voltage = balanced_harmonic_current_voltage(net, harmonics, har, har_angle, analysis_type)
 
     # Nodes need to be sorted 0, 1, 2, 3, 4... Node with index 0 needs to be referent node (External grid is connected to this node)
 
@@ -43,7 +47,11 @@ def balanced_thd_voltage(net, harmonics, har, har_angle, analysis_type):
 
 # calculation of harmonic voltages from harmonic currents
 # at the moment it is possible to define only one harmonic patter which is same for every harmonic source
-def balanced_harmonic_current_voltage(net, harmonics, har, har_angle, analysis_type):
+def balanced_harmonic_current_voltage(net: pandapowerNet,
+                                      harmonics: list[int],
+                                      har: list[float], har_angle: list[float],
+                                      analysis_type: str):
+
     delta_harmonics_voltage = np.zeros([len(net.bus.name) - 1, len(har)], dtype=complex)
     harmonics_voltage = np.zeros([len(net.bus.name) - 1, len(har)], dtype=float)
     harmonic_cur_val = []
@@ -60,14 +68,14 @@ def balanced_harmonic_current_voltage(net, harmonics, har, har_angle, analysis_t
         z_ext = har_ext_matrix[h]
 
         if harmonics[h] == 1:
-            pp.runpp(net)
+            runpp(net)
 
             current = []
             current_0 = []
 
             s = complex(net.res_bus.p_mw[net.ext_grid.bus[0]], net.res_bus.q_mvar[net.ext_grid.bus[0]])
 
-            current_0.append(np.conjugate(s / (math.sqrt(3) * (cmath.rect(net.res_bus.vm_pu[net.ext_grid.bus[0]], \
+            current_0.append(np.conjugate(s / (math.sqrt(3) * (cmath.rect(net.res_bus.vm_pu[net.ext_grid.bus[0]],
                                                                           net.res_bus.va_degree[
                                                                               net.ext_grid.bus[0]])))))
 

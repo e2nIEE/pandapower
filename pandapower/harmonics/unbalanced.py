@@ -1,7 +1,8 @@
 import math
 import cmath
 import numpy as np
-import pandapower as pp
+from pandapower import runpp_3ph
+from pandapower.auxiliary import pandapowerNet
 import pandapower.harmonics.harmonic_impedance_creator as hic
 #import pandapower.harmonics.unbalanced.voltages_currents_calculation as har_vol_calc
 
@@ -9,15 +10,27 @@ import pandapower.harmonics.harmonic_impedance_creator as hic
 # formatting harmonic voltages in table and calculation of THD
 # Nodes need to be sorted 0, 1, 2, 3, 4... Node with index 0 needs to be referent node (External grid is connected to this node)
 
-def unbalanced_thd_voltage(network, harmonics, har_a, har_a_angle, har_b, har_b_angle, har_c, har_c_angle,
-                           har_a_lc, har_a_lc_angle, har_b_lc, har_b_lc_angle, har_c_lc, har_c_lc_angle,
-                           analysis_type):
-    harmonics_voltage_0, harmonics_voltage, harmonics_current_0, harmonics_current = \
-        unbalanced_harmonic_current_voltage(network, harmonics,
-                                            har_a, har_a_angle, har_b, har_b_angle, har_c, har_c_angle,
-                                            har_a_lc, har_a_lc_angle, har_b_lc, har_b_lc_angle, har_c_lc,
-                                            har_c_lc_angle,
-                                            analysis_type)
+def unbalanced_thd_voltage(net: pandapowerNet,
+                           harmonics: list[int],
+                           har_a: list[float], har_a_angle: list[float],
+                           har_b: list[float], har_b_angle: list[float],
+                           har_c: list[float], har_c_angle: list[float],
+                           har_a_lc: list[float], har_a_lc_angle: list[float],
+                           har_b_lc: list[float], har_b_lc_angle: list[float],
+                           har_c_lc: list[float], har_c_lc_angle: list[float],
+                           analysis_type: str):
+
+    harmonics_voltage_0, harmonics_voltage, harmonics_current_0, harmonics_current = unbalanced_harmonic_current_voltage(
+        net,
+        harmonics,
+        har_a, har_a_angle,
+        har_b, har_b_angle,
+        har_c, har_c_angle,
+        har_a_lc, har_a_lc_angle,
+        har_b_lc, har_b_lc_angle,
+        har_c_lc, har_c_lc_angle,
+        analysis_type
+    )
 
     thd_a = []
     thd_b = []
@@ -42,9 +55,9 @@ def unbalanced_thd_voltage(network, harmonics, har_a, har_a_angle, har_b, har_b_
         thd_c.append(sum_thd)
 
     for i in range(0, len(thd_a)):
-        thd_a[i] = math.sqrt(thd_a[i]) / (network.res_bus_3ph.vm_a_pu[i + 1]) * 100
-        thd_b[i] = math.sqrt(thd_b[i]) / (network.res_bus_3ph.vm_b_pu[i + 1]) * 100
-        thd_c[i] = math.sqrt(thd_c[i]) / (network.res_bus_3ph.vm_c_pu[i + 1]) * 100
+        thd_a[i] = math.sqrt(thd_a[i]) / (net.res_bus_3ph.vm_a_pu[i + 1]) * 100
+        thd_b[i] = math.sqrt(thd_b[i]) / (net.res_bus_3ph.vm_b_pu[i + 1]) * 100
+        thd_c[i] = math.sqrt(thd_c[i]) / (net.res_bus_3ph.vm_c_pu[i + 1]) * 100
 
     sum_thd_a_0 = 0
     sum_thd_b_0 = 0
@@ -55,42 +68,49 @@ def unbalanced_thd_voltage(network, harmonics, har_a, har_a_angle, har_b, har_b_
         sum_thd_b_0 += harmonics_voltage_0[1, i] ** 2
         sum_thd_c_0 += harmonics_voltage_0[2, i] ** 2
 
-    thd_a.insert(0, math.sqrt(sum_thd_a_0) / network.res_bus_3ph.vm_a_pu[0] * 100)
-    thd_b.insert(0, math.sqrt(sum_thd_b_0) / network.res_bus_3ph.vm_b_pu[0] * 100)
-    thd_c.insert(0, math.sqrt(sum_thd_c_0) / network.res_bus_3ph.vm_c_pu[0] * 100)
+    thd_a.insert(0, math.sqrt(sum_thd_a_0) / net.res_bus_3ph.vm_a_pu[0] * 100)
+    thd_b.insert(0, math.sqrt(sum_thd_b_0) / net.res_bus_3ph.vm_b_pu[0] * 100)
+    thd_c.insert(0, math.sqrt(sum_thd_c_0) / net.res_bus_3ph.vm_c_pu[0] * 100)
 
-    harmonics_voltage_a = np.zeros([int(len(network.bus.name) * 3 / 3), len(har_a)], dtype=float)
-    harmonics_voltage_b = np.zeros([int(len(network.bus.name) * 3 / 3), len(har_a)], dtype=float)
-    harmonics_voltage_c = np.zeros([int(len(network.bus.name) * 3 / 3), len(har_a)], dtype=float)
+    harmonics_voltage_a = np.zeros([int(len(net.bus.name) * 3 / 3), len(har_a)], dtype=float)
+    harmonics_voltage_b = np.zeros([int(len(net.bus.name) * 3 / 3), len(har_a)], dtype=float)
+    harmonics_voltage_c = np.zeros([int(len(net.bus.name) * 3 / 3), len(har_a)], dtype=float)
     # Harmonic voltage (percentage) of each phase and each harmoni
     for i in range(0, np.shape(harmonics_voltage_a)[0] - 1):
         for j in range(0, np.shape(harmonics_voltage)[1]):
-            harmonics_voltage_a[i + 1, j] = harmonics_voltage[3 * i, j] * 100 * (1 / network.res_bus_3ph.vm_a_pu[i + 1])
+            harmonics_voltage_a[i + 1, j] = harmonics_voltage[3 * i, j] * 100 * (1 / net.res_bus_3ph.vm_a_pu[i + 1])
             harmonics_voltage_b[i + 1, j] = harmonics_voltage[3 * i + 1, j] * 100 * (
-                        1 / network.res_bus_3ph.vm_b_pu[i + 1])
+                    1 / net.res_bus_3ph.vm_b_pu[i + 1])
             harmonics_voltage_c[i + 1, j] = harmonics_voltage[3 * i + 2, j] * 100 * (
-                        1 / network.res_bus_3ph.vm_c_pu[i + 1])
+                    1 / net.res_bus_3ph.vm_c_pu[i + 1])
 
     for i in range(0, np.shape(harmonics_voltage_0)[1]):
-        harmonics_voltage_a[0, i] = harmonics_voltage_0[0, i] * 100 * (1 / network.res_bus_3ph.vm_a_pu[0])
-        harmonics_voltage_b[0, i] = harmonics_voltage_0[1, i] * 100 * (1 / network.res_bus_3ph.vm_b_pu[0])
-        harmonics_voltage_c[0, i] = harmonics_voltage_0[2, i] * 100 * (1 / network.res_bus_3ph.vm_c_pu[0])
+        harmonics_voltage_a[0, i] = harmonics_voltage_0[0, i] * 100 * (1 / net.res_bus_3ph.vm_a_pu[0])
+        harmonics_voltage_b[0, i] = harmonics_voltage_0[1, i] * 100 * (1 / net.res_bus_3ph.vm_b_pu[0])
+        harmonics_voltage_c[0, i] = harmonics_voltage_0[2, i] * 100 * (1 / net.res_bus_3ph.vm_c_pu[0])
 
     return thd_a, thd_b, thd_c, harmonics_voltage_a, harmonics_voltage_b, harmonics_voltage_c
 
 
-def unbalanced_harmonic_current_voltage(network, harmonics, har_a, har_a_angle, har_b, har_b_angle, har_c, har_c_angle, \
-                                        har_a_lc, har_a_lc_angle, har_b_lc, har_b_lc_angle, har_c_lc, har_c_lc_angle, \
-                                        analysis_type):
-    delta_harmonics_voltage = np.zeros([len(network.bus.name) * 3 - 3, len(har_a)], dtype=complex)
-    harmonics_voltage = np.zeros([len(network.bus.name) * 3 - 3, len(har_a)], dtype=float)
-    harmonics_current = np.zeros([len(network.bus.name) * 3 - 3, len(har_a)], dtype=float)
+def unbalanced_harmonic_current_voltage(net: pandapowerNet,
+                                        harmonics: list[int],
+                                        har_a: list[float], har_a_angle: list[float],
+                                        har_b: list[float], har_b_angle: list[float],
+                                        har_c: list[float], har_c_angle: list[float],
+                                        har_a_lc: list[float], har_a_lc_angle: list[float],
+                                        har_b_lc: list[float], har_b_lc_angle: list[float],
+                                        har_c_lc: list[float], har_c_lc_angle: list[float],
+                                        analysis_type: str):
+
+    delta_harmonics_voltage = np.zeros([len(net.bus.name) * 3 - 3, len(har_a)], dtype=complex)
+    harmonics_voltage = np.zeros([len(net.bus.name) * 3 - 3, len(har_a)], dtype=float)
+    harmonics_current = np.zeros([len(net.bus.name) * 3 - 3, len(har_a)], dtype=float)
     u_harmonics_0 = np.zeros([3, len(har_a)], dtype=complex)
     i_harmonics_0 = np.zeros([3, len(har_a)], dtype=float)
 
-    har_matrices, har_ext_matrix = hic.harmonic_imp_creator(network, harmonics, analysis_type)
+    har_matrices, har_ext_matrix = hic.harmonic_imp_creator(net, harmonics, analysis_type)
 
-    s_base = network.sn_mva * 1e6
+    s_base = net.sn_mva * 1e6
 
     for h in range(0, len(harmonics)):
         phase_mat_z = har_matrices[h]
@@ -98,7 +118,7 @@ def unbalanced_harmonic_current_voltage(network, harmonics, har_a, har_a_angle, 
 
         if harmonics[h] == 1:
 
-            pp.runpp_3ph(network)
+            runpp_3ph(net)
 
             current = []
             current_res = []
@@ -106,72 +126,72 @@ def unbalanced_harmonic_current_voltage(network, harmonics, har_a, har_a_angle, 
             current_0 = []
 
             # p.u. values
-            s_a = complex(network.res_bus_3ph.p_a_mw[network.ext_grid.bus[0]] * 1000000 / s_base,
-                          network.res_bus_3ph.q_a_mvar[network.ext_grid.bus[0]] * 1000000 / s_base)
-            s_b = complex(network.res_bus_3ph.p_b_mw[network.ext_grid.bus[0]] * 1000000 / s_base,
-                          network.res_bus_3ph.q_b_mvar[network.ext_grid.bus[0]] * 1000000 / s_base)
-            s_c = complex(network.res_bus_3ph.p_c_mw[network.ext_grid.bus[0]] * 1000000 / s_base,
-                          network.res_bus_3ph.q_c_mvar[network.ext_grid.bus[0]] * 1000000 / s_base)
+            s_a = complex(net.res_bus_3ph.p_a_mw[net.ext_grid.bus[0]] * 1000000 / s_base,
+                          net.res_bus_3ph.q_a_mvar[net.ext_grid.bus[0]] * 1000000 / s_base)
+            s_b = complex(net.res_bus_3ph.p_b_mw[net.ext_grid.bus[0]] * 1000000 / s_base,
+                          net.res_bus_3ph.q_b_mvar[net.ext_grid.bus[0]] * 1000000 / s_base)
+            s_c = complex(net.res_bus_3ph.p_c_mw[net.ext_grid.bus[0]] * 1000000 / s_base,
+                          net.res_bus_3ph.q_c_mvar[net.ext_grid.bus[0]] * 1000000 / s_base)
 
-            current_0.append(np.conjugate(s_a / (cmath.rect(network.res_bus_3ph.vm_a_pu[network.ext_grid.bus[0]],
-                                                            network.res_bus_3ph.va_a_degree[
-                                                                network.ext_grid.bus[0]] * cmath.pi / 180))))
-            current_0.append(np.conjugate(s_b / (cmath.rect(network.res_bus_3ph.vm_b_pu[network.ext_grid.bus[0]],
-                                                            network.res_bus_3ph.va_b_degree[
-                                                                network.ext_grid.bus[0]] * cmath.pi / 180))))
-            current_0.append(np.conjugate(s_c / (cmath.rect(network.res_bus_3ph.vm_c_pu[network.ext_grid.bus[0]],
-                                                            network.res_bus_3ph.va_c_degree[
-                                                                network.ext_grid.bus[0]] * cmath.pi / 180))))
+            current_0.append(np.conjugate(s_a / (cmath.rect(net.res_bus_3ph.vm_a_pu[net.ext_grid.bus[0]],
+                                                            net.res_bus_3ph.va_a_degree[
+                                                                net.ext_grid.bus[0]] * cmath.pi / 180))))
+            current_0.append(np.conjugate(s_b / (cmath.rect(net.res_bus_3ph.vm_b_pu[net.ext_grid.bus[0]],
+                                                            net.res_bus_3ph.va_b_degree[
+                                                                net.ext_grid.bus[0]] * cmath.pi / 180))))
+            current_0.append(np.conjugate(s_c / (cmath.rect(net.res_bus_3ph.vm_c_pu[net.ext_grid.bus[0]],
+                                                            net.res_bus_3ph.va_c_degree[
+                                                                net.ext_grid.bus[0]] * cmath.pi / 180))))
 
-            for i in network.res_bus_3ph.index:
+            for i in net.res_bus_3ph.index:
                 connected = 0
 
-                if i != network.ext_grid.bus[0]:
-                    for j in range(0, len(network.asymmetric_load.index), 2):
+                if i != net.ext_grid.bus[0]:
+                    for j in range(0, len(net.asymmetric_load.index), 2):
                         # The assumption is that two harmonic sources are connected to the node
                         # It can be meodified, additional sources can be added, or number of sources at every node can be reduced
-                        if network.asymmetric_load.bus[j] == i:
+                        if net.asymmetric_load.bus[j] == i:
                             connected = 1  # an asymmetric load is connected to the observed node
 
                             ##Residential
-                            s_a_res = complex(network.asymmetric_load.p_a_mw[j] * 1000000 / s_base,
-                                              network.asymmetric_load.q_a_mvar[j] * 1000000 / s_base)
-                            s_b_res = complex(network.asymmetric_load.p_b_mw[j] * 1000000 / s_base,
-                                              network.asymmetric_load.q_b_mvar[j] * 1000000 / s_base)
-                            s_c_res = complex(network.asymmetric_load.p_c_mw[j] * 1000000 / s_base,
-                                              network.asymmetric_load.q_c_mvar[j] * 1000000 / s_base)
+                            s_a_res = complex(net.asymmetric_load.p_a_mw[j] * 1000000 / s_base,
+                                              net.asymmetric_load.q_a_mvar[j] * 1000000 / s_base)
+                            s_b_res = complex(net.asymmetric_load.p_b_mw[j] * 1000000 / s_base,
+                                              net.asymmetric_load.q_b_mvar[j] * 1000000 / s_base)
+                            s_c_res = complex(net.asymmetric_load.p_c_mw[j] * 1000000 / s_base,
+                                              net.asymmetric_load.q_c_mvar[j] * 1000000 / s_base)
 
                             # PV
-                            s_a_pv = complex(network.asymmetric_load.p_a_mw[j + 1] * 1000000 / s_base,
-                                             network.asymmetric_load.q_a_mvar[j + 1] * 1000000 / s_base)
-                            s_b_pv = complex(network.asymmetric_load.p_b_mw[j + 1] * 1000000 / s_base,
-                                             network.asymmetric_load.q_b_mvar[j + 1] * 1000000 / s_base)
-                            s_c_pv = complex(network.asymmetric_load.p_c_mw[j + 1] * 1000000 / s_base,
-                                             network.asymmetric_load.q_c_mvar[j + 1] * 1000000 / s_base)
+                            s_a_pv = complex(net.asymmetric_load.p_a_mw[j + 1] * 1000000 / s_base,
+                                             net.asymmetric_load.q_a_mvar[j + 1] * 1000000 / s_base)
+                            s_b_pv = complex(net.asymmetric_load.p_b_mw[j + 1] * 1000000 / s_base,
+                                             net.asymmetric_load.q_b_mvar[j + 1] * 1000000 / s_base)
+                            s_c_pv = complex(net.asymmetric_load.p_c_mw[j + 1] * 1000000 / s_base,
+                                             net.asymmetric_load.q_c_mvar[j + 1] * 1000000 / s_base)
 
                             break
 
                     if connected == 1:
                         # If the node is a node where a load/generator is connected we calculate the currents
                         # Else currents at that node are 0
-                        current_res.append(np.conjugate(s_a_res / (cmath.rect(network.res_bus_3ph.vm_a_pu[i],
-                                                                              network.res_bus_3ph.va_a_degree[
+                        current_res.append(np.conjugate(s_a_res / (cmath.rect(net.res_bus_3ph.vm_a_pu[i],
+                                                                              net.res_bus_3ph.va_a_degree[
                                                                                   i] * cmath.pi / 180))))
-                        current_res.append(np.conjugate(s_b_res / (cmath.rect(network.res_bus_3ph.vm_b_pu[i],
-                                                                              network.res_bus_3ph.va_b_degree[
+                        current_res.append(np.conjugate(s_b_res / (cmath.rect(net.res_bus_3ph.vm_b_pu[i],
+                                                                              net.res_bus_3ph.va_b_degree[
                                                                                   i] * cmath.pi / 180))))
-                        current_res.append(np.conjugate(s_c_res / (cmath.rect(network.res_bus_3ph.vm_c_pu[i],
-                                                                              network.res_bus_3ph.va_c_degree[
+                        current_res.append(np.conjugate(s_c_res / (cmath.rect(net.res_bus_3ph.vm_c_pu[i],
+                                                                              net.res_bus_3ph.va_c_degree[
                                                                                   i] * cmath.pi / 180))))
 
-                        current_pv.append(np.conjugate(s_a_pv / (cmath.rect(network.res_bus_3ph.vm_a_pu[i],
-                                                                            network.res_bus_3ph.va_a_degree[
+                        current_pv.append(np.conjugate(s_a_pv / (cmath.rect(net.res_bus_3ph.vm_a_pu[i],
+                                                                            net.res_bus_3ph.va_a_degree[
                                                                                 i] * cmath.pi / 180))))
-                        current_pv.append(np.conjugate(s_b_pv / (cmath.rect(network.res_bus_3ph.vm_b_pu[i],
-                                                                            network.res_bus_3ph.va_b_degree[
+                        current_pv.append(np.conjugate(s_b_pv / (cmath.rect(net.res_bus_3ph.vm_b_pu[i],
+                                                                            net.res_bus_3ph.va_b_degree[
                                                                                 i] * cmath.pi / 180))))
-                        current_pv.append(np.conjugate(s_c_pv / (cmath.rect(network.res_bus_3ph.vm_c_pu[i],
-                                                                            network.res_bus_3ph.va_c_degree[
+                        current_pv.append(np.conjugate(s_c_pv / (cmath.rect(net.res_bus_3ph.vm_c_pu[i],
+                                                                            net.res_bus_3ph.va_c_degree[
                                                                                 i] * cmath.pi / 180))))
 
                     else:
@@ -184,21 +204,21 @@ def unbalanced_harmonic_current_voltage(network, harmonics, har_a, har_a_angle, 
                         current_pv.append(0 + 0j)
 
                     # p.u. values of current in each node. Must be equal to s_res + s_pv
-                    s_a = complex(network.res_bus_3ph.p_a_mw[i] * 1000000 / s_base,
-                                  network.res_bus_3ph.q_a_mvar[i] * 1000000 / s_base)
-                    s_b = complex(network.res_bus_3ph.p_b_mw[i] * 1000000 / s_base,
-                                  network.res_bus_3ph.q_b_mvar[i] * 1000000 / s_base)
-                    s_c = complex(network.res_bus_3ph.p_c_mw[i] * 1000000 / s_base,
-                                  network.res_bus_3ph.q_c_mvar[i] * 1000000 / s_base)
+                    s_a = complex(net.res_bus_3ph.p_a_mw[i] * 1000000 / s_base,
+                                  net.res_bus_3ph.q_a_mvar[i] * 1000000 / s_base)
+                    s_b = complex(net.res_bus_3ph.p_b_mw[i] * 1000000 / s_base,
+                                  net.res_bus_3ph.q_b_mvar[i] * 1000000 / s_base)
+                    s_c = complex(net.res_bus_3ph.p_c_mw[i] * 1000000 / s_base,
+                                  net.res_bus_3ph.q_c_mvar[i] * 1000000 / s_base)
 
-                    current.append(np.conjugate(s_a / (cmath.rect(network.res_bus_3ph.vm_a_pu[i],
-                                                                  network.res_bus_3ph.va_a_degree[
+                    current.append(np.conjugate(s_a / (cmath.rect(net.res_bus_3ph.vm_a_pu[i],
+                                                                  net.res_bus_3ph.va_a_degree[
                                                                       i] * cmath.pi / 180))))
-                    current.append(np.conjugate(s_b / (cmath.rect(network.res_bus_3ph.vm_b_pu[i],
-                                                                  network.res_bus_3ph.va_b_degree[
+                    current.append(np.conjugate(s_b / (cmath.rect(net.res_bus_3ph.vm_b_pu[i],
+                                                                  net.res_bus_3ph.va_b_degree[
                                                                       i] * cmath.pi / 180))))
-                    current.append(np.conjugate(s_c / (cmath.rect(network.res_bus_3ph.vm_c_pu[i],
-                                                                  network.res_bus_3ph.va_c_degree[
+                    current.append(np.conjugate(s_c / (cmath.rect(net.res_bus_3ph.vm_c_pu[i],
+                                                                  net.res_bus_3ph.va_c_degree[
                                                                       i] * cmath.pi / 180))))
 
         else:
@@ -208,7 +228,7 @@ def unbalanced_harmonic_current_voltage(network, harmonics, har_a, har_a_angle, 
             harmonics_current_pv = []
             harmonics_angle_pv = []
 
-            for i in range(0, len(network.bus.name)):
+            for i in range(0, len(net.bus.name)):
                 # Residential household devices harmonics
                 harmonics_current_res.append(har_a[h - 1])
                 harmonics_current_res.append(har_b[h - 1])
