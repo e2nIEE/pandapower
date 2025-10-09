@@ -1,11 +1,13 @@
-import importlib.util
 import os
+import importlib.util
 from pathlib import Path
+import logging
 
 import pandera.pandas as pa
 
 from pandapower import pandapowerNet
 
+logger = logging.getLogger()
 
 def get_dtypes(schema: pa.DataFrameSchema):
     return {name: col.dtype.type for name, col in schema.columns.items() if schema.columns[name].required}
@@ -20,15 +22,22 @@ def validate_dataframes_for_network(net: pandapowerNet):
     """
 
     for element in net:
-        schema_path = Path(os.getcwd() + os.sep + "pandapower" + os.sep + "network_schema") / f"{element}.py"
+        schema_path = Path(Path(__file__).parent, f"{element}.py")
 
         if not os.path.exists(schema_path):
             continue
 
         # Dynamic import
         spec = importlib.util.spec_from_file_location(element, schema_path)
+        if spec is None:
+            logger.warning(f"Schema for {element} not found, no spec")
+            continue
         schema_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(schema_module)
+        loader = spec.loader
+        if loader is None:
+            logger.warning(f"Schema for {element} not found, no loader")
+            continue
+        loader.exec_module(schema_module)
 
         # Assume schema is named 'schema' in each file
         schema = schema_module.schema
