@@ -32,19 +32,19 @@ logger = logging.getLogger(__name__)
 
 def create_empty_network(
         name: str = "",
-        f_hz: float = 50.,
-        sn_mva: float = 1,
+        f_hz: float = 50.0,
+        sn_mva: float = 1000.0,
         add_stdtypes: bool = True
 ) -> pandapowerNet:
     """
     This function initializes the pandapower datastructure.
 
     OPTIONAL:
-        **f_hz** (float, 50.) - power system frequency in hertz
+        **f_hz** (float, 50.0) - power system frequency in hertz
 
         **name** (string, None) - name for the network
 
-        **sn_mva** (float, 1e3) - reference apparent power for per unit system
+        **sn_mva** (float, 1000.0) - reference apparent power for per unit system
 
         **add_stdtypes** (boolean, True) - Includes standard types to net
 
