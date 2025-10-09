@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
         os:  [ ubuntu-latest, windows-latest ]
         group: [ 1, 2 ]
 
@@ -38,16 +38,16 @@ jobs:
       - name: Install specific dependencies (Windows)
         if: matrix.os  == 'windows-latest'
         run: |
-          if ( '${{ matrix.python-version }}'  -eq '3.9' ) { uv pip install pypower }
-          if ( '${{ matrix.python-version }}'  -ne '3.9' ) { uv pip install numba }
-          if ( '${{ matrix.python-version }}'  -eq '3.10' ) { uv pip install lightsim2grid }
+          if ( '${{ matrix.python-version }}'  -eq '3.10' ) { uv pip install pypower }
+          if ( '${{ matrix.python-version }}'  -ne '3.10' ) { uv pip install numba }
+          if ( '${{ matrix.python-version }}'  -eq '3.11' ) { uv pip install lightsim2grid }
 
       - name: Install specific dependencies (Ubuntu)
         if: matrix.os  == 'ubuntu-latest'
         run: |
-          if ${{ matrix.python-version == '3.9' }}; then uv pip install pypower; fi
-          if ${{ matrix.python-version != '3.9' }}; then uv pip install numba; fi
-          if ${{ matrix.python-version == '3.10' }}; then uv pip install lightsim2grid; fi
+          if ${{ matrix.python-version == '3.10' }}; then uv pip install pypower; fi
+          if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
+          if ${{ matrix.python-version == '3.11' }}; then uv pip install lightsim2grid; fi
 
       - name: List all installed packages
         run: |
