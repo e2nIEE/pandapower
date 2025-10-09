@@ -11,9 +11,9 @@ import pandas as pd
 import geojson
 from collections.abc import Iterable
 
-from pandapower.auxiliary import soft_dependency_error, version_check, MapboxTokenMissing
+from pandapower.auxiliary import soft_dependency_error, version_check
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
-from pandapower.plotting.plotly.mapbox_plot import _on_map_test, _get_mapbox_token
+from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
 import logging
 logger = logging.getLogger(__name__)
@@ -23,8 +23,8 @@ try:
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
-    from plotly.graph_objs.scattermapbox import Line as scmLine
-    from plotly.graph_objs.scattermapbox import Marker as scmMarker
+    from plotly.graph_objs.scattermap import Line as scmLine
+    from plotly.graph_objs.scattermap import Marker as scmMarker
 
     version_check('plotly')
     PLOTLY_INSTALLED = True
@@ -97,9 +97,20 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
     """
     # color = get_plotly_color(color)
 
-    center_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
-                        marker=dict(color=color, size=size, symbol=patch_type),
-                        showlegend=showlegend, legendgroup=legendgroup)
+    center_trace = {
+        "type": 'scatter',
+        "text": [],
+        "mode": 'markers',
+        "hoverinfo": 'text',
+        "name": trace_name,
+        "marker": {
+            "color": color,
+            "size": size,
+            "symbol": patch_type
+        },
+        "showlegend": showlegend,
+        "legendgroup": legendgroup
+    }
     if hoverlabel is not None:
         center_trace.update({'hoverlabel': hoverlabel})
 
@@ -141,7 +152,8 @@ def create_bus_trace(net, buses=None, size=5, patch_type="circle", color="blue",
                 - "circle" for a circle
                 - "square" for a rectangle
                 - "diamond" for a diamond
-                - much more patch types at https://plot.ly/python/reference/#scatter-marker
+                - all types for plots at https://plotly.com/python/reference/#scatter-marker-symbol
+                - all types for maps at https://plotly.com/python/reference/#scatter-marker-symbol
 
         **infofunc** (pd.Series, None) - hoverinfo for bus elements. Indices should correspond to
         the pandapower element indices
@@ -248,8 +260,18 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
     if not PLOTLY_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
     color = get_plotly_color(color)
-    node_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
-                      marker=dict(color=color, size=size, symbol=patch_type))
+    node_trace = {
+        "type": 'scatter',
+        "text": [],
+        "mode": 'markers',
+        "hoverinfo": 'text',
+        "name": trace_name,
+        "marker": {
+            "color": color,
+            "size": size,
+            "symbol": patch_type
+        }
+    }
     nodes = net[node_element].index.tolist() if nodes is None else list(nodes)
     node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net[node_element]["geo"].index))]
     node_trace['x'], node_trace['y'] = zip(*net[node_element].loc[node_plot_index, 'geo'].dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list())
@@ -262,7 +284,7 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
         node_trace['legendgroup'] = legendgroup
     # if color map is set
     if cmap is not None:
-        # TODO introduce discrete colormaps (see contour plots in plotly)
+        # TODO: introduce discrete colormaps (see contour plots in plotly)
         # if cmap_vals are not given
 
         cmap = 'Jet' if cmap is True else cmap
@@ -290,13 +312,15 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
         cmin = cmap_vals.min() if cmin is None else cmin
         cmax = cmap_vals.max() if cmax is None else cmax
 
-        node_trace['marker'] = Marker(size=size,
-                                      color=cmap_vals, cmin=cmin, cmax=cmax,
-                                      colorscale=cmap,
-                                      colorbar=ColorBar(thickness=10,
-                                                        x=cpos),
-                                      symbol=patch_type
-                                      )
+        node_trace['marker'] = Marker(
+            size=size,
+            color=cmap_vals,
+            cmin=cmin,
+            cmax=cmax,
+            colorscale=cmap,
+            colorbar=ColorBar(thickness=10, x=cpos),
+            symbol=patch_type
+        )
 
         if cbar_title:
             node_trace['marker']['colorbar']['title'] = cbar_title
@@ -596,7 +620,7 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
     if cmap is not None:
         # workaround: if colormap plot is used, each line need to be separate scatter object because
         # plotly still doesn't support appropriately colormap for line objects
-        # TODO correct this when plotly solves existing github issue about Line colorbar
+        # TODO: correct this when plotly solves existing github issue about Line colorbar
 
         cmap = 'jet' if cmap is True else cmap
 
@@ -1050,15 +1074,24 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
         generated using: `create_bus_trace`, `create_line_trace`, `create_trafo_trace`
 
     OPTIONAL:
-        **on_map** (bool, False) - enables using mapbox plot in plotly
+        **on_map** (bool, False) - enables using mapLibre plot in plotly
 
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+        **map_style** (str, 'basic') - enables using mapLibre plot in plotly
 
-            - 'streets'
-            - 'bright'
-            - 'light'
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
             - 'dark'
-            - 'satellite'
+            - 'light'
+            - 'open-street-map'
+            - 'outdoors'           
+            - 'satellite''
+            - 'satellite-streets'
+            - 'streets'
 
         **showlegend** (bool, 'True') - enables legend display
 
@@ -1091,16 +1124,17 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
                            "Use convert_crs(net, epsg_in=projection) to transform geodata from specific projection.")
 
     if on_map:
-        # change traces for mapbox
-        # change trace_type to scattermapbox and rename x to lat and y to lon
+        # change traces for mapLibre
+        # change trace_type to scattermap and rename x to lat and y to lon
         for trace in traces:
             if 'x' in trace.keys():
                 trace['lon'] = trace.pop('x')
             if 'y' in trace.keys():
                 trace['lat'] = trace.pop('y')
-            trace['type'] = 'scattermapbox'
+            trace['type'] = 'scattermap'
             if "line" in trace and isinstance(trace["line"], Line):
-                # scattermapboxplot lines do not support dash for some reason, make it a red line instead
+                # scattermap plot lines do not support dash for some reason, make it a red line instead
+                # TODO: maybe Dash is working now?
                 if "dash" in trace["line"]._props:
                     _prps = dict(trace["line"]._props)
                     _prps.pop("dash")
@@ -1137,22 +1171,16 @@ def draw_traces(traces, on_map=False, map_style='basic', showlegend=True, figsiz
 
     # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map:
-        try:
-            mapbox_access_token = _get_mapbox_token()
-        except Exception:
-            logger.exception('mapbox token required for map plots. '
-                             'Get Mapbox token by signing in to https://www.mapbox.com/.\n'
-                             'After getting a token, set it to pandapower using:\n'
-                             'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
-            raise MapboxTokenMissing
-
-        fig['layout']['mapbox'] = dict(accesstoken=mapbox_access_token,
-                                       bearing=0,
-                                       center=dict(lat=pd.Series(traces[0]['lat']).dropna().mean(),
-                                                   lon=pd.Series(traces[0]['lon']).dropna().mean()),
-                                       style=map_style,
-                                       pitch=0,
-                                       zoom=kwargs.pop('zoomlevel', 3))
+        fig["layout"]["map"] = {
+            "bearing": 0,
+            "center": {
+                "lat": pd.Series(traces[0]["lat"]).dropna().mean(),
+                "lon": pd.Series(traces[0]["lon"]).dropna().mean(),
+            },
+            "style": map_style,
+            "pitch": 0,
+            "zoom": kwargs.pop("zoomlevel", 11)
+        }
 
     # default aspectratio: if on_map use auto, else use 'original'
     aspectratio = 'original' if not on_map and aspectratio == 'auto' else aspectratio

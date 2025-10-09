@@ -62,7 +62,7 @@ class SynchronousMachinesCim16:
         eq_generating_units['type'] = eq_generating_units['type'].fillna('Nuclear')
         eq_generating_units = eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
 
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             synchronous_machines = self.cimConverter.merge_eq_other_profiles(
                 ['ssh', 'sc'], 'SynchronousMachine', add_cim_type_column=True)
         else:
@@ -159,8 +159,8 @@ class SynchronousMachinesCim16:
         eq = self.cimConverter.cim['eq']
         if not eq['ReactiveCapabilityCurve'].empty and not eq['CurveData'].empty:
             if 'id_q_capability_characteristic' not in syn_gen_df_origin.columns:
-                    syn_gen_df_origin['id_q_capability_characteristic'] = pd.Series(pd.NA, dtype="Int64")
-            if 'q_capability_curve_table' not in self.cimConverter.net.keys():
+                    syn_gen_df_origin['id_q_capability_characteristic'] = float('NaN')
+            if 'q_capability_curve_table' not in self.cimConverter.net:
                 self.cimConverter.net['q_capability_curve_table'] = pd.DataFrame(
                     columns=['id_capability_curve', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
 
@@ -171,8 +171,6 @@ class SynchronousMachinesCim16:
                 ['rdfId', 'Curve', 'xvalue', 'y1value', 'y2value']], how='left', on='Curve')
 
             curve_points['id_q_capability_characteristic'] = pd.factorize(curve_points['Curve'])[0]
-            curve_points['id_q_capability_characteristic'] = (
-                curve_points['id_q_capability_characteristic'].astype('Int64'))
             curve_points = curve_points.drop(columns=['rdfId']).rename(columns={'Curve': 'rdfId', 'xvalue': 'p_mw',
                                                                                 'y1value': 'q_min_mvar',
                                                                                 'y2value': 'q_max_mvar'})

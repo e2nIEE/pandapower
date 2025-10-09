@@ -115,7 +115,7 @@ def test_net_deepcopy():
         for tab in ('bus', 'line'):
             net[f'{tab}_geodata'] = gpd.GeoDataFrame(net[tab].geo.dropna().apply(geojson.loads).apply(
                 lambda x: x["coordinates"] if x is not None else x), geometry=net[tab].geo.dropna().apply(geojson.loads))
-        net1 = net.deepcopy()
+        net1 = copy.deepcopy(net)
         assert isinstance(net1.line_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata.geometry.iat[0], shapely.geometry.Point)

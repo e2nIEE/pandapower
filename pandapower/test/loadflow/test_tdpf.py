@@ -7,7 +7,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-
+import copy
 from pandapower import pp_dir
 from pandapower.create import create_empty_network, create_bus, create_line, create_load, create_ext_grid, \
     create_buses, create_sgen, create_gen, create_gens, create_line_from_parameters
@@ -312,7 +312,7 @@ def test_default_parameters():
     net.line.x_ohm_per_km /= net.line.length_km
     net.line.r_ohm_per_km /= net.line.length_km
     net.line.c_nf_per_km /= net.line.length_km
-    net_backup = net.deepcopy()
+    net_backup = copy.deepcopy(net)
     runpp(net_backup)
 
     # test error is raised when 'tdpf' column is missng
@@ -376,7 +376,7 @@ def test_default_parameters():
 
 def test_with_user_pf_options():
     net = simple_test_grid(0.5, 0.5)
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     set_user_pf_options(net, tdpf=True)
     runpp(net)
     assert "r_ohm_per_km" in net.res_line

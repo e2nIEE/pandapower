@@ -12,7 +12,7 @@ from packaging.version import Version
 from pandapower._version import __version__, __format_version__
 from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.results import reset_results
-from pandapower.control import TrafoController
+from pandapower.control import TrafoController, BinarySearchControl, DroopControl
 from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
 from pandapower.auxiliary import pandapowerNet
 
@@ -26,8 +26,10 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True)
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
-    if not isinstance(net.version, str) or not hasattr(net, 'format_version') or \
-            Version(net.format_version) > Version(net.version.split('.dev')[0]):
+    if not isinstance(net.version, str) or not hasattr(net, 'format_version'):
+        net.format_version = net.version
+    if Version(str(net.format_version)) > Version(str(net.version).split('.dev')[0]):
+        # TODO: create error/warning when pandapower version is older then network
         net.format_version = net.version
     if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
         return net
@@ -141,8 +143,6 @@ def correct_dtypes(net, error):
     raised.
     """
     empty_net = create_empty_network()
-    empty_net.trafo['tap_changer_type'] = empty_net.trafo['tap_changer_type']
-    empty_net.trafo3w['tap_changer_type'] = empty_net.trafo3w['tap_changer_type']
     not_corrected = list()
     failed = dict()
     for key, table in empty_net.items():
@@ -350,6 +350,29 @@ def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('controller', elements_to_deserialize):
         if "controller" in net:
             net["controller"] = net["controller"].rename(columns={"controller": "object"})
+
+    if _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize):
+        if "p_a_l_mw" in net.res_line_3ph:
+            net['res_line_3ph'] = net['res_line_3ph'].rename(columns={
+                'p_a_l_mw': 'pl_a_mw',
+                'p_b_l_mw': 'pl_b_mw',
+                'p_c_l_mw': 'pl_c_mw',
+                'q_a_l_mvar': 'ql_a_mvar',
+                'q_b_l_mvar': 'ql_b_mvar',
+                'q_c_l_mvar': 'ql_c_mvar',
+            })
+
+    if _check_elements_to_deserialize('res_trafo_3ph', elements_to_deserialize):
+        if "p_a_l_mw" in net.res_trafo_3ph:
+            net['res_trafo_3ph'] = net['res_trafo_3ph'].rename(columns={
+                'p_a_l_mw': 'pl_a_mw',
+                'p_b_l_mw': 'pl_b_mw',
+                'p_c_l_mw': 'pl_c_mw',
+                'q_a_l_mvar': 'ql_a_mvar',
+                'q_b_l_mvar': 'ql_b_mvar',
+                'q_c_l_mvar': 'ql_c_mvar',
+            })
+
     if "options" in net:
         if "recycle" in net["options"]:
             if "Ybus" in net["options"]["recycle"]:
@@ -515,6 +538,13 @@ def _add_missing_columns(net, elements_to_deserialize):
             "slack_weight" not in net.xward:
         net.xward['slack_weight'] = 0.0
 
+    if _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize) and \
+        "p_c_from_mw" not in net.res_line_3ph:
+            net.res_line_3ph['p_c_from_mw'] = np.nan
+            net.res_line_3ph['loading_a_percent'] = np.nan
+            net.res_line_3ph['loading_b_percent'] = np.nan
+            net.res_line_3ph['loading_c_percent'] = np.nan
+
 
 def _update_trafo_type_parameter_names(net):
     for element in ('trafo', 'trafo3w'):
@@ -597,10 +627,22 @@ def _update_object_attributes(obj):
     if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
         obj.__dict__["hunting_limit"] = None
 
+    if isinstance(obj, BinarySearchControl):
+        if "input_sign" not in obj.__dict__:
+            n = len(obj.input_element_index)
+            obj.__dict__["input_sign"] = [1] * n
+        if "gen_Q_response" not in obj.__dict__:
+            n = len(obj.output_element_index)
+            obj.__dict__["gen_Q_response"] = [1] * n
+
+    if isinstance(obj, DroopControl):
+        obj.__dict__["vm_set_pu_bsc"] = obj.__dict__.pop("vm_set_pu")
+
 
 def _convert_objects(net, elements_to_deserialize):
     """
-    The function updates attribute names in pandapower objects. For now, it affects TrafoController.
+    The function updates  attribute names and adds new attributes in pandapower objects. For now, it affects
+    TrafoController and Station Controller.
     Should be expanded for other objects if necessary.
     """
     _check_elements_to_deserialize('controller', elements_to_deserialize)

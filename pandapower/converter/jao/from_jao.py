@@ -179,6 +179,7 @@ def _data_correction(
     rename_locnames = [("PSTMIKULOWA", "PST MIKULOWA"),
                        ("Chelm", "CHELM"),
                        ("OLSZTYN-MATK", "OLSZTYN-MATKI"),
+                       ("OLSZTYN-MATKII", "OLSZTYN-MATKI"),
                        ("STANISLAWOW", "Stanislawow"),
                        ("VIERRADEN", "Vierraden")]
 
@@ -625,7 +626,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                 lgd_bus.loc["EIC_Code"].index.get_level_values("identifier")),
             "name": ~line_excerpt.name.isin(
                 lgd_bus.loc["name"].index.get_level_values("identifier"))
-        }).set_axis(is_dupl.index)
+        }).set_axis(is_dupl.index, axis=0)
         is_tieline = pd.Series(net.line.loc[is_dupl.index.get_level_values("line_index"),
                                             "Tieline"].values, index=is_dupl.index)
 
@@ -968,7 +969,8 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
 
 def _multi_str_repl(st: str, repl: list[tuple]) -> str:
     for (old, new) in repl:
-        return st.replace(old, new)
+        st = st.replace(old, new)
+    return st
 
 
 if __name__ == "__main__":

@@ -244,8 +244,8 @@ def abstract_convert_crs(net: ADict,
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)
 
-    if ('geo' in net.bus and not all(net.bus.geo.isna()) and
-        'geo' in net.line and not all(net.line.geo.isna())):
+    if ('geo' in net.bus and (net.bus.empty or not all(net.bus.geo.isna())) and
+        'geo' in net.line and (net.line.empty or not all(net.line.geo.isna()))):
         if epsg_out != 4326:
             logger.warning("Converting geojson to crs other than WGS84 is highly discouraged.")
 
