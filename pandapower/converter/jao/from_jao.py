@@ -9,6 +9,9 @@ import json
 from functools import reduce
 from typing import Optional, Union
 import numpy as np
+import re
+import difflib
+import unicodedata
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_object_dtype
 from pandapower.io_utils import pandapowerNet
@@ -17,10 +20,6 @@ from pandapower.create import create_empty_network, create_buses, create_lines_f
 from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 from pandapower.toolbox import drop_buses, fuse_buses
-import re
-import difflib
-import unicodedata
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,78 +33,59 @@ def from_jao(excel_file_path: str,
              max_i_ka_fillna: Union[float, int] = 999,
              **kwargs) -> pandapowerNet:
     """Converts European (Core) EHV grid data provided by JAO (Joint Allocation Office), the
-    "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that
-    operate in accordance to EU legislation".
+        "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that
+        operate in accordance to EU legislation".
 
-    **Data Sources and Availability:**
+        High-level pipeline:
+          1) Read and stage Excel + optional HTML geodata.
+          2) Identify and fix inconsistent or incomplete data (name normalization, numeric coercions).
+          3) Build buses, lines, transformers based on cleaned data.
+          4) Optionally add synthetic connections to merge islanded grid groups.
+          5) Optionally drop very small unsupplied groups (islands).
+          6) Add geodata to buses and lines if available, resolving ambiguity carefully.
 
-    The data are available at the website
-    `JAO Static Grid Model <https://www.jao.eu/static-grid-model>`_ (November 2024).
-    There, a map is provided to get an fine overview of the geographical extent and the scope of
-    the data. These inlcude information about European (Core) lines, tielines, and transformers.
+        Parameters
+        ----------
+        excel_file_path : str
+            Path to Excel with multi-sheet data (Lines, Tielines, Transformers).
+        html_file_path : str | None
+            Path to HTML file with geodata embedded; pass None to skip geodata.
+        extend_data_for_grid_group_connections : bool
+            If True, add synthetic transformers and bus fusions to connect islanded groups.
+        drop_grid_groups_islands : bool, optional
+            If True, drop small islanded groups based on min_bus_number in kwargs (default 6).
+        apply_data_correction : bool, optional
+            If True, run correction routines (rename normalization, numeric conversion, etc.).
+        max_i_ka_fillna : float | int, optional
+            Fallback value for missing/invalid maximum current (Imax) in kA for lines/transformers.
+            Use np.nan to avoid filling; default 999 (treated as 999 kA).
 
-    **Limitations:**
+        Returns
+        -------
+        pandapowerNet
+            pandapower network created from JAO data.
 
-    No information is available on load or generation.
-    The data quality with regard to the interconnection of the equipment, the information provided
-    and the (incomplete) geodata should be considered with caution.
+        Additional Parameters (via kwargs)
+        ----------------------------------
+        minimal_trafo_invention : bool, optional
+            If True, stop adding synthetic transformers once no islands remain.
+            Note: Not applied for release version 5 or 6 (value ignored).
+        min_bus_number : Union[int,str], optional
+            Threshold for dropping islanded grid groups; can be 'max' or 'unsupplied' (special modes).
+        rel_deviation_threshold_for_trafo_bus_creation : float, optional
+            VN deviation threshold above which new buses are created for transformer sides (default 0.2).
+        log_rel_vn_deviation : float, optional
+            VN deviation threshold to log warnings (default 0.12).
+        sn_mva : float, optional
+            System base apparent power (MVA) for pandapower net.
 
-    **Features of the converter:**
+        Notes
+        -----
+        - The converter intentionally uses heuristics to match transformer location names to bus names,
+          favoring valid topology over strict literal string matching.
+        - HTML geodata parsing relies on specific widget structure; robust error handling ensures
+          the conversion proceeds if parsing fails.
 
-    - **Data Correction:** corrects known data inconsistencies, such as inconsistent spellings and missing necessary information.
-    - **Geographical Data Parsing:** Parses geographical data from the HTML file to add geolocation information to buses and lines.
-    - **Grid Group Connections:** Optionally extends the network by connecting islanded grid groups to avoid disconnected components.
-    - **Data Customization:** Allows for customization through additional parameters to control transformer creation, grid group dropping, and voltage level deviations.
-
-    Parameters
-    ----------
-    excel_file_path : str
-        input data including electrical parameters of grids' utilities, stored in multiple sheets
-        of an excel file
-    html_file_path : str
-        input data for geo information. If The converter should be run without geo information, None
-        can be passed., provided by an html file
-    extend_data_for_grid_group_connections : bool
-        if True, connections (additional transformers and merging buses) are created to avoid
-        islanded grid groups, by default False
-    drop_grid_groups_islands : bool, optional
-        if True, islanded grid groups will be dropped if their number of buses is below
-        min_bus_number (default is 6), by default False
-    apply_data_correction : bool, optional
-        _description_, by default True
-    max_i_ka_fillna : float | int, optional
-        value to fill missing values or data of false type in max_i_ka of lines and transformers.
-        If no value should be set, you can also pass np.nan. By default 999
-
-    Returns
-    -------
-    pandapowerNet
-        net created from the jao data
-
-    Additional Parameters
-    ---------------------
-    minimal_trafo_invention : bool, optional
-        applies if extend_data_for_grid_group_connections is True. Then, if minimal_trafo_invention
-        is True, adding transformers stops when no grid groups is islanded anymore (does not apply
-        for release version 5 or 6, i.e. it does not care what value is passed to
-        minimal_trafo_invention). If False, all equally named buses that have different voltage
-        level and lay in different groups will be connected via additional transformers,
-        by default False
-    min_bus_number : Union[int,str], optional
-        Threshold value to decide which small grid groups should be dropped and which large grid
-        groups should be kept. If all islanded grid groups should be dropped except of the one
-        largest, set "max". If all grid groups that do not contain a slack element should be
-        dropped, set "unsupplied". By default 6
-    rel_deviation_threshold_for_trafo_bus_creation : float, optional
-        If the voltage level of transformer locations is far different than the transformer data,
-        additional buses are created. rel_deviation_threshold_for_trafo_bus_creation defines the
-        tolerance in which no additional buses are created. By default 0.2
-    log_rel_vn_deviation : float, optional
-        This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
-        a warning is logged instead of a creating additional buses. By default 0.12
-
-    Examples
-    --------
     >>> from pathlib import Path
     >>> import os
     >>> import pandapower as pp
@@ -162,18 +142,65 @@ def from_jao(excel_file_path: str,
 
 
 # --- secondary functions --------------------------------------------------------------------------
+
+def _simplify_name(name: str) -> str:
+    """
+    robust canonical rename of location name (without kV).
+    Goal: produce a normalized 'base' token for equivalence-class grouping of names.
+    - Removes trailing marker variants like '(2)', directional suffixes (/W, -West).
+    - Unifies delimiters to spaces, strips voltage-level texts ('220 kV').
+    - Uppercases and collapses whitespace.
+    """
+    _RE_TRAILING = re.compile(r"""
+        (?:\s*\([0-9]+\)\s*$)                 |  #  (2)  (3) …
+        (?:\s*(?:/|[- ])\s*[EWNS](?:EST)?\s*$)   #  /W   -West  _E  …
+    """, re.I | re.X)
+    if not isinstance(name, str):
+        name = str(name)
+    s = unicodedata.normalize("NFKD", name)
+    s = s.encode("ascii", "ignore").decode()
+    s = _RE_TRAILING.sub("", s)
+    s = re.sub(r"[/_.-]", " ", s)
+    s = re.sub(r"\b[0-9]{2,4}\s*k?V\b", "", s, flags=re.I)
+    return " ".join(s.split()).upper()
+
+
+def _extra_variants_from_busnames(bus_names: set[str]) -> list[tuple[str, str]]:
+    """
+    Generate (old,new) pairs using heuristic 'name without suffixes'.
+    E.g. 'Doerpen/W/W'  -> 'DOERPEN'
+         'Stade/W/W (2)'-> 'STADE'
+    This provides conservative normalization proposals from raw bus names.
+    """
+    mapping = {}
+    for n in bus_names:
+        base = _simplify_name(n)
+        if base and n != base:
+            mapping.setdefault(n, base)
+    return list(mapping.items())
+
+
 def generate_rename_locnames_from_combined(
     data: dict[str, pd.DataFrame],
     combined: Optional[pd.DataFrame] = None
 ) -> list[tuple[str, str]]:
     """
-    Erzeugt eine robuste Liste von (old_name, new_name)-Tupeln für Namenskorrekturen.
-    Erweiterungen gegenüber der bisherigen Version:
-      - Case-Harmonisierung direkt aus Transformer-Standorten: z. B. 'Chelm' -> 'CHELM'
-        (auch wenn solche Fälle nicht im kombinierten Report erscheinen).
-      - Präfix-Heuristik (PST/TR) erzeugt Varianten in beiden Fällen (kompakt + Uppercase):
-        z. B. 'PSTMIKULOWA'/'PSTMikulowa' -> 'PST MIKULOWA'/'PST Mikulowa'.
-      - Sicherheitsfilter entfernt mehrdeutige Basistoken-Mappings (z. B. 'Hamburg' -> verschiedene Ziele).
+    Generate a robust list of (old_name, new_name) tuples to normalize naming across sheets.
+    Sources:
+      - 'same_canonical_variant' entries: unify variants that differ only by formatting/case.
+      - 'no_match_after_normalization' entries: propose mapping transformer locations to bus names.
+      - Trafo location case harmonization: direct lowercase/uppercase mapping to existing bus names.
+      - Prefix heuristics: expand compact 'PSTXYZ'/'TRXYZ' to spaced 'PST XYZ'/'TR XYZ'.
+
+    Safety:
+      - Resolve suggestions to existing bus names if possible (case-insensitive).
+      - Filter ambiguous mappings: avoid old_name mapping to multiple new names.
+      - Deduplicate while preserving insertion order.
+
+    Returns
+    -------
+    list[tuple[str, str]]
+        Ordered list of rename rules (old -> new).
     """
     if combined is None:
         combined = report_problematic_names_after_normalization(data)
@@ -183,7 +210,7 @@ def generate_rename_locnames_from_combined(
     bus_location_names_lower = {b.lower(): b for b in bus_location_names}
 
     def _resolve_to_existing_bus_name(name: str) -> str:
-        """Mappt 'name' Case-insensitiv auf existierende Bus-Bezeichnung (Originalschreibweise)."""
+        """Map 'name' case-insensitively to an existing bus name (original form if present)."""
         if not name:
             return name
         return bus_location_names_lower.get(name.lower(), name)
@@ -191,6 +218,7 @@ def generate_rename_locnames_from_combined(
     renames: list[tuple[str, str]] = []
 
     def _add(old: str, new: str):
+        """Append a rename rule if it leads to an existing bus name and is not a no-op."""
         if not old or not new:
             return
         target = _resolve_to_existing_bus_name(new)
@@ -198,13 +226,13 @@ def generate_rename_locnames_from_combined(
             return
         renames.append((old, target))
 
-    # 1) Varianten aus Busdaten (same_canonical_variant): original -> suggested
+    # 1) Variants from Busdata (same_canonical_variant): original -> suggested
     if "reason" in combined.columns:
         sv = combined.loc[combined["reason"] == "same_canonical_variant"]
         for _, row in sv.iterrows():
             _add(str(row["original"]).strip(), str(row["suggested"]).strip())
 
-    # 2) Unmatched Trafo-Fälle (no_match_after_normalization): original -> suggested/Fallback
+    # 2) Unmatched Trafo-cases (no_match_after_normalization): original -> suggested/Fallback
     nm = combined.loc[combined["reason"] == "no_match_after_normalization"]
     for _, row in nm.iterrows():
         orig = str(row.get("original", "")).strip()
@@ -265,6 +293,7 @@ def generate_rename_locnames_from_combined(
                         _add(compact_upper, spaced_upper)
 
     # 4) Sicherheitsfilter: Entferne mehrdeutige Ersetzungen (ein alter Name -> mehrere Ziele)
+    renames.extend(_extra_variants_from_busnames(bus_location_names))
     from collections import defaultdict
     targets_by_old = defaultdict(set)
     for old, new in renames:
@@ -279,7 +308,34 @@ def generate_rename_locnames_from_combined(
         if pair not in seen:
             out.append(pair)
             seen.add(pair)
+    # Sammle alle Zielnamen und deren Quellnamen
+    target_to_sources = {}
+    for old, new in renames:
+        if new not in target_to_sources:
+            target_to_sources[new] = []
+        target_to_sources[new].append(old)
 
+    # Entferne Regeln, bei denen verschiedene Quellnamen zum selben Zielnamen führen
+    # aber behalte diejenigen, die aus demselben kanonischen Namen stammen
+    filtered_renames = []
+    for old, new in renames:
+        sources = target_to_sources[new]
+        if len(sources) > 1:
+            # Prüfe ob alle Quellen zum selben kanonischen Namen führen würden
+            canonical_sources = [_canonical_bus_key(src) for src in sources]
+            current_canonical = _canonical_bus_key(old)
+            # Behalte nur, wenn diese Gruppe konsistent ist
+            if canonical_sources.count(current_canonical) == len(canonical_sources):
+                filtered_renames.append((old, new))
+            # Alternative: Entferne komplett widersprüchliche Gruppen
+            else:
+                # Nur behalten, wenn es keine echten Konflikte gibt
+                continue
+        else:
+            filtered_renames.append((old, new))
+
+    # Ersetze renames mit gefilterter Liste
+    renames = filtered_renames
     print(out)  # zur Kontrolle
     return out
 
@@ -502,7 +558,22 @@ def _data_correction(
     #                    ("OLSZTYN-MATKII", "OLSZTYN-MATKI"),
     #                    ("STANISLAWOW", "Stanislawow"),
     #                    ("VIERRADEN", "Vierraden")]
+    filtered_rename_locnames = []
+    bus_location_names = _collect_bus_location_names(data)
+    for old, new in rename_locnames:
+        if "audorf" in old.lower() or "audorf" in new.lower():
+            print(f"Rename rule: '{old}' -> '{new}'")
+        # Skip if the old name already exists in bus locations (avoid unnecessary changes)
+        if old in bus_location_names and new in bus_location_names:
+            # Both exist - this might create duplicates, skip it
+            continue
+        # Skip if this creates a name that's too different
+        similarity = difflib.SequenceMatcher(None, old.lower(), new.lower()).ratio()
+        if similarity < 0.8:  # Too different, skip
+            continue
+        filtered_rename_locnames.append((old, new))
 
+    rename_locnames = filtered_rename_locnames
     # --- Line and Tieline data ---------------------------
     for key in ["Lines", "Tielines"]:
 
@@ -1213,6 +1284,9 @@ def _allocate_trafos_to_buses_and_create_buses(
 
 
 def _find_trafo_locations(trafo_bus_names, bus_location_names):
+    # Convert bus_location_names to a list for easier searching
+    bus_names_list = list(bus_location_names)
+
     # --- split (original and lower case) strings at " " separators to remove impeding parts for
     # identifying the location names
     trafo_bus_names_expended = trafo_bus_names.str.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+",
@@ -1234,68 +1308,40 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
         ' '.join, axis=1).str.strip()
     trafo_bus_names_longest_part = trafo_bus_names_expended.apply(
         lambda row: max(row, key=len), axis=1)
+
+    # --- Check for exact matches first (more conservative approach)
     joined_in_buses = trafo_bus_names_joined.isin(bus_location_names)
     longest_part_in_buses = trafo_bus_names_longest_part.isin(bus_location_names)
 
-    # --- check whether all name strings point at location names of the buses
-    if True:  # for easy testing
-        fail = ~(joined_in_buses | longest_part_in_buses)
-        a = pd.concat([trafo_bus_names_joined.loc[fail],
-                       trafo_bus_names_longest_part.loc[fail]], axis=1)
+    # --- For entries that don't have exact matches, try very close matches before giving up
+    still_missing = ~(joined_in_buses | longest_part_in_buses)
 
-        # Debug-Ausgabe hinzufügen:
-        print("Problematische Transformator-Namen:")
-        print(a)
-        print("\nUrsprüngliche Transformator-Bus-Namen für diese Einträge:")
-        print(trafo_bus_names.loc[fail])
+    if still_missing.any():
+        # Try difflib for close matches (but be more restrictive)
+        for i in still_missing[still_missing].index:
+            cand1 = trafo_bus_names_joined.iat[i]
+            cand2 = trafo_bus_names_longest_part.iat[i]
 
-        # NEUER DEBUG-CODE:
-        print("\n=== ZUSÄTZLICHE DEBUG-INFORMATIONEN ===")
-        problematic_names = ["OLSZTYN-MATK", "Chelm", "OLSZTYN-MATKI", "CHELM"]
+            # Try both candidates with higher cutoff (0.8 instead of 0.6)
+            query = cand1 if cand1 else cand2
+            if query:
+                matches = difflib.get_close_matches(query, bus_names_list, n=1, cutoff=0.8)
+                if matches:
+                    # Accept close match only if it's very similar
+                    joined_in_buses.iat[i] = True
+                    trafo_bus_names_joined.iat[i] = matches[0]
+                    still_missing.iat[i] = False
 
-        print(f"\nAnzahl Namen in bus_location_names: {len(bus_location_names)}")
-
-        for name in problematic_names:
-            print(f"\nSuche nach '{name}':")
-
-            # Exakte Übereinstimmung
-            if name in bus_location_names:
-                print(f"  ✓ Exakte Übereinstimmung gefunden!")
-            else:
-                print(f"  ✗ Keine exakte Übereinstimmung")
-
-            # Ähnliche Namen finden
-            similar_names = [loc_name for loc_name in bus_location_names
-                             if name.upper() in loc_name.upper() or loc_name.upper() in name.upper()]
-            if similar_names:
-                print(f"  Ähnliche Namen: {similar_names[:10]}")  # Erste 10
-
-            # Namen mit gemeinsamen Teilen
-            name_parts = name.replace('-', ' ').split()
-            for part in name_parts:
-                if len(part) > 2:
-                    matching = [loc_name for loc_name in bus_location_names
-                                if part.upper() in loc_name.upper()]
-                    if matching:
-                        print(f"  Namen mit '{part}': {matching[:10]}")  # Erste 10
-
-        # Zeige ein paar Beispiel-Namen aus bus_location_names
-        bus_names_list = list(bus_location_names)
-        print(f"\nBeispiele aus bus_location_names (erste 20):")
-        for i, name in enumerate(bus_names_list[:20]):
-            print(f"  {i + 1}: '{name}'")
-
-        print("=== ENDE DEBUG ===\n")
-
-    if n_bus_names_not_found := len(joined_in_buses) - sum(joined_in_buses | longest_part_in_buses):
+    # --- Final check - raise error only for truly unmatched transformers
+    if still_missing.any():
+        n_bus_names_not_found = sum(still_missing)
         raise ValueError(
-            f"For {n_bus_names_not_found} Tranformers, no suitable bus location names were found, "
-            f"i.e. the algorithm did not find a (part) of Transformers-Location-Full Name that fits"
-            " to Substation_1 or Substation_2 data in Lines or Tielines sheet.")
+            f"For {n_bus_names_not_found} Transformers, no suitable bus location names were found. "
+            f"This may indicate missing buses or incorrect naming conventions.")
 
     # --- set the trafo location names and trafo bus indices respectively
-    trafo_location_names = trafo_bus_names_longest_part
-    trafo_location_names.loc[joined_in_buses] = trafo_bus_names_joined
+    trafo_location_names = trafo_bus_names_longest_part.copy()
+    trafo_location_names.loc[joined_in_buses] = trafo_bus_names_joined.loc[joined_in_buses]
 
     return trafo_location_names
 
@@ -1374,6 +1420,9 @@ def _multi_str_repl(st: str, repl: list[tuple]) -> str:
     for (old, new) in repl:
         st = st.replace(old, new)
     return st
+
+
+
 
 
 if __name__ == "__main__":
