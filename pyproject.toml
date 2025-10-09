@@ -60,7 +60,15 @@ Download = "https://pypi.org/project/pandapower/#files"
 Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 
 [project.optional-dependencies]
-docs = ["numpydoc~=1.9", "matplotlib~=3.10", "sphinx~=8.1", "sphinx_rtd_theme~=3.0", "sphinx-pyproject~=0.3", "sphinxcontrib-imagesvg~=0.1"]
+docs = [
+    "numpydoc~=1.9",
+    "matplotlib~=3.10",
+    "sphinx~=8.1",
+    "sphinx_rtd_theme~=3.0",
+    "sphinx-pyproject~=0.3",
+    "sphinxcontrib-imagesvg~=0.1",
+    "pandapower[converter]"
+]
 plotting = ["plotly~=6.3", "matplotlib~=3.10", "igraph", "geopandas~=1.1"]
 test = ["pytest~=8.4", "pytest-xdist~=3.8", "nbmake~=1.5"]
 performance = ["ortools~=9.14", "numba~=0.61", "lightsim2grid~=0.10.3"]
