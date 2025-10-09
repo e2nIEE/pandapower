@@ -65,7 +65,7 @@ class ExternalNetworkInjectionsCim16:
                     (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start)))
 
     def _prepare_external_network_injections_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             eni = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'], 'ExternalNetworkInjection',
                                                         add_cim_type_column=True)
         else:
