@@ -14,8 +14,8 @@ schema = pa.DataFrameSchema(
         "geo": pa.Column(str, description="geojson.Point as object or string"),
 
         # neu (Kommentar kann nach kontrolle gelöscht werden)
-        "max_vm_pu": pa.Column(float, description="Maximum dc bus voltage in p.u. - necessary for OPF"),
-        "min_vm_pu": pa.Column(float, description="Minimum dc bus voltage in p.u. - necessary for OPF")
+        "max_vm_pu": pa.Column(float, description="Maximum dc bus voltage in p.u. - necessary for OPF", metadata={"opf": True}),
+        "min_vm_pu": pa.Column(float, description="Minimum dc bus voltage in p.u. - necessary for OPF", metadata={"opf": True})
     },
     strict=False,
 )

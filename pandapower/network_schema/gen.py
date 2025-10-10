@@ -50,8 +50,8 @@ schema = pa.DataFrameSchema(
 
         # neu (Kommentar kann nach kontrolle gelöscht werden)
         "pg_percent": pa.Column(float, description="Rated pg (voltage control range) of the generator for short-circuit calculation"),
-        "min_vm_pu": pa.Column(float, description="Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF."),
-        "max_vm_pu": pa.Column(float, description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF")
+        "min_vm_pu": pa.Column(float, description="Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.", metadata={"opf": True}),
+        "max_vm_pu": pa.Column(float, description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF", metadata={"opf": True})
     },
     strict=False,
 )
