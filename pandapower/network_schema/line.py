@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
@@ -58,6 +60,20 @@ schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geod
         ),  # TODO: add all tdpf parameters from create documentation, bzw alle die in der methoden docu stehen
         "in_service": pa.Column(bool, description="specifies if the line is in service."),
         "geo": pa.Column(str, description="geojson.LineString object or its string representation"),
+
+        #neu (Kommentar kann nach kontrolle gelöscht werden)
+        "alpha": pa.Column(float, description="temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))"),
+        "temperature_degree_celsius": pa.Column(float, description="line temperature for which line resistance is adjusted"),
+        "wind_speed_m_per_s": pa.Column(float, description="wind speed at the line in m/s (TDPF)"),
+        "wind_angle_degree": pa.Column(float, description="angle of attack between the wind direction and the line (TDPF)"),
+        "conductor_outer_diameter_m": pa.Column(float, description="outer diameter of the line conductor in m (TDPF)"),
+        "air_temperature_degree_celsius": pa.Column(float, description="ambient temperature in °C (TDPF)"),
+        "reference_temperature_degree_celsius": pa.Column(float, description="reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)"),
+        "solar_radiation_w_per_sq_m": pa.Column(float, description="solar radiation on horizontal plane in W/m² (TDPF)"),
+        "solar_absorptivity": pa.Column(float, description="Albedo factor for absorptivity of the lines (TDPF)"),
+        "emissivity": pa.Column(float, description="Albedo factor for emissivity of the lines (TDPF)"),
+        "r_theta_kelvin_per_mw": pa.Column(float, description="thermal resistance of the line (TDPF, only for simplified method)"),
+        "mc_joule_per_m_k": pa.Column(float, description="specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)")
     },
     strict=False,
 )
