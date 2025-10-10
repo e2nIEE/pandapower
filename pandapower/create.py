@@ -4448,7 +4448,7 @@ def create_switch(
         **name** (string, default None) - The name for this switch
 
         **in_ka** (float, default None) - maximum current that the switch can carry
-            normal operating conditions without tripping
+            normal operating conditions without tripping # TODO: i_ka = in_ka???
 
     OUTPUT:
         **sid** - The unique switch_id of the created switch
