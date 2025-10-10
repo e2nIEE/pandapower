@@ -248,8 +248,13 @@ def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int,
         if isinstance(g, tuple):
             if len(g) != 2:
                 raise ValueError("geodata tuples must be of length 2")
-            x, y = g
-            geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
+            elif not _is_valid_number(g[0]):
+                raise UserWarning("geodata x must be a valid number")
+            elif not _is_valid_number(g[1]):
+                raise UserWarning("geodata y must be a valid number")
+            else:
+                x, y = g
+                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
         else:
             raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
     if len(geo) == 1:
@@ -417,29 +422,6 @@ def create_buses_dc(
     _set_multiple_entries(net, "bus_dc", index, entries=entries)
 
     return index
-
-
-def _geodata_to_geo_series(data: Union[Iterable[Tuple[float, float]], Tuple[int, int]],
-                           nr_buses: int) -> List[str]:
-    geo = []
-    for g in data:
-        if isinstance(g, tuple):
-            if len(g) != 2:
-                raise ValueError("geodata tuples must be of length 2")
-            elif not _is_valid_number(g[0]):
-                raise UserWarning("geodata x must be a valid number")
-            elif not _is_valid_number(g[1]):
-                raise UserWarning("geodata y must be a valid number")
-            else:
-                x, y = g
-                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
-        else:
-            raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
-    if len(geo) == 1:
-        geo = [geo[0]] * nr_buses
-    if len(geo) != nr_buses:
-        raise ValueError("geodata must be a single point or have the same length as nr_buses")
-    return geo
 
 
 def create_load(
@@ -6626,7 +6608,7 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         entries[column] = pd.Series(data=default_val, index=index)
         try_astype(entries, column, dtype)
 
-def _branch_geodata(geodata: Iterable[list[float]|tuple[float]]) -> list[list[float]]:
+def _branch_geodata(geodata: Iterable[list[float]|tuple[float, float]]) -> list[list[float]]:
     geo: list[list[float]] = []
     for x, y in geodata:
         if (not _is_valid_number(x)) | (not _is_valid_number(y)):
@@ -6635,16 +6617,18 @@ def _branch_geodata(geodata: Iterable[list[float]|tuple[float]]) -> list[list[fl
     return geo
 
 def _add_branch_geodata(net: pandapowerNet, geodata, index, table="line"):
-    if geodata is not None:
+    if geodata:
         if not isinstance(geodata, (list, tuple)):
             raise ValueError("geodata needs to be list or tuple")
-        geodata = _branch_geodata(geodata)
-        geodata = f'{{"coordinates": {geodata}, "type": "LineString"}}'
+        geodata = f'{{"coordinates": {_branch_geodata(geodata)}, "type": "LineString"}}'
     else:
         geodata = None
     net[table].loc[index, "geo"] = geodata
 
 def _add_multiple_branch_geodata(net, geodata, index, table="line"):
+    if not geodata:
+        net[table].loc[index, "geo"] = None
+        return
     dtypes = net[table].dtypes
     if hasattr(geodata, '__iter__') and all(isinstance(g, tuple) and len(g) == 2 for g in geodata):
         # geodata is a single Iterable of coordinate tuples

@@ -190,8 +190,8 @@ def test_dump_to_geojson():
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == '{"features": [], "type": "FeatureCollection"}'
 
-    # test exporting nodes
-    result = dump_to_geojson(_net, nodes=True)
+    # test exporting buses
+    result = dump_to_geojson(_net, buses=True)
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, '
                                              '"id": "bus-1", "properties": {"in_service": true, "name": "bus2", '
@@ -202,8 +202,8 @@ def test_dump_to_geojson():
                                              '"vn_kv": 0.4, "zone": null}, "type": "Feature"}], '
                                              '"type": "FeatureCollection"}')
 
-    # test exporting branches
-    result = dump_to_geojson(_net, branches=True)
+    # test exporting lines
+    result = dump_to_geojson(_net, lines=True)
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [[1.0, 2.0], [3.0, 4.0]], '
                                              '"type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": '
@@ -215,7 +215,7 @@ def test_dump_to_geojson():
                                              '"type": "FeatureCollection"}')
 
     # test exporting both
-    result = dump_to_geojson(_net, nodes=True, branches=True)
+    result = dump_to_geojson(_net, buses=True, lines=True)
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, '
                                              '"id": "bus-1", "properties": {"in_service": true, "name": "bus2", '
@@ -232,16 +232,16 @@ def test_dump_to_geojson():
                                              '"std_type": null, "to_bus": 7, "type": null, "x_ohm_per_km": '
                                              '0.1897522}, "type": "Feature"}], "type": "FeatureCollection"}')
 
-    # test exporting specific nodes
-    result = dump_to_geojson(_net, nodes=[1])
+    # test exporting specific buses
+    result = dump_to_geojson(_net, buses=[1])
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, '
                                              '"id": "bus-1", "properties": {"in_service": true, "name": "bus2", '
                                              '"pp_index": 1, "pp_type": "bus", "type": "b", "vn_kv": 0.4, '
                                              '"zone": null}, "type": "Feature"}], "type": "FeatureCollection"}')
 
-    # test exporting specific branches
-    result = dump_to_geojson(_net, branches=[0])
+    # test exporting specific lines
+    result = dump_to_geojson(_net, lines=[0])
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [[1.0, 2.0], [3.0, 4.0]], '
                                              '"type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": '
@@ -254,7 +254,7 @@ def test_dump_to_geojson():
 
     # test exporting props from bus and res_bus
     _net.res_bus.loc[1, ["vm_pu", "va_degree", "p_mw", "q_mvar"]] = [1.0, 1.0, 1.0, 1.0]
-    result = dump_to_geojson(_net, nodes=[1])
+    result = dump_to_geojson(_net, buses=[1])
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, '
                                              '"id": "bus-1", "properties": {"in_service": true, "name": "bus2", '
@@ -262,9 +262,9 @@ def test_dump_to_geojson():
                                              '"type": "b", "va_degree": 1.0, "vm_pu": 1.0, "vn_kv": 0.4, '
                                              '"zone": null}, "type": "Feature"}], "type": "FeatureCollection"}')
 
-    # test exporting props from bus and res_bus
+    # test exporting props from line and res_line
     _net.res_line.loc[0, _net.res_line.columns] = [7.0] * len(_net.res_line.columns)
-    result = dump_to_geojson(_net, branches=[0])
+    result = dump_to_geojson(_net, lines=[0])
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [[1.0, 2.0], [3.0, 4.0]], '
                                              '"type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": '

@@ -21,7 +21,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True):
+def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
