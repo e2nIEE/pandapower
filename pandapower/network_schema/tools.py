@@ -9,6 +9,7 @@ from pandapower import pandapowerNet
 
 logger = logging.getLogger()
 
+
 def get_dtypes(schema: pa.DataFrameSchema):
     return {name: col.dtype.type for name, col in schema.columns.items() if schema.columns[name].required}
 
@@ -39,14 +40,11 @@ def validate_dataframes_for_network(net: pandapowerNet):
             continue
         loader.exec_module(schema_module)
 
-        # Assume schema is named 'schema' in each file
-        schema = schema_module.schema
-
         try:
-            schema.validate(net[element])
+            schema_module.schema.validate(net[element])
         except Exception as e:
-            print(element)
-            print(e)
+            logger.warning(f"Validation failed for {element}")
+            logger.warning(e)
 
 
 def create_docu_csv_from_schema(schema):

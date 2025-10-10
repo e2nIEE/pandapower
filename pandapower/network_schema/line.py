@@ -2,9 +2,10 @@ import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
     {
-        "name": pa.Column(str, description="name of the line"),
+        "name": pa.Column(str, required=False, description="name of the line"),
         "std_type": pa.Column(
             str,
+            required=False,
             description="standard type which can be used to easily define line parameters with the pandapower standard type library",
         ),
         "from_bus": pa.Column(int, pa.Check.ge(0), description="Index of bus where the line starts"),
@@ -40,13 +41,11 @@ schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geod
             float, pa.Check.ge(0), description="dielectric conductance of the line [micro Siemens per km]"
         ),
         "max_i_ka": pa.Column(float, pa.Check.gt(0), description="maximal thermal current [kilo Ampere]"),
-        "parallel": pa.Column(
-            int, pa.Check.ge(1), description="number of parallel line systems"
-        ),  # other elements have ge0
+        "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel line systems"),
         "df": pa.Column(
             float, pa.Check.between(min_value=0, max_value=1), description="derating factor (scaling) for max_i_ka"
         ),
-        "type": pa.Column(str, pa.Check.isin(["ol", "cs"]), description="type of line"),
+        "type": pa.Column(str, pa.Check.isin(["ol", "cs"]), required=False, description="type of line"),
         "max_loading_percent": pa.Column(
             float, pa.Check.gt(0), required=False, description="Maximum loading of the line", metadata={"opf": True}
         ),
@@ -55,8 +54,8 @@ schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geod
             pa.Check.gt(0),
             required=False,
             description="Short-Circuit end temperature of the line",
-            metadata={"sc": True},
-        ),  # not in create method call
+            metadata={"sc": True, "tdpf": True},
+        ),  # TODO: add all tdpf parameters from create documentation, bzw alle die in der methoden docu stehen
         "in_service": pa.Column(bool, description="specifies if the line is in service."),
         "geo": pa.Column(str, description="geojson.LineString object or its string representation"),
     },
