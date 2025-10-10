@@ -7,8 +7,6 @@ from typing import List, Union
 
 import numpy as np
 
-from typing_extensions import deprecated
-
 import sys
 import math
 import pandas as pd
@@ -154,74 +152,6 @@ def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     transformer = Transformer.from_crs(f'EPSG:{epsg_in}', f'EPSG:{epsg_out}', always_xy=True)
     return transformer.transform(x, y)
-
-
-@deprecated("Use convert_gis_to_geojson instead. Support for geodata will be dropped.")
-def convert_gis_to_geodata(net, node_geodata=True, branch_geodata=True):
-    """
-    Extracts information on bus and line geodata from the geometries of a geopandas geodataframe.
-
-    :param net: The net for which to convert the geodata
-    :type net: pandapowerNet
-    :param node_geodata: flag if to extract x and y values for bus geodata
-    :type node_geodata: bool, default True
-    :param branch_geodata: flag if to extract coordinates values for line geodata
-    :type branch_geodata: bool, default True
-    :return: No output.
-    """
-    if node_geodata:
-        _transform_node_geometry_to_geodata(net.bus_geodata)
-    if branch_geodata:
-        _transform_branch_geometry_to_coords(net.line_geodata)
-
-
-@deprecated(
-    "Use convert_geodata_to_geojson instead. Support for gis will be dropped.\
-    To get a geodataframe use GeoDataFrame.from_features."
-)
-def convert_geodata_to_gis(net, epsg=31467, node_geodata=True, branch_geodata=True, remove_xy=False):
-    """
-    Transforms the bus and line geodata of a net into a geopandas geodataframe with the respective
-    geometries.
-
-    :param net: The net for which to convert the geodata
-    :type net: pandapowerNet
-    :param epsg: current epsg projection
-    :type epsg: int, default 4326 (= WGS84)
-    :param node_geodata: flag if to transform the bus geodata table
-    :type node_geodata: bool, default True
-    :param branch_geodata: flag if to transform the line geodata table
-    :type branch_geodata: bool, default True
-    :param remove_xy: flag if to remove x,y and coords columns from geodata tables
-    :return: No output.
-    """
-    converted = False
-    if node_geodata and "bus_geodata" in net:
-        net["bus_geodata"] = _node_geometries_from_geodata(net["bus_geodata"], epsg, remove_xy)
-        converted = True
-    if branch_geodata and "line_geodata" in net:
-        net["line_geodata"] = _branch_geometries_from_geodata(net["line_geodata"], epsg, remove_xy)
-        converted = True
-    if converted:
-        net["gis_epsg_code"] = epsg
-
-
-@deprecated("Use convert_crs instead. Networks should not use different crs for bus and line geodata.")
-def convert_epsg_bus_geodata(net, epsg_in=4326, epsg_out=31467):
-    """
-    Converts bus geodata in net from epsg_in to epsg_out
-
-    :param net: The pandapower network
-    :type net: pandapowerNet
-    :param epsg_in: current epsg projection
-    :type epsg_in: int, default 4326 (= WGS84)
-    :param epsg_out: epsg projection to be transformed to
-    :type epsg_out: int, default 31467 (= Gauss-Krüger Zone 3)
-    :return: net - the given pandapower network (no copy!)
-    """
-    net['bus_geodata'].loc[:, "x"], net['bus_geodata'].loc[:, "y"] = _convert_xy_epsg(
-        net['bus_geodata'].loc[:, "x"], net['bus_geodata'].loc[:, "y"], epsg_in, epsg_out)
-    return net
 
 
 def abstract_convert_crs(net: ADict,

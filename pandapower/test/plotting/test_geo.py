@@ -15,7 +15,7 @@ from pandas.testing import assert_frame_equal, assert_index_equal
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.plotting.geo import _node_geometries_from_geodata, _branch_geometries_from_geodata, \
     _transform_node_geometry_to_geodata, _transform_branch_geometry_to_coords, _convert_xy_epsg, \
-    convert_gis_to_geodata, convert_geodata_to_gis, convert_geodata_to_geojson, dump_to_geojson
+    convert_geodata_to_geojson, dump_to_geojson
 from pandapower.test.helper_functions import create_test_network
 
 
@@ -167,86 +167,6 @@ def test__convert_xy_epsg():
     expected_x, expected_y = ([3534023, 3500073], [5687359, 5651645])
     assert result_x == pytest.approx(expected_x)
     assert result_y == pytest.approx(expected_y)
-
-
-def test_convert_gis_to_geodata():
-    pytest.importorskip("geopandas")
-    pytest.importorskip("shapely")
-    from shapely.geometry import Point, LineString
-    from geopandas import testing
-
-    converted_node = pd.DataFrame({'x': [1., 1.], 'y': [2., 3.], 'coords': [float('nan'), float('nan')],
-                                   'geometry': [Point(1., 2.), Point(1., 3.)]})
-    converted_node.set_index(pd.Index([1, 7]), inplace=True)
-    converted_branch = pd.DataFrame({'coords': [[(1., 2.), (3., 4.)]], 'geometry': LineString([[1, 2], [3, 4]])})
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-
-    convert_geodata_to_gis(_net)
-    node_geodata = _net.bus_geodata
-    branch_geodata = _net.line_geodata
-
-    convert_gis_to_geodata(_net)
-    _net.bus_geodata.equals(converted_node)
-    _net.line_geodata.equals(converted_branch)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    convert_geodata_to_gis(_net)
-    convert_gis_to_geodata(_net, node_geodata=False)
-    testing.assert_geodataframe_equal(_net.bus_geodata, node_geodata)
-    _net.line_geodata.equals(converted_branch)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    convert_geodata_to_gis(_net)
-    convert_gis_to_geodata(_net, branch_geodata=False)
-    _net.bus_geodata.equals(converted_node)
-    testing.assert_geodataframe_equal(_net.line_geodata, branch_geodata)
-
-
-def test_convert_geodata_to_gis():
-    pytest.importorskip("geopandas")
-    pytest.importorskip("shapely")
-    from geopandas import GeoDataFrame, testing, points_from_xy
-    from shapely.geometry import LineString
-
-    pdf = pd.DataFrame({'x': [1., 1.], 'y': [2., 3.], 'coords': [float('nan'), float('nan')]})
-    pdf = pdf.astype({'coords': 'object'})
-    pdf.set_index(pd.Index([1, 7]), inplace=True)
-    converted_node = GeoDataFrame(crs="epsg:31467", geometry=points_from_xy(pdf.x, pdf.y), data=pdf)
-
-    pdf = pd.DataFrame({'coords': [[[1, 2], [3, 4]]], 'geometry': LineString([[1, 2], [3, 4]])})
-    converted_branch = GeoDataFrame(crs="epsg:31467", geometry=pdf.geometry, data=pdf)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    node_geodata = _net.bus_geodata
-    branch_geodata = _net.line_geodata
-
-    convert_geodata_to_gis(_net)
-    testing.assert_geodataframe_equal(_net.bus_geodata, converted_node)
-    testing.assert_geodataframe_equal(_net.line_geodata, converted_branch)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    convert_geodata_to_gis(_net, node_geodata=False)
-    _net.bus_geodata.equals(node_geodata)
-    testing.assert_geodataframe_equal(_net.line_geodata, converted_branch)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    convert_geodata_to_gis(_net, branch_geodata=False)
-    testing.assert_geodataframe_equal(_net.bus_geodata, converted_node)
-    _net.line_geodata.equals(branch_geodata)
-
 
 def test_convert_epsg_bus_geodata():
     pytest.skip("Not implemented")
