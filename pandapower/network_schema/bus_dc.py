@@ -12,6 +12,10 @@ schema = pa.DataFrameSchema(
         ),
         "in_service": pa.Column(bool, description="specifies if the dc bus is in service"),
         "geo": pa.Column(str, description="geojson.Point as object or string"),
+
+        # neu (Kommentar kann nach kontrolle gelöscht werden)
+        "max_vm_pu": pa.Column(float, description="Maximum dc bus voltage in p.u. - necessary for OPF"),
+        "min_vm_pu": pa.Column(float, description="Minimum dc bus voltage in p.u. - necessary for OPF")
     },
     strict=False,
 )
