@@ -49,6 +49,9 @@ schema = pa.DataFrameSchema(
             float, pa.Check.gt(0), description="reference apparent power for the impedance per unit values [MVA]"
         ),
         "in_service": pa.Column(bool, description="specifies if the impedance is in service."),
+
+        # neu (Kommentar kann nach kontrolle gelöscht werden)
+        "kwargs": pa.Column(dict, description="Additional arguments (for additional columns in net.impedance table)")
     },
     strict=False,
 )
