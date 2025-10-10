@@ -2,10 +2,11 @@ import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description=""),  # missing in docu
+        # "index": pa.Column(int, description="Defines a specific index for the new measurement (if possible)"),  # TODO:
+        "name": pa.Column(str, description=""),  # TODO: missing in docu
         "measurement_type": pa.Column(
             str, pa.Check.isin(["p", "q", "i", "v"]), description="Defines what physical quantity is measured"
-        ),  #  other name in docu
+        ),  # TODO:  other name in docu
         "element_type": pa.Column(
             str,
             pa.Check.isin(
@@ -18,15 +19,15 @@ schema = pa.DataFrameSchema(
         "bus": pa.Column(
             int,
             pa.Check.ge(0),
+            required=False,
             description="Defines the bus at which the measurement is placed. For line or transformer measurement, it defines the side at which the measurement is placed (from_bus or to_bus). must be in net.bus.index",
         ),
         "element": pa.Column(int, description="specifies if the bus is in service."),
         "check_existing": pa.Column(
             bool,
             description="Checks if a measurement of the type already exists and overwrites it. If set to False, the measurement may be added twice (unsafe behaviour), but the performance increases",
-        ),
-        "index": pa.Column(int, description="Defines a specific index for the new measurement (if possible)"),
-        "side": pa.Column(str, description=""),  # missing in docu
+        ),  # TODO: only in docu
+        "side": pa.Column(str, description=""),  # TODO: missing in docu
     },
     strict=False,
 )

@@ -56,9 +56,9 @@ schema = pa.DataFrameSchema(
             description="maximal X0/X-ratio to calculate Zero sequence internal impedance of ext_grid",
             metadata={"sc": True, "3ph": True},
         ),
-        "slack_weight": pa.Column(float, description=""),  # missing in docu
+        "slack_weight": pa.Column(float, description=""),  # TODO: missing in docu
         "in_service": pa.Column(bool, description="specifies if the external grid is in service."),
-        "controllable": pa.Column(bool, required=False, description=""),  # missing in docu
+        "controllable": pa.Column(bool, description=""),  # TODO: missing in docu
     },
     strict=False,
 )

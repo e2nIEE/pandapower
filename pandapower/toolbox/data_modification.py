@@ -44,7 +44,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     """
     branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
-        raise ValueError("%s is not in net.bus.columns" % column)
+        raise ValueError(f"{column} is not in net.bus.columns")
     elements = elements if elements is not None else pp_elements(bus=False, other_elements=False)
     elements_to_replace = elements if replace else [
         el for el in elements if column not in net[el].columns or net[el][column].isnull().all()]

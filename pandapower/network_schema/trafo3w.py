@@ -1,8 +1,9 @@
+import pandas as pd
 import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(
     {
-        # in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
+        # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
         "name": pa.Column(str, description="name of the transformer"),
         "std_type": pa.Column(str, description="transformer standard type name"),
         "hv_bus": pa.Column(int, pa.Check.ge(0), description="high voltage bus index of the transformer"),
@@ -41,9 +42,9 @@ schema = pa.DataFrameSchema(
             pa.Check.isin(["hv", "mv", "lv"]),
             description="defines if tap changer is positioned on high- medium- or low voltage side",
         ),
-        "tap_neutral": pa.Column(int, description=""),
-        "tap_min": pa.Column(int, description="minimum tap position"),
-        "tap_max": pa.Column(int, description="maximum tap position"),
+        "tap_neutral": pa.Column(float, description=""),  # TODO: different type in docu
+        "tap_min": pa.Column(float, description="minimum tap position"),  # TODO: different type in docu
+        "tap_max": pa.Column(float, description="maximum tap position"),  # TODO: different type in docu
         "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size [%]"),
         "tap_step_degree": pa.Column(float, description="tap step size for voltage angle"),
         "tap_at_star_point": pa.Column(
@@ -60,7 +61,7 @@ schema = pa.DataFrameSchema(
             description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
         ),
         "id_characteristic_table": pa.Column(
-            int,
+            pd.Int64Dtype,
             pa.Check.ge(0),
             description="references the id_characteristic index from the trafo_characteristic_table",
         ),
@@ -88,8 +89,8 @@ res_schema = pa.DataFrameSchema(
         "va_mv_degree": pa.Column(float, description="voltage angle at the high voltage bus [degrees]"),
         "vm_lv_pu": pa.Column(float, description="voltage angle at the medium voltage bus [degrees]"),
         "va_lv_degree": pa.Column(float, description="voltage angle at the low voltage bus [degrees]"),
-        "va_internal_degree": pa.Column(float, description=""),  # missing in docu
-        "vm_internal_pu": pa.Column(float, description=""),  # missing in docu
+        "va_internal_degree": pa.Column(float, description=""),  # TODO: missing in docu
+        "vm_internal_pu": pa.Column(float, description=""),  # TODO: missing in docu
         "loading_percent": pa.Column(float, description="transformer utilization [%]"),
     },
 )

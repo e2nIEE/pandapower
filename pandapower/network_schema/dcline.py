@@ -14,7 +14,7 @@ schema = pa.DataFrameSchema(
         "vm_to_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at to bus"),
         "max_p_mw": pa.Column(
             float, pa.Check.gt(0), description="Maximum active power transmission", metadata={"opf": True}
-        ),  # no min_p_mw ?
+        ),  # TODO: no min_p_mw ?
         "min_q_from_mvar": pa.Column(float, description="Minimum reactive power at from bus", metadata={"opf": True}),
         "max_q_from_mvar": pa.Column(float, description="Maximum reactive power at from bus", metadata={"opf": True}),
         "min_q_to_mvar": pa.Column(float, description="Minimum reactive power at to bus", metadata={"opf": True}),

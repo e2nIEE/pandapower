@@ -1,7 +1,7 @@
 import pandera.pandas as pa
 
 schema = pa.DataFrameSchema(
-    {  # in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
+    {  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
         "name": pa.Column(str, description="name of the dc line"),
         "std_type": pa.Column(
             str,
@@ -23,10 +23,10 @@ schema = pa.DataFrameSchema(
             str,
             pa.Check.isin(["ol", "cs"]),
             description="type of dc line Naming conventions: “”ol”” - overhead dc line, “”cs”” - underground cable system”",
-        ),  # docu broken
+        ),  # TODO: docu broken
         "max_loading_percent": pa.Column(float, pa.Check.gt(0), description="Maximum loading of the dc line"),
         "in_service": pa.Column(bool, description="specifies if the dc line is in service."),
-        "geo": pa.Column(str, description=""),  # missing in docu
+        "geo": pa.Column(str, description=""),  # TODO: missing in docu
     },
     strict=False,
 )

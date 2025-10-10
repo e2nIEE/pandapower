@@ -13,39 +13,51 @@ schema = pa.DataFrameSchema(
         "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated power of the load [MVA]"),
         "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
         "in_service": pa.Column(bool, description="specifies if the load is in service."),
-        "type": pa.Column(str, pa.Check.isin(["wye", "delta"]),description="type of load"),
-
+        "type": pa.Column(str, pa.Check.isin(["wye", "delta"]), description="type of load"),
     },
     strict=False,
 )
 
 
-#( ꩜ ᯅ ꩜)
 res_schema = pa.DataFrameSchema(
     {
-        "p_mw": pa.Column(float, description=""), #not in docu
-        "q_mvar": pa.Column(float, description=""), #not in docu
-
-        "p_a_mw": pa.Column(float, description="resulting Phase A active power demand after scaling and after considering voltage dependence [MW]"), #only in docu
-        "q_a_mvar": pa.Column(float, description="resulting Phase A reactive power demand after scaling and after considering voltage dependence [MVar]"), #only in docu
-        "p_b_mw": pa.Column(float, description="resulting Phase B active power demand after scaling and after considering voltage dependence [MW]"), #only in docu
-        "q_b_mvar": pa.Column(float, description="resulting Phase B reactive power demand after scaling and after considering voltage dependence [MVar]"), #only in docu
-        "p_c_mw": pa.Column(float, description="resulting Phase C active power demand after scaling and after considering voltage dependence [MW]"), #only in docu
-        "q_c_mvar": pa.Column(float, description="resulting Phase C reactive power demand after scaling and after considering voltage dependence [MVar]") #only in docu
-
+        "p_mw": pa.Column(float, description=""),  # TODO: not in docu
+        "q_mvar": pa.Column(float, description=""),  # TODO: not in docu
+        # "p_a_mw": pa.Column(
+        #     float,
+        #     description="resulting Phase A active power demand after scaling and after considering voltage dependence [MW]",
+        # ),  #TODO: only in docu
+        # "q_a_mvar": pa.Column(
+        #     float,
+        #     description="resulting Phase A reactive power demand after scaling and after considering voltage dependence [MVar]",
+        # ),  #TODO: only in docu
+        # "p_b_mw": pa.Column(
+        #     float,
+        #     description="resulting Phase B active power demand after scaling and after considering voltage dependence [MW]",
+        # ),  #TODO: only in docu
+        # "q_b_mvar": pa.Column(
+        #     float,
+        #     description="resulting Phase B reactive power demand after scaling and after considering voltage dependence [MVar]",
+        # ),  #TODO: only in docu
+        # "p_c_mw": pa.Column(
+        #     float,
+        #     description="resulting Phase C active power demand after scaling and after considering voltage dependence [MW]",
+        # ),  #TODO: only in docu
+        # "q_c_mvar": pa.Column(
+        #     float,
+        #     description="resulting Phase C reactive power demand after scaling and after considering voltage dependence [MVar]",
+        # ),  #TODO: only in docu
     },
 )
-
 
 
 res_schema_3ph = pa.DataFrameSchema(
     {
-        "p_a_mw": pa.Column(float, description=""), #not in docu
-        "q_a_mvar": pa.Column(float, description=""), #not in docu
-        "p_b_mw": pa.Column(float, description=""), #not in docu
-        "q_b_mvar": pa.Column(float, description=""), #not in docu
-        "p_c_mw": pa.Column(float, description=""), #not in docu
-        "q_c_mvar": pa.Column(float, description=""), #not in docu
+        "p_a_mw": pa.Column(float, description=""),  # not in docu
+        "q_a_mvar": pa.Column(float, description=""),  # not in docu
+        "p_b_mw": pa.Column(float, description=""),  # not in docu
+        "q_b_mvar": pa.Column(float, description=""),  # not in docu
+        "p_c_mw": pa.Column(float, description=""),  # not in docu
+        "q_c_mvar": pa.Column(float, description=""),  # not in docu
     },
 )
-

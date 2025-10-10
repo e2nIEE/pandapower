@@ -1,15 +1,17 @@
+import os
+import importlib.util
+from pathlib import Path
+import logging
+
 import pandera.pandas as pa
 
-import importlib.util
-import os
-from pathlib import Path
-
 from pandapower import pandapowerNet
+
+logger = logging.getLogger()
 
 
 def get_dtypes(schema: pa.DataFrameSchema):
     return {name: col.dtype.type for name, col in schema.columns.items() if schema.columns[name].required}
-    # return {name: dtype.type for name, dtype in schema.dtype.items()} # faster but not working for nonetype
 
 
 def validate_dataframes_for_network(net: pandapowerNet):
@@ -21,24 +23,28 @@ def validate_dataframes_for_network(net: pandapowerNet):
     """
 
     for element in net:
-        schema_path = Path(os.getcwd() + os.sep + "pandapower" + os.sep + "network_schema") / f"{element}.py"
+        schema_path = Path(Path(__file__).parent, f"{element}.py")
 
         if not os.path.exists(schema_path):
             continue
 
         # Dynamic import
         spec = importlib.util.spec_from_file_location(element, schema_path)
+        if spec is None:
+            logger.warning(f"Schema for {element} not found, no spec")
+            continue
         schema_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(schema_module)
-
-        # Assume schema is named 'schema' in each file
-        schema = schema_module.schema
+        loader = spec.loader
+        if loader is None:
+            logger.warning(f"Schema for {element} not found, no loader")
+            continue
+        loader.exec_module(schema_module)
 
         try:
-            schema.validate(net[element])
+            schema_module.schema.validate(net[element])
         except Exception as e:
-            print(element)
-            print(e)
+            logger.warning(f"Validation failed for {element}")
+            logger.warning(e)
 
 
 def create_docu_csv_from_schema(schema):
@@ -50,7 +56,7 @@ def create_docu_csv_from_schema(schema):
 
     columns_info = []
 
-    def get_checks(checks):
+    def get_checks(checks: list):
         if checks is None:
             return ""
 
@@ -69,6 +75,12 @@ def create_docu_csv_from_schema(schema):
                 return f"{check['value']}"
         return ""
 
+    def get_metadata(schema: pa.DataFrameSchema, name: str, kind: str):
+        try:
+            return schema.columns[name].metadata[kind]
+        except:
+            return False
+
     for col_name, col_details in schema_dict["columns"].items():
         columns_info.append(
             {
@@ -77,6 +89,9 @@ def create_docu_csv_from_schema(schema):
                 "Value Range": get_checks(col_details.get("checks")),
                 "nullable": col_details.get("nullable", True),
                 "required": col_details.get("required", False),
+                "optimal power flow": get_metadata(schema, col_name, "opf"),
+                "short circuit": get_metadata(schema, col_name, "sc"),
+                "3ph": get_metadata(schema, col_name, "3ph"),
                 "Explanation": col_details.get("description", ""),
             }
         )

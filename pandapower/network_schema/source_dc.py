@@ -1,10 +1,10 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # docu hat sehr viele fehler...
+schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
     {
         "name": pa.Column(str, description="name of the static generator"),
         "type": pa.Column(str, description="type of source"),
-        "bus_dc": pa.Column(  # not the same name in docu
+        "bus_dc": pa.Column(  # TODO: not the same name in docu
             int, description="index of connected bus"
         ),
         "p_mw": pa.Column(
@@ -16,11 +16,11 @@ schema = pa.DataFrameSchema(  # docu hat sehr viele fehler...
             float,
             pa.Check.ge(0),
             description="scaling factor for the active and reactive power",
-        ),  # not in create method
+        ),  # TODO: not in create method
         "vm_pu": pa.Column(
             float,
             description="",
-        ),  # missing in docu
+        ),  # TODO: missing in docu
         "controllable": pa.Column(
             bool,
             description="states if sgen is controllable or not, sgen will not be used as a flexibility if it is not controllable",

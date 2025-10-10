@@ -1,17 +1,17 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # in methodcall but not parameter docu: geodata, coords
+schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description="name of the dc bus"),
+        "name": pa.Column(str, required=False, description="name of the dc bus"),
         "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the dc bus [kV]"),
-        "type": pa.Column(str, pa.Check.isin(["n", "b", "m"]), description="type variable to classify buses"),
+        "type": pa.Column(
+            str, pa.Check.isin(["n", "b", "m"]), required=False, description="type variable to classify buses"
+        ),
         "zone": pa.Column(
-            str, nullable=True, description="can be used to group dc buses, for example network groups / regions"
+            str, required=False, description="can be used to group dc buses, for example network groups / regions"
         ),
         "in_service": pa.Column(bool, description="specifies if the dc bus is in service"),
-        "geo": pa.Column(
-            str, description="geojson.Point as object or string"
-        ),  # missing in docu, not a create method parameter, kwargs?
+        "geo": pa.Column(str, description="geojson.Point as object or string"),
     },
     strict=False,
 )

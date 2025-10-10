@@ -37,10 +37,10 @@ schema = pa.DataFrameSchema(
         "bf_pu": pa.Column(float, pa.Check.gt(2), description="susceptance at the ‘from_bus’ [p.u.]"),
         "gt_pu": pa.Column(
             float, pa.Check.gt(3), description="conductance at the ‘from_bus’ [p.u.]"
-        ),  # duplicated description?
+        ),  # TODO: duplicated description?
         "bt_pu": pa.Column(
             float, pa.Check.gt(4), description="susceptance at the ‘from_bus’ [p.u.]"
-        ),  # duplicated description?
+        ),  # TODO: duplicated description?
         "gf0_pu": pa.Column(float, pa.Check.gt(1), description="zero-sequence conductance at the ‘from_bus’ [p.u.]"),
         "bf0_pu": pa.Column(float, pa.Check.gt(2), description="zero-sequence susceptance at the ‘from_bus’ [p.u.]"),
         "gt0_pu": pa.Column(float, pa.Check.gt(3), description="zero-sequence conductance at the ‘from_bus’ [p.u.]"),
