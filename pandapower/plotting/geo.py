@@ -233,7 +233,6 @@ def convert_crs(
 ) -> None:
     """
     Converts bus and line geodata in net from epsg_in to epsg_out
-    if GeoDataFrame data is present convert_geodata_to_gis should be used to update geometries after crs conversion
     Supported geojson geometries are Point and LineString. Although Conversion away from WGS84 is highly discouraged.
 
     :param net: network
