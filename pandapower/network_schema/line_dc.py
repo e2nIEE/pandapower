@@ -29,9 +29,9 @@ schema = pa.DataFrameSchema(
         "geo": pa.Column(str, description=""),  # TODO: missing in docu
 
         #neu (Kommentar kann nach kontrolle gelöscht werden)
-        "tdpf": pa.Column(bool, description="whether the line is considered in the TDPF calculation"),
         "alpha": pa.Column(float, description="temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))"),
         "temperature_degree_celsius": pa.Column(float, description="line temperature for which line resistance is adjusted"),
+        "tdpf": pa.Column(bool, description="whether the line is considered in the TDPF calculation", metadata={"tdpf": True}),
         "wind_speed_m_per_s": pa.Column(float, description="wind speed at the line in m/s (TDPF)", metadata={"tdpf": True}),
         "wind_angle_degree": pa.Column(float, description="angle of attack between the wind direction and the line (TDPF)", metadata={"tdpf": True}),
         "conductor_outer_diameter_m": pa.Column(float, description="outer diameter of the line conductor in m (TDPF)", metadata={"tdpf": True}),
