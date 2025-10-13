@@ -130,7 +130,7 @@ schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: xn_o
         ),  # TODO: not in create method call
 
         # neu (Kommentar kann nach kontrolle gelöscht werden)
-        "xn_ohm": pa.Column(float, description="impedance of the grounding reactor (Z_N) for short circuit calculation"),
+        "xn_ohm": pa.Column(float, description="impedance of the grounding reactor (Z_N) for short circuit calculation", metadata={"sc": True}),
         "pt_percent": pa.Column(float, description="")
     },
     strict=False,
