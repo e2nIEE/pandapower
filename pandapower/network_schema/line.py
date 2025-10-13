@@ -2,7 +2,7 @@ from typing import Iterable
 
 import pandera.pandas as pa
 
-line_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
+line_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the line"),
         "std_type": pa.Column(
@@ -57,17 +57,17 @@ line_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu:
             required=False,
             description="Short-Circuit end temperature of the line",
             metadata={"sc": True, "tdpf": True},
-        ),  # TODO: add all tdpf parameters from create documentation, bzw alle die in der methoden docu stehen
+        ),
         "in_service": pa.Column(bool, description="specifies if the line is in service."),
         "geo": pa.Column(str, required=False, description="geojson.LineString object or its string representation"),
         "alpha": pa.Column(
             float,
             required=False,
             description="temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))",
-        ),
+        ), #TODO: missing in docu
         "temperature_degree_celsius": pa.Column(
             float, required=False, description="line temperature for which line resistance is adjusted"
-        ),
+        ), #TODO: missing in docu
         "tdpf": pa.Column(
             bool,
             required=False,

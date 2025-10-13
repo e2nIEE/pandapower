@@ -28,7 +28,7 @@ line_dc_schema = pa.DataFrameSchema(
         ),  # TODO: docu broken
         "max_loading_percent": pa.Column(float, pa.Check.gt(0), description="Maximum loading of the dc line"),
         "in_service": pa.Column(bool, description="specifies if the dc line is in service."),
-        "geo": pa.Column(str, required=False, description=""),  # TODO: missing in docu
+        "geo": pa.Column(str, required=False, description="geojson.LineString object or its string representation"),
         "alpha": pa.Column(
             float,
             required=False,
