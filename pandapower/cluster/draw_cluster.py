@@ -1052,22 +1052,16 @@ def draw_cluster(traces, numb_cluster, on_map=False, map_style='basic', showlege
 
     # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map:
-        try:
-            mapbox_access_token = _get_mapbox_token()
-        except Exception:
-            logger.exception('mapbox token required for map plots. '
-                             'Get Mapbox token by signing in to https://www.mapbox.com/.\n'
-                             'After getting a token, set it to pandapower using:\n'
-                             'pandapower.plotting.plotly.mapbox_plot.set_mapbox_token(\'<token>\')')
-            raise MapboxTokenMissing
-
-        fig['layout']['mapbox'] = dict(accesstoken=mapbox_access_token,
-                                       bearing=0,
-                                       center=dict(lat=pd.Series(traces[0]['lat']).dropna().mean(),
-                                                   lon=pd.Series(traces[0]['lon']).dropna().mean()),
-                                       style=map_style,
-                                       pitch=0,
-                                       zoom=kwargs.pop('zoomlevel', 11))
+        fig['layout']['mapbox'] = {
+            "bearing": 0,
+            "center": {
+                "lat": pd.Series(traces[0]['lat']).dropna().mean(),
+                "lon": pd.Series(traces[0]['lon']).dropna().mean()
+            },
+            "style": map_style,
+            "pitch": 0,
+            "zoom": kwargs.pop('zoomlevel', 11)
+        }
 
     # default aspectratio: if on_map use auto, else use 'original'
     aspectratio = 'original' if not on_map and aspectratio == 'auto' else aspectratio
