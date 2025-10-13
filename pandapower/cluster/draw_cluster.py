@@ -108,9 +108,20 @@ def create_edge_center_trace(line_trace, size=1, patch_type="circle", color="whi
     """
     # color = get_plotly_color(color)
 
-    center_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
-                        marker=dict(color=color, size=size, symbol=patch_type),
-                        showlegend=showlegend, legendgroup=legendgroup)
+    center_trace = {
+        "type": 'scatter',
+        "text": [],
+        "mode": 'markers',
+        "hoverinfo": 'text',
+        "name": trace_name,
+        "marker": {
+            "color": color,
+            "size": size,
+            "symbol": patch_type
+        },
+        "showlegend": showlegend,
+        "legendgroup": legendgroup
+    }
     if hoverlabel is not None:
         center_trace.update({'hoverlabel': hoverlabel})
 
@@ -257,8 +268,18 @@ def _create_node_trace(net, nodes=None, size=5, patch_type='circle', color='blue
 
     """
     color = get_plotly_color(color)
-    node_trace = dict(type='scatter', text=[], mode='markers', hoverinfo='text', name=trace_name,
-                     marker=dict(color=color, size=size, symbol=patch_type))
+    node_trace = {
+        "type": 'scatter',
+        "text": [],
+        "mode": 'markers',
+        "hoverinfo": 'text',
+        "name": trace_name,
+        "marker": {
+            "color": color,
+            "size": size,
+            "symbol": patch_type
+        }
+    }
     nodes = net[node_element].index.tolist() if nodes is None else list(nodes)
     node_geodata = node_element + "_geodata"
     node_plot_index = [b for b in nodes if b in list(set(nodes) & set(net[node_geodata].index))]
@@ -437,56 +458,56 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
     Creates a plotly trace of branch elements. The rather generic, non-power net specific names
     were introduced to make it usable in other packages, e.g. for pipe networks.
 
-   INPUT:
-       **net** (pandapowerNet) - The network
+    INPUT:
+        **net** (pandapowerNet) - The network
 
-   OPTIONAL:
-       **branches** (list, None) - The branches for which the collections are created.
-                                   If None, all branches in the network are considered.
+    OPTIONAL:
+        **branches** (list, None) - The branches for which the collections are created.
+                                    If None, all branches in the network are considered.
 
-       **use_branch_geodata** (bool, True) - whether the geodata of the branch tables should be used
+        **use_branch_geodata** (bool, True) - whether the geodata of the branch tables should be used
 
-       **respect_separators** (bool, True) - whether separating elements like switches should be
-                                             considered
+        **respect_separators** (bool, True) - whether separating elements like switches should be
+                                              considered
 
-       **width** (int, 1) - branch width
+        **width** (int, 1) - branch width
 
-       **color** (String, "grey") - color of lines in the trace
+        **color** (String, "grey") - color of lines in the trace
 
-       **infofunc** (pd.Series, None) - hoverinfo for line elements. Indices should correspond to
-           the pandapower element indices
+        **infofunc** (pd.Series, None) - hoverinfo for line elements. Indices should correspond to
+            the pandapower element indices
 
-       **trace_name** (String, "lines") - name of the trace which will appear in the legend
+        **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
-       **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
-       e.g. groups according to voltage level (as used in `vlevel_plotly`)
+        **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
+        e.g. groups according to voltage level (as used in `vlevel_plotly`)
 
-       **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
-       colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
-       Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+        **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
+        colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
+        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
 
-       **cmap_vals** (list, None) - values used for coloring using colormap
+        **cmap_vals** (list, None) - values used for coloring using colormap
 
-       **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
+        **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
 
-       **cbar_title** (String, None) - title for the colorbar
+        **cbar_title** (String, None) - title for the colorbar
 
-       **cmin** (float, None) - colorbar range minimum
+        **cmin** (float, None) - colorbar range minimum
 
-       **cmax** (float, None) - colorbar range maximum
+        **cmax** (float, None) - colorbar range maximum
 
-       **cpos** (float, 1.1) - position of the colorbar
+        **cpos** (float, 1.1) - position of the colorbar
 
-       **branch_element** (str, "line") - name of the branch element in the net. In a pandapower
+        **branch_element** (str, "line") - name of the branch element in the net. In a pandapower
                                           net, this is alwas "line"
 
-       **separator_element** (str, "switch") - name of the separator element in the net. In a
-                                               pandapower net, this is alwas "switch"
+        **separator_element** (str, "switch") - name of the separator element in the net. In a
+                                                pandapower net, this is alwas "switch"
 
-      **node_element** (str, "bus") - name of the node element in the net. In a pandapower net,
-                                      this is alwas "bus" (net.bus)
+        **node_element** (str, "bus") - name of the node element in the net. In a pandapower net,
+                                        this is alwas "bus" (net.bus)
 
-       """
+    """
 
     color = get_plotly_color(color)
 
@@ -572,14 +593,20 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
                 logger.warning("No color and info for {} {:d} (name: {}) available".format(
                     branch_element, idx, branch['name']))
 
-        line_trace = dict(type='scatter', text=[], hoverinfo='text', mode='lines', name=trace_name,
-                          line=Line(width=width, color=color), showlegend=False,
-                          legendgroup=legendgroup)
+        line_trace = {
+            "type": 'scatter',
+            "text": [],
+            "hoverinfo": 'text',
+            "mode": 'lines',
+            "name": trace_name,
+            "line": Line(width=width, color=color),
+            "showlegend": False,
+            "legendgroup": legendgroup
+        }
 
-        line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
-                                                                      branches_to_plot.loc[idx:idx],
-                                                                      use_branch_geodata,
-                                                                      branch_element, node_element)
+        line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(
+            net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
+        )
 
         line_trace['line']['color'] = line_color
 
@@ -601,14 +628,17 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             # get x and y of first line.from_bus:
             x = [net[node_geodata].x[net[branch_element]["from_"+node_element][net[branch_element].index[0]]]]
             y = [net[node_geodata].y[net[branch_element]["from_"+node_element][net[branch_element].index[0]]]]
-            branches_cbar = dict(type='scatter', x=x, y=y, mode='markers',
-                              marker=Marker(size=0, cmin=cmin, cmax=cmax,
-                                            color='rgb(255,255,255)',
-                                            opacity=0,
-                                            colorscale=cbar_cmap_name,
-                                            colorbar=ColorBar(thickness=10,
-                                                              x=cpos),
-                                            ))
+            branches_cbar = {
+                "type": 'scatter',
+                "x": x,
+                "y": y,
+                "mode": 'markers',
+                "marker": Marker(
+                    size=0, cmin=cmin, cmax=cmax,
+                    color='rgb(255,255,255)', opacity=0, colorscale=cbar_cmap_name,
+                    colorbar=ColorBar(thickness=10, x=cpos),
+                )
+            }
             if cbar_title:
                 branches_cbar['marker']['colorbar']['title'] = cbar_title
 
@@ -622,16 +652,24 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         no_go_branches_to_plot = net[branch_element].loc[list(no_go_branches)]
         for idx, branch in no_go_branches_to_plot.iterrows():
             line_color = color
-            line_trace = dict(type='scatter',
-                              text=[], hoverinfo='text', mode='lines', name='disconnected branches',
-                              line=Line(width=width / 2, color='grey', dash='dot'),
-                              legendgroup="disconnected " + legendgroup, showlegend=False)
+            line_trace = {
+                "type": 'scatter',
+                "text": [],
+                "hoverinfo": 'text',
+                "mode": 'lines',
+                "name": 'disconnected branches',
+                "line": Line(width=width / 2, color='grey', dash='dot'),
+                "legendgroup": "disconnected " + legendgroup,
+                "showlegend": False
+            }
 
-            line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
-                                                                          no_go_branches_to_plot.loc[
-                                                                          idx:idx],
-                                                                          use_branch_geodata,
-                                                                          branch_element, node_element)
+            line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(
+                net,
+                no_go_branches_to_plot.loc[idx:idx],
+                use_branch_geodata,
+                branch_element,
+                node_element
+            )
 
             line_trace['line']['color'] = line_color
             try:
@@ -763,9 +801,16 @@ def create_trafo_trace(net, trafos=None, color='green', trafotype='2W', width=5,
             color = cmap_colors[col_i]
         for from_bus1, to_bus1 in connections:
 
-            trafo_trace = dict(type='scatter', text=[], line=Line(width=width, color=color),
-                                 hoverinfo='text', mode='lines', name=trace_name,
-                               legendgroup=trace_name, showlegend=False)
+            trafo_trace = {
+                "type": 'scatter',
+                "text": [],
+                "line": Line(width=width, color=color),
+                "hoverinfo": 'text',
+                "mode": 'lines',
+                "name": trace_name,
+                "legendgroup": trace_name,
+                "showlegend": False
+            }
 
             trafo_trace['text'] = trafo['name'] if infofunc is None else infofunc.loc[idx]
 
@@ -880,23 +925,29 @@ def create_weighted_marker_trace(net, elm_type="load", elm_ids=None, column_to_p
         infofunc = pd.Series(index=values_by_bus.index, data=infofunc)
 
     # set up the marker trace:
-    marker_trace = dict(type='scatter',
-                        text=infofunc,
-                        mode='markers',
-                        hoverinfo='text',
-                        name=trace_name,
-                        x=x_list,
-                        y=y_list)
-    marker_trace["marker"] = dict(color=color,
-                                  size=values_by_bus.abs() * marker_scaling,
-                                  symbol=patch_type,
-                                  sizemode=sizemode)
+    marker_trace = {
+        "type": 'scatter',
+        "text": infofunc,
+        "mode": 'markers',
+        "hoverinfo": 'text',
+        "name": trace_name,
+        "x": x_list,
+        "y": y_list
+    }
+    marker_trace["marker"] = {
+        "color": color,
+        "size": values_by_bus.abs() * marker_scaling,
+        "symbol": patch_type,
+        "sizemode": sizemode
+    }
 
     # additional info for the create_scale_trace function:
-    marker_trace["meta"] = dict(marker_scaling=marker_scaling,
-                                column_to_plot=column_to_plot,
-                                show_scale_legend=show_scale_legend,
-                                scale_marker_size=scale_marker_size)
+    marker_trace["meta"] = {
+        "marker_scaling": marker_scaling,
+        "column_to_plot": column_to_plot,
+        "show_scale_legend": show_scale_legend,
+        "scale_marker_size": scale_marker_size
+    }
 
     return marker_trace
 
@@ -938,22 +989,27 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
         scale_size = scale_info["scale_marker_size"] * scale_info['marker_scaling']
 
     # second (dummy) position is needed for correct marker sizing
-    scale_trace = dict(type="scatter",
-                        x=[x_pos, x_pos2],
-                        y=[y_pos, y_pos],
-                        mode="markers+text",
-                        hoverinfo="skip",
-                        marker=dict(size=[scale_size, 0],
-                                    color=marker['color'],
-                                    symbol=marker["symbol"],
-                                    sizemode=marker["sizemode"]),
-                        text=[f"scale: {scale_size / scale_info['marker_scaling']} {unit}", ""],
-                        textposition="top center",
-                        showlegend=False,
-                        textfont=dict(
-                                        family="Helvetica",
-                                        size=14,
-                                        color="DarkSlateGrey"))
+    scale_trace = {
+        "type": "scatter",
+        "x": [x_pos, x_pos2],
+        "y": [y_pos, y_pos],
+        "mode": "markers+text",
+        "hoverinfo": "skip",
+        "marker": {
+            "size": [scale_size, 0],
+            "color": marker['color'],
+            "symbol": marker["symbol"],
+            "sizemode": marker["sizemode"]
+        },
+        "text": [f"scale: {scale_size / scale_info['marker_scaling']} {unit}", ""],
+        "textposition": "top center",
+        "showlegend": False,
+        "textfont": {
+            "family": "Helvetica",
+            "size": 14,
+            "color": "DarkSlateGrey"
+        }
+    }
 
     return scale_trace
 
@@ -1031,19 +1087,20 @@ def draw_cluster(traces, numb_cluster, on_map=False, map_style='basic', showlege
     # setting Figure object
     fig = Figure(data=traces,  # edge_trace
                  layout=Layout(
-                     titlefont=dict(size=16),
+                     title_font={"size": 16},
                      showlegend=showlegend,
                      autosize=(aspectratio == 'auto'),
                      hovermode='closest',
-                     margin=dict(b=5, l=5, r=5, t=5),
-                     # annotations=[dict(
-                     #     text="",
-                     #     showarrow=False,
-                     #     xref="paper", yref="paper",
-                     #     x=0.005, y=-0.002)],
+                     margin={"b": 5, "l": 5, "r": 5, "t": 5},
+                     # annotations=[{
+                     #     "text": "",
+                     #     "showarrow": False,
+                     #     "xref": "paper", "yref": "paper",
+                     #     "x": 0.005, "y": -0.002
+                     # }],
                      xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                      yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
-                     # legend=dict(x=0, y=1.0)
+                     # legend={"x": 0, "y": 1.0}
                      ),
                 )
     a = kwargs.get('annotation')
