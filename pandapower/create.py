@@ -45,7 +45,7 @@ def create_empty_network(
 
         **name** (string, None) - name for the network
 
-        **sn_mva** (float, 1e3) - reference apparent power for per unit system
+        **sn_mva** (float, 1) - reference apparent power for per unit system
 
         **add_stdtypes** (boolean, True) - Includes standard types to net
 
