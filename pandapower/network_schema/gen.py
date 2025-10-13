@@ -47,6 +47,11 @@ schema = pa.DataFrameSchema(
         "slack_weight": pa.Column(float, description=""),  # TODO: missing in docu
         "slack": pa.Column(bool, description=""),  # TODO: missing in docu
         "controllable": pa.Column(bool, description=""),  # TODO: missing in docu
+
+        # neu (Kommentar kann nach kontrolle gelöscht werden)
+        "pg_percent": pa.Column(float, description="Rated pg (voltage control range) of the generator for short-circuit calculation", metadata={"sc": True}),
+        "min_vm_pu": pa.Column(float, description="Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.", metadata={"opf": True}),
+        "max_vm_pu": pa.Column(float, description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF", metadata={"opf": True})
     },
     strict=False,
 )
