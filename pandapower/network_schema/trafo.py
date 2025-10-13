@@ -3,8 +3,8 @@ import pandera.pandas as pa
 
 trafo_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: xn_ohm, pt_percent
     {
-        "name": pa.Column(str, description="name of the transformer"),
-        "std_type": pa.Column(str, description="transformer standard type name"),
+        "name": pa.Column(str, required=False, description="name of the transformer"),
+        "std_type": pa.Column(str, required=False, description="transformer standard type name"),
         "hv_bus": pa.Column(int, pa.Check.ge(0), description="high voltage bus index of the transformer"),
         "lv_bus": pa.Column(int, pa.Check.ge(0), description="low voltage bus index of the transformer"),
         "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power of the transformer [MVA]"),
@@ -56,49 +56,62 @@ trafo_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu
         ),
         "shift_degree": pa.Column(float, description="transformer phase shift angle"),
         "tap_side": pa.Column(
-            str, pa.Check.isin(["hv", "lv"]), description="defines if tap changer is at the high- or low voltage side"
+            str,
+            pa.Check.isin(["hv", "lv"]),
+            required=False,
+            description="defines if tap changer is at the high- or low voltage side",
         ),
-        "tap_neutral": pa.Column(float, description="rated tap position"),  # TODO: different type in docu
-        "tap_min": pa.Column(float, description="minimum tap position"),  # TODO: different type in docu
-        "tap_max": pa.Column(float, description="maximum tap position"),  # TODO: different type in docu
-        "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size for voltage magnitude [%]"),
+        "tap_neutral": pa.Column(
+            float, required=False, description="rated tap position"
+        ),  # TODO: different type in docu
+        "tap_min": pa.Column(float, required=False, description="minimum tap position"),  # TODO: different type in docu
+        "tap_max": pa.Column(float, required=False, description="maximum tap position"),  # TODO: different type in docu
+        "tap_step_percent": pa.Column(
+            float, pa.Check.gt(0), required=False, description="tap step size for voltage magnitude [%]"
+        ),
         "tap_step_degree": pa.Column(
-            float, pa.Check.ge(0), nullable=True, description="tap step size for voltage angle"
+            float, pa.Check.ge(0), nullable=True, required=False, description="tap step size for voltage angle"
         ),
-        "tap_pos": pa.Column(float, description="current position of tap changer"),  # TODO: different type in docu
+        "tap_pos": pa.Column(
+            float, required=False, description="current position of tap changer"
+        ),  # TODO: different type in docu
         "tap_changer_type": pa.Column(
             str,
             pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
+            required=False,
             description="specifies the tap changer type",
         ),
         "tap_dependency_table": pa.Column(
             bool,
             nullable=True,
+            required=False,
             description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
         ),
         "id_characteristic_table": pa.Column(
             pd.Int64Dtype,
             pa.Check.ge(0),
             nullable=True,
+            required=False,
             description="references the id_characteristic index from the trafo_characteristic_table",
         ),
-        # "max_loading_percent": pa.Column(
-        #     int,
-        #     required=False,
-        #     description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
-        #     metadata={"opf": True},
-        # ), #TODO: only in docu
-        "parallel": pa.Column(int, pa.Check.gt(0), description="number of parallel transformers"),
+        "max_loading_percent": pa.Column(
+            int,
+            required=False,
+            description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
+            metadata={"opf": True},
+        ),  # TODO: only in docu
+        "parallel": pa.Column(
+            int, pa.Check.ge(1), required=False, description="number of parallel transformers"
+        ),  # TODO: was gt(0)
         "df": pa.Column(
             float,
             pa.Check.between(min_value=0, max_value=1),
+            required=False,
             description="derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)",
         ),
         "in_service": pa.Column(bool, description="specifies if the transformer is in service"),
-        "oltc": pa.Column(
-            bool, required=False, description="specifies if the transformer has an OLTC (short-circuit relevant)"
-        ),
-        "power_station_unit": pa.Column(bool, required=False, description=""),  # TODO: not in create method call
+        "oltc": pa.Column(bool, description="specifies if the transformer has an OLTC (short-circuit relevant)"),
+        "power_station_unit": pa.Column(bool, description=""),  # TODO: not in create method call
         "tap2_side": pa.Column(int, pa.Check.isin(["hv", "lv"]), required=False, description=""),
         "tap2_neutral": pa.Column(int, required=False, description="rated tap position"),
         "tap2_min": pa.Column(int, required=False, description="minimum tap position"),
@@ -128,13 +141,13 @@ trafo_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu
             required=False,
             description="ratio of transformer short-circuit reactance on HV side (default 0.5)",
         ),  # TODO: not in create method call
-        # neu (Kommentar kann nach kontrolle gelöscht werden)
         "xn_ohm": pa.Column(
             float,
+            required=False,
             description="impedance of the grounding reactor (Z_N) for short circuit calculation",
             metadata={"sc": True},
         ),
-        "pt_percent": pa.Column(float, description=""),
+        "pt_percent": pa.Column(float, required=False, description=""),
     },
     strict=False,
 )

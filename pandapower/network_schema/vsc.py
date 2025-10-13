@@ -2,7 +2,7 @@ import pandera.pandas as pa
 
 vsc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description="name of the VSC"),
+        "name": pa.Column(str, required=False, description="name of the VSC"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of ac bus of the ac side of the VSC"),
         "bus_dc": pa.Column(int, pa.Check.ge(0), description="index of dc bus of the dc side of the VSC"),
         "r_ohm": pa.Column(float, pa.Check.ge(0), description="resistance of the coupling transformer"),
@@ -10,6 +10,7 @@ vsc_schema = pa.DataFrameSchema(
         "r_dc_ohm": pa.Column(float, description="resistance of the internal dc resistance component of VSC"),
         "pl_dc_mw": pa.Column(
             float,
+            required=False,
             description="no-load losses of the VSC on the DC side for the shunt R representing the no load losses",
         ),
         "control_mode_ac": pa.Column(

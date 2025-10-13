@@ -2,7 +2,7 @@ import pandera.pandas as pa
 
 xward_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description="name of the extended ward equivalent"),
+        "name": pa.Column(str, required=False, description="name of the extended ward equivalent"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
         "ps_mw": pa.Column(float, description="constant active power demand [MW]"),
         "qs_mvar": pa.Column(float, description="constant reactive power demand [MVar]"),

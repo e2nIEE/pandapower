@@ -2,7 +2,7 @@ import pandera.pandas as pa
 
 load_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description="name of the load"),
+        "name": pa.Column(str, required=False, description="name of the load"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
         "p_mw": pa.Column(
             float, pa.Check.ge(0), description="active power of the load [MW]"
@@ -28,7 +28,9 @@ load_schema = pa.DataFrameSchema(
             pa.Check.between(min_value=0, max_value=100),
             description="percentage of q_mvar that is associated to constant current load at rated voltage [%]",
         ),
-        "sn_mva": pa.Column(float, pa.Check.gt(0), nullable=True, description="rated power of the load [kVA]"),
+        "sn_mva": pa.Column(
+            float, pa.Check.gt(0), required=False, nullable=True, description="rated power of the load [kVA]"
+        ),
         "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
         "in_service": pa.Column(bool, description="specifies if the load is in service."),
         "type": pa.Column(

@@ -4,8 +4,8 @@ import pandera.pandas as pa
 trafo3w_schema = pa.DataFrameSchema(
     {
         # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
-        "name": pa.Column(str, description="name of the transformer"),
-        "std_type": pa.Column(str, description="transformer standard type name"),
+        "name": pa.Column(str, required=False, description="name of the transformer"),
+        "std_type": pa.Column(str, required=False, description="transformer standard type name"),
         "hv_bus": pa.Column(int, pa.Check.ge(0), description="high voltage bus index of the transformer"),
         "mv_bus": pa.Column(int, pa.Check.ge(0), description="medium voltage bus index of the transformer"),
         "lv_bus": pa.Column(int, pa.Check.ge(0), description="low voltage bus index of the transformer"),
@@ -35,34 +35,38 @@ trafo3w_schema = pa.DataFrameSchema(
         ),
         "pfe_kw": pa.Column(float, description="iron losses [kW]"),
         "i0_percent": pa.Column(float, description="open loop losses [%]"),
-        "shift_mv_degree": pa.Column(float, description="transformer phase shift angle at the MV side"),
-        "shift_lv_degree": pa.Column(float, description="transformer phase shift angle at the LV side"),
+        "shift_mv_degree": pa.Column(float, required=False, description="transformer phase shift angle at the MV side"),
+        "shift_lv_degree": pa.Column(float, required=False, description="transformer phase shift angle at the LV side"),
         "tap_side": pa.Column(
             str,
             pa.Check.isin(["hv", "mv", "lv"]),
+            required=False,
             description="defines if tap changer is positioned on high- medium- or low voltage side",
         ),
-        "tap_neutral": pa.Column(float, description=""),  # TODO: different type in docu
-        "tap_min": pa.Column(float, description="minimum tap position"),  # TODO: different type in docu
-        "tap_max": pa.Column(float, description="maximum tap position"),  # TODO: different type in docu
-        "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size [%]"),
-        "tap_step_degree": pa.Column(float, description="tap step size for voltage angle"),
+        "tap_neutral": pa.Column(float, required=False, description=""),  # TODO: different type in docu
+        "tap_min": pa.Column(float, required=False, description="minimum tap position"),  # TODO: different type in docu
+        "tap_max": pa.Column(float, required=False, description="maximum tap position"),  # TODO: different type in docu
+        "tap_step_percent": pa.Column(float, pa.Check.gt(0), required=False, description="tap step size [%]"),
+        "tap_step_degree": pa.Column(float, required=False, description="tap step size for voltage angle"),
         "tap_at_star_point": pa.Column(
-            bool, description="whether the tap changer is modelled at terminal or at star point"
+            bool, required=False, description="whether the tap changer is modelled at terminal or at star point"
         ),
-        "tap_pos": pa.Column(float, description="current position of tap changer"),
+        "tap_pos": pa.Column(float, required=False, description="current position of tap changer"),
         "tap_changer_type": pa.Column(
             str,
             pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
+            required=False,
             description="specifies the tap changer type",
         ),
         "tap_dependency_table": pa.Column(
             bool,
+            required=False,
             description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
         ),
         "id_characteristic_table": pa.Column(
             pd.Int64Dtype,
             pa.Check.ge(0),
+            required=False,
             description="references the id_characteristic index from the trafo_characteristic_table",
         ),
         "in_service": pa.Column(bool, description="specifies if the transformer is in service."),

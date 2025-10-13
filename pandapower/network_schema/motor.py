@@ -2,7 +2,7 @@ import pandera.pandas as pa
 
 motor_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description="name of the motor"),
+        "name": pa.Column(str, required=False, description="name of the motor"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
         "pn_mech_mw": pa.Column(float, pa.Check.ge(0), description="Mechanical rated power of the motor [MW]"),
         "cos_phi": pa.Column(

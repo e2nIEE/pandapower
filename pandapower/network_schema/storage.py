@@ -4,7 +4,7 @@ import pandera.pandas as pa
 
 storage_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description="Name of the storage unit"),
+        "name": pa.Column(str, required=False, description="Name of the storage unit"),
         "bus": pa.Column(int, pa.Check.ge(0), description="Index of connected bus"),
         "p_mw": pa.Column(
             float,
@@ -14,22 +14,38 @@ storage_schema = pa.DataFrameSchema(
         "q_mvar": pa.Column(float, description="Reactive power of the storage [MVar]"),
         "sn_mva": pa.Column(float, pa.Check.gt(0), description="Nominal power ot the storage [MVA]"),
         "scaling": pa.Column(float, pa.Check.ge(0), description="Scaling factor for the active and reactive power"),
-        "max_e_mwh": pa.Column(float, description="The maximum energy content of the storage (maximum charge level)"),
-        "min_e_mwh": pa.Column(float, description="The minimum energy content of the storage (minimum charge level)"),
-        # "max_p_mw": pa.Column(float, description="Maximum active power", metadata={"opf": True}), # TODO: only in docu
-        # "min_p_mw": pa.Column(float, description="Minimum active power", metadata={"opf": True}), # TODO: only in docu
-        "soc_percent": pa.Column(
-            float, pa.Check.between(min_value=0, max_value=100), description="The state of charge of the storage"
+        "max_e_mwh": pa.Column(
+            float, required=False, description="The maximum energy content of the storage (maximum charge level)"
         ),
-        # "max_q_mvar": pa.Column(float, description="Maximum reactive power [MVar]", metadata={"opf": True}), # TODO: only in docu
-        # "min_q_mvar": pa.Column(float, description="Minimum reactive power [MVar]", metadata={"opf": True}), # TODO: only in docu
-        # "controllable": pa.Column(
-        #     bool,
-        #     description="States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable",
-        #     metadata={"opf": True},
-        # ), # TODO: only in docu
+        "min_e_mwh": pa.Column(
+            float, required=False, description="The minimum energy content of the storage (minimum charge level)"
+        ),
+        "max_p_mw": pa.Column(
+            float, required=False, description="Maximum active power", metadata={"opf": True}
+        ),  # TODO: only in docu
+        "min_p_mw": pa.Column(
+            float, required=False, description="Minimum active power", metadata={"opf": True}
+        ),  # TODO: only in docu
+        "soc_percent": pa.Column(
+            float,
+            pa.Check.between(min_value=0, max_value=100),
+            required=False,
+            description="The state of charge of the storage",
+        ),
+        "max_q_mvar": pa.Column(
+            float, required=False, description="Maximum reactive power [MVar]", metadata={"opf": True}
+        ),  # TODO: only in docu
+        "min_q_mvar": pa.Column(
+            float, required=False, description="Minimum reactive power [MVar]", metadata={"opf": True}
+        ),  # TODO: only in docu
+        "controllable": pa.Column(
+            bool,
+            required=False,
+            description="States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable",
+            metadata={"opf": True},
+        ),  # TODO: only in docu
         "in_service": pa.Column(bool, description="Specifies if the generator is in service"),
-        "type": pa.Column(str, description=""),  # TODO: missing in docu
+        "type": pa.Column(str, required=False, description=""),  # TODO: missing in docu
     },
     strict=False,
 )

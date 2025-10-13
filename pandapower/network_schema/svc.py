@@ -2,7 +2,7 @@ import pandera.pandas as pa
 
 svc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description="name of the SVC"),
+        "name": pa.Column(str, required=False, description="name of the SVC"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the SVC is connected"),
         "x_l_ohm": pa.Column(float, pa.Check.ge(0), description="impedance of the reactor component of SVC"),
         "x_cvar_ohm": pa.Column(float, pa.Check.le(0), description="impedance of the fixed capacitor component of SVC"),
@@ -17,12 +17,18 @@ svc_schema = pa.DataFrameSchema(
         ),
         "in_service": pa.Column(bool, description="specifies if the SVC is in service."),
         "min_angle_degree": pa.Column(
-            float, pa.Check.ge(90), description="minimum value of the thyristor_firing_angle_degree"
-        ),
+            float, pa.Check.ge(90), required=False, description="minimum value of the thyristor_firing_angle_degree"
+        ),  # TODO: do values >= 180 make sense?
         "max_angle_degree": pa.Column(
-            float, pa.Check.le(180), description="maximum value of the thyristor_firing_angle_degree"
-        ),
+            float, pa.Check.le(180), required=False, description="maximum value of the thyristor_firing_angle_degree"
+        ),  # TODO: do values <= 90 make sense?
     },
+    checks=[
+        pa.Check(
+            lambda df: df["min_angle_degree"] <= df["max_angle_degree"],
+            error="Column 'min_angle_degree' must be <= column 'max_angle_degree'",
+        )  # TODO: makes sense, right ?
+    ],
     strict=False,
 )
 

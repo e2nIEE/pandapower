@@ -2,7 +2,7 @@ import pandera.pandas as pa
 
 ssc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, description="name of the SSC"),
+        "name": pa.Column(str, required=False, description="name of the SSC"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the SSC is connected"),
         "r_ohm": pa.Column(
             float, pa.Check.ge(0), description="resistance of the coupling transformer component of SSC"

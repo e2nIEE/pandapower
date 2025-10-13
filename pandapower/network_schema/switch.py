@@ -3,7 +3,7 @@ import pandera.pandas as pa
 switch_schema = pa.DataFrameSchema(
     {
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
-        "name": pa.Column(str, nullable=True, description="name of the switch"),
+        "name": pa.Column(str, nullable=True, required=False, description="name of the switch"),
         "element": pa.Column(
             int,
             pa.Check.ge(0),
@@ -17,6 +17,7 @@ switch_schema = pa.DataFrameSchema(
         "type": pa.Column(
             str,
             pa.Check.isin(["CB", "LS", "LBS", "DS"]),
+            required=False,
             description="type of switch naming conventions:  “CB” - circuit breaker “LS” - load switch “LBS” - load break switch “DS” - disconnecting switch",
         ),
         "closed": pa.Column(bool, description="signals the switching state of the switch"),

@@ -2,8 +2,8 @@ import pandera.pandas as pa
 
 source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
     {
-        "name": pa.Column(str, description="name of the static generator"),
-        "type": pa.Column(str, description="type of source"),
+        "name": pa.Column(str, required=False, description="name of the static generator"),
+        "type": pa.Column(str, required=False, description="type of source"),
         "bus_dc": pa.Column(  # TODO: not the same name in docu
             int, description="index of connected bus"
         ),
@@ -23,6 +23,7 @@ source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
         ),  # TODO: missing in docu
         "controllable": pa.Column(
             bool,
+            required=False,
             description="states if sgen is controllable or not, sgen will not be used as a flexibility if it is not controllable",
         ),
         "in_service": pa.Column(bool, description="specifies if the generator is in service."),
