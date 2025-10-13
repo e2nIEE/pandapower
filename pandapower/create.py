@@ -87,7 +87,7 @@ def create_bus(
     in_service: bool = True,
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
-    coords: Optional[list[tuple[float, float]]] = None,
+    coords: Optional[list[tuple[float, float]]] = None, #TODO: remove
     **kwargs
 ) -> Int:
     """
@@ -165,7 +165,7 @@ def create_bus_dc(
     in_service: bool = True,
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
-    coords: Optional[list[tuple[float, float]]] = None,
+    coords: Optional[list[tuple[float, float]]] = None, #TODO remove
     **kwargs
 ) -> Int:
     """
@@ -261,7 +261,7 @@ def create_buses(
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
-    coords: Optional[list[list[tuple[float, float]]]] = None,
+    coords: Optional[list[list[tuple[float, float]]]] = None, #TODO remove
     **kwargs
 ) -> npt.NDArray[Int]:
     """
@@ -340,7 +340,7 @@ def create_buses_dc(
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
-    coords: Optional[list[list[tuple[float, float]]]] = None,
+    coords: Optional[list[list[tuple[float, float]]]] = None, #TODO remove
     **kwargs
 ) -> npt.NDArray[Int]:
     """

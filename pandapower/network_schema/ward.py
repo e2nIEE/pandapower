@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+ward_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the extended ward equivalent"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
@@ -13,7 +13,7 @@ schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_ward_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description="active power demand of the ward equivalent [MW]"),
         "q_mvar": pa.Column(float, description="reactive power demand of the ward equivalent [kVar]"),

@@ -2,7 +2,7 @@ from typing import Iterable
 
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
+line_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
     {
         "name": pa.Column(str, required=False, description="name of the line"),
         "std_type": pa.Column(
@@ -60,26 +60,56 @@ schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: geod
         ),  # TODO: add all tdpf parameters from create documentation, bzw alle die in der methoden docu stehen
         "in_service": pa.Column(bool, description="specifies if the line is in service."),
         "geo": pa.Column(str, description="geojson.LineString object or its string representation"),
-
-        #neu (Kommentar kann nach kontrolle gelöscht werden)
-        "alpha": pa.Column(float, description="temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))"),
-        "temperature_degree_celsius": pa.Column(float, description="line temperature for which line resistance is adjusted"),
-        "tdpf": pa.Column(bool, description="whether the line is considered in the TDPF calculation", metadata={"tdpf": True}),
-        "wind_speed_m_per_s": pa.Column(float, description="wind speed at the line in m/s (TDPF)", metadata={"tdpf": True}),
-        "wind_angle_degree": pa.Column(float, description="angle of attack between the wind direction and the line (TDPF)", metadata={"tdpf": True}),
-        "conductor_outer_diameter_m": pa.Column(float, description="outer diameter of the line conductor in m (TDPF)", metadata={"tdpf": True}),
-        "air_temperature_degree_celsius": pa.Column(float, description="ambient temperature in °C (TDPF)", metadata={"tdpf": True}),
-        "reference_temperature_degree_celsius": pa.Column(float, description="reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)", metadata={"tdpf": True}),
-        "solar_radiation_w_per_sq_m": pa.Column(float, description="solar radiation on horizontal plane in W/m² (TDPF)", metadata={"tdpf": True}),
-        "solar_absorptivity": pa.Column(float, description="Albedo factor for absorptivity of the lines (TDPF)", metadata={"tdpf": True}),
-        "emissivity": pa.Column(float, description="Albedo factor for emissivity of the lines (TDPF)", metadata={"tdpf": True}),
-        "r_theta_kelvin_per_mw": pa.Column(float, description="thermal resistance of the line (TDPF, only for simplified method)", metadata={"tdpf": True}),
-        "mc_joule_per_m_k": pa.Column(float, description="specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)", metadata={"tdpf": True})
+        "alpha": pa.Column(
+            float, description="temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))"
+        ),
+        "temperature_degree_celsius": pa.Column(
+            float, description="line temperature for which line resistance is adjusted"
+        ),
+        "tdpf": pa.Column(
+            bool, description="whether the line is considered in the TDPF calculation", metadata={"tdpf": True}
+        ),
+        "wind_speed_m_per_s": pa.Column(
+            float, description="wind speed at the line in m/s (TDPF)", metadata={"tdpf": True}
+        ),
+        "wind_angle_degree": pa.Column(
+            float, description="angle of attack between the wind direction and the line (TDPF)", metadata={"tdpf": True}
+        ),
+        "conductor_outer_diameter_m": pa.Column(
+            float, description="outer diameter of the line conductor in m (TDPF)", metadata={"tdpf": True}
+        ),
+        "air_temperature_degree_celsius": pa.Column(
+            float, description="ambient temperature in °C (TDPF)", metadata={"tdpf": True}
+        ),
+        "reference_temperature_degree_celsius": pa.Column(
+            float,
+            description="reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)",
+            metadata={"tdpf": True},
+        ),
+        "solar_radiation_w_per_sq_m": pa.Column(
+            float, description="solar radiation on horizontal plane in W/m² (TDPF)", metadata={"tdpf": True}
+        ),
+        "solar_absorptivity": pa.Column(
+            float, description="Albedo factor for absorptivity of the lines (TDPF)", metadata={"tdpf": True}
+        ),
+        "emissivity": pa.Column(
+            float, description="Albedo factor for emissivity of the lines (TDPF)", metadata={"tdpf": True}
+        ),
+        "r_theta_kelvin_per_mw": pa.Column(
+            float,
+            description="thermal resistance of the line (TDPF, only for simplified method)",
+            metadata={"tdpf": True},
+        ),
+        "mc_joule_per_m_k": pa.Column(
+            float,
+            description="specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)",
+            metadata={"tdpf": True},
+        ),
     },
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_line_schema = res_line_est_schema = pa.DataFrameSchema(
     {
         "p_from_mw": pa.Column(float, description="active power flow into the line at “from” bus [MW]"),
         "q_from_mvar": pa.Column(float, description="reactive power flow into the line at “from” bus [MVar]"),
@@ -98,7 +128,7 @@ res_schema = pa.DataFrameSchema(
     },
 )
 
-res_schema_3ph = pa.DataFrameSchema(
+res_line_3ph_schema = pa.DataFrameSchema(
     {
         "p_a_from_mw": pa.Column(float, description="active power flow into the line at from bus: Phase A [MW]"),
         "q_a_from_mvar": pa.Column(float, description="reactive power flow into the line at from bus : Phase A [MVar]"),
@@ -138,4 +168,22 @@ res_schema_3ph = pa.DataFrameSchema(
     },
 )
 
-# TODO: was ist mit res_line_est und res_line_sc
+res_line_sc_schema = pa.DataFrameSchema(
+    {
+        "ikss_ka": pa.Column(float, description="initial short-circuit current value [kA]"),
+        "ikss_from_ka": pa.Column(float, description="magnitude of the initial SC current at “”from”” bus [kA]"),
+        "ikss_from_degree": pa.Column(float, description="degree of the initial SC current at “”from”” bus [degrees]"),
+        "ikss_to_ka": pa.Column(float, description="magnitude of the initial SC current at “”to”” bus [kA]"),
+        "ikss_to_degree": pa.Column(float, description="degree of the initial SC current at “”to”” bus [degrees]"),
+        "p_from_mw": pa.Column(float, description="active SC power flow into the line at “”from”” bus [MW]"),
+        "q_from_mvar": pa.Column(float, description="reactive SC power flow into the line at “”from”” bus [MVar]"),
+        "p_to_mw": pa.Column(float, description="active SC power flow into the line at “”to”” bus [MW]"),
+        "q_to_mvar": pa.Column(float, description="reactive SC power flow into the line at “”to”” bus [MVar]"),
+        "vm_from_pu": pa.Column(float, description="voltage magnitude at “”from”” bus [p.u.]"),
+        "vm_to_pu": pa.Column(float, description="voltage magnitude at “”to”” bus [p.u.]"),
+        "va_from_degree": pa.Column(float, description="voltage angle at “”from”” bus [degrees]"),
+        "va_to_degree": pa.Column(float, description="voltage angle at “”to”” bus [degrees]"),
+        "ip_ka": pa.Column(float, description="peak value of the short-circuit current [kA]"),
+        "ith_ka": pa.Column(float, description="equivalent thermal short-circuit current [kA]"),
+    },
+)

@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+ext_grid_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the external grid"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
@@ -63,14 +63,14 @@ schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_ext_grid_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description="active power supply at the external grid [MW]"),
         "q_mvar": pa.Column(float, description="reactive power supply at the external grid [MVar]"),
     },
 )
 
-res_schema_3ph = pa.DataFrameSchema(
+res_ext_grid_3ph_schema = pa.DataFrameSchema(
     {
         "p_a_mw": pa.Column(float, description="active power supply at the external grid : Phase A [MW]"),
         "q_a_mvar": pa.Column(float, description="reactive power supply at the external grid : Phase A [MVar]"),

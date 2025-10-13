@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+load_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the load"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
@@ -50,7 +50,7 @@ schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_load_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(
             float,

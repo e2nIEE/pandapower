@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+dcline_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the generator"),
         "from_bus": pa.Column(int, pa.Check.ge(0), description="Index of bus where the dc line starts"),
@@ -24,7 +24,7 @@ schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_dcline_schema = pa.DataFrameSchema(
     {
         "p_from_mw": pa.Column(float, description="active power flow into the line at ‘from_bus’ [MW]"),
         "q_from_mvar": pa.Column(float, description="reactive power flow into the line at ‘from_bus’ [kVar]"),

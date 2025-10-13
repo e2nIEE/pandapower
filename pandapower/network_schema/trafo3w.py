@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+trafo3w_schema = pa.DataFrameSchema(
     {
         # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
         "name": pa.Column(str, description="name of the transformer"),
@@ -70,7 +70,7 @@ schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_trafo3w_schema = pa.DataFrameSchema(
     {
         "p_hv_mw": pa.Column(float, description="active power flow at the high voltage transformer bus [MW]"),
         "q_hv_mvar": pa.Column(float, description="reactive power flow at the high voltage transformer bus [kVar]"),
@@ -92,5 +92,19 @@ res_schema = pa.DataFrameSchema(
         "va_internal_degree": pa.Column(float, description=""),  # TODO: missing in docu
         "vm_internal_pu": pa.Column(float, description=""),  # TODO: missing in docu
         "loading_percent": pa.Column(float, description="transformer utilization [%]"),
+    },
+)
+
+res_trafo3w_sc_schema = pa.DataFrameSchema(
+    {
+        "ikss_hv_ka": pa.Column(
+            float, description="magnitude of the initial SC current at the high voltage side of the transformer [kA]"
+        ),
+        "ikss_mv_ka": pa.Column(
+            float, description="magnitude of the initial SC current at the medium voltage side of the transformer [kA]"
+        ),
+        "ikss_lv_ka": pa.Column(
+            float, description="magnitude of the initial SC current at the low voltage side of the transformer [kA]"
+        ),
     },
 )

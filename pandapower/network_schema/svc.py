@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+svc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the SVC"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the SVC is connected"),
@@ -27,7 +27,7 @@ schema = pa.DataFrameSchema(
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_svc_schema = pa.DataFrameSchema(
     {
         "thyristor_firing_angle_degree": pa.Column(
             float, description="the resulting value of thyristor firing angle of svc [degree]"

@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+switch_schema = pa.DataFrameSchema(
     {
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
         "name": pa.Column(str, nullable=True, description="name of the switch"),
@@ -31,7 +31,7 @@ schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_switch_schema = pa.DataFrameSchema(
     {
         "i_ka": pa.Column(float, description="active power from bus [MW]"),
         "loading_percent": pa.Column(float, description="reactive power from bus [MVAr]"),

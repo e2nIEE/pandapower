@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+measurement_schema = pa.DataFrameSchema(
     {
         # "index": pa.Column(int, description="Defines a specific index for the new measurement (if possible)"),  # TODO:
         "name": pa.Column(str, description=""),  # TODO: missing in docu

@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+ssc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the SSC"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the SSC is connected"),
@@ -24,7 +24,7 @@ schema = pa.DataFrameSchema(
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_ssc_schema = pa.DataFrameSchema(
     {
         "q_mvar": pa.Column(float, description="shunt reactive power consumption of ssc [MVAr]"),
         "vm_internal_pu": pa.Column(float, description="voltage magnitude at ssc internal bus [pu]"),

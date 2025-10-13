@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+motor_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the motor"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
@@ -42,7 +42,7 @@ schema = pa.DataFrameSchema(
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_motor_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description="resulting active power demand [MW]"),
         "q_mvar": pa.Column(float, description="resulting reactive power demand [MVar]"),

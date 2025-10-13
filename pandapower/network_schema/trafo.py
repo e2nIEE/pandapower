@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: xn_ohm, pt_percent
+trafo_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: xn_ohm, pt_percent
     {
         "name": pa.Column(str, description="name of the transformer"),
         "std_type": pa.Column(str, description="transformer standard type name"),
@@ -128,15 +128,18 @@ schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: xn_o
             required=False,
             description="ratio of transformer short-circuit reactance on HV side (default 0.5)",
         ),  # TODO: not in create method call
-
         # neu (Kommentar kann nach kontrolle gelöscht werden)
-        "xn_ohm": pa.Column(float, description="impedance of the grounding reactor (Z_N) for short circuit calculation", metadata={"sc": True}),
-        "pt_percent": pa.Column(float, description="")
+        "xn_ohm": pa.Column(
+            float,
+            description="impedance of the grounding reactor (Z_N) for short circuit calculation",
+            metadata={"sc": True},
+        ),
+        "pt_percent": pa.Column(float, description=""),
     },
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_trafo_schema = pa.DataFrameSchema(
     {
         "p_hv_mw": pa.Column(float, description="active power flow at the high voltage transformer bus [MW]"),
         "q_hv_mvar": pa.Column(float, description="reactive power flow at the high voltage transformer bus [MVar]"),
@@ -154,7 +157,7 @@ res_schema = pa.DataFrameSchema(
     },
 )
 
-res_schema_3ph = pa.DataFrameSchema(
+res_trafo_3ph_schema = pa.DataFrameSchema(
     {
         "p_a_hv_mw": pa.Column(
             float, description="active power flow at the high voltage transformer bus : Phase A [MW]"
@@ -213,4 +216,23 @@ res_schema_3ph = pa.DataFrameSchema(
     },
 )
 
-# TODO: was ist mit res_trafo_sc
+res_trafo_sc_schema = pa.DataFrameSchema(
+    {
+        "ikss_hv_ka": pa.Column(float, description="magnitude of the initial SC current at HV transformer bus [kA]"),
+        "ikss_hv_degree": pa.Column(
+            float, description="degree of the initial SC current at HV transformer bus [degrees]"
+        ),
+        "ikss_lv_ka": pa.Column(float, description="magnitude of the initial SC current at LV transformer bus [kA]"),
+        "ikss_lv_degree": pa.Column(
+            float, description="degree of the initial SC current at LV transformer bus [degrees]"
+        ),
+        "p_hv_mw": pa.Column(float, description="active SC power flow at HV transformer bus [MW]"),
+        "q_hv_mvar": pa.Column(float, description="reactive SC power flow at HV transformer bus [MVAr]"),
+        "p_lv_mw": pa.Column(float, description="active SC power flow at LV transformer bus [MW]"),
+        "q_lv_mvar": pa.Column(float, description="reactive SC power flow at LV transformer bus [MVAr]"),
+        "vm_hv_pu": pa.Column(float, description="voltage magnitude at the high voltage (HV) bus [p.u.]"),
+        "va_hv_degree": pa.Column(float, description="voltage angle at the high voltage (HV) bus [degrees]"),
+        "vm_lv_pu": pa.Column(float, description="voltage magnitude at the low voltage (LV) bus [p.u.]"),
+        "va_lv_degree": pa.Column(float, description="voltage angle at the low voltage (LV) bus [degrees]"),
+    },
+)

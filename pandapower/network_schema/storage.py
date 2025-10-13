@@ -2,7 +2,7 @@ from importlib.metadata import metadata
 
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+storage_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="Name of the storage unit"),
         "bus": pa.Column(int, pa.Check.ge(0), description="Index of connected bus"),
@@ -35,14 +35,14 @@ schema = pa.DataFrameSchema(
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_storage_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description="resulting active power after scaling [MW]"),
         "q_mvar": pa.Column(float, description="resulting reactive power after scaling [MVar]"),
     },
 )
 
-res_schema_3ph = pa.DataFrameSchema(
+res_storage_3ph_schema = pa.DataFrameSchema(
     {
         "p_a_mw": pa.Column(float, description=""),  # TODO: not in docu
         "p_b_mw": pa.Column(float, description=""),  # TODO: not in docu

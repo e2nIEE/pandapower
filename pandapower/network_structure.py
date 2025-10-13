@@ -2,63 +2,43 @@ from numpy import dtype
 
 from pandapower._version import __version__, __format_version__
 from pandapower.network_schema.asymmetric_load import (
-    schema as asymmetric_load_schema,
-    res_schema as res_asymmetric_load_schema,
-    res_schema_3ph as res_asymmetric_load_3ph_schema,
+    asymmetric_load_schema,
+    res_asymmetric_load_schema,
+    res_asymmetric_load_3ph_schema,
 )
 from pandapower.network_schema.asymmetric_sgen import (
-    schema as asymmetric_sgen_schema,
-    res_schema as res_asymmetric_sgen_schema,
-    res_schema_3ph as res_asymmetric_sgen_3ph_schema,
+    asymmetric_sgen_schema,
+    res_asymmetric_sgen_schema,
+    res_asymmetric_sgen_3ph_schema,
 )
-from pandapower.network_schema.b2b_vsc import schema as b2b_vsc_schema, res_schema as res_b2b_vsc_schema
-from pandapower.network_schema.bi_vsc import schema as bi_vsc_schema, res_schema as res_bi_vsc_schema
-from pandapower.network_schema.bus import (
-    schema as bus_schema,
-    res_schema as res_bus_schema,
-    res_schema_3ph as res_bus_3ph_schema,
-)
-from pandapower.network_schema.bus_dc import schema as bus_dc_schema, res_schema as res_bus_dc_schema
-from pandapower.network_schema.dcline import schema as dcline_schema, res_schema as res_dcline_schema
-from pandapower.network_schema.ext_grid import (
-    schema as ext_grid_schema,
-    res_schema as res_ext_grid_schema,
-    res_schema_3ph as res_ext_grid_3ph_schema,
-)
-from pandapower.network_schema.gen import schema as gen_schema, res_schema as res_gen_schema
-from pandapower.network_schema.impedance import schema as impedance_schema, res_schema as res_impedance_schema
-from pandapower.network_schema.line import (
-    schema as line_schema,
-    res_schema as res_line_schema,
-    res_schema_3ph as res_line_3ph_schema,
-)
-from pandapower.network_schema.line_dc import schema as line_dc_schema, res_schema as res_line_dc_schema
-from pandapower.network_schema.load import schema as load_schema, res_schema as res_load_schema
-from pandapower.network_schema.load_dc import schema as load_dc_schema, res_schema as res_load_dc_schema
-from pandapower.network_schema.measurement import schema as measurement_schema
-from pandapower.network_schema.motor import schema as motor_schema, res_schema as res_motor_schema
-from pandapower.network_schema.sgen import schema as sgen_schema, res_schema as res_sgen_schema
-from pandapower.network_schema.shunt import schema as shunt_schema, res_schema as res_shunt_schema
-from pandapower.network_schema.source_dc import schema as source_dc_schema, res_schema as res_source_dc_schema
-from pandapower.network_schema.ssc import schema as ssc_schema, res_schema as res_ssc_schema
-from pandapower.network_schema.storage import (
-    schema as storage_schema,
-    res_schema as res_storage_schema,
-    res_schema_3ph as res_storage_3ph_schema,
-)
-from pandapower.network_schema.svc import schema as svc_schema, res_schema as res_svc_schema
-from pandapower.network_schema.switch import schema as switch_schema, res_schema as res_switch_schema
-from pandapower.network_schema.tcsc import schema as tcsc_schema, res_schema as res_tcsc_schema
+from pandapower.network_schema.b2b_vsc import b2b_vsc_schema, res_b2b_vsc_schema
+from pandapower.network_schema.bi_vsc import bi_vsc_schema, res_bi_vsc_schema
+from pandapower.network_schema.bus import bus_schema, res_bus_schema, res_bus_3ph_schema
+from pandapower.network_schema.bus_dc import bus_dc_schema, res_bus_dc_schema
+from pandapower.network_schema.dcline import dcline_schema, res_dcline_schema
+from pandapower.network_schema.ext_grid import ext_grid_schema, res_ext_grid_schema, res_ext_grid_3ph_schema
+from pandapower.network_schema.gen import gen_schema, res_gen_schema
+from pandapower.network_schema.impedance import impedance_schema, res_impedance_schema
+from pandapower.network_schema.line import line_schema, res_line_schema, res_line_3ph_schema
+from pandapower.network_schema.line_dc import line_dc_schema, res_line_dc_schema
+from pandapower.network_schema.load import load_schema, res_load_schema
+from pandapower.network_schema.load_dc import load_dc_schema, res_load_dc_schema
+from pandapower.network_schema.measurement import measurement_schema
+from pandapower.network_schema.motor import motor_schema, res_motor_schema
+from pandapower.network_schema.sgen import sgen_schema, res_sgen_schema
+from pandapower.network_schema.shunt import shunt_schema, res_shunt_schema
+from pandapower.network_schema.source_dc import source_dc_schema, res_source_dc_schema
+from pandapower.network_schema.ssc import ssc_schema, res_ssc_schema
+from pandapower.network_schema.storage import storage_schema, res_storage_schema, res_storage_3ph_schema
+from pandapower.network_schema.svc import svc_schema, res_svc_schema
+from pandapower.network_schema.switch import switch_schema, res_switch_schema
+from pandapower.network_schema.tcsc import tcsc_schema, res_tcsc_schema
 from pandapower.network_schema.tools import get_dtypes
-from pandapower.network_schema.trafo import (
-    schema as trafo_schema,
-    res_schema as res_trafo_schema,
-    res_schema_3ph as res_trafo_3ph_schema,
-)
-from pandapower.network_schema.trafo3w import schema as trafo3w_schema, res_schema as res_trafo3w_schema
-from pandapower.network_schema.vsc import schema as vsc_schema, res_schema as res_vsc_schema
-from pandapower.network_schema.ward import schema as ward_schema, res_schema as res_ward_schema
-from pandapower.network_schema.xward import schema as xward_schema, res_schema as res_xward_schema
+from pandapower.network_schema.trafo import trafo_schema, res_trafo_schema, res_trafo_3ph_schema
+from pandapower.network_schema.trafo3w import trafo3w_schema, res_trafo3w_schema
+from pandapower.network_schema.vsc import vsc_schema, res_vsc_schema
+from pandapower.network_schema.ward import ward_schema, res_ward_schema
+from pandapower.network_schema.xward import xward_schema, res_xward_schema
 
 
 def get_structure_dict() -> dict:
@@ -92,13 +72,13 @@ def get_structure_dict() -> dict:
         "ward": get_dtypes(ward_schema),
         "xward": get_dtypes(xward_schema),
         "measurement": get_dtypes(measurement_schema),
-        "pwl_cost": {  #TODO: not a datastructure or element?
+        "pwl_cost": {  # TODO: not a datastructure or element?
             "power_type": dtype(object),
             "element": "u4",
             "et": dtype(object),
             "points": dtype(object),
         },
-        "poly_cost": {  #TODO: not a datastructure or element?
+        "poly_cost": {  # TODO: not a datastructure or element?
             "element": "u4",
             "et": dtype(object),
             "cp0_eur": "f8",
@@ -108,7 +88,7 @@ def get_structure_dict() -> dict:
             "cq1_eur_per_mvar": "f8",
             "cq2_eur_per_mvar2": "f8",
         },
-        "controller": {  #TODO: not a datastructure or element?
+        "controller": {  # TODO: not a datastructure or element?
             "object": dtype(object),
             "in_service": "bool",
             "order": "float64",
@@ -116,7 +96,7 @@ def get_structure_dict() -> dict:
             "initial_run": "bool",
             "recycle": dtype(object),
         },
-        "group": {  #TODO: not a datastructure or element?
+        "group": {  # TODO: not a datastructure or element?
             "name": dtype(object),
             "element_type": dtype(object),
             "element_index": dtype(object),

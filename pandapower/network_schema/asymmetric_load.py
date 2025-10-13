@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+asymmetric_load_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the load"),
         "bus": pa.Column(int, description="	index of connected bus"),
@@ -19,7 +19,7 @@ schema = pa.DataFrameSchema(
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_asymmetric_load_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description=""),  # TODO: not in docu
         "q_mvar": pa.Column(float, description=""),  # TODO: not in docu
@@ -51,7 +51,7 @@ res_schema = pa.DataFrameSchema(
 )
 
 
-res_schema_3ph = pa.DataFrameSchema(
+res_asymmetric_load_3ph_schema = pa.DataFrameSchema(
     {
         "p_a_mw": pa.Column(float, description=""),  # not in docu
         "q_a_mvar": pa.Column(float, description=""),  # not in docu

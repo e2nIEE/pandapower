@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
+source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
     {
         "name": pa.Column(str, description="name of the static generator"),
         "type": pa.Column(str, description="type of source"),
@@ -30,6 +30,6 @@ schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_source_dc_schema = pa.DataFrameSchema(
     {"p_dc_mw": pa.Column(float, description="resulting active power demand after scaling [MW]")},
 )

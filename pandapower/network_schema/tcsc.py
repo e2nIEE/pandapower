@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+tcsc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the TCSC"),
         "from_bus": pa.Column(int, pa.Check.ge(0), description="index of the from bus where the TCSC is connected"),
@@ -32,7 +32,7 @@ schema = pa.DataFrameSchema(
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_tcsc_schema = pa.DataFrameSchema(
     {
         "thyristor_firing_angle_degree": pa.Column(
             float, description="the resulting value of thyristor firing angle of tcsc [degree]"

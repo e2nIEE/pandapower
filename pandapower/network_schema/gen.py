@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+gen_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the generator"),
         "type": pa.Column(
@@ -47,17 +47,27 @@ schema = pa.DataFrameSchema(
         "slack_weight": pa.Column(float, description=""),  # TODO: missing in docu
         "slack": pa.Column(bool, description=""),  # TODO: missing in docu
         "controllable": pa.Column(bool, description=""),  # TODO: missing in docu
-
-        # neu (Kommentar kann nach kontrolle gelöscht werden)
-        "pg_percent": pa.Column(float, description="Rated pg (voltage control range) of the generator for short-circuit calculation", metadata={"sc": True}),
-        "min_vm_pu": pa.Column(float, description="Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.", metadata={"opf": True}),
-        "max_vm_pu": pa.Column(float, description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF", metadata={"opf": True})
+        "pg_percent": pa.Column(
+            float,
+            description="Rated pg (voltage control range) of the generator for short-circuit calculation",
+            metadata={"sc": True},
+        ),
+        "min_vm_pu": pa.Column(
+            float,
+            description="Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.",
+            metadata={"opf": True},
+        ),
+        "max_vm_pu": pa.Column(
+            float,
+            description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF",
+            metadata={"opf": True},
+        ),
     },
     strict=False,
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_gen_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description="resulting active power demand after scaling [MW]"),
         "q_mvar": pa.Column(float, description="resulting reactive power demand after scaling [MVAr]"),

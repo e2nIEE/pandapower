@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+shunt_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the shunt"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the impedance starts"),
@@ -26,7 +26,7 @@ schema = pa.DataFrameSchema(
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_shunt_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description="shunt active power consumption [MW]"),
         "q_mvar": pa.Column(float, description="shunt reactive power consumption [MVAr]"),

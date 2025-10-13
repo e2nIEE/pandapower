@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+b2b_vsc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str),
         "bus": pa.Column(int, pa.Check.ge(0)),
@@ -20,7 +20,7 @@ schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
+res_b2b_vsc_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, description="total active power consumption of B2B VSC [MW]"),
         "q_mvar": pa.Column(float, description="total reactive power consumption of B2B VSC [MVAr]"),

@@ -1,6 +1,6 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
+impedance_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description="name of the impedance"),
         "from_bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the impedance starts"),
@@ -54,7 +54,7 @@ schema = pa.DataFrameSchema(
 )
 
 
-res_schema = pa.DataFrameSchema(
+res_impedance_schema = pa.DataFrameSchema(
     {
         "p_from_mw": pa.Column(float, description="active power flow into the impedance at “from” bus [MW]"),
         "q_from_mvar": pa.Column(float, description="reactive power flow into the impedance at “from” bus [MVAr]"),

@@ -1,7 +1,9 @@
 import pandera.pandas as pa
 
-schema = pa.DataFrameSchema(
-    {  # where is the documentation? #TODO:
+# TODO: where is the documentation?
+
+bi_vsc_schema = pa.DataFrameSchema(
+    {
         "name": pa.Column(str, description=""),
         "bus": pa.Column(int, pa.Check.ge(0), description=""),
         "bus_dc_plus": pa.Column(int, pa.Check.ge(0), description=""),
@@ -20,8 +22,8 @@ schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_schema = pa.DataFrameSchema(
-    {  # where is the documentation?
+res_bi_vsc_schema = pa.DataFrameSchema(
+    {
         "p_mw": pa.Column(float, description=""),
         "q_mvar": pa.Column(float, description=""),
         "p_dc_mw_p": pa.Column(float, description=""),
