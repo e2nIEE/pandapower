@@ -81,7 +81,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
         **figure** (graph_objs._figure.Figure) figure object
 
     """
-    # getting connected componenets without consideration of trafos
+    # getting connected components without consideration of trafos
     graph = create_nxgraph(net, include_trafos=False)
     vlev_buses = connected_components(graph)
     # getting unique sets of buses for each voltage level
