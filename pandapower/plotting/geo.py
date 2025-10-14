@@ -564,7 +564,7 @@ def convert_geodata_to_geojson(
     if not geo_df.empty:
         df["geo"] = geo_df.apply(lambda r: f'{{"coordinates": [{r[a]}, {r[b]}], "type": "Point"}}', axis=1)
 
-    ldf["geo"] = np.nan
+    ldf["geo"] = None
     for l_id in ldf.index:
         if l_id not in geo_ldf.index:
             continue
