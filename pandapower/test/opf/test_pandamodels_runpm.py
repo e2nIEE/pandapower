@@ -32,15 +32,13 @@ from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.timeseries import DFData, run_timeseries
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError
+    UnsupportedPythonError = JuliaError
 except ImportError:
     UnsupportedPythonError = Exception
+
 try:
-    from julia.api import Julia
-
-    Julia(compiled_modules=False)
-    from julia import Main
-
+    from juliacall import Main
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
@@ -596,16 +594,16 @@ def test_storage_opt():
     assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)])
 
     net = create_cigre_grid_with_time_series(json_path)
-    runpm_storage_opf(net, from_time_step=0, to_time_step=5)
+    runpm_storage_opf(net, from_time_step=0, to_time_step=5, pm_mip_solver='cbc')
     storage_results_1 = read_pm_storage_results(net)
     assert net._pm_org_result["multinetwork"]
     assert net._pm["pm_solver"] == "juniper"
-    assert net._pm["pm_mip_solver"] == "highs"
+    assert net._pm["pm_mip_solver"] == "cbc"
     assert len(net.res_ts_opt) == 5
 
     net2 = create_cigre_grid_with_time_series(json_path)
     net2.sn_mva = 100.0
-    runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
+    runpm_storage_opf(net2, from_time_step=0, to_time_step=5, pm_mip_solver='cbc')
     storage_results_100 = read_pm_storage_results(net2)
 
     assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6

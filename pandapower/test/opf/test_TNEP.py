@@ -14,15 +14,13 @@ from pandapower.run import runpp
 from pandapower.runpm import runpm_tnep
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError
+    UnsupportedPythonError = JuliaError
 except ImportError:
     UnsupportedPythonError = Exception
+
 try:
-    from julia.api import Julia
-
-    Julia(compiled_modules=False)
-    from julia import Main
-
+    from juliacall import Main
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
@@ -131,7 +129,7 @@ def test_pm_tnep_cigre_ac_S():
 
     # run power models tnep optimization
     runpm_tnep(net, pm_solver="juniper", pm_model="ACPPowerModel",
-               opf_flow_lim="S")  # gurobi is a better option, but not for travis
+               opf_flow_lim="S", pm_mip_solver='cbc')  # gurobi is a better option, but not for travis
     # print the information about the newly built lines
     # print("These lines are to be built:")
     # print(net["res_ne_line"])
