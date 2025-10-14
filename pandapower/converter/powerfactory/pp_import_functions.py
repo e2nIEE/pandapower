@@ -4222,7 +4222,8 @@ def create_stactrl(net, item, **kwargs):
                 v_set_point_pu = 1
         else:
             raise NotImplementedError(f"{item}: controlled node selection {item.selBus} not implemented")
-
+        if 'input_invert' not in locals():
+            input_invert=False #fix for missing value
         if item.i_droop:  # Enable Droop
             bsc = BinarySearchControl(net, name=item.loc_name, ctrl_in_service=stactrl_in_service,
                                   output_element=gen_element, output_variable="q_mvar",
