@@ -28,10 +28,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# ==================================================================================================
-# Public API
-# ==================================================================================================
-
 def from_jao(excel_file_path: str,
              html_file_path: Optional[str],
              extend_data_for_grid_group_connections: bool,
