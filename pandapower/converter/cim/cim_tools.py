@@ -56,19 +56,25 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
                                      'SubGeographicalRegion_id', 'SubGeographicalRegion_name']
 
     fill_dict['ext_grid'] = {}
-    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description']
+    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description', 'RegulatingControl.mode']
     fill_dict['ext_grid'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'p_mw', 'q_mvar',
-                                            's_sc_max_mva', 's_sc_min_mva', 'rx_max', 'rx_min', 'r0x0_max', 'x0x_max']
+                                            's_sc_max_mva', 's_sc_min_mva', 'rx_max', 'rx_min', 'r0x0_max', 'x0x_max',
+                                            'RegulatingControl.targetValue', 'referencePriority']
+    fill_dict['ext_grid'][np_bool_type] = ['RegulatingControl.enabled']
 
     fill_dict['load'] = {}
     fill_dict['load'][np_str_type] = [sc['t'], 'description']
     fill_dict['gen'] = {}
-    fill_dict['gen'][np_str_type] = [sc['t'], 'description']
-    fill_dict['gen'][np_float_type] = \
-        ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'cos_phi', 'pg_percent', 'governorSCD']
+    fill_dict['gen'][np_str_type] = [sc['t'], 'description', 'RegulatingControl.mode']
+    fill_dict['gen'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm',
+                                       'xdss_pu', 'cos_phi', 'pg_percent',  'governorSCD',
+                                       'RegulatingControl.targetValue', 'referencePriority']
+    fill_dict['gen'][np_bool_type] = ['RegulatingControl.enabled']
     fill_dict['sgen'] = {}
-    fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type']
-    fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu']
+    fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type', 'RegulatingControl.mode']
+    fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu',
+                                        'RegulatingControl.targetValue', 'referencePriority']
+    fill_dict['sgen'][np_bool_type] = ['RegulatingControl.enabled']
     fill_dict['motor'] = {}
     fill_dict['motor'][np_str_type] = [sc['t'], 'description']
     fill_dict['storage'] = {}

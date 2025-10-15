@@ -2,7 +2,7 @@ import logging
 import time
 
 import pandas as pd
-
+import numpy as np
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
@@ -38,8 +38,8 @@ class ExternalNetworkInjectionsCim16:
         else:
             ref_prio_min = min(eni_ref_prio_min, sync_ref_prio_min)
 
-        eni_slacks = eqssh_eni.loc[(eqssh_eni['slack_weight'] == ref_prio_min) & (eqssh_eni['controllable'])]
-        eni_gens = eqssh_eni.loc[(eqssh_eni['slack_weight'] != ref_prio_min) & (eqssh_eni['controllable'])]
+        eni_slacks = eqssh_eni.loc[(eqssh_eni['referencePriority'] == ref_prio_min) & (eqssh_eni['controllable'])]
+        eni_gens = eqssh_eni.loc[(eqssh_eni['referencePriority'] != ref_prio_min) & (eqssh_eni['controllable'])]
         eni_sgens = eqssh_eni.loc[~eqssh_eni['controllable']]
 
         # create reactive_capability_curve flag
@@ -84,6 +84,8 @@ class ExternalNetworkInjectionsCim16:
                        how='left', left_on=sc['ct'], right_on='TopologicalNode')
         eni['controlEnabled'] = eni['controlEnabled'] & eni['enabled']
         eni['vm_pu'] = eni['targetValue'] / eni['vn_kv']  # voltage from regulation
+        # ignore targetValues with mode != voltage
+        eni.loc[eni['mode'] != 'voltage', 'vm_pu'] = np.nan
         eni['vm_pu'] = eni['vm_pu'].fillna(eni['v'] / eni['vn_kv'])  # voltage from measurement
         eni['vm_pu'] = eni['vm_pu'].fillna(1.)  # default voltage
         eni['angle'] = eni['angle'].fillna(0.)  # default angle
@@ -98,6 +100,8 @@ class ExternalNetworkInjectionsCim16:
                        how='left', left_on='ConnectivityNode', right_on='b_id')
         
         eni['referencePriority'] = eni['referencePriority'].astype(float)
+        eni['slack_weight'] = eni['referencePriority'][:]
+        eni['RegulatingControl.mode'] = eni['mode'][:]
         eni['p'] = -eni['p']
         eni['q'] = -eni['q']
         eni['x0x_max'] = ((eni['maxR1ToX1Ratio'] + 1j) /
@@ -111,18 +115,18 @@ class ExternalNetworkInjectionsCim16:
                                   'minP': 'min_p_mw', 'maxP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
                                   'p': 'p_mw', 'q': 'q_mvar', 'controlEnabled': 'controllable',
                                   'maxR1ToX1Ratio': 'rx_max', 'minR1ToX1Ratio': 'rx_min', 'maxR0ToX0Ratio': 'r0x0_max',
-                                  'referencePriority': 'slack_weight'})
+                                  'targetValue': 'RegulatingControl.targetValue'})
         eni['scaling'] = 1.
         eni['type'] = None
         eni['slack'] = False
+        eni['RegulatingControl.enabled'] = eni['enabled'][:]
         eni['controllable'] = eni['controllable'].fillna(False)
 
         return eni
 
     def get_voltage_from_controllers(self, eqssh_eni):
         regulation_controllers = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')
-        regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
-        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
+        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled', 'mode']]
         regulation_controllers = regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'})
         eqssh_eni = pd.merge(eqssh_eni, regulation_controllers, how='left', on='RegulatingControl')
         return eqssh_eni
