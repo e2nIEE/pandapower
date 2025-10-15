@@ -7,7 +7,9 @@ dcline_schema = pa.DataFrameSchema(
         "to_bus": pa.Column(int, pa.Check.ge(0), description="Index of bus where the dc line ends"),
         "p_mw": pa.Column(float, description="Active power transmitted from ‘from_bus’ to ‘to_bus’"),
         "loss_percent": pa.Column(
-            float, pa.Check.gt(0), description="Relative transmission loss in percent of active power transmission"
+            float,
+            # pa.Check.gt(0),
+            description="Relative transmission loss in percent of active power transmission",
         ),
         "loss_mw": pa.Column(float, pa.Check.gt(0), description="Total transmission loss in MW"),
         "vm_from_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at from bus"),

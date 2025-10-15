@@ -520,7 +520,7 @@ def create_load(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "load")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "load")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "load")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtype=bool_,
+    _set_value_if_not_nan(net, index, controllable, "controllable", "load",
                           default_val=False)
 
     return index
@@ -636,7 +636,7 @@ def create_loads(
     _add_to_entries_if_not_nan(net, "load", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "load", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "load", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(net, "load", entries, index, "controllable", controllable, dtype=bool_,
+    _add_to_entries_if_not_nan(net, "load", entries, index, "controllable", controllable,
                                default_val=False)
     defaults_to_fill = [("controllable", False)]
 
@@ -952,22 +952,20 @@ def create_sgen(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
-                          default_val=False)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", default_val=False)
 
     _set_value_if_not_nan(net, index, id_q_capability_characteristic,
-                          "id_q_capability_characteristic", "sgen", dtype="Int64")
+                          "id_q_capability_characteristic", "sgen")
 
-    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen",
-                          dtype=bool_)
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen")
 
-    _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", dtype=object, default_val=None)
+    _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", default_val=None)
 
     _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     if np.isfinite(kappa):
         _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
     _set_value_if_not_nan(net, index, generator_type, "generator_type", "sgen",
-                          dtype="str", default_val="current_source")
+                          default_val="current_source")
     if generator_type == "current_source" or generator_type is None:
         _set_value_if_not_nan(net, index, k, "k", "sgen")
     elif generator_type == "async":
@@ -1116,20 +1114,20 @@ def create_sgens(
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "controllable", controllable, dtype=bool_,
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "controllable", controllable,
                                default_val=False)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa",
                                    kappa)  # is used for Type C also as a max. current limit
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "generator_type", generator_type,
-                               dtype="str", default_val="current_source")
+                               default_val="current_source")
     gen_types = ['current_source', 'async', 'async_doubly_fed']
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
                                keys=gen_types)  # type: ignore[call-overload]
 
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "id_q_capability_characteristic",
-                               id_q_capability_characteristic, dtype="Int64")
+                               id_q_capability_characteristic, )
 
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
@@ -1369,8 +1367,7 @@ def create_storage(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "storage")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "storage")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "storage")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "storage",
-                          dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "storage", default_val=False)
 
     return index
 
@@ -1478,7 +1475,7 @@ def create_storages(
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(net, "storage", entries, index, "controllable", controllable, dtype=bool_,
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "controllable", controllable,
                                default_val=False)
     defaults_to_fill = [("controllable", False)]
 
@@ -1612,17 +1609,16 @@ def create_gen(
     _set_entries(net, "gen", index, True, entries=entries)
 
     # OPF limits
-    _set_value_if_not_nan(net, index, controllable, "controllable", "gen",
-                          dtype=bool_, default_val=True)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "gen", default_val=True)
 
     # id for q capability curve table
     _set_value_if_not_nan(net, index, id_q_capability_characteristic,
-                          "id_q_capability_characteristic", "gen", dtype="Int64")
+                          "id_q_capability_characteristic", "gen")
 
     # behaviour of reactive power capability curve
-    _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
+    _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", default_val=None)
 
-    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen", dtype=bool_)
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen")
 
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
@@ -1640,8 +1636,7 @@ def create_gen(
     _set_value_if_not_nan(net, index, xdss_pu, "xdss_pu", "gen")
     _set_value_if_not_nan(net, index, rdss_ohm, "rdss_ohm", "gen")
     _set_value_if_not_nan(net, index, pg_percent, "pg_percent", "gen")
-    _set_value_if_not_nan(net, index, power_station_trafo,
-                          "power_station_trafo", "gen", dtype="Int64")
+    _set_value_if_not_nan(net, index, power_station_trafo, "power_station_trafo", "gen")
 
     return index
 
@@ -1666,7 +1661,7 @@ def create_gens(
     id_q_capability_characteristic: Optional[Int] | Iterable[Int] = None,
     reactive_capability_curve: bool | Iterable[bool] = False,
     curve_style: Optional[str] | Optional[Iterable[str]] = None,
-    controllable: bool | float = nan,
+    controllable: bool | float | Iterable[bool | float] = nan, #TODO: do not think this should ever be float
     vn_kv: float | Iterable[float] = nan,
     xdss_pu: float | Iterable[float] = nan,
     rdss_ohm: float | Iterable[float] = nan,
@@ -1795,14 +1790,14 @@ def create_gens(
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_characteristic",
-                               id_q_capability_characteristic, dtype="Int64")
+                               id_q_capability_characteristic)
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "reactive_capability_curve",
-                               reactive_capability_curve, dtype=bool_)
+                               reactive_capability_curve)
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
-                               power_station_trafo, dtype="Int64")
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,
+                               power_station_trafo)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable,
                                default_val=True)
     defaults_to_fill = [("controllable", True), ('reactive_capability_curve', False), ("curve_style", None)]
 
@@ -1996,8 +1991,7 @@ def create_ext_grid(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "ext_grid")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid",
-                          dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid", default_val=False)
     # others
     _set_value_if_not_nan(net, index, x0x_max, "x0x_max", "ext_grid")
     _set_value_if_not_nan(net, index, r0x0_max, "r0x0_max", "ext_grid")
@@ -2152,9 +2146,9 @@ def create_line(
     _set_value_if_not_nan(net, index, temperature_degree_celsius,
                           "temperature_degree_celsius", "line")
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line", float64)
+        _set_value_if_not_nan(net, index, value, column, "line")
 
     return index
 
@@ -2302,9 +2296,9 @@ def create_line_dc(
     _set_value_if_not_nan(net, index, temperature_degree_celsius,
                           "temperature_degree_celsius", "line_dc")
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+        _set_value_if_not_nan(net, index, value, column, "line_dc")
 
     return index
 
@@ -2314,7 +2308,7 @@ def create_lines(
     from_buses: Sequence,
     to_buses: Sequence,
     length_km: float | Iterable[float],
-    std_type: str,
+    std_type: str | Iterable[str],
     name: Optional[Iterable[str]] = None,
     index: Optional[Int] | Iterable[Int] = None,
     geodata: Optional[Iterable[Iterable[tuple[float, float]]]] = None,
@@ -2434,17 +2428,18 @@ def create_lines(
                                max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value)
 
     _set_multiple_entries(net, "line", index, entries=entries)
-    net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
+    if "geo" in net.line.columns:
+        net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
 
     if geodata:
         _add_multiple_branch_geodata(net, geodata, index)
@@ -2573,14 +2568,14 @@ def create_lines_dc(
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent", max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value)
 
     _set_multiple_entries(net, "line_dc", index, entries=entries)
 
@@ -2741,8 +2736,8 @@ def create_line_from_parameters(
 
     if geodata is not None:
         net.line.at[index, "geo"] = f'{{"coordinates":{geodata}, "type":"LineString"}}'
-    else:
-        net.line.at[index, "geo"] = None
+    # else:  #TODO: just remove ? if none just do not do anything
+    #     net.line.at[index, "geo"] = None
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -2750,9 +2745,9 @@ def create_line_from_parameters(
     _set_value_if_not_nan(net, index, endtemp_degree, "endtemp_degree", "line")
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line", float64)
+        _set_value_if_not_nan(net, index, value, column, "line")
 
     return index
 
@@ -2889,9 +2884,9 @@ def create_line_dc_from_parameters(
                           "temperature_degree_celsius", "line_dc")
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+        _set_value_if_not_nan(net, index, value, column, "line_dc")
 
     return index
 
@@ -3036,22 +3031,22 @@ def create_lines_from_parameters(
     _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value)
 
     _set_multiple_entries(net, "line", index, entries=entries)
 
     if geodata is not None:
         _add_multiple_branch_geodata(net, geodata, index)
-    else:
-        for i in index:
-            net.line.at[i, "geo"] = None
+    # else:  #TODO: just remove ? if none just do not do anything
+    #     for i in index:
+    #         net.line.at[i, "geo"] = None
 
     return index
 
@@ -3176,14 +3171,14 @@ def create_lines_dc_from_parameters(
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
                     "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
                     "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
                     "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value)
 
     _set_multiple_entries(net, "line_dc", index, entries=entries)
 
@@ -3348,14 +3343,13 @@ def create_transformer(
             f"The transformer parameters (index {index}) have been updated to the new format."))
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
-    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
-                          "trafo", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo")
     _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo",
-                          dtype=bool_, default_val=False)
+                          default_val=False)
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type",
-                          "trafo", dtype=object, default_val=None)
+                          "trafo", default_val=None)
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
-    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
@@ -3577,23 +3571,20 @@ def create_transformer_from_parameters(
     _set_entries(net, "trafo", index, entries=entries)
 
     _set_value_if_not_nan(net, index, id_characteristic_table,
-                          "id_characteristic_table", "trafo", dtype="Int64")
+                          "id_characteristic_table", "trafo")
     _set_value_if_not_nan(net, index, tap_changer_type,
-                          "tap_changer_type", "trafo", dtype=object, default_val=None)
+                          "tap_changer_type", "trafo", default_val=None)
     _set_value_if_not_nan(net, index, tap_dependency_table,
-                          "tap_dependency_table", "trafo", dtype=bool_, default_val=False)
+                          "tap_dependency_table", "trafo", default_val=False)
 
-    _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo", dtype=str)
-    _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_min, "tap2_min", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_max, "tap2_max", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_step_percent, "tap2_step_percent",
-                          "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_pos if pd.notnull(tap2_pos) else tap2_neutral,
-                          "tap2_pos", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_changer_type, "tap2_changer_type",
-                          "trafo", dtype=object)
+    _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo")
+    _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo")
+    _set_value_if_not_nan(net, index, tap2_min, "tap2_min", "trafo")
+    _set_value_if_not_nan(net, index, tap2_max, "tap2_max", "trafo")
+    _set_value_if_not_nan(net, index, tap2_step_percent, "tap2_step_percent", "trafo")
+    _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo")
+    _set_value_if_not_nan(net, index, tap2_pos if pd.notnull(tap2_pos) else tap2_neutral, "tap2_pos", "trafo")
+    _set_value_if_not_nan(net, index, tap2_changer_type, "tap2_changer_type","trafo")
 
     if any(key in kwargs for key in ['tap_phase_shifter', 'tap2_phase_shifter']):
         convert_trafo_pst_logic(net)
@@ -3608,10 +3599,10 @@ def create_transformer_from_parameters(
         _set_value_if_not_nan(net, index, mag0_percent, "mag0_percent", "trafo")
         _set_value_if_not_nan(net, index, mag0_rx, "mag0_rx", "trafo")
         _set_value_if_not_nan(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
-        _set_value_if_not_nan(net, index, vector_group, "vector_group", "trafo", dtype=str)
+        _set_value_if_not_nan(net, index, vector_group, "vector_group", "trafo")
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
-    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
@@ -3798,34 +3789,36 @@ def create_transformers_from_parameters( # index missing ?
                "in_service": array(in_service).astype(bool_), "std_type": None, "sn_mva": sn_mva,
                "vn_hv_kv": vn_hv_kv, "vn_lv_kv": vn_lv_kv, "vk_percent": vk_percent,
                "vkr_percent": vkr_percent, "pfe_kw": pfe_kw, "i0_percent": i0_percent,
-               "tap_neutral": tp_neutral, "tap_max": tap_max, "tap_min": tap_min,
+               "tap_neutral": tp_neutral,
+               "tap_max": array(tap_max).astype(get_structure_dict(required_only=False)['trafo']['tap_max']),
+               "tap_min": array(tap_min).astype(get_structure_dict(required_only=False)['trafo']['tap_min']),
                "shift_degree": shift_degree, "tap_pos": tp_pos, "tap_side": tap_side,
-               "tap_step_percent": tap_step_percent, "tap_step_degree": tap_step_degree,
+               "tap_step_percent": tap_step_percent,
+               "tap_step_degree": array(tap_step_degree).astype(get_structure_dict(required_only=False)['trafo']['tap_step_degree']),
                "tap_changer_type": tap_changer_type, "parallel": parallel, "df": df,
                "tap_dependency_table": tap_dependency_table, **kwargs}
 
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "id_characteristic_table",
-                               id_characteristic_table, dtype="Int64")
+                               id_characteristic_table)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "vk0_percent", vk0_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "vkr0_percent", vkr0_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "mag0_percent", mag0_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "mag0_rx", mag0_rx)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "si0_hv_partial", si0_hv_partial)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "max_loading_percent", max_loading_percent)
-    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vector_group", vector_group, dtype=str)
-    _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, bool_, False)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "vector_group", vector_group)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, False)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "pt_percent", pt_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "xn_ohm", xn_ohm)
 
-    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_side", tap2_side, dtype=str)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_side", tap2_side)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_neutral", tap2_neutral)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_min", tap2_min)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_max", tap2_max)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_step_percent", tap2_step_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_step_degree", tap2_step_degree)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_pos", tap2_pos)
-    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_changer_type",
-                               tap2_changer_type, dtype=object)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_changer_type", tap2_changer_type)
 
     defaults_to_fill = [("tap_dependency_table", False)]
 
@@ -3971,11 +3964,11 @@ def create_transformer3w(
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table,
-                          "id_characteristic_table", "trafo3w", dtype="Int64")
+                          "id_characteristic_table", "trafo3w")
     _set_value_if_not_nan(net, index, tap_dependency_table,
-                          "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False)
+                          "tap_dependency_table", "trafo3w", default_val=False)
     _set_value_if_not_nan(net, index, tap_changer_type,
-                          "tap_changer_type", "trafo3w", dtype=str, default_val=None)
+                          "tap_changer_type", "trafo3w", default_val=None)
 
     for key in ['tap_dependent_impedance', 'vk_hv_percent_characteristic', 'vkr_hv_percent_characteristic',
                 'vk_mv_percent_characteristic', 'vkr_mv_percent_characteristic', 'vk_lv_percent_characteristic',
@@ -4181,11 +4174,11 @@ def create_transformer3w_from_parameters(
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table,
-                          "id_characteristic_table", "trafo3w", dtype="Int64")
+                          "id_characteristic_table", "trafo3w")
     _set_value_if_not_nan(net, index, tap_changer_type,
-                          "tap_changer_type", "trafo3w", dtype=str, default_val=None)
+                          "tap_changer_type", "trafo3w", default_val=None)
     _set_value_if_not_nan(net, index, tap_dependency_table,
-                          "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False)
+                          "tap_dependency_table", "trafo3w", default_val=False)
 
     return index
 
@@ -4377,9 +4370,9 @@ def create_transformers3w_from_parameters( # no index ?
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "max_loading_percent",
                                max_loading_percent)
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "id_characteristic_table",
-                               id_characteristic_table, dtype="Int64")
+                               id_characteristic_table)
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "tap_changer_type",
-                               tap_changer_type, dtype=str, default_val=None)
+                               tap_changer_type, default_val=None)
     defaults_to_fill = [("tap_dependency_table", False)]
 
     for key in ['tap_dependent_impedance', 'vk_hv_percent_characteristic', 'vkr_hv_percent_characteristic',
@@ -4671,7 +4664,7 @@ def create_shunt(
     _set_entries(net, "shunt", index, entries=entries)
 
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
-                          "shunt", dtype="Int64")
+                          "shunt")
 
     return index
 
@@ -5742,6 +5735,8 @@ def create_ward(
                "in_service": in_service, **kwargs}
     _set_entries(net, "ward", index, entries=entries)
 
+    net.ward = net.ward.where(pd.notnull(net.ward), None)  #TODO: recheck, if NaN would also be ok
+
     return index
 
 
@@ -6538,14 +6533,14 @@ def _not_nan(value, all_=True):
             return True
 
 
-def try_astype(df, column, dtyp):
+def try_astype(df, column, dtype):
     try:
-        df[column] = df[column].astype(dtyp)
+        df[column] = df[column].astype(dtype)
     except TypeError:
         pass
 
 
-def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64, default_val=nan):
+def _set_value_if_not_nan(net, index, value, column, element_type, default_val=nan):
     """Sets the given value to the dataframe net[element_type]. If the value is nan, default_val
     is assumed if this is not nan.
     If the value is not nan and the column does not exist already, the column is created and filled
@@ -6563,8 +6558,6 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
         name of column
     element_type : str
         element_type type, e.g. "gen"
-    dtype : Any, optional
-        e.g. float64, "Int64", bool_, ..., by default float64
     default_val : Any, optional
         default value to be set if the column exists and value is nan and if the column does not
         exist and the value is not nan, by default nan
@@ -6574,6 +6567,7 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
     _add_to_entries_if_not_nan
     """
     column_exists = column in net[element_type].columns
+    dtype = get_structure_dict(required_only=False)[element_type][column]
     if _not_nan(value):
         if not column_exists:
             net[element_type].loc[:, column] = pd.Series(
@@ -6586,8 +6580,7 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
         try_astype(net[element_type], column, dtype)
 
 
-def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values, dtype=float64,
-                               default_val=nan):
+def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values, default_val=nan):
     """
 
     See Also
@@ -6595,6 +6588,7 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
     _set_value_if_not_nan
     """
     column_exists = column in net[element_type].columns
+    dtype = get_structure_dict(required_only=False)[element_type][column]
     if _not_nan(values):
         entries[column] = pd.Series(values, index=index)
         if _not_nan(default_val):
@@ -6633,7 +6627,12 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: Optional[dict
         dtypes = net[table][intersect1d(net[table].columns, list(entries))].dtypes
 
     for col, val in entries.items():
-        net[table].at[index, col] = val
+        if not pd.isna(val): #TODO: questionable
+            net[table].at[index, col] = val
+            try:
+                net[table][col] = net[table][col].astype(get_structure_dict(required_only=False)[table][col])
+            except KeyError:
+                pass
 
     # and preserve dtypes
     if preserve_dtypes:
@@ -6669,6 +6668,10 @@ def _set_multiple_entries(net: pandapowerNet, table: str, index: np.typing.NDArr
         for col, val in defaults_to_fill:
             if col in dd.columns and col not in net[table].columns:
                 net[table][col] = val
+                try:
+                    net[table][col] = net[table][col].astype(get_structure_dict(required_only=False)[table][col])
+                except KeyError:
+                    pass
 
     # extend the table by the frame we just created
     if len(net[table]):

@@ -10,7 +10,7 @@ gen_schema = pa.DataFrameSchema(
             description="type variable to classify generators naming conventions: “sync” - synchronous generator “async” - asynchronous generator",
         ),
         "bus": pa.Column(int, description="index of connected bus"),
-        "p_mw": pa.Column(float, pa.Check.le(0), description="the real power of the generator [MW]"),
+        "p_mw": pa.Column(float, description="the real power of the generator [MW]"),
         "vm_pu": pa.Column(float, description="voltage set point of the generator [p.u.]"),
         "sn_mva": pa.Column(float, pa.Check.gt(0), required=False, description="nominal power of the generator [MVA]"),
         "max_q_mvar": pa.Column(
@@ -19,21 +19,48 @@ gen_schema = pa.DataFrameSchema(
         "min_q_mvar": pa.Column(
             float, required=False, description="minimum reactive power of the generator [MVAr]", metadata={"opf": True}
         ),
-        "scaling": pa.Column(float, pa.Check.le(0), description="scaling factor for the active power"),
-        # "max_p_mw": pa.Column(float, required=False, description="maximum active power", metadata={"opf": True}), #TODO: only in docu
-        # "min_p_mw": pa.Column(float, required=False, description="minimum active power", metadata={"opf": True}), #TODO: only in docu
-        # "vn_kv": pa.Column(float, required=False, description="rated voltage of the generator", metadata={"sc": True}), #TODO: only in docu
-        # "xdss_pu": pa.Column(
-        #     float, pa.Check.gt(0), required=False, description="subtransient generator reactance in per unit", metadata={"sc": True}
-        # ), #TODO: only in docu
-        # "rdss_ohm": pa.Column(
-        #     float, pa.Check.gt(0), required=False, description="subtransient generator resistence in ohm", metadata={"sc": True}
-        # ), #TODO: only in docu
-        # "cos_phi": pa.Column(float, pa.Check.between(min_value=0, max_value=1), required=False, description="rated generator cosine phi", metadata={"sc": True}),
+        "scaling": pa.Column(
+            float,
+            # pa.Check.le(0),  # TODO: thats not right
+            description="scaling factor for the active power",
+        ),
+        "max_p_mw": pa.Column(
+            float, required=False, description="maximum active power", metadata={"opf": True}
+        ),  # TODO: only in docu
+        "min_p_mw": pa.Column(
+            float, required=False, description="minimum active power", metadata={"opf": True}
+        ),  # TODO: only in docu
+        "vn_kv": pa.Column(
+            float, required=False, description="rated voltage of the generator", metadata={"sc": True}
+        ),  # TODO: only in docu
+        "xdss_pu": pa.Column(
+            float,
+            pa.Check.gt(0),
+            required=False,
+            description="subtransient generator reactance in per unit",
+            metadata={"sc": True},
+        ),  # TODO: only in docu
+        "rdss_ohm": pa.Column(
+            float,
+            pa.Check.gt(0),
+            required=False,
+            description="subtransient generator resistence in ohm",
+            metadata={"sc": True},
+        ),  # TODO: only in docu
+        "cos_phi": pa.Column(
+            float,
+            pa.Check.between(min_value=0, max_value=1),
+            required=False,
+            description="rated generator cosine phi",
+            metadata={"sc": True},
+        ),
         "in_service": pa.Column(bool, description="specifies if the generator is in service"),
-        # "power_station_trafo": pa.Column(
-        #     int, required=False, description="index of the power station trafo (short-circuit relevant)", metadata={"sc": True}
-        # ), #TODO: only in docu
+        "power_station_trafo": pa.Column(
+            int,
+            required=False,
+            description="index of the power station trafo (short-circuit relevant)",
+            metadata={"sc": True},
+        ),  # TODO: only in docu
         "id_q_capability_characteristic": pa.Column(
             int,
             required=False,
@@ -41,7 +68,7 @@ gen_schema = pa.DataFrameSchema(
         ),
         "curve_style": pa.Column(
             str,
-            pa.Check.isin(["straightLineYValues", "constantYValue"]),
+            pa.Check.isin(["straightLineYValues", "constantYValue", ""]),
             required=False,
             description="the style of the generator reactive power capability curve",
         ),
@@ -49,7 +76,7 @@ gen_schema = pa.DataFrameSchema(
             bool, required=False, description="True if generator has dependency on q characteristic"
         ),
         "slack_weight": pa.Column(float, required=False, description=""),  # TODO: missing in docu
-        "slack": pa.Column(bool, required=False, description=""),  # TODO: missing in docu
+        "slack": pa.Column(bool, description=""),  # TODO: missing in docu, needs to be required for pf
         "controllable": pa.Column(bool, required=False, description=""),  # TODO: missing in docu
         "pg_percent": pa.Column(
             float,

@@ -17,7 +17,7 @@ bus_schema = pa.DataFrameSchema(
             float, pa.Check.gt(0), required=False, description="Minimum voltage", metadata={"opf": True}
         ),
         "in_service": pa.Column(bool, description="specifies if the bus is in service."),
-        "geo": pa.Column(str, required=False, description="geojson.Point as object or string"),
+        "geo": pa.Column(str, nullable=True, required=False, description="geojson.Point as object or string"),
     },
     strict=False,
 )

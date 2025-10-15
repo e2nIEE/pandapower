@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from network_schema.tools import validate_dataframes_for_network
 from pandapower import create_empty_network, create_bus, create_ext_grid, create_line_from_parameters, \
     create_load_from_cosphi, runpp, create_shunt_as_capacitor, create_sgen_from_cosphi, \
     create_series_reactor_as_impedance, create_transformer_from_parameters, create_load, create_sgen, create_dcline, \
@@ -19,9 +20,11 @@ from pandapower import create_empty_network, create_bus, create_ext_grid, create
     create_transformers3w_from_parameters, create_switches, create_loads, create_storage, create_storages, nets_equal, \
     create_wards, create_sgens
 
-pd.set_option("display.max_rows", 500)
-pd.set_option("display.max_columns", 500)
-pd.set_option("display.width", 1000)
+from pandapower.network_schema import *
+
+# pd.set_option("display.max_rows", 500)
+# pd.set_option("display.max_columns", 500)
+# pd.set_option("display.width", 1000)
 
 
 def test_convenience_create_functions():
@@ -96,6 +99,7 @@ def test_convenience_create_functions():
         i0_percent=1,
         test_kwargs="dummy_string",
     )
+    validate_dataframes_for_network(net)
     create_load(net, b3, 0.1)
     assert net.trafo.at[tid, "df"] == 1
     runpp(net)
@@ -108,6 +112,8 @@ def test_convenience_create_functions():
     with pytest.raises(UserWarning):
         runpp(net)
     assert net.trafo.test_kwargs.at[tid] == "dummy_string"
+
+    validate_dataframes_for_network(net)
 
 
 def test_nonexistent_bus():
@@ -235,6 +241,8 @@ def test_nonexistent_bus():
         ):  # exception is raised because index already exists
             func()
 
+    validate_dataframes_for_network(net)
+
 
 def test_tap_changer_type_default():
     expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
@@ -248,7 +256,10 @@ def test_tap_changer_type_default():
     create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
     create_transformer(net, 0, 1, "without_tap_shifter_info")
     #assert (net.trafo.tap_changer_type == expected_default).all() # comparison with NaN is always false. revert back to this
-    assert (net.trafo.tap_changer_type.isna()).all()
+    if 'tap_changer_type' in net.trafo.columns:
+        assert (net.trafo.tap_changer_type.isna()).all()
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_line_conductance():
@@ -273,6 +284,8 @@ def test_create_line_conductance():
     assert net.line.g_us_per_km.at[l] == 1
     assert net.line.test_kwargs.at[l] == "dummy_string"
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_buses():
     net = create_empty_network()
@@ -291,6 +304,8 @@ def test_create_buses():
         assert net.bus.at[i, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
     for i, ind in enumerate(b3):
         assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_lines():
@@ -311,6 +326,8 @@ def test_create_lines():
     assert len(set(net.line.r_ohm_per_km)) == 1
     assert all(net.line.test_kwargs == "dummy_string")
 
+    validate_dataframes_for_network(net)
+
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
@@ -324,6 +341,8 @@ def test_create_lines():
     assert len(net.line) == 2
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 1
     assert sum(net.line.std_type == "NA2XS2Y 1x240 RM/25 6/10 kV") == 1
+
+    validate_dataframes_for_network(net)
 
     # with geodata
     net = create_empty_network()
@@ -341,6 +360,8 @@ def test_create_lines():
     assert len(net.line) == 2
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
     assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
+
+    validate_dataframes_for_network(net)
 
     # setting params as single value
     net = create_empty_network()
@@ -375,6 +396,8 @@ def test_create_lines():
     assert net.line.at[l[0], "parallel"] == 1
     assert net.line.at[l[1], "parallel"] == 1
 
+    validate_dataframes_for_network(net)
+
     # setting params as array
     net = create_empty_network()
     b1 = create_bus(net, 10)
@@ -407,6 +430,8 @@ def test_create_lines():
     assert net.line.at[l[1], "max_loading_percent"] == 90
     assert net.line.at[l[0], "parallel"] == 2
     assert net.line.at[l[1], "parallel"] == 1
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_lines_from_parameters():
@@ -453,6 +478,8 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
     assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
+    validate_dataframes_for_network(net)
+
     # setting params as single value
     net = create_empty_network()
     b1 = create_bus(net, 10)
@@ -498,6 +525,8 @@ def test_create_lines_from_parameters():
     assert all(net.line["temperature_degree_celsius"].values == 20.0)
     assert all(net.line["alpha"].values == 0.04)
     assert all(net.line.test_kwargs == "dummy_string")
+
+    validate_dataframes_for_network(net)
 
     # setting params as array
     net = create_empty_network()
@@ -553,6 +582,8 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[0], "max_i_ka"] == 100
     assert net.line.at[l[1], "max_i_ka"] == 200
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_lines_raise_errorexcept():
     # standard
@@ -607,6 +638,8 @@ def test_create_lines_raise_errorexcept():
             max_i_ka=[100, 100],
         )
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_lines_optional_columns():
     #
@@ -636,6 +669,8 @@ def test_create_lines_optional_columns():
     # create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
     # create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])
     assert "max_loading_percent" not in net.line.columns
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_line_alpha_temperature():
@@ -668,6 +703,8 @@ def test_create_line_alpha_temperature():
     create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
     create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
     assert "wind_speed_m_per_s" not in net.line.columns
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_transformers_from_parameters():
@@ -710,6 +747,8 @@ def test_create_transformers_from_parameters():
     assert len(net.trafo.i0_percent) == 2
     assert len(net.trafo.df) == 2
     assert len(net.trafo.foo) == 2
+
+    validate_dataframes_for_network(net)
 
     # setting params as single value
     net = create_empty_network()
@@ -756,6 +795,8 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.si0_hv_partial == 0.1)
     assert all(net.trafo.test_kwargs == "dummy_string")
 
+    validate_dataframes_for_network(net)
+
     # setting params as array
     net = create_empty_network()
     b1 = create_bus(net, 10)
@@ -798,6 +839,8 @@ def test_create_transformers_from_parameters():
     assert net.trafo.tap_pos.at[t[0]] == -1
     assert net.trafo.tap_pos.at[t[1]] == 4
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_transformers_raise_errorexcept():
     # standard
@@ -832,6 +875,7 @@ def test_create_transformers_raise_errorexcept():
             i0_percent=0.3,
             index=[2, 1],
         )
+    validate_dataframes_for_network(net)
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
@@ -881,6 +925,8 @@ def test_create_transformers_raise_errorexcept():
             foo=2,
         )
 
+    validate_dataframes_for_network(net)
+
 
 def test_trafo_2_tap_changers():
     net = create_empty_network()
@@ -896,7 +942,7 @@ def test_trafo_2_tap_changers():
                  "tap2_step_degree": 0,
                  "tap2_changer_type": "Ratio"}
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c not in net.trafo.columns
 
     std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
@@ -905,9 +951,11 @@ def test_trafo_2_tap_changers():
 
     t = create_transformer(net, b1, b2, "test_trafo_type")
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c in net.trafo.columns
         assert net.trafo.at[t, c] == tap2_data[c]
+
+    validate_dataframes_for_network(net)
 
 
 def test_trafo_2_tap_changers_parameters():
@@ -926,14 +974,16 @@ def test_trafo_2_tap_changers_parameters():
 
     create_transformer_from_parameters(net, b1, b2, **std_type)
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c not in net.trafo.columns
 
     t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c in net.trafo.columns
         assert net.trafo.at[t, c] == tap2_data[c]
+
+    validate_dataframes_for_network(net)
 
 
 def test_trafos_2_tap_changers_parameters():
@@ -954,14 +1004,16 @@ def test_trafos_2_tap_changers_parameters():
 
     create_transformers_from_parameters(net, [b1, b1], [b2, b2], **std_type_p)
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c not in net.trafo.columns
 
     t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c in net.trafo.columns
         assert net.trafo.at[t, c] == tap2_data[c]
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_transformers3w_from_parameters():
@@ -1070,6 +1122,8 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.in_service == [True, False])
     assert all(net.trafo3w.test_kwargs == ["foo", "bar"])
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_transformers3w_raise_errorexcept():
     # standard
@@ -1129,6 +1183,7 @@ def test_create_transformers3w_raise_errorexcept():
             mag0_percent=0.3,
             index=[2, 1],
         )
+    validate_dataframes_for_network(net)
     net = create_empty_network()
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
@@ -1214,6 +1269,8 @@ def test_create_transformers3w_raise_errorexcept():
             mag0_percent=0.3,
         )
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_switches():
     net = create_empty_network()
@@ -1249,6 +1306,8 @@ def test_create_switches():
     assert net.switch.test_kwargs.at[0] == "aaa"
     assert net.switch.test_kwargs.at[1] == "aaa"
     assert net.switch.test_kwargs.at[2] == "aaa"
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_switches_raise_errorexcept():
@@ -1372,6 +1431,8 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_loads():
     net = create_empty_network()
@@ -1413,6 +1474,8 @@ def test_create_loads():
         net.load.test_kwargs.values
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_loads_raise_errorexcept():
@@ -1463,6 +1526,9 @@ def test_create_loads_raise_errorexcept():
             index=l,
         )
 
+    validate_dataframes_for_network(net)
+
+
 def test_const_percent_values_deprecated_handling():
     # This test checks that passing const_z_percent and const_i_percent to create_load
     # sets all four percent columns and triggers the deprecation warning.
@@ -1479,6 +1545,9 @@ def test_const_percent_values_deprecated_handling():
     assert load_idx.const_z_q_percent == 11
     assert load_idx.const_i_p_percent == 22
     assert load_idx.const_i_q_percent == 22
+
+    validate_dataframes_for_network(net)
+
 
 def test_create_storages():
     net = create_empty_network()
@@ -1536,6 +1605,8 @@ def test_create_storages():
         net.storage.loc[net.storage[col].isnull(), col] = ""
     assert nets_equal(net, net_bulk)
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_wards():
     net = create_empty_network()
@@ -1568,12 +1639,14 @@ def test_create_wards():
     assert net.ward.qz_mvar.at[1] == 7
     assert net.ward.qz_mvar.at[2] == 11
     assert net.ward.name.at[0] == "asd"
-    assert net.ward.name.at[1] == None
+    assert net.ward.name.at[1] == None  #TODO: recheck, if NaN would also be ok
     assert net.ward.name.at[2] == "123"
     assert net.ward.in_service.at[0]
     assert not net.ward.in_service.at[1]
     assert not net.ward.in_service.at[2]
     assert nets_equal(net, net_bulk)
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_sgens():
@@ -1625,6 +1698,8 @@ def test_create_sgens():
     assert all(net.sgen.id_q_capability_characteristic.values == [0, 1, 2])
     assert all(net.sgen.curve_style == "straightLineYValues")
     assert all(net.sgen.reactive_capability_curve == [False, False, False])
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_sgens_raise_errorexcept():
@@ -1684,6 +1759,8 @@ def test_create_sgens_raise_errorexcept():
             index=sg,
         )
 
+    validate_dataframes_for_network(net)
+
 
 def test_create_gens():
     net = create_empty_network()
@@ -1736,6 +1813,8 @@ def test_create_gens():
     assert all(net.gen.id_q_capability_characteristic.values == [0, 1, 2])
     assert all(net.gen.curve_style == "straightLineYValues")
     assert all(net.gen.reactive_capability_curve == [False, False, False])
+
+    validate_dataframes_for_network(net)
 
 
 def test_create_gens_raise_errorexcept():
@@ -1802,6 +1881,8 @@ def test_create_gens_raise_errorexcept():
             cos_phi=1.0,
             index=g,
         )
+
+    validate_dataframes_for_network(net)
 
 
 if __name__ == "__main__":

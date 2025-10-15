@@ -1,77 +1,41 @@
 from numpy import dtype
 
 from pandapower._version import __version__, __format_version__
-from pandapower.network_schema.asymmetric_load import (
-    asymmetric_load_schema,
-    res_asymmetric_load_schema,
-    res_asymmetric_load_3ph_schema,
-)
-from pandapower.network_schema.asymmetric_sgen import (
-    asymmetric_sgen_schema,
-    res_asymmetric_sgen_schema,
-    res_asymmetric_sgen_3ph_schema,
-)
-from pandapower.network_schema.b2b_vsc import b2b_vsc_schema, res_b2b_vsc_schema
-from pandapower.network_schema.bi_vsc import bi_vsc_schema, res_bi_vsc_schema
-from pandapower.network_schema.bus import bus_schema, res_bus_schema, res_bus_3ph_schema
-from pandapower.network_schema.bus_dc import bus_dc_schema, res_bus_dc_schema
-from pandapower.network_schema.dcline import dcline_schema, res_dcline_schema
-from pandapower.network_schema.ext_grid import ext_grid_schema, res_ext_grid_schema, res_ext_grid_3ph_schema
-from pandapower.network_schema.gen import gen_schema, res_gen_schema
-from pandapower.network_schema.impedance import impedance_schema, res_impedance_schema
-from pandapower.network_schema.line import line_schema, res_line_schema, res_line_3ph_schema
-from pandapower.network_schema.line_dc import line_dc_schema, res_line_dc_schema
-from pandapower.network_schema.load import load_schema, res_load_schema
-from pandapower.network_schema.load_dc import load_dc_schema, res_load_dc_schema
-from pandapower.network_schema.measurement import measurement_schema
-from pandapower.network_schema.motor import motor_schema, res_motor_schema
-from pandapower.network_schema.sgen import sgen_schema, res_sgen_schema
-from pandapower.network_schema.shunt import shunt_schema, res_shunt_schema
-from pandapower.network_schema.source_dc import source_dc_schema, res_source_dc_schema
-from pandapower.network_schema.ssc import ssc_schema, res_ssc_schema
-from pandapower.network_schema.storage import storage_schema, res_storage_schema, res_storage_3ph_schema
-from pandapower.network_schema.svc import svc_schema, res_svc_schema
-from pandapower.network_schema.switch import switch_schema, res_switch_schema
-from pandapower.network_schema.tcsc import tcsc_schema, res_tcsc_schema
 from pandapower.network_schema.tools import get_dtypes
-from pandapower.network_schema.trafo import trafo_schema, res_trafo_schema, res_trafo_3ph_schema
-from pandapower.network_schema.trafo3w import trafo3w_schema, res_trafo3w_schema
-from pandapower.network_schema.vsc import vsc_schema, res_vsc_schema
-from pandapower.network_schema.ward import ward_schema, res_ward_schema
-from pandapower.network_schema.xward import xward_schema, res_xward_schema
+from pandapower.network_schema import *
 
 
-def get_structure_dict() -> dict:
+def get_structure_dict(required_only: bool = True) -> dict:
     """
     This function returns the structure dict of the network
     """
     return {
         # structure data
-        "bus": get_dtypes(bus_schema),
-        "bus_dc": get_dtypes(bus_dc_schema),
-        "load": get_dtypes(load_schema),
-        "sgen": get_dtypes(sgen_schema),
-        "motor": get_dtypes(motor_schema),
-        "asymmetric_load": get_dtypes(asymmetric_load_schema),
-        "asymmetric_sgen": get_dtypes(asymmetric_sgen_schema),
-        "storage": get_dtypes(storage_schema),
-        "gen": get_dtypes(gen_schema),
-        "switch": get_dtypes(switch_schema),
-        "shunt": get_dtypes(shunt_schema),
-        "svc": get_dtypes(svc_schema),
-        "ssc": get_dtypes(ssc_schema),
-        "vsc": get_dtypes(vsc_schema),
-        "ext_grid": get_dtypes(ext_grid_schema),
-        "line": get_dtypes(line_schema),
-        "line_dc": get_dtypes(line_dc_schema),
-        "trafo": get_dtypes(trafo_schema),
-        "trafo3w": get_dtypes(trafo3w_schema),
-        "impedance": get_dtypes(impedance_schema),
-        "tcsc": get_dtypes(tcsc_schema),
-        "dcline": get_dtypes(dcline_schema),
-        "ward": get_dtypes(ward_schema),
-        "xward": get_dtypes(xward_schema),
-        "measurement": get_dtypes(measurement_schema),
+        "bus": get_dtypes(bus_schema, required_only),
+        "bus_dc": get_dtypes(bus_dc_schema, required_only),
+        "load": get_dtypes(load_schema, required_only),
+        "sgen": get_dtypes(sgen_schema, required_only),
+        "motor": get_dtypes(motor_schema, required_only),
+        "asymmetric_load": get_dtypes(asymmetric_load_schema, required_only),
+        "asymmetric_sgen": get_dtypes(asymmetric_sgen_schema, required_only),
+        "storage": get_dtypes(storage_schema, required_only),
+        "gen": get_dtypes(gen_schema, required_only),
+        "switch": get_dtypes(switch_schema, required_only),
+        "shunt": get_dtypes(shunt_schema, required_only),
+        "svc": get_dtypes(svc_schema, required_only),
+        "ssc": get_dtypes(ssc_schema, required_only),
+        "vsc": get_dtypes(vsc_schema, required_only),
+        "ext_grid": get_dtypes(ext_grid_schema, required_only),
+        "line": get_dtypes(line_schema, required_only),
+        "line_dc": get_dtypes(line_dc_schema, required_only),
+        "trafo": get_dtypes(trafo_schema, required_only),
+        "trafo3w": get_dtypes(trafo3w_schema, required_only),
+        "impedance": get_dtypes(impedance_schema, required_only),
+        "tcsc": get_dtypes(tcsc_schema, required_only),
+        "dcline": get_dtypes(dcline_schema, required_only),
+        "ward": get_dtypes(ward_schema, required_only),
+        "xward": get_dtypes(xward_schema, required_only),
+        "measurement": get_dtypes(measurement_schema, required_only),
         "pwl_cost": {  # TODO: not a datastructure or element?
             "power_type": dtype(object),
             "element": "u4",
@@ -102,10 +66,10 @@ def get_structure_dict() -> dict:
             "element_index": dtype(object),
             "reference_column": dtype(object),
         },
-        "source_dc": get_dtypes(source_dc_schema),
-        "load_dc": get_dtypes(load_dc_schema),
-        "b2b_vsc": get_dtypes(b2b_vsc_schema),
-        "bi_vsc": get_dtypes(bi_vsc_schema),
+        "source_dc": get_dtypes(source_dc_schema, required_only),
+        "load_dc": get_dtypes(load_dc_schema, required_only),
+        "b2b_vsc": get_dtypes(b2b_vsc_schema, required_only),
+        "bi_vsc": get_dtypes(bi_vsc_schema, required_only),
         # result tables
         "_empty_res_bus": get_dtypes(res_bus_schema),
         "_empty_res_bus_dc": get_dtypes(res_bus_dc_schema),

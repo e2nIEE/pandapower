@@ -3,6 +3,7 @@ import importlib.util
 from pathlib import Path
 import logging
 
+import pandas as pd
 import pandera.pandas as pa
 
 from pandapower import pandapowerNet
@@ -10,8 +11,22 @@ from pandapower import pandapowerNet
 logger = logging.getLogger()
 
 
-def get_dtypes(schema: pa.DataFrameSchema):
-    return {name: col.dtype.type for name, col in schema.columns.items() if schema.columns[name].required}
+def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True):
+    if required_only:
+        return {name: col.dtype.type for name, col in schema.columns.items() if schema.columns[name].required}
+    else:
+        return {name: col.dtype.type for name, col in schema.columns.items() if schema.columns[name]}
+
+
+def validate_element_by_schema(schema: pa.DataFrameSchema, element: pd.DataFrame):
+    assert schema.validate(element) is not None
+
+
+def validate_column_group_dependency(columns):
+    return lambda df: (
+        # Either none of the columns exists or all of the columns exist
+        not any(col in df.columns for col in columns) or all(col in df.columns for col in columns)
+    )
 
 
 def validate_dataframes_for_network(net: pandapowerNet):
@@ -40,11 +55,12 @@ def validate_dataframes_for_network(net: pandapowerNet):
             continue
         loader.exec_module(schema_module)
 
+        schema = getattr(schema_module, f"{element}_schema")
+
         try:
-            schema_module.schema.validate(net[element])
+            schema.validate(net[element])
         except Exception as e:
-            logger.warning(f"Validation failed for {element}")
-            logger.warning(e)
+            raise pa.errors.SchemaError(data=e, message=f"Validation failed for {element}", schema=schema)
 
 
 def create_docu_csv_from_schema(schema):

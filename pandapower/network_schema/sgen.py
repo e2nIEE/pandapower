@@ -4,9 +4,7 @@ sgen_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu:
     {
         "name": pa.Column(str, required=False, description="name of the static generator"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
-        "p_mw": pa.Column(
-            float, pa.Check.le(0), description="active power of the static generator [MW]"
-        ),  # TODO: surely the docu must be wrong for le0
+        "p_mw": pa.Column(float, description="active power of the static generator [MW]"),
         "q_mvar": pa.Column(float, description="reactive power of the static generator [MVAr]"),
         "sn_mva": pa.Column(
             float, pa.Check.gt(0), required=False, description="rated power ot the static generator [MVA]"
@@ -52,7 +50,7 @@ sgen_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu:
         ),
         "curve_style": pa.Column(
             str,
-            pa.Check.isin(["straightLineYValues", "constantYValue"]),
+            pa.Check.isin(["straightLineYValues", "constantYValue", ""]),
             nullable=True,
             required=False,
             description="the style of the static generator reactive power capability curve",
@@ -60,7 +58,12 @@ sgen_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu:
         "reactive_capability_curve": pa.Column(
             bool, required=False, description="True if static generator has dependency on q characteristic"
         ),
-        "type": pa.Column(str, pa.Check.isin(["PV", "WP", "CHP"]), required=False, description="type of generator"),
+        "type": pa.Column(
+            str,
+            pa.Check.isin(["PV", "WP", "CHP", "wye", "delta"]),  # TODO: unclear if complete
+            required=False,
+            description="type of generator",
+        ),
         "current_source": pa.Column(bool, description=""),  # TODO: missing in docu
         "generator_type": pa.Column(
             str,

@@ -35,8 +35,12 @@ trafo3w_schema = pa.DataFrameSchema(
         ),
         "pfe_kw": pa.Column(float, description="iron losses [kW]"),
         "i0_percent": pa.Column(float, description="open loop losses [%]"),
-        "shift_mv_degree": pa.Column(float, required=False, description="transformer phase shift angle at the MV side"),
-        "shift_lv_degree": pa.Column(float, required=False, description="transformer phase shift angle at the LV side"),
+        "shift_mv_degree": pa.Column(
+            float, nullable=True, required=False, description="transformer phase shift angle at the MV side"
+        ),
+        "shift_lv_degree": pa.Column(
+            float, nullable=True, required=False, description="transformer phase shift angle at the LV side"
+        ),
         "tap_side": pa.Column(
             str,
             pa.Check.isin(["hv", "mv", "lv"]),
@@ -69,6 +73,11 @@ trafo3w_schema = pa.DataFrameSchema(
             required=False,
             description="references the id_characteristic index from the trafo_characteristic_table",
         ),
+        "max_loading_percent": pa.Column(
+            int,  # TODO: guess from trafo2w
+            required=False,
+            description="",
+        ),  # TODO: not in docu only create
         "in_service": pa.Column(bool, description="specifies if the transformer is in service."),
     },
     strict=False,

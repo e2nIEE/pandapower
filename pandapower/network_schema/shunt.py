@@ -1,3 +1,4 @@
+import pandas as pd
 import pandera.pandas as pa
 
 shunt_schema = pa.DataFrameSchema(
@@ -16,11 +17,12 @@ shunt_schema = pa.DataFrameSchema(
             bool,
             required=False,
             description="whether the shunt parameters (q_mvar, p_mw) are adjusted dependent on the step of the shunt",
-        ),
+        ),  # TODO: remove
         "id_characteristic_table": pa.Column(
-            int,
+            pd.Int64Dtype,
             pa.Check.ge(0),
-            required=False,
+            nullable=True,
+            required=True,  # TODO: switch to false, when step_dependancy_table is gone
             description="references the id_characteristic index from the shunt_characteristic_table",
         ),
     },
