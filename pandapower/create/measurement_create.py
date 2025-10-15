@@ -28,7 +28,7 @@ def create_measurement(
     check_existing: bool = False,
     index: Optional[Int] = None,
     name: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements \
@@ -83,40 +83,72 @@ def create_measurement(
     if meas_type in ("v", "va"):
         element_type = "bus"
 
-    if element_type not in ("bus", "line", "trafo", "trafo3w", "load", "gen", "sgen", "shunt", "ward", "xward",
-                            "ext_grid"):
+    if element_type not in (
+        "bus",
+        "line",
+        "trafo",
+        "trafo3w",
+        "load",
+        "gen",
+        "sgen",
+        "shunt",
+        "ward",
+        "xward",
+        "ext_grid",
+    ):
         raise UserWarning("Invalid element type ({})".format(element_type))
 
     if element is not None and element not in net[element_type].index.values:
-        raise UserWarning("{} with index={} does not exist".format(element_type.capitalize(),
-                                                                   element))
+        raise UserWarning("{} with index={} does not exist".format(element_type.capitalize(), element))
 
     index = _get_index_with_check(net, "measurement", index)
 
     if meas_type in ("i", "ia") and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if meas_type in ("v", "va") and element_type in ("line", "trafo", "trafo3w", "load", "gen", "sgen", "shunt",
-                                                     "ward", "xward", "ext_grid"):
+    if meas_type in ("v", "va") and element_type in (
+        "line",
+        "trafo",
+        "trafo3w",
+        "load",
+        "gen",
+        "sgen",
+        "shunt",
+        "ward",
+        "xward",
+        "ext_grid",
+    ):
         raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
 
     if check_existing:
         if side is None:
-            existing = net.measurement[(net.measurement.measurement_type == meas_type) &
-                                       (net.measurement.element_type == element_type) &
-                                       (net.measurement.element == element) &
-                                       (pd.isnull(net.measurement.side))].index
+            existing = net.measurement[
+                (net.measurement.measurement_type == meas_type)
+                & (net.measurement.element_type == element_type)
+                & (net.measurement.element == element)
+                & (pd.isnull(net.measurement.side))
+            ].index
         else:
-            existing = net.measurement[(net.measurement.measurement_type == meas_type) &
-                                       (net.measurement.element_type == element_type) &
-                                       (net.measurement.element == element) &
-                                       (net.measurement.side == side)].index
+            existing = net.measurement[
+                (net.measurement.measurement_type == meas_type)
+                & (net.measurement.element_type == element_type)
+                & (net.measurement.element == element)
+                & (net.measurement.side == side)
+            ].index
         if len(existing) == 1:
             index = existing[0]
         elif len(existing) > 1:
             raise UserWarning("More than one measurement of this type exists")
 
-    entries = {"name": name, "measurement_type": meas_type.lower(), "element_type": element_type, "element": element,
-               "value": value, "std_dev": std_dev, "side": side, **kwargs}
+    entries = {
+        "name": name,
+        "measurement_type": meas_type.lower(),
+        "element_type": element_type,
+        "element": element,
+        "value": value,
+        "std_dev": std_dev,
+        "side": side,
+        **kwargs,
+    }
     _set_entries(net, "measurement", index, entries=entries)
     return index

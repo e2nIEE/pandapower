@@ -15,14 +15,15 @@ logger = logging.getLogger(__name__)
 
 
 def create_source_dc(
-        net: pandapowerNet,
-        bus_dc: Int,
-        vm_pu: float = 1.0,
-        index: Int | None = None,
-        name: str | None = None,
-        in_service: bool = True,
-        type: str | None = None,
-        **kwargs):
+    net: pandapowerNet,
+    bus_dc: Int,
+    vm_pu: float = 1.0,
+    index: Int | None = None,
+    name: str | None = None,
+    in_service: bool = True,
+    type: str | None = None,
+    **kwargs,
+):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
     INPUT:
@@ -47,7 +48,7 @@ def create_source_dc(
         **index** (int) - The unique ID of the created svc
 
     """
-    _check_element(net, bus_dc, element='bus_dc')
+    _check_element(net, bus_dc, element="bus_dc")
 
     index = _get_index_with_check(net, "source_dc", index)
 

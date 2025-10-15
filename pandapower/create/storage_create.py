@@ -38,7 +38,7 @@ def create_storage(
     min_e_mwh: float = 0.0,
     name: str | None = None,
     index: Int | None = None,
-    scaling: float = 1.,
+    scaling: float = 1.0,
     type: str | None = None,
     in_service: bool = True,
     max_p_mw: float = nan,
@@ -46,7 +46,7 @@ def create_storage(
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
     controllable: bool | float = nan,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds a storage to the network.
@@ -122,9 +122,20 @@ def create_storage(
 
     index = _get_index_with_check(net, "storage", index)
 
-    entries = {"name": name, "bus": bus, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva, "scaling": scaling,
-               "soc_percent": soc_percent, "min_e_mwh": min_e_mwh, "max_e_mwh": max_e_mwh,
-               "in_service": in_service, "type": type, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "p_mw": p_mw,
+        "q_mvar": q_mvar,
+        "sn_mva": sn_mva,
+        "scaling": scaling,
+        "soc_percent": soc_percent,
+        "min_e_mwh": min_e_mwh,
+        "max_e_mwh": max_e_mwh,
+        "in_service": in_service,
+        "type": type,
+        **kwargs,
+    }
     _set_entries(net, "storage", index, True, entries=entries)
 
     # check for OPF parameters and add columns to network table
@@ -132,8 +143,7 @@ def create_storage(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "storage")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "storage")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "storage")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "storage",
-                          dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "storage", dtype=bool_, default_val=False)
 
     return index
 
@@ -148,8 +158,8 @@ def create_storages(
     soc_percent: float | Iterable[float] = nan,
     min_e_mwh: float | Iterable[float] = 0.0,
     name: Iterable[str] | None = None,
-    index: Int | Iterable[Int] | None  = None,
-    scaling: float | Iterable[float] = 1.,
+    index: Int | Iterable[Int] | None = None,
+    scaling: float | Iterable[float] = 1.0,
     type: str | Iterable[str] | None = None,
     in_service: bool | Iterable[bool] = True,
     max_p_mw: float | Iterable[float] = nan,
@@ -157,7 +167,7 @@ def create_storages(
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
     controllable: bool | Iterable[bool] | float = nan,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """
     Adds storages to the network.
@@ -233,16 +243,28 @@ def create_storages(
 
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
-    entries = {"name": name, "bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
-               "scaling": scaling, "soc_percent": soc_percent, "min_e_mwh": min_e_mwh,
-               "max_e_mwh": max_e_mwh, "in_service": in_service, "type": type, **kwargs}
+    entries = {
+        "name": name,
+        "bus": buses,
+        "p_mw": p_mw,
+        "q_mvar": q_mvar,
+        "sn_mva": sn_mva,
+        "scaling": scaling,
+        "soc_percent": soc_percent,
+        "min_e_mwh": min_e_mwh,
+        "max_e_mwh": max_e_mwh,
+        "in_service": in_service,
+        "type": type,
+        **kwargs,
+    }
 
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(net, "storage", entries, index, "controllable", controllable, dtype=bool_,
-                               default_val=False)
+    _add_to_entries_if_not_nan(
+        net, "storage", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+    )
     defaults_to_fill = [("controllable", False)]
 
     _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, entries=entries)

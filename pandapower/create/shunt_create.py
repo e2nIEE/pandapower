@@ -20,7 +20,7 @@ from pandapower.create._utils import (
     _get_multiple_index_with_check,
     _set_entries,
     _set_multiple_entries,
-    _set_value_if_not_nan
+    _set_value_if_not_nan,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def create_shunt(
     net: pandapowerNet,
     bus: Int,
     q_mvar: float,
-    p_mw: float = 0.,
+    p_mw: float = 0.0,
     vn_kv: Optional[float] = None,
     step: int = 1,
     max_step: int = 1,
@@ -39,7 +39,7 @@ def create_shunt(
     id_characteristic_table: Optional[int] = None,
     in_service: bool = True,
     index: Optional[Int] = None,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates a shunt element.
@@ -92,13 +92,22 @@ def create_shunt(
     if vn_kv is None:
         vn_kv = net.bus.vn_kv.at[bus]
 
-    entries = {"bus": bus, "name": name, "p_mw": p_mw, "q_mvar": q_mvar, "vn_kv": vn_kv, "step": step,
-               "max_step": max_step, "in_service": in_service, "step_dependency_table": step_dependency_table,
-               "id_characteristic_table": id_characteristic_table, **kwargs}
+    entries = {
+        "bus": bus,
+        "name": name,
+        "p_mw": p_mw,
+        "q_mvar": q_mvar,
+        "vn_kv": vn_kv,
+        "step": step,
+        "max_step": max_step,
+        "in_service": in_service,
+        "step_dependency_table": step_dependency_table,
+        "id_characteristic_table": id_characteristic_table,
+        **kwargs,
+    }
     _set_entries(net, "shunt", index, entries=entries)
 
-    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table",
-                          "shunt", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "shunt", dtype="Int64")
 
     return index
 
@@ -107,7 +116,7 @@ def create_shunts(
     net: pandapowerNet,
     buses: Sequence,
     q_mvar: float | Iterable[float],
-    p_mw: float | Iterable[float] = 0.,
+    p_mw: float | Iterable[float] = 0.0,
     vn_kv: Optional[float | Iterable[float]] = None,
     step: int | Iterable[int] = 1,
     max_step: int | Iterable[int] = 1,
@@ -115,8 +124,8 @@ def create_shunts(
     step_dependency_table: bool | Iterable[bool] = False,
     id_characteristic_table: Optional[int] | Iterable[Optional[int]] = None,
     in_service: bool | Iterable[bool] = True,
-    index = None,
-    **kwargs
+    index=None,
+    **kwargs,
 ) -> npt.NDArray[np.array]:
     """
     Creates a number of shunt elements.
@@ -169,21 +178,25 @@ def create_shunts(
     if vn_kv is None:
         vn_kv = net.bus.vn_kv.loc[buses]
 
-    entries = {"bus": buses, "name": name, "p_mw": p_mw, "q_mvar": q_mvar, "vn_kv": vn_kv, "step": step,
-               "max_step": max_step, "in_service": in_service, "step_dependency_table": step_dependency_table,
-               "id_characteristic_table": id_characteristic_table, **kwargs}
+    entries = {
+        "bus": buses,
+        "name": name,
+        "p_mw": p_mw,
+        "q_mvar": q_mvar,
+        "vn_kv": vn_kv,
+        "step": step,
+        "max_step": max_step,
+        "in_service": in_service,
+        "step_dependency_table": step_dependency_table,
+        "id_characteristic_table": id_characteristic_table,
+        **kwargs,
+    }
     _set_multiple_entries(net, "shunt", index, entries=entries)
 
     return index
 
 
-def create_shunt_as_capacitor(
-    net: pandapowerNet,
-    bus: Int,
-    q_mvar: float,
-    loss_factor: float,
-    **kwargs
-) -> Int:
+def create_shunt_as_capacitor(net: pandapowerNet, bus: Int, q_mvar: float, loss_factor: float, **kwargs) -> Int:
     """
     Creates a shunt element representing a capacitor bank.
 
@@ -221,7 +234,7 @@ def create_svc(
     index: Optional[Int] = None,
     min_angle_degree: float = 90,
     max_angle_degree: float = 180,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates an SVC element - a shunt element with adjustable impedance used to control the voltage \
@@ -270,10 +283,19 @@ def create_svc(
 
     index = _get_index_with_check(net, "svc", index)
 
-    entries = {"name": name, "bus": bus, "x_l_ohm": x_l_ohm, "x_cvar_ohm": x_cvar_ohm, "set_vm_pu": set_vm_pu,
-               "thyristor_firing_angle_degree": thyristor_firing_angle_degree, "controllable": controllable,
-               "in_service": in_service, "min_angle_degree": min_angle_degree, "max_angle_degree": max_angle_degree,
-               **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "x_l_ohm": x_l_ohm,
+        "x_cvar_ohm": x_cvar_ohm,
+        "set_vm_pu": set_vm_pu,
+        "thyristor_firing_angle_degree": thyristor_firing_angle_degree,
+        "controllable": controllable,
+        "in_service": in_service,
+        "min_angle_degree": min_angle_degree,
+        "max_angle_degree": max_angle_degree,
+        **kwargs,
+    }
     _set_entries(net, "svc", index, entries=entries)
 
     return index
@@ -284,14 +306,14 @@ def create_ssc(
     bus: Int,
     r_ohm: float,
     x_ohm: float,
-    set_vm_pu: float = 1.,
-    vm_internal_pu: float = 1.,
-    va_internal_degree: float = 0.,
+    set_vm_pu: float = 1.0,
+    vm_internal_pu: float = 1.0,
+    va_internal_degree: float = 0.0,
     name: Optional[str] = None,
     controllable: bool = True,
     in_service: bool = True,
     index: Optional[Int] = None,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates an SSC element (STATCOM)- a shunt element with adjustable VSC internal voltage used to control the voltage \
@@ -340,32 +362,41 @@ def create_ssc(
 
     index = _get_index_with_check(net, "ssc", index)
 
-    entries = {"name": name, "bus": bus, "r_ohm": r_ohm, "x_ohm": x_ohm, "set_vm_pu": set_vm_pu,
-               "vm_internal_pu": vm_internal_pu, "va_internal_degree": va_internal_degree, "controllable": controllable,
-               "in_service": in_service, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "r_ohm": r_ohm,
+        "x_ohm": x_ohm,
+        "set_vm_pu": set_vm_pu,
+        "vm_internal_pu": vm_internal_pu,
+        "va_internal_degree": va_internal_degree,
+        "controllable": controllable,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_entries(net, "ssc", index, entries=entries)
 
     return index
 
 
 def create_b2b_vsc(
-        net: pandapowerNet,
-        bus: Int,
-        bus_dc_plus: Int,
-        bus_dc_minus: Int,
-        r_ohm: float,
-        x_ohm: float,
-        r_dc_ohm: float,
-        pl_dc_mw: float = 0.,
-        control_mode_ac: str = "vm_pu",
-        control_value_ac: float = 1.,
-        control_mode_dc: str = "p_mw",
-        control_value_dc: float = 0.,
-        name: Optional[str] = None,
-        controllable: bool = True,
-        in_service: bool = True,
-        index: Optional[Int] = None,
-        **kwargs
+    net: pandapowerNet,
+    bus: Int,
+    bus_dc_plus: Int,
+    bus_dc_minus: Int,
+    r_ohm: float,
+    x_ohm: float,
+    r_dc_ohm: float,
+    pl_dc_mw: float = 0.0,
+    control_mode_ac: str = "vm_pu",
+    control_value_ac: float = 1.0,
+    control_mode_dc: str = "p_mw",
+    control_value_dc: float = 0.0,
+    name: Optional[str] = None,
+    controllable: bool = True,
+    in_service: bool = True,
+    index: Optional[Int] = None,
+    **kwargs,
 ) -> Int:
     """
     Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
@@ -420,33 +451,46 @@ def create_b2b_vsc(
 
     index = _get_index_with_check(net, "b2b_vsc", index)
 
-    entries = {"name": name, "bus": bus, "bus_dc_plus": bus_dc_plus, "bus_dc_minus": bus_dc_minus, "r_ohm": r_ohm,
-               "x_ohm": x_ohm, "r_dc_ohm": r_dc_ohm, "pl_dc_mw": pl_dc_mw, "control_mode_ac": control_mode_ac,
-               "control_value_ac": control_value_ac, "control_mode_dc": control_mode_dc,
-               "control_value_dc": control_value_dc, "controllable": controllable, "in_service": in_service, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "bus_dc_plus": bus_dc_plus,
+        "bus_dc_minus": bus_dc_minus,
+        "r_ohm": r_ohm,
+        "x_ohm": x_ohm,
+        "r_dc_ohm": r_dc_ohm,
+        "pl_dc_mw": pl_dc_mw,
+        "control_mode_ac": control_mode_ac,
+        "control_value_ac": control_value_ac,
+        "control_mode_dc": control_mode_dc,
+        "control_value_dc": control_value_dc,
+        "controllable": controllable,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_entries(net, "b2b_vsc", index, entries=entries)
 
     return index
 
 
 def create_bi_vsc(
-        net: pandapowerNet,
-        bus: Int,
-        bus_dc_plus: Int,
-        bus_dc_minus: Int,
-        r_ohm: float,
-        x_ohm: float,
-        r_dc_ohm: float,
-        pl_dc_mw: float = 0.,
-        control_mode_ac: str = "vm_pu",
-        control_value_ac: float = 1.,
-        control_mode_dc: str = "p_mw",
-        control_value_dc: float = 0.,
-        name: Optional[str] = None,
-        controllable: bool = True,
-        in_service: bool = True,
-        index: Optional[Int] = None,
-        **kwargs
+    net: pandapowerNet,
+    bus: Int,
+    bus_dc_plus: Int,
+    bus_dc_minus: Int,
+    r_ohm: float,
+    x_ohm: float,
+    r_dc_ohm: float,
+    pl_dc_mw: float = 0.0,
+    control_mode_ac: str = "vm_pu",
+    control_value_ac: float = 1.0,
+    control_mode_dc: str = "p_mw",
+    control_value_dc: float = 0.0,
+    name: Optional[str] = None,
+    controllable: bool = True,
+    in_service: bool = True,
+    index: Optional[Int] = None,
+    **kwargs,
 ) -> Int:
     """
     Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
@@ -499,10 +543,23 @@ def create_bi_vsc(
 
     index = _get_index_with_check(net, "bi_vsc", index)
 
-    entries = {"name": name, "bus": bus, "bus_dc_plus": bus_dc_plus, "bus_dc_minus": bus_dc_minus, "r_ohm": r_ohm,
-               "x_ohm": x_ohm, "r_dc_ohm": r_dc_ohm, "pl_dc_mw": pl_dc_mw, "control_mode_ac": control_mode_ac,
-               "control_value_ac": control_value_ac, "control_mode_dc": control_mode_dc,
-               "control_value_dc": control_value_dc, "controllable": controllable, "in_service": in_service, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "bus_dc_plus": bus_dc_plus,
+        "bus_dc_minus": bus_dc_minus,
+        "r_ohm": r_ohm,
+        "x_ohm": x_ohm,
+        "r_dc_ohm": r_dc_ohm,
+        "pl_dc_mw": pl_dc_mw,
+        "control_mode_ac": control_mode_ac,
+        "control_value_ac": control_value_ac,
+        "control_mode_dc": control_mode_dc,
+        "control_value_dc": control_value_dc,
+        "controllable": controllable,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_entries(net, "bi_vsc", index, entries=entries)
 
     return index
@@ -515,17 +572,17 @@ def create_vsc(
     r_ohm: float,
     x_ohm: float,
     r_dc_ohm: float,
-    pl_dc_mw: float = 0.,
+    pl_dc_mw: float = 0.0,
     control_mode_ac: Literal["vm_pu", "q_mvar"] = "vm_pu",
-    control_value_ac: float = 1.,
+    control_value_ac: float = 1.0,
     control_mode_dc: Literal["vm_pu", "p_mw"] = "p_mw",
-    control_value_dc: float = 0.,
+    control_value_dc: float = 0.0,
     name: Optional[str] = None,
     controllable: bool = True,
     in_service: bool = True,
     index: Optional[Int] = None,
-    ref_bus = None,
-    **kwargs
+    ref_bus=None,
+    **kwargs,
 ) -> Int:
     """
     Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
@@ -577,10 +634,23 @@ def create_vsc(
 
     index = _get_index_with_check(net, "vsc", index)
 
-    entries = {"name": name, "bus": bus, "bus_dc": bus_dc, "r_ohm": r_ohm, "x_ohm": x_ohm, "r_dc_ohm": r_dc_ohm,
-               "pl_dc_mw": pl_dc_mw, "control_mode_ac": control_mode_ac, "control_value_ac": control_value_ac,
-               "control_mode_dc": control_mode_dc, "control_value_dc": control_value_dc, "controllable": controllable,
-               "in_service": in_service, "ref_bus": ref_bus, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "bus_dc": bus_dc,
+        "r_ohm": r_ohm,
+        "x_ohm": x_ohm,
+        "r_dc_ohm": r_dc_ohm,
+        "pl_dc_mw": pl_dc_mw,
+        "control_mode_ac": control_mode_ac,
+        "control_value_ac": control_value_ac,
+        "control_mode_dc": control_mode_dc,
+        "control_value_dc": control_value_dc,
+        "controllable": controllable,
+        "in_service": in_service,
+        "ref_bus": ref_bus,
+        **kwargs,
+    }
     _set_entries(net, "vsc", index, entries=entries)
 
     return index

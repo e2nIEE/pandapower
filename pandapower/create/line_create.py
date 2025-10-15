@@ -25,7 +25,7 @@ from pandapower.create._utils import (
     _get_multiple_index_with_check,
     _set_entries,
     _set_multiple_entries,
-    _set_value_if_not_nan
+    _set_value_if_not_nan,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,14 +39,14 @@ def create_line(
     std_type: str,
     name: str | None = None,
     index: Int | None = None,
-    geodata: Iterable[tuple[float, float]] | None= None,
-    df: float = 1.,
+    geodata: Iterable[tuple[float, float]] | None = None,
+    df: float = 1.0,
     parallel: int = 1,
     in_service: bool = True,
     max_loading_percent: float = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates a line element in net["line"]
@@ -134,27 +134,39 @@ def create_line(
 
     index = _get_index_with_check(net, "line", index)
 
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
-                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_columns = (
+        "wind_speed_m_per_s",
+        "wind_angle_degree",
+        "conductor_outer_diameter_m",
+        "air_temperature_degree_celsius",
+        "reference_temperature_degree_celsius",
+        "solar_radiation_w_per_sq_m",
+        "solar_absorptivity",
+        "emissivity",
+        "r_theta_kelvin_per_mw",
+        "mc_joule_per_m_k",
+    )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
     entries = {
-        "name": name, "length_km": length_km, "from_bus": from_bus,
-        "to_bus": to_bus, "in_service": in_service, "std_type": std_type,
-        "df": df, "parallel": parallel, **kwargs
+        "name": name,
+        "length_km": length_km,
+        "from_bus": from_bus,
+        "to_bus": to_bus,
+        "in_service": in_service,
+        "std_type": std_type,
+        "df": df,
+        "parallel": parallel,
+        **kwargs,
     }
 
     lineparam = load_std_type(net, std_type, "line")
 
-    entries.update({param: lineparam[param] for param in ["r_ohm_per_km", "x_ohm_per_km", "c_nf_per_km",
-                                                    "max_i_ka"]})
+    entries.update({param: lineparam[param] for param in ["r_ohm_per_km", "x_ohm_per_km", "c_nf_per_km", "max_i_ka"]})
     if "r0_ohm_per_km" in lineparam:
-        entries.update({param: lineparam[param] for param in [
-            "r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"]})
+        entries.update({param: lineparam[param] for param in ["r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"]})
 
-    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.0
 
     if "type" in lineparam:
         entries["type"] = lineparam["type"]
@@ -167,8 +179,7 @@ def create_line(
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius,
-                          "temperature_degree_celsius", "line")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
     # add optional columns for TDPF if parameters passed to kwargs:
     _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
     for column, value in tdpf_parameters.items():
@@ -188,13 +199,13 @@ def create_line_dc(
     name: str | None = None,
     index: Int | None = None,
     geodata: Iterable[tuple[float, float]] | None = None,
-    df: float = 1.,
+    df: float = 1.0,
     parallel: int = 1,
     in_service: bool = True,
     max_loading_percent: float = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates a line element in net["line_dc"]
@@ -278,20 +289,34 @@ def create_line_dc(
     """
 
     # check if bus exist to attach the line to
-    _check_branch_element(net, "Line_dc", index, from_bus_dc, to_bus_dc, node_name='bus_dc')
+    _check_branch_element(net, "Line_dc", index, from_bus_dc, to_bus_dc, node_name="bus_dc")
 
     index = _get_index_with_check(net, "line_dc", index)
 
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
-                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_columns = (
+        "wind_speed_m_per_s",
+        "wind_angle_degree",
+        "conductor_outer_diameter_m",
+        "air_temperature_degree_celsius",
+        "reference_temperature_degree_celsius",
+        "solar_radiation_w_per_sq_m",
+        "solar_absorptivity",
+        "emissivity",
+        "r_theta_kelvin_per_mw",
+        "mc_joule_per_m_k",
+    )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
     entries = {
-        "name": name, "length_km": length_km, "from_bus_dc": from_bus_dc,
-        "to_bus_dc": to_bus_dc, "in_service": in_service, "std_type": std_type,
-        "df": df, "parallel": parallel, **kwargs
+        "name": name,
+        "length_km": length_km,
+        "from_bus_dc": from_bus_dc,
+        "to_bus_dc": to_bus_dc,
+        "in_service": in_service,
+        "std_type": std_type,
+        "df": df,
+        "parallel": parallel,
+        **kwargs,
     }
 
     lineparam = load_std_type(net, std_type, "line_dc")
@@ -300,7 +325,7 @@ def create_line_dc(
     if "r0_ohm_per_km" in lineparam:
         entries.update({param: lineparam[param] for param in ["r0_ohm_per_km"]})
 
-    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.0
 
     if "type" in lineparam:
         entries["type"] = lineparam["type"]
@@ -311,16 +336,13 @@ def create_line_dc(
 
     _set_entries(net, "line_dc", index, entries=entries)
 
-
-    if geodata and hasattr(geodata, '__iter__'):
+    if geodata and hasattr(geodata, "__iter__"):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
 
-
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius,
-                          "temperature_degree_celsius", "line_dc")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line_dc")
     # add optional columns for TDPF if parameters passed to kwargs:
     _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
     for column, value in tdpf_parameters.items():
@@ -340,11 +362,11 @@ def create_lines(
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
     geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-    df: float | Iterable[float] = 1.,
+    df: float | Iterable[float] = 1.0,
     parallel: int | Iterable[int] = 1,
     in_service: bool | Iterable[bool] = True,
     max_loading_percent: float | Iterable[float] = nan,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -428,9 +450,17 @@ def create_lines(
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
 
-    entries = {"from_bus": from_buses, "to_bus": to_buses, "length_km": length_km,
-               "std_type": std_type, "name": name, "df": df, "parallel": parallel,
-               "in_service": in_service, **kwargs}
+    entries = {
+        "from_bus": from_buses,
+        "to_bus": to_buses,
+        "length_km": length_km,
+        "std_type": std_type,
+        "name": name,
+        "df": df,
+        "parallel": parallel,
+        "in_service": in_service,
+        **kwargs,
+    }
 
     # add std type data
     if isinstance(std_type, str):
@@ -439,12 +469,11 @@ def create_lines(
         entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
         entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
         entries["max_i_ka"] = lineparam["max_i_ka"]
-        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.0
         if "type" in lineparam:
             entries["type"] = lineparam["type"]
     else:
-        lineparam = list(map(load_std_type, [net] * len(std_type), std_type,
-                             ['line'] * len(std_type)))
+        lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ["line"] * len(std_type)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
@@ -452,15 +481,22 @@ def create_lines(
         entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in lineparam]
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
-    _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
-                               max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent", max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
     _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
-                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_columns = (
+        "wind_speed_m_per_s",
+        "wind_angle_degree",
+        "conductor_outer_diameter_m",
+        "air_temperature_degree_celsius",
+        "reference_temperature_degree_celsius",
+        "solar_radiation_w_per_sq_m",
+        "solar_absorptivity",
+        "emissivity",
+        "r_theta_kelvin_per_mw",
+        "mc_joule_per_m_k",
+    )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
@@ -482,11 +518,11 @@ def create_lines_dc(
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
     geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-    df: float | Iterable[float] = 1.,
+    df: float | Iterable[float] = 1.0,
     parallel: int | Iterable[int] = 1,
     in_service: bool | Iterable[bool] = True,
-    max_loading_percent: float | Iterable[float]=nan,
-**kwargs
+    max_loading_percent: float | Iterable[float] = nan,
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """ Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
         must be arrays of equal length. Other parameters may be either arrays of the same length or
@@ -566,26 +602,34 @@ def create_lines_dc(
             std_type="Not specified yet", name=["line_dc1","line_dc2"])
 
     """
-    _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines_dc", node_name='bus_dc',
-                                    plural='(all dc buses)')
+    _check_multiple_branch_elements(
+        net, from_buses_dc, to_buses_dc, "Lines_dc", node_name="bus_dc", plural="(all dc buses)"
+    )
 
     index = _get_multiple_index_with_check(net, "line_dc", index, len(from_buses_dc))
 
-    entries = {"from_bus_dc": from_buses_dc, "to_bus_dc": to_buses_dc, "length_km": length_km,
-               "std_type": std_type, "name": name, "df": df, "parallel": parallel,
-               "in_service": in_service, **kwargs}
+    entries = {
+        "from_bus_dc": from_buses_dc,
+        "to_bus_dc": to_buses_dc,
+        "length_km": length_km,
+        "std_type": std_type,
+        "name": name,
+        "df": df,
+        "parallel": parallel,
+        "in_service": in_service,
+        **kwargs,
+    }
 
     # add std type data
     if isinstance(std_type, str):
         lineparam = load_std_type(net, std_type, "line_dc")
         entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
         entries["max_i_ka"] = lineparam["max_i_ka"]
-        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.
+        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.0
         if "type" in lineparam:
             entries["type"] = lineparam["type"]
     else:
-        lineparam = list(map(load_std_type, [net] * len(std_type), std_type,
-                             ['line_dc'] * len(std_type)))
+        lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ["line_dc"] * len(std_type)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
         entries["max_i_ka"] = list(map(itemgetter("max_i_ka"), lineparam))
         entries["g_us_per_km"] = [line_param_dict.get("g_us_per_km", 0) for line_param_dict in lineparam]
@@ -595,17 +639,25 @@ def create_lines_dc(
 
     # add optional columns for TDPF if parameters passed to kwargs:
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
-                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_columns = (
+        "wind_speed_m_per_s",
+        "wind_angle_degree",
+        "conductor_outer_diameter_m",
+        "air_temperature_degree_celsius",
+        "reference_temperature_degree_celsius",
+        "solar_radiation_w_per_sq_m",
+        "solar_absorptivity",
+        "emissivity",
+        "r_theta_kelvin_per_mw",
+        "mc_joule_per_m_k",
+    )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
         _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line_dc", index, entries=entries)
 
-    _add_multiple_branch_geodata(net, geodata, index,"line_dc")
+    _add_multiple_branch_geodata(net, geodata, index, "line_dc")
 
     return index
 
@@ -624,9 +676,9 @@ def create_line_from_parameters(
     type: LineType | None = None,
     geodata: Iterable[tuple[float, float]] | None = None,
     in_service: bool = True,
-    df: float = 1.,
+    df: float = 1.0,
     parallel: int = 1,
-    g_us_per_km: float = 0.,
+    g_us_per_km: float = 0.0,
     max_loading_percent: float = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
@@ -634,7 +686,8 @@ def create_line_from_parameters(
     x0_ohm_per_km: float = nan,
     c0_nf_per_km: float = nan,
     g0_us_per_km: float = 0,
-    endtemp_degree: float = nan, **kwargs
+    endtemp_degree: float = nan,
+    **kwargs,
 ) -> Int:
     """
     Creates a line element in net["line"] from line parameters.
@@ -734,18 +787,36 @@ def create_line_from_parameters(
 
     index = _get_index_with_check(net, "line", index)
 
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
-                    "mc_joule_per_m_k")
+    tdpf_columns = (
+        "wind_speed_m_per_s",
+        "wind_angle_degree",
+        "conductor_outer_diameter_m",
+        "air_temperature_degree_celsius",
+        "reference_temperature_degree_celsius",
+        "solar_radiation_w_per_sq_m",
+        "solar_absorptivity",
+        "emissivity",
+        "r_theta_kelvin_per_mw",
+        "mc_joule_per_m_k",
+    )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
     entries = {
-        "name": name, "length_km": length_km, "from_bus": from_bus,
-        "to_bus": to_bus, "in_service": in_service, "std_type": None,
-        "df": df, "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
-        "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "parallel": parallel, "type": type,
-        "g_us_per_km": g_us_per_km, **kwargs
+        "name": name,
+        "length_km": length_km,
+        "from_bus": from_bus,
+        "to_bus": to_bus,
+        "in_service": in_service,
+        "std_type": None,
+        "df": df,
+        "r_ohm_per_km": r_ohm_per_km,
+        "x_ohm_per_km": x_ohm_per_km,
+        "c_nf_per_km": c_nf_per_km,
+        "max_i_ka": max_i_ka,
+        "parallel": parallel,
+        "type": type,
+        "g_us_per_km": g_us_per_km,
+        **kwargs,
     }
     _set_entries(net, "line", index, entries=entries)
 
@@ -754,10 +825,12 @@ def create_line_from_parameters(
         _set_value_if_not_nan(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
-        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line", default_val=0.)
+        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line", default_val=0.0)
     elif not np_all(nan_0_values):
-        logger.warning("Zero sequence values are given for only some parameters. Please specify "
-                       "them for all parameters, otherwise they are not set!")
+        logger.warning(
+            "Zero sequence values are given for only some parameters. Please specify "
+            "them for all parameters, otherwise they are not set!"
+        )
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
@@ -785,13 +858,13 @@ def create_line_dc_from_parameters(
     type: LineType | None = None,
     geodata: Iterable[tuple[float, float]] | None = None,
     in_service: bool = True,
-    df: float = 1.,
+    df: float = 1.0,
     parallel: int = 1,
     max_loading_percent: float = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
-    g_us_per_km: float = 0.,
-    **kwargs
+    g_us_per_km: float = 0.0,
+    **kwargs,
 ) -> Int:
     """
     Creates a dc line element in net["line_dc"] from dc line parameters.
@@ -880,28 +953,44 @@ def create_line_dc_from_parameters(
 
     index = _get_index_with_check(net, "line_dc", index)
 
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity", "r_theta_kelvin_per_mw",
-                    "mc_joule_per_m_k")
+    tdpf_columns = (
+        "wind_speed_m_per_s",
+        "wind_angle_degree",
+        "conductor_outer_diameter_m",
+        "air_temperature_degree_celsius",
+        "reference_temperature_degree_celsius",
+        "solar_radiation_w_per_sq_m",
+        "solar_absorptivity",
+        "emissivity",
+        "r_theta_kelvin_per_mw",
+        "mc_joule_per_m_k",
+    )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
 
     entries = {
-        "name": name, "length_km": length_km, "from_bus_dc": from_bus_dc, "to_bus_dc": to_bus_dc,
-        "in_service": in_service, "std_type": None, "df": df, "r_ohm_per_km": r_ohm_per_km, "max_i_ka": max_i_ka,
-        "parallel": parallel, "type": type, "g_us_per_km": g_us_per_km, **kwargs
+        "name": name,
+        "length_km": length_km,
+        "from_bus_dc": from_bus_dc,
+        "to_bus_dc": to_bus_dc,
+        "in_service": in_service,
+        "std_type": None,
+        "df": df,
+        "r_ohm_per_km": r_ohm_per_km,
+        "max_i_ka": max_i_ka,
+        "parallel": parallel,
+        "type": type,
+        "g_us_per_km": g_us_per_km,
+        **kwargs,
     }
     _set_entries(net, "line_dc", index, entries=entries)
 
-    if geodata and hasattr(geodata, '__iter__'):
+    if geodata and hasattr(geodata, "__iter__"):
         geo = [[x, y] for x, y in geodata]
         net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
 
-
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius,
-                          "temperature_degree_celsius", "line_dc")
+    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line_dc")
 
     # add optional columns for TDPF if parameters passed to kwargs:
     _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
@@ -927,9 +1016,9 @@ def create_lines_from_parameters(
     type: LineType | Iterable[str] | None = None,
     geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
     in_service: bool | Iterable[bool] = True,
-    df: float | Iterable[float] = 1.,
+    df: float | Iterable[float] = 1.0,
     parallel: int | Iterable[int] = 1,
-    g_us_per_km: float | Iterable[float] = 0.,
+    g_us_per_km: float | Iterable[float] = 0.0,
     max_loading_percent: float | Iterable[float] = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
@@ -937,7 +1026,7 @@ def create_lines_from_parameters(
     x0_ohm_per_km: float | Iterable[float] = nan,
     c0_nf_per_km: float | Iterable[float] = nan,
     g0_us_per_km: float | Iterable[float] = nan,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
@@ -1037,27 +1126,45 @@ def create_lines_from_parameters(
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
 
-    entries = {"from_bus": from_buses, "to_bus": to_buses, "length_km": length_km, "type": type,
-               "r_ohm_per_km": r_ohm_per_km, "x_ohm_per_km": x_ohm_per_km,
-               "c_nf_per_km": c_nf_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km,
-               "name": name, "df": df, "parallel": parallel, "in_service": in_service, **kwargs}
+    entries = {
+        "from_bus": from_buses,
+        "to_bus": to_buses,
+        "length_km": length_km,
+        "type": type,
+        "r_ohm_per_km": r_ohm_per_km,
+        "x_ohm_per_km": x_ohm_per_km,
+        "c_nf_per_km": c_nf_per_km,
+        "max_i_ka": max_i_ka,
+        "g_us_per_km": g_us_per_km,
+        "name": name,
+        "df": df,
+        "parallel": parallel,
+        "in_service": in_service,
+        **kwargs,
+    }
 
-    _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent",
-                               max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent", max_loading_percent)
     _add_to_entries_if_not_nan(net, "line", entries, index, "r0_ohm_per_km", r0_ohm_per_km)
     _add_to_entries_if_not_nan(net, "line", entries, index, "x0_ohm_per_km", x0_ohm_per_km)
     _add_to_entries_if_not_nan(net, "line", entries, index, "c0_nf_per_km", c0_nf_per_km)
     _add_to_entries_if_not_nan(net, "line", entries, index, "g0_us_per_km", g0_us_per_km)
-    _add_to_entries_if_not_nan(net, "line", entries, index, "temperature_degree_celsius",
-                               temperature_degree_celsius)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
     _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
     _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
-                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_columns = (
+        "wind_speed_m_per_s",
+        "wind_angle_degree",
+        "conductor_outer_diameter_m",
+        "air_temperature_degree_celsius",
+        "reference_temperature_degree_celsius",
+        "solar_radiation_w_per_sq_m",
+        "solar_absorptivity",
+        "emissivity",
+        "r_theta_kelvin_per_mw",
+        "mc_joule_per_m_k",
+    )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
@@ -1081,13 +1188,13 @@ def create_lines_dc_from_parameters(
     type: LineType | Iterable[str] | None = None,
     geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
     in_service: bool | Iterable[bool] = True,
-    df: float | Iterable[float] = 1.,
+    df: float | Iterable[float] = 1.0,
     parallel: int | Iterable[int] = 1,
-    g_us_per_km: float | Iterable[float] = 0.,
+    g_us_per_km: float | Iterable[float] = 0.0,
     max_loading_percent: float | Iterable[float] = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """
     Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
@@ -1171,36 +1278,54 @@ def create_lines_dc_from_parameters(
         r_ohm_per_km=.01, max_i_ka=0.4, name=["line_dc1","line_dc2"])
 
     """
-    _check_multiple_branch_elements(net, from_buses_dc, to_buses_dc, "Lines_dc", node_name='bus_dc',
-                                    plural='(all dc buses)')
+    _check_multiple_branch_elements(
+        net, from_buses_dc, to_buses_dc, "Lines_dc", node_name="bus_dc", plural="(all dc buses)"
+    )
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses_dc))
 
-    entries = {"from_bus_dc": from_buses_dc, "to_bus_dc": to_buses_dc, "length_km": length_km, "type": type,
-               "r_ohm_per_km": r_ohm_per_km, "max_i_ka": max_i_ka, "g_us_per_km": g_us_per_km, "name": name, "df": df,
-               "parallel": parallel, "in_service": in_service, **kwargs}
+    entries = {
+        "from_bus_dc": from_buses_dc,
+        "to_bus_dc": to_buses_dc,
+        "length_km": length_km,
+        "type": type,
+        "r_ohm_per_km": r_ohm_per_km,
+        "max_i_ka": max_i_ka,
+        "g_us_per_km": g_us_per_km,
+        "name": name,
+        "df": df,
+        "parallel": parallel,
+        "in_service": in_service,
+        **kwargs,
+    }
 
-    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent",
-                               max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent", max_loading_percent)
     # _add_to_entries_if_not_nan(net, "line_dc", entries, index, "r0_ohm_per_km", r0_ohm_per_km)
     # _add_to_entries_if_not_nan(net, "line_dc", entries, index, "g0_us_per_km", g0_us_per_km)
-    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "temperature_degree_celsius",
-                               temperature_degree_celsius)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
-    tdpf_columns = ("wind_speed_m_per_s", "wind_angle_degree", "conductor_outer_diameter_m",
-                    "air_temperature_degree_celsius", "reference_temperature_degree_celsius",
-                    "solar_radiation_w_per_sq_m", "solar_absorptivity", "emissivity",
-                    "r_theta_kelvin_per_mw", "mc_joule_per_m_k")
+    tdpf_columns = (
+        "wind_speed_m_per_s",
+        "wind_angle_degree",
+        "conductor_outer_diameter_m",
+        "air_temperature_degree_celsius",
+        "reference_temperature_degree_celsius",
+        "solar_radiation_w_per_sq_m",
+        "solar_absorptivity",
+        "emissivity",
+        "r_theta_kelvin_per_mw",
+        "mc_joule_per_m_k",
+    )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
         _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line_dc", index, entries=entries)
 
-    _add_multiple_branch_geodata(net, geodata, index, 'line_dc')
+    _add_multiple_branch_geodata(net, geodata, index, "line_dc")
 
     return index
 
@@ -1222,7 +1347,7 @@ def create_dcline(
     max_q_from_mvar: float = nan,
     max_q_to_mvar: float = nan,
     in_service: bool = True,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates a dc line.
@@ -1272,10 +1397,23 @@ def create_dcline(
 
     _check_branch_element(net, "DCLine", index, from_bus, to_bus)
 
-    entries = {"name": name, "from_bus": from_bus, "to_bus": to_bus, "p_mw": p_mw, "loss_percent": loss_percent,
-               "loss_mw": loss_mw, "vm_from_pu": vm_from_pu, "vm_to_pu": vm_to_pu, "max_p_mw": max_p_mw,
-               "min_q_from_mvar": min_q_from_mvar, "max_q_from_mvar": max_q_from_mvar, "max_q_to_mvar": max_q_to_mvar,
-                "min_q_to_mvar": min_q_to_mvar, "in_service": in_service, **kwargs}
+    entries = {
+        "name": name,
+        "from_bus": from_bus,
+        "to_bus": to_bus,
+        "p_mw": p_mw,
+        "loss_percent": loss_percent,
+        "loss_mw": loss_mw,
+        "vm_from_pu": vm_from_pu,
+        "vm_to_pu": vm_to_pu,
+        "max_p_mw": max_p_mw,
+        "min_q_from_mvar": min_q_from_mvar,
+        "max_q_from_mvar": max_q_from_mvar,
+        "max_q_to_mvar": max_q_to_mvar,
+        "min_q_to_mvar": min_q_to_mvar,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_entries(net, "dcline", index, entries=entries)
 
     return index

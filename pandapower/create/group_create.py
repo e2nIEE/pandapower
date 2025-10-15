@@ -27,7 +27,7 @@ def create_group(
     name: str = "",
     reference_columns=None,
     index: int | None = None,
-    **kwargs
+    **kwargs,
 ):
     """Add a new group to net['group'] dataframe.
 
@@ -64,14 +64,20 @@ def create_group(
         >>> create_group(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
     """
     element_types, element_indices, reference_columns = _group_parameter_list(
-        element_types, element_indices, reference_columns)
+        element_types, element_indices, reference_columns
+    )
 
     _check_elements_existence(net, element_types, element_indices, reference_columns)
 
     index = np.array([_get_index_with_check(net, "group", index)] * len(element_types), dtype=np.int64)
 
-    entries = {"name": name, "element_type": element_types, "element_index": element_indices,
-               "reference_column": reference_columns, **kwargs}
+    entries = {
+        "name": name,
+        "element_type": element_types,
+        "element_index": element_indices,
+        "reference_column": reference_columns,
+        **kwargs,
+    }
     _set_multiple_entries(net, "group", index, entries=entries)
     net.group.loc[net.group.reference_column == "", "reference_column"] = None  # overwrite
 
@@ -79,13 +85,15 @@ def create_group(
 
 
 def create_group_from_dict(
-    net,
-    elements_dict,
-    name: str = "",
-    reference_column=None,
-    index: int | None = None,
-    **kwargs
+    net, elements_dict, name: str = "", reference_column=None, index: int | None = None, **kwargs
 ):
-    """ Wrapper function of create_group(). """
-    return create_group(net, elements_dict.keys(), elements_dict.values(),
-                        name=name, reference_columns=reference_column, index=index, **kwargs)
+    """Wrapper function of create_group()."""
+    return create_group(
+        net,
+        elements_dict.keys(),
+        elements_dict.values(),
+        name=name,
+        reference_columns=reference_column,
+        index=index,
+        **kwargs,
+    )

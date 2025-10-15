@@ -19,7 +19,7 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
     _set_value_if_not_nan,
-    _try_astype
+    _try_astype,
 )
 from pandapower.create.bus_create import *
 from pandapower.create.cost_create import *

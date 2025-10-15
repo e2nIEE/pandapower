@@ -20,8 +20,8 @@ def create_motor(
     bus: Int,
     pn_mech_mw: float,
     cos_phi: float,
-    efficiency_percent: float = 100.,
-    loading_percent: float = 100.,
+    efficiency_percent: float = 100.0,
+    loading_percent: float = 100.0,
     name: str | None = None,
     lrc_pu: float = nan,
     scaling: float = 1.0,
@@ -31,7 +31,7 @@ def create_motor(
     in_service: bool = True,
     cos_phi_n: float = nan,
     efficiency_n_percent: float = nan,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds a motor to the network.
@@ -86,10 +86,22 @@ def create_motor(
 
     index = _get_index_with_check(net, "motor", index)
 
-    entries = {"name": name, "bus": bus, "pn_mech_mw": pn_mech_mw, "cos_phi": cos_phi, "cos_phi_n": cos_phi_n,
-               "vn_kv": vn_kv, "rx": rx, "efficiency_n_percent": efficiency_n_percent,
-               "efficiency_percent": efficiency_percent, "loading_percent": loading_percent, "lrc_pu": lrc_pu,
-               "scaling": scaling, "in_service": in_service, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "pn_mech_mw": pn_mech_mw,
+        "cos_phi": cos_phi,
+        "cos_phi_n": cos_phi_n,
+        "vn_kv": vn_kv,
+        "rx": rx,
+        "efficiency_n_percent": efficiency_n_percent,
+        "efficiency_percent": efficiency_percent,
+        "loading_percent": loading_percent,
+        "lrc_pu": lrc_pu,
+        "scaling": scaling,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_entries(net, "motor", index, entries=entries)
 
     return index

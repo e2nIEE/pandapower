@@ -16,10 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_empty_network(
-        name: str = "",
-        f_hz: float = 50.,
-        sn_mva: float = 1,
-        add_stdtypes: bool = True
+    name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True
 ) -> pandapowerNet:
     """
     This function initializes the pandapower datastructure.
@@ -41,9 +38,9 @@ def create_empty_network(
 
     """
     network_structure_dict = get_structure_dict()
-    network_structure_dict['name'] = name
-    network_structure_dict['f_hz'] = f_hz
-    network_structure_dict['sn_mva'] = sn_mva
+    network_structure_dict["name"] = name
+    network_structure_dict["f_hz"] = f_hz
+    network_structure_dict["sn_mva"] = sn_mva
 
     net = pandapowerNet(pandapowerNet.create_dataframes(network_structure_dict))
 
@@ -57,5 +54,5 @@ def create_empty_network(
         net.std_types = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
     for mode in ["pf", "se", "sc", "pf_3ph"]:
         reset_results(net, mode)
-    net['user_pf_options'] = {}
+    net["user_pf_options"] = {}
     return net

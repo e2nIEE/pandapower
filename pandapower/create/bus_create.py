@@ -21,7 +21,7 @@ from pandapower.create._utils import (
     _get_multiple_index_with_check,
     _set_entries,
     _set_multiple_entries,
-    _set_value_if_not_nan
+    _set_value_if_not_nan,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def create_bus(
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
     coords: list[tuple[float, float]] | None = None,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds one bus in table net["bus"].
@@ -103,8 +103,8 @@ def create_bus(
     _set_entries(net, "bus", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.)
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.)
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.0)
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.0)
 
     return index
 
@@ -121,7 +121,7 @@ def create_bus_dc(
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
     coords: list[tuple[float, float]] | None = None,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds one dc bus in table net["bus_dc"].
@@ -186,8 +186,8 @@ def create_bus_dc(
     _set_entries(net, "bus_dc", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.)
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=2.)
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.0)
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=2.0)
 
     return index
 
@@ -205,7 +205,7 @@ def create_buses(
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
     coords: list[list[tuple[float, float]]] | None = None,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """
     Adds several buses in table net["bus"] at once.
@@ -279,12 +279,12 @@ def create_buses_dc(
     name: Iterable[str] | None = None,
     type: BusType | Iterable[BusType] = "b",
     geodata: Iterable[tuple[float, float]] | None = None,
-    zone: str | None= None,
+    zone: str | None = None,
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
     coords: list[list[tuple[float, float]]] | None = None,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """
     Adds several dc buses in table net["bus_dc"] at once.
@@ -350,4 +350,3 @@ def create_buses_dc(
     _set_multiple_entries(net, "bus_dc", index, entries=entries)
 
     return index
-

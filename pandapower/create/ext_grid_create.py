@@ -25,7 +25,7 @@ def create_ext_grid(
     net: pandapowerNet,
     bus: Int,
     vm_pu: float = 1.0,
-    va_degree: float = 0.,
+    va_degree: float = 0.0,
     name: str | None = None,
     in_service: bool = True,
     s_sc_max_mva: float = nan,
@@ -41,7 +41,7 @@ def create_ext_grid(
     x0x_max: float = nan,
     controllable: bool | float = nan,
     slack_weight: float = 1.0,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates an external grid connection.
@@ -117,8 +117,15 @@ def create_ext_grid(
 
     index = _get_index_with_check(net, "ext_grid", index, name="external grid")
 
-    entries = {"name": name, "bus": bus, "vm_pu": vm_pu, "va_degree": va_degree, "in_service": in_service,
-               "slack_weight": slack_weight, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "vm_pu": vm_pu,
+        "va_degree": va_degree,
+        "in_service": in_service,
+        "slack_weight": slack_weight,
+        **kwargs,
+    }
     _set_entries(net, "ext_grid", index, entries=entries)
 
     # OPF limits
@@ -126,8 +133,7 @@ def create_ext_grid(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "ext_grid")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid",
-                          dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid", dtype=bool_, default_val=False)
     # others
     _set_value_if_not_nan(net, index, x0x_max, "x0x_max", "ext_grid")
     _set_value_if_not_nan(net, index, r0x0_max, "r0x0_max", "ext_grid")

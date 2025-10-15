@@ -50,7 +50,7 @@ def create_impedance(
     bf0_pu: float | None = None,
     gt0_pu: float | None = None,
     bt0_pu: float | None = None,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates an impedance element in per unit (pu).
@@ -144,8 +144,12 @@ def create_impedance(
 
     _check_branch_element(net, "Impedance", index, from_bus, to_bus)
 
-    if rft_pu is None or xft_pu is None or (rft0_pu is None and rtf0_pu is not None) or \
-            (xft0_pu is None and xtf0_pu is not None):
+    if (
+        rft_pu is None
+        or xft_pu is None
+        or (rft0_pu is None and rtf0_pu is not None)
+        or (xft0_pu is None and xtf0_pu is not None)
+    ):
         raise UserWarning("*ft_pu parameters are missing for impedance element")
 
     if rtf_pu is None:
@@ -166,9 +170,22 @@ def create_impedance(
     if bf0_pu is not None and bt0_pu is None:
         bt0_pu = bf0_pu
 
-    entries = {"from_bus": from_bus, "to_bus": to_bus, "rft_pu": rft_pu, "xft_pu": xft_pu, "rtf_pu": rtf_pu,
-               "xtf_pu": xtf_pu, "gf_pu": gf_pu, "bf_pu": bf_pu, "gt_pu": gt_pu, "bt_pu": bt_pu, "name": name,
-               "sn_mva": sn_mva, "in_service": in_service, **kwargs}
+    entries = {
+        "from_bus": from_bus,
+        "to_bus": to_bus,
+        "rft_pu": rft_pu,
+        "xft_pu": xft_pu,
+        "rtf_pu": rtf_pu,
+        "xtf_pu": xtf_pu,
+        "gf_pu": gf_pu,
+        "bf_pu": bf_pu,
+        "gt_pu": gt_pu,
+        "bt_pu": bt_pu,
+        "name": name,
+        "sn_mva": sn_mva,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_entries(net, "impedance", index, entries=entries)
 
     if rft0_pu is not None:
@@ -209,8 +226,8 @@ def create_impedances(
     gf0_pu: float | Iterable[float] | None = None,
     bf0_pu: float | Iterable[float] | None = None,
     gt0_pu: float | Iterable[float] | None = None,
-    bt0_pu: float | Iterable[float] | None =None,
-    **kwargs
+    bt0_pu: float | Iterable[float] | None = None,
+    **kwargs,
 ) -> npt.NDArray[np.array]:
     """
     Creates an impedance element in per unit (pu).
@@ -303,8 +320,12 @@ def create_impedances(
 
     index = _get_multiple_index_with_check(net, "impedance", index, len(from_buses))
 
-    if rft_pu is None or xft_pu is None or (rft0_pu is None and rtf0_pu is not None) or \
-            (xft0_pu is None and xtf0_pu is not None):
+    if (
+        rft_pu is None
+        or xft_pu is None
+        or (rft0_pu is None and rtf0_pu is not None)
+        or (xft0_pu is None and xtf0_pu is not None)
+    ):
         raise UserWarning("*ft_pu parameters are missing for impedance element")
 
     if rtf_pu is None:
@@ -325,9 +346,22 @@ def create_impedances(
     if bf0_pu is not None and bt0_pu is None:
         bt0_pu = bf0_pu
 
-    entries = {"from_bus": from_buses, "to_bus": to_buses, "rft_pu": rft_pu, "xft_pu": xft_pu, "rtf_pu": rtf_pu,
-               "xtf_pu": xtf_pu, "gf_pu": gf_pu, "bf_pu": bf_pu, "gt_pu": gt_pu, "bt_pu": bt_pu, "name": name,
-               "sn_mva": sn_mva, "in_service": in_service, **kwargs}
+    entries = {
+        "from_bus": from_buses,
+        "to_bus": to_buses,
+        "rft_pu": rft_pu,
+        "xft_pu": xft_pu,
+        "rtf_pu": rtf_pu,
+        "xtf_pu": xtf_pu,
+        "gf_pu": gf_pu,
+        "bf_pu": bf_pu,
+        "gt_pu": gt_pu,
+        "bt_pu": bt_pu,
+        "name": name,
+        "sn_mva": sn_mva,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_multiple_entries(net, "impedance", index, entries=entries)
 
     if rft0_pu is not None:
@@ -359,7 +393,7 @@ def create_tcsc(
     index: Int | None = None,
     min_angle_degree: float = 90,
     max_angle_degree: float = 180,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates a TCSC element - series impedance compensator to control series reactance.
@@ -414,10 +448,20 @@ def create_tcsc(
 
     _check_branch_element(net, "TCSC", index, from_bus, to_bus)
 
-    entries = {"name": name, "from_bus": from_bus, "to_bus": to_bus, "x_l_ohm": x_l_ohm, "x_cvar_ohm": x_cvar_ohm,
-               "set_p_to_mw": set_p_to_mw, "thyristor_firing_angle_degree": thyristor_firing_angle_degree,
-               "controllable": controllable, "in_service": in_service, "min_angle_degree": min_angle_degree,
-               "max_angle_degree": max_angle_degree, **kwargs}
+    entries = {
+        "name": name,
+        "from_bus": from_bus,
+        "to_bus": to_bus,
+        "x_l_ohm": x_l_ohm,
+        "x_cvar_ohm": x_cvar_ohm,
+        "set_p_to_mw": set_p_to_mw,
+        "thyristor_firing_angle_degree": thyristor_firing_angle_degree,
+        "controllable": controllable,
+        "in_service": in_service,
+        "min_angle_degree": min_angle_degree,
+        "max_angle_degree": max_angle_degree,
+        **kwargs,
+    }
     _set_entries(net, "tcsc", index, entries=entries)
 
     return index
@@ -435,7 +479,7 @@ def create_series_reactor_as_impedance(
     index: int | None = None,
     r0_ohm: float | None = None,
     x0_ohm: float | None = None,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates a series reactor as per-unit impedance
@@ -453,21 +497,34 @@ def create_series_reactor_as_impedance(
     :type index:
     :return: index of the created element
     """
-    if net.bus.at[from_bus, 'vn_kv'] == net.bus.at[to_bus, 'vn_kv']:
-        vn_kv = net.bus.at[from_bus, 'vn_kv']
+    if net.bus.at[from_bus, "vn_kv"] == net.bus.at[to_bus, "vn_kv"]:
+        vn_kv = net.bus.at[from_bus, "vn_kv"]
     else:
-        raise UserWarning('Unable to infer rated voltage vn_kv for series reactor %s due to '
-                          'different rated voltages of from_bus %d (%.3f p.u.) and '
-                          'to_bus %d (%.3f p.u.)' % (name, from_bus, net.bus.at[from_bus, 'vn_kv'],
-                                                     to_bus, net.bus.at[to_bus, 'vn_kv']))
+        raise UserWarning(
+            "Unable to infer rated voltage vn_kv for series reactor %s due to "
+            "different rated voltages of from_bus %d (%.3f p.u.) and "
+            "to_bus %d (%.3f p.u.)"
+            % (name, from_bus, net.bus.at[from_bus, "vn_kv"], to_bus, net.bus.at[to_bus, "vn_kv"])
+        )
 
-    base_z_ohm = vn_kv ** 2 / sn_mva
+    base_z_ohm = vn_kv**2 / sn_mva
     rft_pu = r_ohm / base_z_ohm
     xft_pu = x_ohm / base_z_ohm
     rft0_pu = r0_ohm / base_z_ohm if r0_ohm is not None else None
     xft0_pu = x0_ohm / base_z_ohm if x0_ohm is not None else None
 
-    index = create_impedance(net, from_bus=from_bus, to_bus=to_bus, rft_pu=rft_pu, xft_pu=xft_pu,
-                             sn_mva=sn_mva, name=name, in_service=in_service, index=index,
-                             rft0_pu=rft0_pu, xft0_pu=xft0_pu, **kwargs)
+    index = create_impedance(
+        net,
+        from_bus=from_bus,
+        to_bus=to_bus,
+        rft_pu=rft_pu,
+        xft_pu=xft_pu,
+        sn_mva=sn_mva,
+        name=name,
+        in_service=in_service,
+        index=index,
+        rft0_pu=rft0_pu,
+        xft0_pu=xft0_pu,
+        **kwargs,
+    )
     return index

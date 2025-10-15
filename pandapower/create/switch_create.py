@@ -19,7 +19,7 @@ from pandapower.create._utils import (
     _get_index_with_check,
     _get_multiple_index_with_check,
     _set_entries,
-    _set_multiple_entries
+    _set_multiple_entries,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ def create_switch(
     index: Int | None = None,
     z_ohm: float = 0,
     in_ka: float = nan,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds a switch in the net["switch"] table.
@@ -88,24 +88,26 @@ def create_switch(
     """
     _check_element(net, bus)
     if et == "l":
-        elm_tab = 'line'
+        elm_tab = "line"
         if element not in net[elm_tab].index:
             raise UserWarning("Unknown line index")
         if net[elm_tab]["from_bus"].loc[element] != bus and net[elm_tab]["to_bus"].loc[element] != bus:
             raise UserWarning("Line %s not connected to bus %s" % (element, bus))
     elif et == "t":
-        elm_tab = 'trafo'
+        elm_tab = "trafo"
         if element not in net[elm_tab].index:
             raise UserWarning("Unknown bus index")
         if net[elm_tab]["hv_bus"].loc[element] != bus and net[elm_tab]["lv_bus"].loc[element] != bus:
             raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
     elif et == "t3":
-        elm_tab = 'trafo3w'
+        elm_tab = "trafo3w"
         if element not in net[elm_tab].index:
             raise UserWarning("Unknown trafo3w index")
-        if (net[elm_tab]["hv_bus"].loc[element] != bus and
-                net[elm_tab]["mv_bus"].loc[element] != bus and
-                net[elm_tab]["lv_bus"].loc[element] != bus):
+        if (
+            net[elm_tab]["hv_bus"].loc[element] != bus
+            and net[elm_tab]["mv_bus"].loc[element] != bus
+            and net[elm_tab]["lv_bus"].loc[element] != bus
+        ):
             raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
     elif et == "b":
         _check_element(net, element)
@@ -114,8 +116,17 @@ def create_switch(
 
     index = _get_index_with_check(net, "switch", index)
 
-    entries = {"bus": bus, "element": element, "et": et, "closed": closed, "type": type, "name": name,
-               "z_ohm": z_ohm, "in_ka": in_ka, **kwargs}
+    entries = {
+        "bus": bus,
+        "element": element,
+        "et": et,
+        "closed": closed,
+        "type": type,
+        "name": name,
+        "z_ohm": z_ohm,
+        "in_ka": in_ka,
+        **kwargs,
+    }
     _set_entries(net, "switch", index, entries=entries)
 
     return index
@@ -132,7 +143,7 @@ def create_switches(
     index: Int | Iterable[Int] | None = None,
     z_ohm: float = 0,
     in_ka: float = nan,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds a switch in the net["switch"] table.
@@ -184,11 +195,12 @@ def create_switches(
     """
     index = _get_multiple_index_with_check(net, "switch", index, len(buses), name="Switches")
     _check_multiple_elements(net, buses)
-    rel_els = ['b', 'l', 't', 't3']
-    matcher = {'b': ['bus', 'buses'], 'l': ['line', 'lines'], 't': ['trafo', 'trafos'], 't3': ['trafo3w', 'trafo3ws']}
+    rel_els = ["b", "l", "t", "t3"]
+    matcher = {"b": ["bus", "buses"], "l": ["line", "lines"], "t": ["trafo", "trafos"], "t3": ["trafo3w", "trafo3ws"]}
     for typ in rel_els:
-        if et == typ: _check_multiple_elements(net, elements, *matcher[typ])
-    if np.any(np.isin(et, ['b', 'l', 't'])):
+        if et == typ:
+            _check_multiple_elements(net, elements, *matcher[typ])
+    if np.any(np.isin(et, ["b", "l", "t"])):
         mask_all = np.array([False] * len(et))
         for typ in rel_els:
             et_arr = np.array(et)
@@ -206,19 +218,32 @@ def create_switches(
     el_arr = np.array(elements)
     et_arr = np.array([et] * len(buses) if isinstance(et, str) else et)
     # Ensure switches are connected correctly.
-    for typ, table, joining_busses in [("l", "line", ["from_bus", "to_bus"]),
-                                       ("t", "trafo", ["hv_bus", "lv_bus"]),
-                                       ("t3", "trafo3w", ["hv_bus", "mv_bus", "lv_bus"])]:
+    for typ, table, joining_busses in [
+        ("l", "line", ["from_bus", "to_bus"]),
+        ("t", "trafo", ["hv_bus", "lv_bus"]),
+        ("t3", "trafo3w", ["hv_bus", "mv_bus", "lv_bus"]),
+    ]:
         el = el_arr[et_arr == typ]
         bs = net[table].loc[el, joining_busses].values
         not_connected_mask = ~np.isin(b_arr[et_arr == typ], bs)
         if np_any(not_connected_mask):
-            bus_element_pairs = zip(el_arr[et_arr == typ][:, None][not_connected_mask].tolist(),
-                                    b_arr[et_arr == typ][not_connected_mask].tolist())
+            bus_element_pairs = zip(
+                el_arr[et_arr == typ][:, None][not_connected_mask].tolist(),
+                b_arr[et_arr == typ][not_connected_mask].tolist(),
+            )
             raise UserWarning(f"{table.capitalize()} not connected ({table} element, bus): {list(bus_element_pairs)}")
 
-    entries = {"bus": buses, "element": elements, "et": et, "closed": closed, "type": type,
-               "name": name, "z_ohm": z_ohm, "in_ka": in_ka, **kwargs}
+    entries = {
+        "bus": buses,
+        "element": elements,
+        "et": et,
+        "closed": closed,
+        "type": type,
+        "name": name,
+        "z_ohm": z_ohm,
+        "in_ka": in_ka,
+        **kwargs,
+    }
 
     _set_multiple_entries(net, "switch", index, entries=entries)
 

@@ -19,7 +19,7 @@ from pandapower.create._utils import (
     _get_index_with_check,
     _get_multiple_index_with_check,
     _set_entries,
-    _set_multiple_entries
+    _set_multiple_entries,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ def create_ward(
     name: str | None = None,
     in_service: bool = True,
     index: Int | None = None,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates a ward equivalent.
@@ -62,8 +62,16 @@ def create_ward(
 
     index = _get_index_with_check(net, "ward", index, "ward equivalent")
 
-    entries = {"bus": bus, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw, "qz_mvar": qz_mvar, "name": name,
-               "in_service": in_service, **kwargs}
+    entries = {
+        "bus": bus,
+        "ps_mw": ps_mw,
+        "qs_mvar": qs_mvar,
+        "pz_mw": pz_mw,
+        "qz_mvar": qz_mvar,
+        "name": name,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_entries(net, "ward", index, entries=entries)
 
     return index
@@ -79,7 +87,7 @@ def create_wards(
     name: Iterable[str] | None = None,
     in_service: bool | Iterable[bool] = True,
     index: int | None = None,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[np.array]:
     """
     Creates ward equivalents.
@@ -106,8 +114,16 @@ def create_wards(
 
     index = _get_multiple_index_with_check(net, "storage", index, len(buses))
 
-    entries = {"name": name, "bus": buses, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw,
-               "qz_mvar": qz_mvar, "in_service": in_service, **kwargs}
+    entries = {
+        "name": name,
+        "bus": buses,
+        "ps_mw": ps_mw,
+        "qs_mvar": qs_mvar,
+        "pz_mw": pz_mw,
+        "qz_mvar": qz_mvar,
+        "in_service": in_service,
+        **kwargs,
+    }
 
     _set_multiple_entries(net, "ward", index, entries=entries)
 
@@ -128,7 +144,7 @@ def create_xward(
     name: str | None = None,
     index: Int | None = None,
     slack_weight: float = 0.0,
-    **kwargs
+    **kwargs,
 ):
     """
     Creates an extended ward equivalent.
@@ -165,9 +181,20 @@ def create_xward(
 
     index = _get_index_with_check(net, "xward", index, "extended ward equivalent")
 
-    entries = {"bus": bus, "ps_mw": ps_mw, "qs_mvar": qs_mvar, "pz_mw": pz_mw, "qz_mvar": qz_mvar, "r_ohm": r_ohm,
-               "x_ohm": x_ohm, "vm_pu": vm_pu, "name": name, "slack_weight": slack_weight, "in_service": in_service,
-               **kwargs}
+    entries = {
+        "bus": bus,
+        "ps_mw": ps_mw,
+        "qs_mvar": qs_mvar,
+        "pz_mw": pz_mw,
+        "qz_mvar": qz_mvar,
+        "r_ohm": r_ohm,
+        "x_ohm": x_ohm,
+        "vm_pu": vm_pu,
+        "name": name,
+        "slack_weight": slack_weight,
+        "in_service": in_service,
+        **kwargs,
+    }
     _set_entries(net, "xward", index, entries=entries)
 
     return index

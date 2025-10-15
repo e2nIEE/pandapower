@@ -23,7 +23,7 @@ from pandapower.create._utils import (
     _get_multiple_index_with_check,
     _set_entries,
     _set_multiple_entries,
-    _set_value_if_not_nan
+    _set_value_if_not_nan,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,8 +37,8 @@ def create_sgen(
     sn_mva: float = nan,
     name: Optional[str] = None,
     index: Optional[Int] = None,
-    scaling: float = 1.,
-    type: WyeDeltaType= 'wye',
+    scaling: float = 1.0,
+    type: WyeDeltaType = "wye",
     in_service: bool = True,
     max_p_mw: float = nan,
     min_p_mw: float = nan,
@@ -49,13 +49,13 @@ def create_sgen(
     rx: float = nan,
     id_q_capability_characteristic: Optional[int] = None,
     reactive_capability_curve: bool = False,
-    curve_style = None,
+    curve_style=None,
     current_source: bool = True,
     generator_type: Optional[GeneratorType] = None,
     max_ik_ka: float = nan,
     kappa: float = nan,
     lrc_pu: float = nan,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds one static generator in table net["sgen"].
@@ -159,30 +159,40 @@ def create_sgen(
 
     index = _get_index_with_check(net, "sgen", index, name="static generator")
 
-    entries = {"name": name, "bus": bus, "p_mw": p_mw, "scaling": scaling, "q_mvar": q_mvar, "sn_mva": sn_mva,
-               "in_service": in_service, "type": type, "current_source": current_source, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "p_mw": p_mw,
+        "scaling": scaling,
+        "q_mvar": q_mvar,
+        "sn_mva": sn_mva,
+        "in_service": in_service,
+        "type": type,
+        "current_source": current_source,
+        **kwargs,
+    }
     _set_entries(net, "sgen", index, True, entries=entries)
 
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "sgen")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_,
-                          default_val=False)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_, default_val=False)
 
-    _set_value_if_not_nan(net, index, id_q_capability_characteristic,
-                          "id_q_capability_characteristic", "sgen", dtype="Int64")
+    _set_value_if_not_nan(
+        net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "sgen", dtype="Int64"
+    )
 
-    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen",
-                          dtype=bool_)
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen", dtype=bool_)
 
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", dtype=object, default_val=None)
 
     _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     if np.isfinite(kappa):
         _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
-    _set_value_if_not_nan(net, index, generator_type, "generator_type", "sgen",
-                          dtype="str", default_val="current_source")
+    _set_value_if_not_nan(
+        net, index, generator_type, "generator_type", "sgen", dtype="str", default_val="current_source"
+    )
     if generator_type == "current_source" or generator_type is None:
         _set_value_if_not_nan(net, index, k, "k", "sgen")
     elif generator_type == "async":
@@ -190,8 +200,10 @@ def create_sgen(
     elif generator_type == "async_doubly_fed":
         _set_value_if_not_nan(net, index, max_ik_ka, "max_ik_ka", "sgen")
     else:
-        raise UserWarning(f"unknown sgen generator_type {generator_type}! "
-                          f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
+        raise UserWarning(
+            f"unknown sgen generator_type {generator_type}! "
+            f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'"
+        )
 
     return index
 
@@ -204,8 +216,8 @@ def create_sgens(
     sn_mva: float | Iterable[float] = nan,
     name: Optional[Iterable[str]] = None,
     index: Optional[Int] | Iterable[Int] = None,
-    scaling: float | Iterable[float] = 1.,
-    type: WyeDeltaType = 'wye',
+    scaling: float | Iterable[float] = 1.0,
+    type: WyeDeltaType = "wye",
     in_service: bool | Iterable[bool] = True,
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
@@ -222,7 +234,7 @@ def create_sgens(
     max_ik_ka: float = nan,
     kappa: float = nan,
     lrc_pu: float = nan,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """
     Adds a number of sgens in table net["sgen"].
@@ -323,28 +335,42 @@ def create_sgens(
 
     index = _get_multiple_index_with_check(net, "sgen", index, len(buses))
 
-    entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva, "scaling": scaling,
-               "in_service": in_service, "name": name, "type": type, "current_source": current_source,
-               "reactive_capability_curve": reactive_capability_curve, "curve_style": curve_style, **kwargs}
+    entries = {
+        "bus": buses,
+        "p_mw": p_mw,
+        "q_mvar": q_mvar,
+        "sn_mva": sn_mva,
+        "scaling": scaling,
+        "in_service": in_service,
+        "name": name,
+        "type": type,
+        "current_source": current_source,
+        "reactive_capability_curve": reactive_capability_curve,
+        "curve_style": curve_style,
+        **kwargs,
+    }
 
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "controllable", controllable, dtype=bool_,
-                               default_val=False)
+    _add_to_entries_if_not_nan(
+        net, "sgen", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+    )
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
-        _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa",
-                                   kappa)  # is used for Type C also as a max. current limit
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "generator_type", generator_type,
-                               dtype="str", default_val="current_source")
-    gen_types = ['current_source', 'async', 'async_doubly_fed']
-    gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1,
-                               keys=gen_types)  # type: ignore[call-overload]
+        _add_to_entries_if_not_nan(
+            net, "sgen", entries, index, "kappa", kappa
+        )  # is used for Type C also as a max. current limit
+    _add_to_entries_if_not_nan(
+        net, "sgen", entries, index, "generator_type", generator_type, dtype="str", default_val="current_source"
+    )
+    gen_types = ["current_source", "async", "async_doubly_fed"]
+    gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1, keys=gen_types)  # type: ignore[call-overload]
 
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "id_q_capability_characteristic",
-                               id_q_capability_characteristic, dtype="Int64")
+    _add_to_entries_if_not_nan(
+        net, "sgen", entries, index, "id_q_capability_characteristic", id_q_capability_characteristic, dtype="Int64"
+    )
 
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
@@ -353,10 +379,12 @@ def create_sgens(
     if gen_type_match["async_doubly_fed"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_ik_ka", max_ik_ka)
     if not gen_type_match.any(axis=1).all():
-        raise UserWarning(f"unknown sgen generator_type '{generator_type}'! "
-                          f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'")
+        raise UserWarning(
+            f"unknown sgen generator_type '{generator_type}'! "
+            f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'"
+        )
 
-    defaults_to_fill = [("controllable", False), ('reactive_capability_curve', False), ("curve_style", None)]
+    defaults_to_fill = [("controllable", False), ("reactive_capability_curve", False), ("curve_style", None)]
     _set_multiple_entries(net, "sgen", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
     return index
@@ -365,6 +393,7 @@ def create_sgens(
 # =============================================================================
 # Create 3ph Sgen
 # =============================================================================
+
 
 def create_asymmetric_sgen(
     net: pandapowerNet,
@@ -378,10 +407,10 @@ def create_asymmetric_sgen(
     sn_mva: float = nan,
     name: Optional[str] = None,
     index: Optional[Int] = None,
-    scaling: float = 1.,
-    type: WyeDeltaType = 'wye',
+    scaling: float = 1.0,
+    type: WyeDeltaType = "wye",
     in_service: bool = True,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
 
@@ -432,24 +461,35 @@ def create_asymmetric_sgen(
     """
     _check_element(net, bus)
 
-    index = _get_index_with_check(net, "asymmetric_sgen", index,
-                                  name="3 phase asymmetric static generator")
+    index = _get_index_with_check(net, "asymmetric_sgen", index, name="3 phase asymmetric static generator")
 
-    entries = {"name": name, "bus": bus, "p_a_mw": p_a_mw, "p_b_mw": p_b_mw, "p_c_mw": p_c_mw, "scaling": scaling,
-               "q_a_mvar": q_a_mvar, "q_b_mvar": q_b_mvar, "q_c_mvar": q_c_mvar, "sn_mva": sn_mva,
-               "in_service": in_service, "type": type, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "p_a_mw": p_a_mw,
+        "p_b_mw": p_b_mw,
+        "p_c_mw": p_c_mw,
+        "scaling": scaling,
+        "q_a_mvar": q_a_mvar,
+        "q_b_mvar": q_b_mvar,
+        "q_c_mvar": q_c_mvar,
+        "sn_mva": sn_mva,
+        "in_service": in_service,
+        "type": type,
+        **kwargs,
+    }
     _set_entries(net, "asymmetric_sgen", index, True, entries=entries)
 
     return index
 
 
-def create_sgen_from_cosphi( # no index ?
-        net: pandapowerNet,
-        bus: Int,
-        sn_mva: float,
-        cos_phi: float,
-        mode: UnderOverExcitedType,
-        **kwargs,
+def create_sgen_from_cosphi(  # no index ?
+    net: pandapowerNet,
+    bus: Int,
+    sn_mva: float,
+    cos_phi: float,
+    mode: UnderOverExcitedType,
+    **kwargs,
 ) -> Int:
     """
     Creates an sgen element from rated power and power factor cos(phi).
@@ -475,5 +515,6 @@ def create_sgen_from_cosphi( # no index ?
     positive for overexcited behavior (Q injection, increases voltage).
     """
     from pandapower.toolbox import pq_from_cosphi
+
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
     return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)

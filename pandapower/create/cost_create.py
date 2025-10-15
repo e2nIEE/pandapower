@@ -19,7 +19,7 @@ from pandapower.create._utils import (
     _get_index_with_check,
     _get_multiple_index_with_check,
     _set_entries,
-    _set_multiple_entries
+    _set_multiple_entries,
 )
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def create_pwl_cost(
     power_type: PWLPowerType = "p",
     index: int | None = None,
     check: bool = True,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates an entry for piecewise linear costs for an element. The currently supported elements are
@@ -94,7 +94,7 @@ def create_pwl_costs(
     power_type: PWLPowerType | Iterable[str] = "p",
     index: int | None = None,
     check: bool = True,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[np.integer]:
     """
     Creates entries for piecewise linear costs for multiple elements. The currently supported elements are
@@ -141,18 +141,17 @@ def create_pwl_costs(
         raise ValueError(f"An iterable is expected for elements, not {elements}.")
     if not hasattr(points, "__iter__"):
         if len(points) != len(elements):
-            raise ValueError(f"It should be the same, but len(elements) is {len(elements)} "
-                             f"whereas len(points) is{len(points)}.")
-        if not hasattr(points[0], "__iter__") or len(points[0]) == 0 or not hasattr(
-                points[0][0], "__iter__"):
+            raise ValueError(
+                f"It should be the same, but len(elements) is {len(elements)} whereas len(points) is{len(points)}."
+            )
+        if not hasattr(points[0], "__iter__") or len(points[0]) == 0 or not hasattr(points[0][0], "__iter__"):
             raise ValueError("A list of lists of lists is expected for points.")
     if check:
         bool_ = _costs_existance_check(net, elements, et, power_type=power_type)
         if np.sum(bool_) >= 1:
             raise UserWarning("There already exist costs for {np.sum(bool_)} elements.")
 
-    index = _get_multiple_index_with_check(net, "pwl_cost", index, len(elements),
-                                           "piecewise_linear_cost")
+    index = _get_multiple_index_with_check(net, "pwl_cost", index, len(elements), "piecewise_linear_cost")
     entries = {"power_type": power_type, "element": elements, "et": et, "points": points, **kwargs}
     _set_multiple_entries(net, "pwl_cost", index, entries=entries)
     return index
@@ -170,7 +169,7 @@ def create_poly_cost(
     cq2_eur_per_mvar2: float = 0,
     index: int | None = None,
     check: bool = True,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Creates an entry for polynomial costs for an element. The currently supported elements are:
@@ -221,9 +220,17 @@ def create_poly_cost(
 
     index = _get_index_with_check(net, "poly_cost", index)
 
-    entries = {"element": element, "et": et, "cp0_eur": cp0_eur, "cp1_eur_per_mw": cp1_eur_per_mw, "cq0_eur": cq0_eur,
-               "cq1_eur_per_mvar": cq1_eur_per_mvar, "cp2_eur_per_mw2": cp2_eur_per_mw2,
-               "cq2_eur_per_mvar2": cq2_eur_per_mvar2, **kwargs}
+    entries = {
+        "element": element,
+        "et": et,
+        "cp0_eur": cp0_eur,
+        "cp1_eur_per_mw": cp1_eur_per_mw,
+        "cq0_eur": cq0_eur,
+        "cq1_eur_per_mvar": cq1_eur_per_mvar,
+        "cp2_eur_per_mw2": cp2_eur_per_mw2,
+        "cq2_eur_per_mvar2": cq2_eur_per_mvar2,
+        **kwargs,
+    }
     _set_entries(net, "poly_cost", index, entries=entries)
     return index
 
@@ -240,7 +247,7 @@ def create_poly_costs(
     cq2_eur_per_mvar2: float | Iterable[float] = 0,
     index: int | None = None,
     check: bool = True,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[np.array]:
     """
     Creates entries for polynomial costs for multiple elements. The currently supported elements are:
@@ -295,8 +302,16 @@ def create_poly_costs(
 
     index = _get_multiple_index_with_check(net, "poly_cost", index, len(elements), "poly_cost")
 
-    entries = {"element": elements, "et": et, "cp0_eur": cp0_eur, "cp1_eur_per_mw": cp1_eur_per_mw, "cq0_eur": cq0_eur,
-               "cq1_eur_per_mvar": cq1_eur_per_mvar, "cp2_eur_per_mw2": cp2_eur_per_mw2,
-               "cq2_eur_per_mvar2": cq2_eur_per_mvar2, **kwargs}
+    entries = {
+        "element": elements,
+        "et": et,
+        "cp0_eur": cp0_eur,
+        "cp1_eur_per_mw": cp1_eur_per_mw,
+        "cq0_eur": cq0_eur,
+        "cq1_eur_per_mvar": cq1_eur_per_mvar,
+        "cp2_eur_per_mw2": cp2_eur_per_mw2,
+        "cq2_eur_per_mvar2": cq2_eur_per_mvar2,
+        **kwargs,
+    }
     _set_multiple_entries(net, "poly_cost", index, entries=entries)
     return index

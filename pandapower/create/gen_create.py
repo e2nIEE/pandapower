@@ -31,7 +31,7 @@ def create_gen(
     net: pandapowerNet,
     bus: Int,
     p_mw: float,
-    vm_pu: float = 1.,
+    vm_pu: float = 1.0,
     sn_mva: float = nan,
     name: str | None = None,
     index: Int | None = None,
@@ -41,7 +41,7 @@ def create_gen(
     max_p_mw: float = nan,
     min_vm_pu: float = nan,
     max_vm_pu: float = nan,
-    scaling: float = 1.,
+    scaling: float = 1.0,
     type: str | None = None,
     slack: bool = False,
     id_q_capability_characteristic: int | None = None,
@@ -56,7 +56,7 @@ def create_gen(
     power_station_trafo: int | float = nan,
     in_service: bool = True,
     slack_weight: float = 0.0,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds a generator to the network.
@@ -147,17 +147,28 @@ def create_gen(
 
     index = _get_index_with_check(net, "gen", index, name="generator")
 
-    entries = {"name": name, "bus": bus, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "type": type,
-               "slack": slack, "in_service": in_service, "scaling": scaling, "slack_weight": slack_weight, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "p_mw": p_mw,
+        "vm_pu": vm_pu,
+        "sn_mva": sn_mva,
+        "type": type,
+        "slack": slack,
+        "in_service": in_service,
+        "scaling": scaling,
+        "slack_weight": slack_weight,
+        **kwargs,
+    }
     _set_entries(net, "gen", index, True, entries=entries)
 
     # OPF limits
-    _set_value_if_not_nan(net, index, controllable, "controllable", "gen",
-                          dtype=bool_, default_val=True)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "gen", dtype=bool_, default_val=True)
 
     # id for q capability curve table
-    _set_value_if_not_nan(net, index, id_q_capability_characteristic,
-                          "id_q_capability_characteristic", "gen", dtype="Int64")
+    _set_value_if_not_nan(
+        net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "gen", dtype="Int64"
+    )
 
     # behaviour of reactive power capability curve
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
@@ -171,8 +182,8 @@ def create_gen(
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "gen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "gen")
     # V limits for OPF if controllable == True
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.)
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.)
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.0)
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.0)
 
     # Short circuit calculation variables
     _set_value_if_not_nan(net, index, vn_kv, "vn_kv", "gen")
@@ -180,8 +191,7 @@ def create_gen(
     _set_value_if_not_nan(net, index, xdss_pu, "xdss_pu", "gen")
     _set_value_if_not_nan(net, index, rdss_ohm, "rdss_ohm", "gen")
     _set_value_if_not_nan(net, index, pg_percent, "pg_percent", "gen")
-    _set_value_if_not_nan(net, index, power_station_trafo,
-                          "power_station_trafo", "gen", dtype="Int64")
+    _set_value_if_not_nan(net, index, power_station_trafo, "power_station_trafo", "gen", dtype="Int64")
 
     return index
 
@@ -190,7 +200,7 @@ def create_gens(
     net: pandapowerNet,
     buses: Sequence,
     p_mw: float | Iterable[float],
-    vm_pu: float | Iterable[float] = 1.,
+    vm_pu: float | Iterable[float] = 1.0,
     sn_mva: float | Iterable[float] = nan,
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
@@ -200,7 +210,7 @@ def create_gens(
     max_p_mw: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
     max_vm_pu: float | Iterable[float] = nan,
-    scaling: float | Iterable[float] = 1.,
+    scaling: float | Iterable[float] = 1.0,
     type: str | Iterable[str] | None = None,
     slack: bool | Iterable[bool] = False,
     id_q_capability_characteristic: Int | Iterable[Int] | None = None,
@@ -215,7 +225,7 @@ def create_gens(
     power_station_trafo: int | float = nan,
     in_service: bool = True,
     slack_weight: float = 0.0,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """
     Adds generators to the specified buses network.
@@ -318,10 +328,21 @@ def create_gens(
 
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
 
-    entries = {"bus": buses, "p_mw": p_mw, "vm_pu": vm_pu, "sn_mva": sn_mva, "scaling": scaling,
-               "in_service": in_service, "slack_weight": slack_weight, "name": name, "type": type,
-               "slack": slack, "curve_style": curve_style, "reactive_capability_curve": reactive_capability_curve,
-               **kwargs}
+    entries = {
+        "bus": buses,
+        "p_mw": p_mw,
+        "vm_pu": vm_pu,
+        "sn_mva": sn_mva,
+        "scaling": scaling,
+        "in_service": in_service,
+        "slack_weight": slack_weight,
+        "name": name,
+        "type": type,
+        "slack": slack,
+        "curve_style": curve_style,
+        "reactive_capability_curve": reactive_capability_curve,
+        **kwargs,
+    }
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
@@ -334,17 +355,17 @@ def create_gens(
     _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "id_q_capability_characteristic",
-                               id_q_capability_characteristic, dtype="Int64")
+    _add_to_entries_if_not_nan(
+        net, "gen", entries, index, "id_q_capability_characteristic", id_q_capability_characteristic, dtype="Int64"
+    )
 
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "reactive_capability_curve",
-                               reactive_capability_curve, dtype=bool_)
+    _add_to_entries_if_not_nan(
+        net, "gen", entries, index, "reactive_capability_curve", reactive_capability_curve, dtype=bool_
+    )
 
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo",
-                               power_station_trafo, dtype="Int64")
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_,
-                               default_val=True)
-    defaults_to_fill = [("controllable", True), ('reactive_capability_curve', False), ("curve_style", None)]
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo", power_station_trafo, dtype="Int64")
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_, default_val=True)
+    defaults_to_fill = [("controllable", True), ("reactive_capability_curve", False), ("curve_style", None)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, entries=entries)
 

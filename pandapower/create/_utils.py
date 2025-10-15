@@ -11,22 +11,17 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
-from numpy import (
-    nan,
-    isnan,
-    arange,
-    isin,
-    any as np_any,
-    all as np_all,
-    float64,
-    intersect1d,
-    unique as uni
-)
+from numpy import nan, isnan, arange, isin, any as np_any, all as np_all, float64, intersect1d, unique as uni
 from pandas import isnull
 from pandas.api.types import is_object_dtype
 
-from pandapower.auxiliary import pandapowerNet, get_free_id, _preserve_dtypes, ensure_iterability, \
-    empty_defaults_per_dtype
+from pandapower.auxiliary import (
+    pandapowerNet,
+    get_free_id,
+    _preserve_dtypes,
+    ensure_iterability,
+    empty_defaults_per_dtype,
+)
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import Int
 
@@ -74,25 +69,21 @@ def _check_elements_existence(net, element_types, elements, reference_columns):
     """
     for et, elm, rc in zip(element_types, elements, reference_columns):
         if et not in net:
-            raise UserWarning(f"Cannot create a group with elements of type '{et}', because "
-                              f"net[{et}] does not exist.")
+            raise UserWarning(f"Cannot create a group with elements of type '{et}', because net[{et}] does not exist.")
         if rc is None or pd.isnull(rc):
             diff = pd.Index(elm).difference(net[et].index)
         else:
             if rc not in net[et].columns:
-                raise UserWarning(f"Cannot create a group with reference column '{rc}' for elements"
-                                  f" of type '{et}', because net[{et}][{rc}] does not exist.")
+                raise UserWarning(
+                    f"Cannot create a group with reference column '{rc}' for elements"
+                    f" of type '{et}', because net[{et}][{rc}] does not exist."
+                )
             diff = pd.Index(elm).difference(pd.Index(net[et][rc]))
         if len(diff):
             raise UserWarning(f"Cannot create group with {et} members {diff}.")
 
 
-def _get_index_with_check(
-    net: pandapowerNet,
-    table: str,
-    index: Int | None,
-    name: str | None = None
-) -> Int:
+def _get_index_with_check(net: pandapowerNet, table: str, index: Int | None, name: str | None = None) -> Int:
     if name is None:
         name = table
     if index is None:
@@ -104,28 +95,31 @@ def _get_index_with_check(
 
 def _cost_existance_check(net, element, et, power_type=None):
     if power_type is None:
-        return (bool(net.poly_cost.shape[0]) and
-                np_any((net.poly_cost.element == element).values &
-                       (net.poly_cost.et == et).values)) \
-            or (bool(net.pwl_cost.shape[0]) and
-                np_any((net.pwl_cost.element == element).values &
-                       (net.pwl_cost.et == et).values))
+        return (
+            bool(net.poly_cost.shape[0])
+            and np_any((net.poly_cost.element == element).values & (net.poly_cost.et == et).values)
+        ) or (
+            bool(net.pwl_cost.shape[0])
+            and np_any((net.pwl_cost.element == element).values & (net.pwl_cost.et == et).values)
+        )
     else:
-        return (bool(net.poly_cost.shape[0]) and
-                np_any((net.poly_cost.element == element).values &
-                       (net.poly_cost.et == et).values)) \
-            or (bool(net.pwl_cost.shape[0]) and
-                np_any((net.pwl_cost.element == element).values &
-                       (net.pwl_cost.et == et).values &
-                       (net.pwl_cost.power_type == power_type).values))
+        return (
+            bool(net.poly_cost.shape[0])
+            and np_any((net.poly_cost.element == element).values & (net.poly_cost.et == et).values)
+        ) or (
+            bool(net.pwl_cost.shape[0])
+            and np_any(
+                (net.pwl_cost.element == element).values
+                & (net.pwl_cost.et == et).values
+                & (net.pwl_cost.power_type == power_type).values
+            )
+        )
 
 
 def _costs_existance_check(net, elements, et, power_type=None):
     if isinstance(et, str) and (power_type is None or isinstance(power_type, str)):
-        poly_exist = (net.poly_cost.element.isin(elements)).values & \
-                     (net.poly_cost.et == et).values
-        pwl_exist = (net.pwl_cost.element.isin(elements)).values & \
-                    (net.pwl_cost.et == et).values
+        poly_exist = (net.poly_cost.element.isin(elements)).values & (net.poly_cost.et == et).values
+        pwl_exist = (net.pwl_cost.element.isin(elements)).values & (net.pwl_cost.et == et).values
         if isinstance(power_type, str):
             pwl_exist &= (net.pwl_cost.power_type == power_type).values
         return sum(poly_exist) & sum(pwl_exist)
@@ -137,9 +131,9 @@ def _costs_existance_check(net, elements, et, power_type=None):
             pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(np.c_[elements, et], columns=cols)])
         else:
             cols.append("power_type")
-            pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(np.c_[
-                                                                     elements, et, [power_type] * len(elements)],
-                                                                 columns=cols)])
+            pwl_df = pd.concat(
+                [net.pwl_cost[cols], pd.DataFrame(np.c_[elements, et, [power_type] * len(elements)], columns=cols)]
+            )
         return poly_df.duplicated().sum() + pwl_df.duplicated().sum()
 
 
@@ -154,8 +148,7 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     if len(intersect) > 0:
         if name is None:
             name = table.capitalize() + "s"
-        raise UserWarning("%s with indexes %s already exist."
-                          % (name, intersect))
+        raise UserWarning("%s with indexes %s already exist." % (name, intersect))
     return index
 
 
@@ -163,8 +156,7 @@ def _check_element(net, element_index, element="bus"):
     if element not in net:
         raise UserWarning(f"Node table {element} does not exist")
     if element_index not in net[element].index.values:
-        raise UserWarning("Cannot attach to %s %s, %s does not exist"
-                          % (element, element_index, element_index))
+        raise UserWarning("Cannot attach to %s %s, %s does not exist" % (element, element_index, element_index))
 
 
 def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
@@ -175,25 +167,26 @@ def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
         raise UserWarning(f"Cannot attach to {name} {node_not_exist}, they do not exist")
 
 
-def _check_branch_element(net, element_name, index, from_node, to_node, node_name="bus",
-                          plural="es"):
+def _check_branch_element(net, element_name, index, from_node, to_node, node_name="bus", plural="es"):
     if node_name not in net:
         raise UserWarning(f"Node table {node_name} does not exist")
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
-        raise UserWarning("%s %d tries to attach to non-existing %s(%s) %s"
-                          % (element_name.capitalize(), index, node_name, plural, missing_nodes))
+        raise UserWarning(
+            "%s %d tries to attach to non-existing %s(%s) %s"
+            % (element_name.capitalize(), index, node_name, plural, missing_nodes)
+        )
 
 
-def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus",
-                                    plural="es"):
+def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus", plural="es"):
     if node_name not in net:
         raise UserWarning(f"Node table {node_name} does not exist")
     all_nodes = set(from_nodes) | set(to_nodes)
     node_not_exist = all_nodes - set(net[node_name].index)
     if len(node_not_exist) > 0:
-        raise UserWarning("%s trying to attach to non existing %s%s %s"
-                          % (element_name, node_name, plural, node_not_exist))
+        raise UserWarning(
+            "%s trying to attach to non existing %s%s %s" % (element_name, node_name, plural, node_not_exist)
+        )
 
 
 def _not_nan(value, all_=True):
@@ -253,8 +246,7 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
     column_exists = column in net[element_type].columns
     if _not_nan(value):
         if not column_exists:
-            net[element_type].loc[:, column] = pd.Series(
-                data=default_val, index=net[element_type].index)
+            net[element_type].loc[:, column] = pd.Series(data=default_val, index=net[element_type].index)
         _try_astype(net[element_type], column, dtype)
         net[element_type].at[index, column] = value
     elif column_exists:
@@ -280,13 +272,15 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
         entries[column] = pd.Series(data=default_val, index=index)
         _try_astype(entries, column, dtype)
 
-def _branch_geodata(geodata: Iterable[list[float]|tuple[float, float]]) -> list[list[float]]:
+
+def _branch_geodata(geodata: Iterable[list[float] | tuple[float, float]]) -> list[list[float]]:
     geo: list[list[float]] = []
     for x, y in geodata:
         if (not _is_valid_number(x)) | (not _is_valid_number(y)):
             raise ValueError("geodata contains invalid values")
         geo.append([x, y])
     return geo
+
 
 def _add_branch_geodata(net: pandapowerNet, geodata, index, table="line"):
     if geodata:
@@ -297,26 +291,29 @@ def _add_branch_geodata(net: pandapowerNet, geodata, index, table="line"):
         geodata = None
     net[table].loc[index, "geo"] = geodata
 
+
 def _add_multiple_branch_geodata(net, geodata, index, table="line"):
     if not geodata:
         net[table].loc[index, "geo"] = None
         return
     dtypes = net[table].dtypes
-    if hasattr(geodata, '__iter__') and all(isinstance(g, tuple) and len(g) == 2 for g in geodata):
+    if hasattr(geodata, "__iter__") and all(isinstance(g, tuple) and len(g) == 2 for g in geodata):
         # geodata is a single Iterable of coordinate tuples
         geo = [[x, y] for x, y in geodata]
         series = [f'{{"coordinates": {geo}, "type": "LineString"}}'] * len(index)
-    elif hasattr(geodata, '__iter__') and all(isinstance(g, Iterable) for g in geodata):
+    elif hasattr(geodata, "__iter__") and all(isinstance(g, Iterable) for g in geodata):
         # geodata is Iterable of coordinate tuples
         geo = [[[x, y] for x, y in g] for g in geodata]
         series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
     else:
         raise ValueError(
-            "geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples")
+            "geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples"
+        )
 
     net[table].loc[index, "geo"] = series
 
     _preserve_dtypes(net[table], dtypes)
+
 
 def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None = None):
     if entries is None:
@@ -336,12 +333,13 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
 
 
 def _set_multiple_entries(
-        net: pandapowerNet,
-        table: str,
-        index: np.typing.NDArray[Int] | list[Int] | pd.Index,
-        preserve_dtypes: bool | None = True,
-        defaults_to_fill: list[tuple] | None = None,
-        entries: dict | None = None):
+    net: pandapowerNet,
+    table: str,
+    index: np.typing.NDArray[Int] | list[Int] | pd.Index,
+    preserve_dtypes: bool | None = True,
+    defaults_to_fill: list[tuple] | None = None,
+    entries: dict | None = None,
+):
     if entries is None:
         return
 
@@ -375,8 +373,10 @@ def _set_multiple_entries(
     else:
         dd_columns = dd.columns[~dd.isnull().all()]
         complete_columns = list(net[table].columns) + list(dd_columns.difference(net[table].columns))
-        empty_dict = {key: empty_defaults_per_dtype(dtype) for key, dtype in net[table][net[
-            table].columns.difference(dd_columns)].dtypes.to_dict().items()}
+        empty_dict = {
+            key: empty_defaults_per_dtype(dtype)
+            for key, dtype in net[table][net[table].columns.difference(dd_columns)].dtypes.to_dict().items()
+        }
         net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
 
     # and preserve dtypes
@@ -386,22 +386,27 @@ def _set_multiple_entries(
 
 def _set_const_percent_values(const_percent_values_list, kwargs_input):
     const_percent_values_default_initials = all(value == 0 for value in const_percent_values_list)
-    if (('const_z_percent' in kwargs_input and 'const_i_percent' in kwargs_input) and
-            const_percent_values_default_initials):
-        const_z_p_percent = kwargs_input['const_z_percent']
-        const_z_q_percent = kwargs_input['const_z_percent']
-        const_i_p_percent = kwargs_input['const_i_percent']
-        const_i_q_percent = kwargs_input['const_i_percent']
-        del kwargs_input['const_z_percent']
-        del kwargs_input['const_i_percent']
-        msg = ("Parameters const_z_percent and const_i_percent will be deprecated in further "
-               "pandapower version. For now the values were transfered in "
-               "const_z_p_percent and const_i_p_percent for you.")
+    if (
+        "const_z_percent" in kwargs_input and "const_i_percent" in kwargs_input
+    ) and const_percent_values_default_initials:
+        const_z_p_percent = kwargs_input["const_z_percent"]
+        const_z_q_percent = kwargs_input["const_z_percent"]
+        const_i_p_percent = kwargs_input["const_i_percent"]
+        const_i_q_percent = kwargs_input["const_i_percent"]
+        del kwargs_input["const_z_percent"]
+        del kwargs_input["const_i_percent"]
+        msg = (
+            "Parameters const_z_percent and const_i_percent will be deprecated in further "
+            "pandapower version. For now the values were transfered in "
+            "const_z_p_percent and const_i_p_percent for you."
+        )
         warnings.warn(msg, DeprecationWarning)
         return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
-    elif (('const_z_percent' in kwargs_input or 'const_i_percent' in kwargs_input) and
-          (const_percent_values_default_initials == False)):
-        raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
-    elif (('const_z_percent' in kwargs_input or 'const_i_percent' not in kwargs_input) or
-          ('const_z_percent' not in kwargs_input or 'const_i_percent' in kwargs_input)):
-        raise UserWarning('Definition of voltage dependecies is faulty, please check the parameters again.')
+    elif ("const_z_percent" in kwargs_input or "const_i_percent" in kwargs_input) and (
+        const_percent_values_default_initials == False
+    ):
+        raise UserWarning("Definition of voltage dependecies is faulty, please check the parameters again.")
+    elif ("const_z_percent" in kwargs_input or "const_i_percent" not in kwargs_input) or (
+        "const_z_percent" not in kwargs_input or "const_i_percent" in kwargs_input
+    ):
+        raise UserWarning("Definition of voltage dependecies is faulty, please check the parameters again.")

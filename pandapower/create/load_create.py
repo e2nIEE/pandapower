@@ -22,10 +22,11 @@ from pandapower.create._utils import (
     _set_const_percent_values,
     _set_entries,
     _set_multiple_entries,
-    _set_value_if_not_nan
+    _set_value_if_not_nan,
 )
 
 logger = logging.getLogger(__name__)
+
 
 def create_load(
     net: pandapowerNet,
@@ -38,16 +39,16 @@ def create_load(
     const_i_q_percent: float = 0,
     sn_mva: float = nan,
     name: str | None = None,
-    scaling: float = 1.,
+    scaling: float = 1.0,
     index: Int | None = None,
     in_service: bool = True,
-    type: WyeDeltaType = 'wye',
+    type: WyeDeltaType = "wye",
     max_p_mw: float = nan,
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
     controllable: bool | float = nan,
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds one load in table net["load"].
@@ -123,21 +124,32 @@ def create_load(
 
     if ("const_z_percent" in kwargs) or ("const_i_percent" in kwargs):
         const_percent_values_list = [const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent]
-        const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = (
-            _set_const_percent_values(const_percent_values_list, kwargs_input=kwargs))
+        const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = _set_const_percent_values(
+            const_percent_values_list, kwargs_input=kwargs
+        )
 
-    entries = {"name": name, "bus": bus, "p_mw": p_mw, "const_z_p_percent": const_z_p_percent,
-               "const_i_p_percent": const_i_p_percent, "const_z_q_percent": const_z_q_percent,
-               "const_i_q_percent": const_i_q_percent, "scaling": scaling, "q_mvar": q_mvar, "sn_mva": sn_mva,
-               "in_service": in_service, "type": type, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "p_mw": p_mw,
+        "const_z_p_percent": const_z_p_percent,
+        "const_i_p_percent": const_i_p_percent,
+        "const_z_q_percent": const_z_q_percent,
+        "const_i_q_percent": const_i_q_percent,
+        "scaling": scaling,
+        "q_mvar": q_mvar,
+        "sn_mva": sn_mva,
+        "in_service": in_service,
+        "type": type,
+        **kwargs,
+    }
     _set_entries(net, "load", index, True, entries=entries)
 
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "load")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "load")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "load")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "load")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtype=bool_,
-                          default_val=False)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtype=bool_, default_val=False)
 
     return index
 
@@ -153,16 +165,16 @@ def create_loads(
     const_i_q_percent: float | Iterable[float] = 0,
     sn_mva: float | Iterable[float] = nan,
     name: Iterable[str] | None = None,
-    scaling: float | Iterable[float] = 1.,
-    index: Int | Iterable[Int] | None  = None,
+    scaling: float | Iterable[float] = 1.0,
+    index: Int | Iterable[Int] | None = None,
     in_service: bool | Iterable[bool] = True,
-    type: WyeDeltaType = 'wye',
+    type: WyeDeltaType = "wye",
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
     controllable: bool | Iterable[bool] | float = nan,
-    **kwargs
+    **kwargs,
 ) -> npt.NDArray[Int]:
     """
     Adds a number of loads in table net["load"].
@@ -240,20 +252,33 @@ def create_loads(
 
     if ("const_z_percent" in kwargs) or ("const_i_percent" in kwargs):
         const_percent_values_list = [const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent]
-        const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = (
-            _set_const_percent_values(const_percent_values_list, kwargs_input=kwargs))
+        const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs = _set_const_percent_values(
+            const_percent_values_list, kwargs_input=kwargs
+        )
 
-    entries = {"bus": buses, "p_mw": p_mw, "q_mvar": q_mvar, "sn_mva": sn_mva,
-               "const_z_p_percent": const_z_p_percent, "const_i_p_percent": const_i_p_percent,
-               "const_z_q_percent": const_z_q_percent, "const_i_q_percent": const_i_q_percent,
-               "scaling": scaling, "in_service": in_service, "name": name, "type": type, **kwargs}
+    entries = {
+        "bus": buses,
+        "p_mw": p_mw,
+        "q_mvar": q_mvar,
+        "sn_mva": sn_mva,
+        "const_z_p_percent": const_z_p_percent,
+        "const_i_p_percent": const_i_p_percent,
+        "const_z_q_percent": const_z_q_percent,
+        "const_i_q_percent": const_i_q_percent,
+        "scaling": scaling,
+        "in_service": in_service,
+        "name": name,
+        "type": type,
+        **kwargs,
+    }
 
     _add_to_entries_if_not_nan(net, "load", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "load", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "load", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "load", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(net, "load", entries, index, "controllable", controllable, dtype=bool_,
-                               default_val=False)
+    _add_to_entries_if_not_nan(
+        net, "load", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+    )
     defaults_to_fill = [("controllable", False)]
 
     _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, entries=entries)
@@ -272,11 +297,11 @@ def create_asymmetric_load(
     q_c_mvar: float = 0,
     sn_mva: float = nan,
     name: str | None = None,
-    scaling: float = 1.,
+    scaling: float = 1.0,
     index: Int | None = None,
     in_service: bool = True,
     type: WyeDeltaType = "wye",
-    **kwargs
+    **kwargs,
 ) -> Int:
     """
     Adds one 3 phase load in table net["asymmetric_load"].
@@ -328,9 +353,21 @@ def create_asymmetric_load(
 
     index = _get_index_with_check(net, "asymmetric_load", index, name="3 phase asymmetric_load")
 
-    entries = {"name": name, "bus": bus, "p_a_mw": p_a_mw, "p_b_mw": p_b_mw, "p_c_mw": p_c_mw, "scaling": scaling,
-               "q_a_mvar": q_a_mvar, "q_b_mvar": q_b_mvar, "q_c_mvar": q_c_mvar, "sn_mva": sn_mva,
-               "in_service": in_service, "type": type, **kwargs}
+    entries = {
+        "name": name,
+        "bus": bus,
+        "p_a_mw": p_a_mw,
+        "p_b_mw": p_b_mw,
+        "p_c_mw": p_c_mw,
+        "scaling": scaling,
+        "q_a_mvar": q_a_mvar,
+        "q_b_mvar": q_b_mvar,
+        "q_c_mvar": q_c_mvar,
+        "sn_mva": sn_mva,
+        "in_service": in_service,
+        "type": type,
+        **kwargs,
+    }
     _set_entries(net, "asymmetric_load", index, True, entries=entries)
 
     return index
@@ -392,13 +429,8 @@ def create_asymmetric_load(
 # =============================================================================
 
 
-def create_load_from_cosphi( # no index ?
-    net: pandapowerNet,
-    bus: Int,
-    sn_mva: float,
-    cos_phi: float,
-    mode: UnderOverExcitedType,
-    **kwargs
+def create_load_from_cosphi(  # no index ?
+    net: pandapowerNet, bus: Int, sn_mva: float, cos_phi: float, mode: UnderOverExcitedType, **kwargs
 ) -> Int:
     """
     Creates a load element from rated power and power factor cos(phi).
@@ -426,22 +458,23 @@ def create_load_from_cosphi( # no index ?
     for overexcited behavior (Q injection, increases voltage).
     """
     from pandapower.toolbox import pq_from_cosphi
+
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="load")
     return create_load(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
 
 
 def create_load_dc(
-        net: pandapowerNet,
-        bus_dc: Int,
-        p_dc_mw: float,
-        scaling: float = 1.0,
-        type: str | None = None,
-        index: Int | None = None,
-        name: str | None = None,
-        in_service: bool = True,
-        controllable: bool = False,
-        **kwargs
-    ):
+    net: pandapowerNet,
+    bus_dc: Int,
+    p_dc_mw: float,
+    scaling: float = 1.0,
+    type: str | None = None,
+    index: Int | None = None,
+    name: str | None = None,
+    in_service: bool = True,
+    controllable: bool = False,
+    **kwargs,
+):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
     INPUT:
@@ -471,12 +504,20 @@ def create_load_dc(
         **index** (int) - The unique ID of the created svc
 
     """
-    _check_element(net, bus_dc, element='bus_dc')
+    _check_element(net, bus_dc, element="bus_dc")
 
     index = _get_index_with_check(net, "source_dc", index=index)
 
-    entries = {"name": name, "bus_dc": bus_dc, "p_dc_mw": p_dc_mw, "in_service": in_service, "scaling": scaling,
-               "type": type, "controllable": controllable, **kwargs}
+    entries = {
+        "name": name,
+        "bus_dc": bus_dc,
+        "p_dc_mw": p_dc_mw,
+        "in_service": in_service,
+        "scaling": scaling,
+        "type": type,
+        "controllable": controllable,
+        **kwargs,
+    }
     _set_entries(net, "load_dc", index, True, entries=entries)
 
     return index
