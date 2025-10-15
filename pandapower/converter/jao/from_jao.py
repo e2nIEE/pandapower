@@ -3,11 +3,13 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+
+
 from copy import deepcopy
 import os
 import json
 from functools import reduce
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 import numpy as np
 import re
 import difflib
@@ -342,9 +344,11 @@ def generate_rename_locnames_from_combined(
 def _collect_bus_location_names(data: dict[str, pd.DataFrame]) -> set[str]:
     names = []
     for key in [k for k in ["Lines", "Tielines"] if k in data]:
+        df = data[key]
         for subst in ["Substation_1", "Substation_2"]:
-            if (subst, "Full_name") in data[key].columns:
-                s = data[key].loc[:, (subst, "Full_name")].astype(str).str.strip()
+            col = _get_fullname_tuple(df, subst)
+            if col is not None:
+                s = df.loc[:, col].astype(str).str.strip()
                 names.append(s)
     if not names:
         return set()
@@ -527,6 +531,296 @@ def report_problematic_names_after_normalization(data: dict[str, pd.DataFrame]) 
     print(combined)
     return combined
 
+
+def _first_present_tuple(df: pd.DataFrame, candidates: list[tuple]) -> Optional[tuple]:
+    for t in candidates:
+        if t in df.columns:
+            return t
+    return None
+
+# def _get_voltage_tuple(df: pd.DataFrame) -> Optional[tuple]:
+#     return _best_voltage_col_lines(df)
+
+# def _get_fullname_tuple(df: pd.DataFrame, subst: str) -> Optional[tuple]:
+#     return _first_present_tuple(df, [
+#         (subst, "Full_name"),
+#         (subst, "Full Name"),
+#         (subst, "Fullname"),
+#     ])
+
+def _get_tso_tuple(df: pd.DataFrame, subst: str) -> Optional[tuple]:
+    if subst == "Substation_1":
+        return _first_present_tuple(df, [(None, "TSO 1"), (None, "TSO1"), (None, "TSO")])
+    elif subst == "Substation_2":
+        return _first_present_tuple(df, [(None, "TSO 2"), (None, "TSO2"), (None, "TSO")])
+    else:
+        return _first_present_tuple(df, [(None, "TSO")])
+
+def _ensure_line_tso_column(df: pd.DataFrame) -> None:
+    # Erzeuge (None, "TSO"), falls nicht vorhanden, aus TSO 1/TSO 2
+    if (None, "TSO") not in df.columns:
+        t1 = _first_present_tuple(df, [(None, "TSO 1"), (None, "TSO1")])
+        t2 = _first_present_tuple(df, [(None, "TSO 2"), (None, "TSO2")])
+        if t1 and t2:
+            df[(None, "TSO")] = df.loc[:, t1].astype(str).str.strip() + "/" + df.loc[:, t2].astype(str).str.strip()
+        elif t1:
+            df[(None, "TSO")] = df.loc[:, t1]
+        elif t2:
+            df[(None, "TSO")] = df.loc[:, t2]
+        # sonst bleibt (None, "TSO") ungesetzt – wird später robust behandelt
+def _find_first_present_lvl1(df: pd.DataFrame, variants: list[str]):
+    lvl1 = df.columns.get_level_values(1)
+    for lab in variants:
+        if lab in lvl1:
+            for col in df.columns:
+                if col[1] == lab:
+                    return col
+    return None
+
+# def _get_voltage_tuple(df: pd.DataFrame) -> Optional[tuple]:
+#     # sucht beliebige "Voltage_level..."-Varianten über Level 1
+#     return _find_first_present_lvl1(df, [
+#         "Voltage_level(kV)",
+#         "Voltage_level [kV]",
+#         "Voltage_level (kV)",
+#         "Voltage level [kV]",
+#         "Voltage level (kV)",
+#     ])
+
+def _get_tso_col_for_subst(df: pd.DataFrame, subst: str) -> Optional[tuple]:
+    # Bevorzugt TSO 1 / TSO 2 je nach Substation, sonst generisches "TSO"
+    if subst == "Substation_1":
+        col = _find_first_present_lvl1(df, ["TSO 1", "TSO1"])
+        if col is not None:
+            return col
+    elif subst == "Substation_2":
+        col = _find_first_present_lvl1(df, ["TSO 2", "TSO2"])
+        if col is not None:
+            return col
+    return _find_first_present_lvl1(df, ["TSO"])
+
+def _get_tso_series_for_side(df: pd.DataFrame, subst: str) -> pd.Series:
+    col = _get_tso_col_for_subst(df, subst)
+    if col is not None:
+        return df.loc[:, col].astype(str).str.strip()
+    # Fallback: generische TSO-Spalte?
+    col_generic = _find_first_present_lvl1(df, ["TSO"])
+    if col_generic is not None:
+        return df.loc[:, col_generic].astype(str).str.strip()
+    # letzter Fallback: leere Strings
+    return pd.Series([""] * len(df), index=df.index)
+
+def _series_by_lvl1(df: pd.DataFrame, label: str) -> Optional[pd.Series]:
+    # positionsbasiert statt labelbasiert → kein (None,'TSO')-KeyError, keine PerformanceWarning
+    lvl1 = df.columns.get_level_values(1)
+    pos = np.flatnonzero(lvl1 == label)
+    if pos.size:
+        return df.iloc[:, pos[0]]
+    return None
+
+def _values_by_lvl1(df: pd.DataFrame, label: str, default="") -> np.ndarray:
+    s = _series_by_lvl1(df, label)
+    if s is None:
+        return np.array([default] * len(df))
+    return s.astype(str).str.strip().values
+
+def _get_line_tso_array(df: pd.DataFrame) -> np.ndarray:
+    # 1) Generische "TSO"
+    s = _series_by_lvl1(df, "TSO")
+    if s is not None:
+        return s.astype(str).str.strip().values
+    # 2) Kombination "TSO 1/TSO 2"
+    s1 = _series_by_lvl1(df, "TSO 1") or _series_by_lvl1(df, "TSO1")
+    s2 = _series_by_lvl1(df, "TSO 2") or _series_by_lvl1(df, "TSO2")
+    if s1 is not None and s2 is not None:
+        return (s1.astype(str).str.strip() + "/" + s2.astype(str).str.strip()).values
+    if s1 is not None:
+        return s1.astype(str).str.strip().values
+    if s2 is not None:
+        return s2.astype(str).str.strip().values
+    return np.array([""] * len(df))
+
+def _canon_label(s: str) -> str:
+    s = str(s or "").strip()
+    s = s.replace("µ", "u").replace("μ", "u")
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = s.casefold()
+    s = re.sub(r"[^0-9a-z]+", "", s)
+    return s
+
+def _sim(a: str, b: str) -> float:
+    return difflib.SequenceMatcher(None, a, b).ratio()
+
+def _get_col_pos(df: pd.DataFrame, col: Tuple) -> Optional[int]:
+    try:
+        return list(df.columns).index(col)
+    except ValueError:
+        return None
+
+def _best_col_by_lvl1_similarity(df: pd.DataFrame,
+                                 target_label: str,
+                                 min_ratio: float = 0.55,
+                                 required_tokens: Optional[list[str]] = None) -> Optional[Tuple]:
+    tgt = _canon_label(target_label)
+    req = set(required_tokens or [])
+    best, best_score = None, -1.0
+    for col in df.columns:
+        lvl1 = _canon_label(col[1])
+        score = _sim(lvl1, tgt)
+        if req and not all(tok in lvl1 for tok in req):
+            score -= 0.15
+        if score >= min_ratio and score > best_score:
+            best, best_score = col, score
+    return best
+
+def _best_voltage_col_lines(df: pd.DataFrame) -> Optional[Tuple]:
+    # verlangt "volt" und "kv" im Level-1-Label
+    return _best_col_by_lvl1_similarity(df, target_label="voltage level kv",
+                                        min_ratio=0.45, required_tokens=["volt", "kv"])
+
+def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[Optional[Tuple], Optional[Tuple]]:
+    tgt_top = _canon_label("voltage level kv")
+    prim_list, sec_list = [], []
+    for col in df.columns:
+        top_c = _canon_label(col[0])
+        lvl1_c = _canon_label(col[1])
+        top_ok = (_sim(top_c, tgt_top) >= 0.45) and ("volt" in top_c and "kv" in top_c)
+        if top_ok and _sim(lvl1_c, _canon_label("primary")) >= 0.7:
+            prim_list.append(col)
+        if top_ok and _sim(lvl1_c, _canon_label("secondary")) >= 0.7:
+            sec_list.append(col)
+    # Paare mit identischem Top-Level bevorzugen
+    for p in prim_list:
+        matches = [s for s in sec_list if _canon_label(s[0]) == _canon_label(p[0])]
+        if matches:
+            return p, matches[0]
+    prim_best = max(prim_list, key=lambda c: _sim(_canon_label(c[0]), tgt_top), default=None)
+    sec_best  = max(sec_list,  key=lambda c: _sim(_canon_label(c[0]), tgt_top), default=None)
+    return prim_best, sec_best
+
+def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> Optional[Tuple]:
+    tgt0 = _canon_label(subst)      # "substation1"/"substation2"
+    tgt1 = _canon_label("full name")
+    best, best_score = None, -1.0
+    for col in df.columns:
+        top_c = _canon_label(col[0])
+        lvl1_c = _canon_label(col[1])
+        s0 = _sim(top_c, tgt0)
+        s1 = _sim(lvl1_c, tgt1)
+        if "substation" not in top_c:
+            s0 -= 0.1
+        if "fullname" not in lvl1_c and not ("full" in lvl1_c and "name" in lvl1_c):
+            s1 -= 0.1
+        score = 0.5 * (s0 + s1)
+        if s0 >= 0.5 and s1 >= 0.6 and score > best_score:
+            best, best_score = col, score
+    return best
+
+def _best_susceptance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+    return _best_col_by_lvl1_similarity(df, "susceptance b us",
+                                        min_ratio=0.5, required_tokens=["susceptance", "b", "us"])
+
+def _best_resistance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+    return _best_col_by_lvl1_similarity(df, "resistance r ohm",
+                                        min_ratio=0.5, required_tokens=["resistance"])
+
+def _best_reactance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+    return _best_col_by_lvl1_similarity(df, "reactance x ohm",
+                                        min_ratio=0.5, required_tokens=["reactance"])
+
+def _best_transformer_location_fullname_col_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+    tgt0 = _canon_label("location")
+    tgt1 = _canon_label("full name")
+    best, best_score = None, -1.0
+    for col in df.columns:
+        top_c = _canon_label(col[0])
+        lvl1_c = _canon_label(col[1])
+        s0 = _sim(top_c, tgt0)
+        s1 = _sim(lvl1_c, tgt1)
+        if "location" not in top_c:
+            s0 -= 0.1
+        if "fullname" not in lvl1_c and not ("full" in lvl1_c and "name" in lvl1_c):
+            s1 -= 0.1
+        score = 0.5 * (s0 + s1)
+        if s0 >= 0.5 and s1 >= 0.6 and score > best_score:
+            best, best_score = col, score
+    return best
+
+def _get_transformer_location_fullname_series_fuzzy(df: pd.DataFrame) -> pd.Series:
+    col = _best_transformer_location_fullname_col_fuzzy(df)
+    if col is None:
+        raise KeyError("Transformers: Location / Full Name per Fuzzy-Matching nicht gefunden.")
+    pos = _get_col_pos(df, col)
+    return df.iloc[:, pos].astype(str).str.strip()
+
+def _values_by_lvl1_fuzzy(df: pd.DataFrame, target_label: str,
+                          tokens: Optional[list[str]] = None,
+                          default="") -> np.ndarray:
+    col = _best_col_by_lvl1_similarity(df, target_label, min_ratio=0.5, required_tokens=tokens)
+    if col is None:
+        return np.array([default] * len(df))
+    pos = _get_col_pos(df, col)
+    return df.iloc[:, pos].astype(str).str.strip().values
+
+def _values_by_lvl1_fuzzy_numeric(df: pd.DataFrame, target_label: str,
+                                  tokens: Optional[list[str]] = None,
+                                  default=0.0) -> np.ndarray:
+    vals = _values_by_lvl1_fuzzy(df, target_label, tokens=tokens, default=str(default))
+    return pd.to_numeric(pd.Series(vals).str.replace(",", "."), errors="coerce").fillna(default).values
+
+def _get_tso_series_for_side_fuzzy(df: pd.DataFrame, subst: str) -> pd.Series:
+    target = "TSO 1" if subst == "Substation_1" else "TSO 2"
+    col = _best_col_by_lvl1_similarity(df, target, min_ratio=0.6, required_tokens=["tso"])
+    if col is not None:
+        pos = _get_col_pos(df, col)
+        return df.iloc[:, pos].astype(str).str.strip()
+    col = _best_col_by_lvl1_similarity(df, "TSO", min_ratio=0.6, required_tokens=["tso"])
+    if col is not None:
+        pos = _get_col_pos(df, col)
+        return df.iloc[:, pos].astype(str).str.strip()
+    return pd.Series([""] * len(df), index=df.index)
+
+def _get_line_tso_array_fuzzy(df: pd.DataFrame) -> np.ndarray:
+    col = _best_col_by_lvl1_similarity(df, "TSO", min_ratio=0.6, required_tokens=["tso"])
+    if col is not None:
+        pos = _get_col_pos(df, col)
+        return df.iloc[:, pos].astype(str).str.strip().values
+    c1 = _best_col_by_lvl1_similarity(df, "TSO 1", min_ratio=0.6, required_tokens=["tso"])
+    c2 = _best_col_by_lvl1_similarity(df, "TSO 2", min_ratio=0.6, required_tokens=["tso"])
+    if c1 is not None and c2 is not None:
+        p1 = _get_col_pos(df, c1); p2 = _get_col_pos(df, c2)
+        return (df.iloc[:, p1].astype(str).str.strip() + "/" + df.iloc[:, p2].astype(str).str.strip()).values
+    if c1 is not None:
+        return df.iloc[:, _get_col_pos(df, c1)].astype(str).str.strip().values
+    if c2 is not None:
+        return df.iloc[:, _get_col_pos(df, c2)].astype(str).str.strip().values
+    return np.array([""] * len(df))
+
+def _get_transformer_tso_series_fuzzy(df: pd.DataFrame) -> pd.Series:
+    best, best_score = None, -1.0
+    for col in df.columns:
+        if "tso" in _canon_label(col[1]):
+            score = 0.0
+            if "location" in _canon_label(col[0]):
+                score += 0.2
+            score += _sim(_canon_label(col[1]), _canon_label("tso"))
+            if score > best_score:
+                best, best_score = col, score
+    if best is None:
+        return pd.Series([""] * len(df), index=df.index)
+    pos = _get_col_pos(df, best)
+    return df.iloc[:, pos].astype(str).str.strip()
+
+# Ersetzt: _get_voltage_tuple (Lines/Tielines)
+def _get_voltage_tuple(df: pd.DataFrame) -> Optional[Tuple]:
+    return _best_voltage_col_lines(df)
+
+# Ersetzt: Substation Full_name – nutzt Fuzzy
+def _get_fullname_tuple(df: pd.DataFrame, subst: str) -> Optional[Tuple]:
+    return _best_fullname_tuple_fuzzy(df, subst)
+
+
 def _data_correction(
         data: dict[str, pd.DataFrame],
         html_str: Optional[str],
@@ -552,89 +846,116 @@ def _data_correction(
     # old name -> new name
     combined = report_problematic_names_after_normalization(data)
     rename_locnames = generate_rename_locnames_from_combined(data, combined)
-    # rename_locnames = [("PSTMIKULOWA", "PST MIKULOWA"),
-    #                    ("Chelm", "CHELM"),
-    #                    ("OLSZTYN-MATK", "OLSZTYN-MATKI"),
-    #                    ("OLSZTYN-MATKII", "OLSZTYN-MATKI"),
-    #                    ("STANISLAWOW", "Stanislawow"),
-    #                    ("VIERRADEN", "Vierraden")]
+
     filtered_rename_locnames = []
     bus_location_names = _collect_bus_location_names(data)
     for old, new in rename_locnames:
-        if "audorf" in old.lower() or "audorf" in new.lower():
-            print(f"Rename rule: '{old}' -> '{new}'")
-        # Skip if the old name already exists in bus locations (avoid unnecessary changes)
         if old in bus_location_names and new in bus_location_names:
-            # Both exist - this might create duplicates, skip it
             continue
-        # Skip if this creates a name that's too different
         similarity = difflib.SequenceMatcher(None, old.lower(), new.lower()).ratio()
-        if similarity < 0.8:  # Too different, skip
+        if similarity < 0.8:
             continue
         filtered_rename_locnames.append((old, new))
-
     rename_locnames = filtered_rename_locnames
-    # --- Line and Tieline data ---------------------------
+
+    # --- Lines/Tielines: Spaltenrobustheit + Datentyp-Korrekturen
     for key in ["Lines", "Tielines"]:
+        df = data[key]
 
-        # --- correct column names
-        cols = data[key].columns.to_frame().reset_index(drop=True)
-        cols.loc[cols[1] == "Voltage_level(kV)", 0] = None
-        cols.loc[cols[1] == "Comment", 0] = None
-        cols.loc[cols[0].str.startswith("Unnamed:").astype(bool), 0] = None
-        cols.loc[cols[1] == "Length_(km)", 0] = "Electrical Parameters"  # might be wrong in
-        # Tielines otherwise
-        data[key].columns = pd.MultiIndex.from_arrays(cols.values.T)
+        # MultiIndex-Korrektur: bekannte Varianten unter einen Top-Level (None) heben
+        cols = df.columns.to_frame(index=False)
+        # harmonisiere zweite Ebene (Spaltennamen)
+        replace_map = {
+            "Full Name": "Full_name",
+            "Short Name": "Short_name",
+            "Susceptance_B (µS)": "Susceptance_B(μS)",
+            "Voltage_level (kV)": "Voltage_level(kV)",
+            "Voltage_level [kV]": "Voltage_level(kV)",
+        }
+        cols.iloc[:, 1] = cols.iloc[:, 1].replace(replace_map)
 
-        # --- correct comma separation and cast to floats
-        data[key][("Maximum Current Imax (A)", "Fixed")] = \
-            data[key][("Maximum Current Imax (A)", "Fixed")].replace(
-                "\xa0", max_i_ka_fillna * 1e3).replace(
-                "-", max_i_ka_fillna * 1e3).replace(" ", max_i_ka_fillna * 1e3)
-        col_names = [("Electrical Parameters", col_level1) for col_level1 in [
-            "Length_(km)", "Resistance_R(Ω)", "Reactance_X(Ω)", "Susceptance_B(μS)",
-            "Length_(km)"]] + [("Maximum Current Imax (A)", "Fixed")]
-        _float_col_comma_correction(data, key, col_names)
+        # setze Top-Level = None für diese Felder
+        cols.loc[cols.iloc[:, 1].isin(["Voltage_level(kV)", "Comment"]), cols.columns[0]] = None
+        cols.loc[cols.iloc[:, 0].astype(str).str.startswith("Unnamed:"), cols.columns[0]] = None
+        # Länge unter "Electrical Parameters" sicherstellen
+        cols.loc[cols.iloc[:, 1] == "Length_(km)", cols.columns[0]] = "Electrical Parameters"
 
-        # --- consolidate to one way of name capitalization
-        for loc_name in [(None, "NE_name"), ("Substation_1", "Full_name"),
-                         ("Substation_2", "Full_name")]:
-            data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().apply(
-                _multi_str_repl, repl=rename_locnames)
+        # rekonstruieren
+        df.columns = pd.MultiIndex.from_frame(cols)
+
+        # Stelle (None, "TSO") bereit, falls TSO 1/TSO 2-Struktur verwendet wird
+        _ensure_line_tso_column(df)
+
+        # Imax-Festwert säubern (falls vorhanden)
+        imax_fixed = ("Maximum Current Imax (A)", "Fixed")
+        if imax_fixed in df.columns:
+            df[imax_fixed] = (
+                df[imax_fixed]
+                .replace({"\xa0": max_i_ka_fillna * 1e3, "-": max_i_ka_fillna * 1e3, " ": max_i_ka_fillna * 1e3})
+                .astype(str).str.replace(",", ".")
+            )
+            df[imax_fixed] = pd.to_numeric(df[imax_fixed], errors="coerce")
+
+        # --- numerische Konvertierung für Basis-Spalten (falls exakt vorhanden)
+        static_cols = [
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+        ]
+        for col in static_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col].astype(str).str.replace(",", "."), errors="coerce")
+
+        # --- Fuzzy-Matching für R/X/B (Level-1), inkl. Susceptance_B (µ/μS)
+        R_col = _best_resistance_col_lines_fuzzy(df)  # findet z. B. "Resistance_R(Ω)"
+        X_col = _best_reactance_col_lines_fuzzy(df)  # findet z. B. "Reactance_X(Ω)"
+        B_col = _best_susceptance_col_lines_fuzzy(df)  # findet z. B. "Susceptance_B (µS)/(μS)"
+
+        for fuzzy_col in [R_col, X_col, B_col]:
+            if fuzzy_col is not None:
+                pos = _get_col_pos(df, fuzzy_col)  # positionsbasiert, robust gg. (None/NaN)-Top-Level
+                df.iloc[:, pos] = pd.to_numeric(df.iloc[:, pos].astype(str).str.replace(",", "."), errors="coerce")
+        # Namensnormierung anwenden (NE_name, Full_name, ...)
+        for loc_name in [(None, "NE_name"),
+                         _get_fullname_tuple(df, "Substation_1"),
+                         _get_fullname_tuple(df, "Substation_2")]:
+            if loc_name is not None and loc_name in df.columns:
+                df.loc[:, loc_name] = df.loc[:, loc_name].astype(str).str.strip().apply(_multi_str_repl,
+                                                                                        repl=rename_locnames)
+
     html_str = _multi_str_repl(html_str, rename_locnames)
 
-    # --- Transformer data --------------------------------
+    # --- Transformer-Daten: nur kleinere Anpassungen, Rest bleibt wie im Original
     key = "Transformers"
+    if key in data:
+        df = data[key]
+        # Location vereinheitlichen
+        loc_name = ("Location", "Full Name")
+        if loc_name in df.columns:
+            df.loc[:, loc_name] = df.loc[:, loc_name].astype(str).str.strip().apply(_multi_str_repl,
+                                                                                    repl=rename_locnames)
 
-    # --- fix Locations
-    loc_name = ("Location", "Full Name")
-    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().apply(
-        _multi_str_repl, repl=rename_locnames)
+        # Tap-String-Korrekturen (wie gehabt)
+        taps = df.loc[:, ("Phase Shifting Properties", "Taps used for RAO")].fillna("").astype(str).str.replace(" ", "")
+        nonnull = taps.apply(len).astype(bool)
+        nonnull_taps = taps.loc[nonnull]
+        surrounded = nonnull_taps.str.startswith("<") & nonnull_taps.str.endswith(">")
+        nonnull_taps.loc[surrounded] = nonnull_taps.loc[surrounded].str[1:-1]
+        slash_sep = (~nonnull_taps.str.contains(";")) & nonnull_taps.str.contains("/")
+        nonnull_taps.loc[slash_sep] = nonnull_taps.loc[slash_sep].str.replace("/", ";")
+        nonnull_taps.loc[nonnull_taps == "0"] = "0;0"
+        df.loc[nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = nonnull_taps
+        df.loc[~nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = "0;0"
 
-    # --- fix data in nonnull_taps
-    taps = data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].fillna("").astype(
-        str).str.replace(" ", "")
-    nonnull = taps.apply(len).astype(bool)
-    nonnull_taps = taps.loc[nonnull]
-    surrounded = nonnull_taps.str.startswith("<") & nonnull_taps.str.endswith(">")
-    nonnull_taps.loc[surrounded] = nonnull_taps.loc[surrounded].str[1:-1]
-    slash_sep = (~nonnull_taps.str.contains(";")) & nonnull_taps.str.contains("/")
-    nonnull_taps.loc[slash_sep] = nonnull_taps.loc[slash_sep].str.replace("/", ";")
-    nonnull_taps.loc[nonnull_taps == "0"] = "0;0"
-    data[key].loc[nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = nonnull_taps
-    data[key].loc[~nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = "0;0"
-
-    # --- phase shifter with double info
-    cols = ["Phase Regulation δu (%)", "Angle Regulation δu (%)"]
-    for col in cols:
-        if is_object_dtype(data[key].loc[:, ("Phase Shifting Properties", col)]):
-            tr_double = data[key].index[data[key].loc[:, (
-                                                             "Phase Shifting Properties", col)].str.contains(
-                "/").fillna(0).astype(bool)]
-            data[key].loc[tr_double, ("Phase Shifting Properties", col)] = data[key].loc[
-                tr_double, ("Phase Shifting Properties", col)].str.split("/", expand=True)[
-                1].str.replace(",", ".").astype(float).values  # take second info and correct
-            # separation: , -> .
+        # Phase Shifter Doppelinfos (wie gehabt)
+        cols = ["Phase Regulation δu (%)", "Angle Regulation δu (%)"]
+        for col in cols:
+            tup = ("Phase Shifting Properties", col)
+            if tup in df.columns and is_object_dtype(df.loc[:, tup]):
+                tr_double = df.index[df.loc[:, tup].str.contains("/").fillna(0).astype(bool)]
+                df.loc[tr_double, tup] = df.loc[tr_double, tup].str.split("/", expand=True)[1].str.replace(",",
+                                                                                                           ".").astype(
+                    float).values
 
     return html_str
 
@@ -700,17 +1021,38 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
     """
     bus_df_empty = pd.DataFrame({"name": str(), "vn_kv": float(), "TSO": str()}, index=[])
     bus_df = deepcopy(bus_df_empty)
+
     for key in ["Lines", "Tielines"]:
-        for subst in ['Substation_1', 'Substation_2']:
-            data_col_tuples = [(subst, "Full_name"), (None, "Voltage_level(kV)"), (None, "TSO")]
-            to_add = data[key].loc[:, data_col_tuples].set_axis(bus_df.columns, axis="columns")
-            if len(bus_df):
-                bus_df = pd.concat([bus_df, to_add])
-            else:
-                bus_df = to_add
+        if key not in data:
+            continue
+        df = data[key]
+
+        vn_tuple = _get_voltage_tuple(df)
+        if vn_tuple is None:
+            raise KeyError(f"{key}: Keine Voltage_level-Spalte gefunden (fuzzy).")
+
+        # Substation 1
+        s1_full = _get_fullname_tuple(df, "Substation_1")
+        if s1_full is not None:
+            to_add1 = pd.DataFrame({
+                "name": df.loc[:, s1_full].astype(str).str.strip().values,
+                "vn_kv": pd.to_numeric(df.loc[:, vn_tuple].astype(str).str.replace(",", "."), errors="coerce").values,
+                "TSO": _get_tso_series_for_side_fuzzy(df, "Substation_1").values
+            })
+            bus_df = pd.concat([bus_df, to_add1], ignore_index=True) if len(bus_df) else to_add1
+
+        # Substation 2
+        s2_full = _get_fullname_tuple(df, "Substation_2")
+        if s2_full is not None:
+            to_add2 = pd.DataFrame({
+                "name": df.loc[:, s2_full].astype(str).str.strip().values,
+                "vn_kv": pd.to_numeric(df.loc[:, vn_tuple].astype(str).str.replace(",", "."), errors="coerce").values,
+                "TSO": _get_tso_series_for_side_fuzzy(df, "Substation_2").values
+            })
+            bus_df = pd.concat([bus_df, to_add2], ignore_index=True) if len(bus_df) else to_add2
+
     bus_df = _drop_duplicates_and_join_TSO(bus_df)
-    new_bus_idx = create_buses(
-        net, len(bus_df), vn_kv=bus_df.vn_kv, name=bus_df.name, zone=bus_df.TSO)
+    new_bus_idx = create_buses(net, len(bus_df), vn_kv=bus_df.vn_kv, name=bus_df.name, zone=bus_df.TSO)
     assert np.allclose(new_bus_idx, bus_df.index)
 
 
@@ -735,33 +1077,85 @@ def _create_lines(
     bus_idx = _get_bus_idx(net)
 
     for key in ["Lines", "Tielines"]:
-        length_km = data[key][("Electrical Parameters", "Length_(km)")].values
+        if key not in data:
+            continue
+        df = data[key]
+
+        # Länge
+        length_km = df[("Electrical Parameters", "Length_(km)")].values
         zero_length = np.isclose(length_km, 0)
         no_length = np.isnan(length_km)
         if sum(zero_length) or sum(no_length):
-            logger.warning(f"According to given data, {sum(zero_length)} {key.lower()} have zero "
-                           f"length and {sum(zero_length)} {key.lower()} have no length data. "
-                           "Both types of wrong data are replaced by 1 km.")
+            logger.warning(
+                f"Nach den Daten haben {sum(zero_length)} {key.lower()} 0 km Länge und {sum(no_length)} ohne Länge; beide auf 1 km gesetzt.")
             length_km[zero_length | no_length] = 1
-        vn_kvs = data[key].loc[:, (None, "Voltage_level(kV)")].values
+
+        # VN
+        vn_tuple = _get_voltage_tuple(df)
+        if vn_tuple is None:
+            raise KeyError(f"{key}: Voltage_level (fuzzy) nicht gefunden.")
+        vn_kvs = df.loc[:, vn_tuple].values
+
+        # Substation-Namen
+        s1_full = _get_fullname_tuple(df, "Substation_1")
+        s2_full = _get_fullname_tuple(df, "Substation_2")
+        if s1_full is None or s2_full is None:
+            raise KeyError(f"{key}: Substation_1/2 Full_name (fuzzy) nicht gefunden.")
+
+        # Bus-Indizes
+        from_bus = bus_idx.loc[list(tuple(zip(df.loc[:, s1_full].astype(str).values, vn_kvs)))].values
+        to_bus = bus_idx.loc[list(tuple(zip(df.loc[:, s2_full].astype(str).values, vn_kvs)))].values
+
+        # Leitungsparameter je km (fuzzy, mit Fallback)
+        R_col = _best_resistance_col_lines_fuzzy(df)
+        X_col = _best_reactance_col_lines_fuzzy(df)
+        B_col = _best_susceptance_col_lines_fuzzy(df)
+
+        if R_col is not None:
+            R_vals = df.iloc[:, _get_col_pos(df, R_col)].values
+        elif ("Electrical Parameters", "Resistance_R(Ω)") in df.columns:
+            R_vals = df[("Electrical Parameters", "Resistance_R(Ω)")].values
+        else:
+            R_vals = np.zeros(len(df))
+        if X_col is not None:
+            X_vals = df.iloc[:, _get_col_pos(df, X_col)].values
+        elif ("Electrical Parameters", "Reactance_X(Ω)") in df.columns:
+            X_vals = df[("Electrical Parameters", "Reactance_X(Ω)")].values
+        else:
+            X_vals = np.zeros(len(df))
+        if B_col is not None:
+            B_vals = df.iloc[:, _get_col_pos(df, B_col)].values
+        else:
+            # Fallback-Wert 0 wenn nicht vorhanden
+            B_vals = np.zeros(len(df))
+
+        R = R_vals / length_km
+        X = X_vals / length_km
+        B = B_vals / length_km
+
+        # Imax
+        imax_fixed = ("Maximum Current Imax (A)", "Fixed")
+        I_ka = df[imax_fixed].fillna(max_i_ka_fillna * 1e3).values / 1e3 if imax_fixed in df.columns else np.full(
+            len(df), max_i_ka_fillna)
+
+        # Metadaten (fuzzy)
+        name_vals = _values_by_lvl1_fuzzy(df, "NE name", tokens=["ne", "name"], default=None)
+        eic_vals = _values_by_lvl1_fuzzy(df, "EIC code", tokens=["eic", "code"], default=None)
+        comment_vals = _values_by_lvl1_fuzzy(df, "comment", tokens=["comment"], default="")
+        tso_vals = _get_line_tso_array_fuzzy(df)
 
         _ = create_lines_from_parameters(
             net,
-            bus_idx.loc[list(tuple(zip(data[key].loc[:, ("Substation_1", "Full_name")].values,
-                                       vn_kvs)))].values,
-            bus_idx.loc[list(tuple(zip(data[key].loc[:, ("Substation_2", "Full_name")].values,
-                                       vn_kvs)))].values,
+            from_bus,
+            to_bus,
             length_km,
-            data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,
-            data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,
-            data[key][("Electrical Parameters", "Susceptance_B(μS)")].values / length_km,
-            data[key][("Maximum Current Imax (A)", "Fixed")].fillna(
-                max_i_ka_fillna * 1e3).values / 1e3,
-            name=data[key].xs("NE_name", level=1, axis=1).values[:, 0],
-            EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],
-            TSO=data[key].xs("TSO", level=1, axis=1).values[:, 0],
-            Comment=data[key].xs("Comment", level=1, axis=1).values[:, 0],
-            Tieline=key == "Tielines",
+            R, X, B,
+            I_ka,
+            name=name_vals,
+            EIC_Code=eic_vals,
+            TSO=tso_vals,
+            Comment=comment_vals,
+            Tieline=(key == "Tielines"),
         )
 
 
@@ -780,32 +1174,53 @@ def _create_transformers_and_buses(
 
     # --- data preparations
     key = "Transformers"
+    dfT = data[key]
+
+    # VN & Zuteilung
     bus_idx = _get_bus_idx(net)
     vn_hv_kv, vn_lv_kv = _get_transformer_voltages(data, bus_idx)
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(
         net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
+
+    # Imax primary
     max_i_a = data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
     empty_i_idx = max_i_a.index[max_i_a.isnull()]
-    max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, (
-        "Maximum Current Imax (A) primary", "Max")].values
+    max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, ("Maximum Current Imax (A) primary", "Max")].values
+
+    # Basisgrößen
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
     z_pu = vn_lv_kv ** 2 / sn_mva
-    rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
-    xk = data[key].xs("Reactance_X(Ω)", level=1, axis=1).values[:, 0] / z_pu
-    b0 = data[key].xs("Susceptance_B (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu
-    g0 = data[key].xs("Conductance_G (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu
+
+    # Trafoparameter (fuzzy, Level-1)
+    R_ohm = _values_by_lvl1_fuzzy_numeric(dfT, "resistance r ohm", tokens=["resistance"], default=0.0)
+    X_ohm = _values_by_lvl1_fuzzy_numeric(dfT, "reactance x ohm", tokens=["reactance"], default=0.0)
+    B_uS = _values_by_lvl1_fuzzy_numeric(dfT, "susceptance b us", tokens=["susceptance", "b", "us"], default=0.0)
+    G_uS = _values_by_lvl1_fuzzy_numeric(dfT, "conductance g us", tokens=["conductance", "g", "us"], default=0.0)
+
+    rk = R_ohm / z_pu
+    xk = X_ohm / z_pu
+    b0 = B_uS * 1e-6 * z_pu
+    g0 = G_uS * 1e-6 * z_pu
     zk = np.sqrt(rk ** 2 + xk ** 2)
     vk_percent = np.sign(xk) * zk * 100
     vkr_percent = rk * 100
     pfe_kw = g0 * sn_mva * 1e3
     i0_percent = 100 * np.sqrt(b0 ** 2 + g0 ** 2) * net.sn_mva / sn_mva
-    taps = data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].str.split(
-        ";", expand=True).astype(int).set_axis(["tap_min", "tap_max"], axis=1)
 
+    # Taps/Phasensteller (wie bisher über feste Labels)
+    taps = data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].str.split(";", expand=True).astype(
+        int).set_axis(["tap_min", "tap_max"], axis=1)
     du = _get_float_column(data[key], ("Phase Shifting Properties", "Phase Regulation δu (%)"))
     dphi = _get_float_column(data[key], ("Phase Shifting Properties", "Angle Regulation δu (%)"))
-    phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))  # Symmetrical/Asymmetrical not
-    # considered
+    phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))
+
+    # Name/TSO/EIC/Comment (fuzzy)
+    name_series_tr = _get_transformer_location_fullname_series_fuzzy(dfT)
+    tso_series_tr = _get_transformer_tso_series_fuzzy(dfT)
+    eic_vals = _values_by_lvl1_fuzzy(dfT, "eic code", tokens=["eic", "code"], default=None)
+    comment_vals = pd.Series(_values_by_lvl1_fuzzy(dfT, "comment", tokens=["comment"], default="")).replace("\xa0",
+                                                                                                            "").values
+    theta_vals = _values_by_lvl1_fuzzy_numeric(dfT, "theta degree", tokens=["theta"], default=0.0)
 
     _ = create_transformers_from_parameters(
         net,
@@ -818,7 +1233,7 @@ def _create_transformers_and_buses(
         vk_percent,
         pfe_kw,
         i0_percent,
-        shift_degree=data[key].xs("Theta θ (°)", level=1, axis=1).values[:, 0],
+        shift_degree=theta_vals,
         tap_pos=0,
         tap_neutral=0,
         tap_side="lv",
@@ -827,10 +1242,10 @@ def _create_transformers_and_buses(
         tap_phase_shifter=phase_shifter,
         tap_step_percent=du,
         tap_step_degree=dphi,
-        name=data[key].loc[:, ("Location", "Full Name")].str.strip().values,
-        EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],
-        TSO=data[key].xs("TSO", level=1, axis=1).values[:, 0],
-        Comment=data[key].xs("Comment", level=1, axis=1).replace("\xa0", "").values[:, 0],
+        name=name_series_tr.values,
+        EIC_Code=eic_vals,
+        TSO=tso_series_tr.values,
+        Comment=comment_vals,
     )
 
 
@@ -1117,13 +1532,23 @@ def _float_col_comma_correction(data: dict[str, pd.DataFrame], key: str, col_nam
 def _get_transformer_voltages(
         data: dict[str, pd.DataFrame], bus_idx: pd.Series) -> tuple[np.ndarray, np.ndarray]:
     key = "Transformers"
-    vn = data[key].loc[:, [("Voltage_level(kV)", "Primary"),
-                           ("Voltage_level(kV)", "Secondary")]].values
-    vn_hv_kv = np.max(vn, axis=1)
-    vn_lv_kv = np.min(vn, axis=1)
-    if is_integer_dtype(list(bus_idx.index.dtypes)[1]):
-        vn_hv_kv = vn_hv_kv.astype(int)
-        vn_lv_kv = vn_lv_kv.astype(int)
+    df = data[key]
+
+    col_p, col_s = _find_voltage_cols_in_transformers_fuzzy(df)
+    if col_p is None or col_s is None:
+        raise KeyError("Transformers: Voltage_level (Primary/Secondary) per Fuzzy-Matching nicht gefunden.")
+
+    vn_p = pd.to_numeric(df.loc[:, col_p].astype(str).str.replace(",", "."), errors="coerce").values
+    vn_s = pd.to_numeric(df.loc[:, col_s].astype(str).str.replace(",", "."), errors="coerce").values
+    vn_hv_kv = np.maximum(vn_p, vn_s)
+    vn_lv_kv = np.minimum(vn_p, vn_s)
+
+    try:
+        if is_integer_dtype(list(bus_idx.index.dtypes)[1]):
+            vn_hv_kv = vn_hv_kv.astype(int)
+            vn_lv_kv = vn_lv_kv.astype(int)
+    except Exception:
+        pass
 
     return vn_hv_kv, vn_lv_kv
 
@@ -1169,19 +1594,17 @@ def _allocate_trafos_to_buses_and_create_buses(
 
     if rel_deviation_threshold_for_trafo_bus_creation < log_rel_vn_deviation:
         logger.warning(
-            f"Given parameters violates the ineqation "
-            f"{rel_deviation_threshold_for_trafo_bus_creation=} >= {log_rel_vn_deviation=}. "
-            f"Therefore, rel_deviation_threshold_for_trafo_bus_creation={log_rel_vn_deviation} "
-            "is assumed.")
+            f"Given parameters violates the ineqation {rel_deviation_threshold_for_trafo_bus_creation=} >= {log_rel_vn_deviation=}. Therefore, rel_deviation_threshold_for_trafo_bus_creation={log_rel_vn_deviation} is assumed.")
         rel_deviation_threshold_for_trafo_bus_creation = log_rel_vn_deviation
 
     key = "Transformers"
+    dfT = data[key]
     bus_location_names = set(net.bus.name)
-    trafo_bus_names = data[key].loc[:, ("Location", "Full Name")]
+
+    # Standortnamen (fuzzy)
+    trafo_bus_names = _get_transformer_location_fullname_series_fuzzy(dfT)
     trafo_location_names = _find_trafo_locations(trafo_bus_names, bus_location_names)
 
-    # --- construct DataFrame trafo_connections including all information on trafo allocation to
-    # --- buses
     empties = -1 * np.ones(len(vn_hv_kv), dtype=int)
     trafo_connections = pd.DataFrame({
         "name": trafo_location_names,
@@ -1194,87 +1617,69 @@ def _allocate_trafos_to_buses_and_create_buses(
         "hv_rel_deviation": np.zeros(len(vn_hv_kv)),
         "lv_rel_deviation": np.zeros(len(vn_hv_kv)),
     })
-    trafo_connections[["hv_bus", "lv_bus"]] = trafo_connections[[
-        "hv_bus", "lv_bus"]].astype(np.int64)
+    trafo_connections[["hv_bus", "lv_bus"]] = trafo_connections[["hv_bus", "lv_bus"]].astype(np.int64)
 
     for side in ["hv", "lv"]:
         bus_col, trafo_vn_col, next_col, rel_dev_col, has_dev_col = \
-            f"{side}_bus", f"vn_{side}_kv", f"vn_{side}_kv_next_bus", f"{side}_rel_deviation", \
-                f"trafo_{side}_to_bus_deviation"
-        name_vn_series = pd.Series(
-            tuple(zip(trafo_location_names, trafo_connections[trafo_vn_col])))
+            f"{side}_bus", f"vn_{side}_kv", f"vn_{side}_kv_next_bus", f"{side}_rel_deviation", f"trafo_{side}_to_bus_deviation"
+        name_vn_series = pd.Series(tuple(zip(trafo_location_names, trafo_connections[trafo_vn_col])))
         isin = name_vn_series.isin(bus_idx.index)
         trafo_connections[has_dev_col] = ~isin
         trafo_connections.loc[isin, bus_col] = bus_idx.loc[name_vn_series.loc[isin]].values
 
-        # --- code to find bus locations with vn deviation
         next_vn = np.array([bus_idx.loc[tln.name].index.values[
-                                (pd.Series(bus_idx.loc[tln.name].index) - getattr(tln, trafo_vn_col)).abs().idxmin(
-                                )] for tln in trafo_connections.loc[~isin, ["name", trafo_vn_col]].itertuples()])
+                                (pd.Series(bus_idx.loc[tln.name].index) - getattr(tln, trafo_vn_col)).abs().idxmin()
+                            ] for tln in trafo_connections.loc[~isin, ["name", trafo_vn_col]].itertuples()])
         trafo_connections.loc[~isin, next_col] = next_vn
         rel_dev = np.abs(next_vn - trafo_connections.loc[~isin, trafo_vn_col].values) / next_vn
         trafo_connections.loc[~isin, rel_dev_col] = rel_dev
-        trafo_connections.loc[~isin, bus_col] = \
-            bus_idx.loc[list(tuple(zip(trafo_connections.loc[~isin, "name"],
-                                       trafo_connections.loc[~isin, next_col])))].values
+        trafo_connections.loc[~isin, bus_col] = bus_idx.loc[list(tuple(zip(
+            trafo_connections.loc[~isin, "name"],
+            trafo_connections.loc[~isin, next_col]
+        )))].values
 
-        # --- create buses to avoid too large vn deviations between nodes and transformers
-        need_bus_creation = trafo_connections[rel_dev_col] > \
-                            rel_deviation_threshold_for_trafo_bus_creation
-        new_bus_data = pd.DataFrame({
-            "vn_kv": trafo_connections.loc[need_bus_creation, trafo_vn_col].values,
-            "name": trafo_connections.loc[need_bus_creation, "name"].values,
-            "TSO": data[key].loc[need_bus_creation, ("Location", "TSO")].values
-        })
-        new_bus_data_dd = _drop_duplicates_and_join_TSO(new_bus_data)
-        new_bus_idx = create_buses(net, len(new_bus_data_dd), vn_kv=new_bus_data_dd.vn_kv,
-                                   name=new_bus_data_dd.name, zone=new_bus_data_dd.TSO)
-        trafo_connections.loc[need_bus_creation, bus_col] = net.bus.loc[new_bus_idx, [
-            "name", "vn_kv"]].reset_index().set_index(["name", "vn_kv"]).loc[list(new_bus_data[[
-            "name", "vn_kv"]].itertuples(index=False, name=None))].values
-        trafo_connections.loc[need_bus_creation, next_col] = \
-            trafo_connections.loc[need_bus_creation, trafo_vn_col].values
-        trafo_connections.loc[need_bus_creation, rel_dev_col] = 0
-        trafo_connections.loc[need_bus_creation, has_dev_col] = False
+        need_bus_creation = trafo_connections[rel_dev_col] > rel_deviation_threshold_for_trafo_bus_creation
+        if need_bus_creation.any():
+            tso_series_tr = _get_transformer_tso_series_fuzzy(dfT)
+            new_bus_data = pd.DataFrame({
+                "vn_kv": trafo_connections.loc[need_bus_creation, trafo_vn_col].values,
+                "name": trafo_connections.loc[need_bus_creation, "name"].values,
+                "TSO": tso_series_tr.loc[need_bus_creation].values
+            })
+            new_bus_data_dd = _drop_duplicates_and_join_TSO(new_bus_data)
+            new_bus_idx = create_buses(net, len(new_bus_data_dd),
+                                       vn_kv=new_bus_data_dd.vn_kv,
+                                       name=new_bus_data_dd.name,
+                                       zone=new_bus_data_dd.TSO)
+            trafo_connections.loc[need_bus_creation, bus_col] = \
+            net.bus.loc[new_bus_idx, ["name", "vn_kv"]].reset_index().set_index(["name", "vn_kv"]).loc[
+                list(new_bus_data[["name", "vn_kv"]].itertuples(index=False, name=None))
+            ].values
+            trafo_connections.loc[need_bus_creation, next_col] = trafo_connections.loc[
+                need_bus_creation, trafo_vn_col].values
+            trafo_connections.loc[need_bus_creation, rel_dev_col] = 0
+            trafo_connections.loc[need_bus_creation, has_dev_col] = False
 
-    # --- create buses for trafos that are connected to the same bus at both sides (possible if
-    # --- vn_hv_kv < vn_lv_kv *(1+rel_deviation_threshold_for_trafo_bus_creation) which usually
-    # --- occurs for PSTs only)
     same_bus_connection = trafo_connections.hv_bus == trafo_connections.lv_bus
     duplicated_buses = net.bus.loc[trafo_connections.loc[same_bus_connection, "lv_bus"]].copy()
     duplicated_buses["name"] += " (2)"
-    duplicated_buses.index = list(range(net.bus.index.max() + 1,
-                                        net.bus.index.max() + 1 + len(duplicated_buses)))
+    duplicated_buses.index = list(range(net.bus.index.max() + 1, net.bus.index.max() + 1 + len(duplicated_buses)))
     trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
     net.bus = pd.concat([net.bus, duplicated_buses])
-    if n_add_buses := len(duplicated_buses):
-        tr_names = data[key].loc[trafo_connections.index[same_bus_connection],
-        ("Location", "Full Name")]
+    if (n_add_buses := len(duplicated_buses)):
+        tr_names = trafo_location_names.loc[same_bus_connection]
         are_PSTs = tr_names.str.contains("PST")
-        logger.info(f"{n_add_buses} additional buses were created to avoid that transformers are "
-                    f"connected to the same bus at both side, hv and lv. Of the causing "
-                    f"{len(tr_names)} transformers, {sum(are_PSTs)} contain 'PST' in their name. "
-                    f"According to this converter, the power flows over all these transformers will"
-                    f" end at the additional buses. Please consider to connect lines with the "
-                    f"additional buses, so that the power flow is over the (PST) transformers into "
-                    f"the lines.")
+        logger.info(
+            f"{n_add_buses} additional buses created to avoid same-bus trafos. Of {len(tr_names)} trafos, {sum(are_PSTs)} contain 'PST'.")
 
-    # --- log according to log_rel_vn_deviation
     for side in ["hv", "lv"]:
-        need_logging = trafo_connections.loc[trafo_connections[has_dev_col],
-        rel_dev_col] > log_rel_vn_deviation
+        need_logging = trafo_connections.loc[trafo_connections[has_dev_col], rel_dev_col] > log_rel_vn_deviation
         if n_need_logging := sum(need_logging):
             max_dev = trafo_connections[rel_dev_col].max()
             idx_max_dev = trafo_connections[rel_dev_col].idxmax()
             logger.warning(
-                f"For {n_need_logging} Transformers ({side} side), only locations were found (orig"
-                f"in are the line and tieline data) that have a higher relative deviation than "
-                f"{log_rel_vn_deviation}. The maximum relative deviation is {max_dev} which "
-                f"results from a Transformer rated voltage of "
-                f"{trafo_connections.at[idx_max_dev, trafo_vn_col]} and a bus "
-                f"rated voltage (taken from Lines/Tielines data sheet) of "
-                f"{trafo_connections.at[idx_max_dev, next_col]}. The best locations were "
-                f"nevertheless applied, due to {rel_deviation_threshold_for_trafo_bus_creation=}")
+                f"For {n_need_logging} Transformers ({side} side), only locations with relative deviation > {log_rel_vn_deviation} were found. Max deviation {max_dev} at "
+                f"{trafo_connections.at[idx_max_dev, trafo_vn_col]} kV vs bus {trafo_connections.at[idx_max_dev, next_col]} kV.")
 
     assert (trafo_connections.hv_bus > -1).all()
     assert (trafo_connections.lv_bus > -1).all()
