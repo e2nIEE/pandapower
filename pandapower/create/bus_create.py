@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable
+from typing import Final, Iterable
 
 from numpy import nan
 import numpy.typing as npt
@@ -25,6 +25,8 @@ from pandapower.create._utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+BUSBAR_WARNING: Final[str] = "busbar plotting is not implemented fully and will likely be removed in the future"
 
 
 def create_bus(
@@ -97,7 +99,7 @@ def create_bus(
         geo = None
 
     if coords is not None:
-        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+        raise UserWarning(BUSBAR_WARNING)
 
     entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
     _set_entries(net, "bus", index, True, entries=entries)
@@ -180,7 +182,7 @@ def create_bus_dc(
         geo = None
 
     if coords is not None:
-        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+        raise UserWarning(BUSBAR_WARNING)
 
     entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
     _set_entries(net, "bus_dc", index, True, entries=entries)
@@ -260,7 +262,7 @@ def create_buses(
         geo = [None] * nr_buses  # type: ignore[list-item,assignment]
 
     if coords:
-        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+        raise UserWarning(BUSBAR_WARNING)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
@@ -342,7 +344,7 @@ def create_buses_dc(
         geo = [None] * nr_buses_dc  # type: ignore[list-item,assignment]
 
     if coords:
-        raise UserWarning("busbar plotting is not implemented fully and will likely be removed in the future")
+        raise UserWarning(BUSBAR_WARNING)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)

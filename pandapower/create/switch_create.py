@@ -87,32 +87,33 @@ def create_switch(
 
     """
     _check_element(net, bus)
-    if et == "l":
-        elm_tab = "line"
-        if element not in net[elm_tab].index:
-            raise UserWarning("Unknown line index")
-        if net[elm_tab]["from_bus"].loc[element] != bus and net[elm_tab]["to_bus"].loc[element] != bus:
-            raise UserWarning("Line %s not connected to bus %s" % (element, bus))
-    elif et == "t":
-        elm_tab = "trafo"
-        if element not in net[elm_tab].index:
-            raise UserWarning("Unknown bus index")
-        if net[elm_tab]["hv_bus"].loc[element] != bus and net[elm_tab]["lv_bus"].loc[element] != bus:
-            raise UserWarning("Trafo %s not connected to bus %s" % (element, bus))
-    elif et == "t3":
-        elm_tab = "trafo3w"
-        if element not in net[elm_tab].index:
-            raise UserWarning("Unknown trafo3w index")
-        if (
-            net[elm_tab]["hv_bus"].loc[element] != bus
-            and net[elm_tab]["mv_bus"].loc[element] != bus
-            and net[elm_tab]["lv_bus"].loc[element] != bus
-        ):
-            raise UserWarning("Trafo3w %s not connected to bus %s" % (element, bus))
-    elif et == "b":
-        _check_element(net, element)
-    else:
-        raise UserWarning("Unknown element type")
+    match(et):
+        case "l":
+            elm_tab = "line"
+            if element not in net[elm_tab].index:
+                raise UserWarning("Unknown line index")
+            if net[elm_tab]["from_bus"].loc[element] != bus and net[elm_tab]["to_bus"].loc[element] != bus:
+                raise UserWarning(f"Line {element} not connected to bus {bus}")
+        case "t":
+            elm_tab = "trafo"
+            if element not in net[elm_tab].index:
+                raise UserWarning("Unknown bus index")
+            if net[elm_tab]["hv_bus"].loc[element] != bus and net[elm_tab]["lv_bus"].loc[element] != bus:
+                raise UserWarning(f"Trafo {element} not connected to bus {bus}")
+        case "t3":
+            elm_tab = "trafo3w"
+            if element not in net[elm_tab].index:
+                raise UserWarning("Unknown trafo3w index")
+            if (
+                net[elm_tab]["hv_bus"].loc[element] != bus
+                and net[elm_tab]["mv_bus"].loc[element] != bus
+                and net[elm_tab]["lv_bus"].loc[element] != bus
+            ):
+                raise UserWarning(f"Trafo3w {element} not connected to bus {bus}")
+        case "b":
+            _check_element(net, element)
+        case _:
+            raise UserWarning("Unknown element type")
 
     index = _get_index_with_check(net, "switch", index)
 

@@ -130,9 +130,9 @@ def create_transformer(
     index = _get_index_with_check(net, "trafo", index, name="transformer")
 
     if df <= 0:
-        raise UserWarning("derating factor df must be positive: df = %.3f" % df)
+        raise UserWarning(f"derating factor df must be positive: df = {df:.3f}")
 
-    entries: dict[str, str | None | Int | bool | float] = {
+    entries: dict[str, str | Int | bool | float | None] = {
         "name": name,
         "hv_bus": hv_bus,
         "lv_bus": lv_bus,
@@ -152,7 +152,7 @@ def create_transformer(
         "i0_percent": ti["i0_percent"],
         "parallel": parallel,
         "df": df,
-        "shift_degree": ti["shift_degree"] if "shift_degree" in ti else 0,
+        "shift_degree": ti.get("shift_degree", 0),
     }
     for zero_param in ["vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", "si0_hv_partial", "vector_group"]:
         if zero_param in ti:
@@ -198,7 +198,7 @@ def create_transformer(
         convert_trafo_pst_logic(net)
         warnings.warn(
             DeprecationWarning(
-                "The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3.0 or later. "
+                "The tap_phase_shifter/tap2_phase_shifter parameters are not supported in pandapower as of version 3.0. "
                 f"The transformer parameters (index {index}) have been updated to the new format."
             )
         )
@@ -858,8 +858,8 @@ def create_transformer3w(
             "vkr_lv_percent": ti["vkr_lv_percent"],
             "pfe_kw": ti["pfe_kw"],
             "i0_percent": ti["i0_percent"],
-            "shift_mv_degree": ti["shift_mv_degree"] if "shift_mv_degree" in ti else 0,
-            "shift_lv_degree": ti["shift_lv_degree"] if "shift_lv_degree" in ti else 0,
+            "shift_mv_degree": ti.get("shift_mv_degree", 0),
+            "shift_lv_degree": ti.get("shift_lv_degree", 0),
             "tap_at_star_point": tap_at_star_point,
         }
     )

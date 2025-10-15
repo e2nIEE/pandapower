@@ -9,9 +9,9 @@ import logging
 import warnings
 from typing import Iterable
 
-import numpy as np
 import pandas as pd
-from numpy import nan, isnan, arange, isin, any as np_any, all as np_all, float64, intersect1d, unique as uni
+from numpy import nan, isnan, arange, isin, any as np_any, all as np_all, float64, intersect1d, unique as uni, c_
+import numpy.typing as npt
 from pandas import isnull
 from pandas.api.types import is_object_dtype
 
@@ -126,13 +126,13 @@ def _costs_existance_check(net, elements, et, power_type=None):
 
     else:
         cols = ["element", "et"]
-        poly_df = pd.concat([net.poly_cost[cols], pd.DataFrame(np.c_[elements, et], columns=cols)])
+        poly_df = pd.concat([net.poly_cost[cols], pd.DataFrame(c_[elements, et], columns=cols)])
         if power_type is None:
-            pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(np.c_[elements, et], columns=cols)])
+            pwl_df = pd.concat([net.pwl_cost[cols], pd.DataFrame(c_[elements, et], columns=cols)])
         else:
             cols.append("power_type")
             pwl_df = pd.concat(
-                [net.pwl_cost[cols], pd.DataFrame(np.c_[elements, et, [power_type] * len(elements)], columns=cols)]
+                [net.pwl_cost[cols], pd.DataFrame(c_[elements, et, [power_type] * len(elements)], columns=cols)]
             )
         return poly_df.duplicated().sum() + pwl_df.duplicated().sum()
 
@@ -142,7 +142,7 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
     u, c = uni(index, return_counts=True)
-    if np.any(c > 1):
+    if np_any(c > 1):
         raise UserWarning("Passed indexes %s exist multiple times" % (u[c > 1]))
     intersect = intersect1d(index, net[table].index.values)
     if len(intersect) > 0:
@@ -332,10 +332,17 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
         _preserve_dtypes(net[table], dtypes)
 
 
+def _check_entry(val, index):
+    if isinstance(val, pd.Series) and not np_all(isin(val.index, index)):
+        return val.values
+    elif isinstance(val, set) and len(val) == len(index):
+        return list(val)
+    return val
+
 def _set_multiple_entries(
     net: pandapowerNet,
     table: str,
-    index: np.typing.NDArray[Int] | list[Int] | pd.Index,
+    index: npt.ArrayLike | list[Int] | pd.Index,
     preserve_dtypes: bool | None = True,
     defaults_to_fill: list[tuple] | None = None,
     entries: dict | None = None,
@@ -348,14 +355,7 @@ def _set_multiple_entries(
         # store dtypes
         dtypes = net[table].dtypes
 
-    def check_entry(val):
-        if isinstance(val, pd.Series) and not np_all(isin(val.index, index)):
-            return val.values
-        elif isinstance(val, set) and len(val) == len(index):
-            return list(val)
-        return val
-
-    entries = {k: check_entry(v) for k, v in entries.items()}
+    entries = {k: _check_entry(v, index) for k, v in entries.items()}
 
     dd = pd.DataFrame(index=index, columns=net[table].columns)
     dd = dd.assign(**entries)

@@ -24,7 +24,7 @@ def create_measurement(
     value: Literal["MW", "MVAr", "p.u.", "kA"],
     std_dev: float,
     element: int,
-    side: int | str | None = None,
+    side: int | Literal["from", "to"] | Literal["hv", "mv", "lv"] | None = None,
     check_existing: bool = False,
     index: Int | None = None,
     name: str | None = None,
@@ -75,10 +75,10 @@ def create_measurement(
         create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
     """
     if meas_type not in ("v", "p", "q", "i", "va", "ia"):
-        raise UserWarning("Invalid measurement type ({})".format(meas_type))
+        raise UserWarning(f"Invalid measurement type: {meas_type}")
 
     if side is None and element_type in ("line", "trafo", "trafo3w"):
-        raise UserWarning("The element type '{element_type}' requires a value in 'side'")
+        raise UserWarning(f"The element type '{element_type}' requires parameter 'side' to be set")
 
     if meas_type in ("v", "va"):
         element_type = "bus"
@@ -96,10 +96,10 @@ def create_measurement(
         "xward",
         "ext_grid",
     ):
-        raise UserWarning("Invalid element type ({})".format(element_type))
+        raise UserWarning(f"Invalid element type: {element_type}")
 
     if element is not None and element not in net[element_type].index.values:
-        raise UserWarning("{} with index={} does not exist".format(element_type.capitalize(), element))
+        raise UserWarning(f"{element_type} with index={element} does not exist")
 
     index = _get_index_with_check(net, "measurement", index)
 
@@ -118,7 +118,7 @@ def create_measurement(
         "xward",
         "ext_grid",
     ):
-        raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
+        raise UserWarning(f"Voltage measurements can only be placed at a bus, not at {element_type}")
 
     if check_existing:
         if side is None:
