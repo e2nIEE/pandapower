@@ -26,7 +26,7 @@ def get_pp_net_special_columns_dict() -> Dict[str, str]:
             'pte_id_hv': 'PowerTransformerEnd_id_hv', 'pte_id_mv': 'PowerTransformerEnd_id_mv',
             'pte_id_lv': 'PowerTransformerEnd_id_lv', 'cnc_id': 'ConnectivityNodeContainer_id',
             'sub_id': 'Substation_id', 'src': 'source', 'name': 'name', 'desc': 'description',
-            'a_id': 'analog_id', 'bus': 'terminal'}
+            'a_id': 'analog_id', 'bus': 'terminal', 'bb_id': 'Busbar_id', 'bb_name': 'Busbar_name'}
 
 
 def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNet:
@@ -51,24 +51,30 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict: Dict[str, Dict[str, List[str]]] = {}
 
     fill_dict['bus'] = {}
-    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', 'Busbar_id',
-                                     'Busbar_name', 'GeographicalRegion_id', 'GeographicalRegion_name',
+    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', sc['bb_id'],
+                                     sc['bb_name'], 'GeographicalRegion_id', 'GeographicalRegion_name',
                                      'SubGeographicalRegion_id', 'SubGeographicalRegion_name']
 
     fill_dict['ext_grid'] = {}
-    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description']
+    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description', 'RegulatingControl.mode']
     fill_dict['ext_grid'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'p_mw', 'q_mvar',
-                                            's_sc_max_mva', 's_sc_min_mva', 'rx_max', 'rx_min', 'r0x0_max', 'x0x_max']
+                                            's_sc_max_mva', 's_sc_min_mva', 'rx_max', 'rx_min', 'r0x0_max', 'x0x_max',
+                                            'RegulatingControl.targetValue', 'referencePriority']
+    fill_dict['ext_grid'][np_bool_type] = ['RegulatingControl.enabled']
 
     fill_dict['load'] = {}
     fill_dict['load'][np_str_type] = [sc['t'], 'description']
     fill_dict['gen'] = {}
-    fill_dict['gen'][np_str_type] = [sc['t'], 'description']
-    fill_dict['gen'][np_float_type] = \
-        ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'cos_phi', 'pg_percent', 'governorSCD']
+    fill_dict['gen'][np_str_type] = [sc['t'], 'description', 'RegulatingControl.mode']
+    fill_dict['gen'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm',
+                                       'xdss_pu', 'cos_phi', 'pg_percent',  'governorSCD',
+                                       'RegulatingControl.targetValue', 'referencePriority']
+    fill_dict['gen'][np_bool_type] = ['RegulatingControl.enabled']
     fill_dict['sgen'] = {}
-    fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type']
-    fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu']
+    fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type', 'RegulatingControl.mode']
+    fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu',
+                                        'RegulatingControl.targetValue', 'referencePriority']
+    fill_dict['sgen'][np_bool_type] = ['RegulatingControl.enabled']
     fill_dict['motor'] = {}
     fill_dict['motor'][np_str_type] = [sc['t'], 'description']
     fill_dict['storage'] = {}

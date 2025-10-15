@@ -28,7 +28,7 @@ class ConnectivityNodesCim16:
 
         # a prepared and modified copy of eqssh_terminals to use for lines, switches, loads, sgens and so on
         eqssh_terminals = eqssh_terminals[
-            ['rdfId', 'ConductingEquipment', 'ConnectivityNode', 'sequenceNumber', 'connected']].copy()
+            ['rdfId', 'ConductingEquipment', 'ConnectivityNode', 'sequenceNumber', 'connected']]
         eqssh_terminals = eqssh_terminals.rename(columns={'rdfId': 'rdfId_Terminal'})
         eqssh_terminals = eqssh_terminals.rename(columns={'ConductingEquipment': 'rdfId'})
         # buses for merging with assets:
@@ -249,14 +249,14 @@ class ConnectivityNodesCim16:
             connectivity_nodes = connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first')
         # add the busbars: Terminals.ConductingEquipment -> BusbarSection
         bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
-        bb = bb.rename(columns={'rdfId': 'Busbar_id', 'name': 'Busbar_name'})
+        bb = bb.rename(columns={'rdfId': sc['bb_id'], 'name': sc['bb_name']})
         # terminals for node breaker and bus branch model
         t = pd.merge(self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment']],
                      self.cimConverter.cim['tp']['Terminal'][['rdfId', 'TopologicalNode']], how='left', on='rdfId')
         t['ConnectivityNode'] = t['ConnectivityNode'].fillna(t['TopologicalNode'])
         t = t.drop(columns=['rdfId', 'TopologicalNode'])
-        t = t.rename(columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': 'Busbar_id'})
-        bb = pd.merge(bb, t, how='left', on='Busbar_id')
+        t = t.rename(columns={'ConnectivityNode': 'rdfId', 'ConductingEquipment': sc['bb_id']})
+        bb = pd.merge(bb, t, how='left', on=sc['bb_id'])
         bb = bb.drop_duplicates(subset=['rdfId'], keep='first')
         connectivity_nodes = pd.merge(connectivity_nodes, bb, how='left', on='rdfId')
         del bb, t
@@ -278,6 +278,6 @@ class ConnectivityNodesCim16:
                                                                 'nominalVoltage': 'vn_kv', 'name_substation': 'zone'})
         connectivity_nodes['in_service'] = True
         # set if a bus is a busbar or a node
-        connectivity_nodes.loc[connectivity_nodes['Busbar_id'].notna(), 'type'] = 'b'
+        connectivity_nodes.loc[connectivity_nodes[sc['bb_id']].notna(), 'type'] = 'b'
         connectivity_nodes['type'] = connectivity_nodes['type'].fillna('n')
         return connectivity_nodes, eqssh_terminals
