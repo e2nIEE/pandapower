@@ -1,0 +1,122 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+from __future__ import annotations
+
+import logging
+from typing import Literal
+
+import pandas as pd
+
+from pandapower.auxiliary import pandapowerNet
+from pandapower.pp_types import Int, MeasurementElementType, MeasurementType
+from pandapower.create._utils import _get_index_with_check, _set_entries
+
+logger = logging.getLogger(__name__)
+
+
+def create_measurement(
+    net: pandapowerNet,
+    meas_type: MeasurementType,
+    element_type: MeasurementElementType,
+    value: Literal["MW", "MVAr", "p.u.", "kA"],
+    std_dev: float,
+    element: int,
+    side: Optional[int | str] = None,
+    check_existing: bool = False,
+    index: Optional[Int] = None,
+    name: Optional[str] = None,
+    **kwargs
+) -> Int:
+    """
+    Creates a measurement, which is used by the estimation module. Possible types of measurements \
+    are: v, p, q, i, va, ia
+
+    INPUT:
+        **meas_type** (str) - Type of measurement. "v", "p", "q", "i", "va" and "ia" are possible
+
+        **element_type** (str) - Clarifies which element is measured. "bus", "line", "trafo", "trafo3w", "load", \
+                                 "gen", "sgen", "shunt", "ward", "xward" and "ext_grid" are possible
+
+        **value** (float) - Measurement value. Units are "MW" for P, "MVAr" for Q, "p.u." for V, \
+                            "kA" for I. Bus power measurement is in load reference system, which is consistent to \
+                            the rest of pandapower.
+
+        **std_dev** (float) - Standard deviation in the same unit as the measurement
+
+        **element** (int) - Index of the measured element
+
+        **side** (int or str, default: None) - Only used for measured lines or transformers. Side defines at which \
+                                               end of the branch the measurement is gathered. For lines this may be \
+                                               "from", "to" to denote the side with the from_bus or to_bus. It can \
+                                               also be the index of the from_bus or to_bus. For transformers, it can \
+                                               be "hv", "mv" or "lv" or the corresponding bus index, respectively.
+
+    OPTIONAL:
+        **check_existing** (bool, default: False) - Check for and replace existing measurements for this bus, type and \
+                                                    element_type. Set it to False for performance improvements which \
+                                                    can cause unsafe behavior.
+
+        **index** (int, default: None) - Index of the measurement in the measurement table. Should \
+                                         not exist already.
+
+        **name** (str, default: None) - Name of measurement
+
+    OUTPUT:
+        **index** (int) - Index of the created measurement
+
+    EXAMPLES:
+        2 MW load measurement with 0.05 MW standard deviation on bus 0:
+        create_measurement(net, "p", "bus", 0, 2., 0.05.)
+
+        4.5 MVar line measurement with 0.1 MVAr standard deviation on the "to_bus" side of line 2:
+        create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
+    """
+    if meas_type not in ("v", "p", "q", "i", "va", "ia"):
+        raise UserWarning("Invalid measurement type ({})".format(meas_type))
+
+    if side is None and element_type in ("line", "trafo", "trafo3w"):
+        raise UserWarning("The element type '{element_type}' requires a value in 'side'")
+
+    if meas_type in ("v", "va"):
+        element_type = "bus"
+
+    if element_type not in ("bus", "line", "trafo", "trafo3w", "load", "gen", "sgen", "shunt", "ward", "xward",
+                            "ext_grid"):
+        raise UserWarning("Invalid element type ({})".format(element_type))
+
+    if element is not None and element not in net[element_type].index.values:
+        raise UserWarning("{} with index={} does not exist".format(element_type.capitalize(),
+                                                                   element))
+
+    index = _get_index_with_check(net, "measurement", index)
+
+    if meas_type in ("i", "ia") and element_type == "bus":
+        raise UserWarning("Line current measurements cannot be placed at buses")
+
+    if meas_type in ("v", "va") and element_type in ("line", "trafo", "trafo3w", "load", "gen", "sgen", "shunt",
+                                                     "ward", "xward", "ext_grid"):
+        raise UserWarning("Voltage measurements can only be placed at buses, not at {}".format(element_type))
+
+    if check_existing:
+        if side is None:
+            existing = net.measurement[(net.measurement.measurement_type == meas_type) &
+                                       (net.measurement.element_type == element_type) &
+                                       (net.measurement.element == element) &
+                                       (pd.isnull(net.measurement.side))].index
+        else:
+            existing = net.measurement[(net.measurement.measurement_type == meas_type) &
+                                       (net.measurement.element_type == element_type) &
+                                       (net.measurement.element == element) &
+                                       (net.measurement.side == side)].index
+        if len(existing) == 1:
+            index = existing[0]
+        elif len(existing) > 1:
+            raise UserWarning("More than one measurement of this type exists")
+
+    entries = {"name": name, "measurement_type": meas_type.lower(), "element_type": element_type, "element": element,
+               "value": value, "std_dev": std_dev, "side": side, **kwargs}
+    _set_entries(net, "measurement", index, entries=entries)
+    return index
