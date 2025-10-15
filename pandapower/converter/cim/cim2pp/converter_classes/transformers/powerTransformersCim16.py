@@ -463,6 +463,8 @@ class PowerTransformersCim16:
         power_trafo2w['tap2_side'] = None
         power_trafo2w.loc[power_trafo2w['step'].notna(), 'tap_side'] = 'hv'
         power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap2_side'] = 'lv'
+        # just keep one transformer
+        power_trafo2w = power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first')
         # shift lv tap changer from tap2 to tap if there is no hv tap changer
         hv_taps_na = power_trafo2w['step'].isna() & power_trafo2w['step_lv'].notna()
         power_trafo2w['tap_side'] = power_trafo2w['tap_side'].fillna(power_trafo2w['tap2_side'])
@@ -471,8 +473,6 @@ class PowerTransformersCim16:
                          'step', 'tap_changer_type', sc['tc'], sc['tc_id']]:
             power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
             power_trafo2w.loc[hv_taps_na, one_item + '_lv'] = np.nan
-        # just keep one transformer
-        power_trafo2w = power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first')
 
         power_trafo2w['pfe_kw'] = (power_trafo2w.g * power_trafo2w.ratedU ** 2 +
                                    power_trafo2w.g_lv * power_trafo2w.ratedU_lv ** 2) * 1000
