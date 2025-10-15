@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+# -*- coding: utf-8 -*-
 
 
 from copy import deepcopy
@@ -27,6 +28,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# ==================================================================================================
+# Public API
+# ==================================================================================================
+
 def from_jao(excel_file_path: str,
              html_file_path: Optional[str],
              extend_data_for_grid_group_connections: bool,
@@ -34,66 +39,90 @@ def from_jao(excel_file_path: str,
              apply_data_correction: bool = True,
              max_i_ka_fillna: Union[float, int] = 999,
              **kwargs) -> pandapowerNet:
-    """Converts European (Core) EHV grid data provided by JAO (Joint Allocation Office), the
-        "Single Allocation Platform (SAP) for all European Transmission System Operators (TSOs) that
-        operate in accordance to EU legislation".
+    """
+    Convert a JAO Core EHV static grid model into a pandapowerNet.
 
-        High-level pipeline:
-          1) Read and stage Excel + optional HTML geodata.
-          2) Identify and fix inconsistent or incomplete data (name normalization, numeric coercions).
-          3) Build buses, lines, transformers based on cleaned data.
-          4) Optionally add synthetic connections to merge islanded grid groups.
-          5) Optionally drop very small unsupplied groups (islands).
-          6) Add geodata to buses and lines if available, resolving ambiguity carefully.
+    Overview:
+      - Reads Excel multi-sheet data (Lines, Tielines, Transformers).
+      - Optionally reads HTML to extract geodata for lines.
+      - Optionally applies robust data correction and name normalization.
+      - Creates buses, lines, and transformers in pandapower.
+      - Optionally invents synthetic connections between grid groups to reduce islanding.
+      - Optionally drops islanded grid groups based on size or supply condition.
+      - Attaches geodata to buses and lines when possible.
 
-        Parameters
-        ----------
-        excel_file_path : str
-            Path to Excel with multi-sheet data (Lines, Tielines, Transformers).
-        html_file_path : str | None
-            Path to HTML file with geodata embedded; pass None to skip geodata.
-        extend_data_for_grid_group_connections : bool
-            If True, add synthetic transformers and bus fusions to connect islanded groups.
-        drop_grid_groups_islands : bool, optional
-            If True, drop small islanded groups based on min_bus_number in kwargs (default 6).
-        apply_data_correction : bool, optional
-            If True, run correction routines (rename normalization, numeric conversion, etc.).
-        max_i_ka_fillna : float | int, optional
-            Fallback value for missing/invalid maximum current (Imax) in kA for lines/transformers.
-            Use np.nan to avoid filling; default 999 (treated as 999 kA).
 
-        Returns
-        -------
-        pandapowerNet
-            pandapower network created from JAO data.
+    Note
+    ----
+    This module deliberately includes robust fallback heuristics and fuzzy matching logic to
+    handle real-world inconsistencies in published data and thus may trade strictness for
+    practical usability.
 
-        Additional Parameters (via kwargs)
-        ----------------------------------
-        minimal_trafo_invention : bool, optional
-            If True, stop adding synthetic transformers once no islands remain.
-            Note: Not applied for release version 5 or 6 (value ignored).
-        min_bus_number : Union[int,str], optional
-            Threshold for dropping islanded grid groups; can be 'max' or 'unsupplied' (special modes).
-        rel_deviation_threshold_for_trafo_bus_creation : float, optional
-            VN deviation threshold above which new buses are created for transformer sides (default 0.2).
-        log_rel_vn_deviation : float, optional
-            VN deviation threshold to log warnings (default 0.12).
-        sn_mva : float, optional
-            System base apparent power (MVA) for pandapower net.
+    Parameters
+    ----------
+    excel_file_path : str
+        Path to the Excel file (typically contains sheets: "Lines", "Tielines", "Transformers").
+        A MultiIndex header (2 levels) is expected; variations are matched via fuzzy logic.
+    html_file_path : str | None
+        Optional path to an HTML file that contains embedded map/geodata for lines.
+        Pass None to skip geodata extraction.
+    extend_data_for_grid_group_connections : bool
+        If True, attempts to connect islanded grid groups by:
+          - Inserting representative transformers between same-location buses of different voltage levels.
+          - Fusing buses with the same base name and same voltage but in different groups.
+          - Fusing some special-case close buses.
+    drop_grid_groups_islands : bool, optional
+        If True, drops islanded grid groups determined by `min_bus_number` in kwargs (default 6).
+        Special modes: min_bus_number can be "max" (keep only the largest group) or "unsupplied"
+        (drop groups without slack generation).
+    apply_data_correction : bool, optional
+        If True, apply correction routines:
+          - Comprehensive rename normalization across sheets.
+          - Numeric conversions and column harmonization.
+          - Minor cleanup for tap settings and shifter columns.
+    max_i_ka_fillna : float | int, optional
+        Fallback (in kA) for missing/invalid Imax data (lines/transformers).
+        Use np.nan to avoid filling. Default is 999 (treated as 999 kA).
 
-        Notes
-        -----
-        - The converter intentionally uses heuristics to match transformer location names to bus names,
-          favoring valid topology over strict literal string matching.
-        - HTML geodata parsing relies on specific widget structure; robust error handling ensures
-          the conversion proceeds if parsing fails.
+    Additional Parameters (via kwargs)
+    ----------------------------------
+    minimal_trafo_invention : bool, optional
+        When connecting grid groups, if True, stop adding transformers as soon as no islands remain.
+        Note: Not applied for release version 5 or 6 (value ignored).
+    min_bus_number : Union[int, str], optional
+        For drop_grid_groups_islands:
+          - int: drop groups smaller than this
+          - "max": keep only the largest group
+          - "unsupplied": drop groups without any slack generator/element
+    rel_deviation_threshold_for_trafo_bus_creation : float, optional
+        When matching transformer voltage to buses by location, if the nearest bus voltage
+        deviates more than this fraction (default 0.2), create a new bus instead.
+    log_rel_vn_deviation : float, optional
+        Log-warning threshold for voltage deviation (default 0.12).
+    sn_mva : float, optional
+        System base apparent power (MVA) for the pandapower net.
 
+    Returns
+    -------
+    pandapowerNet
+        The constructed pandapower network with buses, lines, transformers, and possibly geodata.
+
+    Raises
+    ------
+    KeyError
+        If essential columns cannot be found even via fuzzy matching.
+    ValueError
+        If transformer locations cannot be matched to buses (after robust normalization).
+    json.JSONDecodeError
+        If the HTML geodata JSON part cannot be parsed (caught and logged; conversion proceeds).
+
+    Examples
+    --------
     >>> from pathlib import Path
     >>> import os
     >>> import pandapower as pp
     >>> net = pp.converter.from_jao()
     >>> home = str(Path.home())
-    >>> # assume that the files are located at your desktop:
     >>> excel_file_path = os.path.join(home, "desktop", "202409_Core Static Grid Mode_6th release")
     >>> html_file_path = os.path.join(home, "desktop", "2024-09-13_Core_SGM_publication.html")
     >>> net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
@@ -143,15 +172,35 @@ def from_jao(excel_file_path: str,
     return net
 
 
-# --- secondary functions --------------------------------------------------------------------------
+# ==================================================================================================
+# Name normalization and location matching utilities
+# ==================================================================================================
 
 def _simplify_name(name: str) -> str:
     """
-    robust canonical rename of location name (without kV).
-    Goal: produce a normalized 'base' token for equivalence-class grouping of names.
-    - Removes trailing marker variants like '(2)', directional suffixes (/W, -West).
-    - Unifies delimiters to spaces, strips voltage-level texts ('220 kV').
-    - Uppercases and collapses whitespace.
+    Normalize a location name into a canonical, comparable base token.
+
+    Operations:
+      - Convert to ASCII and strip accents.
+      - Remove trailing markers like "(2)", directional suffixes (/W, -West, etc.).
+      - Unify delimiters to spaces.
+      - Remove voltage-level texts (e.g. "220 kV").
+      - Collapse repeated whitespace and uppercase.
+
+    Parameters
+    ----------
+    name : str
+        Original location name as found in data.
+
+    Returns
+    -------
+    str
+        Canonical uppercase base token (without voltage markers), usable as key for grouping.
+
+    Examples
+    --------
+    "Doerpen/W/W (2)" -> "DOERPEN"
+    "Stade - West 220 kV" -> "STADE"
     """
     _RE_TRAILING = re.compile(r"""
         (?:\s*\([0-9]+\)\s*$)                 |  #  (2)  (3) …
@@ -169,10 +218,19 @@ def _simplify_name(name: str) -> str:
 
 def _extra_variants_from_busnames(bus_names: set[str]) -> list[tuple[str, str]]:
     """
-    Generate (old,new) pairs using heuristic 'name without suffixes'.
-    E.g. 'Doerpen/W/W'  -> 'DOERPEN'
-         'Stade/W/W (2)'-> 'STADE'
-    This provides conservative normalization proposals from raw bus names.
+    Generate conservative (old, new) normalization pairs directly from raw bus names.
+
+    This provides proposals like mapping 'Doerpen/W/W' -> 'DOERPEN' or 'Stade/W/W (2)' -> 'STADE'.
+
+    Parameters
+    ----------
+    bus_names : set[str]
+        Collection of bus location names seen in Lines/Tielines.
+
+    Returns
+    -------
+    list[tuple[str, str]]
+        List of renames from observed variants to canonical base tokens.
     """
     mapping = {}
     for n in bus_names:
@@ -182,27 +240,200 @@ def _extra_variants_from_busnames(bus_names: set[str]) -> list[tuple[str, str]]:
     return list(mapping.items())
 
 
+def _collect_bus_location_names(data: dict[str, pd.DataFrame]) -> set[str]:
+    """
+    Collect all unique bus "Full_name" strings from Lines/Tielines sheets.
+
+    Parameters
+    ----------
+    data : dict[str, pd.DataFrame]
+        Excel sheets dict, expected to include "Lines", "Tielines" (if present).
+
+    Returns
+    -------
+    set[str]
+        Set of unique bus location names discovered.
+
+    Notes
+    -----
+    Uses fuzzy detection of the ("Substation_*", "Full_name") columns.
+    """
+    names = []
+    for key in [k for k in ["Lines", "Tielines"] if k in data]:
+        df = data[key]
+        for subst in ["Substation_1", "Substation_2"]:
+            col = _get_fullname_tuple(df, subst)
+            if col is not None:
+                s = df.loc[:, col].astype(str).str.strip()
+                names.append(s)
+    if not names:
+        return set()
+    bus_series = pd.concat(names, ignore_index=True)
+    return set(bus_series.dropna().tolist())
+
+
+def _strip_accents(s: str) -> str:
+    """
+    Strip accents/diacritics from a string using NFKD normalization.
+
+    Parameters
+    ----------
+    s : str
+        Input string.
+
+    Returns
+    -------
+    str
+        ASCII-ish string without combining diacritics.
+    """
+    if not isinstance(s, str):
+        s = str(s)
+    nfkd = unicodedata.normalize("NFKD", s)
+    return "".join(ch for ch in nfkd if not unicodedata.combining(ch))
+
+
+def _canonical_bus_key(s: str) -> str:
+    """
+    Produce a normalized, canonical key for bus-name equivalence classes.
+    Steps:
+      - Casefold, strip accents.
+      - Remove brackets and punctuation.
+      - Remove whitespace.
+    Parameters
+    ----------
+    s : str
+        Input name.
+    Returns
+    -------
+    str
+        Canonical uppercase key.
+    """
+    s = str(s)
+    s = _strip_accents(s.casefold())
+    s = re.sub(r"[()\[\]{}]", " ", s)
+    s = re.sub(r"[-_/.,;:]+", " ", s)
+    s = re.sub(r"\s+", "", s)
+    return s.upper()
+
+
+def _normalize_transformer_name_for_matching(name: str) -> tuple[str, str]:
+    """
+    Normalize a transformer 'Location/Full Name' into tokens helpful for matching buses.
+
+    The algorithm replicates the tokenization used in _find_trafo_locations:
+      - Split by spaces and special patterns '-A\\d+', '-TD\\d+', '-PF\\d+', and '/'.
+      - Filter tokens: drop known stopwords (tr, pst, trafo, kv), empty tokens, tokens with digits.
+      - Construct two candidates:
+        - joined: join remaining tokens with spaces
+        - longest: single longest token
+
+    Parameters
+    ----------
+    name : str
+        Original transformer location string.
+
+    Returns
+    -------
+    tuple[str, str]
+        (joined, longest) tokens for matching.
+    """
+    if not isinstance(name, str):
+        name = str(name)
+    s = name.strip()
+
+    parts_orig = re.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+|/", s)
+    parts_orig = [p.strip().replace(" ", "") for p in parts_orig if p is not None]
+
+    stopwords_lower = {"tr", "pst", "trafo", "kv"}
+    block_exact = {"", "LIPST", "EHPST", "TFO"}
+
+    def _keep_token(tok: str) -> bool:
+        if tok in block_exact:
+            return False
+        if tok.lower() in stopwords_lower:
+            return False
+        if any(ch.isdigit() for ch in tok):
+            return False
+        return True
+
+    filtered = [p for p in parts_orig if _keep_token(p)]
+    joined = " ".join([p for p in filtered if p]).strip()
+    longest = max(filtered, key=len) if filtered else ""
+    return joined, longest
+
+
+def _suggest_closest(q: str, candidates: list[str], n: int = 1) -> str:
+    """
+    Suggest the closest match from a candidate list using difflib.
+
+    Parameters
+    ----------
+    q : str
+        Query string.
+    candidates : list[str]
+        List of candidate strings to match against.
+    n : int, optional
+        Number of matches to consider (default 1).
+
+    Returns
+    -------
+    str
+        The best candidate or empty string if none found.
+    """
+    if not q:
+        return ""
+    pool = candidates
+    try:
+        matches = difflib.get_close_matches(q, pool, n=n, cutoff=0.6)
+        if matches:
+            return matches[0]
+    except Exception:
+        pass
+    # fallback: low case match
+    lower_map = {}
+    for c in candidates:
+        lower_map.setdefault(c.lower(), []).append(c)
+    if q.lower() in lower_map:
+        return lower_map[q.lower()][0]
+    return ""
+
+
 def generate_rename_locnames_from_combined(
     data: dict[str, pd.DataFrame],
     combined: Optional[pd.DataFrame] = None
 ) -> list[tuple[str, str]]:
     """
-    Generate a robust list of (old_name, new_name) tuples to normalize naming across sheets.
-    Sources:
-      - 'same_canonical_variant' entries: unify variants that differ only by formatting/case.
-      - 'no_match_after_normalization' entries: propose mapping transformer locations to bus names.
-      - Trafo location case harmonization: direct lowercase/uppercase mapping to existing bus names.
-      - Prefix heuristics: expand compact 'PSTXYZ'/'TRXYZ' to spaced 'PST XYZ'/'TR XYZ'.
+    Generate a comprehensive list of (old_name -> new_name) rename rules to normalize naming.
 
-    Safety:
-      - Resolve suggestions to existing bus names if possible (case-insensitive).
-      - Filter ambiguous mappings: avoid old_name mapping to multiple new names.
+    Sources (in order of construction):
+      1) same_canonical_variant (bus variants that differ only in formatting/case).
+      2) no_match_after_normalization (trafo locations that don't match any bus after normalization):
+         - prefer suggestions that resolve to existing bus names.
+         - fallback to joined/longest forms if they directly exist as bus names.
+         - generate prefix heuristics for PST/TR like "PSTMIKULOWA" -> "PST MIKULOWA".
+         - map tokens from joined/longest onto the suggested target.
+      3) Case harmonization across all transformer location tokens.
+      4) Conservative normalization proposals from bus names themselves (suffix removal).
+
+    Safety measures:
+      - Resolve suggested targets to existing bus names when possible (case-insensitive).
+      - Filter out ambiguous mappings (one source to multiple targets).
       - Deduplicate while preserving insertion order.
+      - Additional filter in _data_correction applies a similarity >= 0.8 and removes
+        rules where both old and new are already present bus names.
+
+    Parameters
+    ----------
+    data : dict[str, pd.DataFrame]
+        Excel sheets dict.
+    combined : pd.DataFrame, optional
+        Pre-computed combination of problematic-name reports (from
+        report_problematic_names_after_normalization). If None, recomputed.
 
     Returns
     -------
     list[tuple[str, str]]
-        Ordered list of rename rules (old -> new).
+        Ordered list of (old -> new) rename rules suitable for applying across data.
     """
     if combined is None:
         combined = report_problematic_names_after_normalization(data)
@@ -265,8 +496,6 @@ def generate_rename_locnames_from_combined(
                 compact_upper = f"{prefix}{target_base.upper().replace(' ', '')}"
                 spaced_lower = f"{prefix} {target_base}"
                 spaced_upper = f"{prefix} {target_base.upper()}"
-                # Beide Kompaktvarianten auf beide Spaced-Varianten mappen,
-                # damit Groß-/Kleinvarianten abgedeckt sind:
                 _add(compact_lower, spaced_lower)
                 _add(compact_upper, spaced_upper)
 
@@ -285,7 +514,6 @@ def generate_rename_locnames_from_combined(
                     target = bus_location_names_lower[tok.lower()]
                     if tok != target:
                         _add(tok, target)
-                    # Präfix-Heuristiken auch hier (für Fälle wie 'PSTMIKULOWA'):
                     for prefix in ("PST", "TR"):
                         compact_lower = f"{prefix}{target.replace(' ', '')}"
                         compact_upper = f"{prefix}{target.upper().replace(' ', '')}"
@@ -323,114 +551,45 @@ def generate_rename_locnames_from_combined(
     for old, new in renames:
         sources = target_to_sources[new]
         if len(sources) > 1:
-            # Prüfe ob alle Quellen zum selben kanonischen Namen führen würden
             canonical_sources = [_canonical_bus_key(src) for src in sources]
             current_canonical = _canonical_bus_key(old)
-            # Behalte nur, wenn diese Gruppe konsistent ist
             if canonical_sources.count(current_canonical) == len(canonical_sources):
                 filtered_renames.append((old, new))
-            # Alternative: Entferne komplett widersprüchliche Gruppen
             else:
-                # Nur behalten, wenn es keine echten Konflikte gibt
                 continue
         else:
             filtered_renames.append((old, new))
 
-    # Ersetze renames mit gefilterter Liste
     renames = filtered_renames
     print(out)  # zur Kontrolle
     return out
 
-def _collect_bus_location_names(data: dict[str, pd.DataFrame]) -> set[str]:
-    names = []
-    for key in [k for k in ["Lines", "Tielines"] if k in data]:
-        df = data[key]
-        for subst in ["Substation_1", "Substation_2"]:
-            col = _get_fullname_tuple(df, subst)
-            if col is not None:
-                s = df.loc[:, col].astype(str).str.strip()
-                names.append(s)
-    if not names:
-        return set()
-    bus_series = pd.concat(names, ignore_index=True)
-    return set(bus_series.dropna().tolist())
-
-
-def _strip_accents(s: str) -> str:
-    if not isinstance(s, str):
-        s = str(s)
-    nfkd = unicodedata.normalize("NFKD", s)
-    return "".join(ch for ch in nfkd if not unicodedata.combining(ch))
-
-
-def _canonical_bus_key(s: str) -> str:
-    # Vereinheitlichung: Casefold, Akzentabbau, Trennzeichen raus, Whitespaces raus
-    s = str(s)
-    s = _strip_accents(s.casefold())
-    s = re.sub(r"[()\[\]{}]", " ", s)
-    s = re.sub(r"[-_/.,;:]+", " ", s)
-    s = re.sub(r"\s+", "", s)
-    return s.upper()
-
-
-def _normalize_transformer_name_for_matching(name: str) -> tuple[str, str]:
-    """
-    Repliziert die Logik aus _find_trafo_locations (ohne rename_locnames),
-    um 'joined' und 'longest' zu erzeugen.
-    """
-    if not isinstance(name, str):
-        name = str(name)
-    s = name.strip()
-
-    # Wie in _find_trafo_locations: an Leerzeichen und an '-A\d+', '-TD\d+', '-PF\d+' trennen, auch '/'
-    parts_orig = re.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+|/", s)
-    parts_orig = [p.strip().replace(" ", "") for p in parts_orig if p is not None]
-
-    stopwords_lower = {"tr", "pst", "trafo", "kv"}
-    block_exact = {"", "LIPST", "EHPST", "TFO"}
-
-    def _keep_token(tok: str) -> bool:
-        if tok in block_exact:
-            return False
-        if tok.lower() in stopwords_lower:
-            return False
-        if any(ch.isdigit() for ch in tok):
-            return False
-        return True
-
-    filtered = [p for p in parts_orig if _keep_token(p)]
-    joined = " ".join([p for p in filtered if p]).strip()
-    longest = max(filtered, key=len) if filtered else ""
-    return joined, longest
-
-
-def _suggest_closest(q: str, candidates: list[str], n: int = 1) -> str:
-    if not q:
-        return ""
-    # Case-insensitive Vorschlag aus dem Original-Kandidatenraum
-    # Wir nutzen difflib für ungefähre Übereinstimmung
-    pool = candidates
-    try:
-        matches = difflib.get_close_matches(q, pool, n=n, cutoff=0.6)
-        if matches:
-            return matches[0]
-    except Exception:
-        pass
-    # fallback: low case match
-    lower_map = {}
-    for c in candidates:
-        lower_map.setdefault(c.lower(), []).append(c)
-    if q.lower() in lower_map:
-        return lower_map[q.lower()][0]
-    return ""
-
 
 def find_unmatched_transformer_locations_extended(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
-    Liefert für Trafostandorte (Transformers['Location','Full Name']) alle Einträge,
-    die nach der Normalisierung weder als 'joined' noch als 'longest' in den Bus-Standorten
-    (aus Lines/Tielines Substation_* Full_name) gefunden werden.
-    Gibt DataFrame mit Spalten ['original','joined','longest','suggested','reason'] zurück.
+    Identify transformer locations that fail to match any bus location name after normalization.
+
+    For each Transformers['Location','Full Name'] entry:
+      - Tokenize/normalize to (joined, longest) candidates (see _normalize_transformer_name_for_matching).
+      - Check for exact or case-insensitive matches against Lines/Tielines bus names.
+      - If not matched, suggest the closest bus name using difflib.
+      - Return all unmatched entries with columns:
+        ['original', 'joined', 'longest', 'suggested', 'reason']
+
+    Parameters
+    ----------
+    data : dict[str, pd.DataFrame]
+        Excel sheets dict including a "Transformers" sheet.
+
+    Returns
+    -------
+    pd.DataFrame
+        Rows for unmatched transformer locations. Columns:
+        - original: original location string
+        - joined: joined token candidate
+        - longest: longest token candidate
+        - suggested: closest bus name suggestion (may be empty)
+        - reason: "no_match_after_normalization"
     """
     rows = []
     if "Transformers" not in data:
@@ -444,16 +603,16 @@ def find_unmatched_transformer_locations_extended(data: dict[str, pd.DataFrame])
     for original in trafo_names:
         joined, longest = _normalize_transformer_name_for_matching(original)
 
-        # Direkte Übereinstimmung
+        # Direct match
         if (joined and joined in bus_location_names) or (longest and longest in bus_location_names):
             continue
 
-        # Case-insensitive Übereinstimmung (dann nicht als "unmatched" zählen)
+        # Case-insensitive match
         if (joined and joined.lower() in bus_location_names_lower) or \
            (longest and longest.lower() in bus_location_names_lower):
             continue
 
-        # Keine Übereinstimmung: Vorschlag suchen
+        # No match: suggest
         suggest = _suggest_closest(joined if joined else longest, list(bus_location_names))
         rows.append({
             "original": original,
@@ -469,9 +628,24 @@ def find_unmatched_transformer_locations_extended(data: dict[str, pd.DataFrame])
 
 def find_problematic_bus_name_variants(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
-    Ermittelt Busnamen-Varianten aus Lines/Tielines (Substation_* Full_name), die sich nur durch
-    Groß-/Kleinschreibung, Sonderzeichen, Bindestriche/Leerzeichen unterscheiden.
-    Gibt DataFrame mit Spalten ['original','suggested','reason'] zurück. (joined/longest leer)
+    Detect bus-name variants across Lines/Tielines that are equivalent except for case/diacritics/
+    punctuation/spacing, and propose a canonical representative.
+
+    Strategy:
+      - Compute a canonical key per name via _canonical_bus_key.
+      - For each canonical key that maps to multiple originals, choose the representative as:
+        - The most frequent original; ties broken by longest length, then lexicographic order.
+      - Emit rename rows: 'original' -> 'suggested', reason='same_canonical_variant'.
+
+    Parameters
+    ----------
+    data : dict[str, pd.DataFrame]
+        Excel sheets dict.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns ['original', 'suggested', 'reason'] where reason == "same_canonical_variant".
     """
     all_names = []
     for key in [k for k in ["Lines", "Tielines"] if k in data]:
@@ -488,7 +662,6 @@ def find_problematic_bus_name_variants(data: dict[str, pd.DataFrame]) -> pd.Data
     df = pd.DataFrame({"original": s})
     df["canonical"] = df["original"].map(_canonical_bus_key)
 
-    # Häufigkeiten je Original-Name (für sinnvolle 'suggested'-Wahl)
     freq = df["original"].value_counts()
 
     out_rows = []
@@ -496,7 +669,6 @@ def find_problematic_bus_name_variants(data: dict[str, pd.DataFrame]) -> pd.Data
         uniques = sub["original"].unique()
         if len(uniques) <= 1:
             continue
-        # Wähle als "suggested" den häufigsten Namen; bei Gleichstand den längsten
         uniques_sorted = sorted(uniques, key=lambda x: (-freq.get(x, 0), -len(x), x))
         suggested = uniques_sorted[0]
         for orig in uniques:
@@ -513,8 +685,24 @@ def find_problematic_bus_name_variants(data: dict[str, pd.DataFrame]) -> pd.Data
 
 def report_problematic_names_after_normalization(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
     """
-    Wrapper wie gewünscht: ruft die beiden Analysefunktionen auf, harmonisiert Spalten,
-    printed die kombinierten Ergebnisse und gibt sie zurück.
+    Aggregate name issues across sheets to inform normalization rules.
+
+    Combines:
+      - find_unmatched_transformer_locations_extended: transformer locations that fail to match.
+      - find_problematic_bus_name_variants: bus naming variants that are essentially the same.
+
+    Returns a combined DataFrame with harmonized columns:
+    ['original', 'joined', 'longest', 'suggested', 'reason'] and prints it for debugging.
+
+    Parameters
+    ----------
+    data : dict[str, pd.DataFrame]
+        Excel sheets dict.
+
+    Returns
+    -------
+    pd.DataFrame
+        Combined report of problematic names across sources.
     """
     trafo = find_unmatched_transformer_locations_extended(data)
     bus_vars = find_problematic_bus_name_variants(data)
@@ -523,7 +711,6 @@ def report_problematic_names_after_normalization(data: dict[str, pd.DataFrame]) 
         bus_vars = bus_vars.assign(joined="", longest="")
 
     cols = ["original", "joined", "longest", "suggested", "reason"]
-    # reindex für bus_vars (die hat joined/longest leer)
     bus_vars = bus_vars.reindex(columns=["original", "joined", "longest", "suggested", "reason"])
 
     combined = pd.concat([trafo.reindex(columns=cols), bus_vars.reindex(columns=cols)],
@@ -532,115 +719,27 @@ def report_problematic_names_after_normalization(data: dict[str, pd.DataFrame]) 
     return combined
 
 
-def _first_present_tuple(df: pd.DataFrame, candidates: list[tuple]) -> Optional[tuple]:
-    for t in candidates:
-        if t in df.columns:
-            return t
-    return None
-
-# def _get_voltage_tuple(df: pd.DataFrame) -> Optional[tuple]:
-#     return _best_voltage_col_lines(df)
-
-# def _get_fullname_tuple(df: pd.DataFrame, subst: str) -> Optional[tuple]:
-#     return _first_present_tuple(df, [
-#         (subst, "Full_name"),
-#         (subst, "Full Name"),
-#         (subst, "Fullname"),
-#     ])
-
-def _get_tso_tuple(df: pd.DataFrame, subst: str) -> Optional[tuple]:
-    if subst == "Substation_1":
-        return _first_present_tuple(df, [(None, "TSO 1"), (None, "TSO1"), (None, "TSO")])
-    elif subst == "Substation_2":
-        return _first_present_tuple(df, [(None, "TSO 2"), (None, "TSO2"), (None, "TSO")])
-    else:
-        return _first_present_tuple(df, [(None, "TSO")])
-
-def _ensure_line_tso_column(df: pd.DataFrame) -> None:
-    # Erzeuge (None, "TSO"), falls nicht vorhanden, aus TSO 1/TSO 2
-    if (None, "TSO") not in df.columns:
-        t1 = _first_present_tuple(df, [(None, "TSO 1"), (None, "TSO1")])
-        t2 = _first_present_tuple(df, [(None, "TSO 2"), (None, "TSO2")])
-        if t1 and t2:
-            df[(None, "TSO")] = df.loc[:, t1].astype(str).str.strip() + "/" + df.loc[:, t2].astype(str).str.strip()
-        elif t1:
-            df[(None, "TSO")] = df.loc[:, t1]
-        elif t2:
-            df[(None, "TSO")] = df.loc[:, t2]
-        # sonst bleibt (None, "TSO") ungesetzt – wird später robust behandelt
-def _find_first_present_lvl1(df: pd.DataFrame, variants: list[str]):
-    lvl1 = df.columns.get_level_values(1)
-    for lab in variants:
-        if lab in lvl1:
-            for col in df.columns:
-                if col[1] == lab:
-                    return col
-    return None
-
-# def _get_voltage_tuple(df: pd.DataFrame) -> Optional[tuple]:
-#     # sucht beliebige "Voltage_level..."-Varianten über Level 1
-#     return _find_first_present_lvl1(df, [
-#         "Voltage_level(kV)",
-#         "Voltage_level [kV]",
-#         "Voltage_level (kV)",
-#         "Voltage level [kV]",
-#         "Voltage level (kV)",
-#     ])
-
-def _get_tso_col_for_subst(df: pd.DataFrame, subst: str) -> Optional[tuple]:
-    # Bevorzugt TSO 1 / TSO 2 je nach Substation, sonst generisches "TSO"
-    if subst == "Substation_1":
-        col = _find_first_present_lvl1(df, ["TSO 1", "TSO1"])
-        if col is not None:
-            return col
-    elif subst == "Substation_2":
-        col = _find_first_present_lvl1(df, ["TSO 2", "TSO2"])
-        if col is not None:
-            return col
-    return _find_first_present_lvl1(df, ["TSO"])
-
-def _get_tso_series_for_side(df: pd.DataFrame, subst: str) -> pd.Series:
-    col = _get_tso_col_for_subst(df, subst)
-    if col is not None:
-        return df.loc[:, col].astype(str).str.strip()
-    # Fallback: generische TSO-Spalte?
-    col_generic = _find_first_present_lvl1(df, ["TSO"])
-    if col_generic is not None:
-        return df.loc[:, col_generic].astype(str).str.strip()
-    # letzter Fallback: leere Strings
-    return pd.Series([""] * len(df), index=df.index)
-
-def _series_by_lvl1(df: pd.DataFrame, label: str) -> Optional[pd.Series]:
-    # positionsbasiert statt labelbasiert → kein (None,'TSO')-KeyError, keine PerformanceWarning
-    lvl1 = df.columns.get_level_values(1)
-    pos = np.flatnonzero(lvl1 == label)
-    if pos.size:
-        return df.iloc[:, pos[0]]
-    return None
-
-def _values_by_lvl1(df: pd.DataFrame, label: str, default="") -> np.ndarray:
-    s = _series_by_lvl1(df, label)
-    if s is None:
-        return np.array([default] * len(df))
-    return s.astype(str).str.strip().values
-
-def _get_line_tso_array(df: pd.DataFrame) -> np.ndarray:
-    # 1) Generische "TSO"
-    s = _series_by_lvl1(df, "TSO")
-    if s is not None:
-        return s.astype(str).str.strip().values
-    # 2) Kombination "TSO 1/TSO 2"
-    s1 = _series_by_lvl1(df, "TSO 1") or _series_by_lvl1(df, "TSO1")
-    s2 = _series_by_lvl1(df, "TSO 2") or _series_by_lvl1(df, "TSO2")
-    if s1 is not None and s2 is not None:
-        return (s1.astype(str).str.strip() + "/" + s2.astype(str).str.strip()).values
-    if s1 is not None:
-        return s1.astype(str).str.strip().values
-    if s2 is not None:
-        return s2.astype(str).str.strip().values
-    return np.array([""] * len(df))
+# ==================================================================================================
+# Column fuzzy matching and schema handling utilities
+# ==================================================================================================
 
 def _canon_label(s: str) -> str:
+    """
+    Normalize a column label for fuzzy comparison:
+      - Replace micro symbols with 'u'.
+      - Strip accents and casefold.
+      - Remove all non-alphanumeric characters.
+
+    Parameters
+    ----------
+    s : str
+        Original label.
+
+    Returns
+    -------
+    str
+        Canonicalized label for similarity matching.
+    """
     s = str(s or "").strip()
     s = s.replace("µ", "u").replace("μ", "u")
     s = unicodedata.normalize("NFKD", s)
@@ -649,19 +748,71 @@ def _canon_label(s: str) -> str:
     s = re.sub(r"[^0-9a-z]+", "", s)
     return s
 
+
 def _sim(a: str, b: str) -> float:
+    """
+    Compute similarity ratio between two strings using difflib.
+
+    Parameters
+    ----------
+    a : str
+        First string.
+    b : str
+        Second string.
+
+    Returns
+    -------
+    float
+        Similarity ratio in [0, 1].
+    """
     return difflib.SequenceMatcher(None, a, b).ratio()
 
+
 def _get_col_pos(df: pd.DataFrame, col: Tuple) -> Optional[int]:
+    """
+    Get the positional index of a given MultiIndex column tuple.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Target DataFrame with MultiIndex columns.
+    col : tuple
+        Column tuple to search for.
+
+    Returns
+    -------
+    int | None
+        Integer position if found, otherwise None.
+    """
     try:
         return list(df.columns).index(col)
     except ValueError:
         return None
 
+
 def _best_col_by_lvl1_similarity(df: pd.DataFrame,
                                  target_label: str,
                                  min_ratio: float = 0.55,
                                  required_tokens: Optional[list[str]] = None) -> Optional[Tuple]:
+    """
+    Find the best-matching column by fuzzy similarity on level-1 label only.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with MultiIndex columns (2 levels).
+    target_label : str
+        Desired label to match (e.g. "voltage level kv").
+    min_ratio : float, optional
+        Minimal similarity ratio for acceptance.
+    required_tokens : list[str], optional
+        Tokens that must appear (in canonicalized label); reduces accidental matches.
+
+    Returns
+    -------
+    tuple | None
+        The best-matching MultiIndex column tuple (top-level, level-1), or None if not found.
+    """
     tgt = _canon_label(target_label)
     req = set(required_tokens or [])
     best, best_score = None, -1.0
@@ -674,12 +825,45 @@ def _best_col_by_lvl1_similarity(df: pd.DataFrame,
             best, best_score = col, score
     return best
 
+
 def _best_voltage_col_lines(df: pd.DataFrame) -> Optional[Tuple]:
-    # verlangt "volt" und "kv" im Level-1-Label
+    """
+    Fuzzy-find the voltage level column for Lines/Tielines DataFrames.
+
+    Expects level-1 label containing tokens similar to "voltage level (kV)".
+    Requires both "volt" and "kv" tokens present in canonical label.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines or Tielines DataFrame.
+
+    Returns
+    -------
+    tuple | None
+        Column tuple if found, else None.
+    """
     return _best_col_by_lvl1_similarity(df, target_label="voltage level kv",
                                         min_ratio=0.45, required_tokens=["volt", "kv"])
 
+
 def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[Optional[Tuple], Optional[Tuple]]:
+    """
+    Fuzzy-find primary and secondary voltage level columns in Transformers sheet.
+
+    Prefers pairs that share the same top-level label. If multiple candidates exist,
+    chooses the best pair based on similarity to the target top-level label.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Transformers DataFrame.
+
+    Returns
+    -------
+    tuple[tuple | None, tuple | None]
+        (primary_col, secondary_col), each may be None if not found.
+    """
     tgt_top = _canon_label("voltage level kv")
     prim_list, sec_list = [], []
     for col in df.columns:
@@ -690,16 +874,32 @@ def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[Optional
             prim_list.append(col)
         if top_ok and _sim(lvl1_c, _canon_label("secondary")) >= 0.7:
             sec_list.append(col)
-    # Paare mit identischem Top-Level bevorzugen
+    # Prefer pairs with same top-level
     for p in prim_list:
         matches = [s for s in sec_list if _canon_label(s[0]) == _canon_label(p[0])]
         if matches:
             return p, matches[0]
     prim_best = max(prim_list, key=lambda c: _sim(_canon_label(c[0]), tgt_top), default=None)
-    sec_best  = max(sec_list,  key=lambda c: _sim(_canon_label(c[0]), tgt_top), default=None)
+    sec_best = max(sec_list,  key=lambda c: _sim(_canon_label(c[0]), tgt_top), default=None)
     return prim_best, sec_best
 
+
 def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> Optional[Tuple]:
+    """
+    Fuzzy-find ("Substation_*", "Full Name") column for Lines/Tielines.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines or Tielines DataFrame.
+    subst : str
+        Either "Substation_1" or "Substation_2".
+
+    Returns
+    -------
+    tuple | None
+        Matching column tuple if found, else None.
+    """
     tgt0 = _canon_label(subst)      # "substation1"/"substation2"
     tgt1 = _canon_label("full name")
     best, best_score = None, -1.0
@@ -717,19 +917,75 @@ def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> Optional[Tuple]:
             best, best_score = col, score
     return best
 
+
 def _best_susceptance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+    """
+    Fuzzy-find susceptance (B) column for Lines/Tielines.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines or Tielines DataFrame.
+
+    Returns
+    -------
+    tuple | None
+        Matching column tuple if found, else None.
+    """
     return _best_col_by_lvl1_similarity(df, "susceptance b us",
                                         min_ratio=0.5, required_tokens=["susceptance", "b", "us"])
 
+
 def _best_resistance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+    """
+    Fuzzy-find resistance (R) column for Lines/Tielines.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines or Tielines DataFrame.
+
+    Returns
+    -------
+    tuple | None
+        Matching column tuple if found, else None.
+    """
     return _best_col_by_lvl1_similarity(df, "resistance r ohm",
                                         min_ratio=0.5, required_tokens=["resistance"])
 
+
 def _best_reactance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+    """
+    Fuzzy-find reactance (X) column for Lines/Tielines.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines or Tielines DataFrame.
+
+    Returns
+    -------
+    tuple | None
+        Matching column tuple if found, else None.
+    """
     return _best_col_by_lvl1_similarity(df, "reactance x ohm",
                                         min_ratio=0.5, required_tokens=["reactance"])
 
+
 def _best_transformer_location_fullname_col_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+    """
+    Fuzzy-find ("Location", "Full Name") column in Transformers sheet.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Transformers DataFrame.
+
+    Returns
+    -------
+    tuple | None
+        Matching column tuple if found, else None.
+    """
     tgt0 = _canon_label("location")
     tgt1 = _canon_label("full name")
     best, best_score = None, -1.0
@@ -747,29 +1003,258 @@ def _best_transformer_location_fullname_col_fuzzy(df: pd.DataFrame) -> Optional[
             best, best_score = col, score
     return best
 
+
 def _get_transformer_location_fullname_series_fuzzy(df: pd.DataFrame) -> pd.Series:
+    """
+    Retrieve the "Location / Full Name" series from Transformers using fuzzy column matching.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Transformers DataFrame.
+
+    Returns
+    -------
+    pd.Series
+        Series of transformer location names (stripped strings).
+
+    Raises
+    ------
+    KeyError
+        If the column cannot be located via fuzzy matching.
+    """
     col = _best_transformer_location_fullname_col_fuzzy(df)
     if col is None:
         raise KeyError("Transformers: Location / Full Name per Fuzzy-Matching nicht gefunden.")
     pos = _get_col_pos(df, col)
     return df.iloc[:, pos].astype(str).str.strip()
 
+
 def _values_by_lvl1_fuzzy(df: pd.DataFrame, target_label: str,
                           tokens: Optional[list[str]] = None,
                           default="") -> np.ndarray:
+    """
+    Extract a column by fuzzy match against the level-1 label and return values as string array.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with MultiIndex columns.
+    target_label : str
+        Target label to match (e.g., "EIC code").
+    tokens : list[str], optional
+        Required tokens (canonicalized) that must appear to consider a column.
+    default : str, optional
+        Default string value if not found.
+
+    Returns
+    -------
+    np.ndarray
+        Array of strings (stripped) for the matched column, or defaults if not found.
+    """
     col = _best_col_by_lvl1_similarity(df, target_label, min_ratio=0.5, required_tokens=tokens)
     if col is None:
         return np.array([default] * len(df))
     pos = _get_col_pos(df, col)
     return df.iloc[:, pos].astype(str).str.strip().values
 
+
 def _values_by_lvl1_fuzzy_numeric(df: pd.DataFrame, target_label: str,
                                   tokens: Optional[list[str]] = None,
                                   default=0.0) -> np.ndarray:
+    """
+    Extract a column via fuzzy match and return numeric values, using comma->dot conversion.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with MultiIndex columns.
+    target_label : str
+        Target label to match.
+    tokens : list[str], optional
+        Required tokens (canonicalized).
+    default : float, optional
+        Default numeric value if not found or non-coercible.
+
+    Returns
+    -------
+    np.ndarray
+        Numeric array of values (floats).
+    """
     vals = _values_by_lvl1_fuzzy(df, target_label, tokens=tokens, default=str(default))
     return pd.to_numeric(pd.Series(vals).str.replace(",", "."), errors="coerce").fillna(default).values
 
+
+def _find_first_present_lvl1(df: pd.DataFrame, variants: list[str]):
+    """
+    Find the first present column whose level-1 label matches any variant in 'variants'.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with MultiIndex columns.
+    variants : list[str]
+        Ordered list of level-1 label candidates to check.
+
+    Returns
+    -------
+    tuple | None
+        Matching column tuple if found, else None.
+    """
+    lvl1 = df.columns.get_level_values(1)
+    for lab in variants:
+        if lab in lvl1:
+            for col in df.columns:
+                if col[1] == lab:
+                    return col
+    return None
+
+
+def _series_by_lvl1(df: pd.DataFrame, label: str) -> Optional[pd.Series]:
+    """
+    Retrieve the first column whose level-1 label equals 'label', returning it as a Series.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with MultiIndex columns.
+    label : str
+        Desired level-1 label.
+
+    Returns
+    -------
+    pd.Series | None
+        Found column as a Series, or None if not present.
+    """
+    lvl1 = df.columns.get_level_values(1)
+    pos = np.flatnonzero(lvl1 == label)
+    if pos.size:
+        return df.iloc[:, pos[0]]
+    return None
+
+
+def _values_by_lvl1(df: pd.DataFrame, label: str, default="") -> np.ndarray:
+    """
+    Return an array of strings from the first column whose level-1 label equals 'label'.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with MultiIndex columns.
+    label : str
+        Level-1 label to select.
+    default : str, optional
+        Default string if not found.
+
+    Returns
+    -------
+    np.ndarray
+        Array of strings (stripped) or defaults if no column found.
+    """
+    s = _series_by_lvl1(df, label)
+    if s is None:
+        return np.array([default] * len(df))
+    return s.astype(str).str.strip().values
+
+
+def _get_line_tso_array(df: pd.DataFrame) -> np.ndarray:
+    """
+    Retrieve a per-line TSO label, combining "TSO 1/TSO 2" if generic "TSO" not present.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines or Tielines DataFrame.
+
+    Returns
+    -------
+    np.ndarray
+        Array of TSO strings (e.g., "TSO1/TSO2") or empty strings when unavailable.
+    """
+    s = _series_by_lvl1(df, "TSO")
+    if s is not None:
+        return s.astype(str).str.strip().values
+    s1 = _series_by_lvl1(df, "TSO 1") or _series_by_lvl1(df, "TSO1")
+    s2 = _series_by_lvl1(df, "TSO 2") or _series_by_lvl1(df, "TSO2")
+    if s1 is not None and s2 is not None:
+        return (s1.astype(str).str.strip() + "/" + s2.astype(str).str.strip()).values
+    if s1 is not None:
+        return s1.astype(str).str.strip().values
+    if s2 is not None:
+        return s2.astype(str).str.strip().values
+    return np.array([""] * len(df))
+
+
+def _get_tso_col_for_subst(df: pd.DataFrame, subst: str) -> Optional[tuple]:
+    """
+    Return a TSO column for a given substation side if available, else a generic TSO column.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines/Tielines DataFrame.
+    subst : str
+        "Substation_1" or "Substation_2".
+
+    Returns
+    -------
+    tuple | None
+        Column tuple if found, else None.
+    """
+    if subst == "Substation_1":
+        col = _find_first_present_lvl1(df, ["TSO 1", "TSO1"])
+        if col is not None:
+            return col
+    elif subst == "Substation_2":
+        col = _find_first_present_lvl1(df, ["TSO 2", "TSO2"])
+        if col is not None:
+            return col
+    return _find_first_present_lvl1(df, ["TSO"])
+
+
+def _get_tso_series_for_side(df: pd.DataFrame, subst: str) -> pd.Series:
+    """
+    Retrieve the TSO series for a substation side (strict variant).
+
+    If no side-specific TSO column is present, tries a generic "TSO". Else returns empty series.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines/Tielines DataFrame.
+    subst : str
+        "Substation_1" or "Substation_2".
+
+    Returns
+    -------
+    pd.Series
+        Series of TSO strings for each row.
+    """
+    col = _get_tso_col_for_subst(df, subst)
+    if col is not None:
+        return df.loc[:, col].astype(str).str.strip()
+    col_generic = _find_first_present_lvl1(df, ["TSO"])
+    if col_generic is not None:
+        return df.loc[:, col_generic].astype(str).str.strip()
+    return pd.Series([""] * len(df), index=df.index)
+
+
 def _get_tso_series_for_side_fuzzy(df: pd.DataFrame, subst: str) -> pd.Series:
+    """
+    Retrieve the TSO series for a substation side via fuzzy matching.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines/Tielines DataFrame.
+    subst : str
+        "Substation_1" or "Substation_2".
+
+    Returns
+    -------
+    pd.Series
+        Series of TSO strings for each row; empty strings if not found.
+    """
     target = "TSO 1" if subst == "Substation_1" else "TSO 2"
     col = _best_col_by_lvl1_similarity(df, target, min_ratio=0.6, required_tokens=["tso"])
     if col is not None:
@@ -781,7 +1266,24 @@ def _get_tso_series_for_side_fuzzy(df: pd.DataFrame, subst: str) -> pd.Series:
         return df.iloc[:, pos].astype(str).str.strip()
     return pd.Series([""] * len(df), index=df.index)
 
+
 def _get_line_tso_array_fuzzy(df: pd.DataFrame) -> np.ndarray:
+    """
+    Build a line-wise TSO string via fuzzy matching:
+      - Try generic "TSO"
+      - Else combine "TSO 1/TSO 2"
+      - Else fall back to single-available side.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines/Tielines DataFrame.
+
+    Returns
+    -------
+    np.ndarray
+        Array of TSO strings.
+    """
     col = _best_col_by_lvl1_similarity(df, "TSO", min_ratio=0.6, required_tokens=["tso"])
     if col is not None:
         pos = _get_col_pos(df, col)
@@ -797,7 +1299,25 @@ def _get_line_tso_array_fuzzy(df: pd.DataFrame) -> np.ndarray:
         return df.iloc[:, _get_col_pos(df, c2)].astype(str).str.strip().values
     return np.array([""] * len(df))
 
+
 def _get_transformer_tso_series_fuzzy(df: pd.DataFrame) -> pd.Series:
+    """
+    Retrieve a TSO column for Transformers via fuzzy scanning.
+
+    Heuristic:
+      - Prefer columns with level-1 label containing 'tso'.
+      - Add slight score for top-level labels containing 'location'.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Transformers DataFrame.
+
+    Returns
+    -------
+    pd.Series
+        TSO strings per transformer (empty if not found).
+    """
     best, best_score = None, -1.0
     for col in df.columns:
         if "tso" in _canon_label(col[1]):
@@ -812,36 +1332,128 @@ def _get_transformer_tso_series_fuzzy(df: pd.DataFrame) -> pd.Series:
     pos = _get_col_pos(df, best)
     return df.iloc[:, pos].astype(str).str.strip()
 
-# Ersetzt: _get_voltage_tuple (Lines/Tielines)
+
 def _get_voltage_tuple(df: pd.DataFrame) -> Optional[Tuple]:
+    """
+    Wrapper for voltage-level column detection for Lines/Tielines.
+
+    Returns
+    -------
+    tuple | None
+        The detected column tuple (top-level, level-1) or None.
+    """
     return _best_voltage_col_lines(df)
 
-# Ersetzt: Substation Full_name – nutzt Fuzzy
+
 def _get_fullname_tuple(df: pd.DataFrame, subst: str) -> Optional[Tuple]:
+    """
+    Wrapper for full-name column detection for a given substation side (fuzzy).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines/Tielines DataFrame.
+    subst : str
+        "Substation_1" or "Substation_2".
+
+    Returns
+    -------
+    tuple | None
+        The detected ("Substation_*", "Full Name") column tuple, or None if not found.
+    """
     return _best_fullname_tuple_fuzzy(df, subst)
 
+
+def _ensure_line_tso_column(df: pd.DataFrame) -> None:
+    """
+    Ensure a generic (None, "TSO") column exists on Lines/Tielines.
+
+    If only "TSO 1"/"TSO 2" are present, creates a combined "TSO" column by concatenation.
+    This helps unify downstream handling for TSO metadata.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Lines or Tielines DataFrame with MultiIndex columns.
+
+    Notes
+    -----
+    Column is created in-place when needed.
+    """
+    if (None, "TSO") not in df.columns:
+        t1 = _first_present_tuple(df, [(None, "TSO 1"), (None, "TSO1")])
+        t2 = _first_present_tuple(df, [(None, "TSO 2"), (None, "TSO2")])
+        if t1 and t2:
+            df[(None, "TSO")] = df.loc[:, t1].astype(str).str.strip() + "/" + df.loc[:, t2].astype(str).str.strip()
+        elif t1:
+            df[(None, "TSO")] = df.loc[:, t1]
+        elif t2:
+            df[(None, "TSO")] = df.loc[:, t2]
+        # else: leave unset; downstream is robust
+
+
+def _first_present_tuple(df: pd.DataFrame, candidates: list[tuple]) -> Optional[tuple]:
+    """
+    Return the first candidate column tuple that exists in df.columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with MultiIndex columns.
+    candidates : list[tuple]
+        Candidate tuples (top-level, level-1) to check in order.
+
+    Returns
+    -------
+    tuple | None
+        The first present tuple or None if none found.
+    """
+    for t in candidates:
+        if t in df.columns:
+            return t
+    return None
+
+
+# ==================================================================================================
+# Data correction pipeline
+# ==================================================================================================
 
 def _data_correction(
         data: dict[str, pd.DataFrame],
         html_str: Optional[str],
         max_i_ka_fillna: Union[float, int]) -> Optional[str]:
-    """Corrects input data in particular with regard to obvious weaknesses in the data provided,
-    such as inconsistent spellings and missing necessary information
+    """
+    Apply corrections and normalizations to Excel and HTML data before building the network.
+
+    Corrections include:
+      - Compute rename rules from cross-sheet analysis and apply them to Lines/Tielines/Transformers
+        location columns and to HTML geodata (string replace).
+      - Harmonize known column naming variants under consistent top-level and level-1 labels
+        (e.g., unify "Full Name" -> "Full_name", "Voltage_level [kV]" -> "Voltage_level(kV)").
+      - Ensure a (None, "TSO") column in Lines/Tielines when only side-specific TSO columns exist.
+      - Numeric coercions for key electrical parameters (Length, R, X, B) and Imax.
+      - Clean up tap strings and duplicate shifter data.
 
     Parameters
     ----------
     data : dict[str, pd.DataFrame]
-        data provided by the excel file which will be corrected
+        Excel sheets dict; modified in-place.
     html_str : str | None
-        data provided by the html file which will be corrected
+        HTML geodata raw text; rename rules are applied to embedded names/EICs via find/replace.
     max_i_ka_fillna : float | int
-        value to fill missing values or data of false type in max_i_ka of lines and transformers.
-        If no value should be set, you can also pass np.nan.
+        Value to fill missing or invalid maximum currents (Imax) in lines and transformers.
+        Pass np.nan to disable filling.
 
     Returns
     -------
-    str
-        corrected html_str
+    str | None
+        Corrected HTML string (same value if None was provided).
+
+    Notes
+    -----
+    - Additional filtering is applied to rename rules based on string similarity >= 0.8 and to
+      avoid mapping between two names that already exist in bus set.
+    - Uses robust fuzzy matching for detection of R/X/B columns as well as TSO columns where needed.
     """
     # old name -> new name
     combined = report_problematic_names_after_normalization(data)
@@ -907,9 +1519,9 @@ def _data_correction(
                 df[col] = pd.to_numeric(df[col].astype(str).str.replace(",", "."), errors="coerce")
 
         # --- Fuzzy-Matching für R/X/B (Level-1), inkl. Susceptance_B (µ/μS)
-        R_col = _best_resistance_col_lines_fuzzy(df)  # findet z. B. "Resistance_R(Ω)"
-        X_col = _best_reactance_col_lines_fuzzy(df)  # findet z. B. "Reactance_X(Ω)"
-        B_col = _best_susceptance_col_lines_fuzzy(df)  # findet z. B. "Susceptance_B (µS)/(μS)"
+        R_col = _best_resistance_col_lines_fuzzy(df)
+        X_col = _best_reactance_col_lines_fuzzy(df)
+        B_col = _best_susceptance_col_lines_fuzzy(df)
 
         for fuzzy_col in [R_col, X_col, B_col]:
             if fuzzy_col is not None:
@@ -935,7 +1547,7 @@ def _data_correction(
             df.loc[:, loc_name] = df.loc[:, loc_name].astype(str).str.strip().apply(_multi_str_repl,
                                                                                     repl=rename_locnames)
 
-        # Tap-String-Korrekturen (wie gehabt)
+        # Tap-String-Korrekturen
         taps = df.loc[:, ("Phase Shifting Properties", "Taps used for RAO")].fillna("").astype(str).str.replace(" ", "")
         nonnull = taps.apply(len).astype(bool)
         nonnull_taps = taps.loc[nonnull]
@@ -947,7 +1559,7 @@ def _data_correction(
         df.loc[nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = nonnull_taps
         df.loc[~nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = "0;0"
 
-        # Phase Shifter Doppelinfos (wie gehabt)
+        # Phase Shifter Doppelinfos
         cols = ["Phase Regulation δu (%)", "Angle Regulation δu (%)"]
         for col in cols:
             tup = ("Phase Shifting Properties", col)
@@ -960,19 +1572,38 @@ def _data_correction(
     return html_str
 
 
+# ==================================================================================================
+# HTML geodata parsing
+# ==================================================================================================
+
 def _parse_html_str(html_str: str) -> pd.DataFrame:
-    """Converts ths geodata from the html file (information hidden in the string), from Lines in
-    particular, to a DataFrame that can be used later in _add_bus_geo()
+    """
+    Parse embedded JSON geodata from an HTML map file and return line-endpoint coordinates.
+
+    Expected map widget structure: a specific htmlwidget with a JSON script tag.
+    Extracts polylines and associated tooltips to recover:
+      - EIC code per line
+      - NE name (line name)
+      - Coordinates (lng/lat) for 'from' and 'to' endpoints
 
     Parameters
     ----------
     html_str : str
-        html file that includes geodata information
+        Full HTML content as a string.
 
     Returns
     -------
     pd.DataFrame
-        extracted geodata for a later and easy use
+        Tidy DataFrame with columns:
+          ["EIC_Code", "name", "bus", "geo_dim", "value"]
+        Where 'bus' is ["from", "to"], 'geo_dim' is ["lng", "lat"], and 'value' is numeric.
+
+    Raises
+    ------
+    AssertionError
+        If EIC list length does not match polyline list length.
+    KeyError, json.JSONDecodeError
+        If the internal widget structure is not found or JSON is malformed.
     """
 
     def _filter_name(st: str) -> str:
@@ -1008,16 +1639,52 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
     return line_geo_data
 
 
+def _lng_lat_to_df(dict_: dict, line_EIC: str, line_name: str) -> pd.DataFrame:
+    """
+    Helper: convert a small lng/lat dict from map JSON into a tidy 4-row DataFrame
+    for 'from'/'to' endpoints.
+
+    Parameters
+    ----------
+    dict_ : dict
+        Dict with 'lng' and 'lat' lists (each size 2).
+    line_EIC : str
+        EIC code string for the line.
+    line_name : str
+        NE name for the line.
+
+    Returns
+    -------
+    pd.DataFrame
+        Rows with columns ["EIC_Code", "name", "bus", "geo_dim", "value"].
+    """
+    return pd.DataFrame([
+        [line_EIC, line_name, "from", "lng", dict_["lng"][0]],
+        [line_EIC, line_name, "to", "lng", dict_["lng"][1]],
+        [line_EIC, line_name, "from", "lat", dict_["lat"][0]],
+        [line_EIC, line_name, "to", "lat", dict_["lat"][1]],
+    ], columns=["EIC_Code", "name", "bus", "geo_dim", "value"])
+
+
+# ==================================================================================================
+# Element creation: buses, lines, transformers
+# ==================================================================================================
+
 def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFrame]) -> None:
-    """Creates buses to the pandapower net using information from the lines and tielines sheets
-    (excel file).
+    """
+    Create pandapower buses from Lines and Tielines data.
+
+    Logic:
+      - Fuzzy-detect voltage (kV) and substation "Full_name" columns.
+      - Build a DataFrame of (name, vn_kv, TSO) for Substation_1 and Substation_2.
+      - Drop duplicates (join TSO labels when multiple), then create buses in pandapower.
 
     Parameters
     ----------
     net : pandapowerNet
-        net to be filled by buses
+        Target pandapower network (modified in-place).
     data : dict[str, pd.DataFrame]
-        data provided by the excel file which will be corrected
+        Excel sheets dict.
     """
     bus_df_empty = pd.DataFrame({"name": str(), "vn_kv": float(), "TSO": str()}, index=[])
     bus_df = deepcopy(bus_df_empty)
@@ -1060,20 +1727,31 @@ def _create_lines(
         net: pandapowerNet,
         data: dict[str, pd.DataFrame],
         max_i_ka_fillna: Union[float, int]) -> None:
-    """Creates lines to the pandapower net using information from the lines and tielines sheets
-    (excel file).
+    """
+    Create pandapower lines from Lines/Tielines data.
+
+    Steps:
+      - Validate/repair length (km), set zero/NaN lengths to 1 km with a warning.
+      - Determine from/to buses via (Substation, Full_name) and voltage (vn_kv).
+      - Fuzzy-detect R, X, B columns, compute per-km values.
+      - Read Imax (kA) from Fixed column if present, else use fallback.
+      - Attach metadata (name/EIC/TSO/comment) via fuzzy detection.
+      - Create lines in pandapower; set Tieline=True for tielines.
 
     Parameters
     ----------
     net : pandapowerNet
-        net to be filled by buses
+        Target pandapower network (modified in-place).
     data : dict[str, pd.DataFrame]
-        data provided by the excel file which will be corrected
+        Excel sheets dict.
     max_i_ka_fillna : float | int
-        value to fill missing values or data of false type in max_i_ka of lines and transformers.
-        If no value should be set, you can also pass np.nan.
-    """
+        Fallback Imax (kA) if missing; use np.nan to avoid filling.
 
+    Raises
+    ------
+    KeyError
+        If voltage or substation name columns cannot be found via fuzzy matching.
+    """
     bus_idx = _get_bus_idx(net)
 
     for key in ["Lines", "Tielines"]:
@@ -1081,7 +1759,7 @@ def _create_lines(
             continue
         df = data[key]
 
-        # Länge
+        # Length
         length_km = df[("Electrical Parameters", "Length_(km)")].values
         zero_length = np.isclose(length_km, 0)
         no_length = np.isnan(length_km)
@@ -1096,17 +1774,17 @@ def _create_lines(
             raise KeyError(f"{key}: Voltage_level (fuzzy) nicht gefunden.")
         vn_kvs = df.loc[:, vn_tuple].values
 
-        # Substation-Namen
+        # Substation names
         s1_full = _get_fullname_tuple(df, "Substation_1")
         s2_full = _get_fullname_tuple(df, "Substation_2")
         if s1_full is None or s2_full is None:
             raise KeyError(f"{key}: Substation_1/2 Full_name (fuzzy) nicht gefunden.")
 
-        # Bus-Indizes
+        # Bus indices
         from_bus = bus_idx.loc[list(tuple(zip(df.loc[:, s1_full].astype(str).values, vn_kvs)))].values
         to_bus = bus_idx.loc[list(tuple(zip(df.loc[:, s2_full].astype(str).values, vn_kvs)))].values
 
-        # Leitungsparameter je km (fuzzy, mit Fallback)
+        # Per unit-length R/X/B (fuzzy, with fallback)
         R_col = _best_resistance_col_lines_fuzzy(df)
         X_col = _best_reactance_col_lines_fuzzy(df)
         B_col = _best_susceptance_col_lines_fuzzy(df)
@@ -1126,7 +1804,6 @@ def _create_lines(
         if B_col is not None:
             B_vals = df.iloc[:, _get_col_pos(df, B_col)].values
         else:
-            # Fallback-Wert 0 wenn nicht vorhanden
             B_vals = np.zeros(len(df))
 
         R = R_vals / length_km
@@ -1138,7 +1815,7 @@ def _create_lines(
         I_ka = df[imax_fixed].fillna(max_i_ka_fillna * 1e3).values / 1e3 if imax_fixed in df.columns else np.full(
             len(df), max_i_ka_fillna)
 
-        # Metadaten (fuzzy)
+        # Metadata (fuzzy)
         name_vals = _values_by_lvl1_fuzzy(df, "NE name", tokens=["ne", "name"], default=None)
         eic_vals = _values_by_lvl1_fuzzy(df, "EIC code", tokens=["eic", "code"], default=None)
         comment_vals = _values_by_lvl1_fuzzy(df, "comment", tokens=["comment"], default="")
@@ -1161,22 +1838,33 @@ def _create_lines(
 
 def _create_transformers_and_buses(
         net: pandapowerNet, data: dict[str, pd.DataFrame], **kwargs) -> None:
-    """Creates transformers to the pandapower net using information from the transformers sheet
-    (excel file).
+    """
+    Create transformers from the Transformers sheet and ensure valid bus connections.
+
+    Flow:
+      - Determine transformer HV/LV nominal voltages (fuzzy).
+      - Match each transformer to a bus pair at its location; create buses when:
+          * no bus exists at the required voltage and best existing voltage deviates more than
+            rel_deviation_threshold_for_trafo_bus_creation, or
+          * HV and LV sides would connect to the same bus (duplicate LV bus with suffix " (2)").
+      - Compute transformer parameters (vk%, vkr%, pfe, i0, etc.) from R/X/B/G and base values.
+      - Add tap/phase-shifter settings.
+      - Create pandapower transformers.
 
     Parameters
     ----------
     net : pandapowerNet
-        net to be filled by buses
+        Target pandapower network (modified in-place).
     data : dict[str, pd.DataFrame]
-        data provided by the excel file which will be corrected
+        Excel sheets dict.
+    kwargs :
+        - rel_deviation_threshold_for_trafo_bus_creation: float (default 0.2)
+        - log_rel_vn_deviation: float (default 0.12)
     """
-
-    # --- data preparations
     key = "Transformers"
     dfT = data[key]
 
-    # VN & Zuteilung
+    # VN & allocation
     bus_idx = _get_bus_idx(net)
     vn_hv_kv, vn_lv_kv = _get_transformer_voltages(data, bus_idx)
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(
@@ -1187,11 +1875,11 @@ def _create_transformers_and_buses(
     empty_i_idx = max_i_a.index[max_i_a.isnull()]
     max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, ("Maximum Current Imax (A) primary", "Max")].values
 
-    # Basisgrößen
+    # Base quantities
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
     z_pu = vn_lv_kv ** 2 / sn_mva
 
-    # Trafoparameter (fuzzy, Level-1)
+    # Transformer parameters (fuzzy)
     R_ohm = _values_by_lvl1_fuzzy_numeric(dfT, "resistance r ohm", tokens=["resistance"], default=0.0)
     X_ohm = _values_by_lvl1_fuzzy_numeric(dfT, "reactance x ohm", tokens=["reactance"], default=0.0)
     B_uS = _values_by_lvl1_fuzzy_numeric(dfT, "susceptance b us", tokens=["susceptance", "b", "us"], default=0.0)
@@ -1207,7 +1895,7 @@ def _create_transformers_and_buses(
     pfe_kw = g0 * sn_mva * 1e3
     i0_percent = 100 * np.sqrt(b0 ** 2 + g0 ** 2) * net.sn_mva / sn_mva
 
-    # Taps/Phasensteller (wie bisher über feste Labels)
+    # Tap/shifter
     taps = data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].str.split(";", expand=True).astype(
         int).set_axis(["tap_min", "tap_max"], axis=1)
     du = _get_float_column(data[key], ("Phase Shifting Properties", "Phase Regulation δu (%)"))
@@ -1249,288 +1937,29 @@ def _create_transformers_and_buses(
     )
 
 
-def _invent_connections_between_grid_groups(
-        net: pandapowerNet, minimal_trafo_invention: bool = False, **kwargs) -> None:
-    """Adds connections between islanded grid groups via:
-
-    - adding transformers between equally named buses that have different voltage level and lay in different groups
-    - merge buses of same voltage level, different grid groups and equal name base
-    - fuse buses that are close to each other
-
-    Parameters
-    ----------
-    net : pandapowerNet
-        net to be manipulated
-    minimal_trafo_invention : bool, optional
-        if True, adding transformers stops when no grid groups is islanded anymore (does not apply
-        for release version 5 or 6, i.e. it does not care what value is passed to
-        minimal_trafo_invention). If False, all equally named buses that have different voltage
-        level and lay in different groups will be connected via additional transformers,
-        by default False
-    """
-    grid_groups = get_grid_groups(net)
-    bus_idx = _get_bus_idx(net)
-    bus_grid_groups = pd.concat([pd.Series(group, index=buses) for group, buses in zip(
-        grid_groups.index, grid_groups.buses)]).sort_index()
-
-    # treat for example "Wuergau" equally as "Wuergau (2)":
-    location_names = pd.Series(bus_idx.index.get_level_values(0))
-    location_names = location_names.str.replace(r"(.) \([0-9]+\)", r"\1", regex=True)
-    bus_idx.index = pd.MultiIndex.from_arrays(
-        [location_names.values, bus_idx.index.get_level_values(1).to_numpy()],
-        names=bus_idx.index.names)
-
-    # --- add Transformers between equally named buses that have different voltage level and lay in
-    # --- different groups
-    connected_vn_kvs_by_trafos = pd.DataFrame({
-        "hv": net.bus.vn_kv.loc[net.trafo.hv_bus.values].values,
-        "lv": net.bus.vn_kv.loc[net.trafo.lv_bus.values].values,
-        "index": net.trafo.index}).set_index(["hv", "lv"]).sort_index()
-    dupl_location_names = location_names[location_names.duplicated()]
-
-    for location_name in dupl_location_names:
-        if minimal_trafo_invention and len(bus_grid_groups.unique()) <= 1:
-            break  # break with regard to minimal_trafo_invention
-        grid_groups_at_location = bus_grid_groups.loc[bus_idx.loc[location_name].values]
-        grid_groups_at_location = grid_groups_at_location.drop_duplicates()
-        if len(grid_groups_at_location) < 2:
-            continue
-        elif len(grid_groups_at_location) > 2:
-            raise NotImplementedError("Code is not provided to invent Transformer connections "
-                                      "between locations with more than two grid groups, i.e. "
-                                      "voltage levels.")
-        TSO = net.bus.zone.at[grid_groups_at_location.index[0]]
-        vn_kvs = net.bus.vn_kv.loc[grid_groups_at_location.index].sort_values(ascending=False)
-        try:
-            trafos_connecting_same_voltage_levels = \
-                connected_vn_kvs_by_trafos.loc[tuple(vn_kvs)]
-        except KeyError:
-            logger.info(f"For location {location_name}, no transformer data can be reused since "
-                        f"no transformer connects {vn_kvs.sort_values(ascending=False).iat[0]} kV "
-                        f"and {vn_kvs.sort_values(ascending=False).iat[1]} kV.")
-            continue
-        trafos_of_same_TSO = trafos_connecting_same_voltage_levels.loc[(net.bus.zone.loc[
-                                                                            net.trafo.hv_bus.loc[
-                                                                                trafos_connecting_same_voltage_levels.values.flatten(
-                                                                                )].values] == TSO).values].values.flatten()
-
-        # from which trafo parameters are copied:
-        tr_to_be_copied = trafos_of_same_TSO[0] if len(trafos_of_same_TSO) else \
-            trafos_connecting_same_voltage_levels.values.flatten()[0]
-
-        # copy transformer data
-        duplicated_row = net.trafo.loc[[tr_to_be_copied]].copy()
-        duplicated_row.index = [net.trafo.index.max() + 1]  # adjust index
-        duplicated_row.hv_bus = vn_kvs.index[0]  # adjust hv_bus, lv_bus
-        duplicated_row.lv_bus = vn_kvs.index[1]  # adjust hv_bus, lv_bus
-        duplicated_row.name = "additional transformer to connect the grid"
-        net.trafo = pd.concat([net.trafo, duplicated_row])
-
-        bus_grid_groups.loc[bus_grid_groups == grid_groups_at_location.iat[1]] = \
-            grid_groups_at_location.iat[0]
-
-    # --- merge buses of same voltage level, different grid groups and equal name base
-    bus_name_splits = net.bus.name.str.split(r"[ -/]+", expand=True)
-    buses_with_single_base = net.bus.name.loc[(~bus_name_splits.isnull()).sum(axis=1) == 1]
-    for idx, name_base in buses_with_single_base.items():
-        same_name_base = net.bus.drop(idx).name.str.contains(name_base)
-        if not any(same_name_base):
-            continue
-        other_group = bus_grid_groups.drop(idx) != bus_grid_groups.at[idx]
-        same_vn = net.bus.drop(idx).vn_kv == net.bus.vn_kv.at[idx]
-        is_fuse_candidate = same_name_base & other_group & same_vn
-        if not any(is_fuse_candidate):
-            continue
-        to_fuse = bus_grid_groups.drop(idx).loc[is_fuse_candidate].drop_duplicates()
-        fuse_buses(net, idx, set(to_fuse.index))
-
-        bus_grid_groups.loc[bus_grid_groups.isin(bus_grid_groups.drop(idx).loc[
-                                                     is_fuse_candidate].unique())] = grid_groups_at_location.iat[0]
-        bus_grid_groups = bus_grid_groups.drop(to_fuse.index)
-
-    # --- fuse buses that are close to each other
-    for name1, name2 in [("CROISIERE", "BOLLENE (POSTE RESEAU)"),
-                         ("CAEN", "DRONNIERE (LA)"),
-                         ("TRINITE-VICTOR", "MENTON/TRINITE VICTOR")]:
-        b1 = net.bus.index[net.bus.name == name1]
-        b2 = net.bus.index[net.bus.name == name2]
-        if len(b1) == 1 and len(b2) >= 1:
-            fuse_buses(net, b1[0], set(b2))
-            bus_grid_groups = bus_grid_groups.drop(b2)
-        else:
-            logger.info("Buses of the following names were intended to be fused but were not found."
-                        f"\n'{name1}' and '{name2}'")
-
-
-def drop_islanded_grid_groups(
-        net: pandapowerNet,
-        min_bus_number: Union[int, str],
-        **kwargs) -> None:
-    """Drops grid groups that are islanded and include a number of buses below min_bus_number.
-
-    Parameters
-    ----------
-    net : pandapowerNet
-        net in which islanded grid groups will be dropped
-    min_bus_number : int | str, optional
-        Threshold value to decide which small grid groups should be dropped and which large grid
-        groups should be kept. If all islanded grid groups should be dropped except of the one
-        largest, set "max". If all grid groups that do not contain a slack element should be
-        dropped, set "unsupplied".
-    """
-
-    def _grid_groups_to_drop_by_min_bus_number():
-        return grid_groups.loc[grid_groups["n_buses"] < min_bus_number]
-
-    grid_groups = get_grid_groups(net, **kwargs)
-
-    if min_bus_number == "unsupplied":
-        slack_buses = set(net.ext_grid.loc[net.ext_grid.in_service, "bus"]) | \
-                      set(net.gen.loc[net.gen.in_service & net.gen.slack, "bus"])
-        grid_groups_to_drop = grid_groups.loc[~grid_groups.buses.apply(
-            lambda x: not x.isdisjoint(slack_buses))]
-
-    elif min_bus_number == "max":
-        min_bus_number = grid_groups["n_buses"].max()
-        grid_groups_to_drop = _grid_groups_to_drop_by_min_bus_number()
-
-    elif isinstance(min_bus_number, int):
-        grid_groups_to_drop = _grid_groups_to_drop_by_min_bus_number()
-
-    else:
-        raise NotImplementedError(
-            f"{min_bus_number=} is not implemented. Use an int, 'max', or 'unsupplied' instead.")
-
-    buses_to_drop = reduce(set.union, grid_groups_to_drop.buses)
-    drop_buses(net, buses_to_drop)
-    logger.info(f"drop_islanded_grid_groups() drops {len(grid_groups_to_drop)} grid groups with a "
-                f"total of {grid_groups_to_drop.n_buses.sum()} buses.")
-
-
-def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
-    """Adds geodata to the buses. The function needs to handle cases where line_geo_data does not
-    include no or multiple geodata per bus. Primarly, the geodata are allocate via EIC Code names,
-    if ambigous, names are considered.
-
-    Parameters
-    ----------
-    net : pandapowerNet
-        net in which geodata are added to the buses
-    line_geo_data : pd.DataFrame
-        Converted geodata from the html file
-    """
-    iSl = pd.IndexSlice
-    lgd_EIC_bus = line_geo_data.pivot_table(values="value", index=["EIC_Code", "bus"],
-                                            columns="geo_dim")
-    lgd_name_bus = line_geo_data.pivot_table(values="value", index=["name", "bus"],
-                                             columns="geo_dim")
-    lgd_EIC_bus_idx_extended = pd.MultiIndex.from_frame(lgd_EIC_bus.index.to_frame().assign(
-        **dict(col_name="EIC_Code")).rename(columns=dict(EIC_Code="identifier")).loc[
-                                                        :, ["col_name", "identifier", "bus"]])
-    lgd_name_bus_idx_extended = pd.MultiIndex.from_frame(lgd_name_bus.index.to_frame().assign(
-        **dict(col_name="name")).rename(columns=dict(name="identifier")).loc[
-                                                         :, ["col_name", "identifier", "bus"]])
-    lgd_bus = pd.concat([lgd_EIC_bus.set_axis(lgd_EIC_bus_idx_extended),
-                         lgd_name_bus.set_axis(lgd_name_bus_idx_extended)])
-    dupl_EICs = net.line.EIC_Code.loc[net.line.EIC_Code.duplicated()]
-    dupl_names = net.line.name.loc[net.line.name.duplicated()]
-
-    def _geo_json_str(this_bus_geo: pd.Series) -> str:
-        return f'{{"coordinates": [{this_bus_geo.at["lng"]}, {this_bus_geo.at["lat"]}], "type": "Point"}}'
-
-    def _add_bus_geo_inner(bus: int) -> Optional[str]:
-        from_bus_line_excerpt = net.line.loc[net.line.from_bus ==
-                                             bus, ["EIC_Code", "name", "Tieline"]]
-        to_bus_line_excerpt = net.line.loc[net.line.to_bus == bus, ["EIC_Code", "name", "Tieline"]]
-        line_excerpt = pd.concat([from_bus_line_excerpt, to_bus_line_excerpt])
-        n_connected_line_ends = len(line_excerpt)
-        if n_connected_line_ends == 0:
-            logger.error(
-                f"Bus {bus} (name {net.bus.at[bus, 'name']}) is not found in line_geo_data.")
-            return None
-        is_dupl = pd.concat([
-            pd.DataFrame({"EIC": from_bus_line_excerpt.EIC_Code.isin(dupl_EICs).values,
-                          "name": from_bus_line_excerpt.name.isin(dupl_names).values},
-                         index=pd.MultiIndex.from_product([["from"], from_bus_line_excerpt.index],
-                                                          names=["bus", "line_index"])),
-            pd.DataFrame({"EIC": to_bus_line_excerpt.EIC_Code.isin(dupl_EICs).values,
-                          "name": to_bus_line_excerpt.name.isin(dupl_names).values},
-                         index=pd.MultiIndex.from_product([["to"], to_bus_line_excerpt.index],
-                                                          names=["bus", "line_index"]))
-        ])
-        is_missing = pd.DataFrame({
-            "EIC": ~line_excerpt.EIC_Code.isin(
-                lgd_bus.loc["EIC_Code"].index.get_level_values("identifier")),
-            "name": ~line_excerpt.name.isin(
-                lgd_bus.loc["name"].index.get_level_values("identifier"))
-        }).set_axis(is_dupl.index)
-        is_tieline = pd.Series(net.line.loc[is_dupl.index.get_level_values("line_index"),
-        "Tieline"].values, index=is_dupl.index)
-
-        # --- construct access_vals, i.e. values to take line geo data from lgd_bus
-        # --- if not duplicated, take "EIC_Code". Otherwise and if not dupl, take "name".
-        # --- Otherwise ignore. Do it for both from and to bus
-        access_vals = pd.DataFrame({
-            "col_name": "EIC_Code",
-            "identifier": line_excerpt.EIC_Code.values,
-            "bus": is_dupl.index.get_level_values("bus").values
-        })  # default is EIC_Code
-        take_from_name = ((is_dupl.EIC | is_missing.EIC) & (
-                ~is_dupl.name & ~is_missing.name)).values
-        access_vals.loc[take_from_name, "col_name"] = "name"
-        access_vals.loc[take_from_name, "identifier"] = line_excerpt.name.loc[take_from_name].values
-        keep = (~(is_dupl | is_missing)).any(axis=1).values
-        if np.all(is_missing):
-            log_msg = (f"For bus {bus} (name {net.bus.at[bus, 'name']}), {n_connected_line_ends} "
-                       "were found but no EIC_Codes or names of corresponding lines were found ."
-                       "in the geo data from the html file.")
-            if is_tieline.all():
-                logger.debug(log_msg)
-            else:
-                logger.warning(log_msg)
-            return None
-        elif sum(keep) == 0:
-            logger.info(f"For {bus=}, all EIC_Codes and names of connected lines are ambiguous. "
-                        "No geo data is dropped at this point.")
-            keep[(~is_missing).any(axis=1)] = True
-        access_vals = access_vals.loc[keep]
-
-        # --- get this_bus_geo from EIC_Code or name with regard to access_vals
-        this_bus_geo = lgd_bus.loc[iSl[
-                                       access_vals.col_name, access_vals.identifier, access_vals.bus], :]
-
-        if len(this_bus_geo) > 1:
-            # reduce similar/equal lines
-            this_bus_geo = this_bus_geo.loc[this_bus_geo.round(2).drop_duplicates().index]
-
-        # --- return geo_json_str
-        len_this_bus_geo = len(this_bus_geo)
-        if len_this_bus_geo == 1:
-            return _geo_json_str(this_bus_geo.iloc[0])
-        elif len_this_bus_geo == 2:
-            how_often = pd.Series(
-                [sum(np.isclose(lgd_EIC_bus["lat"], this_bus_geo["lat"].iat[i]) &
-                     np.isclose(lgd_EIC_bus["lng"], this_bus_geo["lng"].iat[i])) for i in
-                 range(len_this_bus_geo)], index=this_bus_geo.index)
-            if how_often.at[how_often.idxmax()] >= 1:
-                logger.warning(f"Bus {bus} (name {net.bus.at[bus, 'name']}) was found multiple times"
-                               " in line_geo_data. No value exists more often than others. "
-                               "The first of most used geo positions is used.")
-            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()])
-
-    net.bus.geo = [_add_bus_geo_inner(bus) for bus in net.bus.index]
-
-
-# --- tertiary functions ---------------------------------------------------------------------------
-
-def _float_col_comma_correction(data: dict[str, pd.DataFrame], key: str, col_names: list):
-    for col_name in col_names:
-        data[key][col_name] = pd.to_numeric(data[key][col_name].astype(str).str.replace(
-            ",", "."), errors="coerce")
-
-
 def _get_transformer_voltages(
         data: dict[str, pd.DataFrame], bus_idx: pd.Series) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Determine transformer primary/secondary nominal voltages via fuzzy matching.
+
+    Parameters
+    ----------
+    data : dict[str, pd.DataFrame]
+        Excel sheets dict including "Transformers".
+    bus_idx : pd.Series
+        Mapping from (name, vn_kv) -> bus index; used to infer int dtype for voltages.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        (vn_hv_kv, vn_lv_kv) arrays, respectively the max/min of primary/secondary as floats
+        or ints when bus index uses integer voltages.
+
+    Raises
+    ------
+    KeyError
+        When primary/secondary voltage columns cannot be located via fuzzy matching.
+    """
     key = "Transformers"
     df = data[key]
 
@@ -1558,40 +1987,50 @@ def _allocate_trafos_to_buses_and_create_buses(
         vn_hv_kv: np.ndarray, vn_lv_kv: np.ndarray,
         rel_deviation_threshold_for_trafo_bus_creation: float = 0.2,
         log_rel_vn_deviation: float = 0.12, **kwargs) -> pd.DataFrame:
-    """Provides a DataFrame of data to allocate transformers to the buses according to their
-    location names. If locations of transformers do not exist due to the data of the lines and
-    tielines sheets, additional buses are created. If locations exist but have a far different
-    voltage level than the transformer, either a warning is logged or additional buses are created
-    according to rel_deviation_threshold_for_trafo_bus_creation and log_rel_vn_deviation.
+    """
+    Allocate transformers to bus pairs by matching location names and voltages and create buses
+    when needed.
+
+    For each transformer:
+      - Determine its location name (fuzzy).
+      - Try mapping to an existing bus (same name, same voltage).
+      - If no exact match, pick nearest available voltage at the location; compute relative
+        deviation. If deviation > threshold, create a new bus at transformer's VN.
+      - If HV and LV map to the same bus, duplicate the LV bus (" (2)") to avoid same-bus trafos.
+      - Log warnings for moderate deviations (> log_rel_vn_deviation).
+      - Return a DataFrame of allocations and deviations.
 
     Parameters
     ----------
     net : pandapowerNet
-        pandapower net
+        Target pandapower network; modified when new buses must be created.
     data : dict[str, pd.DataFrame]
-        _description_
+        Excel sheets dict.
     bus_idx : pd.Series
-        Series of indices and corresponding location names and voltage levels in the MultiIndex of
-        the Series
+        Mapping (name, vn_kv) -> bus index.
     vn_hv_kv : np.ndarray
-        nominal voltages of the hv side of the transformers
+        HV nominal voltages for each transformer.
     vn_lv_kv : np.ndarray
-        Nominal voltages of the lv side of the transformers
+        LV nominal voltages for each transformer.
     rel_deviation_threshold_for_trafo_bus_creation : float, optional
-        If the voltage level of transformer locations is far different than the transformer data,
-        additional buses are created. rel_deviation_threshold_for_trafo_bus_creation defines the
-        tolerance in which no additional buses are created. By default 0.2
+        Threshold for creating new buses when nearest existing voltage deviates too much.
     log_rel_vn_deviation : float, optional
-        This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
-        a warning is logged instead of a creating additional buses. By default 0.12
+        Warning threshold for voltage deviations when not creating a bus.
 
     Returns
     -------
     pd.DataFrame
-        information to which bus the trafos should be connected to. Columns are
-        ["name", "hv_bus", "lv_bus", "vn_hv_kv", "vn_lv_kv", ...]
-    """
+        Allocation info with columns:
+        ["name", "hv_bus", "lv_bus", "vn_hv_kv", "vn_lv_kv",
+         "vn_hv_kv_next_bus", "vn_lv_kv_next_bus",
+         "hv_rel_deviation", "lv_rel_deviation",
+         "trafo_hv_to_bus_deviation", "trafo_lv_to_bus_deviation"]
 
+    Raises
+    ------
+    ValueError
+        If transformer locations cannot be resolved to any bus/location after robust normalization.
+    """
     if rel_deviation_threshold_for_trafo_bus_creation < log_rel_vn_deviation:
         logger.warning(
             f"Given parameters violates the ineqation {rel_deviation_threshold_for_trafo_bus_creation=} >= {log_rel_vn_deviation=}. Therefore, rel_deviation_threshold_for_trafo_bus_creation={log_rel_vn_deviation} is assumed.")
@@ -1689,6 +2128,34 @@ def _allocate_trafos_to_buses_and_create_buses(
 
 
 def _find_trafo_locations(trafo_bus_names, bus_location_names):
+    """
+    Resolve transformer location strings to existing bus location names via normalization.
+    The procedure:
+      - Split original names into tokens on spaces and patterns like '-A\\d+', '-TD\\d+', '-PF\\d+', and '/'.
+      - Remove tokens that are stopwords (tr, pst, trafo, kv), empties, or contain digits.
+      - Compose two candidates:
+          * joined string of remaining tokens
+          * longest single token
+      - Try exact matches against bus names; if failed, try a close match (cutoff=0.8).
+      - If still unmatched, raise a ValueError for the count of unmatched transformers.
+
+    Parameters
+    ----------
+    trafo_bus_names : pd.Series
+        Series of transformer location strings (raw).
+    bus_location_names : set[str]
+        Known bus location names from Lines/Tielines.
+
+    Returns
+    -------
+    pd.Series
+        Best-matched bus location names for each transformer entry.
+
+    Raises
+    ------
+    ValueError
+        If after robust tries some transformers remain unresolved.
+    """
     # Convert bus_location_names to a list for easier searching
     bus_names_list = list(bus_location_names)
 
@@ -1727,12 +2194,10 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
             cand1 = trafo_bus_names_joined.iat[i]
             cand2 = trafo_bus_names_longest_part.iat[i]
 
-            # Try both candidates with higher cutoff (0.8 instead of 0.6)
             query = cand1 if cand1 else cand2
             if query:
                 matches = difflib.get_close_matches(query, bus_names_list, n=1, cutoff=0.8)
                 if matches:
-                    # Accept close match only if it's very similar
                     joined_in_buses.iat[i] = True
                     trafo_bus_names_joined.iat[i] = matches[0]
                     still_missing.iat[i] = False
@@ -1752,26 +2217,89 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
 
 
 def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Deduplicate bus rows by (name, vn_kv); join multiple TSO strings by '/'.
+
+    Parameters
+    ----------
+    bus_df : pd.DataFrame
+        DataFrame with columns ["name", "vn_kv", "TSO"].
+
+    Returns
+    -------
+    pd.DataFrame
+        Deduplicated DataFrame ready for create_buses().
+    """
     bus_df = bus_df.drop_duplicates(ignore_index=True)
-    # just keep one bus per name and vn_kv. If there are multiple buses of different TSOs, join the
-    # TSO strings:
     bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: '/'.join(x)})
     assert not bus_df.duplicated(["name", "vn_kv"]).any()
     return bus_df
 
 
 def _get_float_column(df, col_tuple, fill=0):
+    """
+    Return a column coerced to float; interpret non-breaking space as missing and fill.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with target column.
+    col_tuple : tuple
+        MultiIndex column tuple to fetch.
+    fill : float, optional
+        Fill value for missing entries.
+
+    Returns
+    -------
+    pd.Series
+        Float Series with NA filled by 'fill'.
+    """
     series = df.loc[:, col_tuple]
     series.loc[series == "\xa0"] = fill
     return series.astype(float).fillna(fill)
 
 
 def _get_bus_idx(net: pandapowerNet) -> pd.Series:
+    """
+    Build an index mapping from (name, vn_kv) to bus index.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        Network with 'bus' table.
+
+    Returns
+    -------
+    pd.Series
+        Series where index is MultiIndex(name, vn_kv) and values are bus indices.
+    """
     return net.bus[["name", "vn_kv"]].rename_axis("index").reset_index().set_index([
         "name", "vn_kv"])["index"]
 
 
+# ==================================================================================================
+# Grid grouping, augmentation and cleanup
+# ==================================================================================================
+
 def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
+    """
+    Compute connected components (grid groups) over the network topology.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        Network to analyze.
+    kwargs : dict
+        Additional options passed to pandapower.topology.create_nxgraph and connected_components.
+        Supported key "notravbuses": iterable of buses to exclude from traversal.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with columns:
+        - 'buses': set of bus indices in each group
+        - 'n_buses': group size
+    """
     notravbuses_dict = dict() if "notravbuses" not in kwargs.keys() else {
         "notravbuses": kwargs.pop("notravbuses")}
     grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs),
@@ -1781,16 +2309,328 @@ def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
     return grid_groups
 
 
-def _lng_lat_to_df(dict_: dict, line_EIC: str, line_name: str) -> pd.DataFrame:
-    return pd.DataFrame([
-        [line_EIC, line_name, "from", "lng", dict_["lng"][0]],
-        [line_EIC, line_name, "to", "lng", dict_["lng"][1]],
-        [line_EIC, line_name, "from", "lat", dict_["lat"][0]],
-        [line_EIC, line_name, "to", "lat", dict_["lat"][1]],
-    ], columns=["EIC_Code", "name", "bus", "geo_dim", "value"])
+def _invent_connections_between_grid_groups(
+        net: pandapowerNet, minimal_trafo_invention: bool = False, **kwargs) -> None:
+    """
+    Connect islanded grid groups through synthetic links to improve network connectivity.
+
+    Three mechanisms:
+      1) Add representative transformers between equally named buses in different groups
+         (same location, different voltage levels) using parameters copied from existing trafos
+         that connect the same voltage pair (prefer same TSO).
+      2) Fuse buses with same base name and same voltage level that belong to different groups.
+      3) Fuse specific known close-by bus pairs (hardcoded list).
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        Network to modify in-place.
+    minimal_trafo_invention : bool, optional
+        If True, stop adding transformers as soon as the grid is no longer islanded. Not applied
+        for certain published releases (value may be ignored).
+    kwargs : dict
+        Passed through; not used currently.
+
+    Notes
+    -----
+    - Replaces "Wuergau (2)" with "Wuergau" for base-name equality before matching.
+    - After each synthetic connection, group assignments are updated.
+    - Emits info logs when transformer data are copied.
+    """
+    grid_groups = get_grid_groups(net)
+    bus_idx = _get_bus_idx(net)
+    bus_grid_groups = pd.concat([pd.Series(group, index=buses) for group, buses in zip(
+        grid_groups.index, grid_groups.buses)]).sort_index()
+
+    # treat for example "Wuergau" equally as "Wuergau (2)":
+    location_names = pd.Series(bus_idx.index.get_level_values(0))
+    location_names = location_names.str.replace(r"(.) \([0-9]+\)", r"\1", regex=True)
+    bus_idx.index = pd.MultiIndex.from_arrays(
+        [location_names.values, bus_idx.index.get_level_values(1).to_numpy()],
+        names=bus_idx.index.names)
+
+    # --- 1) add Transformers between equally named buses that have different voltage level and lay in different groups
+    connected_vn_kvs_by_trafos = pd.DataFrame({
+        "hv": net.bus.vn_kv.loc[net.trafo.hv_bus.values].values,
+        "lv": net.bus.vn_kv.loc[net.trafo.lv_bus.values].values,
+        "index": net.trafo.index}).set_index(["hv", "lv"]).sort_index()
+    dupl_location_names = location_names[location_names.duplicated()]
+
+    for location_name in dupl_location_names:
+        if minimal_trafo_invention and len(bus_grid_groups.unique()) <= 1:
+            break
+        grid_groups_at_location = bus_grid_groups.loc[bus_idx.loc[location_name].values]
+        grid_groups_at_location = grid_groups_at_location.drop_duplicates()
+        if len(grid_groups_at_location) < 2:
+            continue
+        elif len(grid_groups_at_location) > 2:
+            raise NotImplementedError("Code is not provided to invent Transformer connections "
+                                      "between locations with more than two grid groups, i.e. "
+                                      "voltage levels.")
+        TSO = net.bus.zone.at[grid_groups_at_location.index[0]]
+        vn_kvs = net.bus.vn_kv.loc[grid_groups_at_location.index].sort_values(ascending=False)
+        try:
+            trafos_connecting_same_voltage_levels = \
+                connected_vn_kvs_by_trafos.loc[tuple(vn_kvs)]
+        except KeyError:
+            logger.info(f"For location {location_name}, no transformer data can be reused since "
+                        f"no transformer connects {vn_kvs.sort_values(ascending=False).iat[0]} kV "
+                        f"and {vn_kvs.sort_values(ascending=False).iat[1]} kV.")
+            continue
+        trafos_of_same_TSO = trafos_connecting_same_voltage_levels.loc[(net.bus.zone.loc[
+                                                                            net.trafo.hv_bus.loc[
+                                                                                trafos_connecting_same_voltage_levels.values.flatten(
+                                                                                )].values] == TSO).values].values.flatten()
+
+        # choose trafo to copy parameters from
+        tr_to_be_copied = trafos_of_same_TSO[0] if len(trafos_of_same_TSO) else \
+            trafos_connecting_same_voltage_levels.values.flatten()[0]
+
+        # duplicate transformer row
+        duplicated_row = net.trafo.loc[[tr_to_be_copied]].copy()
+        duplicated_row.index = [net.trafo.index.max() + 1]
+        duplicated_row.hv_bus = vn_kvs.index[0]
+        duplicated_row.lv_bus = vn_kvs.index[1]
+        duplicated_row.name = "additional transformer to connect the grid"
+        net.trafo = pd.concat([net.trafo, duplicated_row])
+
+        bus_grid_groups.loc[bus_grid_groups == grid_groups_at_location.iat[1]] = \
+            grid_groups_at_location.iat[0]
+
+    # --- 2) merge buses of same voltage level, different grid groups and equal name base
+    bus_name_splits = net.bus.name.str.split(r"[ -/]+", expand=True)
+    buses_with_single_base = net.bus.name.loc[(~bus_name_splits.isnull()).sum(axis=1) == 1]
+    for idx, name_base in buses_with_single_base.items():
+        same_name_base = net.bus.drop(idx).name.str.contains(name_base)
+        if not any(same_name_base):
+            continue
+        other_group = bus_grid_groups.drop(idx) != bus_grid_groups.at[idx]
+        same_vn = net.bus.drop(idx).vn_kv == net.bus.vn_kv.at[idx]
+        is_fuse_candidate = same_name_base & other_group & same_vn
+        if not any(is_fuse_candidate):
+            continue
+        to_fuse = bus_grid_groups.drop(idx).loc[is_fuse_candidate].drop_duplicates()
+        fuse_buses(net, idx, set(to_fuse.index))
+
+        bus_grid_groups.loc[bus_grid_groups.isin(bus_grid_groups.drop(idx).loc[
+                                                     is_fuse_candidate].unique())] = grid_groups_at_location.iat[0]
+        bus_grid_groups = bus_grid_groups.drop(to_fuse.index)
+
+    # --- 3) fuse buses that are close to each other (known cases)
+    for name1, name2 in [("CROISIERE", "BOLLENE (POSTE RESEAU)"),
+                         ("CAEN", "DRONNIERE (LA)"),
+                         ("TRINITE-VICTOR", "MENTON/TRINITE VICTOR")]:
+        b1 = net.bus.index[net.bus.name == name1]
+        b2 = net.bus.index[net.bus.name == name2]
+        if len(b1) == 1 and len(b2) >= 1:
+            fuse_buses(net, b1[0], set(b2))
+            bus_grid_groups = bus_grid_groups.drop(b2)
+        else:
+            logger.info("Buses of the following names were intended to be fused but were not found."
+                        f"\n'{name1}' and '{name2}'")
+
+
+def drop_islanded_grid_groups(
+        net: pandapowerNet,
+        min_bus_number: Union[int, str],
+        **kwargs) -> None:
+    """
+    Drop islanded grid groups based on group size or supply condition.
+
+    Modes:
+      - Integer (e.g., 6): drop groups with number of buses < min_bus_number.
+      - "max": keep only the largest group (drop all others).
+      - "unsupplied": drop groups that do not contain any slack element (ext_grid or slack gen).
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        Network to clean up (modified in-place).
+    min_bus_number : int | str
+        Threshold or special mode ("max", "unsupplied").
+    kwargs : dict
+        Additional parameters passed to get_grid_groups.
+
+    Raises
+    ------
+    NotImplementedError
+        If 'min_bus_number' is neither an int nor one of the special strings.
+
+    Notes
+    -----
+    Logs the number of dropped groups and total buses dropped.
+    """
+
+    def _grid_groups_to_drop_by_min_bus_number():
+        return grid_groups.loc[grid_groups["n_buses"] < min_bus_number]
+
+    grid_groups = get_grid_groups(net, **kwargs)
+
+    if min_bus_number == "unsupplied":
+        slack_buses = set(net.ext_grid.loc[net.ext_grid.in_service, "bus"]) | \
+                      set(net.gen.loc[net.gen.in_service & net.gen.slack, "bus"])
+        grid_groups_to_drop = grid_groups.loc[~grid_groups.buses.apply(
+            lambda x: not x.isdisjoint(slack_buses))]
+
+    elif min_bus_number == "max":
+        min_bus_number = grid_groups["n_buses"].max()
+        grid_groups_to_drop = _grid_groups_to_drop_by_min_bus_number()
+
+    elif isinstance(min_bus_number, int):
+        grid_groups_to_drop = _grid_groups_to_drop_by_min_bus_number()
+
+    else:
+        raise NotImplementedError(
+            f"{min_bus_number=} is not implemented. Use an int, 'max', or 'unsupplied' instead.")
+
+    buses_to_drop = reduce(set.union, grid_groups_to_drop.buses)
+    drop_buses(net, buses_to_drop)
+    logger.info(f"drop_islanded_grid_groups() drops {len(grid_groups_to_drop)} grid groups with a "
+                f"total of {grid_groups_to_drop.n_buses.sum()} buses.")
+
+
+# ==================================================================================================
+# Geodata integration
+# ==================================================================================================
+
+def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
+    """
+    Add geodata to buses using line endpoint geodata from the HTML-exported map.
+
+    Method:
+      - Build two pivot tables of geodata: by EIC_Code/bus and by name/bus.
+      - For each bus, inspect connected lines and decide whether to use EIC_Code or name
+        as the primary lookup key (based on duplicates/availability).
+      - If multiple candidate coordinates remain, reduce by rounding and pick the most
+        frequently occurring coordinate across lines.
+      - Write GeoJSON-like strings into net.bus.geo.
+      - Lines receive geodata via set_line_geodata_from_bus_geodata elsewhere.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        Target network (modified in-place).
+    line_geo_data : pd.DataFrame
+        Tidy DataFrame from _parse_html_str().
+
+    Notes
+    -----
+    For ambiguous geodata (all EIC/Name keys duplicated), the function falls back to any
+    available (non-missing) value and logs info.
+    """
+    iSl = pd.IndexSlice
+    lgd_EIC_bus = line_geo_data.pivot_table(values="value", index=["EIC_Code", "bus"],
+                                            columns="geo_dim")
+    lgd_name_bus = line_geo_data.pivot_table(values="value", index=["name", "bus"],
+                                             columns="geo_dim")
+    lgd_EIC_bus_idx_extended = pd.MultiIndex.from_frame(lgd_EIC_bus.index.to_frame().assign(
+        **dict(col_name="EIC_Code")).rename(columns=dict(EIC_Code="identifier")).loc[
+                                                        :, ["col_name", "identifier", "bus"]])
+    lgd_name_bus_idx_extended = pd.MultiIndex.from_frame(lgd_name_bus.index.to_frame().assign(
+        **dict(col_name="name")).rename(columns=dict(name="identifier")).loc[
+                                                         :, ["col_name", "identifier", "bus"]])
+    lgd_bus = pd.concat([lgd_EIC_bus.set_axis(lgd_EIC_bus_idx_extended),
+                         lgd_name_bus.set_axis(lgd_name_bus_idx_extended)])
+    dupl_EICs = net.line.EIC_Code.loc[net.line.EIC_Code.duplicated()]
+    dupl_names = net.line.name.loc[net.line.name.duplicated()]
+
+    def _geo_json_str(this_bus_geo: pd.Series) -> str:
+        return f'{{"coordinates": [{this_bus_geo.at["lng"]}, {this_bus_geo.at["lat"]}], "type": "Point"}}'
+
+    def _add_bus_geo_inner(bus: int) -> Optional[str]:
+        from_bus_line_excerpt = net.line.loc[net.line.from_bus ==
+                                             bus, ["EIC_Code", "name", "Tieline"]]
+        to_bus_line_excerpt = net.line.loc[net.line.to_bus == bus, ["EIC_Code", "name", "Tieline"]]
+        line_excerpt = pd.concat([from_bus_line_excerpt, to_bus_line_excerpt])
+        n_connected_line_ends = len(line_excerpt)
+        if n_connected_line_ends == 0:
+            logger.error(
+                f"Bus {bus} (name {net.bus.at[bus, 'name']}) is not found in line_geo_data.")
+            return None
+        is_dupl = pd.concat([
+            pd.DataFrame({"EIC": from_bus_line_excerpt.EIC_Code.isin(dupl_EICs).values,
+                          "name": from_bus_line_excerpt.name.isin(dupl_names).values},
+                         index=pd.MultiIndex.from_product([["from"], from_bus_line_excerpt.index],
+                                                          names=["bus", "line_index"])),
+            pd.DataFrame({"EIC": to_bus_line_excerpt.EIC_Code.isin(dupl_EICs).values,
+                          "name": to_bus_line_excerpt.name.isin(dupl_names).values},
+                         index=pd.MultiIndex.from_product([["to"], to_bus_line_excerpt.index],
+                                                          names=["bus", "line_index"]))
+        ])
+        is_missing = pd.DataFrame({"EIC": ~line_excerpt.EIC_Code.isin(
+                lgd_bus.loc["EIC_Code"].index.get_level_values("identifier")),"name": ~line_excerpt.name.isin(
+                lgd_bus.loc["name"].index.get_level_values("identifier"))}).set_axis(is_dupl.index)
+        is_tieline = pd.Series(net.line.loc[is_dupl.index.get_level_values("line_index"),
+        "Tieline"].values, index=is_dupl.index)
+
+        # construct access_vals: default use EIC_Code, but switch to name if EIC duplicated/missing
+        access_vals = pd.DataFrame({
+            "col_name": "EIC_Code",
+            "identifier": line_excerpt.EIC_Code.values,
+            "bus": is_dupl.index.get_level_values("bus").values
+        })
+        take_from_name = ((is_dupl.EIC | is_missing.EIC) & (
+                ~is_dupl.name & ~is_missing.name)).values
+        access_vals.loc[take_from_name, "col_name"] = "name"
+        access_vals.loc[take_from_name, "identifier"] = line_excerpt.name.loc[take_from_name].values
+        keep = (~(is_dupl | is_missing)).any(axis=1).values
+        if np.all(is_missing):
+            log_msg = (f"For bus {bus} (name {net.bus.at[bus, 'name']}), {n_connected_line_ends} "
+                       "were found but no EIC_Codes or names of corresponding lines were found ."
+                       "in the geo data from the html file.")
+            if is_tieline.all():
+                logger.debug(log_msg)
+            else:
+                logger.warning(log_msg)
+            return None
+        elif sum(keep) == 0:
+            logger.info(f"For {bus=}, all EIC_Codes and names of connected lines are ambiguous. "
+                        "No geo data is dropped at this point.")
+            keep[(~is_missing).any(axis=1)] = True
+        access_vals = access_vals.loc[keep]
+        # get geodata entries
+        this_bus_geo = lgd_bus.loc[iSl[access_vals.col_name, access_vals.identifier, access_vals.bus], :]
+        if len(this_bus_geo) > 1:
+            # reduce similar/equal lines
+            this_bus_geo = this_bus_geo.loc[this_bus_geo.round(2).drop_duplicates().index]
+        # resolve to single coordinate
+        len_this_bus_geo = len(this_bus_geo)
+        if len_this_bus_geo == 1:
+            return _geo_json_str(this_bus_geo.iloc[0])
+        elif len_this_bus_geo == 2:
+            how_often = pd.Series(
+                [sum(np.isclose(lgd_EIC_bus["lat"], this_bus_geo["lat"].iat[i]) &
+                     np.isclose(lgd_EIC_bus["lng"], this_bus_geo["lng"].iat[i])) for i in
+                 range(len_this_bus_geo)], index=this_bus_geo.index)
+            if how_often.at[how_often.idxmax()] >= 1:
+                logger.warning(f"Bus {bus} (name {net.bus.at[bus, 'name']}) was found multiple times"
+                               " in line_geo_data. No value exists more often than others. "
+                               "The first of most used geo positions is used.")
+            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()])
+
+    net.bus.geo = [_add_bus_geo_inner(bus) for bus in net.bus.index]
 
 
 def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
+    """
+    Propagate bus geodata across branches when only one end has geodata.
+
+    Iteratively:
+      - Find lines/transformers where one end bus has geo and the other has not.
+      - Copy the available geodata to the missing side.
+      - Repeat until no more one-sided geo branches exist.
+      - Finally, compute line geodata from bus geodata.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        Network with potentially partial geodata.
+
+    Notes
+    -----
+    Intended as a post-processing helper to fill gaps if initial geodata coverage is sparse.
+    """
+
     def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, Union[pd.Index, int]]:
         av = dict()  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
@@ -1821,14 +2661,56 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
     set_line_geodata_from_bus_geodata(net)
 
 
+# ==================================================================================================
+# Misc utilities
+# ==================================================================================================
+
+def _float_col_comma_correction(data: dict[str, pd.DataFrame], key: str, col_names: list):
+    """
+    Convert string columns with comma decimal separators to float for specified columns.
+
+    Parameters
+    ----------
+    data : dict[str, pd.DataFrame]
+        Excel sheets dict.
+    key : str
+        Target sheet key (e.g., "Lines").
+    col_names : list
+        List of column tuples to convert.
+    """
+    for col_name in col_names:
+        data[key][col_name] = pd.to_numeric(data[key][col_name].astype(str).str.replace(
+            ",", "."), errors="coerce")
+
+
 def _multi_str_repl(st: str, repl: list[tuple]) -> str:
+    """
+    Replace multiple substrings in a string according to a list of (old, new) pairs.
+
+    Parameters
+    ----------
+    st : str
+        Input string.
+    repl : list[tuple]
+        List of (old, new) replacement pairs.
+
+    Returns
+    -------
+    str
+        String after sequential replacements.
+
+    Notes
+    -----
+    Applied to both Excel string cells and raw HTML geodata.
+    """
     for (old, new) in repl:
         st = st.replace(old, new)
     return st
 
 
-
-
+# ==================================================================================================
+# __main__ demo
+# ==================================================================================================
 
 if __name__ == "__main__":
     from pathlib import Path
