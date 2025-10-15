@@ -465,6 +465,8 @@ class PowerTransformersCim16:
         power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap2_side'] = 'lv'
         # shift lv tap changer from tap2 to tap if there is no hv tap changer
         hv_taps_na = power_trafo2w['step'].isna() & power_trafo2w['step_lv'].notna()
+        power_trafo2w['tap_side'] = power_trafo2w['tap_side'].fillna(power_trafo2w['tap2_side'])
+        power_trafo2w.loc[hv_taps_na, 'tap2_side'] = None
         for one_item in ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement',
                          'step', 'tap_changer_type', sc['tc'], sc['tc_id']]:
             power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
