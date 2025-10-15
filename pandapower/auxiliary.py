@@ -543,13 +543,6 @@ class OPFNotConverged(ppException):
     pass
 
 
-class MapboxTokenMissing(ppException):
-    """
-    Exception being raised in case loadflow did not converge.
-    """
-    pass
-
-
 def _sum_by_group(bus, first_val, second_val):
     order = np.argsort(bus)
     bus = bus[order]
@@ -1588,15 +1581,27 @@ def SVabc_from_SV012(S012, V012, n_res=None, idx=None):
 def _add_dcline_gens(net: pandapowerNet):
     from pandapower.create import create_gen
     for dctab in net.dcline.itertuples():
-        pfrom = dctab.p_mw
-        pto = (pfrom * (1 - dctab.loss_percent / 100) - dctab.loss_mw)
-        pmax = dctab.max_p_mw
-        create_gen(net, bus=dctab.to_bus, p_mw=pto, vm_pu=dctab.vm_to_pu,
-                   min_p_mw=0, max_p_mw=pmax,
+        p_mw = np.abs(dctab.p_mw)
+        p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw
+
+        if np.sign(dctab.p_mw) > 0:
+            p_to = p_loss
+            p_from = -p_mw
+            p_max = dctab.max_p_mw
+            p_min = 0
+        else:
+            p_to = -p_mw
+            p_from = p_loss
+            p_max = 0
+            p_min = -dctab.max_p_mw
+
+        create_gen(net, bus=dctab.to_bus, p_mw=p_to, vm_pu=dctab.vm_to_pu,
+                   min_p_mw=p_min, max_p_mw=p_max,
                    max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
                    in_service=dctab.in_service)
-        create_gen(net, bus=dctab.from_bus, p_mw=-pfrom, vm_pu=dctab.vm_from_pu,
-                   min_p_mw=-pmax, max_p_mw=0,
+
+        create_gen(net, bus=dctab.from_bus, p_mw=p_from, vm_pu=dctab.vm_from_pu,
+                   min_p_mw=-p_max, max_p_mw=-p_min,
                    max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
                    in_service=dctab.in_service)
 

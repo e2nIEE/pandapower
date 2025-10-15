@@ -136,8 +136,8 @@ class PowerTransformersCim16:
                 (abs(trafo_df.r_lv) ** 2 + abs(trafo_df.x_lv) ** 2) ** 0.5 * \
                 (trafo_df.ratedS * 1e3) / (10. * trafo_df.ratedU_lv ** 2)
             trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
-            append_dict = dict({'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
-                                'vk_percent': [], 'vkr_percent': []})
+            append_dict = {'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [], 'vk_percent': [],
+                           'vkr_percent': []}
         else:
             trafo_df = trafo_df_origin.copy()
             trafo_df = trafo_df.sort_values(['PowerTransformer', 'endNumber']).reset_index()
@@ -234,9 +234,9 @@ class PowerTransformersCim16:
                          trafo_df.ratedU_lv / trafo_df.ratedU) ** 2) ** 2) ** 0.5 * \
                 trafo_df.min_s_lvhv * 100 / trafo_df.ratedU_lv ** 2
             trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
-            append_dict = dict({'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
-                                'vkr_hv_percent': [], 'vkr_mv_percent': [], 'vkr_lv_percent': [], 'vk_hv_percent': [],
-                                'vk_mv_percent': [], 'vk_lv_percent': []})
+            append_dict = {'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
+                           'vkr_hv_percent': [], 'vkr_mv_percent': [], 'vkr_lv_percent': [], 'vk_hv_percent': [],
+                           'vk_mv_percent': [], 'vk_lv_percent': []}
 
         def append_row(res_dict, id_c, row, cols):
             res_dict['id_characteristic'].append(id_c)

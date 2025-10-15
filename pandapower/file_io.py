@@ -9,12 +9,11 @@ import pickle
 import os
 import sys
 import json
-from typing import Union, TextIO, overload
+from typing import Union, TextIO, overload as function_overload
 from warnings import warn
 import numpy
 import pandas as pd
 from packaging.version import Version
-
 
 try:
     import xlsxwriter
@@ -80,7 +79,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         >>> to_excel(net, "example2.xlsx")  # relative path
     """
     if not xlsxwriter_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "xlsxwriter")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "xlsxwriter")
     dict_net = to_dict_of_dfs(
         net,
         include_results=include_results,
@@ -90,21 +89,24 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
         for item, table in dict_net.items():
             table.to_excel(writer, sheet_name=item)
 
-@overload
+
+@function_overload
 def to_json(net: pandapowerNet, filename: None = ..., encryption_key: Union[str, None] = ...,
             indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> str: ...
 
-@overload
+
+@function_overload
 def to_json(net: pandapowerNet, filename: Union[str, TextIO], encryption_key: Union[str, None] = ...,
             indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
 
+
 def to_json(
-    net: pandapowerNet,
-    filename: Union[str, TextIO, None] = None,
-    encryption_key: Union[str, None] = None,
-    indent: Union[int, str, None] = 2,
-    sort_keys: bool = False,
-)-> Union[str, None]:
+        net: pandapowerNet,
+        filename: Union[str, TextIO, None] = None,
+        encryption_key: Union[str, None] = None,
+        indent: Union[int, str, None] = 2,
+        sort_keys: bool = False,
+) -> Union[str, None]:
     """
         Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
         be saved in ascending order. net elements which name begins with "_" (internal elements)
@@ -191,7 +193,7 @@ def from_excel(filename, convert=True):
     if not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!" % filename)
     if not openpyxl_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "openpyxl")
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "openpyxl")
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:
@@ -232,7 +234,7 @@ def _from_excel_old(xls):
 
 def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None, ignore_unknown_objects=False):
+              empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -284,7 +286,8 @@ def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_de
             add_basic_std_types=add_basic_std_types,
             replace_elements=replace_elements,
             empty_dict_like_object=empty_dict_like_object,
-            ignore_unknown_objects=ignore_unknown_objects
+            ignore_unknown_objects=ignore_unknown_objects,
+            drop_invalid_geodata=drop_invalid_geodata
         )
     except ValueError as e:
         raise UserWarning(f"Failed to load as json or file: {e}")
@@ -299,7 +302,8 @@ def from_json_string(
         add_basic_std_types=False,
         replace_elements=None,
         empty_dict_like_object=None,
-        ignore_unknown_objects=False
+        ignore_unknown_objects=False,
+        drop_invalid_geodata=False
 ):
     """
     Load a pandapower network from a JSON string.
@@ -383,7 +387,7 @@ def from_json_string(
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net, elements_to_deserialize=elements_to_deserialize)
+        convert_format(net, elements_to_deserialize=elements_to_deserialize, drop_invalid_geodata=drop_invalid_geodata)
 
         # compare pandapowerNet-format_version and package-version
         # check if installed pandapower version is older than imported network file
