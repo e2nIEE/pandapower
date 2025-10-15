@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] from_jao: converter now uses fuzzy matching with difflib module to find matching buses instead of  as well as table column names if they are inconsistent between files
 - [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
 - [ADDED] cim2pp: additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
 - [ADDED] Feature to plot multiple layers for buses using plotly
