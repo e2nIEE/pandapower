@@ -24,10 +24,10 @@ def create_measurement(
     value: Literal["MW", "MVAr", "p.u.", "kA"],
     std_dev: float,
     element: int,
-    side: Optional[int | str] = None,
+    side: int | str | None = None,
     check_existing: bool = False,
-    index: Optional[Int] = None,
-    name: Optional[str] = None,
+    index: Int | None = None,
+    name: str | None = None,
     **kwargs,
 ) -> Int:
     """

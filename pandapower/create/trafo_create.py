@@ -518,7 +518,7 @@ def create_transformers_from_parameters(  # index missing ?
     tap_step_degree: float | Iterable[float] = nan,
     tap_pos: int | Iterable[int] | float = nan,
     tap_changer_type: TapChangerWithTabularType | Iterable[str] | None = None,
-    id_characteristic_table: int | Iterable[int] = None,
+    id_characteristic_table: int | Iterable[int] | None = None,
     in_service: bool | Iterable[bool] = True,
     name: Iterable[str] | None = None,
     vector_group: str | Iterable[str] | None = None,
