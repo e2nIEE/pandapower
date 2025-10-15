@@ -152,7 +152,7 @@ def create_consecutive_bus_lookup(bus_index: np.ndarray):
     """
     if len(bus_index) == 0:
         return np.array([], dtype=np.int64)
-    consec_buses = np.arange(len(bus_index), dtype=np.int64)
+    consec_buses: np.ndarray = np.arange(len(bus_index), dtype=np.int64)
     # bus_lookup as dict:
     # bus_lookup = dict(zip(bus_index, consec_buses))
     # bus lookup as mask from pandapower -> pypower

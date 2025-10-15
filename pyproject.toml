@@ -30,6 +30,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     # Add the specific Python versions supported here, e.g.:
     #  REMINDER: When removeing or adding support for a Version here, please remember to update ALL github pipelines.
+    #  REMINDER: The mypy config also contains the lowest supported python version
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -133,6 +134,6 @@ exclude_lines = [
     "if __name__ == .__main__.:"
 ]
 
-# styeling information for black formatter
-[tool.black]
+# styling information for ruff formatter
+[tool.ruff]
 line-length = 120
