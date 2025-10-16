@@ -21,13 +21,17 @@ class ExternalNetworkInjectionsCim16:
         time_start = time.time()
         self.logger.info("Start converting ExternalNetworkInjections.")
 
-        eqssh_eni = self._prepare_external_network_injections_cim16()
+        eni = self._prepare_external_network_injections_cim16()
 
         # choose the slack
-        eni_ref_prio_min = eqssh_eni.loc[(eqssh_eni['enabled']) & (eqssh_eni['slack_weight'] > 0), 'slack_weight'].min()
+        eni_ref_prio_min = eni.loc[
+            (eni['mode'] == 'voltage') & (eni['enabled']) & (eni['referencePriority'] > 0), 'referencePriority'].min()
         # check if the slack is a SynchronousMachine
         sync_machines = self.cimConverter.merge_eq_ssh_profile('SynchronousMachine')
-        sync_machines = self.get_voltage_from_controllers(sync_machines)
+        regulation_controllers = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')
+        regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage'][
+            ['rdfId', 'targetValue', 'enabled']].rename(columns={'rdfId': 'RegulatingControl'})
+        sync_machines = pd.merge(sync_machines, regulation_controllers, how='left', on='RegulatingControl')
 
         sync_ref_prio_min = sync_machines.loc[
             (sync_machines['referencePriority'] > 0) & (sync_machines['enabled']), 'referencePriority'].min()
@@ -38,19 +42,9 @@ class ExternalNetworkInjectionsCim16:
         else:
             ref_prio_min = min(eni_ref_prio_min, sync_ref_prio_min)
 
-        eni_slacks = eqssh_eni.loc[(eqssh_eni['referencePriority'] == ref_prio_min) & (eqssh_eni['controllable'])]
-        eni_gens = eqssh_eni.loc[(eqssh_eni['referencePriority'] != ref_prio_min) & (eqssh_eni['controllable'])]
-        eni_sgens = eqssh_eni.loc[~eqssh_eni['controllable']]
-
-        # create reactive_capability_curve flag
-        if 'reactive_capability_curve' not in eni_gens.columns:
-            eni_gens['reactive_capability_curve'] = False
-        # create reactive_capability_curve flag
-        if 'reactive_capability_curve' not in eni_sgens.columns:
-            eni_sgens['reactive_capability_curve'] = False
-        # create reactive_capability_curve flag
-        if 'reactive_capability_curve' not in eni_slacks.columns:
-            eni_slacks['reactive_capability_curve'] = False
+        eni_slacks = eni.loc[(eni['referencePriority'] == ref_prio_min) & (eni['controllable'])]
+        eni_gens = eni.loc[(eni['referencePriority'] != ref_prio_min) & (eni['controllable'])]
+        eni_sgens = eni.loc[~eni['controllable']]
 
         self.cimConverter.copy_to_pp('ext_grid', eni_slacks)
         self.cimConverter.copy_to_pp('gen', eni_gens)
@@ -74,8 +68,10 @@ class ExternalNetworkInjectionsCim16:
         # merge with buses
         eni = pd.merge(eni, self.cimConverter.bus_merge, how='left', on='rdfId')
 
-        # get the voltage from controllers
-        eni = self.get_voltage_from_controllers(eni)
+        # merge the ExternalNetworkInjections with their controllers to get voltages and regulation modes
+        eni = pd.merge(eni, self.cimConverter.merge_eq_ssh_profile('RegulatingControl')[
+            ['rdfId', 'targetValue', 'enabled', 'mode']].rename(columns={'rdfId': 'RegulatingControl'}), how='left',
+                       on='RegulatingControl')
 
         # get slack voltage and angle from SV profile
         eni = pd.merge(eni, self.cimConverter.net.bus[['vn_kv', sc['ct']]],
@@ -119,14 +115,9 @@ class ExternalNetworkInjectionsCim16:
         eni['scaling'] = 1.
         eni['type'] = None
         eni['slack'] = False
+        # create reactive_capability_curve flag (no capability curves available for ExternalNetworkInjections
+        eni['reactive_capability_curve'] = False
         eni['RegulatingControl.enabled'] = eni['enabled'][:]
         eni['controllable'] = eni['controllable'].fillna(False)
 
         return eni
-
-    def get_voltage_from_controllers(self, eqssh_eni):
-        regulation_controllers = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')
-        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled', 'mode']]
-        regulation_controllers = regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'})
-        eqssh_eni = pd.merge(eqssh_eni, regulation_controllers, how='left', on='RegulatingControl')
-        return eqssh_eni

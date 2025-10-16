@@ -1,8 +1,7 @@
 import logging
 import time
-
 import pandas as pd
-
+import numpy as np
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
@@ -97,6 +96,8 @@ class SynchronousMachinesCim16:
         synchronous_machines = pd.merge(synchronous_machines, self.cimConverter.bus_merge, how='left', on='rdfId')
         synchronous_machines = synchronous_machines.drop_duplicates(['rdfId'], keep='first')
         synchronous_machines['vm_pu'] = synchronous_machines.targetValue / synchronous_machines.vn_kv
+        # ignore targetValues with mode != voltage
+        synchronous_machines.loc[synchronous_machines['mode'] != 'voltage', 'vm_pu'] = np.nan
         synchronous_machines['vm_pu'] = synchronous_machines['vm_pu'].fillna(1.)
         synchronous_machines = synchronous_machines.rename(columns={'vn_kv': 'bus_voltage'})
         synchronous_machines['slack'] = False
@@ -110,11 +111,12 @@ class SynchronousMachinesCim16:
         enis = self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection')
         regulation_controllers = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')
         regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
-        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
+        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled', 'mode']]
         regulation_controllers = regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'})
         enis = pd.merge(enis, regulation_controllers, how='left', on='RegulatingControl')
 
-        eni_ref_prio_min = enis.loc[(enis['referencePriority'] > 0) & (enis['enabled']), 'referencePriority'].min()
+        eni_ref_prio_min = enis.loc[(enis['referencePriority'] > 0) & (enis['enabled']) & (
+                    enis['mode'] == 'voltage'), 'referencePriority'].min()
         if pd.isna(sync_ref_prio_min):
             ref_prio_min = eni_ref_prio_min
         elif pd.isna(eni_ref_prio_min):
@@ -145,7 +147,6 @@ class SynchronousMachinesCim16:
         synchronous_machines['rx'] = synchronous_machines['r2'] / synchronous_machines['x2']
         synchronous_machines['scaling'] = 1.
         synchronous_machines['generator_type'] = 'current_source'
-        synchronous_machines.loc[synchronous_machines['referencePriority'] == 0, 'referencePriority'] = float('NaN')
         synchronous_machines['referencePriority'] = synchronous_machines['referencePriority'].astype(float)
         synchronous_machines['slack_weight'] = synchronous_machines['referencePriority'][:]
         synchronous_machines['RegulatingControl.enabled'] = synchronous_machines['enabled'][:]
