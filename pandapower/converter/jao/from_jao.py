@@ -115,7 +115,7 @@ def from_jao(excel_file_path: str,
     --------
     >>> from pathlib import Path
     >>> import os
-    >>> import pandapower as pp
+    >>> from pandapower.converter import from_jao
     >>> net = pp.converter.from_jao()
     >>> home = str(Path.home())
     >>> excel_file_path = os.path.join(home, "desktop", "202409_Core Static Grid Mode_6th release")
@@ -197,15 +197,20 @@ def _simplify_name(name: str) -> str:
     "Doerpen/W/W (2)" -> "DOERPEN"
     "Stade - West 220 kV" -> "STADE"
     """
-    _RE_TRAILING = re.compile(r"""\s*\(\d+\)\s*$|  
-        \s*(?:/|[- ])\s*[EWNS](?:EST)?\s*$""", re.I | re.X)
+    _RE_TRAILING_SAFE = re.compile(r"""(?ix)(?:\s*\(\d+\) | (?:[/\-]|\s+)\s*(?:W(?:EST)?|E|N|S))\s*\Z""")
+    _RE_VOLT = re.compile(r"\b\d{2,4}\s*k?V\b", re.IGNORECASE)
+    _RE_DELIMS = re.compile(r"[/_.-]")
     if not isinstance(name, str):
         name = str(name)
     s = unicodedata.normalize("NFKD", name)
     s = s.encode("ascii", "ignore").decode()
-    s = _RE_TRAILING.sub("", s)
-    s = re.sub(r"[/_.-]", " ", s)
-    s = re.sub(r"\b\d{2,4}\s*k?V\b", "", s, flags=re.I)
+    s = _RE_VOLT.sub("", s)
+    while True:
+        s2 = _RE_TRAILING_SAFE.sub("", s)
+        if s2 == s:
+            break
+        s = s2
+    s = _RE_DELIMS.sub(" ", s)
     return " ".join(s.split()).upper()
 
 
@@ -840,7 +845,7 @@ def _best_voltage_col_lines(df: pd.DataFrame) -> tuple | None:
                                         min_ratio=0.45, required_tokens=["volt", "kv"])
 
 
-def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[tuple|None, tuple|None]:
+def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[list|None, list|None]:
     """
     Fuzzy-find primary and secondary voltage level columns in Transformers sheet.
 
@@ -2624,7 +2629,7 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
     Intended as a post-processing helper to fill gaps if initial geodata coverage is sparse.
     """
 
-    def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, Union[pd.Index, int]]:
+    def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, pd.Index | int]:
         av = dict()  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
         av["lines_fbw_tbwo"] = net.line.index[net.line.from_bus.isin(av["bus_with_geo"]) &
