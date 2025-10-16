@@ -10,7 +10,6 @@ from copy import deepcopy
 import os
 import json
 from functools import reduce
-from typing import Optional, Union, Tuple
 import numpy as np
 import re
 import difflib
@@ -29,11 +28,11 @@ logger = logging.getLogger(__name__)
 
 
 def from_jao(excel_file_path: str,
-             html_file_path: Optional[str],
+             html_file_path: str | None,
              extend_data_for_grid_group_connections: bool,
              drop_grid_groups_islands: bool = False,
              apply_data_correction: bool = True,
-             max_i_ka_fillna: Union[float, int] = 999,
+             max_i_ka_fillna: float | int = 999,
              **kwargs) -> pandapowerNet:
     """
     Convert a JAO Core EHV static grid model into a pandapowerNet.
@@ -198,17 +197,15 @@ def _simplify_name(name: str) -> str:
     "Doerpen/W/W (2)" -> "DOERPEN"
     "Stade - West 220 kV" -> "STADE"
     """
-    _RE_TRAILING = re.compile(r"""
-        (?:\s*\([0-9]+\)\s*$)                 |  #  (2)  (3) …
-        (?:\s*(?:/|[- ])\s*[EWNS](?:EST)?\s*$)   #  /W   -West  _E  …
-    """, re.I | re.X)
+    _RE_TRAILING = re.compile(r"""\s*\(\d+\)\s*$|  
+        \s*(?:/|[- ])\s*[EWNS](?:EST)?\s*$""", re.I | re.X)
     if not isinstance(name, str):
         name = str(name)
     s = unicodedata.normalize("NFKD", name)
     s = s.encode("ascii", "ignore").decode()
     s = _RE_TRAILING.sub("", s)
     s = re.sub(r"[/_.-]", " ", s)
-    s = re.sub(r"\b[0-9]{2,4}\s*k?V\b", "", s, flags=re.I)
+    s = re.sub(r"\b\d{2,4}\s*k?V\b", "", s, flags=re.I)
     return " ".join(s.split()).upper()
 
 
@@ -396,7 +393,7 @@ def _suggest_closest(q: str, candidates: list[str], n: int = 1) -> str:
 
 def generate_rename_locnames_from_combined(
     data: dict[str, pd.DataFrame],
-    combined: Optional[pd.DataFrame] = None
+    combined: pd.DataFrame | None = None
 ) -> list[tuple[str, str]]:
     """
     Generate a comprehensive list of (old_name -> new_name) rename rules to normalize naming.
@@ -764,7 +761,7 @@ def _sim(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio()
 
 
-def _get_col_pos(df: pd.DataFrame, col: Tuple) -> Optional[int]:
+def _get_col_pos(df: pd.DataFrame, col: tuple) -> int | None:
     """
     Get the positional index of a given MultiIndex column tuple.
 
@@ -789,7 +786,7 @@ def _get_col_pos(df: pd.DataFrame, col: Tuple) -> Optional[int]:
 def _best_col_by_lvl1_similarity(df: pd.DataFrame,
                                  target_label: str,
                                  min_ratio: float = 0.55,
-                                 required_tokens: Optional[list[str]] = None) -> Optional[Tuple]:
+                                 required_tokens: list[str] | None = None) -> tuple | None:
     """
     Find the best-matching column by fuzzy similarity on level-1 label only.
 
@@ -822,7 +819,7 @@ def _best_col_by_lvl1_similarity(df: pd.DataFrame,
     return best
 
 
-def _best_voltage_col_lines(df: pd.DataFrame) -> Optional[Tuple]:
+def _best_voltage_col_lines(df: pd.DataFrame) -> tuple | None:
     """
     Fuzzy-find the voltage level column for Lines/Tielines DataFrames.
 
@@ -843,7 +840,7 @@ def _best_voltage_col_lines(df: pd.DataFrame) -> Optional[Tuple]:
                                         min_ratio=0.45, required_tokens=["volt", "kv"])
 
 
-def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[Optional[Tuple], Optional[Tuple]]:
+def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[tuple|None, tuple|None]:
     """
     Fuzzy-find primary and secondary voltage level columns in Transformers sheet.
 
@@ -880,7 +877,7 @@ def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[Optional
     return prim_best, sec_best
 
 
-def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> Optional[Tuple]:
+def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> tuple | None:
     """
     Fuzzy-find ("Substation_*", "Full Name") column for Lines/Tielines.
 
@@ -914,7 +911,7 @@ def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> Optional[Tuple]:
     return best
 
 
-def _best_susceptance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+def _best_susceptance_col_lines_fuzzy(df: pd.DataFrame) -> tuple | None:
     """
     Fuzzy-find susceptance (B) column for Lines/Tielines.
 
@@ -932,7 +929,7 @@ def _best_susceptance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
                                         min_ratio=0.5, required_tokens=["susceptance", "b", "us"])
 
 
-def _best_resistance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+def _best_resistance_col_lines_fuzzy(df: pd.DataFrame) -> tuple | None:
     """
     Fuzzy-find resistance (R) column for Lines/Tielines.
 
@@ -950,7 +947,7 @@ def _best_resistance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
                                         min_ratio=0.5, required_tokens=["resistance"])
 
 
-def _best_reactance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+def _best_reactance_col_lines_fuzzy(df: pd.DataFrame) -> tuple | None:
     """
     Fuzzy-find reactance (X) column for Lines/Tielines.
 
@@ -968,7 +965,7 @@ def _best_reactance_col_lines_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
                                         min_ratio=0.5, required_tokens=["reactance"])
 
 
-def _best_transformer_location_fullname_col_fuzzy(df: pd.DataFrame) -> Optional[Tuple]:
+def _best_transformer_location_fullname_col_fuzzy(df: pd.DataFrame) -> tuple | None:
     """
     Fuzzy-find ("Location", "Full Name") column in Transformers sheet.
 
@@ -1027,7 +1024,7 @@ def _get_transformer_location_fullname_series_fuzzy(df: pd.DataFrame) -> pd.Seri
 
 
 def _values_by_lvl1_fuzzy(df: pd.DataFrame, target_label: str,
-                          tokens: Optional[list[str]] = None,
+                          tokens: list[str] | None = None,
                           default="") -> np.ndarray:
     """
     Extract a column by fuzzy match against the level-1 label and return values as string array.
@@ -1056,7 +1053,7 @@ def _values_by_lvl1_fuzzy(df: pd.DataFrame, target_label: str,
 
 
 def _values_by_lvl1_fuzzy_numeric(df: pd.DataFrame, target_label: str,
-                                  tokens: Optional[list[str]] = None,
+                                  tokens: list[str] | None = None,
                                   default=0.0) -> np.ndarray:
     """
     Extract a column via fuzzy match and return numeric values, using comma->dot conversion.
@@ -1106,7 +1103,7 @@ def _find_first_present_lvl1(df: pd.DataFrame, variants: list[str]):
     return None
 
 
-def _series_by_lvl1(df: pd.DataFrame, label: str) -> Optional[pd.Series]:
+def _series_by_lvl1(df: pd.DataFrame, label: str) -> pd.Series | None:
     """
     Retrieve the first column whose level-1 label equals 'label', returning it as a Series.
 
@@ -1181,7 +1178,7 @@ def _get_line_tso_array(df: pd.DataFrame) -> np.ndarray:
     return np.array([""] * len(df))
 
 
-def _get_tso_col_for_subst(df: pd.DataFrame, subst: str) -> Optional[tuple]:
+def _get_tso_col_for_subst(df: pd.DataFrame, subst: str) -> tuple | None:
     """
     Return a TSO column for a given substation side if available, else a generic TSO column.
 
@@ -1329,7 +1326,7 @@ def _get_transformer_tso_series_fuzzy(df: pd.DataFrame) -> pd.Series:
     return df.iloc[:, pos].astype(str).str.strip()
 
 
-def _get_voltage_tuple(df: pd.DataFrame) -> Optional[Tuple]:
+def _get_voltage_tuple(df: pd.DataFrame) -> tuple | None:
     """
     Wrapper for voltage-level column detection for Lines/Tielines.
 
@@ -1341,7 +1338,7 @@ def _get_voltage_tuple(df: pd.DataFrame) -> Optional[Tuple]:
     return _best_voltage_col_lines(df)
 
 
-def _get_fullname_tuple(df: pd.DataFrame, subst: str) -> Optional[Tuple]:
+def _get_fullname_tuple(df: pd.DataFrame, subst: str) -> tuple | None:
     """
     Wrapper for full-name column detection for a given substation side (fuzzy).
 
@@ -1388,7 +1385,7 @@ def _ensure_line_tso_column(df: pd.DataFrame) -> None:
         # else: leave unset; downstream is robust
 
 
-def _first_present_tuple(df: pd.DataFrame, candidates: list[tuple]) -> Optional[tuple]:
+def _first_present_tuple(df: pd.DataFrame, candidates: list[tuple]) -> tuple | None:
     """
     Return the first candidate column tuple that exists in df.columns.
 
@@ -1416,8 +1413,8 @@ def _first_present_tuple(df: pd.DataFrame, candidates: list[tuple]) -> Optional[
 
 def _data_correction(
         data: dict[str, pd.DataFrame],
-        html_str: Optional[str],
-        max_i_ka_fillna: Union[float, int]) -> Optional[str]:
+        html_str: str | None,
+        max_i_ka_fillna: float | int) -> str | None:
     """
     Apply corrections and normalizations to Excel and HTML data before building the network.
 
@@ -1722,7 +1719,7 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
 def _create_lines(
         net: pandapowerNet,
         data: dict[str, pd.DataFrame],
-        max_i_ka_fillna: Union[float, int]) -> None:
+        max_i_ka_fillna: float | int) -> None:
     """
     Create pandapower lines from Lines/Tielines data.
 
@@ -2428,7 +2425,7 @@ def _invent_connections_between_grid_groups(
 
 def drop_islanded_grid_groups(
         net: pandapowerNet,
-        min_bus_number: Union[int, str],
+        min_bus_number: int | str,
         **kwargs) -> None:
     """
     Drop islanded grid groups based on group size or supply condition.
@@ -2533,7 +2530,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
     def _geo_json_str(this_bus_geo: pd.Series) -> str:
         return f'{{"coordinates": [{this_bus_geo.at["lng"]}, {this_bus_geo.at["lat"]}], "type": "Point"}}'
 
-    def _add_bus_geo_inner(bus: int) -> Optional[str]:
+    def _add_bus_geo_inner(bus: int) -> str | None:
         from_bus_line_excerpt = net.line.loc[net.line.from_bus ==
                                              bus, ["EIC_Code", "name", "Tieline"]]
         to_bus_line_excerpt = net.line.loc[net.line.to_bus == bus, ["EIC_Code", "name", "Tieline"]]
