@@ -115,7 +115,7 @@ class ExternalNetworkInjectionsCim16:
         eni['scaling'] = 1.
         eni['type'] = None
         eni['slack'] = False
-        # create reactive_capability_curve flag (no capability curves available for ExternalNetworkInjections
+        # create reactive_capability_curve flag (no capability curves available for ExternalNetworkInjections)
         eni['reactive_capability_curve'] = False
         eni['RegulatingControl.enabled'] = eni['enabled'][:]
         eni['controllable'] = eni['controllable'].fillna(False)
