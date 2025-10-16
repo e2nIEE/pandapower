@@ -1,10 +1,6 @@
 Change Log
 =============
 
-[NEXT] - 2025-..-..
--------------------------------
-- [FIXED] cim2pp: update docu with correct dependancy install
-
 [upcoming release] - 2025-..-..
 -------------------------------
 - [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
@@ -78,6 +74,7 @@ Change Log
 - [FIXED] create.py: remove needlessly slow dict(zip) constructs in favor of fast literal dict creation, some other small code refactoring
 - [ADDED] cim2pp: new shema files, added Junctions and shorcuts for busbars
 - [FIXED] create.pu set_multiple_entries remove not needed dict translation
+- [FIXED] cim2pp: update docu with correct dependancy install
 
 [3.1.2] - 2025-06-16
 -------------------------------
