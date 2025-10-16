@@ -3,6 +3,10 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] create.py: refactored to create module with smaller files. Backwards compatible, importing does not require change!
+- [FIXED] cim2pp: update docu with correct dependancy install
+- [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
+- [ADDED] cim2pp: additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
 - [ADDED] Feature to plot multiple layers for buses using plotly
 - [CHANGED] Plotly is switching from mapbox to maplibre. This was also changed in our plotting functions.
 - [FIXED] Fixed res_trafo_3ph, including converter since it was wrong in code and did not adhere to documentation: 'p_a_l_mw' is now 'pl_a_mw', same for ql and all phases.
