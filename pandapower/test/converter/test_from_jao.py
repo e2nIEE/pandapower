@@ -3,18 +3,16 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from copy import deepcopy
 import os
-import pytest
 import numpy as np
-import pandas as pd
 
-import pandapower as pp
+from pandapower import pp_dir
+from pandapower.toolbox.comparison import nets_equal
 from pandapower.converter import from_jao
 
 
 def test_from_jao_with_testfile():
-    testfile = os.path.join(pp.pp_dir, 'test', 'converter', "jao_testfiles", "testfile.xlsx")
+    testfile = os.path.join(pp_dir, 'test', 'converter', "jao_testfiles", "testfile.xlsx")
     assert os.path.isfile(testfile)
 
     # --- net1
@@ -45,7 +43,7 @@ def test_from_jao_with_testfile():
 
     # --- net2
     net2 = from_jao(testfile, None, True)
-    pp.nets_equal(net1, net2)  # extend_data_for_grid_group_connections makes no difference here
+    nets_equal(net1, net2)  # extend_data_for_grid_group_connections makes no difference here
 
     # --- net3
     net3 = from_jao(testfile, None, True, drop_grid_groups_islands=True)

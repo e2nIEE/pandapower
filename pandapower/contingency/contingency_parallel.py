@@ -200,13 +200,18 @@ def _update_contingency_results_parallel(net, contingency_results, result_variab
 
 if __name__ == '__main__':
     import time
-    import pandapower as pp
-    from pandapower.contingency import get_element_limits, check_elements_within_limits, report_contingency_results
+    from pandapower.networks.power_system_test_cases import case2869pegase
+    from pandapower.contingency import (
+        get_element_limits,
+        check_elements_within_limits,
+        report_contingency_results,
+        run_contingency
+    )
 
-    net = pp.networks.case2869pegase()
+    net = case2869pegase()
     nminus1_cases = {"line": {"index": net.line.index.values}}
 
-    # res = pp.contingency.run_contingency(net, nminus1_cases)
+    # res = run_contingency(net, nminus1_cases)
     start = time.time()
     res = run_contingency_parallel(net, nminus1_cases, n_procs=8)
     parallel_time = time.time() - start

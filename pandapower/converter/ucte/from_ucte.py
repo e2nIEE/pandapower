@@ -40,9 +40,11 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
 
     :example:
         >>> import os
-        >>> import pandapower as pp
-        >>> ucte_file = os.path.join(pp.pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
-        >>> net = pp.converter.from_ucte(ucte_file)
+        >>> from pandapower import pp_dir
+        >>> from pandapower.converter.ucte.from_ucte import from_ucte
+        >>>
+        >>> ucte_file = os.path.join(pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
+        >>> net = from_ucte(ucte_file)
     """
     # Note:
     # the converter functionality from_ucte() and internal functions are structured similar to
@@ -68,8 +70,8 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
 
 if __name__ == "__main__":
     import os
-    import pandapower as pp
+    from pandapower import pp_dir
 
     # loading the line test as example
-    ucte_file = os.path.join(pp.pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
-    net = pp.converter.from_ucte(ucte_file)
+    ucte_file = os.path.join(pp_dir, "test", "converter", "testfiles", "test_ucte_DK.uct")
+    net = from_ucte(ucte_file)

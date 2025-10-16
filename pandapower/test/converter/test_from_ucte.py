@@ -8,7 +8,9 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pandapower as pp
+from pandapower.auxiliary import pandapowerNet
+from pandapower.run import runpp
+from pandapower.toolbox.element_selection import count_elements
 import pandapower.converter as pc
 
 import logging
@@ -84,11 +86,11 @@ def test_from_ucte(test_case):
     # --- convert UCTE data -------------------------------------------------------------------
     net = pc.from_ucte(ucte_file, slack_as_gen=False)
 
-    assert isinstance(net, pp.pandapowerNet)
+    assert isinstance(net, pandapowerNet)
     assert len(net.bus)
 
     # --- run power flow ----------------------------------------------------------------------
-    pp.runpp(net)
+    runpp(net)
     assert net.converged
 
     # --- check expected element counts -------------------------------------------------------
@@ -96,7 +98,7 @@ def test_from_ucte(test_case):
         _testfiles_folder(), "ucte_expected_element_counts.csv"), sep=";", index_col=0)
     exp_elm_count = exp_elm_count_df.loc[country_code]
     exp_elm_count = exp_elm_count.loc[exp_elm_count > 0]
-    assert dict(pp.count_elements(net)) == dict(exp_elm_count)
+    assert dict(count_elements(net)) == dict(exp_elm_count)
 
     # --- compare results ---------------------------------------------------------------------
     res_target = _results_from_powerfactory()
