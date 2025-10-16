@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[NEXT] - 2025-..-..
+-------------------------------
+- [FIXED] cim2pp: update docu with correct dependancy install
+
 [upcoming release] - 2025-..-..
 -------------------------------
 - [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
