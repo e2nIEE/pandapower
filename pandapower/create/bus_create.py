@@ -201,7 +201,7 @@ def create_buses(
     index: Int | Iterable[Int] | None = None,
     name: Iterable[str] | None = None,
     type: BusType | Iterable[BusType] = "b",
-    geodata: Iterable[tuple[float, float]] | None = None,
+    geodata: tuple[float, float] | Iterable[tuple[float, float]] | None = None,
     zone: str | Iterable[str] | None = None,
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,

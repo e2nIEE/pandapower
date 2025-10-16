@@ -58,7 +58,7 @@ trafo_schema = pa.DataFrameSchema(
         ),
         "shift_degree": pa.Column(float, description="transformer phase shift angle"),
         "tap_side": pa.Column(
-            object,  # str
+            pd.StringDtype,
             pa.Check.isin(["hv", "lv"]),
             nullable=True,
             required=False,

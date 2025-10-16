@@ -22,10 +22,6 @@ from pandapower import create_empty_network, create_bus, create_ext_grid, create
 
 from pandapower.network_schema import *
 
-# pd.set_option("display.max_rows", 500)
-# pd.set_option("display.max_columns", 500)
-# pd.set_option("display.width", 1000)
-
 
 def test_convenience_create_functions():
     net = create_empty_network()
@@ -313,7 +309,7 @@ def test_create_lines():
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
-    l = create_lines(
+    create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -331,7 +327,7 @@ def test_create_lines():
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
-    l = create_lines(
+    create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -675,7 +671,7 @@ def test_create_lines_optional_columns():
 
 def test_create_line_alpha_temperature():
     net = create_empty_network()
-    b = create_buses(net, 5, 110)
+    create_buses(net, 5, 110)
 
     l1 = create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
     l2 = create_line(
