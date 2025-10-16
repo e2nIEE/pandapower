@@ -10,7 +10,11 @@ A `tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/cim2pp.
 
 Setup
 -----
-In order to use this converter the following import is all that ist needed. ::
+Install the needed dependancies with: ::
+
+    pip install pandapower[converter]
+
+In order to use this converter the following import is needed. ::
 
     from pandapower.converter import from_cim as cim2pp
 
