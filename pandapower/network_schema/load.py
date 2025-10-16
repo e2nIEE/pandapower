@@ -2,7 +2,7 @@ import pandera.pandas as pa
 
 load_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the load"),
+        "name": pa.Column(str, nullable=True, required=False, description="name of the load"),
         "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
         "p_mw": pa.Column(
             float, pa.Check.ge(0), description="active power of the load [MW]"

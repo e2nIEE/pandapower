@@ -66,7 +66,9 @@ line_schema = pa.DataFrameSchema(
             metadata={"sc": True, "tdpf": True},
         ),
         "in_service": pa.Column(bool, description="specifies if the line is in service."),
-        "geo": pa.Column(str, required=False, description="geojson.LineString object or its string representation"),
+        "geo": pa.Column(
+            str, nullable=True, required=False, description="geojson.LineString object or its string representation"
+        ),
         "alpha": pa.Column(
             float,
             nullable=True,

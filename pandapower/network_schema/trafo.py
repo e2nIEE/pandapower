@@ -173,12 +173,14 @@ trafo_schema = pa.DataFrameSchema(
         pa.Check(
             validate_column_group_dependency(
                 ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_step_degree"]
-            )
+            ),
+            error="Tap configuration columns have dependency violations. Please ensure tap_pos, tap_neutral, tap_side, tap_step_percent, and tap_step_degree are consistent with each other.",
         ),
         pa.Check(
             validate_column_group_dependency(
-                ["tap_pos2", "tap_neutral2", "tap_side2", "tap_step_percent2", "tap_step_degree2"]
-            )
+                ["tap2_pos", "tap2_neutral", "tap2_side", "tap2_step_percent", "tap2_step_degree"]
+            ),
+            error="Tap2 configuration columns have dependency violations. Please ensure tap2_pos, tap2_neutral, tap2_side, tap2_step_percent, and tap2_step_degree are consistent with each other.",
         ),
     ],
     strict=False,

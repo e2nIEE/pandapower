@@ -1602,7 +1602,8 @@ def test_create_storages():
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
     for col in ["name", "type"]:
-        net.storage.loc[net.storage[col].isnull(), col] = ""
+        if col in net.storage.columns:
+            net.storage.loc[net.storage[col].isnull(), col] = "" #TODO: why is this here ?
     assert nets_equal(net, net_bulk)
 
     validate_dataframes_for_network(net)

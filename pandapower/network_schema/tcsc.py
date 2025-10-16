@@ -30,9 +30,11 @@ tcsc_schema = pa.DataFrameSchema(
     },
     checks=[
         pa.Check(
-            lambda df: df["min_angle_degree"] <= df["max_angle_degree"]
-            if all(col in df.columns for col in ["min_angle_degree", "max_angle_degree"])
-            else True,
+            lambda df: (
+                df["min_angle_degree"] <= df["max_angle_degree"]
+                if all(col in df.columns for col in ["min_angle_degree", "max_angle_degree"])
+                else True
+            ),
             error="Column 'min_angle_degree' must be <= column 'max_angle_degree'",
         )  # TODO: makes sense, right ?
     ],
