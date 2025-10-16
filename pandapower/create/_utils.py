@@ -329,7 +329,6 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
         dtypes = net[table][intersect1d(net[table].columns, list(entries))].dtypes
 
     for col, val in entries.items():
-        net[table].at[index, col] = val
         if not pd.isna(val):  # TODO: questionable
             net[table].at[index, col] = val
             try:
@@ -392,7 +391,15 @@ def _set_multiple_entries(
             key: empty_defaults_per_dtype(dtype)
             for key, dtype in net[table][net[table].columns.difference(dd_columns)].dtypes.to_dict().items()
         }
-        net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
+        # net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
+        df_temp = dd[dd_columns].assign(**empty_dict)[complete_columns]
+        dtype_dict = get_structure_dict(required_only=False)[table]
+
+        for col in df_temp.columns:
+            if col in dtype_dict:
+                df_temp[col] = df_temp[col].astype(dtype_dict[col])
+
+        net[table] = df_temp
 
     # and preserve dtypes
     if preserve_dtypes:

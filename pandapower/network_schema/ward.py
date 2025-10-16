@@ -4,7 +4,7 @@ import pandera.pandas as pa
 ward_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(
-            object,  # str
+            pd.StringDtype,  # str
             nullable=True,
             required=False,
             description="name of the extended ward equivalent",

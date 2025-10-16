@@ -268,7 +268,8 @@ def create_buses(
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, entries=entries)
-    net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
+    if "geo" in net.bus.columns:
+        net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
 
     return index
 

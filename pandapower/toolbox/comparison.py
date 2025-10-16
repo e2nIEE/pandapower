@@ -183,14 +183,14 @@ def nets_equal_keys(net1, net2, check_only_results, check_without_results, exclu
             or key.startswith("res_") and check_without_results)]
     keys_to_check = set(net1_keys) & set(net2_keys)
     key_difference = set(net1_keys) ^ set(net2_keys)
-    not_checked_keys = list()
+    not_checked_keys = []
 
     if len(key_difference) > 0:
         logger.warning(f"Networks entries mismatch at: {key_difference}")
         return key_difference, set()
 
     # ... and then iter through the keys, checking for equality for each table
-    for key in list(keys_to_check):
+    for key in keys_to_check:
 
         if isinstance(net1[key], pd.DataFrame):
             if not isinstance(net2[key], pd.DataFrame) or not dataframes_equal(

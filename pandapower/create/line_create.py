@@ -502,7 +502,8 @@ def create_lines(
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, entries=entries)
-    net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
+    if "geo" in net.bus.columns:
+        net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
 
     _add_multiple_branch_geodata(net, geodata, index)
 
