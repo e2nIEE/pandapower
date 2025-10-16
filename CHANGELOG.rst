@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 - [CHANGED] create.py: refactored to create module with smaller files. Backwards compatible, importing does not require change!
+- [FIXED] cim2pp: update docu with correct dependancy install
 - [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
 - [ADDED] cim2pp: additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
 - [ADDED] Feature to plot multiple layers for buses using plotly
