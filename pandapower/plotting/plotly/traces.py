@@ -688,8 +688,10 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             cbar_cmap_name = 'Jet' if cmap == 'jet' else cmap
             # workaround to get colorbar for branches (an unvisible node is added)
             # get x and y of first line.from_bus:
-            x, y = geojson.utils.coords(net[node_element].loc(net[branch_element][f"from_{node_element}"][net[branch_element].index[0]], "geo"))
-            branches_cbar = dict(type='scatter', x=x, y=y, mode='markers',
+            from_bus_idx = net[branch_element][f"from_{node_element}"].iloc[0]
+            bus_geo = net[node_element].loc[from_bus_idx, "geo"]
+            x, y = next(geojson.utils.coords(geojson.loads(bus_geo)))
+            branches_cbar = dict(type='scatter', x=[x], y=[y], mode='markers',
                                  marker=Marker(size=0, cmin=cmin, cmax=cmax,
                                                color='rgb(255,255,255)',
                                                opacity=0,
