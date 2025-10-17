@@ -88,7 +88,6 @@ class SynchronousMachinesCim16:
         eqssh_reg_control = pd.merge(eqssh_reg_control, self.cimConverter.net.bus[['vn_kv', sc['o_id']]].rename(
             columns={sc['o_id']: 'reg_control_cnode'}), how='left', on='reg_control_cnode')
         # merge with RegulatingControl to check if it is a voltage controlled generator
-        eqssh_reg_control = eqssh_reg_control.loc[eqssh_reg_control['mode'] == 'voltage']
         synchronous_machines = pd.merge(
             synchronous_machines, eqssh_reg_control.rename(columns={'rdfId': 'RegulatingControl'}),
             how='left', on='RegulatingControl')
@@ -104,16 +103,14 @@ class SynchronousMachinesCim16:
         synchronous_machines['controllable'] = synchronous_machines['controllable'].fillna(False)
         # set the slack = True for gens with highest prio
         # get the highest prio from SynchronousMachines
-        sync_ref_prio_min = synchronous_machines.loc[
-            (synchronous_machines['referencePriority'] > 0) & (synchronous_machines['enabled']),
-            'referencePriority'].min()
+        sync_ref_prio_min = synchronous_machines.loc[(synchronous_machines['referencePriority'] > 0) & (
+                    synchronous_machines['enabled'] & (
+                        synchronous_machines['mode'] == 'voltage')), 'referencePriority'].min()
         # get the highest prio from ExternalNetworkInjection and check if the slack is an ExternalNetworkInjection
-        enis = self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection')
-        regulation_controllers = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')
-        regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
-        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled', 'mode']]
-        regulation_controllers = regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'})
-        enis = pd.merge(enis, regulation_controllers, how='left', on='RegulatingControl')
+        enis = pd.merge(self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection'),
+                        self.cimConverter.merge_eq_ssh_profile('RegulatingControl')[
+                            ['rdfId', 'targetValue', 'enabled', 'mode']].rename(columns={'rdfId': 'RegulatingControl'}),
+                        how='left', on='RegulatingControl')
 
         eni_ref_prio_min = enis.loc[(enis['referencePriority'] > 0) & (enis['enabled']) & (
                     enis['mode'] == 'voltage'), 'referencePriority'].min()
