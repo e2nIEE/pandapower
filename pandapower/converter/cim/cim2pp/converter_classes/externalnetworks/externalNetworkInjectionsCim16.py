@@ -97,7 +97,7 @@ class ExternalNetworkInjectionsCim16:
         
         eni['referencePriority'] = eni['referencePriority'].astype(float)
         eni['slack_weight'] = eni['referencePriority'][:]
-        eni['slack_weight'].loc[eni['slack_weight'] == 0, 'slack_weight'] = np.nan
+        eni.loc[eni['slack_weight'] == 0, 'slack_weight'] = np.nan
         eni['RegulatingControl.mode'] = eni['mode'][:]
         eni['p'] = -eni['p']
         eni['q'] = -eni['q']

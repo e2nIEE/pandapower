@@ -149,7 +149,7 @@ class SynchronousMachinesCim16:
         synchronous_machines['generator_type'] = 'current_source'
         synchronous_machines['referencePriority'] = synchronous_machines['referencePriority'].astype(float)
         synchronous_machines['slack_weight'] = synchronous_machines['referencePriority'][:]
-        synchronous_machines['slack_weight'].loc[synchronous_machines['slack_weight'] == 0, 'slack_weight'] = np.nan
+        synchronous_machines.loc[synchronous_machines['slack_weight'] == 0, 'slack_weight'] = np.nan
         synchronous_machines['RegulatingControl.enabled'] = synchronous_machines['enabled'][:]
         synchronous_machines['RegulatingControl.mode'] = synchronous_machines['mode'][:]
         if 'inService' in synchronous_machines.columns:
