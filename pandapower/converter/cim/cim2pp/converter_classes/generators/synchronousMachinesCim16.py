@@ -103,14 +103,17 @@ class SynchronousMachinesCim16:
         synchronous_machines['controllable'] = synchronous_machines['controllable'].fillna(False)
         # set the slack = True for gens with highest prio
         # get the highest prio from SynchronousMachines
-        sync_ref_prio_min = synchronous_machines.loc[(synchronous_machines['referencePriority'] > 0) & (
-                    synchronous_machines['enabled'] & (
-                        synchronous_machines['mode'] == 'voltage')), 'referencePriority'].min()
+        sync_ref_prio_min = synchronous_machines.loc[
+            (synchronous_machines['referencePriority'] > 0) &
+            (synchronous_machines['enabled'] & (synchronous_machines['mode'] == 'voltage')),
+            'referencePriority'
+        ].min()
         # get the highest prio from ExternalNetworkInjection and check if the slack is an ExternalNetworkInjection
-        enis = pd.merge(self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection'),
-                        self.cimConverter.merge_eq_ssh_profile('RegulatingControl')[
-                            ['rdfId', 'targetValue', 'enabled', 'mode']].rename(columns={'rdfId': 'RegulatingControl'}),
-                        how='left', on='RegulatingControl')
+        enis = pd.merge(
+            self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection'),
+            self.cimConverter.merge_eq_ssh_profile('RegulatingControl')[
+                ['rdfId', 'targetValue', 'enabled', 'mode']
+            ].rename(columns={'rdfId': 'RegulatingControl'}), how='left', on='RegulatingControl')
 
         eni_ref_prio_min = enis.loc[(enis['referencePriority'] > 0) & (enis['enabled']) & (
                     enis['mode'] == 'voltage'), 'referencePriority'].min()
