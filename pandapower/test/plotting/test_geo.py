@@ -179,10 +179,14 @@ def test_convert_crs__bus_only():
     net = mv_oberrhein()
     net.line.geo = None
     convert_crs(net)
+    _bus_geojson_to_geodata_(net)
+    convert_crs(net)
 
 def test_convert_crs__branch_only():
     net = mv_oberrhein()
     net.bus.geo = None
+    convert_crs(net)
+    _line_geojson_to_geodata_(net)
     convert_crs(net)
 
 def test_dump_to_geojson():
