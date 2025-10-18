@@ -15,7 +15,7 @@ from pandas.testing import assert_frame_equal, assert_index_equal
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.plotting.geo import _node_geometries_from_geodata, _branch_geometries_from_geodata, \
     _transform_node_geometry_to_geodata, _transform_branch_geometry_to_coords, _convert_xy_epsg, \
-    convert_geodata_to_geojson, dump_to_geojson
+    convert_geodata_to_geojson, dump_to_geojson, convert_crs
 from pandapower.test.helper_functions import create_test_network
 
 
@@ -175,6 +175,15 @@ def test_convert_epsg_bus_geodata():
 def test_convert_crs():
     pytest.skip("Not implemented")
 
+def test_convert_crs__bus_only():
+    net = mv_oberrhein()
+    net.line.geo = None
+    convert_crs(net)
+
+def test_convert_crs__branch_only():
+    net = mv_oberrhein()
+    net.bus.geo = None
+    convert_crs(net)
 
 def test_dump_to_geojson():
     pytest.importorskip("geojson")
