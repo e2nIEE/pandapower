@@ -216,10 +216,10 @@ def abstract_convert_crs(
 
     component_geo_name = f"{component_name}_geodata"
     try:
-        net[component_geo_name] = net[component_geo_name].apply(lambda r: _geo_component_transformer(r), axis=1)
+        net[component_geo_name] = net[component_geo_name].apply(_geo_component_transformer, axis=1)
         net[component_geo_name].attrs = {"crs": f"EPSG:{epsg_out}"}
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(e)
 
 
 def convert_crs(
