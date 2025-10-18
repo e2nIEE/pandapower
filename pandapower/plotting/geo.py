@@ -204,16 +204,15 @@ def abstract_convert_crs(
         return
 
     def _geo_component_transformer(r):
-        if isinstance(r, list):
-            return list(transformer.itraform(r))
-        if "coords" in r:
+        if "coords" in r.index:
             coords = r.coords
-            if coords and not any(pd.isna(coords)):
+            if hasattr(coords, "__iter__") and not (pd.isna(coords)).any():
                 coords = list(transformer.itransform(coords))
+        if "x" in r.index:
+            (x, y) = transformer.transform(r.x, r.y)
             return pd.Series([x, y, coords], ["x", "y", "coords"])
         else:
-            (x, y) = transformer.transform(r.x, r.y)
-            return pd.Series([x, y], ["x", "y"])
+            return pd.Series([coords], ["coords"])
 
     component_geo_name = f"{component_name}_geodata"
     try:
