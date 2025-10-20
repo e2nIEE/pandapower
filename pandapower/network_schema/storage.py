@@ -8,11 +8,11 @@ storage_schema = pa.DataFrameSchema(
         "bus": pa.Column(int, pa.Check.ge(0), description="Index of connected bus"),
         "p_mw": pa.Column(
             float,
-            pa.Check.le(0),
+            # pa.Check.le(0),
             description="Momentary real power of the storage (positive for charging, negative for discharging)",
         ),
         "q_mvar": pa.Column(float, description="Reactive power of the storage [MVar]"),
-        "sn_mva": pa.Column(float, pa.Check.gt(0), description="Nominal power ot the storage [MVA]"),
+        "sn_mva": pa.Column(float, pa.Check.gt(0), nullable=True, description="Nominal power ot the storage [MVA]"),
         "scaling": pa.Column(float, pa.Check.ge(0), description="Scaling factor for the active and reactive power"),
         "max_e_mwh": pa.Column(
             float, required=False, description="The maximum energy content of the storage (maximum charge level)"

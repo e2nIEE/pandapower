@@ -6,8 +6,15 @@ trafo_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the transformer"),
         "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
-        "hv_bus": pa.Column(int, pa.Check.ge(0), description="high voltage bus index of the transformer"),
-        "lv_bus": pa.Column(int, pa.Check.ge(0), description="low voltage bus index of the transformer"),
+        "hv_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="high voltage bus index of the transformer",
+            metadata={"foreign_key": "bus"},
+        ),
+        "lv_bus": pa.Column(
+            int, pa.Check.ge(0), description="low voltage bus index of the transformer", metadata={"foreign_key": "bus"}
+        ),
         "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power of the transformer [MVA]"),
         "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage bus [kV]"),
         "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage bus [kV]"),
