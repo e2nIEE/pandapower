@@ -1,4 +1,5 @@
 import pandera.pandas as pa
+import pandas as pd
 
 gen_schema = pa.DataFrameSchema(
     {
@@ -62,7 +63,7 @@ gen_schema = pa.DataFrameSchema(
             metadata={"sc": True},
         ),  # TODO: only in docu
         "id_q_capability_characteristic": pa.Column(
-            int,
+            pd.Int64Dtype(),
             required=False,
             description="references the index of the characteristic from the q_capability_characteristic",
         ),

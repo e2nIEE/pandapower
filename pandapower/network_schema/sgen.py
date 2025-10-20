@@ -1,4 +1,5 @@
 import pandera.pandas as pa
+import pandas as pd
 
 sgen_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: generator_type, max_i_ka, kappa, lrc_pu
     {
@@ -43,7 +44,7 @@ sgen_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu:
         ),  # TODO: only in docu
         "in_service": pa.Column(bool, description="specifies if the generator is in service."),
         "id_q_capability_characteristic": pa.Column(
-            int,
+            pd.Int64Dtype(),
             nullable=True,
             required=False,
             description="references the index of the characteristic from the q_capability_characteristic",
