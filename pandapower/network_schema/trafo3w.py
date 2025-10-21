@@ -6,9 +6,24 @@ trafo3w_schema = pa.DataFrameSchema(
         # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
         "name": pa.Column(str, required=False, description="name of the transformer"),
         "std_type": pa.Column(str, required=False, description="transformer standard type name"),
-        "hv_bus": pa.Column(int, pa.Check.ge(0), description="high voltage bus index of the transformer"),
-        "mv_bus": pa.Column(int, pa.Check.ge(0), description="medium voltage bus index of the transformer"),
-        "lv_bus": pa.Column(int, pa.Check.ge(0), description="low voltage bus index of the transformer"),
+        "hv_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="high voltage bus index of the transformer",
+            metadata={"foreign_key": "bus.index"},
+        ),
+        "mv_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="medium voltage bus index of the transformer",
+            metadata={"foreign_key": "bus.index"},
+        ),
+        "lv_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="low voltage bus index of the transformer",
+            metadata={"foreign_key": "bus.index"},
+        ),
         "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage bus [kV]"),
         "vn_mv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at medium voltage bus [kV]"),
         "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage bus [kV]"),

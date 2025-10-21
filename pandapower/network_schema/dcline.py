@@ -3,8 +3,18 @@ import pandera.pandas as pa
 dcline_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the generator"),
-        "from_bus": pa.Column(int, pa.Check.ge(0), description="Index of bus where the dc line starts"),
-        "to_bus": pa.Column(int, pa.Check.ge(0), description="Index of bus where the dc line ends"),
+        "from_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="Index of bus where the dc line starts",
+            metadata={"foreign_key": "bus.index"},
+        ),
+        "to_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="Index of bus where the dc line ends",
+            metadata={"foreign_key": "bus.index"},
+        ),
         "p_mw": pa.Column(float, description="Active power transmitted from ‘from_bus’ to ‘to_bus’"),
         "loss_percent": pa.Column(
             float,

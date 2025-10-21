@@ -5,9 +5,9 @@ import pandera.pandas as pa
 bi_vsc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, description=""),
-        "bus": pa.Column(int, pa.Check.ge(0), description=""),
-        "bus_dc_plus": pa.Column(int, pa.Check.ge(0), description=""),
-        "bus_dc_minus": pa.Column(int, pa.Check.ge(0), description=""),
+        "bus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus.index"}),
+        "bus_dc_plus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus_dc.index"}),
+        "bus_dc_minus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus_dc.index"}),
         "r_ohm": pa.Column(float, description=""),
         "x_ohm": pa.Column(float, description=""),
         "r_dc_ohm": pa.Column(float, description=""),

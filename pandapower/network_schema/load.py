@@ -3,7 +3,9 @@ import pandera.pandas as pa
 load_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, nullable=True, required=False, description="name of the load"),
-        "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
+        "bus": pa.Column(
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
+        ),
         "p_mw": pa.Column(
             float, pa.Check.ge(0), description="active power of the load [MW]"
         ),  # TODO: surely the docu must be wrong for ge0

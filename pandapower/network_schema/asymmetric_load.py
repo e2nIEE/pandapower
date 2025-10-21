@@ -3,7 +3,7 @@ import pandera.pandas as pa
 asymmetric_load_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the load"),
-        "bus": pa.Column(int, description="	index of connected bus"),
+        "bus": pa.Column(int, description="	index of connected bus", metadata={"foreign_key": "bus.index"}),
         "p_a_mw": pa.Column(float, pa.Check.ge(0), description="Phase A active power of the load [MW]"),
         "p_b_mw": pa.Column(float, pa.Check.ge(0), description="Phase B active power of the load [MW]"),
         "p_c_mw": pa.Column(float, pa.Check.ge(0), description="Phase C active power of the load [MW]"),

@@ -3,9 +3,9 @@ import pandera.pandas as pa
 b2b_vsc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False),
-        "bus": pa.Column(int, pa.Check.ge(0)),
-        "bus_dc_plus": pa.Column(int, pa.Check.ge(0)),
-        "bus_dc_minus": pa.Column(int, pa.Check.ge(0)),
+        "bus": pa.Column(int, pa.Check.ge(0), metadata={"foreign_key": "bus.index"}),
+        "bus_dc_plus": pa.Column(int, pa.Check.ge(0), metadata={"foreign_key": "bus_dc.index"}),
+        "bus_dc_minus": pa.Column(int, pa.Check.ge(0), metadata={"foreign_key": "bus_dc.index"}),
         "r_ohm": pa.Column(float),
         "x_ohm": pa.Column(float),
         "r_dc_ohm": pa.Column(float),

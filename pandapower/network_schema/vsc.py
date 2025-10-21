@@ -3,8 +3,18 @@ import pandera.pandas as pa
 vsc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the VSC"),
-        "bus": pa.Column(int, pa.Check.ge(0), description="index of ac bus of the ac side of the VSC"),
-        "bus_dc": pa.Column(int, pa.Check.ge(0), description="index of dc bus of the dc side of the VSC"),
+        "bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="index of ac bus of the ac side of the VSC",
+            metadata={"foreign_key": "bus.index"},
+        ),
+        "bus_dc": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="index of dc bus of the dc side of the VSC",
+            metadata={"foreign_key": "bus_dc.index"},
+        ),
         "r_ohm": pa.Column(float, pa.Check.ge(0), description="resistance of the coupling transformer"),
         "x_ohm": pa.Column(float, pa.Check.ge(0), description="reactance of the coupling transformer"),
         "r_dc_ohm": pa.Column(float, description="resistance of the internal dc resistance component of VSC"),

@@ -4,7 +4,9 @@ source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
     {
         "name": pa.Column(str, required=False, description="name of the static generator"),
         "type": pa.Column(str, required=False, description="type of source"),
-        "bus_dc": pa.Column(int, description="index of connected bus"),  # TODO: not the same name in docu
+        "bus_dc": pa.Column(
+            int, description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}
+        ),  # TODO: not the same name in docu
         "p_mw": pa.Column(
             float,
             pa.Check.le(0),

@@ -5,7 +5,9 @@ import pandera.pandas as pa
 storage_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="Name of the storage unit"),
-        "bus": pa.Column(int, pa.Check.ge(0), description="Index of connected bus"),
+        "bus": pa.Column(
+            int, pa.Check.ge(0), description="Index of connected bus", metadata={"foreign_key": "bus.index"}
+        ),
         "p_mw": pa.Column(
             float,
             # pa.Check.le(0),

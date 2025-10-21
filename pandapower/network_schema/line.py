@@ -12,8 +12,12 @@ line_schema = pa.DataFrameSchema(
             required=False,
             description="standard type which can be used to easily define line parameters with the pandapower standard type library",
         ),
-        "from_bus": pa.Column(int, pa.Check.ge(0), description="Index of bus where the line starts"),
-        "to_bus": pa.Column(int, pa.Check.ge(0), description="Index of bus where the line ends"),
+        "from_bus": pa.Column(
+            int, pa.Check.ge(0), description="Index of bus where the line starts", metadata={"foreign_key": "bus.index"}
+        ),
+        "to_bus": pa.Column(
+            int, pa.Check.ge(0), description="Index of bus where the line ends", metadata={"foreign_key": "bus.index"}
+        ),
         "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
         "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),
         "x_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="reactance of the line [Ohm per km]"),

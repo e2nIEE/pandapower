@@ -3,7 +3,9 @@ import pandera.pandas as pa
 ext_grid_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the external grid"),
-        "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
+        "bus": pa.Column(
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
+        ),
         "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage set point [p.u]"),
         "va_degree": pa.Column(float, description="angle set point [degree]"),
         "max_p_mw": pa.Column(float, required=False, description="Maximum active power", metadata={"opf": True}),

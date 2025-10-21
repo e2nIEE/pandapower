@@ -10,7 +10,7 @@ trafo_schema = pa.DataFrameSchema(
             int,
             pa.Check.ge(0),
             description="high voltage bus index of the transformer",
-            metadata={"foreign_key": "bus"},
+            metadata={"foreign_key": "bus.index"},
         ),
         "lv_bus": pa.Column(
             int, pa.Check.ge(0), description="low voltage bus index of the transformer", metadata={"foreign_key": "bus"}

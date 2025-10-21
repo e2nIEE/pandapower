@@ -3,8 +3,18 @@ import pandera.pandas as pa
 impedance_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the impedance"),
-        "from_bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the impedance starts"),
-        "to_bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the impedance ends"),
+        "from_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="index of bus where the impedance starts",
+            metadata={"foreign_key": "bus.index"},
+        ),
+        "to_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="index of bus where the impedance ends",
+            metadata={"foreign_key": "bus.index"},
+        ),
         "rft_pu": pa.Column(
             float, pa.Check.gt(0), description="resistance of the impedance from ‘from’ to ‘to’ bus [p.u.]"
         ),

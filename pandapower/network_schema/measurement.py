@@ -23,6 +23,7 @@ measurement_schema = pa.DataFrameSchema(
             pa.Check.ge(0),
             required=False,
             description="Defines the bus at which the measurement is placed. For line or transformer measurement, it defines the side at which the measurement is placed (from_bus or to_bus). must be in net.bus.index",
+            metadata={"foreign_key": "bus.index"},
         ),
         "element": pa.Column(int, description="specifies if the bus is in service."),
         "check_existing": pa.Column(

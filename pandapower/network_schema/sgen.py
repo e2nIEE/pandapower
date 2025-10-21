@@ -4,7 +4,9 @@ import pandas as pd
 sgen_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: generator_type, max_i_ka, kappa, lrc_pu
     {
         "name": pa.Column(str, required=False, description="name of the static generator"),
-        "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
+        "bus": pa.Column(
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
+        ),
         "p_mw": pa.Column(float, description="active power of the static generator [MW]"),
         "q_mvar": pa.Column(float, description="reactive power of the static generator [MVAr]"),
         "sn_mva": pa.Column(

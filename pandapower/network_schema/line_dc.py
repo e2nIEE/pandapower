@@ -8,8 +8,18 @@ line_dc_schema = pa.DataFrameSchema(
             required=False,
             description="standard type which can be used to easily define dc line parameters with the pandapower standard type library",
         ),
-        "from_bus_dc": pa.Column(int, pa.Check.ge(0), description="Index of dc bus where the dc line starts"),
-        "to_bus_dc": pa.Column(int, pa.Check.ge(0), description="Index of dc bus where the dc line ends"),
+        "from_bus_dc": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="Index of dc bus where the dc line starts",
+            metadata={"foreign_key": "bus_dc.index"},
+        ),
+        "to_bus_dc": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="Index of dc bus where the dc line ends",
+            metadata={"foreign_key": "bus_dc.index"},
+        ),
         "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
         "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),
         "g_us_per_km": pa.Column(

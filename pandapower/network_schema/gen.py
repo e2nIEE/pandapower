@@ -10,7 +10,7 @@ gen_schema = pa.DataFrameSchema(
             required=False,
             description="type variable to classify generators naming conventions: “sync” - synchronous generator “async” - asynchronous generator",
         ),
-        "bus": pa.Column(int, description="index of connected bus"),
+        "bus": pa.Column(int, description="index of connected bus", metadata={"foreign_key": "bus.index"}),
         "p_mw": pa.Column(float, description="the real power of the generator [MW]"),
         "vm_pu": pa.Column(float, description="voltage set point of the generator [p.u.]"),
         "sn_mva": pa.Column(float, pa.Check.gt(0), required=False, description="nominal power of the generator [MVA]"),

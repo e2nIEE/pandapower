@@ -3,8 +3,18 @@ import pandera.pandas as pa
 tcsc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the TCSC"),
-        "from_bus": pa.Column(int, pa.Check.ge(0), description="index of the from bus where the TCSC is connected"),
-        "to_bus": pa.Column(int, pa.Check.ge(0), description="index of the to bus where the TCSC is connected"),
+        "from_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="index of the from bus where the TCSC is connected",
+            metadata={"foreign_key": "bus.index"},
+        ),
+        "to_bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="index of the to bus where the TCSC is connected",
+            metadata={"foreign_key": "bus.index"},
+        ),
         "x_l_ohm": pa.Column(float, pa.Check.ge(0), description="impedance of the reactor component of TCSC"),
         "x_cvar_ohm": pa.Column(
             float, pa.Check.le(0), description="impedance of the fixed capacitor component of TCSC"

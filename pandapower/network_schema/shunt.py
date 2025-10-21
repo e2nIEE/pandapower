@@ -4,7 +4,12 @@ import pandera.pandas as pa
 shunt_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the shunt"),
-        "bus": pa.Column(int, pa.Check.ge(0), description="index of bus where the impedance starts"),
+        "bus": pa.Column(
+            int,
+            pa.Check.ge(0),
+            description="index of bus where the impedance starts",
+            metadata={"foreign_key": "bus.index"},
+        ),
         "p_mw": pa.Column(float, pa.Check.ge(0), description="shunt active power in MW at v= 1.0 p.u. per step"),
         "q_mvar": pa.Column(float, description="shunt reactive power in MVAr at v= 1.0 p.u. per step"),
         "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the shunt element"),

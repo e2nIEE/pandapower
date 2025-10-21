@@ -126,7 +126,7 @@ def validate_dataframes_for_network(net: pandapowerNet):
         try:
             _bus_index_validation(element, net)
         except Exception as e:
-            raise e  #TODO: better exception
+            raise e  # TODO: better exception
 
 
 def _bus_index_validation(element, net: pandapowerNet):

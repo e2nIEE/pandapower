@@ -3,7 +3,9 @@ import pandera.pandas as pa
 xward_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(str, required=False, description="name of the extended ward equivalent"),
-        "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus"),
+        "bus": pa.Column(
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
+        ),
         "ps_mw": pa.Column(float, description="constant active power demand [MW]"),
         "qs_mvar": pa.Column(float, description="constant reactive power demand [MVar]"),
         "pz_mw": pa.Column(float, description="constant impedance active power demand at 1.0 pu [MW]"),
