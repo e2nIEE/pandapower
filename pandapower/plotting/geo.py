@@ -166,8 +166,7 @@ def abstract_convert_crs(
     :param ADict net: A network subclassed from pandapower.auxiliary.ADict
     :param int epsg_in: the ESRI CRS number to convert from
     :param int epsg_out: the ESRI CRS number to convert to
-    :param str component_name: name of the nodes DataFrame
-    :param str branch_name: name of the branches DataFrame
+    :param str component_name: name of the component DataFrame
     :return:
     """
     if epsg_in == epsg_out:
@@ -208,9 +207,14 @@ def abstract_convert_crs(
             coords = r.coords
             if hasattr(coords, "__iter__") and not (pd.isna(coords)).any():
                 coords = list(transformer.itransform(coords))
+        else:
+            coords = None
         if "x" in r.index:
             (x, y) = transformer.transform(r.x, r.y)
-            return pd.Series([x, y, coords], ["x", "y", "coords"])
+            if coords is not None:
+                return pd.Series([x, y, coords], ["x", "y", "coords"])
+            else:
+                return pd.Series([x, y], ["x", "y"])
         else:
             return pd.Series([coords], ["coords"])
 

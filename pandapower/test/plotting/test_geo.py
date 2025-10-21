@@ -176,11 +176,32 @@ def test_convert_crs():
     pytest.skip("Not implemented")
 
 def test_convert_crs__bus_only():
-    net = mv_oberrhein()
-    net.line.geo = None
+    def get_net_with_bus_geo():
+        net = mv_oberrhein()
+        net.line.geo = None
+        return net
+    # Test with geojson
+    net = get_net_with_bus_geo()
     convert_crs(net)
+    # Test with geodata
+    net = get_net_with_bus_geo()
     _bus_geojson_to_geodata_(net)
     convert_crs(net)
+    # Test with geodata without coord column
+    net = get_net_with_bus_geo()
+    _bus_geojson_to_geodata_(net)
+    net.bus_geodata = net.bus_geodata[["x", "y"]]
+    convert_crs(net)
+    assert "coords" not in net.bus_geodata.columns
+
+    # Test with geodata, populate geodata coord
+    net = get_net_with_bus_geo()
+    _bus_geojson_to_geodata_(net)
+    for index, row in net.bus_geodata.iterrows():
+        net.bus_geodata.at[index, 'coords'] = [(row['x'], row['y']), (row['x'], row['y'])]
+    convert_crs(net)
+    assert "coords" in net.bus_geodata.columns
+    assert not (pd.isna(net.bus_geodata.coords)).any()
 
 def test_convert_crs__branch_only():
     net = mv_oberrhein()
