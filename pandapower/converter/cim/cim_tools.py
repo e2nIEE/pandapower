@@ -73,7 +73,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     fill_dict['sgen'] = {}
     fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type', 'RegulatingControl.mode']
     fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu',
-                                        'RegulatingControl.targetValue', 'referencePriority']
+                                        'RegulatingControl.targetValue', 'referencePriority', 'max_p_mw', 'min_p_mw']
     fill_dict['sgen'][np_bool_type] = ['RegulatingControl.enabled']
     fill_dict['motor'] = {}
     fill_dict['motor'][np_str_type] = [sc['t'], 'description']
