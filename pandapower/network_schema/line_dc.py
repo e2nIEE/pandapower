@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 line_dc_schema = pa.DataFrameSchema(
     {  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
-        "name": pa.Column(str, required=False, description="name of the dc line"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the dc line"),
         "std_type": pa.Column(
             str,
             required=False,

@@ -3,10 +3,9 @@ import pandas as pd
 
 gen_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the generator"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the generator"),
         "type": pa.Column(
             str,
-            pa.Check.isin(["sync", "async"]),
             required=False,
             description="type variable to classify generators naming conventions: “sync” - synchronous generator “async” - asynchronous generator",
         ),
@@ -15,39 +14,39 @@ gen_schema = pa.DataFrameSchema(
         "vm_pu": pa.Column(float, description="voltage set point of the generator [p.u.]"),
         "sn_mva": pa.Column(float, pa.Check.gt(0), required=False, description="nominal power of the generator [MVA]"),
         "max_q_mvar": pa.Column(
-            float, required=False, description="maximum reactive power of the generator [MVAr]", metadata={"opf": True}
+            float,
+            required=False,
+            description="maximum reactive power of the generator [MVAr]",
+            metadata={"opf": True, "q_lim_enforced": True},
         ),
         "min_q_mvar": pa.Column(
-            float, required=False, description="minimum reactive power of the generator [MVAr]", metadata={"opf": True}
+            float,
+            required=False,
+            description="minimum reactive power of the generator [MVAr]",
+            metadata={"opf": True, "q_lim_enforced": True},
         ),
         "scaling": pa.Column(
             float,
-            # pa.Check.le(0),  # TODO: thats not right
+            pa.Check.ge(0),
             description="scaling factor for the active power",
         ),
-        "max_p_mw": pa.Column(
-            float, required=False, description="maximum active power", metadata={"opf": True}
-        ),  # TODO: only in docu
-        "min_p_mw": pa.Column(
-            float, required=False, description="minimum active power", metadata={"opf": True}
-        ),  # TODO: only in docu
-        "vn_kv": pa.Column(
-            float, required=False, description="rated voltage of the generator", metadata={"sc": True}
-        ),  # TODO: only in docu
+        "max_p_mw": pa.Column(float, required=False, description="maximum active power", metadata={"opf": True}),
+        "min_p_mw": pa.Column(float, required=False, description="minimum active power", metadata={"opf": True}),
+        "vn_kv": pa.Column(float, required=False, description="rated voltage of the generator", metadata={"sc": True}),
         "xdss_pu": pa.Column(
             float,
             pa.Check.gt(0),
             required=False,
             description="subtransient generator reactance in per unit",
             metadata={"sc": True},
-        ),  # TODO: only in docu
+        ),
         "rdss_ohm": pa.Column(
             float,
             pa.Check.gt(0),
             required=False,
             description="subtransient generator resistence in ohm",
             metadata={"sc": True},
-        ),  # TODO: only in docu
+        ),
         "cos_phi": pa.Column(
             float,
             pa.Check.between(min_value=0, max_value=1),
@@ -61,7 +60,7 @@ gen_schema = pa.DataFrameSchema(
             required=False,
             description="index of the power station trafo (short-circuit relevant)",
             metadata={"sc": True},
-        ),  # TODO: only in docu
+        ),
         "id_q_capability_characteristic": pa.Column(
             pd.Int64Dtype(),
             required=False,
@@ -76,9 +75,9 @@ gen_schema = pa.DataFrameSchema(
         "reactive_capability_curve": pa.Column(
             bool, required=False, description="True if generator has dependency on q characteristic"
         ),
-        "slack_weight": pa.Column(float, required=False, description=""),  # TODO: missing in docu
-        "slack": pa.Column(bool, description=""),  # TODO: missing in docu, needs to be required for pf
-        "controllable": pa.Column(bool, required=False, description=""),  # TODO: missing in docu
+        "slack_weight": pa.Column(float, required=False, description="weight of the slack when using multiple slacks"),
+        "slack": pa.Column(bool, description="use the gen as slack"),
+        "controllable": pa.Column(bool, required=False, description="allow control for opf", metadata={"opf": True}),
         "pg_percent": pa.Column(
             float,
             required=False,

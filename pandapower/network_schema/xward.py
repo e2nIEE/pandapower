@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 xward_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the extended ward equivalent"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the extended ward equivalent"),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),

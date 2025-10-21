@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 asymmetric_sgen_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the static generator"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the static generator"),
         "type": pa.Column(str, pa.Check.isin(["PV", "WP", "CHP"]), required=False, description="type of generator"),
         "bus": pa.Column(int, description="index of connected bus", metadata={"foreign_key": "bus.index"}),
         "p_a_mw": pa.Column(float, pa.Check.le(0), description="active power of the static generator : Phase A[MW]"),

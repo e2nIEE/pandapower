@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 dcline_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the generator"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the generator"),
         "from_bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -18,19 +19,24 @@ dcline_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, description="Active power transmitted from ‘from_bus’ to ‘to_bus’"),
         "loss_percent": pa.Column(
             float,
-            # pa.Check.gt(0),
+            pa.Check.ge(0),
             description="Relative transmission loss in percent of active power transmission",
         ),
-        "loss_mw": pa.Column(float, pa.Check.gt(0), description="Total transmission loss in MW"),
+        "loss_mw": pa.Column(float, pa.Check.ge(0), description="Total transmission loss in MW"),
         "vm_from_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at from bus"),
         "vm_to_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at to bus"),
         "max_p_mw": pa.Column(
             float,
-            pa.Check.gt(0),
             required=False,
             description="Maximum active power transmission",
             metadata={"opf": True},
-        ),  # TODO: no min_p_mw ?
+        ),
+        "min_p_mw": pa.Column(
+            float,
+            required=False,
+            description="Minimum active power transmission",
+            metadata={"opf": True},
+        ),
         "min_q_from_mvar": pa.Column(
             float, required=False, description="Minimum reactive power at from bus", metadata={"opf": True}
         ),

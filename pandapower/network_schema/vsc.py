@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 vsc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the VSC"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the VSC"),
         "bus": pa.Column(
             int,
             pa.Check.ge(0),

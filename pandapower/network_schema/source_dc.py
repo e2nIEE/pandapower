@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
     {
-        "name": pa.Column(str, required=False, description="name of the static generator"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the static generator"),
         "type": pa.Column(str, required=False, description="type of source"),
         "bus_dc": pa.Column(
             int, description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}

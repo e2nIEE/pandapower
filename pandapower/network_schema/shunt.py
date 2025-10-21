@@ -1,9 +1,9 @@
-import pandas as pd
 import pandera.pandas as pa
+import pandas as pd
 
 shunt_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the shunt"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the shunt"),
         "bus": pa.Column(
             int,
             pa.Check.ge(0),

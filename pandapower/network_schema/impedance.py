@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 impedance_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the impedance"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the impedance"),
         "from_bus": pa.Column(
             int,
             pa.Check.ge(0),

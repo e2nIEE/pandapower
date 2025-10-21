@@ -1,11 +1,12 @@
 import pandera.pandas as pa
+import pandas as pd
 
 # TODO: unklar was required und was nicht
 
 measurement_schema = pa.DataFrameSchema(
     {
         # "index": pa.Column(int, description="Defines a specific index for the new measurement (if possible)"),  # TODO:
-        "name": pa.Column(str, description=""),  # TODO: missing in docu
+        "name": pa.Column(pd.StringDtype, description=""),  # TODO: missing in docu
         "measurement_type": pa.Column(
             str, pa.Check.isin(["p", "q", "i", "v"]), description="Defines what physical quantity is measured"
         ),  # TODO:  other name in docu

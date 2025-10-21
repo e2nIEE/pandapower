@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 ext_grid_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the external grid"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the external grid"),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
@@ -30,7 +31,7 @@ ext_grid_schema = pa.DataFrameSchema(
         ),
         "rx_max": pa.Column(
             float,
-            pa.Check.between(min_value=0, max_value=1),
+            pa.Check.ge(0),
             nullable=True,
             required=False,
             description="maxium R/X ratio of short-circuit impedance",
@@ -38,7 +39,7 @@ ext_grid_schema = pa.DataFrameSchema(
         ),
         "rx_min": pa.Column(
             float,
-            pa.Check.between(min_value=0, max_value=1),
+            pa.Check.ge(0),
             nullable=True,
             required=False,
             description="minimum R/X ratio of short-circuit impedance",
@@ -46,14 +47,14 @@ ext_grid_schema = pa.DataFrameSchema(
         ),
         "r0x0_max": pa.Column(
             float,
-            pa.Check.between(min_value=0, max_value=1),
+            pa.Check.ge(0),
             required=False,
             description="maximal R/X-ratio to calculate Zero sequence internal impedance of ext_grid",
             metadata={"sc": True, "3ph": True},
         ),
         "x0x_max": pa.Column(
             float,
-            pa.Check.between(min_value=0, max_value=1),
+            pa.Check.ge(0),
             required=False,
             description="maximal X0/X-ratio to calculate Zero sequence internal impedance of ext_grid",
             metadata={"sc": True, "3ph": True},

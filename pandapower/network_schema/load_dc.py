@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 load_dc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the load"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the load"),
         "bus_dc": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}
         ),

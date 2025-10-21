@@ -1,11 +1,12 @@
 import pandera.pandas as pa
+import pandas as pd
 
 switch_schema = pa.DataFrameSchema(
     {
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
-        "name": pa.Column(str, nullable=True, required=False, description="name of the switch"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the switch"),
         "element": pa.Column(
             int,
             pa.Check.ge(0),

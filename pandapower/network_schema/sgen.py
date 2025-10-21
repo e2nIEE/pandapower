@@ -3,7 +3,7 @@ import pandas as pd
 
 sgen_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: generator_type, max_i_ka, kappa, lrc_pu
     {
-        "name": pa.Column(str, required=False, description="name of the static generator"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the static generator"),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),

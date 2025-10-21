@@ -1,11 +1,9 @@
-from typing import Iterable
-
 import pandera.pandas as pa
 import pandas as pd
 
 line_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the line"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the line"),
         "std_type": pa.Column(
             str,
             nullable=True,

@@ -1,10 +1,9 @@
-from importlib.metadata import metadata
-
 import pandera.pandas as pa
+import pandas as pd
 
 storage_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="Name of the storage unit"),
+        "name": pa.Column(pd.StringDtype, required=False, description="Name of the storage unit"),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="Index of connected bus", metadata={"foreign_key": "bus.index"}
         ),

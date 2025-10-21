@@ -1,12 +1,11 @@
 import pandera.pandas as pa
+import pandas as pd
 
 bus_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the bus"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=True, description="name of the bus"),
         "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the bus [kV]"),
-        "type": pa.Column(
-            str, pa.Check.isin(["n", "b", "m"]), required=False, description="type variable to classify buses"
-        ),
+        "type": pa.Column(str, required=False, description="type variable to classify buses"),
         "zone": pa.Column(
             str, required=False, description="can be used to group buses, for example network groups / regions"
         ),
@@ -25,11 +24,12 @@ bus_schema = pa.DataFrameSchema(
 
 res_bus_schema = res_bus_est_schema = pa.DataFrameSchema(
     {
-        "vm_pu": pa.Column(float, description="voltage magnitude [p.u]"),
-        "va_degree": pa.Column(float, description="voltage angle [degree]"),
-        "p_mw": pa.Column(float, description="resulting active power demand [MW]"),
-        "q_mvar": pa.Column(float, description="resulting reactive power demand [Mvar]"),
+        "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude [p.u]"),
+        "va_degree": pa.Column(float, nullable=True, description="voltage angle [degree]"),
+        "p_mw": pa.Column(float, nullable=True, description="resulting active power demand [MW]"),
+        "q_mvar": pa.Column(float, nullable=True, description="resulting reactive power demand [Mvar]"),
     },
+    strict=False,
 )
 
 res_bus_3ph_schema = pa.DataFrameSchema(

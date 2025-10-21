@@ -1,10 +1,10 @@
-import pandas as pd
 import pandera.pandas as pa
+import pandas as pd
 
 trafo3w_schema = pa.DataFrameSchema(
     {
         # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
-        "name": pa.Column(str, required=False, description="name of the transformer"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the transformer"),
         "std_type": pa.Column(str, required=False, description="transformer standard type name"),
         "hv_bus": pa.Column(
             int,

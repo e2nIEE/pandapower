@@ -1,10 +1,10 @@
-import pandas as pd
 import pandera.pandas as pa
+import pandas as pd
 from pandapower.network_schema.tools import validate_column_group_dependency
 
 trafo_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False, description="name of the transformer"),
+        "name": pa.Column(pd.StringDtype, required=False, description="name of the transformer"),
         "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
         "hv_bus": pa.Column(
             int,
@@ -119,7 +119,7 @@ trafo_schema = pa.DataFrameSchema(
         ),  # TODO: was gt(0)
         "df": pa.Column(
             float,
-            pa.Check.between(min_value=0, max_value=1),
+            pa.Check.between(min_value=0, max_value=1, include_min=False),
             required=False,
             description="derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)",
         ),

@@ -1,8 +1,9 @@
 import pandera.pandas as pa
+import pandas as pd
 
 b2b_vsc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(str, required=False),
+        "name": pa.Column(pd.StringDtype, required=False),
         "bus": pa.Column(int, pa.Check.ge(0), metadata={"foreign_key": "bus.index"}),
         "bus_dc_plus": pa.Column(int, pa.Check.ge(0), metadata={"foreign_key": "bus_dc.index"}),
         "bus_dc_minus": pa.Column(int, pa.Check.ge(0), metadata={"foreign_key": "bus_dc.index"}),
