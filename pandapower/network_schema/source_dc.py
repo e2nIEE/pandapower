@@ -3,8 +3,8 @@ import pandas as pd
 
 source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the static generator"),
-        "type": pa.Column(str, required=False, description="type of source"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the static generator"),
+        "type": pa.Column(str, nullable=True, required=False, description="type of source"),
         "bus_dc": pa.Column(
             int, description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}
         ),  # TODO: not the same name in docu
@@ -24,6 +24,7 @@ source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
         ),  # TODO: missing in docu
         "controllable": pa.Column(
             bool,
+            nullable=True,
             required=False,
             description="states if sgen is controllable or not, sgen will not be used as a flexibility if it is not controllable",
         ),

@@ -20,6 +20,7 @@ switch_schema = pa.DataFrameSchema(
         "type": pa.Column(
             str,
             pa.Check.isin(["CB", "LS", "LBS", "DS"]),
+            nullable=True,
             required=False,
             description="type of switch naming conventions:  “CB” - circuit breaker “LS” - load switch “LBS” - load break switch “DS” - disconnecting switch",
         ),

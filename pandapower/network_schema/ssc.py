@@ -3,7 +3,7 @@ import pandas as pd
 
 ssc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the SSC"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the SSC"),
         "bus": pa.Column(
             int,
             pa.Check.ge(0),

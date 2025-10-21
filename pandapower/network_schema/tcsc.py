@@ -3,7 +3,7 @@ import pandas as pd
 
 tcsc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the TCSC"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the TCSC"),
         "from_bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -33,10 +33,18 @@ tcsc_schema = pa.DataFrameSchema(
         ),
         "in_service": pa.Column(bool, description="specifies if the TCSC is in service."),
         "min_angle_degree": pa.Column(
-            float, pa.Check.ge(90), required=False, description="minimum value of the thyristor_firing_angle_degree"
+            float,
+            pa.Check.ge(90),
+            nullable=True,
+            required=False,
+            description="minimum value of the thyristor_firing_angle_degree",
         ),  # TODO: do values >= 180 make sense?
         "max_angle_degree": pa.Column(
-            float, pa.Check.le(180), required=False, description="maximum value of the thyristor_firing_angle_degree"
+            float,
+            pa.Check.le(180),
+            nullable=True,
+            required=False,
+            description="maximum value of the thyristor_firing_angle_degree",
         ),  # TODO:do values <= 90 make sense?
     },
     checks=[

@@ -3,7 +3,7 @@ import pandas as pd
 
 b2b_vsc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the B2B VSC"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the B2B VSC"),
         "bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -27,6 +27,7 @@ b2b_vsc_schema = pa.DataFrameSchema(
         "r_dc_ohm": pa.Column(float, description="resistance of the internal dc resistance component of VSC"),
         "pl_dc_mw": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="no-load losses of the VSC on the DC side for the shunt R representing the no load losses",
         ),

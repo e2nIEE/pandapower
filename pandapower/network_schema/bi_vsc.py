@@ -5,7 +5,7 @@ import pandas as pd
 
 bi_vsc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, description=""),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description=""),
         "bus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus.index"}),
         "bus_dc_plus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus_dc.index"}),
         "bus_dc_minus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus_dc.index"}),

@@ -3,8 +3,10 @@ import pandas as pd
 
 asymmetric_sgen_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the static generator"),
-        "type": pa.Column(str, pa.Check.isin(["PV", "WP", "CHP"]), required=False, description="type of generator"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the static generator"),
+        "type": pa.Column(
+            str, pa.Check.isin(["PV", "WP", "CHP"]), nullable=True, required=False, description="type of generator"
+        ),
         "bus": pa.Column(int, description="index of connected bus", metadata={"foreign_key": "bus.index"}),
         "p_a_mw": pa.Column(float, pa.Check.le(0), description="active power of the static generator : Phase A[MW]"),
         "q_a_mvar": pa.Column(float, description="reactive power of the static generator : Phase A [MVar]"),
@@ -13,7 +15,11 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
         "p_c_mw": pa.Column(float, pa.Check.le(0), description="active power of the static generator : Phase C [MW]"),
         "q_c_mvar": pa.Column(float, description="reactive power of the static generator : Phase C [MVar]"),
         "sn_mva": pa.Column(
-            float, pa.Check.gt(0), required=False, description="rated power ot the static generator [MVA]"
+            float,
+            pa.Check.gt(0),
+            nullable=True,
+            required=False,
+            description="rated power ot the static generator [MVA]",
         ),
         "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for the active and reactive power"),
         "in_service": pa.Column(bool, description="specifies if the generator is in service."),
@@ -25,25 +31,25 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
 
 res_asymmetric_sgen_schema = pa.DataFrameSchema(
     {
-        "p_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
-        "q_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_mw": pa.Column(float, description=""),  # TODO: not in docu
+        "q_mvar": pa.Column(float, description=""),  # TODO: not in docu
         "p_a_mw": pa.Column(
-            float, nullable=True, description="resulting active power demand after scaling : Phase A [MW"
+            float, description="resulting active power demand after scaling : Phase A [MW"
         ),  # TODO: only in docu
         "q_a_mvar": pa.Column(
-            float, nullable=True, description="resulting reactive power demand after scaling : Phase A [MVar]"
+            float, description="resulting reactive power demand after scaling : Phase A [MVar]"
         ),  # TODO: only in docu
         "p_b_mw": pa.Column(
-            float, nullable=True, description="resulting active power demand after scaling : Phase B [MW]"
+            float, description="resulting active power demand after scaling : Phase B [MW]"
         ),  # TODO: only in docu
         "q_b_mvar": pa.Column(
-            float, nullable=True, description="resulting reactive power demand after scaling : Phase B [MVar]"
+            float, description="resulting reactive power demand after scaling : Phase B [MVar]"
         ),  # TODO: only in docu
         "p_c_mw": pa.Column(
-            float, nullable=True, description="resulting active power demand after scaling : Phase C [MW]"
+            float, description="resulting active power demand after scaling : Phase C [MW]"
         ),  # TODO: only in docu
         "q_c_mvar": pa.Column(
-            float, nullable=True, description="resulting reactive power demand after scaling : Phase C [MVar]"
+            float, description="resulting reactive power demand after scaling : Phase C [MVar]"
         ),  # TODO: only in docu
     },
     strict=False,
@@ -52,12 +58,12 @@ res_asymmetric_sgen_schema = pa.DataFrameSchema(
 
 res_asymmetric_sgen_3ph_schema = pa.DataFrameSchema(
     {
-        "p_a_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
-        "q_a_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
-        "p_b_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
-        "q_b_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
-        "p_c_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
-        "q_c_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_a_mw": pa.Column(float, description=""),  # TODO: not in docu
+        "q_a_mvar": pa.Column(float, description=""),  # TODO: not in docu
+        "p_b_mw": pa.Column(float, description=""),  # TODO: not in docu
+        "q_b_mvar": pa.Column(float, description=""),  # TODO: not in docu
+        "p_c_mw": pa.Column(float, description=""),  # TODO: not in docu
+        "q_c_mvar": pa.Column(float, description=""),  # TODO: not in docu
     },
     strict=False,
 )

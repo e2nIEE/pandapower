@@ -4,8 +4,8 @@ import pandas as pd
 trafo3w_schema = pa.DataFrameSchema(
     {
         # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the transformer"),
-        "std_type": pa.Column(str, required=False, description="transformer standard type name"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
+        "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
         "hv_bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -59,37 +59,53 @@ trafo3w_schema = pa.DataFrameSchema(
         "tap_side": pa.Column(
             str,
             pa.Check.isin(["hv", "mv", "lv"]),
+            nullable=True,
             required=False,
             description="defines if tap changer is positioned on high- medium- or low voltage side",
         ),
-        "tap_neutral": pa.Column(float, required=False, description=""),  # TODO: different type in docu
-        "tap_min": pa.Column(float, required=False, description="minimum tap position"),  # TODO: different type in docu
-        "tap_max": pa.Column(float, required=False, description="maximum tap position"),  # TODO: different type in docu
-        "tap_step_percent": pa.Column(float, pa.Check.gt(0), required=False, description="tap step size [%]"),
-        "tap_step_degree": pa.Column(float, required=False, description="tap step size for voltage angle"),
-        "tap_at_star_point": pa.Column(
-            bool, required=False, description="whether the tap changer is modelled at terminal or at star point"
+        "tap_neutral": pa.Column(float, nullable=True, required=False, description=""),  # TODO: different type in docu
+        "tap_min": pa.Column(
+            float, nullable=True, required=False, description="minimum tap position"
+        ),  # TODO: different type in docu
+        "tap_max": pa.Column(
+            float, nullable=True, required=False, description="maximum tap position"
+        ),  # TODO: different type in docu
+        "tap_step_percent": pa.Column(
+            float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"
         ),
-        "tap_pos": pa.Column(float, required=False, description="current position of tap changer"),
+        "tap_step_degree": pa.Column(
+            float, nullable=True, required=False, description="tap step size for voltage angle"
+        ),
+        "tap_at_star_point": pa.Column(
+            bool,
+            nullable=True,
+            required=False,
+            description="whether the tap changer is modelled at terminal or at star point",
+        ),
+        "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
         "tap_changer_type": pa.Column(
             str,
             pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
+            nullable=True,
             required=False,
             description="specifies the tap changer type",
         ),
         "tap_dependency_table": pa.Column(
             bool,
+            nullable=True,
             required=False,
             description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
         ),
         "id_characteristic_table": pa.Column(
             pd.Int64Dtype,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="references the id_characteristic index from the trafo_characteristic_table",
         ),
         "max_loading_percent": pa.Column(
             int,  # TODO: guess from trafo2w
+            nullable=True,
             required=False,
             description="",
         ),  # TODO: not in docu only create

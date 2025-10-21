@@ -5,9 +5,12 @@ bus_dc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc bus"),
         "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the dc bus [kV]"),
-        "type": pa.Column(str, required=False, description="type variable to classify buses"),
+        "type": pa.Column(str, nullable=True, required=False, description="type variable to classify buses"),
         "zone": pa.Column(
-            str, required=False, description="can be used to group dc buses, for example network groups / regions"
+            str,
+            nullable=True,
+            required=False,
+            description="can be used to group dc buses, for example network groups / regions",
         ),
         "in_service": pa.Column(bool, description="specifies if the dc bus is in service"),
         "geo": pa.Column(

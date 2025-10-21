@@ -3,16 +3,24 @@ import pandas as pd
 
 ext_grid_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the external grid"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the external grid"),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
         "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage set point [p.u]"),
         "va_degree": pa.Column(float, description="angle set point [degree]"),
-        "max_p_mw": pa.Column(float, required=False, description="Maximum active power", metadata={"opf": True}),
-        "min_p_mw": pa.Column(float, required=False, description="Minimum active power", metadata={"opf": True}),
-        "max_q_mvar": pa.Column(float, required=False, description="Maximum reactive power", metadata={"opf": True}),
-        "min_q_mvar": pa.Column(float, required=False, description="Minimum reactive power", metadata={"opf": True}),
+        "max_p_mw": pa.Column(
+            float, nullable=True, required=False, description="Maximum active power", metadata={"opf": True}
+        ),
+        "min_p_mw": pa.Column(
+            float, nullable=True, required=False, description="Minimum active power", metadata={"opf": True}
+        ),
+        "max_q_mvar": pa.Column(
+            float, nullable=True, required=False, description="Maximum reactive power", metadata={"opf": True}
+        ),
+        "min_q_mvar": pa.Column(
+            float, nullable=True, required=False, description="Minimum reactive power", metadata={"opf": True}
+        ),
         "s_sc_max_mva": pa.Column(
             float,
             pa.Check.gt(0),
@@ -48,6 +56,7 @@ ext_grid_schema = pa.DataFrameSchema(
         "r0x0_max": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="maximal R/X-ratio to calculate Zero sequence internal impedance of ext_grid",
             metadata={"sc": True, "3ph": True},
@@ -55,6 +64,7 @@ ext_grid_schema = pa.DataFrameSchema(
         "x0x_max": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="maximal X0/X-ratio to calculate Zero sequence internal impedance of ext_grid",
             metadata={"sc": True, "3ph": True},

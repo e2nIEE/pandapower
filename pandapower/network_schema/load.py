@@ -32,7 +32,7 @@ load_schema = pa.DataFrameSchema(
             description="percentage of q_mvar that is associated to constant current load at rated voltage [%]",
         ),
         "sn_mva": pa.Column(
-            float, pa.Check.gt(0), required=False, nullable=True, description="rated power of the load [kVA]"
+            float, pa.Check.gt(0), nullable=True, required=False, description="rated power of the load [kVA]"
         ),
         "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
         "in_service": pa.Column(bool, description="specifies if the load is in service."),
@@ -43,14 +43,15 @@ load_schema = pa.DataFrameSchema(
         ),
         "controllable": pa.Column(
             bool,
+            nullable=True,
             required=False,
             description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
         ),
         "zone": pa.Column(str, nullable=True, required=False, description=""),  # TODO: missing in docu
-        "max_p_mw": pa.Column(float, required=False, description="Maximum active power"),
-        "min_p_mw": pa.Column(float, required=False, description="Minimum active power"),
-        "max_q_mvar": pa.Column(float, required=False, description="Maximum reactive power"),
-        "min_q_mvar": pa.Column(float, required=False, description="Minimum reactive power"),
+        "max_p_mw": pa.Column(float, nullable=True, required=False, description="Maximum active power"),
+        "min_p_mw": pa.Column(float, nullable=True, required=False, description="Minimum active power"),
+        "max_q_mvar": pa.Column(float, nullable=True, required=False, description="Maximum reactive power"),
+        "min_q_mvar": pa.Column(float, nullable=True, required=False, description="Minimum reactive power"),
     },
     strict=False,
 )

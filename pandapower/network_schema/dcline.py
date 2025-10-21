@@ -3,7 +3,7 @@ import pandas as pd
 
 dcline_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the generator"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the generator"),
         "from_bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -27,27 +27,37 @@ dcline_schema = pa.DataFrameSchema(
         "vm_to_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at to bus"),
         "max_p_mw": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="Maximum active power transmission",
             metadata={"opf": True},
         ),
         "min_p_mw": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="Minimum active power transmission",
             metadata={"opf": True},
         ),
         "min_q_from_mvar": pa.Column(
-            float, required=False, description="Minimum reactive power at from bus", metadata={"opf": True}
+            float,
+            nullable=True,
+            required=False,
+            description="Minimum reactive power at from bus",
+            metadata={"opf": True},
         ),
         "max_q_from_mvar": pa.Column(
-            float, required=False, description="Maximum reactive power at from bus", metadata={"opf": True}
+            float,
+            nullable=True,
+            required=False,
+            description="Maximum reactive power at from bus",
+            metadata={"opf": True},
         ),
         "min_q_to_mvar": pa.Column(
-            float, required=False, description="Minimum reactive power at to bus", metadata={"opf": True}
+            float, nullable=True, required=False, description="Minimum reactive power at to bus", metadata={"opf": True}
         ),
         "max_q_to_mvar": pa.Column(
-            float, required=False, description="Maximum reactive power at to bus", metadata={"opf": True}
+            float, nullable=True, required=False, description="Maximum reactive power at to bus", metadata={"opf": True}
         ),
         "in_service": pa.Column(bool, description="specifies if the line is in service."),
     },

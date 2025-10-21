@@ -3,7 +3,7 @@ import pandas as pd
 
 line_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the line"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the line"),
         "std_type": pa.Column(
             str,
             nullable=True,
@@ -22,9 +22,17 @@ line_schema = pa.DataFrameSchema(
         "c_nf_per_km": pa.Column(
             float, pa.Check.ge(0), description="capacitance of the line (line-to-earth) [nano Farad per km]"
         ),
+        "g_us_per_km": pa.Column(
+            float,
+            pa.Check.ge(0),
+            nullable=True,
+            required=False,
+            description="dielectric conductance in micro Siemens per km",
+        ),
         "r0_ohm_per_km": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="zero sequence resistance of the line [Ohm per km]",
             metadata={"sc": True, "3ph": True},
@@ -32,6 +40,7 @@ line_schema = pa.DataFrameSchema(
         "x0_ohm_per_km": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="zero sequence reactance of the line [Ohm per km]",
             metadata={"sc": True, "3ph": True},
@@ -39,6 +48,7 @@ line_schema = pa.DataFrameSchema(
         "c0_nf_per_km": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="zero sequence capacitance of the line [nano Farad per km]",
             metadata={"sc": True, "3ph": True},
@@ -47,6 +57,7 @@ line_schema = pa.DataFrameSchema(
             float,
             pa.Check.ge(0),
             nullable=True,
+            required=False,
             description="dielectric conductance of the line [micro Siemens per km]",
         ),
         "max_i_ka": pa.Column(float, pa.Check.gt(0), description="maximal thermal current [kilo Ampere]"),
@@ -58,11 +69,17 @@ line_schema = pa.DataFrameSchema(
             str, pa.Check.isin(["ol", "cs", "nan"]), nullable=True, required=False, description="type of line"
         ),
         "max_loading_percent": pa.Column(
-            float, pa.Check.gt(0), required=False, description="Maximum loading of the line", metadata={"opf": True}
+            float,
+            pa.Check.gt(0),
+            nullable=True,
+            required=False,
+            description="Maximum loading of the line",
+            metadata={"opf": True},
         ),
         "endtemp_degree": pa.Column(
             float,
             pa.Check.gt(0),
+            nullable=True,
             required=False,
             description="Short-Circuit end temperature of the line",
             metadata={"sc": True, "tdpf": True},
@@ -82,60 +99,77 @@ line_schema = pa.DataFrameSchema(
         ),  # TODO: missing in docu
         "tdpf": pa.Column(
             bool,
+            nullable=True,
             required=False,
             description="whether the line is considered in the TDPF calculation",
             metadata={"tdpf": True},
         ),
         "wind_speed_m_per_s": pa.Column(
-            float, required=False, description="wind speed at the line in m/s (TDPF)", metadata={"tdpf": True}
+            float,
+            nullable=True,
+            required=False,
+            description="wind speed at the line in m/s (TDPF)",
+            metadata={"tdpf": True},
         ),
         "wind_angle_degree": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="angle of attack between the wind direction and the line (TDPF)",
             metadata={"tdpf": True},
         ),
         "conductor_outer_diameter_m": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="outer diameter of the line conductor in m (TDPF)",
             metadata={"tdpf": True},
         ),
         "air_temperature_degree_celsius": pa.Column(
-            float, required=False, description="ambient temperature in °C (TDPF)", metadata={"tdpf": True}
+            float,
+            nullable=True,
+            required=False,
+            description="ambient temperature in °C (TDPF)",
+            metadata={"tdpf": True},
         ),
         "reference_temperature_degree_celsius": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)",
             metadata={"tdpf": True},
         ),
         "solar_radiation_w_per_sq_m": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="solar radiation on horizontal plane in W/m² (TDPF)",
             metadata={"tdpf": True},
         ),
         "solar_absorptivity": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="Albedo factor for absorptivity of the lines (TDPF)",
             metadata={"tdpf": True},
         ),
         "emissivity": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="Albedo factor for emissivity of the lines (TDPF)",
             metadata={"tdpf": True},
         ),
         "r_theta_kelvin_per_mw": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="thermal resistance of the line (TDPF, only for simplified method)",
             metadata={"tdpf": True},
         ),
         "mc_joule_per_m_k": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)",
             metadata={"tdpf": True},

@@ -3,7 +3,7 @@ import pandas as pd
 
 load_dc_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the load"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load"),
         "bus_dc": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}
         ),
@@ -15,6 +15,7 @@ load_dc_schema = pa.DataFrameSchema(
         "type": pa.Column(str, description="A string describing the type."),
         "controllable": pa.Column(
             bool,
+            nullable=True,
             required=False,
             description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
         ),

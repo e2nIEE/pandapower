@@ -3,7 +3,7 @@ import pandas as pd
 
 shunt_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the shunt"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the shunt"),
         "bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -20,6 +20,7 @@ shunt_schema = pa.DataFrameSchema(
         "in_service": pa.Column(bool, description="specifies if the shunt is in service"),
         "step_dependency_table": pa.Column(
             bool,
+            nullable=True,
             required=False,
             description="whether the shunt parameters (q_mvar, p_mw) are adjusted dependent on the step of the shunt",
         ),  # TODO: remove

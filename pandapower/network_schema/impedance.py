@@ -3,7 +3,7 @@ import pandas as pd
 
 impedance_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the impedance"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the impedance"),
         "from_bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -77,16 +77,32 @@ impedance_schema = pa.DataFrameSchema(
             description="susceptance at the ‘from_bus’ [p.u.]",
         ),  # TODO: duplicated description?
         "gf0_pu": pa.Column(
-            float, pa.Check.gt(1), required=False, description="zero-sequence conductance at the ‘from_bus’ [p.u.]"
+            float,
+            pa.Check.gt(1),
+            nullable=True,
+            required=False,
+            description="zero-sequence conductance at the ‘from_bus’ [p.u.]",
         ),
         "bf0_pu": pa.Column(
-            float, pa.Check.gt(2), required=False, description="zero-sequence susceptance at the ‘from_bus’ [p.u.]"
+            float,
+            pa.Check.gt(2),
+            nullable=True,
+            required=False,
+            description="zero-sequence susceptance at the ‘from_bus’ [p.u.]",
         ),
         "gt0_pu": pa.Column(
-            float, pa.Check.gt(3), required=False, description="zero-sequence conductance at the ‘from_bus’ [p.u.]"
+            float,
+            pa.Check.gt(3),
+            nullable=True,
+            required=False,
+            description="zero-sequence conductance at the ‘from_bus’ [p.u.]",
         ),
         "bt0_pu": pa.Column(
-            float, pa.Check.gt(4), required=False, description="zero-sequence susceptance at the ‘from_bus’ [p.u.]"
+            float,
+            pa.Check.gt(4),
+            nullable=True,
+            required=False,
+            description="zero-sequence susceptance at the ‘from_bus’ [p.u.]",
         ),
         "sn_mva": pa.Column(
             float, pa.Check.gt(0), description="reference apparent power for the impedance per unit values [MVA]"

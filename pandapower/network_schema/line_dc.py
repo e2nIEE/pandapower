@@ -34,76 +34,97 @@ line_dc_schema = pa.DataFrameSchema(
         "type": pa.Column(
             str,
             pa.Check.isin(["ol", "cs"]),
+            nullable=True,
             required=False,
             description="type of dc line Naming conventions: “”ol”” - overhead dc line, “”cs”” - underground cable system”",
         ),  # TODO: docu broken
         "max_loading_percent": pa.Column(float, pa.Check.gt(0), description="Maximum loading of the dc line"),
         "in_service": pa.Column(bool, description="specifies if the dc line is in service."),
-        "geo": pa.Column(str, required=False, description="geojson.LineString object or its string representation"),
+        "geo": pa.Column(
+            str, nullable=True, required=False, description="geojson.LineString object or its string representation"
+        ),
         "alpha": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))",
         ),
         "temperature_degree_celsius": pa.Column(
-            float, required=False, description="line temperature for which line resistance is adjusted"
+            float, nullable=True, required=False, description="line temperature for which line resistance is adjusted"
         ),
         "tdpf": pa.Column(
             bool,
+            nullable=True,
             required=False,
             description="whether the line is considered in the TDPF calculation",
             metadata={"tdpf": True},
         ),
         "wind_speed_m_per_s": pa.Column(
-            float, required=False, description="wind speed at the line in m/s (TDPF)", metadata={"tdpf": True}
+            float,
+            nullable=True,
+            required=False,
+            description="wind speed at the line in m/s (TDPF)",
+            metadata={"tdpf": True},
         ),
         "wind_angle_degree": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="angle of attack between the wind direction and the line (TDPF)",
             metadata={"tdpf": True},
         ),
         "conductor_outer_diameter_m": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="outer diameter of the line conductor in m (TDPF)",
             metadata={"tdpf": True},
         ),
         "air_temperature_degree_celsius": pa.Column(
-            float, required=False, description="ambient temperature in °C (TDPF)", metadata={"tdpf": True}
+            float,
+            nullable=True,
+            required=False,
+            description="ambient temperature in °C (TDPF)",
+            metadata={"tdpf": True},
         ),
         "reference_temperature_degree_celsius": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="reference temperature in °C for which r_ohm_per_km for the line_dc is specified (TDPF)",
             metadata={"tdpf": True},
         ),
         "solar_radiation_w_per_sq_m": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="solar radiation on horizontal plane in W/m² (TDPF)",
             metadata={"tdpf": True},
         ),
         "solar_absorptivity": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="Albedo factor for absorptivity of the lines (TDPF)",
             metadata={"tdpf": True},
         ),
         "emissivity": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="Albedo factor for emissivity of the lines (TDPF)",
             metadata={"tdpf": True},
         ),
         "r_theta_kelvin_per_mw": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="thermal resistance of the line (TDPF, only for simplified method)",
             metadata={"tdpf": True},
         ),
         "mc_joule_per_m_k": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)",
             metadata={"tdpf": True},

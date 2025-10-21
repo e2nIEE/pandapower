@@ -4,7 +4,7 @@ from pandapower.network_schema.tools import validate_column_group_dependency
 
 trafo_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the transformer"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
         "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
         "hv_bus": pa.Column(
             int,
@@ -25,6 +25,7 @@ trafo_schema = pa.DataFrameSchema(
         "vk0_percent": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="zero sequence relative short-circuit voltage",
             metadata={"sc": True, "3ph": True},
@@ -32,6 +33,7 @@ trafo_schema = pa.DataFrameSchema(
         "vkr0_percent": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="real part of zero sequence relative short-circuit voltage",
             metadata={"sc": True, "3ph": True},
@@ -39,12 +41,14 @@ trafo_schema = pa.DataFrameSchema(
         "mag0_percent": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="z_mag0 / z0 ratio between magnetizing and short circuit impedance (zero sequence)",
             metadata={"sc": True, "3ph": True},
         ),
         "mag0_rx": pa.Column(
             float,
+            nullable=True,
             required=False,
             description="zero sequence magnetizing r/x  ratio",
             metadata={"sc": True, "3ph": True},
@@ -52,6 +56,7 @@ trafo_schema = pa.DataFrameSchema(
         "si0_hv_partial": pa.Column(
             float,
             pa.Check.ge(0),
+            nullable=True,
             required=False,
             description="zero sequence short circuit impedance  distribution in hv side",
             metadata={"sc": True, "3ph": True},
@@ -92,6 +97,7 @@ trafo_schema = pa.DataFrameSchema(
         "tap_changer_type": pa.Column(
             str,
             pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular", "nan"]),
+            nullable=True,
             required=False,  # TODO: according to test test_tap_changer_type_default it should be required
             description="specifies the tap changer type",
         ),
@@ -110,28 +116,32 @@ trafo_schema = pa.DataFrameSchema(
         ),
         "max_loading_percent": pa.Column(
             int,
+            nullable=True,
             required=False,
             description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
             metadata={"opf": True},
         ),  # TODO: only in docu
         "parallel": pa.Column(
-            int, pa.Check.ge(1), required=False, description="number of parallel transformers"
+            int, pa.Check.ge(1), nullable=True, required=False, description="number of parallel transformers"
         ),  # TODO: was gt(0)
         "df": pa.Column(
             float,
             pa.Check.between(min_value=0, max_value=1, include_min=False),
+            nullable=True,
             required=False,
             description="derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)",
         ),
         "in_service": pa.Column(bool, description="specifies if the transformer is in service"),
         "oltc": pa.Column(
             bool,
+            nullable=True,
             required=False,  # TODO: laut docu powerflow relevant, war aber nicht im alten network struct
             description="specifies if the transformer has an OLTC (short-circuit relevant)",
             metadata={"sc": True},
         ),
         "power_station_unit": pa.Column(
             bool,
+            nullable=True,
             required=False,  # TODO: laut docu powerflow relevant, war aber nicht im alten network struct
             description="specifies if the transformer is part of a power_station_unit (short-circuit relevant)",
             metadata={"sc": True},
@@ -159,12 +169,14 @@ trafo_schema = pa.DataFrameSchema(
         "leakage_resistance_ratio_hv": pa.Column(
             float,
             pa.Check.between(min_value=0, max_value=1),
+            nullable=True,
             required=False,
             description="ratio of transformer short-circuit resistance on HV side (default 0.5)",
         ),  # TODO: not in create method call
         "leakage_reactance_ratio_hv": pa.Column(
             float,
             pa.Check.between(min_value=0, max_value=1),
+            nullable=True,
             required=False,
             description="ratio of transformer short-circuit reactance on HV side (default 0.5)",
         ),  # TODO: not in create method call

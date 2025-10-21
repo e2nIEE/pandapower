@@ -3,7 +3,7 @@ import pandas as pd
 
 motor_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, required=False, description="name of the motor"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the motor"),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
