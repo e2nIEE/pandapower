@@ -26,7 +26,8 @@ bus_dc_schema = pa.DataFrameSchema(
 
 res_bus_dc_schema = pa.DataFrameSchema(
     {
-        "vm_pu": pa.Column(float, description="voltage magnitude [p.u]"),
-        "p_mw": pa.Column(float, description="resulting active power demand [MW]"),
+        "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude [p.u]"),
+        "p_mw": pa.Column(float, nullable=True, description="resulting active power demand [MW]"),
     },
+    strict=False,
 )

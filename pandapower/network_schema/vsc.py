@@ -49,14 +49,15 @@ vsc_schema = pa.DataFrameSchema(
 
 res_vsc_schema = pa.DataFrameSchema(
     {
-        "p_mw": pa.Column(float, description="active power consumption of vsc [MW]"),
-        "q_mvar": pa.Column(float, description="reactive power consumption of vsc [MVAr]"),
-        "p_dc_mw": pa.Column(float, description=""),  # TODO: missing in docu
-        "vm_internal_pu": pa.Column(float, description="voltage magnitude at vsc internal bus [pu]"),
-        "va_internal_degree": pa.Column(float, description="voltage angle at vsc internal bus [degree]"),
-        "vm_pu": pa.Column(float, description="voltage magnitude at vsc ac bus [pu]"),
-        "va_degree": pa.Column(float, description="voltage angle at vsc ac bus [degree]"),
-        "vm_internal_dc_pu": pa.Column(float, description=""),  # TODO: missing in docu
-        "vm_dc_pu": pa.Column(float, description=""),  # TODO: missing in docu
+        "p_mw": pa.Column(float, nullable=True, description="active power consumption of vsc [MW]"),
+        "q_mvar": pa.Column(float, nullable=True, description="reactive power consumption of vsc [MVAr]"),
+        "p_dc_mw": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
+        "vm_internal_pu": pa.Column(float, nullable=True, description="voltage magnitude at vsc internal bus [pu]"),
+        "va_internal_degree": pa.Column(float, nullable=True, description="voltage angle at vsc internal bus [degree]"),
+        "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude at vsc ac bus [pu]"),
+        "va_degree": pa.Column(float, nullable=True, description="voltage angle at vsc ac bus [degree]"),
+        "vm_internal_dc_pu": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
+        "vm_dc_pu": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
     },
+    strict=False,
 )

@@ -37,8 +37,9 @@ shunt_schema = pa.DataFrameSchema(
 
 res_shunt_schema = pa.DataFrameSchema(
     {
-        "p_mw": pa.Column(float, description="shunt active power consumption [MW]"),
-        "q_mvar": pa.Column(float, description="shunt reactive power consumption [MVAr]"),
-        "vm_pu": pa.Column(float, description="voltage magnitude at shunt bus [pu]"),
+        "p_mw": pa.Column(float, nullable=True, description="shunt active power consumption [MW]"),
+        "q_mvar": pa.Column(float, nullable=True, description="shunt reactive power consumption [MVAr]"),
+        "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude at shunt bus [pu]"),
     },
+    strict=False,
 )

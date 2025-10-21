@@ -26,7 +26,9 @@ res_load_dc_schema = pa.DataFrameSchema(
     {
         "p_dc_mw": pa.Column(
             float,
+            nullable=True,
             description="resulting active power demand after scaling and after considering voltage dependence [MW]",
         )
     },
+    strict=False,
 )

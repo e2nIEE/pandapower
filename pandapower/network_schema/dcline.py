@@ -56,14 +56,19 @@ dcline_schema = pa.DataFrameSchema(
 
 res_dcline_schema = pa.DataFrameSchema(
     {
-        "p_from_mw": pa.Column(float, description="active power flow into the line at ‘from_bus’ [MW]"),
-        "q_from_mvar": pa.Column(float, description="reactive power flow into the line at ‘from_bus’ [kVar]"),
-        "p_to_mw": pa.Column(float, description="active power flow into the line at ‘to_bus’ [MW]"),
-        "q_to_mvar": pa.Column(float, description="reactive power flow into the line at ‘to_bus’ [kVar]"),
-        "pl_mw": pa.Column(float, description="active power losses of the line [MW]"),
-        "vm_from_pu": pa.Column(float, description="voltage magnitude at ‘from_bus’ [p.u]"),
-        "va_from_degree": pa.Column(float, description="voltage angle at ‘from_bus’ [degree]"),
-        "vm_to_pu": pa.Column(float, description="voltage magnitude at ‘to_bus’ [p.u]"),
-        "va_to_degree": pa.Column(float, description="voltage angle at ‘to_bus’ [degree]"),
+        "p_from_mw": pa.Column(float, nullable=True, description="active power flow into the line at ‘from_bus’ [MW]"),
+        "q_from_mvar": pa.Column(
+            float, nullable=True, description="reactive power flow into the line at ‘from_bus’ [kVar]"
+        ),
+        "p_to_mw": pa.Column(float, nullable=True, description="active power flow into the line at ‘to_bus’ [MW]"),
+        "q_to_mvar": pa.Column(
+            float, nullable=True, description="reactive power flow into the line at ‘to_bus’ [kVar]"
+        ),
+        "pl_mw": pa.Column(float, nullable=True, description="active power losses of the line [MW]"),
+        "vm_from_pu": pa.Column(float, nullable=True, description="voltage magnitude at ‘from_bus’ [p.u]"),
+        "va_from_degree": pa.Column(float, nullable=True, description="voltage angle at ‘from_bus’ [degree]"),
+        "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at ‘to_bus’ [p.u]"),
+        "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at ‘to_bus’ [degree]"),
     },
+    strict=False,
 )

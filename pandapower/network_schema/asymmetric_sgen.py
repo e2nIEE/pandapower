@@ -25,37 +25,39 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
 
 res_asymmetric_sgen_schema = pa.DataFrameSchema(
     {
-        "p_mw": pa.Column(float, description=""),  # TODO: not in docu
-        "q_mvar": pa.Column(float, description=""),  # TODO: not in docu
-        # "p_a_mw": pa.Column(
-        #     float, description="resulting active power demand after scaling : Phase A [MW"
-        # ),  #TODO: only in docu
-        # "q_a_mvar": pa.Column(
-        #     float, description="resulting reactive power demand after scaling : Phase A [MVar]"
-        # ),  #TODO: only in docu
-        # "p_b_mw": pa.Column(
-        #     float, description="resulting active power demand after scaling : Phase B [MW]"
-        # ),  #TODO: only in docu
-        # "q_b_mvar": pa.Column(
-        #     float, description="resulting reactive power demand after scaling : Phase B [MVar]"
-        # ),  #TODO: only in docu
-        # "p_c_mw": pa.Column(
-        #     float, description="resulting active power demand after scaling : Phase C [MW]"
-        # ),  #TODO: only in docu
-        # "q_c_mvar": pa.Column(
-        #     float, description="resulting reactive power demand after scaling : Phase C [MVar]"
-        # ),  #TODO: only in docu
+        "p_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_a_mw": pa.Column(
+            float, nullable=True, description="resulting active power demand after scaling : Phase A [MW"
+        ),  # TODO: only in docu
+        "q_a_mvar": pa.Column(
+            float, nullable=True, description="resulting reactive power demand after scaling : Phase A [MVar]"
+        ),  # TODO: only in docu
+        "p_b_mw": pa.Column(
+            float, nullable=True, description="resulting active power demand after scaling : Phase B [MW]"
+        ),  # TODO: only in docu
+        "q_b_mvar": pa.Column(
+            float, nullable=True, description="resulting reactive power demand after scaling : Phase B [MVar]"
+        ),  # TODO: only in docu
+        "p_c_mw": pa.Column(
+            float, nullable=True, description="resulting active power demand after scaling : Phase C [MW]"
+        ),  # TODO: only in docu
+        "q_c_mvar": pa.Column(
+            float, nullable=True, description="resulting reactive power demand after scaling : Phase C [MVar]"
+        ),  # TODO: only in docu
     },
+    strict=False,
 )
 
 
 res_asymmetric_sgen_3ph_schema = pa.DataFrameSchema(
     {
-        "p_a_mw": pa.Column(float, description=""),  # TODO: not in docu
-        "q_a_mvar": pa.Column(float, description=""),  # TODO: not in docu
-        "p_b_mw": pa.Column(float, description=""),  # TODO: not in docu
-        "q_b_mvar": pa.Column(float, description=""),  # TODO: not in docu
-        "p_c_mw": pa.Column(float, description=""),  # TODO: not in docu
-        "q_c_mvar": pa.Column(float, description=""),  # TODO: not in docu
+        "p_a_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_a_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_b_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_b_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_c_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_c_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
     },
+    strict=False,
 )

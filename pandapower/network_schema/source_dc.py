@@ -33,5 +33,6 @@ source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
 )
 
 res_source_dc_schema = pa.DataFrameSchema(
-    {"p_dc_mw": pa.Column(float, description="resulting active power demand after scaling [MW]")},
+    {"p_dc_mw": pa.Column(float, nullable=True, description="resulting active power demand after scaling [MW]")},
+    strict=False,
 )

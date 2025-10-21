@@ -59,11 +59,14 @@ res_load_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(
             float,
+            nullable=True,
             description="resulting active power demand after scaling and after considering voltage dependence [MW]",
         ),
         "q_mvar": pa.Column(
             float,
+            nullable=True,
             description="resulting reactive power demand after scaling and after considering voltage dependence [MVar]",
         ),
     },
+    strict=False,
 )

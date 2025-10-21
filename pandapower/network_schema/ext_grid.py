@@ -68,18 +68,32 @@ ext_grid_schema = pa.DataFrameSchema(
 
 res_ext_grid_schema = pa.DataFrameSchema(
     {
-        "p_mw": pa.Column(float, description="active power supply at the external grid [MW]"),
-        "q_mvar": pa.Column(float, description="reactive power supply at the external grid [MVar]"),
+        "p_mw": pa.Column(float, nullable=True, description="active power supply at the external grid [MW]"),
+        "q_mvar": pa.Column(float, nullable=True, description="reactive power supply at the external grid [MVar]"),
     },
+    strict=False,
 )
 
 res_ext_grid_3ph_schema = pa.DataFrameSchema(
     {
-        "p_a_mw": pa.Column(float, description="active power supply at the external grid : Phase A [MW]"),
-        "q_a_mvar": pa.Column(float, description="reactive power supply at the external grid : Phase A [MVar]"),
-        "p_b_mw": pa.Column(float, description="active power supply at the external grid : Phase B [MW]"),
-        "q_b_mvar": pa.Column(float, description="reactive power supply at the external grid : Phase B [MVar]"),
-        "p_c_mw": pa.Column(float, description="active power supply at the external grid : Phase C [MW]"),
-        "q_c_mvar": pa.Column(float, description="reactive power supply at the external grid : Phase C [MVar]"),
+        "p_a_mw": pa.Column(
+            float, nullable=True, description="active power supply at the external grid : Phase A [MW]"
+        ),
+        "q_a_mvar": pa.Column(
+            float, nullable=True, description="reactive power supply at the external grid : Phase A [MVar]"
+        ),
+        "p_b_mw": pa.Column(
+            float, nullable=True, description="active power supply at the external grid : Phase B [MW]"
+        ),
+        "q_b_mvar": pa.Column(
+            float, nullable=True, description="reactive power supply at the external grid : Phase B [MVar]"
+        ),
+        "p_c_mw": pa.Column(
+            float, nullable=True, description="active power supply at the external grid : Phase C [MW]"
+        ),
+        "q_c_mvar": pa.Column(
+            float, nullable=True, description="reactive power supply at the external grid : Phase C [MVar]"
+        ),
     },
+    strict=False,
 )

@@ -32,10 +32,11 @@ ssc_schema = pa.DataFrameSchema(
 
 res_ssc_schema = pa.DataFrameSchema(
     {
-        "q_mvar": pa.Column(float, description="shunt reactive power consumption of ssc [MVAr]"),
-        "vm_internal_pu": pa.Column(float, description="voltage magnitude at ssc internal bus [pu]"),
-        "va_internal_degree": pa.Column(float, description="voltage angle at ssc internal bus [degree]"),
-        "vm_pu": pa.Column(float, description="voltage magnitude at ssc bus [pu]"),
-        "va_degree": pa.Column(float, description="voltage angle at ssc bus [degree]"),
+        "q_mvar": pa.Column(float, nullable=True, description="shunt reactive power consumption of ssc [MVAr]"),
+        "vm_internal_pu": pa.Column(float, nullable=True, description="voltage magnitude at ssc internal bus [pu]"),
+        "va_internal_degree": pa.Column(float, nullable=True, description="voltage angle at ssc internal bus [degree]"),
+        "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude at ssc bus [pu]"),
+        "va_degree": pa.Column(float, nullable=True, description="voltage angle at ssc bus [degree]"),
     },
+    strict=False,
 )

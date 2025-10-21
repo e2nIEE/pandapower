@@ -22,10 +22,11 @@ xward_schema = pa.DataFrameSchema(
 
 res_xward_schema = pa.DataFrameSchema(
     {
-        "p_mw": pa.Column(float, description="active power demand of the ward equivalent [MW]"),
-        "q_mvar": pa.Column(float, description="reactive power demand of the ward equivalent [MVar]"),
-        "vm_pu": pa.Column(float, description="voltage at the ward bus [p.u]"),
-        "va_internal_degree": pa.Column(float, description=""),  # TODO: missing in docu
-        "vm_internal_pu": pa.Column(float, description=""),  # TODO: missing in docu
+        "p_mw": pa.Column(float, nullable=True, description="active power demand of the ward equivalent [MW]"),
+        "q_mvar": pa.Column(float, nullable=True, description="reactive power demand of the ward equivalent [MVar]"),
+        "vm_pu": pa.Column(float, nullable=True, description="voltage at the ward bus [p.u]"),
+        "va_internal_degree": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
+        "vm_internal_pu": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
     },
+    strict=False,
 )

@@ -56,19 +56,24 @@ tcsc_schema = pa.DataFrameSchema(
 res_tcsc_schema = pa.DataFrameSchema(
     {
         "thyristor_firing_angle_degree": pa.Column(
-            float, description="the resulting value of thyristor firing angle of tcsc [degree]"
+            float, nullable=True, description="the resulting value of thyristor firing angle of tcsc [degree]"
         ),
-        "x_ohm": pa.Column(float, description="resulting value of the shunt impedance of tcsc [Ohm]"),
-        "p_from_mw": pa.Column(float, description="active power consumed at the from bus of tcsc [MW]"),
-        "q_from_mvar": pa.Column(float, description="reactive power consumed at the from bus of tcsc [MVAr]"),
-        "p_to_mw": pa.Column(float, description="active power consumed at the to bus of tcsc [MW]"),
-        "q_to_mvar": pa.Column(float, description="reactive power consumed at the to bus of tcsc [MVAr]"),
-        "pl_mw": pa.Column(float, description="active power losses of tcsc [MW]"),
-        "ql_mvar": pa.Column(float, description="reactive power losses of tcsc [MVAr]"),
-        "i_ka": pa.Column(float, description=""),  # TODO: docu missing
-        "vm_from_pu": pa.Column(float, description="voltage magnitude at the from bus [pu]"),
-        "va_from_degree": pa.Column(float, description="voltage angle at the from bus [degree]"),
-        "vm_to_pu": pa.Column(float, description="voltage magnitude at the to bus [pu]"),
-        "va_to_degree": pa.Column(float, description="voltage angle at the to bus [degree]"),
+        "x_ohm": pa.Column(float, nullable=True, description="resulting value of the shunt impedance of tcsc [Ohm]"),
+        "p_from_mw": pa.Column(float, nullable=True, description="active power consumed at the from bus of tcsc [MW]"),
+        "q_from_mvar": pa.Column(
+            float, nullable=True, description="reactive power consumed at the from bus of tcsc [MVAr]"
+        ),
+        "p_to_mw": pa.Column(float, nullable=True, description="active power consumed at the to bus of tcsc [MW]"),
+        "q_to_mvar": pa.Column(
+            float, nullable=True, description="reactive power consumed at the to bus of tcsc [MVAr]"
+        ),
+        "pl_mw": pa.Column(float, nullable=True, description="active power losses of tcsc [MW]"),
+        "ql_mvar": pa.Column(float, nullable=True, description="reactive power losses of tcsc [MVAr]"),
+        "i_ka": pa.Column(float, nullable=True, description=""),  # TODO: docu missing
+        "vm_from_pu": pa.Column(float, nullable=True, description="voltage magnitude at the from bus [pu]"),
+        "va_from_degree": pa.Column(float, nullable=True, description="voltage angle at the from bus [degree]"),
+        "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at the to bus [pu]"),
+        "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at the to bus [degree]"),
     },
+    strict=False,
 )

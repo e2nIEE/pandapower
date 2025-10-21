@@ -114,14 +114,19 @@ line_dc_schema = pa.DataFrameSchema(
 
 res_line_dc_schema = pa.DataFrameSchema(
     {
-        "p_from_mw": pa.Column(float, description="active power flow into the dc line at “”from”” dc bus [MW]"),
-        "p_to_mw": pa.Column(float, description="active power flow into the dc line at “”to”” dc bus [MW]"),
-        "pl_mw": pa.Column(float, description="active power losses of the dc line [MW]"),
-        "i_from_ka": pa.Column(float, description="Current at from dc bus [kA]"),
-        "i_to_ka": pa.Column(float, description="Current at to dc bus [kA]"),
-        "i_ka": pa.Column(float, description="Maximum of i_from_ka and i_to_ka [kA]"),
-        "vm_from_pu": pa.Column(float, description="voltage magnitude at from dc bus"),
-        "vm_to_pu": pa.Column(float, description="voltage magnitude at to dc bus"),
-        "loading_percent": pa.Column(float, description="line loading [%]"),
+        "p_from_mw": pa.Column(
+            float, nullable=True, description="active power flow into the dc line at “”from”” dc bus [MW]"
+        ),
+        "p_to_mw": pa.Column(
+            float, nullable=True, description="active power flow into the dc line at “”to”” dc bus [MW]"
+        ),
+        "pl_mw": pa.Column(float, nullable=True, description="active power losses of the dc line [MW]"),
+        "i_from_ka": pa.Column(float, nullable=True, description="Current at from dc bus [kA]"),
+        "i_to_ka": pa.Column(float, nullable=True, description="Current at to dc bus [kA]"),
+        "i_ka": pa.Column(float, nullable=True, description="Maximum of i_from_ka and i_to_ka [kA]"),
+        "vm_from_pu": pa.Column(float, nullable=True, description="voltage magnitude at from dc bus"),
+        "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at to dc bus"),
+        "loading_percent": pa.Column(float, nullable=True, description="line loading [%]"),
     },
+    strict=False,
 )
