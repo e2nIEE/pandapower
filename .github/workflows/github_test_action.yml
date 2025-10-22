@@ -182,6 +182,7 @@ jobs:
         uv pip install setuptools
         if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi        
         uv pip install matplotlib
+        uv pip install lxml
         if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
     - name: Install pandapipes and simbench
       run: |
