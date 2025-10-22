@@ -8,10 +8,10 @@ from __future__ import annotations
 import logging
 import warnings
 from typing import Iterable, Sequence
+from functools import partial
 
-import numpy as np
 import pandas as pd
-from numpy import nan, isnan, isin, array, bool_, float64
+from numpy import nan, isnan, isin, array, bool_, float64, full, integer, all as all_
 import numpy.typing as npt
 
 from pandapower.auxiliary import pandapowerNet
@@ -130,7 +130,7 @@ def create_transformer(
     index = _get_index_with_check(net, "trafo", index, name="transformer")
 
     if df <= 0:
-        raise UserWarning(f"derating factor df must be positive: df = {df:.3f}")
+        raise ValueError(f"derating factor 'df' must be positive: df = {df:.3f}")
 
     entries: dict[str, str | Int | bool | float | None] = {
         "name": name,
@@ -175,9 +175,7 @@ def create_transformer(
         elif tap_pos_var is not nan:
             entries[f"tap{s}_pos"] = tap_pos_var
             if isinstance(tap_pos_var, float):
-                net.trafo[f"tap{s}_pos"] = net.trafo.get(f"tap{s}_pos", np.full(len(net.trafo), np.nan)).astype(
-                    np.float64
-                )
+                net.trafo[f"tap{s}_pos"] = net.trafo.get(f"tap{s}_pos", full(len(net.trafo), nan)).astype(float64)
 
     for key in ["tap_dependent_impedance", "vk_percent_characteristic", "vkr_percent_characteristic"]:
         if key in kwargs:
@@ -214,6 +212,56 @@ def create_transformer(
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
+
+
+def create_transformers(
+    net: pandapowerNet,
+    hv_buses: Sequence,
+    lv_buses: Sequence,
+    std_type: str,
+    name: Iterable[str] | None = None,
+    tap_pos: int | Iterable[int] | float = nan,
+    in_service: bool | Iterable[bool] = True,
+    index: Int | Iterable[Int] | None = None,
+    max_loading_percent: float | Iterable[float] = nan,
+    parallel: int | Iterable[int] = 1,
+    df: float | Iterable[float] = 1.0,
+    tap_changer_type: TapChangerWithTabularType | Iterable[str] | None = None,
+    tap_dependency_table: bool | Iterable[bool] = False,
+    id_characteristic_table: int | Iterable[int] | None = None,
+    pt_percent: float | Iterable[float] = nan,
+    oltc: bool | Iterable[bool] = False,
+    xn_ohm: float | Iterable[float] = nan,
+    tap2_pos: int | Iterable[int] | float = nan,
+    **kwargs,
+) -> npt.NDArray[Int]:
+    """
+    Creates several two-winding transformers in table net.trafo.
+
+    EXAMPLE:
+        create_transformers(
+            net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="0.4 MVA 10/0.4 kV", name=["trafo1", "trafo2"]
+        )
+    """
+
+    std_params = load_std_type(net, std_type, "trafo")
+
+    required_params = ("sn_mva", "vn_lv_kv", "vn_hv_kv", "vk_percent", "vkr_percent", "pfe_kw")
+    if not all(param in std_params for param in required_params):
+        raise ValueError(f"std_type is missing a required value. Required values: {', '.join(required_params)}")
+    params_from_std_type = (
+        "i0_percent", "vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", "si0_hv_partial", "vector_group",
+        *required_params
+    )
+
+    return create_transformers_from_parameters(
+        net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
+        max_loading_percent=max_loading_percent, parallel=parallel, df=df, tap_changer_type=tap_changer_type,
+        tap_dependency_table=tap_dependency_table, id_characteristic_table=id_characteristic_table,
+        pt_percent=pt_percent, oltc=oltc, xn_ohm=xn_ohm, tap2_pos=tap2_pos,
+        **{param: std_params[param] for param in params_from_std_type if param in std_params},
+        **kwargs
+    )
 
 
 def create_transformer_from_parameters(
@@ -457,13 +505,13 @@ def create_transformer_from_parameters(
     )
 
     _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo", dtype=str)
-    _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_min, "tap2_min", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_max, "tap2_max", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_step_percent, "tap2_step_percent", "trafo", dtype=np.float64)
-    _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo", dtype=np.float64)
+    _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo", dtype=float64)
+    _set_value_if_not_nan(net, index, tap2_min, "tap2_min", "trafo", dtype=float64)
+    _set_value_if_not_nan(net, index, tap2_max, "tap2_max", "trafo", dtype=float64)
+    _set_value_if_not_nan(net, index, tap2_step_percent, "tap2_step_percent", "trafo", dtype=float64)
+    _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo", dtype=float64)
     _set_value_if_not_nan(
-        net, index, tap2_pos if pd.notnull(tap2_pos) else tap2_neutral, "tap2_pos", "trafo", dtype=np.float64
+        net, index, tap2_pos if pd.notnull(tap2_pos) else tap2_neutral, "tap2_pos", "trafo", dtype=float64
     )
     _set_value_if_not_nan(net, index, tap2_changer_type, "tap2_changer_type", "trafo", dtype=object)
 
@@ -916,6 +964,61 @@ def create_transformer3w(
     return index
 
 
+def create_transformers3w(
+    net: pandapowerNet,
+    hv_buses: Sequence,
+    mv_buses: Sequence,
+    lv_buses: Sequence,
+    std_type: str,
+    tap_pos: int | Iterable[int] | float = nan,
+    name: Iterable[str] | None = None,
+    in_service: bool | Iterable[bool] = True,
+    index: Int | Iterable[Int] | None = None,
+    max_loading_percent: float | Iterable[float] = nan,
+    tap_at_star_point: bool | Iterable[bool] = False,
+    tap_changer_type: float | Iterable[float] | None = None,
+    tap_dependency_table: bool | Iterable[bool] = False,
+    id_characteristic_table: int | Iterable[int] | None = None,
+    **kwargs,
+) -> npt.NDArray[Int]:
+    """
+    Creates several two-winding transformers in table net.trafo.
+
+    EXAMPLE:
+        create_transformers(
+            net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="0.4 MVA 10/0.4 kV", name=["trafo1", "trafo2"]
+        )
+    """
+
+    std_params = load_std_type(net, std_type, "trafo")
+
+    params = {
+        "shift_mv_degree": std_params.get("shift_mv_degree", 0),
+        "shift_lv_degree": std_params.get("shift_lv_degree", 0),
+    }
+
+    required_params = (
+        "sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
+        "vk_hv_percent", "vk_mv_percent", "vk_lv_percent",
+        "vkr_hv_percent", "vkr_mv_percent", "vkr_lv_percent", "pfe_kw", "i0_percent")
+    if not all(param in std_params for param in required_params):
+        raise ValueError(f"std_type is missing a required value. Required values: {', '.join(required_params)}")
+    params_from_std_type = (
+        "tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent", "tap_step_degree", "tap_changer_type",
+        *required_params
+    )
+
+    return create_transformers3w_from_parameters(
+        net=net, hv_buses=hv_buses, mv_buses=mv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos,
+        in_service=in_service, index=index, max_loading_percent=max_loading_percent,
+        tap_changer_type=tap_changer_type, tap_dependency_table=tap_dependency_table,
+        id_characteristic_table=id_characteristic_table, tap_at_star_point=tap_at_star_point,
+        **params,
+        **{param: std_params[param] for param in params_from_std_type if param in std_params},
+        **kwargs
+    )
+
+
 def create_transformer3w_from_parameters(
     net: pandapowerNet,
     hv_bus: Int,
@@ -1195,7 +1298,7 @@ def create_transformers3w_from_parameters(  # no index ?
     tap_dependency_table: bool | Iterable[bool] = False,
     id_characteristic_table: int | Iterable[int] | None = None,
     **kwargs,
-) -> npt.NDArray[np.integer]:
+) -> npt.NDArray[integer]:
     """
     Adds multiple three-winding transformers in table net.trafo3w with the specified parameters.
     The model currently only supports one tap changer per 3w-transformer.
@@ -1312,7 +1415,7 @@ def create_transformers3w_from_parameters(  # no index ?
 
     index = _get_multiple_index_with_check(net, "trafo3w", index, len(hv_buses), name="Three winding transformers")
 
-    if not np.all([isin(hv_buses, net.bus.index), isin(mv_buses, net.bus.index), isin(lv_buses, net.bus.index)]):
+    if not all_([isin(hv_buses, net.bus.index), isin(mv_buses, net.bus.index), isin(lv_buses, net.bus.index)]):
         bus_not_exist = (set(hv_buses) | set(mv_buses) | set(lv_buses)) - set(net.bus.index)
         raise UserWarning(f"Transformers trying to attach to non existing buses {bus_not_exist}")
 
