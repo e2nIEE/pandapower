@@ -8,6 +8,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
+from pandapower import pp_dir
 from pandapower.auxiliary import pandapowerNet
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import count_elements
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def _testfiles_folder():
-    return os.path.join(pp.pp_dir, 'test', 'converter', "testfiles")
+    return os.path.join(pp_dir, 'test', 'converter', "testfiles")
 
 
 def _results_from_powerfactory():

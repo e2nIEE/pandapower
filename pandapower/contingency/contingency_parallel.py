@@ -58,7 +58,7 @@ def run_contingency_parallel(net: pandapowerNet,
     :param dict pf_options: options for power flow calculation in N-0 case
     :param dict pf_options_nminus1: options for power flow calculation in N-1 cases
     :param bool write_to_net: whether to write the results of contingency analysis to net (in `res_` tables).
-    :param callable contingency_evaluation_function: function to use for power flow calculation, default pp.runpp
+    :param callable contingency_evaluation_function: function to use for power flow calculation, default runpp
     :param int n_procs: Number of processors to use. If None, all available cores are used. If 1, runs sequentially.
     :return: contingency results dict of arrays per element for index, min/max result
     :rtype: dict
