@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] cim2pp: added EquipmentContainer to BusbarSection and Junction, added max and min p to sgen, updated schemas
 - [FIXED] network_structure: id_q_capability_characteristic -> pd.Int64Dtype(), id_characteristic_table -> pd.Int64Dtype()
 - [FIXED] cim2pp: extracting the additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
 - [CHANGED] create.py: refactored to create module with smaller files. Backwards compatible, importing does not require change!

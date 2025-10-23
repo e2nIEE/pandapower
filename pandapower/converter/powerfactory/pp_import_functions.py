@@ -18,7 +18,7 @@ from pandapower.create import create_empty_network, create_bus, create_bus_dc, c
     create_shunt, create_line, create_line_from_parameters, create_line_dc, create_sgen, create_gen, create_ext_grid, \
     create_asymmetric_sgen, create_line_dc_from_parameters, create_asymmetric_load, create_transformer, \
     create_transformer_from_parameters, create_transformer3w_from_parameters, create_impedance, create_xward, \
-    create_ward, create_series_reactor_as_impedance
+    create_ward, create_series_reactor_as_impedance, create_vsc as _create_vsc
 from pandapower.results import reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
@@ -3778,7 +3778,7 @@ def create_vscmono(net, item):
             f"VSCmono element {params['name']} has no DC resistive loss factor - power flow will not converge!"
         )
 
-    vid = create_vsc(net, **params)
+    vid = _create_vsc(net, **params)
     logger.debug(f'created VSC {vid} for vscmono {item.loc_name}')
 
     result_variables = {"pf_p_mw": "m:P:busac",
@@ -3827,8 +3827,8 @@ def create_vsc(net, item):
     if params["r_dc_ohm"] == 0:
         logger.warning(f"VSC element {params['name']} has no DC resistive loss factor - power flow will not converge!")
 
-    vid_1 = create_vsc(net, bus=bus, bus_dc=bus_dc_n, **params)
-    vid_2 = create_vsc(net, bus=bus, bus_dc=bus_dc_p, **params)
+    vid_1 = _create_vsc(net, bus=bus, bus_dc=bus_dc_n, **params)
+    vid_2 = _create_vsc(net, bus=bus, bus_dc=bus_dc_p, **params)
     logger.debug(f'created two vsc mono {vid_1}, {vid_2} for vsc {item.loc_name}')
 
     result_variables = {"pf_p_mw": "m:P:busac",
