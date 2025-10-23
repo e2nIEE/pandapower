@@ -375,7 +375,7 @@ def create_transformer_from_parameters(
 
         **mag0_rx** (float) - zero sequence magnetizing R/X ratio
 
-        **si0_hv_partial** (float) - Distribution of zero sequence leakage impedances for HV side
+        **si0_hv_partial** (float) - Distribution of zero sequence leakage impedance's for HV side
 
     OPTIONAL:
 
@@ -657,7 +657,7 @@ def create_transformers_from_parameters(  # index missing ?
 
         **mag0_rx** (list of float) - zero sequence magnetizing R/X ratio
 
-        **si0_hv_partial** (list of float) - distribution of zero sequence leakage impedances for HV side
+        **si0_hv_partial** (list of float) - distribution of zero sequence leakage impedance's for HV side
 
     OPTIONAL:
 
@@ -1011,11 +1011,34 @@ def create_transformers3w(
 ) -> npt.NDArray[Int]:
     """
     Creates several two-winding transformers in table net.trafo.
+    Additional parameters passed will be added to the transformers dataframe. If keywords are passed that are present
+    in the std_type they will override any setting from the standard type.
 
-    EXAMPLE:
-        create_transformers3w(
-            net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="63/25/38 MVA 110/20/10 kV", name=["trafo1", "trafo2"]
-        )
+    :param net: the pandapower network to which the transformers should be added
+    :type net: pandapower.pandapowerNet
+    :param Sequence hv_buses: a Sequence of bus ids that are the high voltage buses for the transformers
+    :param Sequence mv_buses: a Sequence of bus ids that are the medium voltage buses for the transformers
+    :param Sequence lv_buses: a Sequence of bus ids that are the low valtage buses for the transformers
+    :param str std_type: the transformer std_type to get the not specified parameters from
+    :param tap_pos: current tap position of the transformers. Defaults to the medium position (tap_neutral), default nan
+    :type tap_pos: int | Iterable[int] | float
+    :param name: names for the transformers, default None
+    :type name: Iterable[str]
+    :param in_service: Wheather the transforers are in or out of service, default True
+    :type in_service: bool | Itreable[bool]
+    :param index: the index to use for the new elements, default None
+    :type index: Int | Iterable[Int] | None
+    :param max_loading_percent: the maximum loading percentage of the transformer, default nan
+    :type max_loading_percent: float | Iterable[float]
+    :param tap_at_star_point: whether tap changer is modelled at star point or at the bus
+    :param tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular" or None), default None
+    :param tap_dependency_table: True if sanity checks should be performed. See SplineCharacteristics, default False
+    :param id_characteristic_table: id of the SplineCharacteristic, default None
+
+    :example:
+        >>> create_transformers3w(
+        >>>     net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="63/25/38 MVA 110/20/10 kV", name=["trafo1", "trafo2"]
+        >>> )
     """
 
     std_params = load_std_type(net, std_type, "trafo3w")
