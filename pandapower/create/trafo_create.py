@@ -1001,7 +1001,7 @@ def create_transformers3w(
     tap_pos: int | Iterable[int] | float = nan,
     name: Iterable[str] | None = None,
     in_service: bool | Iterable[bool] = True,
-    index: Int | Iterable[Int] | None = None,
+    index: Iterable[Int] | None = None,
     max_loading_percent: float | Iterable[float] = nan,
     tap_at_star_point: bool | Iterable[bool] = False,
     tap_changer_type: float | Iterable[float] | None = None,
