@@ -148,6 +148,26 @@ def _bus_index_validation(element, net: pandapowerNet):
             )
 
 
+def get_metadata_columns_from_schema_dict(schema, name):
+    """Extract column names that have opf=True in their metadata."""
+    return [
+        col_name for col_name, col_schema in schema.items() if col_schema.metadata and col_schema.metadata.get(name)
+    ]
+
+
+def create_checks_from_metadata(names, schema_columns):
+    checks = []
+    for name in names:
+        for col in get_metadata_columns_from_schema_dict(schema_columns, name):
+            checks.append(
+                pa.Check(
+                    validate_column_group_dependency(col),
+                    error=f"{name} columns have dependency violations. Please ensure {col} columns are present in the dataframe.",
+                )
+            )
+    return checks
+
+
 def create_docu_csv_from_schema(schema):
     import pandas as pd
     import json

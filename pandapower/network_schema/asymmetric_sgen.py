@@ -1,5 +1,5 @@
-import pandera.pandas as pa
 import pandas as pd
+import pandera.pandas as pa
 
 asymmetric_sgen_schema = pa.DataFrameSchema(
     {

@@ -1,26 +1,30 @@
-import pandera.pandas as pa
 import pandas as pd
+import pandera.pandas as pa
 
+from pandapower.network_schema.tools import create_checks_from_metadata
+
+_bus_columns = {
+    "name": pa.Column(pd.StringDtype, nullable=True, required=True, description="name of the bus"),
+    "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the bus [kV]"),
+    "type": pa.Column(str, nullable=True, required=False, description="type variable to classify buses"),
+    "zone": pa.Column(
+        str,
+        nullable=True,
+        required=False,
+        description="can be used to group buses, for example network groups / regions",
+    ),
+    "max_vm_pu": pa.Column(
+        float, pa.Check.gt(0), nullable=True, required=False, description="Maximum voltage", metadata={"opf": True}
+    ),
+    "min_vm_pu": pa.Column(
+        float, pa.Check.gt(0), nullable=True, required=False, description="Minimum voltage", metadata={"opf": True}
+    ),
+    "in_service": pa.Column(bool, description="specifies if the bus is in service."),
+    "geo": pa.Column(str, nullable=True, required=False, description="geojson.Point as object or string"),
+}
 bus_schema = pa.DataFrameSchema(
-    {
-        "name": pa.Column(pd.StringDtype, nullable=True, required=True, description="name of the bus"),
-        "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the bus [kV]"),
-        "type": pa.Column(str, nullable=True, required=False, description="type variable to classify buses"),
-        "zone": pa.Column(
-            str,
-            nullable=True,
-            required=False,
-            description="can be used to group buses, for example network groups / regions",
-        ),
-        "max_vm_pu": pa.Column(
-            float, pa.Check.gt(0), nullable=True, required=False, description="Maximum voltage", metadata={"opf": True}
-        ),
-        "min_vm_pu": pa.Column(
-            float, pa.Check.gt(0), nullable=True, required=False, description="Minimum voltage", metadata={"opf": True}
-        ),
-        "in_service": pa.Column(bool, description="specifies if the bus is in service."),
-        "geo": pa.Column(str, nullable=True, required=False, description="geojson.Point as object or string"),
-    },
+    _bus_columns,
+    checks=create_checks_from_metadata(["opf"], _bus_columns),
     strict=False,
 )
 

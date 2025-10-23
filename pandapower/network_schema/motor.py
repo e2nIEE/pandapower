@@ -1,5 +1,5 @@
-import pandera.pandas as pa
 import pandas as pd
+import pandera.pandas as pa
 
 motor_schema = pa.DataFrameSchema(
     {

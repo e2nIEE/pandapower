@@ -1,5 +1,5 @@
-import pandera.pandas as pa
 import pandas as pd
+import pandera.pandas as pa
 
 source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
     {
