@@ -640,7 +640,6 @@ def find_problematic_bus_name_variants(data: dict[str, pd.DataFrame]) -> pd.Data
 
     df = pd.DataFrame({"original": s})
     df["canonical"] = df["original"].map(_canonical_bus_key)
-
     freq = df["original"].value_counts()
 
     out_rows = []
@@ -653,12 +652,7 @@ def find_problematic_bus_name_variants(data: dict[str, pd.DataFrame]) -> pd.Data
         for orig in uniques:
             if orig == suggested:
                 continue
-            out_rows.append({
-                "original": orig,
-                "suggested": suggested,
-                "reason": "same_canonical_variant"
-            })
-
+            out_rows.append({"original": orig, "suggested": suggested, "reason": "same_canonical_variant"})
     return pd.DataFrame(out_rows, columns=["original", "suggested", "reason"])
 
 
