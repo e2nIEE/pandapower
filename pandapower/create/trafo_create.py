@@ -237,6 +237,33 @@ def create_transformers(
 ) -> npt.NDArray[Int]:
     """
     Creates several two-winding transformers in table net.trafo.
+    Additional parameters passed will be added to the transformers dataframe. If keywords are passed that are present
+    in the std_type they will override any setting from the standard type.
+
+    :param net: the pandapower network to which the transformers should be added
+    :type net: pandapower.pandapowerNet
+    :param Sequence hv_buses: a Sequence of bus ids that are the high voltage buses for the transformers
+    :param Sequence lv_buses: a Sequence of bus ids that are the low valtage buses for the transformers
+    :param str std_type: the transformer std_type to get the not specified parameters from
+    :param name: names for the transformers, default None
+    :type name: Iterable[str]
+    :param tap_pos: current tap position of the transformers. Defaults to the medium position (tap_neutral), default nan
+    :type tap_pos: int | Iterable[int] | float
+    :param in_service: Wheather the transforers are in or out of service, default True
+    :type in_service: bool | Itreable[bool]
+    :param index: the index to use for the new elements, default None
+    :type index: Int | Iterable[Int] | None
+    :param max_loading_percent: the maximum loading percentage of the transformer, default nan
+    :type max_loading_percent: float | Iterable[float]
+    :param parallel: number of parallel transformer, default 1
+    :param df: derating factor: maximum current of transformer in relation to nominal current of transformer (0 - 1), default 1.0
+    :param tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular" or None), default None
+    :param tap_dependency_table: True if sanity checks should be performed. See SplineCharacteristics, default False
+    :param id_characteristic_table: id of the SplineCharacteristic, default None
+    :param pt_percent: default nan
+    :param oltc: default False
+    :param xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation, default nan
+    :param tap2_pos: current tap position of the second tap changer ot the transformer. Defaults to the medium position (tap2_neutral), default nan
 
     :example:
         >>> create_transformers(
