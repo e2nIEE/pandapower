@@ -206,7 +206,7 @@ def _simplify_name(name: str) -> str:
     "Doerpen/W/W (2)" -> "DOERPEN"
     "Stade - West 220 kV" -> "STADE"
     """
-    _RE_TRAILING_SAFE = re.compile(r"""(?ix)(?:\s*\(\d+\) | (?:[/\-]\s*|\s+)(?:W(?:EST)?|E|N|S))\s*\Z""")
+    _RE_TRAILING_SAFE = re.compile(r"(?ix)(?:\s*\(\d+\) | (?:[/\-]\s*|\s+)(?:W(?:EST)?|E|N|S))\s*$")
     _RE_VOLT = re.compile(r"\b\d{2,4}\s*k?V\b", re.IGNORECASE)
     _RE_DELIMS = re.compile(r"[/_.-]")
     if not isinstance(name, str):
