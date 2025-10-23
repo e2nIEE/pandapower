@@ -238,10 +238,10 @@ def create_transformers(
     """
     Creates several two-winding transformers in table net.trafo.
 
-    EXAMPLE:
-        create_transformers(
-            net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="0.4 MVA 10/0.4 kV", name=["trafo1", "trafo2"]
-        )
+    :example:
+        >>> create_transformers(
+        >>>     net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="0.4 MVA 10/0.4 kV", name=["trafo1", "trafo2"]
+        >>> )
     """
 
     std_params = load_std_type(net, std_type, "trafo")
@@ -253,14 +253,15 @@ def create_transformers(
         "i0_percent", "vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", "si0_hv_partial", "vector_group",
         *required_params
     )
+    params = {param: std_params[param] for param in params_from_std_type if param in std_params}
+    params.update(kwargs)
 
     return create_transformers_from_parameters(
         net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
         max_loading_percent=max_loading_percent, parallel=parallel, df=df, tap_changer_type=tap_changer_type,
         tap_dependency_table=tap_dependency_table, id_characteristic_table=id_characteristic_table,
-        pt_percent=pt_percent, oltc=oltc, xn_ohm=xn_ohm, tap2_pos=tap2_pos,
-        **{param: std_params[param] for param in params_from_std_type if param in std_params},
-        **kwargs
+        pt_percent=pt_percent, oltc=oltc, xn_ohm=xn_ohm, tap2_pos=tap2_pos, std_type=std_type,
+        **params
     )
 
 
@@ -985,12 +986,12 @@ def create_transformers3w(
     Creates several two-winding transformers in table net.trafo.
 
     EXAMPLE:
-        create_transformers(
-            net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="0.4 MVA 10/0.4 kV", name=["trafo1", "trafo2"]
+        create_transformers3w(
+            net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="63/25/38 MVA 110/20/10 kV", name=["trafo1", "trafo2"]
         )
     """
 
-    std_params = load_std_type(net, std_type, "trafo")
+    std_params = load_std_type(net, std_type, "trafo3w")
 
     params = {
         "shift_mv_degree": std_params.get("shift_mv_degree", 0),
@@ -1008,14 +1009,16 @@ def create_transformers3w(
         *required_params
     )
 
+    params.update({param: std_params[param] for param in params_from_std_type if param in std_params})
+    if tap_changer_type is not None:
+        params["tap_changer_type"] = tap_changer_type
+    params.update(kwargs)
+
     return create_transformers3w_from_parameters(
-        net=net, hv_buses=hv_buses, mv_buses=mv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos,
-        in_service=in_service, index=index, max_loading_percent=max_loading_percent,
-        tap_changer_type=tap_changer_type, tap_dependency_table=tap_dependency_table,
-        id_characteristic_table=id_characteristic_table, tap_at_star_point=tap_at_star_point,
-        **params,
-        **{param: std_params[param] for param in params_from_std_type if param in std_params},
-        **kwargs
+        net=net, hv_buses=hv_buses, mv_buses=mv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, std_type=std_type,
+        in_service=in_service, max_loading_percent=max_loading_percent, tap_dependency_table=tap_dependency_table,
+        id_characteristic_table=id_characteristic_table, tap_at_star_point=tap_at_star_point, index=index,
+        **params
     )
 
 
@@ -1284,7 +1287,7 @@ def create_transformers3w_from_parameters(  # no index ?
     tap_min: int | Iterable[int] | float = nan,
     name: Iterable[str] | None = None,
     in_service: bool | Iterable[bool] = True,
-    index: Int | Iterable[Int] | None = None,
+    index: Iterable[Int] | None = None,
     max_loading_percent: float | Iterable[float] = nan,
     tap_at_star_point: bool | Iterable[bool] = False,
     tap_changer_type: float | Iterable[float] | None = None,
