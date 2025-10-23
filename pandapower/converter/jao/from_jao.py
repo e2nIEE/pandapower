@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-nt
+# -*- coding: utf-8 -*
 
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-# -*- coding: utf-8 -*-
 
 
 from copy import deepcopy
@@ -25,6 +23,17 @@ from pandapower.toolbox import drop_buses, fuse_buses
 import logging
 
 logger = logging.getLogger(__name__)
+# String constants
+ELECTRICAL_PARAMETER_STR = 'Electrical Parameters'
+PHASE_SHIFT_PROPERTIES_STR = 'Phase Shifting Properties'
+VOLTAGE_LEVEL_STR = 'voltage level kv'
+LENGTH_STR = 'Length_(km)'
+RESISTANCE_STR = 'Resistance_R(Ω)'
+FULL_NAME_STR = 'Full Name'
+TAPS_STR = 'Taps used for RAO'
+REACTANCE_STR = 'Reactance_X(Ω)'
+TSO_1_STR = 'TSO 1'
+TSO_2_STR = 'TSO 2'
 
 
 def from_jao(excel_file_path: str,
@@ -197,7 +206,7 @@ def _simplify_name(name: str) -> str:
     "Doerpen/W/W (2)" -> "DOERPEN"
     "Stade - West 220 kV" -> "STADE"
     """
-    _RE_TRAILING_SAFE = re.compile(r"""(?ix)(?:\s*\(\d+\) | (?:[/\-]|\s+)\s*(?:W(?:EST)?|E|N|S))\s*\Z""")
+    _RE_TRAILING_SAFE = re.compile(r"""(?ix)(?:\s*\(\d+\) | (?:[/\-]\s*|\s+)(?:W(?:EST)?|E|N|S))\s*\Z""")
     _RE_VOLT = re.compile(r"\b\d{2,4}\s*k?V\b", re.IGNORECASE)
     _RE_DELIMS = re.compile(r"[/_.-]")
     if not isinstance(name, str):
@@ -205,6 +214,8 @@ def _simplify_name(name: str) -> str:
     s = unicodedata.normalize("NFKD", name)
     s = s.encode("ascii", "ignore").decode()
     s = _RE_VOLT.sub("", s)
+    s = s.rstrip()
+    # Remove trailing markers/directions until stable
     while True:
         s2 = _RE_TRAILING_SAFE.sub("", s)
         if s2 == s:
@@ -260,7 +271,7 @@ def _collect_bus_location_names(data: dict[str, pd.DataFrame]) -> set[str]:
     for key in [k for k in ["Lines", "Tielines"] if k in data]:
         df = data[key]
         for subst in ["Substation_1", "Substation_2"]:
-            col = _get_fullname_tuple(df, subst)
+            col = _best_fullname_tuple_fuzzy(df, subst)
             if col is not None:
                 s = df.loc[:, col].astype(str).str.strip()
                 names.append(s)
@@ -271,19 +282,6 @@ def _collect_bus_location_names(data: dict[str, pd.DataFrame]) -> set[str]:
 
 
 def _strip_accents(s: str) -> str:
-    """
-    Strip accents/diacritics from a string using NFKD normalization.
-
-    Parameters
-    ----------
-    s : str
-        Input string.
-
-    Returns
-    -------
-    str
-        ASCII-ish string without combining diacritics.
-    """
     if not isinstance(s, str):
         s = str(s)
     nfkd = unicodedata.normalize("NFKD", s)
@@ -291,21 +289,6 @@ def _strip_accents(s: str) -> str:
 
 
 def _canonical_bus_key(s: str) -> str:
-    """
-    Produce a normalized, canonical key for bus-name equivalence classes.
-    Steps:
-      - Casefold, strip accents.
-      - Remove brackets and punctuation.
-      - Remove whitespace.
-    Parameters
-    ----------
-    s : str
-        Input name.
-    Returns
-    -------
-    str
-        Canonical uppercase key.
-    """
     s = str(s)
     s = _strip_accents(s.casefold())
     s = re.sub(r"[()\[\]{}]", " ", s)
@@ -339,7 +322,7 @@ def _normalize_transformer_name_for_matching(name: str) -> tuple[str, str]:
         name = str(name)
     s = name.strip()
 
-    parts_orig = re.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+|/", s)
+    parts_orig = re.split(r" +|-A\d+|-TD\d+|-PF\d+|/", s)
     parts_orig = [p.strip().replace(" ", "") for p in parts_orig if p is not None]
 
     stopwords_lower = {"tr", "pst", "trafo", "kv"}
@@ -380,9 +363,8 @@ def _suggest_closest(q: str, candidates: list[str], n: int = 1) -> str:
     """
     if not q:
         return ""
-    pool = candidates
     try:
-        matches = difflib.get_close_matches(q, pool, n=n, cutoff=0.6)
+        matches = difflib.get_close_matches(q, candidates, n=n, cutoff=0.6)
         if matches:
             return matches[0]
     except Exception:
@@ -503,8 +485,8 @@ def generate_rename_locnames_from_combined(
                 _add(token, sugg)
 
     # 3) Case-Harmonisierung direkt aus allen Transformer-Standorten
-    if "Transformers" in data and ("Location", "Full Name") in data["Transformers"].columns:
-        trafo_names = data["Transformers"].loc[:, ("Location", "Full Name")].astype(str).str.strip()
+    if "Transformers" in data and ("Location", FULL_NAME_STR) in data["Transformers"].columns:
+        trafo_names = data["Transformers"].loc[:, ("Location", FULL_NAME_STR)].astype(str).str.strip()
         for original in trafo_names:
             joined, longest = _normalize_transformer_name_for_matching(original)
             for tok in {joined, longest}:
@@ -559,7 +541,6 @@ def generate_rename_locnames_from_combined(
             filtered_renames.append((old, new))
 
     renames = filtered_renames
-    print(out)  # zur Kontrolle
     return out
 
 
@@ -596,7 +577,7 @@ def find_unmatched_transformer_locations_extended(data: dict[str, pd.DataFrame])
     bus_location_names = _collect_bus_location_names(data)
     bus_location_names_lower = {b.lower(): b for b in bus_location_names}
 
-    trafo_names = data["Transformers"].loc[:, ("Location", "Full Name")].astype(str).str.strip()
+    trafo_names = data["Transformers"].loc[:, ("Location", FULL_NAME_STR)].astype(str).str.strip()
 
     for original in trafo_names:
         joined, longest = _normalize_transformer_name_for_matching(original)
@@ -704,13 +685,10 @@ def report_problematic_names_after_normalization(data: dict[str, pd.DataFrame]) 
     """
     trafo = find_unmatched_transformer_locations_extended(data)
     bus_vars = find_problematic_bus_name_variants(data)
-
     if len(bus_vars):
         bus_vars = bus_vars.assign(joined="", longest="")
-
     cols = ["original", "joined", "longest", "suggested", "reason"]
     bus_vars = bus_vars.reindex(columns=["original", "joined", "longest", "suggested", "reason"])
-
     combined = pd.concat([trafo.reindex(columns=cols), bus_vars.reindex(columns=cols)],
                          ignore_index=True).drop_duplicates()
     print(combined)
@@ -722,22 +700,6 @@ def report_problematic_names_after_normalization(data: dict[str, pd.DataFrame]) 
 # ==================================================================================================
 
 def _canon_label(s: str) -> str:
-    """
-    Normalize a column label for fuzzy comparison:
-      - Replace micro symbols with 'u'.
-      - Strip accents and casefold.
-      - Remove all non-alphanumeric characters.
-
-    Parameters
-    ----------
-    s : str
-        Original label.
-
-    Returns
-    -------
-    str
-        Canonicalized label for similarity matching.
-    """
     s = str(s or "").strip()
     s = s.replace("µ", "u").replace("μ", "u")
     s = unicodedata.normalize("NFKD", s)
@@ -748,39 +710,12 @@ def _canon_label(s: str) -> str:
 
 
 def _sim(a: str, b: str) -> float:
-    """
-    Compute similarity ratio between two strings using difflib.
-
-    Parameters
-    ----------
-    a : str
-        First string.
-    b : str
-        Second string.
-
-    Returns
-    -------
-    float
-        Similarity ratio in [0, 1].
-    """
     return difflib.SequenceMatcher(None, a, b).ratio()
 
 
 def _get_col_pos(df: pd.DataFrame, col: tuple) -> int | None:
     """
     Get the positional index of a given MultiIndex column tuple.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Target DataFrame with MultiIndex columns.
-    col : tuple
-        Column tuple to search for.
-
-    Returns
-    -------
-    int | None
-        Integer position if found, otherwise None.
     """
     try:
         return list(df.columns).index(col)
@@ -825,23 +760,7 @@ def _best_col_by_lvl1_similarity(df: pd.DataFrame,
 
 
 def _best_voltage_col_lines(df: pd.DataFrame) -> tuple | None:
-    """
-    Fuzzy-find the voltage level column for Lines/Tielines DataFrames.
-
-    Expects level-1 label containing tokens similar to "voltage level (kV)".
-    Requires both "volt" and "kv" tokens present in canonical label.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Lines or Tielines DataFrame.
-
-    Returns
-    -------
-    tuple | None
-        Column tuple if found, else None.
-    """
-    return _best_col_by_lvl1_similarity(df, target_label="voltage level kv",
+    return _best_col_by_lvl1_similarity(df, target_label=VOLTAGE_LEVEL_STR,
                                         min_ratio=0.45, required_tokens=["volt", "kv"])
 
 
@@ -862,7 +781,7 @@ def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[list|Non
     tuple[tuple | None, tuple | None]
         (primary_col, secondary_col), each may be None if not found.
     """
-    tgt_top = _canon_label("voltage level kv")
+    tgt_top = _canon_label(VOLTAGE_LEVEL_STR)
     prim_list, sec_list = [], []
     for col in df.columns:
         top_c = _canon_label(col[0])
@@ -917,73 +836,21 @@ def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> tuple | None:
 
 
 def _best_susceptance_col_lines_fuzzy(df: pd.DataFrame) -> tuple | None:
-    """
-    Fuzzy-find susceptance (B) column for Lines/Tielines.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Lines or Tielines DataFrame.
-
-    Returns
-    -------
-    tuple | None
-        Matching column tuple if found, else None.
-    """
     return _best_col_by_lvl1_similarity(df, "susceptance b us",
                                         min_ratio=0.5, required_tokens=["susceptance", "b", "us"])
 
 
 def _best_resistance_col_lines_fuzzy(df: pd.DataFrame) -> tuple | None:
-    """
-    Fuzzy-find resistance (R) column for Lines/Tielines.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Lines or Tielines DataFrame.
-
-    Returns
-    -------
-    tuple | None
-        Matching column tuple if found, else None.
-    """
     return _best_col_by_lvl1_similarity(df, "resistance r ohm",
                                         min_ratio=0.5, required_tokens=["resistance"])
 
 
 def _best_reactance_col_lines_fuzzy(df: pd.DataFrame) -> tuple | None:
-    """
-    Fuzzy-find reactance (X) column for Lines/Tielines.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Lines or Tielines DataFrame.
-
-    Returns
-    -------
-    tuple | None
-        Matching column tuple if found, else None.
-    """
     return _best_col_by_lvl1_similarity(df, "reactance x ohm",
                                         min_ratio=0.5, required_tokens=["reactance"])
 
 
 def _best_transformer_location_fullname_col_fuzzy(df: pd.DataFrame) -> tuple | None:
-    """
-    Fuzzy-find ("Location", "Full Name") column in Transformers sheet.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Transformers DataFrame.
-
-    Returns
-    -------
-    tuple | None
-        Matching column tuple if found, else None.
-    """
     tgt0 = _canon_label("location")
     tgt1 = _canon_label("full name")
     best, best_score = None, -1.0
@@ -1003,24 +870,6 @@ def _best_transformer_location_fullname_col_fuzzy(df: pd.DataFrame) -> tuple | N
 
 
 def _get_transformer_location_fullname_series_fuzzy(df: pd.DataFrame) -> pd.Series:
-    """
-    Retrieve the "Location / Full Name" series from Transformers using fuzzy column matching.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Transformers DataFrame.
-
-    Returns
-    -------
-    pd.Series
-        Series of transformer location names (stripped strings).
-
-    Raises
-    ------
-    KeyError
-        If the column cannot be located via fuzzy matching.
-    """
     col = _best_transformer_location_fullname_col_fuzzy(df)
     if col is None:
         raise KeyError("Transformers: Location / Full Name per Fuzzy-Matching nicht gefunden.")
@@ -1031,25 +880,6 @@ def _get_transformer_location_fullname_series_fuzzy(df: pd.DataFrame) -> pd.Seri
 def _values_by_lvl1_fuzzy(df: pd.DataFrame, target_label: str,
                           tokens: list[str] | None = None,
                           default="") -> np.ndarray:
-    """
-    Extract a column by fuzzy match against the level-1 label and return values as string array.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with MultiIndex columns.
-    target_label : str
-        Target label to match (e.g., "EIC code").
-    tokens : list[str], optional
-        Required tokens (canonicalized) that must appear to consider a column.
-    default : str, optional
-        Default string value if not found.
-
-    Returns
-    -------
-    np.ndarray
-        Array of strings (stripped) for the matched column, or defaults if not found.
-    """
     col = _best_col_by_lvl1_similarity(df, target_label, min_ratio=0.5, required_tokens=tokens)
     if col is None:
         return np.array([default] * len(df))
@@ -1060,45 +890,11 @@ def _values_by_lvl1_fuzzy(df: pd.DataFrame, target_label: str,
 def _values_by_lvl1_fuzzy_numeric(df: pd.DataFrame, target_label: str,
                                   tokens: list[str] | None = None,
                                   default=0.0) -> np.ndarray:
-    """
-    Extract a column via fuzzy match and return numeric values, using comma->dot conversion.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with MultiIndex columns.
-    target_label : str
-        Target label to match.
-    tokens : list[str], optional
-        Required tokens (canonicalized).
-    default : float, optional
-        Default numeric value if not found or non-coercible.
-
-    Returns
-    -------
-    np.ndarray
-        Numeric array of values (floats).
-    """
     vals = _values_by_lvl1_fuzzy(df, target_label, tokens=tokens, default=str(default))
     return pd.to_numeric(pd.Series(vals).str.replace(",", "."), errors="coerce").fillna(default).values
 
 
 def _find_first_present_lvl1(df: pd.DataFrame, variants: list[str]):
-    """
-    Find the first present column whose level-1 label matches any variant in 'variants'.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with MultiIndex columns.
-    variants : list[str]
-        Ordered list of level-1 label candidates to check.
-
-    Returns
-    -------
-    tuple | None
-        Matching column tuple if found, else None.
-    """
     lvl1 = df.columns.get_level_values(1)
     for lab in variants:
         if lab in lvl1:
@@ -1109,21 +905,6 @@ def _find_first_present_lvl1(df: pd.DataFrame, variants: list[str]):
 
 
 def _series_by_lvl1(df: pd.DataFrame, label: str) -> pd.Series | None:
-    """
-    Retrieve the first column whose level-1 label equals 'label', returning it as a Series.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with MultiIndex columns.
-    label : str
-        Desired level-1 label.
-
-    Returns
-    -------
-    pd.Series | None
-        Found column as a Series, or None if not present.
-    """
     lvl1 = df.columns.get_level_values(1)
     pos = np.flatnonzero(lvl1 == label)
     if pos.size:
@@ -1132,23 +913,6 @@ def _series_by_lvl1(df: pd.DataFrame, label: str) -> pd.Series | None:
 
 
 def _values_by_lvl1(df: pd.DataFrame, label: str, default="") -> np.ndarray:
-    """
-    Return an array of strings from the first column whose level-1 label equals 'label'.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with MultiIndex columns.
-    label : str
-        Level-1 label to select.
-    default : str, optional
-        Default string if not found.
-
-    Returns
-    -------
-    np.ndarray
-        Array of strings (stripped) or defaults if no column found.
-    """
     s = _series_by_lvl1(df, label)
     if s is None:
         return np.array([default] * len(df))
@@ -1156,24 +920,11 @@ def _values_by_lvl1(df: pd.DataFrame, label: str, default="") -> np.ndarray:
 
 
 def _get_line_tso_array(df: pd.DataFrame) -> np.ndarray:
-    """
-    Retrieve a per-line TSO label, combining "TSO 1/TSO 2" if generic "TSO" not present.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Lines or Tielines DataFrame.
-
-    Returns
-    -------
-    np.ndarray
-        Array of TSO strings (e.g., "TSO1/TSO2") or empty strings when unavailable.
-    """
     s = _series_by_lvl1(df, "TSO")
     if s is not None:
         return s.astype(str).str.strip().values
-    s1 = _series_by_lvl1(df, "TSO 1") or _series_by_lvl1(df, "TSO1")
-    s2 = _series_by_lvl1(df, "TSO 2") or _series_by_lvl1(df, "TSO2")
+    s1 = _series_by_lvl1(df, TSO_1_STR) or _series_by_lvl1(df, "TSO1")
+    s2 = _series_by_lvl1(df, TSO_2_STR) or _series_by_lvl1(df, "TSO2")
     if s1 is not None and s2 is not None:
         return (s1.astype(str).str.strip() + "/" + s2.astype(str).str.strip()).values
     if s1 is not None:
@@ -1200,11 +951,11 @@ def _get_tso_col_for_subst(df: pd.DataFrame, subst: str) -> tuple | None:
         Column tuple if found, else None.
     """
     if subst == "Substation_1":
-        col = _find_first_present_lvl1(df, ["TSO 1", "TSO1"])
+        col = _find_first_present_lvl1(df, [TSO_1_STR, "TSO1"])
         if col is not None:
             return col
     elif subst == "Substation_2":
-        col = _find_first_present_lvl1(df, ["TSO 2", "TSO2"])
+        col = _find_first_present_lvl1(df, [TSO_2_STR, "TSO2"])
         if col is not None:
             return col
     return _find_first_present_lvl1(df, ["TSO"])
@@ -1253,7 +1004,7 @@ def _get_tso_series_for_side_fuzzy(df: pd.DataFrame, subst: str) -> pd.Series:
     pd.Series
         Series of TSO strings for each row; empty strings if not found.
     """
-    target = "TSO 1" if subst == "Substation_1" else "TSO 2"
+    target = TSO_1_STR if subst == "Substation_1" else TSO_2_STR
     col = _best_col_by_lvl1_similarity(df, target, min_ratio=0.6, required_tokens=["tso"])
     if col is not None:
         pos = _get_col_pos(df, col)
@@ -1286,8 +1037,8 @@ def _get_line_tso_array_fuzzy(df: pd.DataFrame) -> np.ndarray:
     if col is not None:
         pos = _get_col_pos(df, col)
         return df.iloc[:, pos].astype(str).str.strip().values
-    c1 = _best_col_by_lvl1_similarity(df, "TSO 1", min_ratio=0.6, required_tokens=["tso"])
-    c2 = _best_col_by_lvl1_similarity(df, "TSO 2", min_ratio=0.6, required_tokens=["tso"])
+    c1 = _best_col_by_lvl1_similarity(df, TSO_1_STR, min_ratio=0.6, required_tokens=["tso"])
+    c2 = _best_col_by_lvl1_similarity(df, TSO_2_STR, min_ratio=0.6, required_tokens=["tso"])
     if c1 is not None and c2 is not None:
         p1 = _get_col_pos(df, c1); p2 = _get_col_pos(df, c2)
         return (df.iloc[:, p1].astype(str).str.strip() + "/" + df.iloc[:, p2].astype(str).str.strip()).values
@@ -1332,34 +1083,8 @@ def _get_transformer_tso_series_fuzzy(df: pd.DataFrame) -> pd.Series:
 
 
 def _get_voltage_tuple(df: pd.DataFrame) -> tuple | None:
-    """
-    Wrapper for voltage-level column detection for Lines/Tielines.
-
-    Returns
-    -------
-    tuple | None
-        The detected column tuple (top-level, level-1) or None.
-    """
-    return _best_voltage_col_lines(df)
-
-
-def _get_fullname_tuple(df: pd.DataFrame, subst: str) -> tuple | None:
-    """
-    Wrapper for full-name column detection for a given substation side (fuzzy).
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Lines/Tielines DataFrame.
-    subst : str
-        "Substation_1" or "Substation_2".
-
-    Returns
-    -------
-    tuple | None
-        The detected ("Substation_*", "Full Name") column tuple, or None if not found.
-    """
-    return _best_fullname_tuple_fuzzy(df, subst)
+    return _best_col_by_lvl1_similarity(df, target_label=VOLTAGE_LEVEL_STR,
+                                        min_ratio=0.45, required_tokens=["volt", "kv"])
 
 
 def _ensure_line_tso_column(df: pd.DataFrame) -> None:
@@ -1379,8 +1104,8 @@ def _ensure_line_tso_column(df: pd.DataFrame) -> None:
     Column is created in-place when needed.
     """
     if (None, "TSO") not in df.columns:
-        t1 = _first_present_tuple(df, [(None, "TSO 1"), (None, "TSO1")])
-        t2 = _first_present_tuple(df, [(None, "TSO 2"), (None, "TSO2")])
+        t1 = _first_present_tuple(df, [(None, TSO_1_STR), (None, "TSO1")])
+        t2 = _first_present_tuple(df, [(None, TSO_2_STR), (None, "TSO2")])
         if t1 and t2:
             df[(None, "TSO")] = df.loc[:, t1].astype(str).str.strip() + "/" + df.loc[:, t2].astype(str).str.strip()
         elif t1:
@@ -1391,21 +1116,6 @@ def _ensure_line_tso_column(df: pd.DataFrame) -> None:
 
 
 def _first_present_tuple(df: pd.DataFrame, candidates: list[tuple]) -> tuple | None:
-    """
-    Return the first candidate column tuple that exists in df.columns.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with MultiIndex columns.
-    candidates : list[tuple]
-        Candidate tuples (top-level, level-1) to check in order.
-
-    Returns
-    -------
-    tuple | None
-        The first present tuple or None if none found.
-    """
     for t in candidates:
         if t in df.columns:
             return t
@@ -1471,24 +1181,24 @@ def _data_correction(
     # --- Lines/Tielines: Spaltenrobustheit + Datentyp-Korrekturen
     for key in ["Lines", "Tielines"]:
         df = data[key]
-
+        voltage_str = 'Voltage_level(kV)'
         # MultiIndex-Korrektur: bekannte Varianten unter einen Top-Level (None) heben
         cols = df.columns.to_frame(index=False)
         # harmonisiere zweite Ebene (Spaltennamen)
         replace_map = {
-            "Full Name": "Full_name",
+            FULL_NAME_STR: "Full_name",
             "Short Name": "Short_name",
             "Susceptance_B (µS)": "Susceptance_B(μS)",
-            "Voltage_level (kV)": "Voltage_level(kV)",
-            "Voltage_level [kV]": "Voltage_level(kV)",
+            "Voltage_level (kV)": voltage_str,
+            "Voltage_level [kV]": voltage_str,
         }
         cols.iloc[:, 1] = cols.iloc[:, 1].replace(replace_map)
 
         # setze Top-Level = None für diese Felder
-        cols.loc[cols.iloc[:, 1].isin(["Voltage_level(kV)", "Comment"]), cols.columns[0]] = None
+        cols.loc[cols.iloc[:, 1].isin([voltage_str, "Comment"]), cols.columns[0]] = None
         cols.loc[cols.iloc[:, 0].astype(str).str.startswith("Unnamed:"), cols.columns[0]] = None
         # Länge unter "Electrical Parameters" sicherstellen
-        cols.loc[cols.iloc[:, 1] == "Length_(km)", cols.columns[0]] = "Electrical Parameters"
+        cols.loc[cols.iloc[:, 1] == LENGTH_STR, cols.columns[0]] = ELECTRICAL_PARAMETER_STR
 
         # rekonstruieren
         df.columns = pd.MultiIndex.from_frame(cols)
@@ -1508,9 +1218,9 @@ def _data_correction(
 
         # --- numerische Konvertierung für Basis-Spalten (falls exakt vorhanden)
         static_cols = [
-            ("Electrical Parameters", "Length_(km)"),
-            ("Electrical Parameters", "Resistance_R(Ω)"),
-            ("Electrical Parameters", "Reactance_X(Ω)"),
+            (ELECTRICAL_PARAMETER_STR, LENGTH_STR),
+            (ELECTRICAL_PARAMETER_STR, RESISTANCE_STR),
+            (ELECTRICAL_PARAMETER_STR, REACTANCE_STR),
         ]
         for col in static_cols:
             if col in df.columns:
@@ -1527,8 +1237,8 @@ def _data_correction(
                 df.iloc[:, pos] = pd.to_numeric(df.iloc[:, pos].astype(str).str.replace(",", "."), errors="coerce")
         # Namensnormierung anwenden (NE_name, Full_name, ...)
         for loc_name in [(None, "NE_name"),
-                         _get_fullname_tuple(df, "Substation_1"),
-                         _get_fullname_tuple(df, "Substation_2")]:
+                         _best_fullname_tuple_fuzzy(df, "Substation_1"),
+                         _best_fullname_tuple_fuzzy(df, "Substation_2")]:
             if loc_name is not None and loc_name in df.columns:
                 df.loc[:, loc_name] = df.loc[:, loc_name].astype(str).str.strip().apply(_multi_str_repl,
                                                                                         repl=rename_locnames)
@@ -1540,13 +1250,13 @@ def _data_correction(
     if key in data:
         df = data[key]
         # Location vereinheitlichen
-        loc_name = ("Location", "Full Name")
+        loc_name = ("Location", FULL_NAME_STR)
         if loc_name in df.columns:
             df.loc[:, loc_name] = df.loc[:, loc_name].astype(str).str.strip().apply(_multi_str_repl,
                                                                                     repl=rename_locnames)
 
         # Tap-String-Korrekturen
-        taps = df.loc[:, ("Phase Shifting Properties", "Taps used for RAO")].fillna("").astype(str).str.replace(" ", "")
+        taps = df.loc[:, (PHASE_SHIFT_PROPERTIES_STR, TAPS_STR)].fillna("").astype(str).str.replace(" ", "")
         nonnull = taps.apply(len).astype(bool)
         nonnull_taps = taps.loc[nonnull]
         surrounded = nonnull_taps.str.startswith("<") & nonnull_taps.str.endswith(">")
@@ -1554,13 +1264,13 @@ def _data_correction(
         slash_sep = (~nonnull_taps.str.contains(";")) & nonnull_taps.str.contains("/")
         nonnull_taps.loc[slash_sep] = nonnull_taps.loc[slash_sep].str.replace("/", ";")
         nonnull_taps.loc[nonnull_taps == "0"] = "0;0"
-        df.loc[nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = nonnull_taps
-        df.loc[~nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = "0;0"
+        df.loc[nonnull, (PHASE_SHIFT_PROPERTIES_STR, TAPS_STR)] = nonnull_taps
+        df.loc[~nonnull, (PHASE_SHIFT_PROPERTIES_STR, TAPS_STR)] = "0;0"
 
         # Phase Shifter Doppelinfos
         cols = ["Phase Regulation δu (%)", "Angle Regulation δu (%)"]
         for col in cols:
-            tup = ("Phase Shifting Properties", col)
+            tup = (PHASE_SHIFT_PROPERTIES_STR, col)
             if tup in df.columns and is_object_dtype(df.loc[:, tup]):
                 tr_double = df.index[df.loc[:, tup].str.contains("/").fillna(0).astype(bool)]
                 df.loc[tr_double, tup] = df.loc[tr_double, tup].str.split("/", expand=True)[1].str.replace(",",
@@ -1697,7 +1407,7 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
             raise KeyError(f"{key}: Keine Voltage_level-Spalte gefunden (fuzzy).")
 
         # Substation 1
-        s1_full = _get_fullname_tuple(df, "Substation_1")
+        s1_full = _best_fullname_tuple_fuzzy(df, "Substation_1")
         if s1_full is not None:
             to_add1 = pd.DataFrame({
                 "name": df.loc[:, s1_full].astype(str).str.strip().values,
@@ -1707,7 +1417,7 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
             bus_df = pd.concat([bus_df, to_add1], ignore_index=True) if len(bus_df) else to_add1
 
         # Substation 2
-        s2_full = _get_fullname_tuple(df, "Substation_2")
+        s2_full = _best_fullname_tuple_fuzzy(df, "Substation_2")
         if s2_full is not None:
             to_add2 = pd.DataFrame({
                 "name": df.loc[:, s2_full].astype(str).str.strip().values,
@@ -1758,7 +1468,7 @@ def _create_lines(
         df = data[key]
 
         # Length
-        length_km = df[("Electrical Parameters", "Length_(km)")].values
+        length_km = df[(ELECTRICAL_PARAMETER_STR, LENGTH_STR)].values
         zero_length = np.isclose(length_km, 0)
         no_length = np.isnan(length_km)
         if sum(zero_length) or sum(no_length):
@@ -1773,8 +1483,8 @@ def _create_lines(
         vn_kvs = df.loc[:, vn_tuple].values
 
         # Substation names
-        s1_full = _get_fullname_tuple(df, "Substation_1")
-        s2_full = _get_fullname_tuple(df, "Substation_2")
+        s1_full = _best_fullname_tuple_fuzzy(df, "Substation_1")
+        s2_full = _best_fullname_tuple_fuzzy(df, "Substation_2")
         if s1_full is None or s2_full is None:
             raise KeyError(f"{key}: Substation_1/2 Full_name (fuzzy) nicht gefunden.")
 
@@ -1789,14 +1499,14 @@ def _create_lines(
 
         if R_col is not None:
             R_vals = df.iloc[:, _get_col_pos(df, R_col)].values
-        elif ("Electrical Parameters", "Resistance_R(Ω)") in df.columns:
-            R_vals = df[("Electrical Parameters", "Resistance_R(Ω)")].values
+        elif (ELECTRICAL_PARAMETER_STR, RESISTANCE_STR) in df.columns:
+            R_vals = df[(ELECTRICAL_PARAMETER_STR, RESISTANCE_STR)].values
         else:
             R_vals = np.zeros(len(df))
         if X_col is not None:
             X_vals = df.iloc[:, _get_col_pos(df, X_col)].values
-        elif ("Electrical Parameters", "Reactance_X(Ω)") in df.columns:
-            X_vals = df[("Electrical Parameters", "Reactance_X(Ω)")].values
+        elif (ELECTRICAL_PARAMETER_STR, REACTANCE_STR) in df.columns:
+            X_vals = df[(ELECTRICAL_PARAMETER_STR, REACTANCE_STR)].values
         else:
             X_vals = np.zeros(len(df))
         if B_col is not None:
@@ -1894,10 +1604,10 @@ def _create_transformers_and_buses(
     i0_percent = 100 * np.sqrt(b0 ** 2 + g0 ** 2) * net.sn_mva / sn_mva
 
     # Tap/shifter
-    taps = data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].str.split(";", expand=True).astype(
+    taps = data[key].loc[:, (PHASE_SHIFT_PROPERTIES_STR, TAPS_STR)].str.split(";", expand=True).astype(
         int).set_axis(["tap_min", "tap_max"], axis=1)
-    du = _get_float_column(data[key], ("Phase Shifting Properties", "Phase Regulation δu (%)"))
-    dphi = _get_float_column(data[key], ("Phase Shifting Properties", "Angle Regulation δu (%)"))
+    du = _get_float_column(data[key], (PHASE_SHIFT_PROPERTIES_STR, "Phase Regulation δu (%)"))
+    dphi = _get_float_column(data[key], (PHASE_SHIFT_PROPERTIES_STR, "Angle Regulation δu (%)"))
     phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))
 
     # Name/TSO/EIC/Comment (fuzzy)
@@ -1937,27 +1647,6 @@ def _create_transformers_and_buses(
 
 def _get_transformer_voltages(
         data: dict[str, pd.DataFrame], bus_idx: pd.Series) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Determine transformer primary/secondary nominal voltages via fuzzy matching.
-
-    Parameters
-    ----------
-    data : dict[str, pd.DataFrame]
-        Excel sheets dict including "Transformers".
-    bus_idx : pd.Series
-        Mapping from (name, vn_kv) -> bus index; used to infer int dtype for voltages.
-
-    Returns
-    -------
-    tuple[np.ndarray, np.ndarray]
-        (vn_hv_kv, vn_lv_kv) arrays, respectively the max/min of primary/secondary as floats
-        or ints when bus index uses integer voltages.
-
-    Raises
-    ------
-    KeyError
-        When primary/secondary voltage columns cannot be located via fuzzy matching.
-    """
     key = "Transformers"
     df = data[key]
 
@@ -2215,19 +1904,7 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
 
 
 def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Deduplicate bus rows by (name, vn_kv); join multiple TSO strings by '/'.
 
-    Parameters
-    ----------
-    bus_df : pd.DataFrame
-        DataFrame with columns ["name", "vn_kv", "TSO"].
-
-    Returns
-    -------
-    pd.DataFrame
-        Deduplicated DataFrame ready for create_buses().
-    """
     bus_df = bus_df.drop_duplicates(ignore_index=True)
     bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: '/'.join(x)})
     assert not bus_df.duplicated(["name", "vn_kv"]).any()
@@ -2235,42 +1912,12 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _get_float_column(df, col_tuple, fill=0):
-    """
-    Return a column coerced to float; interpret non-breaking space as missing and fill.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with target column.
-    col_tuple : tuple
-        MultiIndex column tuple to fetch.
-    fill : float, optional
-        Fill value for missing entries.
-
-    Returns
-    -------
-    pd.Series
-        Float Series with NA filled by 'fill'.
-    """
     series = df.loc[:, col_tuple]
     series.loc[series == "\xa0"] = fill
     return series.astype(float).fillna(fill)
 
 
 def _get_bus_idx(net: pandapowerNet) -> pd.Series:
-    """
-    Build an index mapping from (name, vn_kv) to bus index.
-
-    Parameters
-    ----------
-    net : pandapowerNet
-        Network with 'bus' table.
-
-    Returns
-    -------
-    pd.Series
-        Series where index is MultiIndex(name, vn_kv) and values are bus indices.
-    """
     return net.bus[["name", "vn_kv"]].rename_axis("index").reset_index().set_index([
         "name", "vn_kv"])["index"]
 
@@ -2300,8 +1947,7 @@ def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
     """
     notravbuses_dict = dict() if "notravbuses" not in kwargs.keys() else {
         "notravbuses": kwargs.pop("notravbuses")}
-    grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs),
-                                                              **notravbuses_dict)]
+    grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs), **notravbuses_dict)]
     grid_groups = pd.DataFrame({"buses": grid_group_buses})
     grid_groups["n_buses"] = grid_groups["buses"].apply(len)
     return grid_groups
@@ -2664,43 +2310,12 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
 # ==================================================================================================
 
 def _float_col_comma_correction(data: dict[str, pd.DataFrame], key: str, col_names: list):
-    """
-    Convert string columns with comma decimal separators to float for specified columns.
-
-    Parameters
-    ----------
-    data : dict[str, pd.DataFrame]
-        Excel sheets dict.
-    key : str
-        Target sheet key (e.g., "Lines").
-    col_names : list
-        List of column tuples to convert.
-    """
     for col_name in col_names:
         data[key][col_name] = pd.to_numeric(data[key][col_name].astype(str).str.replace(
             ",", "."), errors="coerce")
 
 
 def _multi_str_repl(st: str, repl: list[tuple]) -> str:
-    """
-    Replace multiple substrings in a string according to a list of (old, new) pairs.
-
-    Parameters
-    ----------
-    st : str
-        Input string.
-    repl : list[tuple]
-        List of (old, new) replacement pairs.
-
-    Returns
-    -------
-    str
-        String after sequential replacements.
-
-    Notes
-    -----
-    Applied to both Excel string cells and raw HTML geodata.
-    """
     for (old, new) in repl:
         st = st.replace(old, new)
     return st
