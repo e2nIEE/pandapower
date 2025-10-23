@@ -1489,8 +1489,8 @@ def _create_lines(
             raise KeyError(f"{key}: Substation_1/2 Full_name (fuzzy) nicht gefunden.")
 
         # Bus indices
-        from_bus = bus_idx.loc[list(tuple(zip(df.loc[:, s1_full].astype(str).values, vn_kvs)))].values
-        to_bus = bus_idx.loc[list(tuple(zip(df.loc[:, s2_full].astype(str).values, vn_kvs)))].values
+        from_bus = bus_idx.loc[list(zip(df.loc[:, s1_full].astype(str).values, vn_kvs))].values
+        to_bus = bus_idx.loc[list(zip(df.loc[:, s2_full].astype(str).values, vn_kvs))].values
 
         # Per unit-length R/X/B (fuzzy, with fallback)
         R_col = _best_resistance_col_lines_fuzzy(df)
@@ -1759,10 +1759,8 @@ def _allocate_trafos_to_buses_and_create_buses(
         trafo_connections.loc[~isin, next_col] = next_vn
         rel_dev = np.abs(next_vn - trafo_connections.loc[~isin, trafo_vn_col].values) / next_vn
         trafo_connections.loc[~isin, rel_dev_col] = rel_dev
-        trafo_connections.loc[~isin, bus_col] = bus_idx.loc[list(tuple(zip(
-            trafo_connections.loc[~isin, "name"],
-            trafo_connections.loc[~isin, next_col]
-        )))].values
+        trafo_connections.loc[~isin, bus_col] = bus_idx.loc[list(zip(trafo_connections.loc[~isin, "name"],
+            trafo_connections.loc[~isin, next_col]))].values
 
         need_bus_creation = trafo_connections[rel_dev_col] > rel_deviation_threshold_for_trafo_bus_creation
         if need_bus_creation.any():
@@ -1904,7 +1902,6 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
 
 
 def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
-
     bus_df = bus_df.drop_duplicates(ignore_index=True)
     bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: '/'.join(x)})
     assert not bus_df.duplicated(["name", "vn_kv"]).any()
@@ -1945,9 +1942,9 @@ def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
         - 'buses': set of bus indices in each group
         - 'n_buses': group size
     """
-    notravbuses_dict = dict() if "notravbuses" not in kwargs.keys() else {
+    notravbuses_dict = {} if "notravbuses" not in kwargs.keys() else {
         "notravbuses": kwargs.pop("notravbuses")}
-    grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs), **notravbuses_dict)]
+    grid_group_buses = list(connected_components(create_nxgraph(net, **kwargs), **notravbuses_dict))
     grid_groups = pd.DataFrame({"buses": grid_group_buses})
     grid_groups["n_buses"] = grid_groups["buses"].apply(len)
     return grid_groups
@@ -2167,12 +2164,10 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                                             columns="geo_dim")
     lgd_name_bus = line_geo_data.pivot_table(values="value", index=["name", "bus"],
                                              columns="geo_dim")
-    lgd_EIC_bus_idx_extended = pd.MultiIndex.from_frame(lgd_EIC_bus.index.to_frame().assign(
-        **dict(col_name="EIC_Code")).rename(columns=dict(EIC_Code="identifier")).loc[
-                                                        :, ["col_name", "identifier", "bus"]])
-    lgd_name_bus_idx_extended = pd.MultiIndex.from_frame(lgd_name_bus.index.to_frame().assign(
-        **dict(col_name="name")).rename(columns=dict(name="identifier")).loc[
-                                                         :, ["col_name", "identifier", "bus"]])
+    lgd_EIC_bus_idx_extended = pd.MultiIndex.from_frame(lgd_EIC_bus.index.to_frame().assign(col_name="EIC_Code")
+                                .rename(columns={"EIC_Code": "identifier"}).loc[:, ["col_name", "identifier", "bus"]])
+    lgd_name_bus_idx_extended = pd.MultiIndex.from_frame(lgd_name_bus.index.to_frame().assign(col_name="name")
+        .rename(columns={"name": "identifier"}).loc[:, ["col_name", "identifier", "bus"]])
     lgd_bus = pd.concat([lgd_EIC_bus.set_axis(lgd_EIC_bus_idx_extended),
                          lgd_name_bus.set_axis(lgd_name_bus_idx_extended)])
     dupl_EICs = net.line.EIC_Code.loc[net.line.EIC_Code.duplicated()]
@@ -2203,7 +2198,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         ])
         is_missing = pd.DataFrame({"EIC": ~line_excerpt.EIC_Code.isin(
                 lgd_bus.loc["EIC_Code"].index.get_level_values("identifier")),"name": ~line_excerpt.name.isin(
-                lgd_bus.loc["name"].index.get_level_values("identifier"))}).set_axis(is_dupl.index)
+                lgd_bus.loc["name"].index.get_level_values("identifier"))}).set_axis(is_dupl.index, axis=0)
         is_tieline = pd.Series(net.line.loc[is_dupl.index.get_level_values("line_index"),
         "Tieline"].values, index=is_dupl.index)
 
@@ -2276,7 +2271,7 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
     """
 
     def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, pd.Index | int]:
-        av = dict()  # availablitiy of geodata
+        av = {}  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
         av["lines_fbw_tbwo"] = net.line.index[net.line.from_bus.isin(av["bus_with_geo"]) &
                                               (~net.line.to_bus.isin(av["bus_with_geo"]))]
