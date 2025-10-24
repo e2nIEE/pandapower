@@ -61,6 +61,22 @@ def _calc_ybus(ppci):
         Ybus[rows[rows != cols], cols[rows != cols]] = 0
         Ybus.eliminate_zeros()
 
+    nonzero = Yf.nonzero()
+    nonzero_mask = np.array(abs(Yf[nonzero]) <= (10 / (BIG_NUMBER * ppci["baseMVA"])))[0]
+    if len(nonzero_mask) > 0:
+        rows = nonzero[0][nonzero_mask]
+        cols = nonzero[1][nonzero_mask]
+        Yf[rows[rows != cols], cols[rows != cols]] = 0
+        Yf.eliminate_zeros()
+
+    nonzero = Yt.nonzero()
+    nonzero_mask = np.array(abs(Yt[nonzero]) <= (10 / (BIG_NUMBER * ppci["baseMVA"])))[0]
+    if len(nonzero_mask) > 0:
+        rows = nonzero[0][nonzero_mask]
+        cols = nonzero[1][nonzero_mask]
+        Yt[rows[rows != cols], cols[rows != cols]] = 0
+        Yt.eliminate_zeros()
+
     ppci["internal"]["Yf"] = Yf
     ppci["internal"]["Yt"] = Yt
     ppci["internal"]["Ybus"] = Ybus
