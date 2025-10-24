@@ -189,7 +189,13 @@ _trafo_columns = {
     "pt_percent": pa.Column(float, required=False, description=""),  # TODO: not in docu
 }
 tap2_columns = ["tap2_pos", "tap2_neutral", "tap2_side", "tap2_step_percent", "tap2_step_degree"]
-tap_columns = ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_step_degree"]
+tap_columns = [
+    "tap_pos",
+    "tap_neutral",
+    "tap_side",
+    "tap_step_percent",
+    "tap_step_degree",
+]  # TODO: ideally tap_step_percent and tap_step_degree should not exist together
 trafo_checks = [
     pa.Check(
         validate_column_group_dependency(tap_columns),

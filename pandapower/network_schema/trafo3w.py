@@ -37,9 +37,7 @@ _trafo3w_columns = {
     "vk_mv_percent": pa.Column(
         float, pa.Check.gt(0), description="short circuit voltage from medium to low voltage [%]"
     ),
-    "vk_lv_percent": pa.Column(
-        float, pa.Check.gt(0), description="short circuit voltage from high to low voltage [%]"
-    ),
+    "vk_lv_percent": pa.Column(float, pa.Check.gt(0), description="short circuit voltage from high to low voltage [%]"),
     "vkr_hv_percent": pa.Column(
         float, pa.Check.ge(0), description="real part of short circuit voltage from high to medium voltage [%]"
     ),
@@ -74,9 +72,7 @@ _trafo3w_columns = {
     "tap_step_percent": pa.Column(
         float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"
     ),
-    "tap_step_degree": pa.Column(
-        float, nullable=True, required=False, description="tap step size for voltage angle"
-    ),
+    "tap_step_degree": pa.Column(float, nullable=True, required=False, description="tap step size for voltage angle"),
     "tap_at_star_point": pa.Column(
         bool,
         nullable=True,
@@ -112,13 +108,15 @@ _trafo3w_columns = {
     ),  # TODO: not in docu only create
     "in_service": pa.Column(bool, description="specifies if the transformer is in service."),
 }
-tap_columns = ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_step_degree"]  #TODO: which ones?
+tap_columns = ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_step_degree"]  # TODO: which ones?
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
-    checks=[pa.Check(
-        validate_column_group_dependency(tap_columns),
-        error=f"Tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
-    ),],
+    checks=[
+        pa.Check(
+            validate_column_group_dependency(tap_columns),
+            error=f"Tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
+        ),
+    ],
     strict=False,
 )
 
