@@ -4718,7 +4718,7 @@ def set_new_coords(net, bus_id, line_idx, new_line_idx, line_length, pos_at_line
 
     scale_factor_length = get_scale_factor(line_length, line_coords)
     
-    if scale_factor_length is None:
+    if pd.isna(scale_factor_length):
         logger.warning("Could not generate geodata for line sections (partial loads on line)!")
     else:
         section_coords, new_coords = break_coords_sections(line_coords, pos_at_line,
