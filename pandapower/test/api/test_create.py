@@ -7,20 +7,26 @@ from copy import deepcopy
 
 import geojson
 import numpy as np
+from numpy import nan
 import pandas as pd
 import pytest
 
-from network_schema.tools import validate_dataframes_for_network
-from pandapower import create_empty_network, create_bus, create_ext_grid, create_line_from_parameters, \
-    create_load_from_cosphi, runpp, create_shunt_as_capacitor, create_sgen_from_cosphi, \
-    create_series_reactor_as_impedance, create_transformer_from_parameters, create_load, create_sgen, create_dcline, \
-    create_gen, create_ward, create_xward, create_shunt, create_line, create_transformer, create_transformer3w, \
-    create_transformer3w_from_parameters, create_impedance, create_switch, create_gens, load_std_type, \
-    create_std_type, create_buses, create_lines, create_lines_from_parameters, create_transformers_from_parameters, \
-    create_transformers3w_from_parameters, create_switches, create_loads, create_storage, create_storages, nets_equal, \
-    create_wards, create_sgens
+from pandapower.create import (
+    create_empty_network, create_bus, create_ext_grid, create_line_from_parameters,
+    create_load_from_cosphi, create_shunt_as_capacitor, create_sgen_from_cosphi,
+    create_series_reactor_as_impedance, create_transformer_from_parameters, create_load, create_sgen, create_dcline,
+    create_gen, create_ward, create_xward, create_shunt, create_line, create_transformer, create_transformer3w,
+    create_transformer3w_from_parameters, create_impedance, create_switch, create_gens, load_std_type,
+    create_buses, create_lines, create_lines_from_parameters, create_transformers_from_parameters,
+    create_transformers3w_from_parameters, create_switches, create_loads, create_storage, create_storages,
+    create_wards, create_sgens, create_transformers, create_transformers3w
+)
+from pandapower.run import runpp
+from pandapower.std_types import create_std_type
+from pandapower.toolbox import nets_equal, dataframes_equal
 
 from pandapower.network_schema import *
+from network_schema.tools import validate_dataframes_for_network
 
 
 def test_convenience_create_functions():
@@ -1010,6 +1016,152 @@ def test_trafos_2_tap_changers_parameters():
         assert net.trafo.at[t, c] == tap2_data[c]
 
     validate_dataframes_for_network(net)
+
+
+def test_create_transformers():
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, .4)
+    b3 = create_bus(net, .4)
+    create_transformers(
+        net,
+        hv_buses=[b1, b1],
+        lv_buses=[b2, b3],
+        std_type="0.4 MVA 10/0.4 kV",
+        name=["trafo1", "trafo2"],
+        test_kwargs="TestKW"
+    )
+    res_df = pd.DataFrame({
+        'name': ['trafo1', 'trafo2'],
+        'std_type': ['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'],
+        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
+        'lv_bus': pd.Series([1, 2], dtype=np.uint32),
+        'sn_mva': [0.4, 0.4],
+        'vn_hv_kv': [10.0, 10.0],
+        'vn_lv_kv': [0.4, 0.4],
+        'vk_percent': [4.0, 4.0],
+        'vkr_percent': [1.325, 1.325],
+        'pfe_kw': [0.95, 0.95],
+        'i0_percent': [0.2375, 0.2375],
+        'shift_degree': [0.0, 0.0],
+        'tap_side': ['', ''],
+        'tap_neutral': [nan, nan],
+        'tap_min': [nan, nan],
+        'tap_max': [nan, nan],
+        'tap_step_percent': [nan, nan],
+        'tap_step_degree': [nan, nan],
+        'tap_pos': [nan, nan],
+        'tap_changer_type': ['', ''],
+        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+        'tap_dependency_table': [False, False],
+        'parallel': pd.Series([1, 1], dtype=np.uint32),
+        'df': [1.0, 1.0],
+        'in_service': [True, True],
+        'oltc': [False, False],
+        'test_kwargs': ['TestKW', 'TestKW'],
+        'vector_group': ['Dyn5', 'Dyn5'],
+    })
+    assert dataframes_equal(net.trafo, res_df)
+
+def test_create_transformers_for_single():
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, .4)
+    create_transformers(
+        net,
+        hv_buses=[b1],
+        lv_buses=[b2],
+        std_type="0.4 MVA 10/0.4 kV",
+        name="trafo1",
+        test_kwargs="TestKW",
+        sn_mva=.4
+    )
+    res_df = pd.DataFrame({
+        'name': ['trafo1'],
+        'std_type': ['0.4 MVA 10/0.4 kV'],
+        'hv_bus': pd.Series([0], dtype=np.uint32),
+        'lv_bus': pd.Series([1], dtype=np.uint32),
+        'sn_mva': [0.4],
+        'vn_hv_kv': [10.0],
+        'vn_lv_kv': [0.4],
+        'vk_percent': [4.0],
+        'vkr_percent': [1.325],
+        'pfe_kw': [0.95],
+        'i0_percent': [0.2375],
+        'shift_degree': [0.0],
+        'tap_side': [''],
+        'tap_neutral': [nan],
+        'tap_min': [nan],
+        'tap_max': [nan],
+        'tap_step_percent': [nan],
+        'tap_step_degree': [nan],
+        'tap_pos': [nan],
+        'tap_changer_type': [''],
+        'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
+        'tap_dependency_table': [False],
+        'parallel': pd.Series([1], dtype=np.uint32),
+        'df': [1.0],
+        'in_service': [True],
+        'oltc': [False],
+        'test_kwargs': ['TestKW'],
+        'vector_group': ['Dyn5'],
+    })
+    assert dataframes_equal(net.trafo, res_df)
+
+
+def test_create_transformers3w():
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 20)
+    b4 = create_bus(net, 10)
+    b5 = create_bus(net, 10)
+    create_transformers3w(
+        net=net,
+        hv_buses=[b1, b1],
+        mv_buses=[b2, b3],
+        lv_buses=[b4, b5],
+        std_type="63/25/38 MVA 110/20/10 kV",
+        name=["t3w-1", "t3w-2"],
+        in_service=[True, False],
+        index=[5, 6],
+    )
+    res_df = pd.DataFrame({
+        'name': ['t3w-1', 't3w-2'],
+        'std_type': ['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'],
+        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
+        'mv_bus': pd.Series([1, 2], dtype=np.uint32),
+        'lv_bus': pd.Series([3, 4], dtype=np.uint32),
+        'sn_hv_mva': [63.0, 63.0],
+        'sn_mv_mva': [25.0, 25.0],
+        'sn_lv_mva': [38.0, 38.0],
+        'vn_hv_kv': [110.0, 110.0],
+        'vn_mv_kv': [20.0, 20.0],
+        'vn_lv_kv': [10.0, 10.0],
+        'vk_hv_percent': [10.4, 10.4],
+        'vk_mv_percent': [10.4, 10.4],
+        'vk_lv_percent': [10.4, 10.4],
+        'vkr_hv_percent': [0.28, 0.28],
+        'vkr_mv_percent': [0.32, 0.32],
+        'vkr_lv_percent': [0.35, 0.35],
+        'pfe_kw': [35.0, 35.0],
+        'i0_percent': [0.89, 0.89],
+        'shift_mv_degree': [0.0, 0.0],
+        'shift_lv_degree': [0.0, 0.0],
+        'tap_side': ['hv', 'hv'],
+        'tap_neutral': [0.0, 0.0],
+        'tap_min': [-10.0, -10.0],
+        'tap_max': [10.0, 10.0],
+        'tap_step_percent': [1.2, 1.2],
+        'tap_step_degree': [nan, nan],
+        'tap_pos': [0.0, 0.0],
+        'tap_at_star_point': [False, False],
+        'tap_changer_type': ['Ratio', 'Ratio'],
+        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+        'tap_dependency_table': [False, False],
+        'in_service': [True, False]
+    }).set_index(pd.Index([5, 6]))
+    assert dataframes_equal(net.trafo3w, res_df)
 
 
 def test_create_transformers3w_from_parameters():

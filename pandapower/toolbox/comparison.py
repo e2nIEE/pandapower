@@ -102,8 +102,7 @@ def compare_arrays(x, y):
     or y. NaN values are assumed as equal.
     """
     if x.shape == y.shape:
-        # (x != x) is like np.isnan(x) - but works also for strings
-        return np.equal(x, y) | ((x != x) & (y != y))
+        return np.equal(x, y) | (pd.isna(x) & pd.isna(y))
     else:
         raise ValueError("x and y need to have the same shape.")
 
@@ -170,15 +169,15 @@ def nets_equal_keys(net1, net2, check_only_results, check_without_results, exclu
     if name_selection is not None:
         net1_keys = net2_keys = name_selection
     elif check_only_results:
-        net1_keys = [key for key in net1.keys() if key.startswith("res_")
+        net1_keys = [key for key in net1 if key.startswith("res_")
                      and key not in exclude_elms]
-        net2_keys = [key for key in net2.keys() if key.startswith("res_")
+        net2_keys = [key for key in net2 if key.startswith("res_")
                      and key not in exclude_elms]
     else:
-        net1_keys = [key for key in net1.keys() if not (
+        net1_keys = [key for key in net1 if not (
             key.startswith("_") or key in exclude_elms or key == "et"
             or key.startswith("res_") and check_without_results)]
-        net2_keys = [key for key in net2.keys() if not (
+        net2_keys = [key for key in net2 if not (
             key.startswith("_") or key in exclude_elms or key == "et"
             or key.startswith("res_") and check_without_results)]
     keys_to_check = set(net1_keys) & set(net2_keys)
