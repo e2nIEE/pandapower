@@ -4,17 +4,15 @@
 import pytest
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError
+    UnsupportedPythonError = JuliaError
 except ImportError:
     UnsupportedPythonError = Exception
 
 try:
-    from julia.api import Julia
-    Julia(compiled_modules=False)
-    from julia import Main
-    from julia import Pkg
-    from julia import Base
-
+    from juliacall import Main
+    from juliacall import Base
+    from juliacall import Pkg
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
@@ -28,14 +26,9 @@ logger = logging.getLogger(__name__)
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_julia_connection():
     try:
-        import julia
+        import juliacall
     except:
-        raise ImportError("install pyjulia properlly to run PandaModels.jl")
-    try:
-        julia.Julia()
-    except:
-        raise UserWarning(
-            "cannot connect to julia, check pyjulia configuration")
+        raise ImportError("install juliacall properlly to run PandaModels.jl")
 
 
 @pytest.mark.slow
@@ -57,7 +50,8 @@ def test_pandamodels_installation():
     logger.info("PandaModels is added to julia packages")
 
     try:
-        Main.using("PandaModels")
+        # Main.using("PandaModels")
+        Main.seval("using PandaModels")
         logger.info("using PandaModels in its base mode!")
     except ImportError:
         raise ImportError("cannot use PandaModels in its base mode")
@@ -85,7 +79,8 @@ def test_pandamodels_dev_mode():
 
     try:
         Pkg.activate("PandaModels")
-        Main.using("PandaModels")
+        # Main.using("PandaModels")
+        Main.seval("using PandaModels")
         logger.info("using PandaModels in its dev mode!")
     except ImportError:
         # assert False
@@ -93,7 +88,7 @@ def test_pandamodels_dev_mode():
 
     # activate julia base mode
     Pkg.activate()
-    Pkg.free("PandaModels")
+    # Pkg.free("PandaModels")
     Pkg.resolve()
 
 

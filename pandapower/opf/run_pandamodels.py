@@ -51,20 +51,17 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False, 
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
 
     try:
-        import julia
-        from julia import Main
-        from julia import Pkg
-        from julia import Base
+        #import julia
+        #from julia import Main
+        #from julia import Pkg
+        #from julia import Base
+        from juliacall import Main
+        from juliacall import Base
+        from juliacall import Pkg
     except ImportError:
         raise ImportError(
             "Please install pyjulia properly to run pandapower with PandaModels.jl.")
-        
-    try:
-        julia.Julia()
-    except:
-        raise UserWarning(
-            "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
-              
+
     if not Base.find_package("PandaModels"):
         logger.info("PandaModels.jl is not installed in julia. It is added now!")
         Pkg.Registry.update()
@@ -88,12 +85,17 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         Pkg.activate("PandaModels")
 
     try:
-        Main.using("PandaModels")
+        # Main.using("PandaModels")
+        Main.seval("using PandaModels")
     except ImportError:
         raise ImportError("cannot use PandaModels")
 
-    Main.buffer_file = buffer_file
-    result_pm = Main.eval(julia_file + "(buffer_file)")
+    try:
+        Main.buffer_file = buffer_file
+    except Exception:
+        Main.buffer_file = buffer_file
+
+    result_pm = Main.seval(julia_file + "(buffer_file)")
 
     # if dev_mode:
     #     Pkg.activate()

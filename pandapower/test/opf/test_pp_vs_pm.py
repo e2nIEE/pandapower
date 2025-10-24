@@ -17,14 +17,13 @@ from pandapower.run import runpp, runopp
 from pandapower.runpm import runpm_ac_opf
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError
+    UnsupportedPythonError = JuliaError
 except ImportError:
     UnsupportedPythonError = Exception
-try:
-    from julia.api import Julia
 
-    Julia(compiled_modules=False)
-    from julia import Main
+try:
+    from juliacall import Main
 
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
