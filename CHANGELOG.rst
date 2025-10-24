@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 - [REMOVED] deprecated functions removed: wrapper for deepcopy, get_connected_lines, get_connected_switches, connected_bus_in_line, get_line_path
+- [FIXED] diagnostic: increase readabillity
 - [CHANGED] removed general imports again
 - [CHANGED] updated all tutorials to remove general imports
 - [FIXED] toolbox: increase readabillity
