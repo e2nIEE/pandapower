@@ -157,10 +157,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         trafo_df = net["trafo"]
     if k_st is None:
         k_st = np.ones(len(ppc["branch"]))
-    if "xn_ohm" not in trafo_df.columns:
-        trafo_df["xn_ohm"] = 0.
-    if "rn_ohm" not in trafo_df.columns:
-        trafo_df["rn_ohm"] = 0.
+    if "xn_ohm_lv" not in trafo_df.columns:
+        trafo_df["xn_ohm_lv"] = 0.
+    if "rn_ohm_lv" not in trafo_df.columns:
+        trafo_df["rn_ohm_lv"] = 0.
     if "xn_ohm_hv" not in trafo_df.columns:
         trafo_df["xn_ohm_hv"] = 0.
     if "rn_ohm_hv" not in trafo_df.columns:
@@ -170,7 +170,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         return
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     mode = net["_options"]["mode"]
-    trafo_model = net["_options"]["trafo_model"]
     f, t = branch_lookup["trafo"]
     trafo_df["_ppc_idx"] = range(f, t)
     trafo_df["k_st"] = k_st[trafo_df["_ppc_idx"].values].real
@@ -188,8 +187,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # and the imaginary part must be 0 - otherwise the result will be np.nan rather than 0:
         ppc["branch"][f:t, BR_R] = BIG_NUMBER * ppc["baseMVA"]
         ppc["branch"][f:t, BR_X] = BIG_NUMBER * ppc["baseMVA"]
-        # ppc["branch"][f:t, BR_X] = 0
-        ppc["branch"][f:t, BR_B] = 0
         ppc["branch"][f:t, BR_STATUS] = in_service
     else:
         ppc["branch"][f:t, BR_STATUS] = 0
@@ -201,7 +198,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         )
 
     for vector_group, trafos in trafo_df.groupby("vector_group"):
-        # TODO Roman: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
         # vector groups without "N" have no impact on the LG
         if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
@@ -273,8 +269,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         ppc["branch"][ppc_idx, SHIFT] = shift
 
         # zero seq. transformer impedance
-        tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * net.sn_mva
-        tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * net.sn_mva
+        tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * ppc["baseMVA"]
+        tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * ppc["baseMVA"]
         if mode == "pf_3ph":
             if vector_group.lower() not in ["ynyn", "dyn", "yzn"]:
                 raise NotImplementedError(
@@ -289,27 +285,22 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             #             Network base voltage is Line-Neutral voltage in each phase
             #             Line-Neutral voltage= Line-Line Voltage(vn_bus_lv) divided by sq.root(3)
             # =============================================================================
-            tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * (3 * net.sn_mva)
-            tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * (3 * net.sn_mva)
+            tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * (3 * ppc["baseMVA"])
+            tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * (3 * ppc["baseMVA"])
 
         tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny", "dyn", "yyn") else tap_lv
-        # tap_corr = tap_lv
-        z_sc = vk0_percent / 100. / sn_trafo_mva * tap_corr
+        z_sc = vk0_percent / 100. / sn_trafo_mva * tap_corr # tap_corr has the ppc["baseMVA"] inside!
         r_sc = vkr0_percent / 100. / sn_trafo_mva * tap_corr
         z_sc = z_sc.astype(np.float64)
         r_sc = r_sc.astype(np.float64)
         x_sc = np.sign(z_sc) * np.sqrt(z_sc ** 2 - r_sc ** 2)
-        # TODO: This equation needs to be checked!
-        # z0_k = (r_sc + x_sc * 1j) / parallel  * max(1, ratio) **2
-        # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_bus_hv
-        # z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
+
         z0_k = (r_sc + x_sc * 1j) / parallel
         # z_n_ohm = trafos["xn_ohm"].fillna(0).values
-        z_n_ohm = trafos["rn_ohm"] + 1j * trafos["xn_ohm"]
-        z_n_ohm_hv = trafos["rn_ohm_hv"] + 1j * trafos["xn_ohm_hv"]
+        z_n_ohm_lv = np.nan_to_num(trafos["rn_ohm_lv"].values, nan=0.0) + 1j * np.nan_to_num(trafos["xn_ohm_lv"].values, nan=0.0)
+        z_n_ohm_hv = np.nan_to_num(trafos["rn_ohm_hv"], nan=0.0) + 1j * np.nan_to_num(trafos["xn_ohm_hv"], nan=0.0)
         k_st_tr = trafos["k_st"].fillna(1).values
         # if no grounding type is specified solid grounding with 0 ohm on both sides of the transformer is assumed
-        z0_k_hv = z0_k
 
         if mode == "sc":  # or trafo_model == "pi":
             case = net._options["case"]
@@ -330,26 +321,28 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             z_0THV = (vkr0_percent / 100 + 1j * vkx0_percent / 100) * (np.square(vn_trafo_hv) / sn_trafo_mva) / parallel
             # grounding impedance: for power system unit, the neutral grounding is set at the HV side.
             # for petersen coil and power transformers, the neutral grounding is at the LV side
-            z_petersen_pu = 3 * z_n_ohm / ((vn_bus_lv ** 2) / net.sn_mva)
-            # Calculate the grounding impedance for the ynyn vector group, which can be at either at the HV or LV side
-            if vector_group.lower() == "ynyn":
-                # Calculate the Petersen coil impedance in per unit (pu) on the HV side
-                z_petersen_pu_hv = 3 * z_n_ohm_hv / (vn_bus_hv ** 2 / net.sn_mva)
-                z_petersen_pu_hv /= si0_hv_partial  # Normalize by the HV partial component
-                z0_k_hv = z0_k + z_petersen_pu_hv.values  # Combine with the base zero-sequence impedance
-                z_petersen_pu /= (1 - si0_hv_partial) # Normalize by the LV partial component
-                z0_k += z_petersen_pu.values
-            else:
-                # Update the zero-sequence impedance, adding the Petersen coil impedance of the low voltage side
-                z0_k += z_petersen_pu.values
-                z0_k_hv = z0_k  # Use the base zero-sequence impedance if not ynyn for both sides (hv and lv)
-            # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
-            # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_trafo_hv ** 2) / net.sn_mva)
-            z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
-            z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
+            z_petersen_pu_lv = 0.0
+            z_petersen_pu_hv = 0.0
 
-        y0_k = 1 / z0_k  # adding admittance for "pi" model
-        # y0_k = 1 / (z0_k * k_st_tr + 3 * z_n_ohm)  # adding admittance for "pi" model
+            # Calculate the grounding impedance for the ynyn vector group, which can be at either at the HV or LV side
+            # Calculate the Petersen coil impedance in per unit (pu)
+
+            if vector_group.lower() == "ynyn":
+                z_petersen_pu_lv += 3 * z_n_ohm_lv / (vn_bus_lv ** 2 / ppc["baseMVA"])
+                z_petersen_pu_hv += 3 * z_n_ohm_hv / (vn_bus_hv ** 2 / ppc["baseMVA"])
+            elif vector_group.lower() == "dyn" or vector_group.lower() == "yyn":
+                z_petersen_pu_lv += 3 * z_n_ohm_lv / (vn_bus_lv ** 2 / ppc["baseMVA"])
+            elif vector_group.lower() == "ynd":
+                z_petersen_pu_hv += 3 * z_n_ohm_hv / (vn_bus_hv ** 2 / ppc["baseMVA"])
+            elif vector_group.lower() == "yyn":
+                z_petersen_pu_lv += 3 * z_n_ohm_lv / (vn_bus_lv ** 2 / ppc["baseMVA"])
+            elif vector_group.lower() == "yny":
+                z_petersen_pu_hv += 3 * z_n_ohm_hv / (vn_bus_hv ** 2 / ppc["baseMVA"])
+                
+            # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_bus_hv ** 2) / ppc["baseMVA"])
+            # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_trafo_hv ** 2) / ppc["baseMVA"])
+            z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm_lv) / ((vn_bus_hv ** 2) / ppc["baseMVA"])
+            z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
 
         # =============================================================================
         #       Transformer magnetising impedance for zero sequence
@@ -367,78 +360,60 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         #     za=ZAN|_|                  |_| zb=ZBN
         #            |                    |
         # =============================================================================
-        z1 = si0_hv_partial * z0_k_hv
-        z2 = (1 - si0_hv_partial) * z0_k
-        z3 = z0_mag
+
+        # probably the whole star delta transformation is obsolete for dyn and ynd connections...
+        if vector_group.lower() == "dyn":
+            z1 = 1 / BIG_NUMBER
+            z2 = z0_k  + z_petersen_pu_lv
+            z3 = 1 / BIG_NUMBER # magnetizing impedance is 0 acc. to powerfactory technical documentation of trafo. this mismatches with the Oswald book
+        elif vector_group.lower() == "ynd":
+            z1 = z0_k + z_petersen_pu_hv
+            z2 = 1 / BIG_NUMBER
+            z3 = 1 / BIG_NUMBER
+        elif vector_group.lower() == "yyn":
+            z1 = 1 / BIG_NUMBER
+            z2 = z0_k  + z_petersen_pu_lv
+            z3 = z0_mag
+        elif vector_group.lower() == "yny":
+            z1 = z0_k  + z_petersen_pu_hv
+            z2 = 1 / BIG_NUMBER
+            z3 = z0_mag
+        else:
+            z1 = si0_hv_partial * z0_k + z_petersen_pu_hv
+            z2 = (1 - si0_hv_partial) * z0_k  + z_petersen_pu_lv
+            z3 = z0_mag
         z_temp = z1 * z2 + z2 * z3 + z1 * z3
-        za = z_temp / z2
-        #        za = z_temp / (z2+z3)
-        zb = z_temp / z1
-        #        zb = z_temp / (z1+z3)
+        za = z_temp / z2  # ZAN  Transfer impedance
+        zb = z_temp / z1  # ZBN  Transfer impedance
         zc = z_temp / z3  # ZAB  Transfer impedance
-        #        zc = z_temp / (z1+z2)  # ZAB  Transfer impedance
         YAB = 1 / zc.astype(complex)
         YAN = 1 / za.astype(complex)
         YBN = 1 / zb.astype(complex)
 
-        #        YAB_AN = (zc + za) /(zc * za).astype(complex)  # Series conn YAB and YAN
-        #        YAB_BN = (zc + zb) / (zc * zb).astype(complex)  # Series conn YAB and YBN
-
         YAB_AN = 1 / (zc + za).astype(complex)  # Series conn YAB and YAN
         YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN
-        y_sym = np.zeros(len(trafos), dtype=np.complex128)
-        # y0_k = 1 / z0_k #adding admittance for "pi" model
+
         if vector_group.lower() == "dyn":
-            if trafo_model == "pi":
-                y = y0_k  # pi model
-            else:
-                y = (YAB + YBN).astype(complex)  # T model
-            y_asym = y * in_service.values * 2
+            y_sym = np.zeros(len(trafos), dtype=np.complex128)
+            y_asym = 1/z2.astype(complex) * in_service.values * 2
 
         elif vector_group.lower() == "ynd":
-            if trafo_model == "pi":
-                y = y0_k  # pi model
-                # y = 1/0.99598 * 1 / (1/(y0_k * ppc["baseMVA"]) + 1/0.99598 * (1j * 3 * 22 /( (110 ** 2) / 1))) # pi
-                # y = 1/0.99598 * 1 / (1/(y0_k * ppc["baseMVA"]) + 1/0.99598 * (1j * 3 * 22 /( (110 ** 2) / 1))) # pi
-
-                # z0_k_k = z0_k * 0.99598 + 1j * 3 * 22 /( (110 ** 2) / 1)
-                # print(z0_k_k)
-                # y = 1 / z0_k_k # pi model
-            else:
-                y = (YAB_BN + YAN).astype(complex)  # T model
-            y_sym = y * in_service.values * 2 * ppc["branch"][ppc_idx, TAP] ** 2
+            y_sym = 1/z1.astype(complex) * in_service.values * 2
             y_asym = -y_sym
 
         elif vector_group.lower() == "yyn":
-            if trafo_model == "pi":
-                y = 1 / (z0_mag + z0_k).astype(complex)  # pi model
-            else:
-                # y = (YAB_AN + YBN).astype(complex)  # T model
-                y = (YAB + YAB_BN + YBN).astype(complex)  # T model
-            y_asym = y * in_service.values * 2
-
-        elif vector_group.lower() == "ynyn":
-            ppc["branch"][ppc_idx, BR_STATUS] = in_service
-            # Need to update this.
-            # zc = ZAB
-            ppc["branch"][ppc_idx, BR_R] = zc.real
-            ppc["branch"][ppc_idx, BR_X] = zc.imag
-            y_sym = (
-                YAN
-                * in_service.values
-                * 2
-                * (tap_lv / tap_hv)
-                * ppc["branch"][ppc_idx, TAP] ** 2
-            )
-            y_asym = YBN * in_service.values * 2 - y_sym
+            y_sym = np.zeros(len(trafos), dtype=np.complex128)
+            y_asym = (YAB_AN + YBN).astype(complex) * in_service.values * 2
 
         elif vector_group.lower() == "yny":
-            if trafo_model == "pi":
-                y = 1 / (z0_mag + z0_k).astype(complex)  # pi model
-            else:
-                y = (YAB_BN + YAN).astype(complex)  # T model
-            y_sym = y * in_service.values * 2 * ppc["branch"][ppc_idx, TAP] ** 2
+            y_sym = (YAB_BN + YAN).astype(complex) * in_service.values * 2
             y_asym = -y_sym
+
+        elif vector_group.lower() == "ynyn":
+            ppc["branch"][f:t, BR_R] = zc.astype(complex).real
+            ppc["branch"][f:t, BR_X] = zc.astype(complex).imag
+            y_sym = YAN.astype(complex) * in_service.values * 2
+            y_asym = YBN.astype(complex) * in_service.values * 2 - y_sym
 
         elif vector_group.lower() == "yzn":
             #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
@@ -593,9 +568,9 @@ def _add_line_sc_impedance_zero(net, ppc):
 
     fb = bus_lookup[line["from_bus"].values]
     tb = bus_lookup[line["to_bus"].values]
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
+    baseR = np.square(ppc["bus"][fb, BASE_KV]) / ppc["baseMVA"]
     if mode == "pf_3ph":
-        baseR = np.square(ppc["bus"][fb, BASE_KV]) / (3 * net.sn_mva)
+        baseR = np.square(ppc["bus"][fb, BASE_KV]) / (3 * ppc["baseMVA"])
     f, t = branch_lookup["line"]
     # line zero sequence impedance
     ppc["branch"][f:t, F_BUS] = fb
