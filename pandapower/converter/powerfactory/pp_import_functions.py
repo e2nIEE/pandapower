@@ -4652,11 +4652,11 @@ def calc_segment_length(x1, y1, x2, y2):
 
 def get_scale_factor(length_line, coords):
     if np.isscalar(coords):  # single value
-        if np.isnan(coords):
-            return np.nan
+        if pd.isna(coords):
+            return None
     else:  # array or list
-        if np.any(np.isnan(coords)):
-            return np.nan
+        if np.any(pd.isna(coords)):
+            return None
     temp_len = 0
     num_coords = len(coords)
     for i in range(num_coords - 1):
@@ -4718,7 +4718,7 @@ def set_new_coords(net, bus_id, line_idx, new_line_idx, line_length, pos_at_line
 
     scale_factor_length = get_scale_factor(line_length, line_coords)
     
-    if np.isnan(scale_factor_length):
+    if pd.isna(scale_factor_length):
         logger.warning("Could not generate geodata for line sections (partial loads on line)!")
     else:
         section_coords, new_coords = break_coords_sections(line_coords, pos_at_line,
