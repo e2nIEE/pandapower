@@ -116,10 +116,10 @@ def get_result_dfs(net_name, fault_location, grounding_type, gen_active=False):
 
     if 'twenty_bus' in net_name and fault_location not in [0, 8, 18]:
         print(f"For {net_name} only fault locations 0, 8, 18 are supported. Skipping fault location {fault_location}.")
-        return None, None
+        return None, None, None
     elif 'twenty_bus' not in net_name and fault_location not in [0, 1, 2, 3]:
         print(f"For {net_name} only fault locations 0, 1, 2, 3 are supported. Skipping fault location {fault_location}.")
-        return None, None
+        return None, None, None
 
     result_files_path = os.path.join('sc_result_comparison')
     result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
@@ -196,7 +196,7 @@ def get_result_dfs(net_name, fault_location, grounding_type, gen_active=False):
     excel_file = f"wp_2.5/{net_name}_pf_sc_results_{fault_location}_branch{gen_loc}_{grounding_type}.xlsx"
     diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location)
 
-    return diff_df, diff_df_branch
+    return diff_df, diff_df_branch, net
 
 
 def generate_summary_tables(net_names, fault_locations, grounding_types, detailed=False, gen_active=False):
@@ -311,11 +311,11 @@ if __name__ == "__main__":
     # net_name = '2_five_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
     net_name = '4_twenty_bus_radial_grid_dyn_gen'   # possible net_name in net_names and net_names_gen
     fault_location = 8  # 0, 1, 2, 3 for four- and five-bus grids; 0, 8, 18 for twenty-bus grid
-    grounding_type = "resistance"
+    grounding_type = "solid"
     grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated", "resonant"]
     gen_active = False
 
-    diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, grounding_type, gen_active=gen_active)
+    diff_df, diff_df_branch, net = get_result_dfs(net_name, fault_location, grounding_type, gen_active=gen_active)
 
     """fault_location = [fault_location]
     ## detailed overview for all grids
@@ -325,7 +325,15 @@ if __name__ == "__main__":
     ## simple overview for all grids
     df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, grounding_types, detailed=False,
                                                               gen_active=gen_active)"""
+    net.line.in_service=False
+    net.trafo.rn_ohm_hv = 1000.0
+    net.trafo.xn_ohm_hv = 1000.0
+    net.trafo.rn_ohm_lv = 1000.0
+    net.trafo.xn_ohm_lv = 1000.0
 
+    net.trafo.shift_degree = 0.0
+    net.trafo.vector_group = "ynyn"
+    calc_sc(net, fault='LG', case='max', branch_results=False, ip=False,
+                                r_fault_ohm=0.0, x_fault_ohm=0.0, bus=1, return_all_currents=False)
 
-
-
+    print(net.res_bus_sc)
