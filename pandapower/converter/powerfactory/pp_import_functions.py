@@ -4652,7 +4652,7 @@ def calc_segment_length(x1, y1, x2, y2):
 
 def get_scale_factor(length_line, coords):
     if np.isscalar(coords):  # single value
-        if coords is None:
+        if pd.isna(coords):
             return None
     else:  # array or list
         if np.any(pd.isna(coords)):
