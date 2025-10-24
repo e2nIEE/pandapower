@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from network_schema.tools import create_checks_from_metadata
+from pandapower.network_schema.tools import create_checks_from_metadata
 
 _line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
     "name": pa.Column(pd.StringDtype, required=False, description="name of the dc line"),

@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from network_schema.tools import validate_column_group_dependency
+from pandapower.network_schema.tools import validate_column_group_dependency
 
 _trafo3w_columns = {
     # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
