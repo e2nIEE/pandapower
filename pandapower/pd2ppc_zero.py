@@ -157,10 +157,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         trafo_df = net["trafo"]
     if k_st is None:
         k_st = np.ones(len(ppc["branch"]))
-    if "xn_ohm_lv" not in trafo_df.columns:
-        trafo_df["xn_ohm_lv"] = 0.
-    if "rn_ohm_lv" not in trafo_df.columns:
-        trafo_df["rn_ohm_lv"] = 0.
+    if "xn_ohm" not in trafo_df.columns:
+        trafo_df["xn_ohm"] = 0.
+    if "rn_ohm" not in trafo_df.columns:
+        trafo_df["rn_ohm"] = 0.
     if "xn_ohm_hv" not in trafo_df.columns:
         trafo_df["xn_ohm_hv"] = 0.
     if "rn_ohm_hv" not in trafo_df.columns:
@@ -297,7 +297,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 
         z0_k = (r_sc + x_sc * 1j) / parallel
         # z_n_ohm = trafos["xn_ohm"].fillna(0).values
-        z_n_ohm_lv = np.nan_to_num(trafos["rn_ohm_lv"].values, nan=0.0) + 1j * np.nan_to_num(trafos["xn_ohm_lv"].values, nan=0.0)
+        z_n_ohm_lv = np.nan_to_num(trafos["rn_ohm"].values, nan=0.0) + 1j * np.nan_to_num(trafos["xn_ohm"].values, nan=0.0)
         z_n_ohm_hv = np.nan_to_num(trafos["rn_ohm_hv"], nan=0.0) + 1j * np.nan_to_num(trafos["xn_ohm_hv"], nan=0.0)
         k_st_tr = trafos["k_st"].fillna(1).values
         # if no grounding type is specified solid grounding with 0 ohm on both sides of the transformer is assumed
@@ -372,7 +372,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             z3 = 1 / BIG_NUMBER
         elif vector_group.lower() == "yyn":
             z1 = 1 / BIG_NUMBER
-            z2 = z0_k  + z_petersen_pu_lv
+            z2 = z0_k + z_petersen_pu_lv
             z3 = z0_mag
         elif vector_group.lower() == "yny":
             z1 = z0_k  + z_petersen_pu_hv
@@ -403,10 +403,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 
         elif vector_group.lower() == "yyn":
             y_sym = np.zeros(len(trafos), dtype=np.complex128)
-            y_asym = (YAB_AN + YBN).astype(complex) * in_service.values * 2
+            y_asym = 1/(z2 + z3).astype(complex) * in_service.values * 2
 
         elif vector_group.lower() == "yny":
-            y_sym = (YAB_BN + YAN).astype(complex) * in_service.values * 2
+            y_sym = 1/(z1 + z3).astype(complex) * in_service.values * 2
             y_asym = -y_sym
 
         elif vector_group.lower() == "ynyn":
@@ -415,11 +415,11 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             y_sym = YAN.astype(complex) * in_service.values * 2
             y_asym = YBN.astype(complex) * in_service.values * 2 - y_sym
 
-        elif vector_group.lower() == "yzn":
-            #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
-            #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
-            y = (YAB_AN + YBN).astype(complex)
-            y_asym = (1.1547) * y * in_service.values * ppc["baseMVA"] * 2
+        # elif vector_group.lower() == "yzn":
+        #     #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
+        #     #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
+        #     y = (YAB_AN + YBN).astype(complex)
+        #     y_asym = (1.1547) * y * in_service.values * ppc["baseMVA"] * 2
 
         elif vector_group[-1].isdigit():
             raise ValueError(
