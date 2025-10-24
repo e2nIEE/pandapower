@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] fixed broken converter import in runpm
 - [REMOVED] deprecated functions removed: wrapper for deepcopy, get_connected_lines, get_connected_switches, connected_bus_in_line, get_line_path
 - [CHANGED] removed general imports again
 - [CHANGED] updated all tutorials to remove general imports
