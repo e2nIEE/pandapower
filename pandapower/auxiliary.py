@@ -36,11 +36,9 @@ from importlib.metadata import version as version_str
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
-# from pandas.api.types import is_integer_dtype, is_float_dtype
 import scipy as sp
 from geojson import loads, GeoJSON
 from packaging.version import Version
-from typing_extensions import deprecated
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
@@ -328,10 +326,6 @@ class pandapowerNet(ADict):
             if isinstance(data[key], dict):
                 data[key] = pd.DataFrame(columns=data[key].keys(), index=pd.Index([], dtype=np.int64)).astype(data[key])
         return data
-
-    @deprecated("Use copy.deepcopy(net) instead of net.deepcopy()")
-    def deepcopy(self):
-        return copy.deepcopy(self)
 
     def __repr__(self):  # pragma: no cover
         """
