@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import geojson
 
+from typing_extensions import deprecated
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -240,3 +242,76 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ign
     num_failed = len(line_index) - len(line_index_successful)
     if num_failed > 0:
         logger.info(f"failed to set coordinates of {num_failed} lines")
+
+
+@deprecated("Use of busbar is not by bus_geodata anymore.")
+def position_on_busbar(net, bus, busbar_coords):
+    """
+    Checks if the first or the last coordinates of a line are on a bus
+
+    :param net: The pandapower network
+    :type net: pandapowerNet
+    :param bus: ID of the target bus on one end of the line
+    :type bus: int
+    :param busbar_coords: The coordinates of the busbar (beginning and end point).
+    :type busbar_coords: array, shape= (,2L)
+    :return: intersection (tuple, shape= (2L,))- Intersection point of the line with the given bus.\
+        Can be used for switch position
+    """
+    # If the line has no Intersection line will be returned and the bus coordinates can be used to
+    # calculate the switch position
+    intersection = None
+    bus_coords = net.bus_geodata.loc[bus, "coords"]
+    # Checking if bus has "coords" - if it is a busbar
+    if bus_coords is not None and bus_coords is not np.nan and busbar_coords is not None:
+        for i in range(len(bus_coords) - 1):
+            try:
+                # Calculating slope of busbar-line. If the busbar-line is vertical ZeroDivisionError
+                # occurs
+                m = (bus_coords[i + 1][1] - bus_coords[i][1]) / \
+                    (bus_coords[i + 1][0] - bus_coords[i][0])
+                # Clculating the off-set of the busbar-line
+                b = bus_coords[i][1] - bus_coords[i][0] * m
+                # Checking if the first end of the line is on the busbar-line
+                if 0 == m * busbar_coords[0][0] + b - busbar_coords[0][1]:
+                    # Checking if the end of the line is in the Range of the busbar-line
+                    if bus_coords[i + 1][0] <= busbar_coords[0][0] <= bus_coords[i][0] \
+                            or bus_coords[i][0] <= busbar_coords[0][0] <= bus_coords[i + 1][0]:
+                        # Intersection found. Breaking for-loop
+                        intersection = busbar_coords[0]
+                        break
+                # Checking if the second end of the line is on the busbar-line
+                elif 0 == m * busbar_coords[-1][0] + b - busbar_coords[-1][1]:
+                    if bus_coords[i][0] >= busbar_coords[-1][0] >= bus_coords[i + 1][0] \
+                            or bus_coords[i][0] <= busbar_coords[-1][0] <= bus_coords[i + 1][0]:
+                        # Intersection found. Breaking for-loop
+                        intersection = busbar_coords[-1]
+                        break
+            # If the busbar-line is a vertical line and the slope is infinitely
+            except ZeroDivisionError:
+                # Checking if the first line-end is at the same position
+                if bus_coords[i][0] == busbar_coords[0][0]:
+                    # Checking if the first line-end is in the Range of the busbar-line
+                    if bus_coords[i][1] >= busbar_coords[0][1] >= bus_coords[i + 1][1] \
+                            or bus_coords[i][1] <= busbar_coords[0][1] <= bus_coords[i + 1][1]:
+                        # Intersection found. Breaking for-loop
+                        intersection = busbar_coords[0]
+                        break
+                # Checking if the second line-end is at the same position
+                elif bus_coords[i][0] == busbar_coords[-1][0]:
+                    if bus_coords[i][1] >= busbar_coords[-1][1] >= bus_coords[i + 1][1] \
+                            or bus_coords[i][1] <= busbar_coords[-1][1] <= bus_coords[i + 1][1]:
+                        # Intersection found. Breaking for-loop
+                        intersection = busbar_coords[-1]
+                        break
+    # If the bus has no "coords" it mus be a normal bus
+    elif bus_coords is np.nan:
+        bus_geo = (net["bus_geodata"].loc[bus, "x"], net["bus_geodata"].loc[bus, "y"])
+        # Checking if the first end of the line is on the bus
+        if bus_geo == busbar_coords[0]:
+            intersection = busbar_coords[0]
+        # Checking if the second end of the line is on the bus
+        elif bus_geo == busbar_coords[-1]:
+            intersection = busbar_coords[-1]
+
+    return intersection
