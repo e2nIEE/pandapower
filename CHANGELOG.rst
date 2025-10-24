@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] diagnostic: increase readabillity
 - [CHANGED] removed general imports again
 - [CHANGED] updated all tutorials to remove general imports
 - [FIXED] toolbox: increase readabillity
