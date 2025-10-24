@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] removed general imports again
+- [CHANGED] updated all tutorials to remove general imports
 - [FIXED] toolbox: increase readabillity
 - [FIXED] io_utils: increase readabillity
 - [ADDED] cim2pp: added EquipmentContainer to BusbarSection and Junction, added max and min p to sgen, updated schemas
