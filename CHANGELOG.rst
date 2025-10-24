@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [REMOVED] deprecated functions removed: wrapper for deepcopy, position_on_busbar, get_connected_lines, get_connected_switches, connected_bus_in_line, get_line_path
 - [FIXED] toolbox: increase readabillity
 - [FIXED] io_utils: increase readabillity
 - [ADDED] cim2pp: added EquipmentContainer to BusbarSection and Junction, added max and min p to sgen, updated schemas
