@@ -84,7 +84,7 @@ def test_no_issues(diag_params, diag_errors, report_methods):
     diag_results = diagnostic(net, report_style=None)
     assert diag_results == {}
     for bool_value in [True, False]:
-        for _, check_function in report_methods.items():
+        for check_function in report_methods.values():
             diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report=bool_value)
             check_report_function(getattr(diag_report, check_function))
 
