@@ -8,7 +8,7 @@ import numpy as np
 
 from pandapower import pp_dir
 from pandapower.toolbox.comparison import nets_equal
-from pandapower.converter import from_jao
+from pandapower.converter.jao import from_jao
 
 
 def test_from_jao_with_testfile():
