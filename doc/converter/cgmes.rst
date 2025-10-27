@@ -16,7 +16,7 @@ Install the needed dependancies with: ::
 
 In order to use this converter the following import is needed. ::
 
-    from pandapower.converter.cim.cim2pp import from_cim as cim2pp
+    from pandapower.converter.cim import from_cim as cim2pp
 
 For a speed increase it is advisable to install numba into the used python environment. ::
 
