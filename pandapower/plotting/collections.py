@@ -531,15 +531,6 @@ def create_line_collection(net: pandapowerNet, lines=None,
     OUTPUT:
         **lc** - line collection
     """
-    if line_table == "line":
-        dc = False
-        line_geodata_table = "line_geodata"
-    elif line_table == "line_dc":
-        dc = True
-        line_geodata_table = "line_dc_geodata"
-    else:
-        raise NotImplementedError(f"line table {line_table} not implemented!")
-
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
 

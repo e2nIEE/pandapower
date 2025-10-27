@@ -656,7 +656,7 @@ def create_J_modification_hvdc(
     # data = np.r_[P_Fik / V_dc[vsc_dc_fb], P_Fik / V_dc[vsc_dc_tb], np.where(vsc_dc_slack, one, P_Fki / V_dc[vsc_dc_fb]), np.where(vsc_dc_slack, zero, P_Fki / V_dc[vsc_dc_tb])]
     # data = np.r_[-Q_Fik[f_in_pvpq], Q_Fik[f_in_pvpq & t_in_pvpq], np.where(control_delta[f_in_pvpq & t_in_pvpq], one[f_in_pvpq & t_in_pvpq], Q_Fki[f_in_pvpq & t_in_pvpq]), np.where(control_delta[t_in_pvpq], zero[t_in_pvpq], -Q_Fki[t_in_pvpq])]
 
-    J_m_vsc = csr_matrix((data, (rows, cols)), shape=J_all.shape, dtype=np.float64)
+    J_m_vsc: csr_matrix = csr_matrix((data, (rows, cols)), shape=J_all.shape, dtype=np.float64)
 
     # Combine them to form the Jacobian for DC grid including the VSC elements
     J_combined = J_all + J_diag + J_m_vsc

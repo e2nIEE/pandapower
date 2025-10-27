@@ -28,7 +28,7 @@ class ConnectivityNodesCim16:
 
         # a prepared and modified copy of eqssh_terminals to use for lines, switches, loads, sgens and so on
         eqssh_terminals = eqssh_terminals[
-            ['rdfId', 'ConductingEquipment', 'ConnectivityNode', 'sequenceNumber', 'connected']].copy()
+            ['rdfId', 'ConductingEquipment', 'ConnectivityNode', 'sequenceNumber', 'connected']]
         eqssh_terminals = eqssh_terminals.rename(columns={'rdfId': 'rdfId_Terminal'})
         eqssh_terminals = eqssh_terminals.rename(columns={'ConductingEquipment': 'rdfId'})
         # buses for merging with assets:

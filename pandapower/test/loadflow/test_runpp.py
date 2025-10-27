@@ -14,7 +14,6 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
-from pandapower.control import _create_trafo_characteristics, SplineCharacteristic
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
     create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
     create_line_from_parameters, create_line, create_impedance, create_storage, create_buses, \
@@ -787,7 +786,7 @@ def test_zip_loads_out_of_service():
     create_line(net, from_bus=bus2, to_bus=bus3, length_km=0.1,
                 std_type="NAYY 4x50 SE", name="Line")
 
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     oos_load = create_load(
         net1, bus=bus3, p_mw=0.100, q_mvar=0.05, in_service=False,
         const_i_p_percent=0, const_i_q_percent=0, const_z_p_percent=100, const_z_q_percent=100)

@@ -469,7 +469,7 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
     #         ikss[b] = ppci["bus"][b, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][b, PHI_IKSS1_DEGREE])) * baseI[b]
     #         V_ikss[:, ix] = ybus_fact(ikss)
 
-    # net_copy = net.deepcopy()
+    # net_copy = copy.deepcopy(net)
     # pp.runpp(net_copy)
     # Ybus_p = net_copy._ppc["internal"]["Ybus"]
     # Yf_p = net_copy._ppc["internal"]["Yf"]

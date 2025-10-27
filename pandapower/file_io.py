@@ -234,7 +234,7 @@ def _from_excel_old(xls):
 
 def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None, ignore_unknown_objects=False):
+              empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -267,7 +267,7 @@ def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_de
 
     :example:
         >>> from pandapower.file_io import from_json
-        >>> net = pp.from_json("example.json")
+        >>> net = from_json("example.json")
     """
     if hasattr(filename_or_str, 'read'):
         json_string = filename_or_str.read()
@@ -286,7 +286,8 @@ def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_de
             add_basic_std_types=add_basic_std_types,
             replace_elements=replace_elements,
             empty_dict_like_object=empty_dict_like_object,
-            ignore_unknown_objects=ignore_unknown_objects
+            ignore_unknown_objects=ignore_unknown_objects,
+            drop_invalid_geodata=drop_invalid_geodata
         )
     except ValueError as e:
         raise UserWarning(f"Failed to load as json or file: {e}")
@@ -301,7 +302,8 @@ def from_json_string(
         add_basic_std_types=False,
         replace_elements=None,
         empty_dict_like_object=None,
-        ignore_unknown_objects=False
+        ignore_unknown_objects=False,
+        drop_invalid_geodata=False
 ):
     """
     Load a pandapower network from a JSON string.
@@ -385,7 +387,7 @@ def from_json_string(
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net, elements_to_deserialize=elements_to_deserialize)
+        convert_format(net, elements_to_deserialize=elements_to_deserialize, drop_invalid_geodata=drop_invalid_geodata)
 
         # compare pandapowerNet-format_version and package-version
         # check if installed pandapower version is older than imported network file

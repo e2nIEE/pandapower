@@ -93,7 +93,7 @@ def test_contingency_timeseries(get_net):
 
         # check for the last time step:
         res1 = run_contingency(net0, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
-        net1 = net0.deepcopy()
+        net1 = copy.deepcopy(net0)
 
         # check for the first time step:
         for c in net0.controller.object.values:
