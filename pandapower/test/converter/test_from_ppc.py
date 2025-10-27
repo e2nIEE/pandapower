@@ -16,7 +16,7 @@ from pandapower.toolbox.comparison import nets_equal
 from pandapower.run import set_user_pf_options, runpp, runopp
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 
-from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
+from pandapower.converter.pypower import from_ppc, validate_from_ppc, to_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.pypower.idx_bus import PD, VM, VA
 from pandapower.pypower.idx_gen import PG, QG
@@ -70,7 +70,7 @@ def test_from_ppc_simple_against_target():
 @pytest.mark.xfail
 def test_validate_from_ppc_simple_against_target():
     ppc = get_testgrids('ppc_testgrids', 'case2_2.json') # TODO: marked as xfail since it uses wrong paths to load references
-    net = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
+    net = from_json(os.path.join(pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 

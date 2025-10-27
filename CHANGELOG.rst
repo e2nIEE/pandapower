@@ -5,6 +5,7 @@ Change Log
 -------------------------------
 - [FIXED] legacy np.random.random uses
 - [FIXED] SonarCube reliabilty complaints
+- [FIXED] remove imports from converter init, change code usage and docu accordingly
 - [FIXED] fixed broken converter import in runpm
 - [REMOVED] deprecated functions removed: wrapper for deepcopy, get_connected_lines, get_connected_switches, connected_bus_in_line, get_line_path
 - [FIXED] diagnostic: increase readabillity

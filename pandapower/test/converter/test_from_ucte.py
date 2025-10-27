@@ -12,8 +12,7 @@ from pandapower import pp_dir
 from pandapower.auxiliary import pandapowerNet
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import count_elements
-import pandapower.converter as pc
-
+import pandapower.converter.ucte as ucte_converter
 import logging
 
 logger = logging.getLogger(__name__)
@@ -85,7 +84,7 @@ def test_from_ucte(test_case):
     ucte_file = os.path.join(_testfiles_folder(), f"{ucte_file_name}.uct")
 
     # --- convert UCTE data -------------------------------------------------------------------
-    net = pc.from_ucte(ucte_file, slack_as_gen=False)
+    net = ucte_converter.from_ucte(ucte_file, slack_as_gen=False)
 
     assert isinstance(net, pandapowerNet)
     assert len(net.bus)
@@ -103,7 +102,7 @@ def test_from_ucte(test_case):
 
     # --- compare results ---------------------------------------------------------------------
     res_target = _results_from_powerfactory()
-    failed = list()
+    failed = []
     atol_dict = {
         "res_bus": {"vm_pu": 1e-4, "va_degree": 7e-3},
         "res_line": {"p_from_mw": 5e-2, "q_from_mvar": 2e-1},
@@ -158,12 +157,4 @@ def test_from_ucte(test_case):
 
 
 if __name__ == '__main__':
-    if 1:
         pytest.main([__file__, "-s"])
-    else:
-
-        ucte_file = os.path.join(_testfiles_folder(), "test_ucte_DE.uct")
-        net = pc.from_ucte(ucte_file, slack_as_gen=False)
-
-        print(net)
-        print()
