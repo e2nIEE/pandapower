@@ -2605,13 +2605,18 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             tap_dependency_table = False
             tap_changer_type = None
 
+        # Add epsilon to avoid zero impedance on one transformer side (pandapower limitation)
+        epsilon = 1e-6
+        itrdr = np.clip(pf_type.itrdr, epsilon, 1 - epsilon)
+        itrdl = np.clip(pf_type.itrdl, epsilon, 1 - epsilon)
+
         tid = create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                  std_type=std_type, tap_pos=tap_pos,
                                  tap_dependency_table=tap_dependency_table,
                                  tap_changer_type=tap_changer_type,
                                  id_characteristic_table=id_characteristic_table,
                                  in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
-                                 leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
+                                 leakage_resistance_ratio_hv=itrdr, leakage_reactance_ratio_hv=itrdl)
         trafo_dict[item] = tid
         logger.debug('created trafo at index <%d>' % tid)
     else:
