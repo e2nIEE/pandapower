@@ -108,8 +108,8 @@ def from_pf(
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                            dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
-            logger.debug('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d loads' % n)
+            logger.debug(f'load failed at import and was not imported: {err}')
+    if n > 0: logger.info(f'imported {n} loads')
 
     logger.debug('creating lv loads')
     # create loads:
@@ -119,8 +119,8 @@ def from_pf(
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                            dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
-            logger.warning('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d lv loads' % n)
+            logger.warning(f'load failed at import and was not imported: {err}')
+    if n > 0: logger.info(f'imported {n} lv loads')
 
     logger.debug('creating mv loads')
     # create loads:
@@ -130,8 +130,8 @@ def from_pf(
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                            dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
-            logger.error('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d mv loads' % n)
+            logger.error(f'load failed at import and was not imported: {err}')
+    if n > 0: logger.info(f'imported {n} mv loads')
 
     #    logger.debug('sum loads: %.3f' % sum(net.load.loc[net.load.in_service, 'p_mw']))
 
@@ -307,8 +307,8 @@ def from_pf(
                 create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                                dict_net=dict_net, is_unbalanced=is_unbalanced)
             except RuntimeError as err:
-                logger.warning('load failed at import and was not imported: %s' % err)
-        if n > 0: logger.info('imported %d lv loads' % n)
+                logger.warning(f'load failed at import and was not imported: {err}')
+        if n > 0: logger.info(f'imported {n} lv loads')
         
         
     # create station controllers (ElmStactrl):
@@ -4678,9 +4678,7 @@ def break_coords_sections(coords, section_length, scale_factor_length):
     else:  # array or list
         if np.any(np.isnan(coords)):
             return [[np.nan, np.nan]], [[np.nan, np.nan]]
-    
-    # if any(coords) is np.nan:
-    #     return [[np.nan, np.nan]], [[np.nan, np.nan]]
+
 
     num_coords = len(coords)
     if num_coords < 2:

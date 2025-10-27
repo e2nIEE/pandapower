@@ -211,7 +211,6 @@ if __name__ == '__main__':
     net = case2869pegase()
     nminus1_cases = {"line": {"index": net.line.index.values}}
 
-    # res = run_contingency(net, nminus1_cases)
     start = time.time()
     res = run_contingency_parallel(net, nminus1_cases, n_procs=8)
     parallel_time = time.time() - start
