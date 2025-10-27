@@ -158,8 +158,7 @@ def abstract_convert_crs(
     net: ADict,
     epsg_in: int = 4326,
     epsg_out: int = 31467,
-    node_name: str = "bus",
-    branch_name: str = "line",
+    component_name: str = "bus",
 ) -> None:
     """
     function to convert the crs of a network in place
@@ -167,8 +166,7 @@ def abstract_convert_crs(
     :param ADict net: A network subclassed from pandapower.auxiliary.ADict
     :param int epsg_in: the ESRI CRS number to convert from
     :param int epsg_out: the ESRI CRS number to convert to
-    :param str node_name: name of the nodes DataFrame
-    :param str branch_name: name of the branches DataFrame
+    :param str component_name: name of the component DataFrame
     :return:
     """
     if epsg_in == epsg_out:
@@ -179,8 +177,8 @@ def abstract_convert_crs(
     transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)
 
     if (
-        "geo" in net[node_name] and (net[node_name].empty or not all(net[node_name].geo.isna()))
-        and "geo" in net[branch_name] and (net[branch_name].empty or not all(net[branch_name].geo.isna()))
+            ("geo" in net[component_name])
+            and (not (net[component_name].empty or all(net[component_name].geo.isna())))
     ):
         if epsg_out != 4326:
             logger.warning("Converting geojson to crs other than WGS84 is highly discouraged.")
@@ -201,29 +199,31 @@ def abstract_convert_crs(
                 geometry["coordinates"] = new_coordinates
             return geojson.dumps(geometry)
 
-        net[node_name].geo = net[node_name].geo.apply(_geojson_transformer)
-        net[branch_name].geo = net[branch_name].geo.apply(_geojson_transformer)
+        net[component_name].geo = net[component_name].geo.apply(_geojson_transformer)
         return
 
-    def _geo_node_transformer(r):
-        (x, y) = transformer.transform(r.x, r.y)
-        if "coords" in r:
+    def _geo_component_transformer(r):
+        if "coords" in r.index:
             coords = r.coords
-            if coords and not any(pd.isna(coords)):
-                coords = _geo_branch_transformer(coords)
-            return pd.Series([x, y, coords], ["x", "y", "coords"])
-        return pd.Series([x, y], ["x", "y"])
+            if hasattr(coords, "__iter__") and not (pd.isna(coords)).any():
+                coords = list(transformer.itransform(coords))
+        else:
+            coords = None
+        if "x" in r.index:
+            (x, y) = transformer.transform(r.x, r.y)
+            if coords is not None:
+                return pd.Series([x, y, coords], ["x", "y", "coords"])
+            else:
+                return pd.Series([x, y], ["x", "y"])
+        else:
+            return pd.Series([coords], ["coords"])
 
-    def _geo_branch_transformer(r):
-        return list(transformer.itransform(r))
-
-    node_geo_name = f"{node_name}_geodata"
-    branch_geo_name = f"{branch_name}_geodata"
-
-    net[node_geo_name] = net[node_geo_name].apply(lambda r: _geo_node_transformer(r), axis=1)
-    net[branch_geo_name].coords = net[branch_geo_name].coords.apply(lambda r: _geo_branch_transformer(r))
-    net[node_geo_name].attrs = {"crs": f"EPSG:{epsg_out}"}
-    net[branch_geo_name].attrs = {"crs": f"EPSG:{epsg_out}"}
+    component_geo_name = f"{component_name}_geodata"
+    try:
+        net[component_geo_name] = net[component_geo_name].apply(_geo_component_transformer, axis=1)
+        net[component_geo_name].attrs = {"crs": f"EPSG:{epsg_out}"}
+    except Exception as e:
+        logger.warning(e)
 
 
 def convert_crs(
@@ -242,7 +242,8 @@ def convert_crs(
     :param epsg_out: epsg projection to be transformed to
     :type epsg_out: int, default 31467 (= Gauss-Krüger Zone 3)
     """
-    abstract_convert_crs(net, epsg_in, epsg_out, "bus", "line")
+    abstract_convert_crs(net, epsg_in, epsg_out, "bus")
+    abstract_convert_crs(net, epsg_in, epsg_out, "line")
 
 
 def dump_to_geojson_node_branch(

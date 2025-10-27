@@ -267,7 +267,7 @@ def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_de
 
     :example:
         >>> from pandapower.file_io import from_json
-        >>> net = pp.from_json("example.json")
+        >>> net = from_json("example.json")
     """
     if hasattr(filename_or_str, 'read'):
         json_string = filename_or_str.read()

@@ -74,10 +74,7 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    net = from_pickle(os.path.join(pp_dir, "test", "loadflow", "testgrid.p"))
-    #    net = pp.file_io.from_pickle("testgrid.p")
-
-    return net
+    return from_pickle(os.path.join(pp_dir, "test", "loadflow", "testgrid.p"))
 
 
 def add_grid_connection(net, vn_kv=20., zone=None):

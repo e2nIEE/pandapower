@@ -465,6 +465,14 @@ class PowerTransformersCim16:
         power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap2_side'] = 'lv'
         # just keep one transformer
         power_trafo2w = power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first')
+        # shift lv tap changer from tap2 to tap if there is no hv tap changer
+        hv_taps_na = power_trafo2w['step'].isna() & power_trafo2w['step_lv'].notna()
+        power_trafo2w['tap_side'] = power_trafo2w['tap_side'].fillna(power_trafo2w['tap2_side'])
+        power_trafo2w.loc[hv_taps_na, 'tap2_side'] = None
+        for one_item in ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement',
+                         'step', 'tap_changer_type', sc['tc'], sc['tc_id']]:
+            power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
+            power_trafo2w.loc[hv_taps_na, one_item + '_lv'] = np.nan
 
         power_trafo2w['pfe_kw'] = (power_trafo2w.g * power_trafo2w.ratedU ** 2 +
                                    power_trafo2w.g_lv * power_trafo2w.ratedU_lv ** 2) * 1000
@@ -527,8 +535,8 @@ class PowerTransformersCim16:
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_lv': 'vn_lv_kv',
             'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc',
             'neutralStep_lv': 'tap2_neutral',  'lowStep_lv': 'tap2_min', 'highStep_lv': 'tap2_max',
-            'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',\
-            'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',\
+            'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',
+            'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',
             'tapchanger_class_lv': sc['tc2'], 'tapchanger_id_lv': sc['tc2_id']})
         return power_trafo2w
 
