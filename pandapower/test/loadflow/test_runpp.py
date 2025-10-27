@@ -34,7 +34,8 @@ from pandapower.test.control.test_shunt_control import simple_test_net_shunt_con
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
-from pandapower.toolbox import nets_equal, drop_elements
+from pandapower.toolbox.comparison import nets_equal
+from pandapower.toolbox.grid_modification import drop_elements
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 
 try:

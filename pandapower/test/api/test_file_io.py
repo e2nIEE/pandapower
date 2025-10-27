@@ -26,7 +26,7 @@ from pandapower.run import set_user_pf_options, runpp
 from pandapower.sql_io import to_sqlite, from_sqlite
 from pandapower.test.helper_functions import assert_net_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
-from pandapower.toolbox import nets_equal, dataframes_equal
+from pandapower.toolbox.comparison import nets_equal, dataframes_equal
 from pandapower.topology.create_graph import create_nxgraph
 
 try:

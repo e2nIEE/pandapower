@@ -17,8 +17,9 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower import diagnostic, invalid_values, no_ext_grid, create_ext_grid, \
     multiple_voltage_controlling_elements_per_bus, parallel_switches, create_switch, overload, \
     wrong_switch_configuration, different_voltage_levels_connected, implausible_impedance_values, \
-    nominal_voltages_dont_match, wrong_reference_system, drop_trafos, disconnected_elements, change_std_type, \
+    nominal_voltages_dont_match, wrong_reference_system, disconnected_elements, change_std_type, \
     deviation_from_std_type, numba_comparison, missing_bus_indices
+from pandapower.toolbox.grid_modification import drop_trafos
 from pandapower.networks import example_multivoltage, example_simple
 from pandapower.diagnostic_reports import DiagnosticReports
 

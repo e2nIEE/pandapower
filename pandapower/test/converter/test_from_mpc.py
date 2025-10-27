@@ -12,7 +12,7 @@ from pandapower import pp_dir
 from pandapower.converter import from_mpc
 from pandapower.networks import case24_ieee_rts
 from pandapower.run import runpp, set_user_pf_options
-from pandapower.toolbox import nets_equal
+from pandapower.toolbox.comparison import nets_equal
 
 try:
     import matpowercaseframes

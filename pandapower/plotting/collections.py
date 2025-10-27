@@ -80,7 +80,7 @@ class CustomTextPath(TextPath):
         size : font size
         prop : font property
         """
-        super().__init__()
+        super().__init__(xy, s, size, prop, _interpolation_steps, usetex)
         if not MATPLOTLIB_INSTALLED:
             soft_dependency_error("class CustomTextPath", "matplotlib")
         if prop is None:
