@@ -3,10 +3,6 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
-
-[3.2.1] - 2025-10-27
--------------------------------
-- [HOTFIX] Fixed changelog, added lxml back.
 - [FIXED] fixed broken converter import in runpm
 - [REMOVED] deprecated functions removed: wrapper for deepcopy, get_connected_lines, get_connected_switches, connected_bus_in_line, get_line_path
 - [FIXED] diagnostic: increase readabillity
@@ -21,7 +17,10 @@ Change Log
 - [FIXED] cim2pp: update docu with correct dependancy install
 - [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
 - [ADDED] cim2pp: additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
->>>>>>> f18f6acc0ed074e865a66e70002444b76f0b36e5
+
+[3.2.1] - 2025-10-27
+-------------------------------
+- [HOTFIX] Fixed changelog, added lxml back.
 - [ADDED] Feature to plot multiple layers for buses using plotly
 - [CHANGED] Plotly is switching from mapbox to maplibre. This was also changed in our plotting functions.
 - [FIXED] Fixed res_trafo_3ph, including converter since it was wrong in code and did not adhere to documentation: 'p_a_l_mw' is now 'pl_a_mw', same for ql and all phases.
