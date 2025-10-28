@@ -1,18 +1,9 @@
 import numbers
-from cmath import isnan
 import numpy as np
-from collections.abc import Sequence
-from numba.core.ir import Raise
-from numpy.ma.extras import atleast_1d
-from scipy.optimize import minimize
-from pandapower import create_gen
-from pandapower import create_sgen
-from pandas import concat
 
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
-import pandapower.topology as top
-import networkx as nx
+
 try:
     import pandaplan.core.pplog as logging
 except ImportError:
@@ -27,8 +18,9 @@ class BinarySearchControl(Controller):
         reactive power control, voltage control, cosines(phi) or tangens(phi) control. The control modus can be set via
         the control_modus parameter. Input and output elements and indexes can be lists. Input elements can be transformers,
         switches, lines or buses (only in case of voltage control). in case of voltage control, the controlled bus must be
-        given to input_element_index. Output elements are sgens, where active and reactive power can
-        be set.
+        given to input_element_index. Output elements are sgens, where active and reactive power can be set. The
+        output value distribution describes the distribution of reactive power provision between multiple
+        output_elements and must sum up to 1.
 
         INPUT:
             **self**
@@ -53,11 +45,13 @@ class BinarySearchControl(Controller):
             **input_variable** - Variable which is used to take the measurement from. Indicated by string value. Must
             be 'vm_pu' for 'V_ctrl'.
 
-            **input_element_index** - Element of input element in net. Controlled bus in case of Voltage control. Can be
-            given the string 'auto' in control_modus 'V_ctrl' to automatically select a bus whose nominal voltage is >= X kV.
-            The X must be given to 'set_point'. Will take target voltage of the encountered bus. If no bus is found,
-            uses the bus next to the controlled generator group. Not completely implemented, generators on multiple buses
-            are not correctly handled.
+            **input_inverted** - Boolean list that indicates if the measurement of the input element must be inverted.
+            Required when importing from PowerFactory.
+
+            **gen_Q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
+            order to invert the droop value of the controller.
+
+            **input_element_index** - Element of input element in net.
 
             **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
             case of voltage set point, control_modus must be V_ctrl, input_element_index must be a bus (input_variable must be
@@ -65,10 +59,7 @@ class BinarySearchControl(Controller):
             search control. If 'V_ctrl' and automated bus selection (input_element_index == 'auto'), set_point will be
             the search criteria in kV for the controlled bus (V_bus >= V_set_point).
 
-            **output_distribution_values=None** -The values of the Q distribution, only applicable if q_distribution = 'set_Q'
-            or rel_V_pu. For 'set_Q': Must be list containing the Q Value of each controlled element in percent in the same
-            order as the controlled elements. For 'rel_V_pu': must be a list containing [Target Voltage, minimal allowed
-            Voltage, maximal allowed Voltage] for each output element.
+            **output_values_distribution** - Distribution of reactive power provision.
 
             **control_modus=None** - Enables the selection of the available control modi by taking one of the strings: Q_ctrl, V_ctrl,
             PF_ctrl (PF_ctrl_ind or PF_ctrl_cap for reactance of PF_ctrl) or tan(phi)_ctrl. Formerly called Voltage_ctrl
@@ -100,8 +91,8 @@ class BinarySearchControl(Controller):
         self.output_values = None
         self.output_values_old = None
         self.output_element = output_element #typically sgens, output of Q
-        self.max_q_mvar = [] #limits of output element Q
-        self.min_q_mvar = []
+        self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
+            output_values_distribution)
         self.diff = None
         self.diff_old = None
         self.converged = False  # criteria for success of controller
@@ -403,6 +394,8 @@ class BinarySearchControl(Controller):
             delta = np.clip(delta, -cap, +cap)
 
             x = self.output_values + delta
+            x = x * self.output_values_distribution if isinstance(x, numbers.Number) else sum(
+                x) * self.output_values_distribution
             x = np.sign(x) * (np.where(abs(abs(x) - abs(self.output_values)) > 84, 84, abs(x)))# catching distributions out of bounds, 84 seems to be the maximum
             self.output_values_old, self.output_values = self.output_values, x
 
