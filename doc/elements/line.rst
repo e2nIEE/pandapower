@@ -76,6 +76,7 @@ The elements in the equivalent circuit are calculated from the parameters in the
 
 .. math::
     :nowrap:
+
     \begin{align*}
     \underline{Z_{1 or 2}} &= (r\_ohm\_per\_km + j \cdot x\_ohm\_per\_km) \cdot \frac{length\_km}{parallel}  \\
     \underline{Y_{1 or 2}}&= (g\_us\_per\_km \cdot 1 \cdot 10^-6 + j \cdot 2 \pi f \cdot c\_nf\_per\_km \cdot 1 \cdot 10^-9) \cdot length\_km \cdot parallel\\
@@ -98,6 +99,7 @@ The parameters are then transformed in the per unit system:
 
 .. math::
     :nowrap:
+
     \begin{align*}
     Z_{N} &= \frac{V_{N}^2}{S_{N}} \\
     \underline{z} &= \frac{\underline{Z}}{Z_{N}} \\
@@ -125,6 +127,7 @@ The power flow results in the net.res_line table are defined as:
 
 .. math::
     :nowrap:
+
     \begin{align*}
     p\_from\_mw &= Re(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\    
     q\_from\_mvar &= Im(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\
@@ -150,6 +153,7 @@ The power flow results in the net.res_line_3ph table are defined as:
 
 .. math::
     :nowrap:
+
     \begin{align*}
     p\_from\_mw_{phase} &= Re(\underline{v_{phase}}_{from} \cdot \underline{i_{phase}}^*_{from}) \\    
     q\_from\_mvar_{phase} &= Im(\underline{v_{phase}}_{from} \cdot \underline{i_{phase}}^*_{from}) \\
