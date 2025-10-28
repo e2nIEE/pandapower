@@ -368,14 +368,12 @@ def _suggest_closest(q: str, candidates: list[str], n: int = 1) -> str:
         if matches:
             return matches[0]
     except Exception:
-        pass
-    # fallback: low case match
-    lower_map = {}
-    for c in candidates:
-        lower_map.setdefault(c.lower(), []).append(c)
-    if q.lower() in lower_map:
-        return lower_map[q.lower()][0]
-    return ""
+        lower_map = {}
+        for c in candidates:
+            lower_map.setdefault(c.lower(), []).append(c)
+        if q.lower() in lower_map:
+            return lower_map[q.lower()][0]
+        return ""
 
 
 def generate_rename_locnames_from_combined(
@@ -643,7 +641,7 @@ def find_problematic_bus_name_variants(data: dict[str, pd.DataFrame]) -> pd.Data
     freq = df["original"].value_counts()
 
     out_rows = []
-    for canon, sub in df.groupby("canonical"):
+    for _, sub in df.groupby("canonical"):
         uniques = sub["original"].unique()
         if len(uniques) <= 1:
             continue
@@ -795,23 +793,31 @@ def _find_voltage_cols_in_transformers_fuzzy(df: pd.DataFrame) -> tuple[list|Non
     return prim_best, sec_best
 
 
-def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> tuple | None:
+def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str | None = None) -> tuple | None:
     """
-    Fuzzy-find ("Substation_*", "Full Name") column for Lines/Tielines.
+    Fuzzy-find ("Substation_*", "Full Name") column for Lines/Tielines or
+    ("Location", "Full Name") column for Transformers.
 
     Parameters
     ----------
     df : pd.DataFrame
-        Lines or Tielines DataFrame.
-    subst : str
-        Either "Substation_1" or "Substation_2".
+        Lines, Tielines or Transformers DataFrame.
+    subst : str | None
+        Either "Substation_1", "Substation_2" for Lines/Tielines, or None for Transformers.
 
     Returns
     -------
     tuple | None
         Matching column tuple if found, else None.
     """
-    tgt0 = _canon_label(subst)      # "substation1"/"substation2"
+    if subst is not None:
+        # Behavior for Lines/Tielines (Substation_1 or Substation_2)
+        tgt0 = _canon_label(subst)  # "substation1"/"substation2"
+        element_str = 'substation'
+    else:
+        # Behavior for Transformers (Location / Full Name)
+        tgt0 = _canon_label("location")
+        element_str = 'location'
     tgt1 = _canon_label("full name")
     best, best_score = None, -1.0
     for col in df.columns:
@@ -819,13 +825,7 @@ def _best_fullname_tuple_fuzzy(df: pd.DataFrame, subst: str) -> tuple | None:
         lvl1_c = _canon_label(col[1])
         s0 = _sim(top_c, tgt0)
         s1 = _sim(lvl1_c, tgt1)
-        if "substation" not in top_c:
-            s0 -= 0.1
-        if "fullname" not in lvl1_c and not ("full" in lvl1_c and "name" in lvl1_c):
-            s1 -= 0.1
-        score = 0.5 * (s0 + s1)
-        if s0 >= 0.5 and s1 >= 0.6 and score > best_score:
-            best, best_score = col, score
+        s0, s1, best, best_score = _col_fuzzy_helper(element_str, top_c, s0, s1, lvl1_c, best_score, col, best)
     return best
 
 
@@ -844,27 +844,19 @@ def _best_reactance_col_lines_fuzzy(df: pd.DataFrame) -> tuple | None:
                                         min_ratio=0.5, required_tokens=["reactance"])
 
 
-def _best_transformer_location_fullname_col_fuzzy(df: pd.DataFrame) -> tuple | None:
-    tgt0 = _canon_label("location")
-    tgt1 = _canon_label("full name")
-    best, best_score = None, -1.0
-    for col in df.columns:
-        top_c = _canon_label(col[0])
-        lvl1_c = _canon_label(col[1])
-        s0 = _sim(top_c, tgt0)
-        s1 = _sim(lvl1_c, tgt1)
-        if "location" not in top_c:
-            s0 -= 0.1
-        if "fullname" not in lvl1_c and not ("full" in lvl1_c and "name" in lvl1_c):
-            s1 -= 0.1
-        score = 0.5 * (s0 + s1)
-        if s0 >= 0.5 and s1 >= 0.6 and score > best_score:
-            best, best_score = col, score
-    return best
+def _col_fuzzy_helper(element_str: str, top_c: str, s0: float, s1: float, lvl1_c: str, best_score: float, col: any, best: None) -> tuple | None:
+    if element_str not in top_c:
+        s0 -= 0.1
+    if "fullname" not in lvl1_c and not ("full" in lvl1_c and "name" in lvl1_c):
+        s1 -= 0.1
+    score = 0.5 * (s0 + s1)
+    if s0 >= 0.5 and s1 >= 0.6 and score > best_score:
+        best, best_score = col, score
+    return s0, s1, best, best_score
 
 
 def _get_transformer_location_fullname_series_fuzzy(df: pd.DataFrame) -> pd.Series:
-    col = _best_transformer_location_fullname_col_fuzzy(df)
+    col = _best_fullname_tuple_fuzzy(df, None)
     if col is None:
         raise KeyError("Transformers: Location / Full Name per Fuzzy-Matching nicht gefunden.")
     pos = _get_col_pos(df, col)
