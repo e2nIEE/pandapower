@@ -155,7 +155,7 @@ def get_metadata_columns_from_schema_dict(schema, name):
     ]
 
 
-def create_checks_from_metadata(names, schema_columns):
+def create_column_dependency_checks_from_metadata(names, schema_columns):
     checks = []
     for name in names:
         for col in get_metadata_columns_from_schema_dict(schema_columns, name):

@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import create_checks_from_metadata
+from pandapower.network_schema.tools import create_column_dependency_checks_from_metadata
 
 _bus_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=True, description="name of the bus"),
@@ -24,7 +24,7 @@ _bus_columns = {
 }
 bus_schema = pa.DataFrameSchema(
     _bus_columns,
-    checks=create_checks_from_metadata(["opf"], _bus_columns),
+    checks=create_column_dependency_checks_from_metadata(["opf"], _bus_columns),
     strict=False,
 )
 

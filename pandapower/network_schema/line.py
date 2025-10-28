@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import create_checks_from_metadata
+from pandapower.network_schema.tools import create_column_dependency_checks_from_metadata
 
 _line_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the line"),
@@ -26,8 +26,6 @@ _line_columns = {
     "g_us_per_km": pa.Column(
         float,
         pa.Check.ge(0),
-        nullable=True,
-        required=False,
         description="dielectric conductance in micro Siemens per km",
     ),
     "r0_ohm_per_km": pa.Column(
@@ -60,7 +58,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="dielectric conductance of the line [micro Siemens per km]",
-        metadata={"sc": True, "3ph": True},  # TODO: impleziert ? nicht in doku
+        metadata={"sc": True, "3ph": True},
     ),
     "max_i_ka": pa.Column(float, pa.Check.gt(0), description="maximal thermal current [kilo Ampere]"),
     "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel line systems"),
@@ -68,7 +66,10 @@ _line_columns = {
         float, pa.Check.between(min_value=0, max_value=1), description="derating factor (scaling) for max_i_ka"
     ),
     "type": pa.Column(
-        str, pa.Check.isin(["ol", "cs", "nan"]), nullable=True, required=False, description="type of line"
+        str,
+        nullable=True,
+        required=False,
+        description="type of line normally “ol” - overhead line “cs” - underground cable system",
     ),
     "max_loading_percent": pa.Column(
         float,
@@ -80,10 +81,10 @@ _line_columns = {
     ),
     "endtemp_degree": pa.Column(
         float,
-        pa.Check.gt(0),
+        pa.Check.gt(-273),
         nullable=True,
         required=False,
-        description="Short-Circuit end temperature of the line",
+        description="Short-Circuit end temperature of the line in degree Celsius",
         metadata={"sc": True, "tdpf": True},
     ),
     "in_service": pa.Column(bool, description="specifies if the line is in service."),
@@ -95,10 +96,14 @@ _line_columns = {
         nullable=True,
         required=False,
         description="temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))",
-    ),  # TODO: missing in docu
+    ),
     "temperature_degree_celsius": pa.Column(
-        float, nullable=True, required=False, description="line temperature for which line resistance is adjusted"
-    ),  # TODO: missing in docu
+        float,
+        pa.Check.gt(-273),
+        nullable=True,
+        required=False,
+        description="line temperature for which line resistance is adjusted",
+    ),
     "tdpf": pa.Column(
         bool,
         nullable=True,
@@ -180,7 +185,7 @@ _line_columns = {
 line_schema = pa.DataFrameSchema(
     _line_columns,
     strict=False,
-    checks=create_checks_from_metadata(["opf", "sc", "tdpf"], _line_columns),
+    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "tdpf", "3ph"], _line_columns),
 )
 
 res_line_schema = res_line_est_schema = pa.DataFrameSchema(
@@ -259,19 +264,21 @@ res_line_3ph_schema = pa.DataFrameSchema(
         ),
         "i_a_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Phase A [kA]"),
         "i_a_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Phase A [kA]"),
+        "i_a_ka": pa.Column(float, nullable=True, description=""),
         "i_b_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Phase B [kA]"),
         "i_b_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Phase B [kA]"),
+        "i_b_ka": pa.Column(float, nullable=True, description=""),
         "i_c_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Phase C [kA]"),
         "i_c_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Phase C [kA]"),
-        "i_a_ka": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
-        "i_b_ka": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
-        "i_c_ka": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
-        "i_n_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Neutral [kA]"),
-        "i_n_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Neutral [kA]"),
-        "i_ka": pa.Column(
-            float, nullable=True, description="Maximum of i_from_ka and i_to_ka [kA]"
-        ),  # TODO: was only in docu
-        "i_n_ka": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
+        "i_c_ka": pa.Column(float, nullable=True, description=""),
+        "i_n_from_ka": pa.Column(
+            float, nullable=True, description="Current at from bus: Neutral [kA]"
+        ),  # TODO: muss mike schauen
+        "i_n_to_ka": pa.Column(
+            float, nullable=True, description="Current at to bus: Neutral [kA]"
+        ),  # TODO: muss mike schauen
+        "i_ka": pa.Column(float, nullable=True, description="Maximum of i_from_ka and i_to_ka [kA]"),
+        "i_n_ka": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu muss mike schauen
         "loading_a_percent": pa.Column(float, nullable=True, description="line a loading [%]"),
         "loading_b_percent": pa.Column(float, nullable=True, description="line b loading [%]"),
         "loading_c_percent": pa.Column(float, nullable=True, description="line c loading [%]"),

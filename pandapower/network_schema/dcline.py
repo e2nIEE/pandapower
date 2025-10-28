@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import create_checks_from_metadata
+from pandapower.network_schema.tools import create_column_dependency_checks_from_metadata
 
 _dcline_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the generator"),
@@ -64,7 +64,7 @@ _dcline_columns = {
 }
 dcline_schema = pa.DataFrameSchema(
     _dcline_columns,
-    checks=create_checks_from_metadata(["opf"], _dcline_columns),
+    checks=create_column_dependency_checks_from_metadata(["opf"], _dcline_columns),
     strict=False,
 )
 

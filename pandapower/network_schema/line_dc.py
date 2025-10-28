@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import create_checks_from_metadata
+from pandapower.network_schema.tools import create_column_dependency_checks_from_metadata
 
 _line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
     "name": pa.Column(pd.StringDtype, required=False, description="name of the dc line"),
@@ -34,11 +34,10 @@ _line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alp
     ),
     "type": pa.Column(
         str,
-        pa.Check.isin(["ol", "cs"]),
         nullable=True,
         required=False,
         description="type of dc line Naming conventions: “”ol”” - overhead dc line, “”cs”” - underground cable system”",
-    ),  # TODO: docu broken
+    ),
     "max_loading_percent": pa.Column(float, pa.Check.gt(0), description="Maximum loading of the dc line"),
     "in_service": pa.Column(bool, description="specifies if the dc line is in service."),
     "geo": pa.Column(
@@ -133,7 +132,7 @@ _line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alp
 }
 line_dc_schema = pa.DataFrameSchema(
     _line_dc_columns,
-    checks=create_checks_from_metadata(["opf", "sc", "tdpf"], _line_dc_columns),
+    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "tdpf"], _line_dc_columns),
     strict=False,
 )
 

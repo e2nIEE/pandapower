@@ -1,7 +1,10 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import validate_column_group_dependency, create_checks_from_metadata
+from pandapower.network_schema.tools import (
+    validate_column_group_dependency,
+    create_column_dependency_checks_from_metadata,
+)
 
 _trafo_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
@@ -206,7 +209,7 @@ trafo_checks = [
         error=f"Tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
     ),
 ]
-trafo_checks += create_checks_from_metadata(["opf", "sc", "3ph"], _trafo_columns)
+trafo_checks += create_column_dependency_checks_from_metadata(["opf", "sc", "3ph"], _trafo_columns)
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,

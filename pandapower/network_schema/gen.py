@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import create_checks_from_metadata
+from pandapower.network_schema.tools import create_column_dependency_checks_from_metadata
 
 _gen_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the generator"),
@@ -125,7 +125,7 @@ _gen_columns = {
 gen_schema = pa.DataFrameSchema(
     _gen_columns,
     strict=False,
-    checks=create_checks_from_metadata(["opf", "sc", "q_lim_enforced"], _gen_columns),
+    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "q_lim_enforced"], _gen_columns),
 )
 
 

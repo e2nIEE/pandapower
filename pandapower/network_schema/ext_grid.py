@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import create_checks_from_metadata
+from pandapower.network_schema.tools import create_column_dependency_checks_from_metadata
 
 _ext_grid_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the external grid"),
@@ -75,7 +75,7 @@ _ext_grid_columns = {
 ext_grid_schema = pa.DataFrameSchema(
     _ext_grid_columns,
     strict=False,
-    checks=create_checks_from_metadata(["opf", "sc", "3ph"], _ext_grid_columns),
+    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "3ph"], _ext_grid_columns),
 )
 
 res_ext_grid_schema = pa.DataFrameSchema(
