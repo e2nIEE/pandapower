@@ -472,7 +472,7 @@ def create_bus_collection(net: pandapowerNet, buses: Optional[list]=None, size:f
 def create_line_collection(net: pandapowerNet, lines=None,
                            line_geodata: DataFrame | None = None, bus_geodata: DataFrame | None = None,
                            use_bus_geodata: bool = False, infofunc: Callable | None = None,
-                           cmap: Colormap | None = None, norm: Normalize | None = None, picker: bool = False,
+                           cmap: 'Colormap | None' = None, norm: 'Normalize | None' = None, picker: bool = False,
                            z=None, cbar_title: str = "Line Loading [%]", clim=None, plot_colormap: bool = True,
                            line_table="line", **kwargs):
     """
