@@ -181,7 +181,7 @@ if __name__ == '__main__':
     from pandapower.plotting.plotly import simple_plotly
     from pandapower.networks import mv_oberrhein
     from pandapower import runpp
-    net = mv_oberrhein()
+    net = mv_oberrhein()  # type: ignore[operator]
     vlevel_plotly(net)
     runpp(net)
     line_width = 2
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     respect_switches = True
 
     # getting unique sets of buses for each voltage level
-    vlev_bus_dict = {}
+    vlev_bus_dict: dict = {}
     for vl_buses in vlev_buses:
         if net.bus.loc[vl_buses, 'vn_kv'].unique().shape[0] > 1:
             logger.warning('buses from the same voltage level does not have the same vn_kv !?')

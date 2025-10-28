@@ -342,7 +342,7 @@ if __name__ == '__main__':
     from pandapower.networks import mv_oberrhein
     from pandapower.plotting.plotly.traces import create_weighted_marker_trace
 
-    net = mv_oberrhein()
+    net = mv_oberrhein()  # type: ignore[operator]
     net.load.scaling, net.sgen.scaling = 1, 1
     # different markers and sizemodes as examples
     markers_load = create_weighted_marker_trace(net, elm_type="load", color="red",
