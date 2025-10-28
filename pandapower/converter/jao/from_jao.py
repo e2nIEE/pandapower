@@ -2317,7 +2317,7 @@ def _multi_str_repl(st: str, repl: list[tuple]) -> str:
 if __name__ == "__main__":
     from pathlib import Path
     import os
-    import pandapower as pp
+    from pandapower.file_io import from_json, to_json
 
     home = str(Path.home())
     jao_data_folder = os.path.join(home, "Documents", "JAO Static Grid Model")
@@ -2336,9 +2336,9 @@ if __name__ == "__main__":
 
     if 1:  # read from original data
         net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
-        pp.to_json(net, pp_net_json_file)
+        to_json(net, pp_net_json_file)
     else:  # load net from already converted and stored net
-        net = pp.from_json(pp_net_json_file)
+        net = from_json(pp_net_json_file)
 
     print(net)
     grid_groups = get_grid_groups(net)

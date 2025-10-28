@@ -636,19 +636,6 @@ def calc_line_intersection(m1, b1, m2, b2):
     return xi, yi
 
 
-# get connected lines using bus id
-@deprecated("Use pandapower.get_connected_elements(net, 'line', bus_idx) instead!")
-def get_connected_lines(net, bus_idx):
-    return get_connected_elements(net, "line", bus_idx)
-
-
-# Returns the index of the second bus an element is connected to, given a
-# first one. E.g. the from_bus given the to_bus of a line.
-@deprecated("Use pandapower.next_bus(net, bus, element_id instead!")
-def next_buses(net, bus, element_id):
-    return next_bus(net, bus, element_id)
-
-
 # get the connected bus listr from start to end bus
 def source_to_end_path(net, start_bus, bus_list, bus_order):
     connected_lines = get_connected_elements(net, 'line', start_bus)
@@ -668,36 +655,6 @@ def source_to_end_path(net, start_bus, bus_list, bus_order):
         bus_list.append(bus_order)
 
     return bus_list
-
-
-# get connected switches with bus
-@deprecated("Use pandapower.get_connected_switches(net, buses, consider='l', status='closed') instead!")
-def get_connected_switches(net, buses):
-    return get_connected_switches(net, buses, consider='l', status="closed")
-
-
-# get connected buses with a oven element
-@deprecated(
-    "Use pandapower.get_connected_buses_at_element(net, element, element_type='l', respect_in_service=False) instead!"
-)
-def connected_bus_in_line(net, element):
-    return get_connected_buses_at_element(net, element, element_type='l', respect_in_service=False)
-
-
-@deprecated("Use networkx topological search instead! See pandapower docs.")
-def get_line_path(net, bus_path, sc_line_id=0):
-    """line path from bus path """
-    line_path = []
-    for i in range(len(bus_path) - 1):
-        bus1 = bus_path[i]
-        bus2 = bus_path[i + 1]
-
-        # line=net.line [(net.line.from_bus==bus1) & (net.line.to_bus==bus2)].index.item()
-
-        line_path.extend(net.line[((net.line.from_bus == bus1) & (net.line.to_bus == bus2)) | (
-                (net.line.from_bus == bus2) & (net.line.to_bus == bus1))].index.to_list())
-
-    return line_path
 
 
 def switch_geodatas(net, size, distance_to_bus):
