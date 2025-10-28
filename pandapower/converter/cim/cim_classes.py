@@ -130,7 +130,7 @@ class CimParser:
         """
         self.logger.info("Start preparing the cim data.")
         cim_data_structure = self.get_cim_data_structure()
-        for profile in self.cim:
+        for profile in list(self.cim):
             if profile not in cim_data_structure:
                 # this profile is not used by the converter, drop it
                 del self.cim[profile]
