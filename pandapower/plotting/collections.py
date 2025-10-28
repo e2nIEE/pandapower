@@ -34,7 +34,8 @@ except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 
-    class TextPath:  # so that the test does not fail
+    # so that the test does not fail
+    class TextPath:  # type: ignore[no-redef]
         pass
 
 from pandapower.auxiliary import soft_dependency_error, pandapowerNet
@@ -469,9 +470,9 @@ def create_bus_collection(net: pandapowerNet, buses: Optional[list]=None, size:f
 
 
 def create_line_collection(net: pandapowerNet, lines=None,
-                           line_geodata: DataFrame or None = None, bus_geodata: DataFrame or None = None,
-                           use_bus_geodata: bool = False, infofunc: Callable or None = None,
-                           cmap: 'Colormap' = None, norm: 'Normalize' = None, picker: bool = False,
+                           line_geodata: DataFrame | None = None, bus_geodata: DataFrame | None = None,
+                           use_bus_geodata: bool = False, infofunc: Callable | None = None,
+                           cmap: Colormap | None = None, norm: Normalize | None = None, picker: bool = False,
                            z=None, cbar_title: str = "Line Loading [%]", clim=None, plot_colormap: bool = True,
                            line_table="line", **kwargs):
     """
