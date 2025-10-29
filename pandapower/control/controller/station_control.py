@@ -137,10 +137,13 @@ class BinarySearchControl(Controller):
             elif self.input_element == "res_switch":
                 self.input_element_in_service.append(
                     net[self.input_element].pf_in_service[input_index])
+            elif self.input_element == "res_impedance":
+                self.input_element_in_service.append(net.impedance.in_service[input_index])
             elif self.input_element == "res_bus":
                 self.input_element_in_service.append(net.bus.in_service[input_index])
             elif self.input_element == "res_gen":
                 self.input_element_in_service.append(ctrl_in_service)
+
 
             if isinstance(input_variable, list):
                 read_flag_temp, input_variable_temp = _detect_read_write_flag(net, self.input_element,
@@ -178,6 +181,8 @@ class BinarySearchControl(Controller):
                 self.input_element_in_service.append(net.trafo3w.in_service[input_index])
             elif self.input_element == "res_switch":
                 self.input_element_in_service.append(net.switch.closed[input_index])
+            elif self.input_element == "res_impedance":
+                self.input_element_in_service.append(net.impedance.in_service[input_index])
             elif self.input_element == "res_bus":
                 self.input_element_in_service.append(net.bus.in_service[input_index])
             elif self.input_element == "res_gen":
