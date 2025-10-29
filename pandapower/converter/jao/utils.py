@@ -1,9 +1,7 @@
+# -*- coding: utf-8 -*
 
-# Utility classes for:
-
-# 1) Name normalization and location matching
-
-# 2) Column fuzzy matching and schema handling
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import re
 import difflib
