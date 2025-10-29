@@ -121,15 +121,8 @@ def draw_layers(traces, num_layers=0, on_map=False, map_style='basic', showlegen
                      autosize=(aspectratio == 'auto'),
                      hovermode='closest',
                      margin={"b": 5, "l": 5, "r": 5, "t": 5},
-                     # annotations=[{
-                     #     "text": "",
-                     #     "showarrow": False,
-                     #     "xref": "paper", "yref": "paper",
-                     #     "x": 0.005, "y": -0.002
-                     # }],
                      xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
                      yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
-                     # legend={"x": 0, "y": 1.0}
                  ),
                  )
     a = kwargs.get('annotation')
