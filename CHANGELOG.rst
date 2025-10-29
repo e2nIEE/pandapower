@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] from_jao: converter now uses fuzzy matching with difflib module to find matching buses instead of  as well as table column names if they are inconsistent between files
 - [FIXED] legacy np.random.random uses
 - [FIXED] SonarCube reliabilty complaints
 - [FIXED] remove imports from converter init, change code usage and docu accordingly
