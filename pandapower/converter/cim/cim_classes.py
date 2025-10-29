@@ -9,7 +9,6 @@ import re
 import tempfile
 import zipfile
 from types import MappingProxyType
-from typing import Dict, List
 import pandas as pd
 import numpy as np
 from lxml import etree
@@ -19,7 +18,7 @@ from .cim_tools import get_cim_schema
 
 class CimParser:
     def __init__(
-        self, cim: Dict[str, Dict[str, pd.DataFrame]] | None = None, cgmes_version: str | None = None, **kwargs
+        self, cim: dict[str, dict[str, pd.DataFrame]] | None = None, cgmes_version: str | None = None, **kwargs
     ):
         """
         This class parses CIM files and loads its content to a dictionary of
@@ -30,18 +29,16 @@ class CimParser:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
-        self.__cim_blueprint = self._initialize_cim_data_structure(self.cgmes_version)
-        self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
-        self.file_names: Dict[str, str] = {}
+        self.__cim_blueprint: MappingProxyType[str, MappingProxyType[str, pd.DataFrame]] =\
+            self._initialize_cim_data_structure(self.cgmes_version)
+        self.cim: dict[str, dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
+        self.file_names: dict[str, str] = {}
         self.report_container = ReportContainer()
         self.ignore_errors = bool(kwargs.get("ignore_errors", False))
 
     def parse_files(
-        self,
-        file_list: List[str] | str | None = None,
-        encoding: str | None = None,
-        prepare_cim_net: bool = False,
-        set_data_types: bool = False,
+        self, file_list: list[str] | str | None = None,
+        encoding: str | None = None, prepare_cim_net: bool = False, set_data_types: bool = False,
     ) -> CimParser:
         """
         Parse CIM XML files from a storage.
@@ -139,23 +136,19 @@ class CimParser:
         """
         self.logger.info("Start preparing the cim data.")
         cim_data_structure = self.get_cim_data_structure()
+        # drop profiles not used by the converter
         self.cim = {profile: v for profile, v in self.cim.items() if profile in cim_data_structure}
-        for profile, data in self.cim.items():
-            keep: list[str] = []
-            clear: list[str] = []
-            for cim_elem_type, elem_data in data.items():
-                if isinstance(elem_data, pd.DataFrame):
-                    keep.append(cim_elem_type)
-                    continue
-                if cim_elem_type in cim_data_structure[profile]:
-                    keep.append(cim_elem_type)
-                    clear.append(cim_elem_type)
-                self.logger.warning(f"{cim_elem_type} isn't a DataFrame! The data won't be used!")
-            self.cim[profile] = {
-                cim_elem_type: (
-                    cim_data_structure[profile][cim_elem_type] if cim_elem_type in clear else data[cim_elem_type]
-                ) for cim_elem_type in keep
-            }
+        for profile in self.cim:
+            for cim_element_type in self.cim[profile]:
+                # check if the CIM element type is a pd.DataFrame
+                if not isinstance(self.cim[profile][cim_element_type], pd.DataFrame):
+                    if profile in cim_data_structure and cim_element_type in cim_data_structure[profile]:
+                        # replace the cim element type with the default empty DataFrame from the cim_data_structure
+                        self.cim[profile][cim_element_type] = cim_data_structure[profile][cim_element_type]
+                    else:
+                        # this cim element type is not used by the converter, drop it
+                        del self.cim[profile][cim_element_type]
+                    self.logger.warning("%s isn't a DataFrame! The data won't be used!" % cim_element_type)
 
         # append missing columns to the CIM net
         for profile in cim_data_structure:
@@ -513,12 +506,12 @@ class CimParser:
         self.file_names[prf] = file
         self._parse_xml_tree(xml_tree.getroot(), prf, output)
 
-    def _parse_xml_tree(self, xml_tree: etree.ElementTree, profile_name: str, output: Dict | None = None):
+    def _parse_xml_tree(self, xml_tree, profile_name: str, output: dict | None = None):
         output = self.cim if output is None else output
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in xml_tree])
         element_types = element_types.drop_duplicates()
-        prf_content: Dict[str, pd.DataFrame] = {}
+        prf_content: dict[str, pd.DataFrame] = {}
         ns_dict = {}
         prf = profile_name
         if prf not in ns_dict:
@@ -577,29 +570,31 @@ class CimParser:
         else:
             return False
 
-    def get_cim_dict(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def get_cim_dict(self) -> dict[str, dict[str, pd.DataFrame]]:
         return self.cim
 
-    def set_cim_dict(self, cim: Dict[str, Dict[str, pd.DataFrame]]):
+    def set_cim_dict(self, cim: dict[str, dict[str, pd.DataFrame]]):
         self.cim = cim
 
-    def get_file_names(self) -> Dict[str, str]:
+    def get_file_names(self) -> dict[str, str]:
         return self.file_names
 
     def get_report_container(self) -> ReportContainer:
         return self.report_container
 
-    def _initialize_cim_data_structure(self, cgmes_version: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim_data_structure(
+            self, cgmes_version: str
+    ) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         if cgmes_version == '2.4.15':
             return self._initialize_cim16_data_structure()
         if cgmes_version == '3.0':
             return self._initialize_cim100_data_structure()
         raise NotImplementedError(f"CGMES version {cgmes_version} is not supported.")
 
-    def _initialize_cim100_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim100_data_structure(self) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         """
         Get the cim data structure used by the converter for cgmes version 3.
-        :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
+        :return MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]: The cim data structure used by the converter.
         """
         self.logger.debug("Returning the CIM data structure.")
         return MappingProxyType({
@@ -823,8 +818,8 @@ class CimParser:
                 'PositionPoint': pd.DataFrame(columns=['rdfId', 'Location', 'sequenceNumber', 'xPosition', 'yPosition'])
             })})
 
-    def get_cim_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
-        cim_data_structure = {}
+    def get_cim_data_structure(self) -> dict[str, dict[str, pd.DataFrame]]:
+        cim_data_structure: dict[str, dict[str, pd.DataFrame]] = {}
         for one_profile, one_profile_dict in self.__cim_blueprint.items():
             cim_data_structure[one_profile] = {}
             for one_class, one_class_df in one_profile_dict.items():
