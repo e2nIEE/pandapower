@@ -18,11 +18,11 @@ logger = logging.getLogger('cim.cim2pp.from_cim')
 
 def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_line_to_switch: bool = False,
                   line_r_limit: float = 0.1, line_x_limit: float = 0.1,
-                  repair_cim: Union[str, interfaces.CIMRepair] = None,
-                  repair_cim_class: Type[interfaces.CIMRepair] = None,
-                  repair_pp: Union[str, interfaces.PandapowerRepair] = None,
-                  repair_pp_class: Type[interfaces.PandapowerRepair] = None,
-                  custom_converter_classes: Dict = None,
+                  repair_cim: Union[str, interfaces.CIMRepair] | None = None,
+                  repair_cim_class: Type[interfaces.CIMRepair] | None = None,
+                  repair_pp: Union[str, interfaces.PandapowerRepair] | None = None,
+                  repair_pp_class: Type[interfaces.PandapowerRepair] | None = None,
+                  custom_converter_classes: Dict | None = None,
                   **kwargs) -> pandapowerNet:
     """
     Creates a pandapower net from a CIM data structure.
@@ -96,13 +96,13 @@ def get_converter_classes():
     return converter_classes
 
 
-def from_cim(file_list: Union[str, List[str]] = None, encoding: str = None, convert_line_to_switch: bool = False,
+def from_cim(file_list: Union[str, List[str]] | None = None, encoding: str | None = None, convert_line_to_switch: bool = False,
              line_r_limit: float = 0.1, line_x_limit: float = 0.1,
-             repair_cim: Union[str, interfaces.CIMRepair] = None,
-             repair_cim_class: Type[interfaces.CIMRepair] = None,
-             repair_pp: Union[str, interfaces.PandapowerRepair] = None,
-             repair_pp_class: Type[interfaces.PandapowerRepair] = None,
-             custom_converter_classes: Dict = None,
+             repair_cim: Union[str, interfaces.CIMRepair] | None = None,
+             repair_cim_class: Type[interfaces.CIMRepair] | None = None,
+             repair_pp: Union[str, interfaces.PandapowerRepair] | None = None,
+             repair_pp_class: Type[interfaces.PandapowerRepair] | None = None,
+             custom_converter_classes: Dict | None = None,
              cgmes_version: str = '2.4.15', **kwargs) -> pandapowerNet:
     """
     Converts a CIM net to a pandapower net from XML files.

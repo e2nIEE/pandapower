@@ -20,7 +20,7 @@ class UCTE2pandapower:
         Convert UCTE data to pandapower.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.u_d = dict()
+        self.u_d: dict = dict()
         self.net = self._create_empty_network()
         self.net.bus["node_name"] = ""
         self.slack_as_gen = slack_as_gen
@@ -672,7 +672,7 @@ class UCTE2pandapower:
 
     def set_pp_col_types(
         self,
-        net: Union[pandapower.auxiliary.pandapowerNet, Dict],
+        net: pandapower.auxiliary.pandapowerNet,
         ignore_errors: bool = False,
     ) -> pandapower.auxiliary.pandapowerNet:
         """

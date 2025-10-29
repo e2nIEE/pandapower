@@ -178,7 +178,7 @@ class SplineCharacteristic(Characteristic):
         """
         return self._interpolator
 
-    @interpolator.getter
+    @interpolator.getter  # type: ignore[misc]
     def interpolator(self):
         if not hasattr(self, '_interpolator'):
             if self.interpolator_kind == "interp1d":
@@ -212,15 +212,15 @@ class LogSplineCharacteristic(SplineCharacteristic):
     def x_vals(self):
         return self._x_vals
 
-    @property
-    def y_vals(self):
-        return self._y_vals
-
     @x_vals.setter
     def x_vals(self, x_values):
         if np.any(x_values == 0):
             logger.warning("zero-values not supported in x_values")
         self._x_vals = np.log10(x_values)
+
+    @property
+    def y_vals(self):
+        return self._y_vals
 
     @y_vals.setter
     def y_vals(self, y_values):

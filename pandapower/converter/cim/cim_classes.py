@@ -19,7 +19,7 @@ from .cim_tools import get_cim_schema
 
 class CimParser:
 
-    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None, cgmes_version: str = None, **kwargs):
+    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] | None = None, cgmes_version: str | None = None, **kwargs):
         """
         This class parses CIM files and loads its content to a dictionary of
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
@@ -35,7 +35,7 @@ class CimParser:
         self.report_container = ReportContainer()
         self.ignore_errors = bool(kwargs.get("ignore_errors", False))
 
-    def parse_files(self, file_list: List[str] | str = None, encoding: str = None, prepare_cim_net: bool = False,
+    def parse_files(self, file_list: List[str] | str | None = None, encoding: str | None = None, prepare_cim_net: bool = False,
                     set_data_types: bool = False) -> CimParser:
         """
         Parse CIM XML files from a storage.
@@ -92,8 +92,8 @@ class CimParser:
                         self.logger.debug("Skipping CIM element type %s from profile %s." % (cim_element_type, profile))
                         continue
                     if col in cim_schema[profile][cim_element_type]['fields'] and \
-                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col]:
-                        data_type_col_str = cim_schema[profile][cim_element_type]['fields'][col]['data_type_prim']
+                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col]:  # type: ignore[index]
+                        data_type_col_str = cim_schema[profile][cim_element_type]['fields'][col]['data_type_prim']  # type: ignore[index]
                         if data_type_col_str in data_types_map:
                             data_type_col = data_types_map[data_type_col_str]
                         else:
@@ -112,7 +112,7 @@ class CimParser:
                                 self.cim[profile][cim_element_type][col] = \
                                     self.cim[profile][cim_element_type][col].astype(float_type)
                             self.cim[profile][cim_element_type][col] = \
-                                self.cim[profile][cim_element_type][col].astype(data_type_col)
+                                self.cim[profile][cim_element_type][col].astype(data_type_col)  # type: ignore[call-overload]
                         except Exception as e:
                             self.logger.warning("Couldn't set the datatype to %s for field %s at CIM type %s in "
                                                 "profile %s!" % (data_type_col_str, col, cim_element_type, profile))
@@ -170,7 +170,7 @@ class CimParser:
                                              message="CIM parser finished preparing the CIM data."))
         return self
 
-    def _initialize_cim16_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim16_data_structure(self) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         """
            Get the cim data structure used by the converter for cgmes version less than 3.
            :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
@@ -397,7 +397,7 @@ class CimParser:
     def _get_df(self, items):
         return pd.DataFrame([self._parse_element(child) for child in iter(items)])
 
-    def _get_cgmes_profile_from_xml(self, root: etree.Element, default_profile: str = 'unknown') -> str:
+    def _get_cgmes_profile_from_xml(self, root: etree._Element, default_profile: str = 'unknown') -> str:
         """
         Get the CGMES profile from the XML file.
 
@@ -412,11 +412,11 @@ class CimParser:
         element_types = element_types.drop_duplicates()
         full_model = element_types.str.find('FullModel')
         if full_model.max() >= 0:
-            full_model = element_types[full_model >= 0].values[0]
+            full_model = element_types[full_model >= 0].values[0]  # type: ignore[assignment]
         else:
-            full_model = 'FullModel'
+            full_model = 'FullModel'  # type: ignore[assignment]
         full_model_profile = full_model[:-9] + 'Model.profile'
-        full_model_df = self._get_df(root.findall('.//' + full_model))
+        full_model_df = self._get_df(root.findall('.//' + full_model))  # type: ignore[arg-type]
         if full_model_df.index.size == 0 and self.ignore_errors:
             self.logger.warning("The FullModel is not given in the XML tree, returning %s" % default_profile)
             return default_profile
@@ -470,7 +470,7 @@ class CimParser:
                                                  message="The CGMES profile could not be parsed from the XML."))
             raise Exception("The CGMES profile could not be parsed from the XML.")
 
-    def _parse_source_file(self, file: str, output: dict, encoding: str, profile_name: str = None):
+    def _parse_source_file(self, file: str, output: dict, encoding: str | None, profile_name: str | None = None):
         self.logger.info("Parsing file: %s" % file)
         if not self._check_file(file):
             return
@@ -500,15 +500,15 @@ class CimParser:
         else:
             prf = profile_name
         self.file_names[prf] = file
-        self._parse_xml_tree(xml_tree.getroot(), prf, output)
+        self._parse_xml_tree(xml_tree.getroot(), prf, output)  # type: ignore[arg-type]
 
-    def _parse_xml_tree(self, xml_tree: etree.ElementTree, profile_name: str, output: Dict | None = None):
+    def _parse_xml_tree(self, xml_tree: etree._ElemetTree, profile_name: str, output: Dict | None = None):
         output = self.cim if output is None else output
         # get all CIM elements to parse
-        element_types = pd.Series([ele.tag for ele in xml_tree])
+        element_types = pd.Series([ele.tag for ele in xml_tree])  # type: ignore[attr_defined]
         element_types = element_types.drop_duplicates()
         prf_content: Dict[str, pd.DataFrame] = {}
-        ns_dict = {}
+        ns_dict: dict = {}
         prf = profile_name
         if prf not in ns_dict:
             ns_dict[prf] = {}
@@ -534,10 +534,10 @@ class CimParser:
                         # get the namespace from the literal, Note: get the largest string because some values could
                         # be nan
                         name_space = \
-                            prf_content[element_type_c][col].values[prf_content[element_type_c][col].str.len().idxmax()]
+                            prf_content[element_type_c][col].values[prf_content[element_type_c][col].str.len().idxmax()]  # type: ignore[index]
                         # remove the namespace from the literal
                         prf_content[element_type_c][col] = \
-                            prf_content[element_type_c][col].str[name_space.rfind('.') + 1:]
+                            prf_content[element_type_c][col].str[name_space.rfind('.') + 1:]  # type: ignore[union-attr]
                 elif col_new.endswith('-about'):
                     col_new = 'rdfId'
                     prf_content[element_type_c][col] = prf_content[element_type_c][col].str[1:]
@@ -578,14 +578,14 @@ class CimParser:
     def get_report_container(self) -> ReportContainer:
         return self.report_container
 
-    def _initialize_cim_data_structure(self, cgmes_version: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim_data_structure(self, cgmes_version: str) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         if cgmes_version == '2.4.15':
             return self._initialize_cim16_data_structure()
         if cgmes_version == '3.0':
             return self._initialize_cim100_data_structure()
         raise NotImplementedError(f"CGMES version {cgmes_version} is not supported.")
 
-    def _initialize_cim100_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim100_data_structure(self) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         """
            Get the cim data structure used by the converter for cgmes version 3.
            :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
@@ -813,7 +813,7 @@ class CimParser:
             })})
 
     def get_cim_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
-        cim_data_structure = {}
+        cim_data_structure: dict = {}
         for one_profile, one_profile_dict in self.__cim_blueprint.items():
             cim_data_structure[one_profile] = {}
             for one_class, one_class_df in one_profile_dict.items():

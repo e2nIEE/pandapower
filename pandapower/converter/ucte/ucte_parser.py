@@ -14,14 +14,14 @@ import pandas as pd
 
 
 class UCTEParser:
-    def __init__(self, path_ucte_file: str = None, config: Dict = None):
+    def __init__(self, path_ucte_file: str | None = None, config: Dict | None = None):
         """
         This class parses an UCTE file and loads its content to a dictionary of
         UCTE element type (str) -> UCTE elements (DataFrame)
         :param path_ucte_file: The path to the UCTE file. Optional, default: None. This parameter may be set later.
         :param config: The configuration dictionary. Optional, default: None. This parameter may be set later.
         """
-        self.path_ucte_file: str = path_ucte_file
+        self.path_ucte_file: str | None = path_ucte_file
         self.config: Dict = config if isinstance(config, dict) else dict()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.ucte_elements = ["##C", "##N", "##L", "##T", "##R", "##TT", "##E"]
@@ -29,7 +29,7 @@ class UCTEParser:
         self.date: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
         self.bus_ucte_countries : list = list()
 
-    def parse_file(self, path_ucte_file: str = None) -> bool:
+    def parse_file(self, path_ucte_file: str | None = None) -> bool:
         """
         Parse a UCTE file.
         :param path_ucte_file: The path to the UCTE file. By default the internal field 'self.path_ucte_file' is used.
@@ -54,7 +54,7 @@ class UCTEParser:
             self._parse_date_str(self.config["custom"]["date"])
         else:
             self._parse_date_str(os.path.basename(self.path_ucte_file)[:13])
-        raw_input_dict = dict()
+        raw_input_dict: dict = dict()
         for ucte_element in self.ucte_elements:
             raw_input_dict[ucte_element] = []
         with open(self.path_ucte_file, "r") as f:
@@ -353,7 +353,7 @@ class UCTEParser:
             data = ucte_temp.get_data()
         if os.path.exists(f.name):
             os.remove(f.name)
-        return_dict = dict()
+        return_dict: dict = dict()
         return_dict["element_types"] = dict()
         return_dict["dtypes"] = dict()
         for element_type, df in data.items():
@@ -364,7 +364,7 @@ class UCTEParser:
     def set_path_ucte_file(self, path_ucte_file: str):
         self.path_ucte_file = path_ucte_file
 
-    def get_path_ucte_file(self) -> str:
+    def get_path_ucte_file(self) -> str | None:
         return self.path_ucte_file
 
     def set_config(self, config: Dict):

@@ -83,7 +83,7 @@ class DcLineSegmentsCim16:
         t = self.cimConverter.cim['eq']['DCTerminal'][['DCNode', 'DCConductingEquipment', 'sequenceNumber']]
         t = t.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment'})
 
-        def search_converter(cn_ids: Dict[str, str], visited_cns: List[str]) -> str:
+        def search_converter(cn_ids: Dict[str, str], visited_cns: List[str]) -> str | None:
             new_cn_dict = {}
             for one_cn, from_dev in cn_ids.items():
                 # get the Terminals
@@ -103,11 +103,13 @@ class DcLineSegmentsCim16:
                             new_cn_dict[id_temp] = one_t['ConductingEquipment']
             if len(new_cn_dict) > 0:
                 visited_cns.extend(list(cn_ids))
-                return search_converter(cn_ids=new_cn_dict, visited_cns=visited_cns)
+                return search_converter(cn_ids=new_cn_dict, visited_cns=visited_cns)  # type: ignore[arg-type]
+            
+            return None
 
         for row_index, row in dc_line_segments[dc_line_segments['converters'].isna()].iterrows():
-            conv = search_converter(cn_ids={row['ConnectivityNode']: row['rdfId']},
-                                    visited_cns=[row['ConnectivityNode']])
+            conv = search_converter(cn_ids={row['ConnectivityNode']: row['rdfId']},  # type: ignore[dict-item]
+                                    visited_cns=[row['ConnectivityNode']])  # type: ignore[list-item]
             dc_line_segments.loc[row_index, 'converters'] = conv
             if conv is None:
                 self.logger.warning("Problem with converting tht DC line %s: No ACDC converter found, maybe the DC "

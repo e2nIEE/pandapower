@@ -121,12 +121,12 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
 
     for pp_type, one_fd in fill_dict.items():
         for np_type, fields in fill_dict_all.items():
-            np_type = np.sctypeDict.get(np_type)
+            np_type = np.sctypeDict.get(np_type)  # type: ignore[assignment]
             for field in fields:
                 if override or field not in net[pp_type].columns:
                     net[pp_type][field] = pd.Series([], dtype=np_type)
         for np_type, fields in one_fd.items():
-            np_type = np.sctypeDict.get(np_type)
+            np_type = np.sctypeDict.get(np_type)  # type: ignore[assignment]
             for field in fields:
                 if override or field not in net[pp_type].columns:
                     net[pp_type][field] = pd.Series([], dtype=np_type)
@@ -144,7 +144,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     return net
 
 
-def get_cim_schema(cgmes_version: str = '2.4.15') -> Dict[str, Dict[str, Dict[str, str or Dict[str, Dict[str, str]]]]]:
+def get_cim_schema(cgmes_version: str = '2.4.15') -> Dict[str, Dict[str, Dict[str, str | Dict[str, Dict[str, str]]]]]:
     """
     Parses the CIM schema from the serialized CIM schema json files which have been created from the RDF schema files.
     The schema is parsed for the serializer from the CIM data structure used by the cim2pp and pp2cim converters.
@@ -167,3 +167,5 @@ def get_cim_schema(cgmes_version: str = '2.4.15') -> Dict[str, Dict[str, Dict[st
             with open(path_to_schema, encoding='UTF-8', mode='r') as f:
                 cim_schema = json.load(f)
             return cim_schema
+    
+    raise RuntimeError("This line should not be reached")

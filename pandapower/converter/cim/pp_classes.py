@@ -18,12 +18,12 @@ class PandapowerDiagnostic:
     :param diagnostic_: The pandapower diagnostic. If None a pp.diagnostic(net) will be run. Optional, default: None.
     :return: The pandapower diagnostic with CIM IDs.
     """
-    def __init__(self, net: pandapowerNet, diagnostic_: Dict = None):
+    def __init__(self, net: pandapowerNet, diagnostic_: Dict | None = None):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.net = net
         self.diagnostic = diagnostic_
 
-    def _rec_replace_pp_diagnostic_with_cim_ids(self, input_obj, element_type: str = None):
+    def _rec_replace_pp_diagnostic_with_cim_ids(self, input_obj, element_type: str | None = None):
         sc = cim_tools.get_pp_net_special_columns_dict()
         element_mapping = {
             'bus': 'bus', 'buses': 'bus', 'load': 'load', 'loads': 'load', 'sgen': 'sgen', 'sgens': 'sgen',
@@ -54,7 +54,7 @@ class PandapowerDiagnostic:
                     # default
                     return_obj.append(one_input_obj)
         elif isinstance(input_obj, dict):
-            return_obj = {}
+            return_obj = {}  # type: ignore[assignment]
             for key, item in input_obj.items():
                 if isinstance(item, list) or isinstance(item, dict) and key in element_mapping:
                     element_type = element_mapping[key]

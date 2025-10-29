@@ -943,7 +943,7 @@ def bus_path_multiple_ext_bus(net):
 
 
 # get the line path from the given bus path
-def get_line_path(net, bus_path):
+def get_line_path(net, bus_path):  # type: ignore[no-redef]
     """ Function return the list of line path from the given bus path"""
     line_path = []
     for i in range(len(bus_path) - 1):

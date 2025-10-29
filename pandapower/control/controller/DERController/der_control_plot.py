@@ -123,25 +123,3 @@ def generate_circle_segment(center_x, center_y, radius, start, stop, step):
     x = center_x + radius * np.cos(sample_angles)
     y = center_y + radius * np.sin(sample_angles)
     return x, y
-
-
-if __name__ == "__main__":
-    from pandapower.control.controller.DERController import PQVArea4120V1, PQVArea4120V2, PQVArea4120V3
-
-    pq_area = PQVArea4120V1()
-    plot_pq_area(pq_area, "PQVArea4120V1")
-    plt.show()
-    plot_qv_area(pq_area, "PQVArea4120V1")
-    plt.show()
-
-    pq_area = PQVArea4120V2()
-    plot_pq_area(pq_area, "PQVArea4120V2")
-    plt.show()
-    plot_qv_area(pq_area, "PQVArea4120V2")
-    plt.show()
-
-    pq_area = PQVArea4120V3()
-    plot_pq_area(pq_area, "PQVArea4120V3")
-    plt.show()
-    plot_qv_area(pq_area, "PQVArea4120V3")
-    plt.show()
