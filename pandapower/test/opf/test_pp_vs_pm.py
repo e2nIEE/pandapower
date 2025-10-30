@@ -98,10 +98,10 @@ def test_case5_pm_pd2ppc():
     assert net.bus.max_vm_pu[net.ext_grid.bus].values[0] == vmax
 
     assert net.ext_grid["in_service"].values.dtype == bool
-    assert net.ext_grid["bus"].values.dtype == "int64"
+    assert net.ext_grid["bus"].values.dtype == "uint32"
     create_ext_grid(net, bus=4, vm_pu=net.res_bus.vm_pu.loc[4], controllable=False)
 
-    assert net.ext_grid["bus"].values.dtype == "int64"
+    assert net.ext_grid["bus"].values.dtype == "uint32"
     assert net.ext_grid["in_service"].values.dtype == bool
 
     ppc = _pd2ppc(net)

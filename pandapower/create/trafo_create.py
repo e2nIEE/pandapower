@@ -27,7 +27,6 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
-from pandapower.network_structure import get_structure_dict
 
 logger = logging.getLogger(__name__)
 
@@ -766,15 +765,13 @@ def create_transformers_from_parameters(  # index missing ?
         "pfe_kw": pfe_kw,
         "i0_percent": i0_percent,
         "tap_neutral": tp_neutral,
-        "tap_max": array(tap_max).astype(get_structure_dict(required_only=False)["trafo"]["tap_max"]),
-        "tap_min": array(tap_min).astype(get_structure_dict(required_only=False)["trafo"]["tap_min"]),
+        "tap_max": tap_max,
+        "tap_min": tap_min,
         "shift_degree": shift_degree,
         "tap_pos": tp_pos,
         "tap_side": tap_side,
         "tap_step_percent": tap_step_percent,
-        "tap_step_degree": array(tap_step_degree).astype(
-            get_structure_dict(required_only=False)["trafo"]["tap_step_degree"]
-        ),
+        "tap_step_degree": tap_step_degree,
         "tap_changer_type": tap_changer_type,
         "parallel": parallel,
         "df": df,
