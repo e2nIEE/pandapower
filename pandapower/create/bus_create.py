@@ -40,7 +40,7 @@ def create_bus(
     in_service: bool = True,
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
-    coords: list[tuple[float, float]] | None = None,
+    coords: list[tuple[float, float]] | None = None,  # TODO: remove
     **kwargs,
 ) -> Int:
     """
@@ -122,7 +122,7 @@ def create_bus_dc(
     in_service: bool = True,
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
-    coords: list[tuple[float, float]] | None = None,
+    coords: list[tuple[float, float]] | None = None,  # TODO: remove
     **kwargs,
 ) -> Int:
     """
@@ -201,12 +201,12 @@ def create_buses(
     index: Int | Iterable[Int] | None = None,
     name: Iterable[str] | None = None,
     type: BusType | Iterable[BusType] = "b",
-    geodata: Iterable[tuple[float, float]] | None = None,
+    geodata: tuple[float, float] | Iterable[tuple[float, float]] | None = None,
     zone: str | Iterable[str] | None = None,
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
-    coords: list[list[tuple[float, float]]] | None = None,
+    coords: list[list[tuple[float, float]]] | None = None,  # TODO: remove
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -268,7 +268,8 @@ def create_buses(
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, entries=entries)
-    net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
+    if "geo" in net.bus.columns:
+        net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
 
     return index
 
@@ -285,7 +286,7 @@ def create_buses_dc(
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
-    coords: list[list[tuple[float, float]]] | None = None,
+    coords: list[list[tuple[float, float]]] | None = None,  # TODO: remove
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
