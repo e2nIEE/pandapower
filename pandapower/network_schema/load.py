@@ -1,76 +1,76 @@
 import pandas as pd
 import pandera.pandas as pa
 
+from network_schema.tools import create_column_dependency_checks_from_metadata
+
+_load_columns = {
+    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load"),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "p_mw": pa.Column(float, description="active power of the load [MW], normally positiv value is power consumption"),
+    "q_mvar": pa.Column(float, description="reactive power of the load [MVar]"),
+    "const_z_p_percent": pa.Column(
+        float,
+        pa.Check.between(min_value=0, max_value=100),
+        nullable=True,
+        required=False,
+        description="percentage of p_mw that is associated to constant impedance load at rated voltage [%]",
+        metadata={"zip": True},
+    ),
+    "const_i_p_percent": pa.Column(
+        float,
+        pa.Check.between(min_value=0, max_value=100),
+        nullable=True,
+        required=False,
+        description="percentage of p_mw that is associated to constant current load at rated voltage [%]",
+        metadata={"zip": True},
+    ),
+    "const_z_q_percent": pa.Column(
+        float,
+        pa.Check.between(min_value=0, max_value=100),
+        nullable=True,
+        required=False,
+        description="percentage of q_mvar that is associated to constant impedance load at rated voltage [%]",
+        metadata={"zip": True},
+    ),
+    "const_i_q_percent": pa.Column(
+        float,
+        pa.Check.between(min_value=0, max_value=100),
+        nullable=True,
+        required=False,
+        description="percentage of q_mvar that is associated to constant current load at rated voltage [%]",
+        metadata={"zip": True},
+    ),
+    "sn_mva": pa.Column(
+        float, pa.Check.gt(0), nullable=True, required=False, description="rated power of the load [kVA]"
+    ),
+    "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
+    "in_service": pa.Column(bool, description="specifies if the load is in service."),
+    "type": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="Connection Type of 3 Phase Load(Valid for three phase load flow only) Naming convention: wye, delta",
+    ),
+    "controllable": pa.Column(
+        pd.BooleanDtype,
+        nullable=True,
+        required=False,
+        description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
+    ),
+    "zone": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="can be used to group loads, for example network groups / regions",
+    ),
+    "max_p_mw": pa.Column(float, nullable=True, required=False, description="Maximum active power"),
+    "min_p_mw": pa.Column(float, nullable=True, required=False, description="Minimum active power"),
+    "max_q_mvar": pa.Column(float, nullable=True, required=False, description="Maximum reactive power"),
+    "min_q_mvar": pa.Column(float, nullable=True, required=False, description="Minimum reactive power"),
+}
 load_schema = pa.DataFrameSchema(
-    {
-        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load"),
-        "bus": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
-        ),
-        "p_mw": pa.Column(
-            float, description="active power of the load [MW], normally positiv value is power consumption"
-        ),
-        "q_mvar": pa.Column(float, description="reactive power of the load [MVar]"),
-        "const_z_p_percent": pa.Column(
-            float,
-            pa.Check.between(min_value=0, max_value=100),
-            nullable=True,
-            required=False,
-            description="percentage of p_mw that is associated to constant impedance load at rated voltage [%]",
-            metadata={"zip": True},
-        ),
-        "const_i_p_percent": pa.Column(
-            float,
-            pa.Check.between(min_value=0, max_value=100),
-            nullable=True,
-            required=False,
-            description="percentage of p_mw that is associated to constant current load at rated voltage [%]",
-            metadata={"zip": True},
-        ),
-        "const_z_q_percent": pa.Column(
-            float,
-            pa.Check.between(min_value=0, max_value=100),
-            nullable=True,
-            required=False,
-            description="percentage of q_mvar that is associated to constant impedance load at rated voltage [%]",
-            metadata={"zip": True},
-        ),
-        "const_i_q_percent": pa.Column(
-            float,
-            pa.Check.between(min_value=0, max_value=100),
-            nullable=True,
-            required=False,
-            description="percentage of q_mvar that is associated to constant current load at rated voltage [%]",
-            metadata={"zip": True},
-        ),
-        "sn_mva": pa.Column(
-            float, pa.Check.gt(0), nullable=True, required=False, description="rated power of the load [kVA]"
-        ),
-        "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
-        "in_service": pa.Column(bool, description="specifies if the load is in service."),
-        "type": pa.Column(
-            str,
-            nullable=True,
-            required=False,
-            description="Connection Type of 3 Phase Load(Valid for three phase load flow only) Naming convention: wye, delta",
-        ),
-        "controllable": pa.Column(
-            bool,
-            nullable=True,
-            required=False,
-            description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
-        ),
-        "zone": pa.Column(
-            str,
-            nullable=True,
-            required=False,
-            description="can be used to group loads, for example network groups / regions",
-        ),
-        "max_p_mw": pa.Column(float, nullable=True, required=False, description="Maximum active power"),
-        "min_p_mw": pa.Column(float, nullable=True, required=False, description="Minimum active power"),
-        "max_q_mvar": pa.Column(float, nullable=True, required=False, description="Maximum reactive power"),
-        "min_q_mvar": pa.Column(float, nullable=True, required=False, description="Minimum reactive power"),
-    },
+    _load_columns,
+    checks=create_column_dependency_checks_from_metadata(["zip"], _load_columns),
     strict=False,
 )
 

@@ -66,7 +66,7 @@ _line_columns = {
         float, pa.Check.between(min_value=0, max_value=1), description="derating factor (scaling) for max_i_ka"
     ),
     "type": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="type of line normally “ol” - overhead line “cs” - underground cable system",
@@ -89,7 +89,10 @@ _line_columns = {
     ),
     "in_service": pa.Column(bool, description="specifies if the line is in service."),
     "geo": pa.Column(
-        str, nullable=True, required=False, description="geojson.LineString object or its string representation"
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="geojson.LineString object or its string representation",
     ),
     "alpha": pa.Column(
         float,
@@ -105,7 +108,7 @@ _line_columns = {
         description="line temperature for which line resistance is adjusted",
     ),
     "tdpf": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the line is considered in the TDPF calculation",

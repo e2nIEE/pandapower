@@ -78,28 +78,28 @@ impedance_schema = pa.DataFrameSchema(
         ),  # TODO: duplicated description?
         "gf0_pu": pa.Column(
             float,
-            pa.Check.gt(1),
+            # pa.Check.gt(1),
             nullable=True,
             required=False,
             description="zero-sequence conductance at the ‘from_bus’ [p.u.]",
         ),
         "bf0_pu": pa.Column(
             float,
-            pa.Check.gt(2),
+            # pa.Check.gt(2),
             nullable=True,
             required=False,
             description="zero-sequence susceptance at the ‘from_bus’ [p.u.]",
         ),
         "gt0_pu": pa.Column(
             float,
-            pa.Check.gt(3),
+            # pa.Check.gt(3),
             nullable=True,
             required=False,
             description="zero-sequence conductance at the ‘from_bus’ [p.u.]",
         ),
         "bt0_pu": pa.Column(
             float,
-            pa.Check.gt(4),
+            # pa.Check.gt(4),
             nullable=True,
             required=False,
             description="zero-sequence susceptance at the ‘from_bus’ [p.u.]",

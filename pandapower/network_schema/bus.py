@@ -8,7 +8,7 @@ _bus_columns = {
     "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the bus [kV]"),
     "type": pa.Column(str, nullable=True, required=False, description="type variable to classify buses"),
     "zone": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="can be used to group buses, for example network groups / regions",
@@ -20,7 +20,7 @@ _bus_columns = {
         float, pa.Check.gt(0), nullable=True, required=False, description="Minimum voltage", metadata={"opf": True}
     ),
     "in_service": pa.Column(bool, description="specifies if the bus is in service."),
-    "geo": pa.Column(str, nullable=True, required=False, description="geojson.Point as object or string"),
+    "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
 }
 bus_schema = pa.DataFrameSchema(
     _bus_columns,

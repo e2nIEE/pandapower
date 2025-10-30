@@ -19,11 +19,11 @@ shunt_schema = pa.DataFrameSchema(
         "max_step": pa.Column(int, pa.Check.ge(1), description="maximum allowed step of shunt"),
         "in_service": pa.Column(bool, description="specifies if the shunt is in service"),
         "step_dependency_table": pa.Column(
-            bool,
+            pd.BooleanDtype,
             nullable=True,
             required=False,
             description="whether the shunt parameters (q_mvar, p_mw) are adjusted dependent on the step of the shunt",
-        ),  # TODO: remove
+        ),  # TODO: remove since it is implied by id_characteristic_table
         "id_characteristic_table": pa.Column(
             pd.Int64Dtype,
             pa.Check.ge(0),

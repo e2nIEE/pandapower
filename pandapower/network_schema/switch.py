@@ -18,8 +18,7 @@ switch_schema = pa.DataFrameSchema(
             description="element type the switch connects to: “b” - bus-bus switch “l” - bus-line switch “t” - bus-trafo “t3” - bus-trafo3w switch",
         ),
         "type": pa.Column(
-            str,
-            pa.Check.isin(["CB", "LS", "LBS", "DS"]),
+            pd.StringDtype,
             nullable=True,
             required=False,
             description="type of switch naming conventions:  “CB” - circuit breaker “LS” - load switch “LBS” - load break switch “DS” - disconnecting switch",
@@ -31,7 +30,12 @@ switch_schema = pa.DataFrameSchema(
             nullable=True,
             description="maximum current that the switch can carry under normal operating conditions without tripping",
         ),
-        "z_ohm": pa.Column(float, description=""),  # TODO: missing in docu
+        "z_ohm": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description="indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0, the buses will be fused like before, if larger than 0 a branch will be created for the switch which has also effects on the bus mapping",
+        ),
     },
     strict=False,
 )

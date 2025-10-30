@@ -6,7 +6,7 @@ from pandapower.network_schema.tools import create_column_dependency_checks_from
 _gen_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the generator"),
     "type": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="type variable to classify generators naming conventions: “sync” - synchronous generator “async” - asynchronous generator",
@@ -71,34 +71,40 @@ _gen_columns = {
     ),
     "in_service": pa.Column(bool, description="specifies if the generator is in service"),
     "power_station_trafo": pa.Column(
-        int,
+        pd.Int64Dtype,
         nullable=True,
         required=False,
         description="index of the power station trafo (short-circuit relevant)",
         metadata={"sc": True},
     ),
     "id_q_capability_characteristic": pa.Column(
-        pd.Int64Dtype(),
+        pd.Int64Dtype,
         nullable=True,
         required=False,
         description="references the index of the characteristic from the q_capability_characteristic",
+        metadata={"qcc": True},
     ),
     "curve_style": pa.Column(
-        str,
-        pa.Check.isin(["straightLineYValues", "constantYValue", ""]),
+        pd.StringDtype,
+        pa.Check.isin(["straightLineYValues", "constantYValue"]),
         nullable=True,
         required=False,
         description="the style of the generator reactive power capability curve",
+        metadata={"qcc": True},
     ),
     "reactive_capability_curve": pa.Column(
-        bool, nullable=True, required=False, description="True if generator has dependency on q characteristic"
+        pd.BooleanDtype,
+        nullable=True,
+        required=False,
+        description="True if generator has dependency on q characteristic",
+        metadata={"qcc": True},
     ),
     "slack_weight": pa.Column(
         float, nullable=True, required=False, description="weight of the slack when using multiple slacks"
     ),
     "slack": pa.Column(bool, description="use the gen as slack"),
     "controllable": pa.Column(
-        bool, nullable=True, required=False, description="allow control for opf", metadata={"opf": True}
+        pd.BooleanDtype, nullable=True, required=False, description="allow control for opf", metadata={"opf": True}
     ),
     "pg_percent": pa.Column(
         float,
@@ -125,7 +131,7 @@ _gen_columns = {
 gen_schema = pa.DataFrameSchema(
     _gen_columns,
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "q_lim_enforced"], _gen_columns),
+    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "q_lim_enforced", "qcc"], _gen_columns),
 )
 
 

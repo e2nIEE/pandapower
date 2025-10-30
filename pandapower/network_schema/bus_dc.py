@@ -6,9 +6,9 @@ from pandapower.network_schema.tools import create_column_dependency_checks_from
 _bus_dc_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc bus"),
     "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the dc bus [kV]"),
-    "type": pa.Column(str, nullable=True, required=False, description="type variable to classify buses"),
+    "type": pa.Column(pd.StringDtype, nullable=True, required=False, description="type variable to classify buses"),
     "zone": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="can be used to group dc buses, for example network groups / regions",

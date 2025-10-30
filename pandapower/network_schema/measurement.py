@@ -1,15 +1,15 @@
 import pandas as pd
 import pandera.pandas as pa
 
-# TODO: unklar was required und was nicht
+# TODO: to discuss whole concept
+# TODO: whats required and whats not ?
 
 measurement_schema = pa.DataFrameSchema(
     {
-        # "index": pa.Column(int, description="Defines a specific index for the new measurement (if possible)"),  # TODO:
-        "name": pa.Column(pd.StringDtype, description=""),  # TODO: missing in docu
+        "name": pa.Column(pd.StringDtype, description=""),
         "measurement_type": pa.Column(
             str, pa.Check.isin(["p", "q", "i", "v"]), description="Defines what physical quantity is measured"
-        ),  # TODO:  other name in docu
+        ),
         "element_type": pa.Column(
             str,
             pa.Check.isin(
@@ -26,12 +26,15 @@ measurement_schema = pa.DataFrameSchema(
             description="Defines the bus at which the measurement is placed. For line or transformer measurement, it defines the side at which the measurement is placed (from_bus or to_bus). must be in net.bus.index",
             metadata={"foreign_key": "bus.index"},
         ),
-        "element": pa.Column(int, description="specifies if the bus is in service."),
+        "element": pa.Column(
+            int,
+            description="If the element_type is “line”, “trafo”, “trafo3w”, “load”, “gen”, “sgen”, “shunt”, “ward”, “xward” or “ext_grid”, element is the index of the relevant element. For “bus” measurements, it is None (default)",
+        ),
         "check_existing": pa.Column(
             bool,
             description="Checks if a measurement of the type already exists and overwrites it. If set to False, the measurement may be added twice (unsafe behaviour), but the performance increases",
-        ),  # TODO: only in docu
-        "side": pa.Column(str, description=""),  # TODO: missing in docu
+        ),  # TODO: shouldn't this be called overwrite?
+        "side": pa.Column(str, description=""),  # TODO: check nur wenn element_type trafo oder line
     },
     strict=False,
 )

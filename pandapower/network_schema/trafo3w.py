@@ -1,10 +1,12 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import validate_column_group_dependency
+from pandapower.network_schema.tools import (
+    validate_column_group_dependency,
+    create_column_dependency_checks_from_metadata,
+)
 
 _trafo3w_columns = {
-    # TODO: in methodcall but not parameter docu: vector_group, vkr0_x, vk0_x, max_loading_percent, ahhh warum gibt es 2 create methoden???
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
     "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
     "hv_bus": pa.Column(
@@ -32,20 +34,34 @@ _trafo3w_columns = {
     "sn_mv_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power on medium voltage side [kVA]"),
     "sn_lv_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power on low voltage side [kVA]"),
     "vk_hv_percent": pa.Column(
-        float, pa.Check.gt(0), description="short circuit voltage from high to medium voltage [%]"
+        float,
+        pa.Check.gt(0),
+        description="short circuit voltage from high to medium voltage [%]",
+        metadata={"sc": True},
     ),
     "vk_mv_percent": pa.Column(
-        float, pa.Check.gt(0), description="short circuit voltage from medium to low voltage [%]"
+        float, pa.Check.gt(0), description="short circuit voltage from medium to low voltage [%]", metadata={"sc": True}
     ),
-    "vk_lv_percent": pa.Column(float, pa.Check.gt(0), description="short circuit voltage from high to low voltage [%]"),
+    "vk_lv_percent": pa.Column(
+        float, pa.Check.gt(0), description="short circuit voltage from high to low voltage [%]", metadata={"sc": True}
+    ),
     "vkr_hv_percent": pa.Column(
-        float, pa.Check.ge(0), description="real part of short circuit voltage from high to medium voltage [%]"
+        float,
+        pa.Check.ge(0),
+        description="real part of short circuit voltage from high to medium voltage [%]",
+        metadata={"sc": True},
     ),
     "vkr_mv_percent": pa.Column(
-        float, pa.Check.ge(0), description="real part of short circuit voltage from medium to low voltage [%]"
+        float,
+        pa.Check.ge(0),
+        description="real part of short circuit voltage from medium to low voltage [%]",
+        metadata={"sc": True},
     ),
     "vkr_lv_percent": pa.Column(
-        float, pa.Check.ge(0), description="real part of short circuit voltage from high to low voltage [%]"
+        float,
+        pa.Check.ge(0),
+        description="real part of short circuit voltage from high to low voltage [%]",
+        metadata={"sc": True},
     ),
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
     "i0_percent": pa.Column(float, description="open loop losses [%]"),
@@ -56,19 +72,15 @@ _trafo3w_columns = {
         float, nullable=True, required=False, description="transformer phase shift angle at the LV side"
     ),
     "tap_side": pa.Column(
-        str,
+        pd.StringDtype,
         pa.Check.isin(["hv", "mv", "lv"]),
         nullable=True,
         required=False,
         description="defines if tap changer is positioned on high- medium- or low voltage side",
     ),
-    "tap_neutral": pa.Column(float, nullable=True, required=False, description=""),  # TODO: different type in docu
-    "tap_min": pa.Column(
-        float, nullable=True, required=False, description="minimum tap position"
-    ),  # TODO: different type in docu
-    "tap_max": pa.Column(
-        float, nullable=True, required=False, description="maximum tap position"
-    ),  # TODO: different type in docu
+    "tap_neutral": pa.Column(float, nullable=True, required=False, description=""),
+    "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
+    "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
     "tap_step_percent": pa.Column(
         float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"
     ),
@@ -81,7 +93,7 @@ _trafo3w_columns = {
     ),
     "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
     "tap_changer_type": pa.Column(
-        str,
+        pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
         nullable=True,
         required=False,
@@ -101,22 +113,43 @@ _trafo3w_columns = {
         description="references the id_characteristic index from the trafo_characteristic_table",
     ),
     "max_loading_percent": pa.Column(
-        int,  # TODO: guess from trafo2w
+        float,
         nullable=True,
         required=False,
         description="",
-    ),  # TODO: not in docu only create
+    ),
+    "vector_group": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="",
+        metadata={"sc": True},
+    ),
+    "vkr0_x": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="",
+    ),
+    "vk0_x": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="",
+    ),
     "in_service": pa.Column(bool, description="specifies if the transformer is in service."),
 }
-tap_columns = ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_step_degree"]  # TODO: which ones?
+tap_columns = ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_step_degree"]
+trafo3w_checks = [
+    pa.Check(
+        validate_column_group_dependency(tap_columns),
+        error=f"Tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
+    ),
+]
+trafo3w_checks += create_column_dependency_checks_from_metadata(["sc"], _trafo3w_columns)
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
-    checks=[
-        pa.Check(
-            validate_column_group_dependency(tap_columns),
-            error=f"Tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
-        ),
-    ],
+    checks=trafo3w_checks,
     strict=False,
 )
 
@@ -157,8 +190,8 @@ res_trafo3w_schema = pa.DataFrameSchema(
         "va_mv_degree": pa.Column(float, nullable=True, description="voltage angle at the high voltage bus [degrees]"),
         "vm_lv_pu": pa.Column(float, nullable=True, description="voltage angle at the medium voltage bus [degrees]"),
         "va_lv_degree": pa.Column(float, nullable=True, description="voltage angle at the low voltage bus [degrees]"),
-        "va_internal_degree": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
-        "vm_internal_pu": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
+        "va_internal_degree": pa.Column(float, nullable=True, description=""),
+        "vm_internal_pu": pa.Column(float, nullable=True, description=""),
         "loading_percent": pa.Column(float, nullable=True, description="transformer utilization [%]"),
     },
     strict=False,

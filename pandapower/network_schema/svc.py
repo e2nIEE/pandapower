@@ -28,14 +28,14 @@ svc_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="minimum value of the thyristor_firing_angle_degree",
-        ),  # TODO: do values >= 180 make sense?
+        ),
         "max_angle_degree": pa.Column(
             float,
             pa.Check.le(180),
             nullable=True,
             required=False,
             description="maximum value of the thyristor_firing_angle_degree",
-        ),  # TODO: do values <= 90 make sense?
+        ),
     },
     checks=[
         pa.Check(
@@ -45,7 +45,7 @@ svc_schema = pa.DataFrameSchema(
                 else True
             ),
             error="Column 'min_angle_degree' must be <= column 'max_angle_degree'",
-        )  # TODO: makes sense, right ?
+        )
     ],
     strict=False,
 )

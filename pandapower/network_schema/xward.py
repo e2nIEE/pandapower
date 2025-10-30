@@ -16,7 +16,9 @@ xward_schema = pa.DataFrameSchema(
         "r_ohm": pa.Column(float, pa.Check.gt(0), description="internal resistance of the voltage source [ohm]"),
         "x_ohm": pa.Column(float, pa.Check.gt(0), description="internal reactance of the voltage source [ohm]"),
         "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage source set point [p.u]"),
-        "slack_weight": pa.Column(float, description=""),  # TODO: missing in docu
+        "slack_weight": pa.Column(
+            float, nullable=True, required=False, description=" Contribution factor for distributed slack power"
+        ),
         "in_service": pa.Column(bool, description="specifies if the extended ward equivalent is in service."),
     },
     strict=False,
@@ -27,8 +29,8 @@ res_xward_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, nullable=True, description="active power demand of the ward equivalent [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="reactive power demand of the ward equivalent [MVar]"),
         "vm_pu": pa.Column(float, nullable=True, description="voltage at the ward bus [p.u]"),
-        "va_internal_degree": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
-        "vm_internal_pu": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu
+        "va_internal_degree": pa.Column(float, nullable=True, description=""),
+        "vm_internal_pu": pa.Column(float, nullable=True, description=""),
     },
     strict=False,
 )

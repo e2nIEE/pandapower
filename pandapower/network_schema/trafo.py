@@ -21,8 +21,10 @@ _trafo_columns = {
     "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power of the transformer [MVA]"),
     "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage bus [kV]"),
     "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage bus [kV]"),
-    "vk_percent": pa.Column(float, pa.Check.gt(0), description="short circuit voltage [%]"),
-    "vkr_percent": pa.Column(float, pa.Check.ge(0), description="real component of short circuit voltage [%]"),
+    "vk_percent": pa.Column(float, pa.Check.gt(0), description="short circuit voltage [%]", metadata={"sc": True}),
+    "vkr_percent": pa.Column(
+        float, pa.Check.ge(0), description="real component of short circuit voltage [%]", metadata={"sc": True}
+    ),
     "pfe_kw": pa.Column(float, pa.Check.ge(0), description="iron losses [kW]"),
     "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop losses in [%]"),
     "vk0_percent": pa.Column(
@@ -79,29 +81,20 @@ _trafo_columns = {
         required=False,
         description="defines if tap changer is at the high- or low voltage side",
     ),
-    "tap_neutral": pa.Column(
-        float, nullable=True, required=False, description="rated tap position"
-    ),  # TODO: different type in docu
-    "tap_min": pa.Column(
-        float, nullable=True, required=False, description="minimum tap position"
-    ),  # TODO: different type in docu
-    "tap_max": pa.Column(
-        float, nullable=True, required=False, description="maximum tap position"
-    ),  # TODO: different type in docu
+    "tap_neutral": pa.Column(float, nullable=True, required=False, description="rated tap position"),
+    "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
+    "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
     "tap_step_percent": pa.Column(
         float, pa.Check.gt(0), nullable=True, required=False, description="tap step size for voltage magnitude [%]"
     ),
     "tap_step_degree": pa.Column(
         float, pa.Check.ge(0), nullable=True, required=False, description="tap step size for voltage angle"
     ),
-    "tap_pos": pa.Column(
-        float, nullable=True, required=False, description="current position of tap changer"
-    ),  # TODO: different type in docu
+    "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
     "tap_changer_type": pa.Column(
-        str,
-        pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular", "nan"]),
+        pd.StringDtype,
+        pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
         nullable=True,
-        required=False,  # TODO: according to test test_tap_changer_type_default it should be required
         description="specifies the tap changer type",
     ),
     "tap_dependency_table": pa.Column(
@@ -123,10 +116,10 @@ _trafo_columns = {
         required=False,
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
         metadata={"opf": True},
-    ),  # TODO: only in docu
+    ),
     "parallel": pa.Column(
         int, pa.Check.ge(1), nullable=True, required=False, description="number of parallel transformers"
-    ),  # TODO: was gt(0)
+    ),
     "df": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=1, include_min=False),
@@ -138,18 +131,18 @@ _trafo_columns = {
     "oltc": pa.Column(
         bool,
         nullable=True,
-        required=False,  # TODO: laut docu powerflow relevant, war aber nicht im alten network struct
+        required=False,
         description="specifies if the transformer has an OLTC (short-circuit relevant)",
         metadata={"sc": True},
     ),
     "power_station_unit": pa.Column(
         bool,
         nullable=True,
-        required=False,  # TODO: laut docu powerflow relevant, war aber nicht im alten network struct
-        description="specifies if the transformer is part of a power_station_unit (short-circuit relevant)",
+        required=False,
+        description="specifies if the transformer is part of a power_station_unit (short-circuit relevant) refer to IEC60909-0-2016 section 6.7.1",
         metadata={"sc": True},
-    ),  # TODO: not in create method call
-    "tap2_side": pa.Column(str, pa.Check.isin(["hv", "lv", "nan"]), nullable=True, required=False, description=""),
+    ),
+    "tap2_side": pa.Column(pd.StringDtype, pa.Check.isin(["hv", "lv"]), nullable=True, required=False, description=""),
     "tap2_neutral": pa.Column(pd.Float64Dtype, nullable=True, required=False, description="rated tap position"),
     "tap2_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap2_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
@@ -175,21 +168,23 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="ratio of transformer short-circuit resistance on HV side (default 0.5)",
-    ),  # TODO: not in create method call
+        metadata={"sc": True},
+    ),
     "leakage_reactance_ratio_hv": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=1),
         nullable=True,
         required=False,
         description="ratio of transformer short-circuit reactance on HV side (default 0.5)",
-    ),  # TODO: not in create method call
+        metadata={"sc": True},
+    ),
     "xn_ohm": pa.Column(
         float,
         required=False,
         description="impedance of the grounding reactor (Z_N) for short circuit calculation",
         metadata={"sc": True},
-    ),  # TODO: not in docu
-    "pt_percent": pa.Column(float, required=False, description=""),  # TODO: not in docu
+    ),
+    "pt_percent": pa.Column(float, required=False, description="", metadata={"sc": True}),
 }
 tap2_columns = ["tap2_pos", "tap2_neutral", "tap2_side", "tap2_step_percent", "tap2_step_degree"]
 tap_columns = [

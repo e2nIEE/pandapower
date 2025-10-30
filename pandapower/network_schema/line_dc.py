@@ -3,10 +3,11 @@ import pandera.pandas as pa
 
 from pandapower.network_schema.tools import create_column_dependency_checks_from_metadata
 
-_line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alpha, temperature_degree_celsius
+_line_dc_columns = {
     "name": pa.Column(pd.StringDtype, required=False, description="name of the dc line"),
     "std_type": pa.Column(
-        str,
+        pd.StringDtype,
+        nullable=True,
         required=False,
         description="standard type which can be used to easily define dc line parameters with the pandapower standard type library",
     ),
@@ -33,7 +34,7 @@ _line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alp
         float, pa.Check.between(min_value=0, max_value=1), description="derating factor (scaling) for max_i_ka"
     ),
     "type": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="type of dc line Naming conventions: “”ol”” - overhead dc line, “”cs”” - underground cable system”",
@@ -41,7 +42,10 @@ _line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alp
     "max_loading_percent": pa.Column(float, pa.Check.gt(0), description="Maximum loading of the dc line"),
     "in_service": pa.Column(bool, description="specifies if the dc line is in service."),
     "geo": pa.Column(
-        str, nullable=True, required=False, description="geojson.LineString object or its string representation"
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="geojson.LineString object or its string representation",
     ),
     "alpha": pa.Column(
         float,
@@ -53,7 +57,7 @@ _line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alp
         float, nullable=True, required=False, description="line temperature for which line resistance is adjusted"
     ),
     "tdpf": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the line is considered in the TDPF calculation",
@@ -132,7 +136,7 @@ _line_dc_columns = {  # TODO: in methodcall but not parameter docu: geodata, alp
 }
 line_dc_schema = pa.DataFrameSchema(
     _line_dc_columns,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "tdpf"], _line_dc_columns),
+    checks=create_column_dependency_checks_from_metadata(["tdpf"], _line_dc_columns),
     strict=False,
 )
 

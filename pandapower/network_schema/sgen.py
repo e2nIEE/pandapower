@@ -18,10 +18,10 @@ _sgen_columns = {
     "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for the active and reactive power"),
     "min_p_mw": pa.Column(
         float, nullable=True, required=False, description="maximum active power [MW]", metadata={"opf": True}
-    ),  # TODO: only in docu
+    ),
     "max_p_mw": pa.Column(
         float, nullable=True, required=False, description="minimum active power [MW]", metadata={"opf": True}
-    ),  # TODO: only in docu
+    ),
     "min_q_mvar": pa.Column(
         float, nullable=True, required=False, description="maximum reactive power [MVAr]", metadata={"opf": True}
     ),
@@ -29,7 +29,7 @@ _sgen_columns = {
         float, nullable=True, required=False, description="minimum reactive power [MVAr]", metadata={"opf": True}
     ),
     "controllable": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="states if sgen is controllable or not, sgen will not be used as a flexibility if it is not controllable",
@@ -41,7 +41,7 @@ _sgen_columns = {
         required=False,
         description="ratio of short circuit current to nominal current",
         metadata={"sc": True},
-    ),  # TODO: only in docu
+    ),
     "rx": pa.Column(
         float,
         pa.Check.ge(0),
@@ -49,61 +49,74 @@ _sgen_columns = {
         required=False,
         description="R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor",
         metadata={"sc": True},
-    ),  # TODO: only in docu
+    ),
     "in_service": pa.Column(bool, description="specifies if the generator is in service."),
     "id_q_capability_characteristic": pa.Column(
-        pd.Int64Dtype(),
+        pd.Int64Dtype,
         nullable=True,
         required=False,
         description="references the index of the characteristic from the q_capability_characteristic",
+        metadata={"qcc": True},
     ),
     "curve_style": pa.Column(
-        str,
-        pa.Check.isin(["straightLineYValues", "constantYValue", ""]),
+        pd.StringDtype,
         nullable=True,
         required=False,
-        description="the style of the static generator reactive power capability curve",
+        description="the style of the static generator reactive power capability curve. Naming convention straightLineYValues, constantYValue",
+        metadata={"qcc": True},
     ),
     "reactive_capability_curve": pa.Column(
-        bool, required=False, description="True if static generator has dependency on q characteristic"
+        pd.BooleanDtype,
+        required=False,
+        description="True if static generator has dependency on q characteristic",
+        metadata={"qcc": True},
     ),
     "type": pa.Column(
-        str,
-        pa.Check.isin(["PV", "WP", "CHP", "wye", "delta"]),
-        nullable=True,  # TODO: unclear if complete
+        pd.StringDtype,
+        nullable=True,
         required=False,
-        description="type of generator",
+        description="type of generator naming conventions: “PV” - photovoltaic system “WP” - wind power system “CHP” - combined heating and power system",
     ),
-    "current_source": pa.Column(bool, description=""),  # TODO: missing in docu
-    "generator_type": pa.Column(
-        str,
+    "current_source": pa.Column(
+        pd.BooleanDtype,
+        nullable=True,
+        required=False,
+        description=" Model this sgen as a current source during short- circuit calculations; useful in some cases, for example the simulation of full- size converters per IEC 60909-0:2016.",
+        metadata={"sc": True},
+    ),
+    "generator_type": pa.Column(  # TODO: is this not an sgen, did someone model moter as an sgen?
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="can be one of current_source (full size converter), async (asynchronous generator), or async_doubly_fed (doubly fed asynchronous generator, DFIG). Represents the type of the static generator in the context of the short-circuit calculations of wind power station units. If None, other short-circuit-related parameters are not set",
+        metadata={"sc": True},
     ),
     "lrc_pu": pa.Column(
         float,
         nullable=True,
         required=False,
         description="locked rotor current in relation to the rated generator current. Relevant if the generator_type is async.",
+        metadata={"sc": True},
     ),
     "max_ik_ka": pa.Column(
         float,
         nullable=True,
         required=False,
         description="the highest instantaneous short-circuit value in case of a three-phase short-circuit (provided by the manufacturer). Relevant if the generator_type is async_doubly_fed.",
+        metadata={"sc": True},
     ),
     "kappa": pa.Column(
         float,
         nullable=True,
         required=False,
         description="the factor for the calculation of the peak short-circuit current, referred to the high-voltage side (provided by the manufacturer). Relevant if the generator_type is async_doubly_fed. If the superposition method is used (use_pre_fault_voltage=True), this parameter is used to pass through the max. current limit of the machine in p.u.",
+        metadata={"sc": True},
     ),
 }
-sgen_schema = pa.DataFrameSchema(  # TODO: in methodcall but not parameter docu: generator_type, max_i_ka, kappa, lrc_pu
+sgen_schema = pa.DataFrameSchema(
     _sgen_columns,
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc"], _sgen_columns),
+    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "qcc"], _sgen_columns),
 )
 
 res_sgen_schema = pa.DataFrameSchema(
