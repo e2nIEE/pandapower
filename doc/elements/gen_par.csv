@@ -16,7 +16,7 @@ min_p_mw**;float;;minimum active power
 vn_kv***;float;;rated voltage of the generator
 xdss_pu***;float;:math:`>` 0;subtransient generator reactance in per unit
 rdss_ohm***;float;:math:`>` 0;subtransient generator resistence in ohm
-cos_phi***;float;:math:0 `\leq` 1;rated generator cosine phi
+cos_phi***;float;:math:`\leq` 1;rated generator cosine phi
 in_service*;boolean;True / False;specifies if the generator is in service
 power_station_trafo***;integer;;index of the power station trafo (short-circuit relevant)
 id_q_capability_characteristic;integer;;references the index of the characteristic from the q_capability_characteristic

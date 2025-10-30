@@ -24,6 +24,8 @@ from pandapower.create._utils import (
 
 logger = logging.getLogger(__name__)
 
+from typing import Optional
+
 
 def create_ward(
     net: pandapowerNet,

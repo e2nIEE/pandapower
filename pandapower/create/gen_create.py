@@ -47,7 +47,7 @@ def create_gen(
     id_q_capability_characteristic: int | None = None,
     reactive_capability_curve: bool = False,
     curve_style: str | None = None,
-    controllable: bool | float = nan,
+    controllable: bool | float | Iterable[bool | float] = nan,  # TODO: do not think this should ever be float
     vn_kv: float = nan,
     xdss_pu: float = nan,
     rdss_ohm: float = nan,

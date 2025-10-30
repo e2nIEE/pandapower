@@ -24,6 +24,8 @@ from pandapower.auxiliary import (
 )
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import Int
+from pandapower.network_structure import get_structure_dict
+
 
 logger = logging.getLogger(__name__)
 
@@ -244,6 +246,7 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
     _add_to_entries_if_not_nan
     """
     column_exists = column in net[element_type].columns
+    dtype = get_structure_dict(required_only=False)[element_type][column]
     if _not_nan(value):
         if not column_exists:
             net[element_type].loc[:, column] = pd.Series(data=default_val, index=net[element_type].index)
@@ -263,6 +266,7 @@ def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values
     _set_value_if_not_nan
     """
     column_exists = column in net[element_type].columns
+    dtype = get_structure_dict(required_only=False)[element_type][column]
     if _not_nan(values):
         entries[column] = pd.Series(values, index=index)
         if _not_nan(default_val):
@@ -325,7 +329,12 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
         dtypes = net[table][intersect1d(net[table].columns, list(entries))].dtypes
 
     for col, val in entries.items():
-        net[table].at[index, col] = val
+        if not pd.isna(val):  # TODO: questionable
+            net[table].at[index, col] = val
+            try:
+                net[table][col] = net[table][col].astype(get_structure_dict(required_only=False)[table][col])
+            except KeyError:
+                pass
 
     # and preserve dtypes
     if preserve_dtypes:
@@ -338,6 +347,7 @@ def _check_entry(val, index):
     elif isinstance(val, set) and len(val) == len(index):
         return list(val)
     return val
+
 
 def _set_multiple_entries(
     net: pandapowerNet,
@@ -366,6 +376,10 @@ def _set_multiple_entries(
         for col, val in defaults_to_fill:
             if col in dd.columns and col not in net[table].columns:
                 net[table][col] = val
+                try:
+                    net[table][col] = net[table][col].astype(get_structure_dict(required_only=False)[table][col])
+                except KeyError:
+                    pass
 
     # extend the table by the frame we just created
     if len(net[table]):
@@ -377,7 +391,15 @@ def _set_multiple_entries(
             key: empty_defaults_per_dtype(dtype)
             for key, dtype in net[table][net[table].columns.difference(dd_columns)].dtypes.to_dict().items()
         }
-        net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
+        # net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
+        df_temp = dd[dd_columns].assign(**empty_dict)[complete_columns]
+        dtype_dict = get_structure_dict(required_only=False)[table]
+
+        for col in df_temp.columns:
+            if col in dtype_dict:
+                df_temp[col] = df_temp[col].astype(dtype_dict[col])
+
+        net[table] = df_temp
 
     # and preserve dtypes
     if preserve_dtypes:

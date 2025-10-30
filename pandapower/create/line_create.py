@@ -358,7 +358,7 @@ def create_lines(
     from_buses: Sequence,
     to_buses: Sequence,
     length_km: float | Iterable[float],
-    std_type: str,
+    std_type: str | Iterable[str],
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
     geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
@@ -502,7 +502,8 @@ def create_lines(
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, entries=entries)
-    net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
+    if "geo" in net.bus.columns:
+        net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
 
     _add_multiple_branch_geodata(net, geodata, index)
 
