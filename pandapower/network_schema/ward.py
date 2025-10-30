@@ -1,7 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-
 ward_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(
