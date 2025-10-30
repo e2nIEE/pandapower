@@ -48,7 +48,7 @@ class BinarySearchControl(Controller):
             **input_inverted** - Boolean list that indicates if the measurement of the input element must be inverted.
             Required when importing from PowerFactory.
 
-            **gen_Q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
+            **gen_q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
             order to invert the droop value of the controller.
 
             **input_element_index** - Element of input element in net.
@@ -425,7 +425,7 @@ class DroopControl(Controller):
 
         **bus_idx** - Bus index in case of voltage control.
 
-        **vm_set_pu_bsc** - Inital voltage set point in case of voltage control.
+        **vm_set_pu_bsc** - Initial voltage set point in case of voltage control.
 
         **controller_idx** - Index of linked Binary< search control (if present).
 
@@ -433,7 +433,7 @@ class DroopControl(Controller):
 
         **bus_idx=None** - Bus index which is used for voltage control.
 
-        **q_set_mvar_bsc** - Inital voltage set point in case of no voltage control.
+        **q_set_mvar_bsc** - Initial voltage set point in case of no voltage control.
 
         **tol=1e-6** - Tolerance criteria of controller convergence.
 
@@ -512,20 +512,22 @@ class DroopControl(Controller):
         if not self.voltage_ctrl:
             if self.q_set_mvar_bsc is None:
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
+            if hasattr(net.controller.object[self.controller_idx], 'gen_q_response'):
+                gen_q_response = net.controller.object[self.controller_idx].gen_q_response[0]
+            else: gen_q_response = None
+            if gen_q_response is None: gen_q_response = 1 #legacy and robustness
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            net.controller.object[self.controller_idx].gen_Q_response[0
-                                                            ] * (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
+                                                            gen_q_response * (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            net.controller.object[self.controller_idx].gen_Q_response[0]
-                                                             * (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
+                                                            gen_q_response * (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
             else:
                 self.q_set_old_mvar, self.q_set_mvar = (
-                    self.q_set_mvar, self.q_set_mvar + net.controller.object[self.controller_idx].gen_Q_response[0] * (
+                    self.q_set_mvar, self.q_set_mvar + net.controller.object[self.controller_idx].gen_q_response[0] * (
                                 self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
 
             if self.q_set_old_mvar is not None:
