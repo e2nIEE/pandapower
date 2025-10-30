@@ -1,0 +1,8 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the static generator
+type;string;;type of source
+bus*;integer;;index of connected bus
+p_mw*;float;:math:`\leq` 0;active power of the static generator [MW]
+scaling*;float;:math:`\geq` 0;scaling factor for the active and reactive power
+controllable**;bool;True / False;states if sgen is controllable or not, sgen will not be used as a flexibility if it is not controllable
+in_service*;boolean;True / False;specifies if the generator is in service.

@@ -250,6 +250,67 @@
                 }
             }
         },
+        "Junction": {
+            "rdf_type": " rdf:ID=\"",
+            "label": "cim:Junction",
+            "fields": {
+                "BaseVoltage": {
+                    "label": "cim:ConductingEquipment.BaseVoltage",
+                    "data_type": " rdf:resource=\"#",
+                    "data_type_prim": " rdf:resource=\"#"
+                },
+                "Terminals": {
+                    "label": "cim:ConductingEquipment.Terminals",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#Terminal.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#Terminal."
+                },
+                "aggregate": {
+                    "label": "cim:Equipment.aggregate",
+                    "data_type": "Boolean",
+                    "data_type_prim": "Boolean"
+                },
+                "normallyInService": {
+                    "label": "cim:Equipment.normallyInService",
+                    "data_type": "Boolean",
+                    "data_type_prim": "Boolean"
+                },
+                "EquipmentContainer": {
+                    "label": "cim:Equipment.EquipmentContainer",
+                    "data_type": " rdf:resource=\"#",
+                    "data_type_prim": " rdf:resource=\"#"
+                },
+                "OperationalLimitSet": {
+                    "label": "cim:Equipment.OperationalLimitSet",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#OperationalLimitSet.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#OperationalLimitSet."
+                },
+                "description": {
+                    "label": "cim:IdentifiedObject.description",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "energyIdentCodeEic": {
+                    "label": "cim:IdentifiedObject.energyIdentCodeEic",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "mRID": {
+                    "label": "cim:IdentifiedObject.mRID",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "name": {
+                    "label": "cim:IdentifiedObject.name",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "shortName": {
+                    "label": "cim:IdentifiedObject.shortName",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                }
+            }
+        },
         "Substation": {
             "rdf_type": " rdf:ID=\"",
             "label": "cim:Substation",
@@ -1022,6 +1083,57 @@
             "rdf_type": " rdf:ID=\"",
             "label": "cim:DCEquipmentContainer",
             "fields": {
+                "DCNodes": {
+                    "label": "cim:DCEquipmentContainer.DCNodes",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#DCNode.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#DCNode."
+                },
+                "Equipments": {
+                    "label": "cim:EquipmentContainer.Equipments",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#Equipment.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#Equipment."
+                },
+                "ConnectivityNodes": {
+                    "label": "cim:ConnectivityNodeContainer.ConnectivityNodes",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#ConnectivityNode.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#ConnectivityNode."
+                },
+                "description": {
+                    "label": "cim:IdentifiedObject.description",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "energyIdentCodeEic": {
+                    "label": "cim:IdentifiedObject.energyIdentCodeEic",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "mRID": {
+                    "label": "cim:IdentifiedObject.mRID",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "name": {
+                    "label": "cim:IdentifiedObject.name",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "shortName": {
+                    "label": "cim:IdentifiedObject.shortName",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                }
+            }
+        },
+        "DCLine": {
+            "rdf_type": " rdf:ID=\"",
+            "label": "cim:DCLine",
+            "fields": {
+                "Region": {
+                    "label": "cim:DCLine.Region",
+                    "data_type": " rdf:resource=\"#",
+                    "data_type_prim": " rdf:resource=\"#"
+                },
                 "DCNodes": {
                     "label": "cim:DCEquipmentContainer.DCNodes",
                     "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#DCNode.",
@@ -5008,6 +5120,98 @@
                 }
             }
         },
+        "ReactiveCapabilityCurve": {
+            "rdf_type": " rdf:ID=\"",
+            "label": "cim:ReactiveCapabilityCurve",
+            "fields": {
+                "EquivalentInjection": {
+                    "label": "cim:ReactiveCapabilityCurve.EquivalentInjection",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#EquivalentInjection.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#EquivalentInjection."
+                },
+                "InitiallyUsedBySynchronousMachines": {
+                    "label": "cim:ReactiveCapabilityCurve.InitiallyUsedBySynchronousMachines",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#SynchronousMachine.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#SynchronousMachine."
+                },
+                "curveStyle": {
+                    "label": "cim:Curve.curveStyle",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#CurveStyle.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#CurveStyle."
+                },
+                "xUnit": {
+                    "label": "cim:Curve.xUnit",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol."
+                },
+                "y1Unit": {
+                    "label": "cim:Curve.y1Unit",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol."
+                },
+                "y2Unit": {
+                    "label": "cim:Curve.y2Unit",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol."
+                },
+                "CurveDatas": {
+                    "label": "cim:Curve.CurveDatas",
+                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#CurveData.",
+                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#CurveData."
+                },
+                "description": {
+                    "label": "cim:IdentifiedObject.description",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "energyIdentCodeEic": {
+                    "label": "cim:IdentifiedObject.energyIdentCodeEic",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "mRID": {
+                    "label": "cim:IdentifiedObject.mRID",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "name": {
+                    "label": "cim:IdentifiedObject.name",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                },
+                "shortName": {
+                    "label": "cim:IdentifiedObject.shortName",
+                    "data_type": "String",
+                    "data_type_prim": "String"
+                }
+            }
+        },
+        "CurveData": {
+            "rdf_type": " rdf:ID=\"",
+            "label": "cim:CurveData",
+            "fields": {
+                "Curve": {
+                    "label": "cim:CurveData.Curve",
+                    "data_type": " rdf:resource=\"#",
+                    "data_type_prim": " rdf:resource=\"#"
+                },
+                "xvalue": {
+                    "label": "cim:CurveData.xvalue",
+                    "data_type": "Float",
+                    "data_type_prim": "Float"
+                },
+                "y1value": {
+                    "label": "cim:CurveData.y1value",
+                    "data_type": "Float",
+                    "data_type_prim": "Float"
+                },
+                "y2value": {
+                    "label": "cim:CurveData.y2value",
+                    "data_type": "Float",
+                    "data_type_prim": "Float"
+                }
+            }
+        },
         "FullModel": {
             "rdf_type": " rdf:ID=\"",
             "label": "cim:FullModel",
@@ -6061,32 +6265,6 @@
                 }
             }
         },
-        "CurveData": {
-            "rdf_type": " rdf:ID=\"",
-            "label": "cim:CurveData",
-            "fields": {
-                "Curve": {
-                    "label": "cim:CurveData.Curve",
-                    "data_type": " rdf:resource=\"#",
-                    "data_type_prim": " rdf:resource=\"#"
-                },
-                "xvalue": {
-                    "label": "cim:CurveData.xvalue",
-                    "data_type": "Float",
-                    "data_type_prim": "Float"
-                },
-                "y1value": {
-                    "label": "cim:CurveData.y1value",
-                    "data_type": "Float",
-                    "data_type_prim": "Float"
-                },
-                "y2value": {
-                    "label": "cim:CurveData.y2value",
-                    "data_type": "Float",
-                    "data_type_prim": "Float"
-                }
-            }
-        },
         "TapSchedule": {
             "rdf_type": " rdf:ID=\"",
             "label": "cim:TapSchedule",
@@ -6135,72 +6313,6 @@
                     "label": "cim:BasicIntervalSchedule.value2Unit",
                     "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol.",
                     "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol."
-                },
-                "description": {
-                    "label": "cim:IdentifiedObject.description",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "energyIdentCodeEic": {
-                    "label": "cim:IdentifiedObject.energyIdentCodeEic",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "mRID": {
-                    "label": "cim:IdentifiedObject.mRID",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "name": {
-                    "label": "cim:IdentifiedObject.name",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "shortName": {
-                    "label": "cim:IdentifiedObject.shortName",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                }
-            }
-        },
-        "ReactiveCapabilityCurve": {
-            "rdf_type": " rdf:ID=\"",
-            "label": "cim:ReactiveCapabilityCurve",
-            "fields": {
-                "EquivalentInjection": {
-                    "label": "cim:ReactiveCapabilityCurve.EquivalentInjection",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#EquivalentInjection.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#EquivalentInjection."
-                },
-                "InitiallyUsedBySynchronousMachines": {
-                    "label": "cim:ReactiveCapabilityCurve.InitiallyUsedBySynchronousMachines",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#SynchronousMachine.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#SynchronousMachine."
-                },
-                "curveStyle": {
-                    "label": "cim:Curve.curveStyle",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#CurveStyle.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#CurveStyle."
-                },
-                "xUnit": {
-                    "label": "cim:Curve.xUnit",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol."
-                },
-                "y1Unit": {
-                    "label": "cim:Curve.y1Unit",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol."
-                },
-                "y2Unit": {
-                    "label": "cim:Curve.y2Unit",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#UnitSymbol."
-                },
-                "CurveDatas": {
-                    "label": "cim:Curve.CurveDatas",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#CurveData.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#CurveData."
                 },
                 "description": {
                     "label": "cim:IdentifiedObject.description",
@@ -6921,57 +7033,6 @@
                 }
             }
         },
-        "DCLine": {
-            "rdf_type": " rdf:ID=\"",
-            "label": "cim:DCLine",
-            "fields": {
-                "Region": {
-                    "label": "cim:DCLine.Region",
-                    "data_type": " rdf:resource=\"#",
-                    "data_type_prim": " rdf:resource=\"#"
-                },
-                "DCNodes": {
-                    "label": "cim:DCEquipmentContainer.DCNodes",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#DCNode.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#DCNode."
-                },
-                "Equipments": {
-                    "label": "cim:EquipmentContainer.Equipments",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#Equipment.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#Equipment."
-                },
-                "ConnectivityNodes": {
-                    "label": "cim:ConnectivityNodeContainer.ConnectivityNodes",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#ConnectivityNode.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#ConnectivityNode."
-                },
-                "description": {
-                    "label": "cim:IdentifiedObject.description",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "energyIdentCodeEic": {
-                    "label": "cim:IdentifiedObject.energyIdentCodeEic",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "mRID": {
-                    "label": "cim:IdentifiedObject.mRID",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "name": {
-                    "label": "cim:IdentifiedObject.name",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "shortName": {
-                    "label": "cim:IdentifiedObject.shortName",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                }
-            }
-        },
         "ReportingGroup": {
             "rdf_type": " rdf:ID=\"",
             "label": "cim:ReportingGroup",
@@ -7448,67 +7509,6 @@
                     "label": "cim:CombinedCyclePlant.ThermalGeneratingUnits",
                     "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#ThermalGeneratingUnit.",
                     "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#ThermalGeneratingUnit."
-                },
-                "description": {
-                    "label": "cim:IdentifiedObject.description",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "energyIdentCodeEic": {
-                    "label": "cim:IdentifiedObject.energyIdentCodeEic",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "mRID": {
-                    "label": "cim:IdentifiedObject.mRID",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "name": {
-                    "label": "cim:IdentifiedObject.name",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                },
-                "shortName": {
-                    "label": "cim:IdentifiedObject.shortName",
-                    "data_type": "String",
-                    "data_type_prim": "String"
-                }
-            }
-        },
-        "Junction": {
-            "rdf_type": " rdf:ID=\"",
-            "label": "cim:Junction",
-            "fields": {
-                "BaseVoltage": {
-                    "label": "cim:ConductingEquipment.BaseVoltage",
-                    "data_type": " rdf:resource=\"#",
-                    "data_type_prim": " rdf:resource=\"#"
-                },
-                "Terminals": {
-                    "label": "cim:ConductingEquipment.Terminals",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#Terminal.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#Terminal."
-                },
-                "aggregate": {
-                    "label": "cim:Equipment.aggregate",
-                    "data_type": "Boolean",
-                    "data_type_prim": "Boolean"
-                },
-                "normallyInService": {
-                    "label": "cim:Equipment.normallyInService",
-                    "data_type": "Boolean",
-                    "data_type_prim": "Boolean"
-                },
-                "EquipmentContainer": {
-                    "label": "cim:Equipment.EquipmentContainer",
-                    "data_type": " rdf:resource=\"#",
-                    "data_type_prim": " rdf:resource=\"#"
-                },
-                "OperationalLimitSet": {
-                    "label": "cim:Equipment.OperationalLimitSet",
-                    "data_type": " rdf:resource=\"http://iec.ch/TC57/CIM100#OperationalLimitSet.",
-                    "data_type_prim": " rdf:resource=\"http://iec.ch/TC57/CIM100#OperationalLimitSet."
                 },
                 "description": {
                     "label": "cim:IdentifiedObject.description",

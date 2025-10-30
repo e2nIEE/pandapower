@@ -16,6 +16,7 @@ from pandapower.pypower.idx_bus import bus_cols
 
 import logging
 std_logger = logging.getLogger(__name__)
+std_logger.setLevel(logging.DEBUG)
 
 __all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm", "IRWLSAlgorithm"]
 
@@ -75,7 +76,6 @@ class WLSAlgorithm(BaseAlgorithm):
         self.hx = None
         self.iterations = None
         self.obj_func = None
-        logging.basicConfig(level=logging.DEBUG)
 
     def estimate(self, eppci: ExtendedPPCI, debug_mode=False, **kwargs):
         self.initialize(eppci)

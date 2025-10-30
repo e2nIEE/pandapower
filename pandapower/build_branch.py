@@ -28,7 +28,7 @@ from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
 
-def _build_branch_ppc(net, ppc):
+def _build_branch_ppc(net, ppc, sequence=1):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.
@@ -65,7 +65,7 @@ def _build_branch_ppc(net, ppc):
     if "line" in lookup:
         _calc_line_parameter(net, ppc)
     if "trafo" in lookup:
-        _calc_trafo_parameter(net, ppc)
+        _calc_trafo_parameter(net, ppc, sequence)
     if "trafo3w" in lookup:
         _calc_trafo3w_parameter(net, ppc)
     if "impedance" in lookup:
@@ -346,7 +346,7 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
         branch_dc[f:t, DC_RATE_A] = 0. if mode == "opf" else 100.
 
 
-def _calc_trafo_parameter(net, ppc):
+def _calc_trafo_parameter(net, ppc, sequence=1):
     """
     Calculates the transformer parameter in per unit.
 
@@ -376,6 +376,8 @@ def _calc_trafo_parameter(net, ppc):
     branch[f:t, BR_G_ASYM] = g_asym
     branch[f:t, BR_B_ASYM] = b_asym
     branch[f:t, TAP] = ratio
+    if sequence == 2:
+        shift = - shift
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = trafo["in_service"].values
     if any(trafo.df.values <= 0):

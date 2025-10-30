@@ -7,7 +7,7 @@
 import numpy as np
 import pytest
 
-from pandapower.converter import to_ppc, to_mpc
+from pandapower.converter.matpower import to_ppc, to_mpc
 from pandapower.networks import case4gs, case6ww, case30, case39
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.powerflow import LoadflowNotConverged

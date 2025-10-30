@@ -51,7 +51,7 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
         **net** - The pandapower network
 
     EXAMPLE:
-        >>> from pandapower.converter import from_mpc
+        >>> from pandapower.converter.matpower import from_mpc
         >>>
         >>> pp_net1 = from_mpc('case9.mat', f_hz=60)
         >>> pp_net2 = from_mpc('case9.m', f_hz=60)
@@ -64,7 +64,7 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
     net = from_ppc(ppc, f_hz=f_hz, validate_conversion=validate_conversion, **kwargs)
     if "mpc_additional_data" in ppc:
         if "_options" not in net:
-            net["_options"] = dict()
+            net["_options"] = {}
         net._options.update(ppc["mpc_additional_data"])
         logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
 
@@ -80,7 +80,7 @@ def _mat2ppc(mpc_file, casename_mpc_file):
     mpc = scipy.io.loadmat(mpc_file, squeeze_me=True, struct_as_record=False)
 
     # init empty ppc
-    ppc = dict()
+    ppc = {}
 
     _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file)
     _adjust_ppc_indices(ppc)
@@ -129,7 +129,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 
         for k in mpc[casename_mpc_file]._fieldnames:
             if k not in ppc:
-                ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
+                ppc.setdefault("mpc_additional_data", {})[k] = getattr(mpc[casename_mpc_file], k)
 
     else:
         logger.error('Matfile does not contain a valid mpc structure.')
@@ -138,7 +138,3 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 def _change_ppc_TAP_value(ppc):
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
     ppc["branch"][np.where(ppc["branch"][:, 8] == 0), 8] = 1
-
-
-if "__main__" == __name__:
-    pass

@@ -3,8 +3,6 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -89,9 +87,7 @@ class DiagnosticReports:
 
     def report_different_voltage_levels_connected(self):
         from pandapower.toolbox import get_connected_buses_at_element
-
         if "different_voltage_levels_connected" in self.diag_results:
-
             # message header
             if self.compact_report:
                 logger.warning("different_voltage_levels_connected:")
@@ -137,9 +133,7 @@ class DiagnosticReports:
 
 
     def report_impedance_values_close_to_zero(self):
-
         if "impedance_values_close_to_zero" in self.diag_results:
-
             # message header
             if self.compact_report:
                 logger.warning("impedance_values_close_to_zero:")
@@ -154,10 +148,7 @@ class DiagnosticReports:
             for key in diag_result:
                 element_counter += len(diag_result[key])
                 for element in diag_result[key]:
-                    if key in ("line", "line_dc"):
-                        min_r_type = "r_ohm"
-                        min_x_type = "x_ohm"
-                    elif key == "xward":
+                    if key in ("line", "line_dc", "xward"):
                         min_r_type = "r_ohm"
                         min_x_type = "x_ohm"
                     elif key == "impedance":
@@ -194,9 +185,7 @@ class DiagnosticReports:
 
 
     def report_nominal_voltages_dont_match(self):
-
         if "nominal_voltages_dont_match" in self.diag_results:
-
             # message header
             if self.compact_report:
                 logger.warning("nominal_voltages_dont_match:")
@@ -292,7 +281,6 @@ class DiagnosticReports:
             logger.info("PASSED: No components with deviating nominal voltages found")
 
     def report_invalid_values(self):
-
         if "invalid_values" in self.diag_results:
 
             # message header
@@ -333,7 +321,6 @@ class DiagnosticReports:
 
 
     def report_overload(self):
-
         if "overload" in self.diag_results:
             # message header
             if self.compact_report:
@@ -371,7 +358,6 @@ class DiagnosticReports:
 
 
     def report_wrong_switch_configuration(self):
-
         if "wrong_switch_configuration" in self.diag_results:
 
             # message header
@@ -398,7 +384,6 @@ class DiagnosticReports:
 
 
     def report_no_ext_grid(self):
-
         if "no_ext_grid" in self.diag_results:
             # message header
             if self.compact_report:
@@ -421,7 +406,6 @@ class DiagnosticReports:
 
 
     def report_multiple_voltage_controlling_elements_per_bus(self):
-
         if "multiple_voltage_controlling_elements_per_bus" in self.diag_results:
             # message header
             if self.compact_report:
@@ -467,7 +451,6 @@ class DiagnosticReports:
 
 
     def report_wrong_reference_system(self):
-
         if "wrong_reference_system" in self.diag_results:
 
             # message header
@@ -538,7 +521,6 @@ class DiagnosticReports:
 
 
     def report_deviation_from_std_type(self):
-
         if "deviation_from_std_type" in self.diag_results:
             # message header
             if self.compact_report:
@@ -575,7 +557,6 @@ class DiagnosticReports:
             logger.info("PASSED: No elements with deviations from std_type found.")
 
     def report_numba_comparison(self):
-
         if "numba_comparison" in self.diag_results:
             # message header
             if self.compact_report:
@@ -614,7 +595,6 @@ class DiagnosticReports:
 
 
     def report_parallel_switches(self):
-
         if "parallel_switches" in self.diag_results:
             # message header
             if self.compact_report:

@@ -54,7 +54,7 @@ class AsynchronousMachinesCim16:
                                            sort=False)
         eqssh_generating_units['type'] = eqssh_generating_units['type'].fillna('Nuclear')
         eqssh_generating_units = eqssh_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             asynchronous_machines = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'],
                                                                               'AsynchronousMachine',
                                                                               add_cim_type_column=True)

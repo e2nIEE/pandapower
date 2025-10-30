@@ -82,7 +82,6 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
     <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
 
     """
-
     diag_functions = [
         (missing_bus_indices, {}),
         (disconnected_elements, {}),
@@ -148,62 +147,48 @@ def check_greater_zero(element, element_index, column):
      OUTPUT:
         **element_index (index)**   - index of element instance, if input type restriction is not
                                       fulfilled
-
-
     """
-
     if check_number(element, element_index, column) is None:
-
-        if (element[column] <= 0):
+        if element[column] <= 0:
             return element_index
-
     else:
         return element_index
 
 
 def check_greater_equal_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
-        if (element[column] < 0):
+        if element[column] < 0:
             return element_index
-
     else:
         return element_index
 
 
 def check_less_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
-        if (element[column] >= 0):
+        if element[column] >= 0:
             return element_index
-
     else:
         return element_index
 
 
 def check_less_15(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
         if element[column] >= 15:
             return element_index
-
     else:
         return element_index
 
 
 def check_less_equal_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
-        if (element[column] > 0):
+        if element[column] > 0:
             return element_index
-
     else:
         return element_index
 
 
 def check_boolean(element, element_index, column):
-    valid_values = [True, False, 0, 1, 0.0, 1.0]
-    if element[column] not in valid_values:
+    if element[column] not in [True, False, 0, 1, 0.0, 1.0]:
         return element_index
 
 
@@ -211,7 +196,6 @@ def check_pos_int(element, element_index, column):
     if check_number(element, element_index, column) is None:
         if not ((element[column] % 1 == 0) and element[column] >= 0):
             return element_index
-
     else:
         return element_index
 
@@ -227,17 +211,14 @@ def check_number(element, element_index, column):
 
 def check_greater_zero_less_equal_one(element, element_index, column):
     if check_number(element, element_index, column) is None:
-
         if not (0 < element[column] <= 1):
             return element_index
-
     else:
         return element_index
 
 
 def check_switch_type(element, element_index, column):
-    valid_values = ['b', 'l', 't', 't3']
-    if element[column] not in valid_values:
+    if element[column] not in ['b', 'l', 't', 't3']:
         return element_index
 
 
@@ -256,9 +237,7 @@ def invalid_values(net):
                                           grouped by element (keys)
                                           Format: {'element': [element_index, 'element_attribute',
                                                     attribute_value]}
-
     """
-
     check_results = {}
 
     # Contains all element attributes that are necessary to initiate a power flow calculation.
@@ -342,9 +321,7 @@ def no_ext_grid(net):
 
      INPUT:
         **net** (pandapowerNet)         - pandapower network
-
     """
-
     if net.ext_grid.in_service.sum() + (net.gen.slack & net.gen.in_service).sum() == 0:
         return True
 
@@ -389,12 +366,10 @@ def overload(net, overload_scaling_factor, **kwargs):
         **kwargs** - Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
         is replaced by the function kwargs["run"]
 
-
      OUTPUT:
         **check_results** (dict)        - dict with the results of the overload check
                                           Format: {'load_overload': True/False
                                                    'generation_overload', True/False}
-
     """
     # get function to run power flow
     run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -436,6 +411,7 @@ def overload(net, overload_scaling_factor, **kwargs):
         net.load.scaling = load_scaling
     except Exception as e:
         logger.error(f"Overload check failed: {str(e)}")
+
     if check_result:
         return check_result
 
@@ -453,7 +429,6 @@ def wrong_switch_configuration(net, **kwargs):
 
      OUTPUT:
         **check_result** (boolean)
-
     """
     run = partial(kwargs.pop("run", runpp), **kwargs)
     switch_configuration = copy.deepcopy(net.switch.closed)
@@ -484,14 +459,13 @@ def missing_bus_indices(net):
             **check_results** (list)   - List of tuples each containing missing bus indices.
                                          Format:
                                          [(element_index, bus_name (e.g. "from_bus"),  bus_index]
-
     """
     check_results = {}
     bus_indices = set(net.bus.index)
     element_bus_names = {"ext_grid": ["bus"], "load": ["bus"], "gen": ["bus"], "sgen": ["bus"],
                          "trafo": ["lv_bus", "hv_bus"], "trafo3w": ["lv_bus", "mv_bus", "hv_bus"],
                          "switch": ["bus", "element"], "line": ["from_bus", "to_bus"]}
-    for element in element_bus_names.keys():
+    for element in element_bus_names:
         element_check = []
         for i, row in net[element].iterrows():
             for bus_name in element_bus_names[element]:
@@ -516,7 +490,6 @@ def different_voltage_levels_connected(net):
         **check_results** (dict)        - dict that contains all lines and switches that connect
                                           different voltage levels.
                                           Format: {'lines': lines, 'switches': switches}
-
     """
     check_results = {}
     inconsistent_lines = []
@@ -535,6 +508,7 @@ def different_voltage_levels_connected(net):
         check_results['lines'] = inconsistent_lines
     if inconsistent_switches:
         check_results['switches'] = inconsistent_switches
+
     if check_results:
         return check_results
 
@@ -552,8 +526,6 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
      OUTPUT:
         **implausible_lines** (list)    - list that contains the indices of all lines with an
                                           impedance value of zero.
-
-
     """
     # get function to run power flow
     run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -675,6 +647,7 @@ def implausible_impedance_values(net, min_r_ohm, min_x_ohm, max_r_ohm, max_x_ohm
         net.xward = xward_copy
         net.trafo = trafo_copy
         net.trafo3w = trafo3w_copy
+
     if implausible_elements:
         return check_results
 
@@ -702,7 +675,6 @@ def nominal_voltages_dont_match(net, nom_voltage_tolerance):
                                                       'mv_bus' : trafos3w_indices
                                                       'lv_bus' : trafo3w_indices,
                                                       'connectors_swapped_3w' : trafo3w_indices}}
-
     """
     results = {}
     trafo_results = {}
@@ -823,7 +795,6 @@ def disconnected_elements(net):
                                                    'disconnected loads'    : load_indices,
                                                    'disconnected gens'     : gen_indices,
                                                    'disconnected sgens'    : sgen_indices}
-
     """
     from pandapower.topology import create_nxgraph, connected_components
     mg = create_nxgraph(net)
@@ -873,8 +844,7 @@ def disconnected_elements(net):
                 disc_elements.append(section_dict)
 
     open_trafo_switches = net.switch[(net.switch.et == 't') & (net.switch.closed == 0)]
-    isolated_trafos = set(
-        (open_trafo_switches.groupby("element").count().query("bus > 1").index))
+    isolated_trafos = set(open_trafo_switches.groupby("element").count().query("bus > 1").index)
     isolated_trafos_is = isolated_trafos.intersection((set(net.trafo[net.trafo.in_service].index)))
     if isolated_trafos_is:
         disc_elements.append({'isolated_trafos': list(isolated_trafos_is)})
@@ -938,7 +908,7 @@ def numba_comparison(net, numba_tolerance, **kwargs):
     result_numba_true = copy.deepcopy(net)
     run(net, numba=False)
     result_numba_false = copy.deepcopy(net)
-    res_keys = [key for key in result_numba_true.keys() if
+    res_keys = [key for key in result_numba_true if
                 (key in ['res_bus', 'res_ext_grid',
                          'res_gen', 'res_impedance',
                          'res_line', 'res_load',
@@ -948,10 +918,10 @@ def numba_comparison(net, numba_tolerance, **kwargs):
     for key in res_keys:
         diffs = abs(result_numba_true[key] - result_numba_false[key]) > numba_tolerance
         if any(diffs.any()):
-            if (key not in check_results.keys()):
+            if key not in check_results:
                 check_results[key] = {}
             for col in diffs.columns:
-                if (col not in check_results[key].keys()) and (diffs.any()[col]):
+                if (col not in check_results[key]) and (diffs.any()[col]):
                     check_results[key][col] = {}
                     numba_true = result_numba_true[key][col][diffs[col]]
                     numba_false = result_numba_false[key][col][diffs[col]]
@@ -974,17 +944,15 @@ def deviation_from_std_type(net):
                                          standard type library
 
                                          Format: (element_type, element_index, parameter)
-
-
     """
     check_results = {}
-    for key in net.std_types.keys():
+    for key in net.std_types:
         if key in net:
             for i, element in net[key].iterrows():
                 std_type = element.std_type
-                if std_type in net.std_types[key].keys():
+                if std_type in net.std_types[key]:
                     std_type_values = net.std_types[key][std_type]
-                    for param in std_type_values.keys():
+                    for param in std_type_values:
                         if param == "tap_pos":
                             continue
                         if param in net[key].columns:
@@ -994,13 +962,13 @@ def deviation_from_std_type(net):
                             except TypeError:
                                 isclose = element[param] == std_type_values[param]
                             if not isclose:
-                                if key not in check_results.keys():
+                                if key not in check_results:
                                     check_results[key] = {}
                                 check_results[key][i] = {'param': param, 'e_value': element[param],
                                                          'std_type_value': std_type_values[param],
                                                          'std_type_in_lib': True}
                 elif std_type is not None:
-                    if key not in check_results.keys():
+                    if key not in check_results:
                         check_results[key] = {}
                     check_results[key][i] = {'std_type_in_lib': False}
 
@@ -1016,13 +984,13 @@ def parallel_switches(net):
         **net** (PandapowerNet)    - pandapower network
 
      OUTPUT:
-        **parallel_switches** (list)   - List of tuples each containing parallel switches.
+        **found_parallel_switches** (list)   - List of tuples each containing parallel switches.
     """
-    parallel_switches = []
+    found_parallel_switches = []
     compare_parameters = ['bus', 'element', 'et']
     parallels_bus_and_element = list(
         net.switch.groupby(compare_parameters).count().query('closed > 1').index)
     for bus, element, et in parallels_bus_and_element:
-        parallel_switches.append(list(net.switch.query('bus==@bus & element==@element & et==@et').index))
-    if parallel_switches:
-        return parallel_switches
+        found_parallel_switches.append(list(net.switch.query('bus==@bus & element==@element & et==@et').index))
+    if found_parallel_switches:
+        return found_parallel_switches

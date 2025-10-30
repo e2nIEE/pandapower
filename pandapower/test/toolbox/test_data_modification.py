@@ -143,7 +143,7 @@ def test_continuos_bus_numbering():
                     continue
 
     # assert that no buses were used except the ones in net.bus
-    assert set(list(used_buses)) - set(list(net.bus.index.values)) == set()
+    assert set(used_buses) - set(net.bus.index.values) == set()
 
 
 def test_reindex_elements():

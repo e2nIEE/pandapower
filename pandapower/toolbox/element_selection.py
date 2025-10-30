@@ -533,7 +533,7 @@ def get_connected_elements_dict(
             cost_tables=False,
             res_elements=False)
 
-    connected = dict()
+    connected = {}
     for et in element_types:
         if et == "bus":
             conn = get_connected_buses(net, buses, respect_switches=respect_switches,
@@ -559,7 +559,7 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     if "switch" in branch_dict:
         branch_dict["switch"].append("element")
 
-    found = {et: set() for et in branch_dict.keys()}
+    found = {et: set() for et in branch_dict}
     for et, bus_types in branch_dict.items():
         for bus1 in bus_types:
             for bus2 in bus_types:
@@ -580,7 +580,7 @@ def get_gc_objects_dict():
     type
     """
     objs = gc.get_objects()
-    nums_by_types = dict()
+    nums_by_types = {}
 
     for obj in objs:
         _type = type(obj)
@@ -618,7 +618,7 @@ def false_elm_links_loop(net, element_types=None):
     does not exist in the net.
     This function is an outer loop for get_false_links() applications.
     """
-    false_links = dict()
+    false_links = {}
     element_types = element_types if element_types is not None else pp_elements(
         bus=False, cost_tables=True)
     bebd = branch_element_bus_dict(include_switch=True)
@@ -626,7 +626,7 @@ def false_elm_links_loop(net, element_types=None):
         if net[element_type].shape[0]:
             fl = pd.Index([])
             # --- define col and target_element_type
-            if element_type in bebd.keys():
+            if element_type in bebd:
                 for col in bebd[element_type]:
                     fl = fl.union(false_elm_links(net, element_type, col, "bus"))
             elif element_type in {"poly_cost", "pwl_cost"}:
@@ -652,8 +652,8 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
         pp_elms |= {"bus"}
         if res_elements:
             pp_elms |= {"res_bus"}
-    pp_elms |= set([el[0] for el in element_bus_tuples(
-        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
+    pp_elms |= {el[0] for el in element_bus_tuples(
+        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)}
     if other_elements:
         pp_elms |= {"measurement"}
     if cost_tables:
@@ -676,9 +676,9 @@ def branch_element_bus_dict(include_switch=False, sort=None):
         logger.debug(msg)
 
     ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
-    bebd = dict()
+    bebd = {}
     for et, bus in ebts:
-        if et in bebd.keys():
+        if et in bebd:
             bebd[et].append(bus)
         else:
             bebd[et] = [bus]
@@ -700,7 +700,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     if Version(__version__) < Version('2.13'):
         logger.debug("element_bus_tuples() returns a list of tuples instead of a set of tuples "
                      "since pp.version >= 2.12.")
-    ebts = list()
+    ebts = []
     if bus_elements:
         ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                  ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),

@@ -48,14 +48,14 @@ A DC line is modelled as two generators in the loadflow:
 	:align: center
     
 The active power at the from side is defined by the parameters in the dcline table. The active power at the to side is equal to the active power on the from side minus the losses of the DC line.
+If the active power is negative, the values are swapped: Meaning the current is flowing backwards from to_bus to from_bus. Also the active power limits are inverted, not the reactive power limits.
 
 .. math::
    :nowrap:
    
    \begin{align*}
     P_{from} &= p\_mw \\
-    P_{to} &= - (p\_mw - loss\_mw) \cdot (1 - \frac{loss\_percent}{100})
-    
+    P_{to} &= -p\_mw \cdot (1 - \frac{loss\_percent}{100}) - loss\_mw
    \end{align*}
 
 The voltage control with reactive power works just as described for the generator model. Maximum and Minimum reactive power limits are considered in the OPF, and in the PF if it is run with enforce_q_lims=True.

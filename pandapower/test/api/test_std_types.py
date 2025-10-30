@@ -265,24 +265,18 @@ def test_find_line_type():
 
 
 def test_find_std_alternative():
-    net = create_empty_network()
-    c = 210
     r = 0.642
-    x = 0.083
-    i = 0.142
-    vr = "LV"
     ## {'NAYY 4x50 SE': {'c_nf_per_km': 210, 'r_ohm_per_km': 0.642, 'x_ohm_per_km': 0.083, 'max_i_ka': 0.142, 'voltage_rating': 'LV'}
     # Assuming we are looking for the cable NAYY 4X50 SE with a maximum ampacity of 0.142 A
     name ='NAYY 4x50 SE'
-    typdata = {"c_nf_per_km": c, "r_ohm_per_km": r, "x_ohm_per_km": x, "max_i_ka": i, "voltage_rating": vr}
-    fitting_type = find_std_type_alternative(net, {"r_ohm_per_km":r+0.05}, voltage_rating ="LV", epsilon=0.06)
+    fitting_type = find_std_type_alternative(data = {"r_ohm_per_km":r+0.05}, voltage_rating ="LV", epsilon=0.06)
     assert len(fitting_type) == 1
     assert fitting_type[0] == name
 
-    fitting_type = find_std_type_alternative(net, {"r_ohm_per_km":r+0.07}, voltage_rating ="LV", epsilon=0.06)
+    fitting_type = find_std_type_alternative(data = {"r_ohm_per_km":r+0.07}, voltage_rating ="LV", epsilon=0.06)
     assert len(fitting_type) == 0
 
-    fitting_type = find_std_type_alternative(net, {"r_ohm_per_km":r+0.07}, voltage_rating ="MV", epsilon=0.06)
+    fitting_type = find_std_type_alternative(data = {"r_ohm_per_km":r+0.07}, voltage_rating ="MV", epsilon=0.06)
     assert len(fitting_type) == 0
 
 

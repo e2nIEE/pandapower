@@ -14,7 +14,7 @@
 
 from time import perf_counter
 from packaging import version
-from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d, int64
+from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d, int64, isclose
 
 from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
@@ -151,7 +151,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
         qg_max_lim = gen[:, QG] > gen[:, QMAX]
         qg_min_lim = gen[:, QG] < gen[:, QMIN]
 
-        non_refs = (gen[:, QMAX] != 0.) & (gen[:, QMIN] != 0.)
+        non_refs = (~isclose(gen[:, QMAX], 0.0)) & (~isclose(gen[:, QMIN], 0.0))
         mx = find(gen_status & qg_max_lim & non_refs)
         mn = find(gen_status & qg_min_lim & non_refs)
 
