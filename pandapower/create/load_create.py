@@ -42,7 +42,7 @@ def create_load(
     scaling: float = 1.0,
     index: Int | None = None,
     in_service: bool = True,
-    type: WyeDeltaType = "wye",
+    type: str | None = None,
     max_p_mw: float = nan,
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
@@ -89,7 +89,7 @@ def create_load(
         **scaling** (float, default 1.) - An OPTIONAL scaling factor.
         Multiplies with p_mw and q_mvar.
 
-        **type** (string, 'wye') -  type variable to classify the load: wye/delta
+        **type** (string, None) -  Type of the generator, custom identifier, some can use custom patches for a type.
 
         **index** (int, None) - Force a specified ID if it is available. If None, the index one \
             higher than the highest already existing index is selected.
@@ -457,7 +457,7 @@ def create_load_from_cosphi(  # no index ?
     positive, reactive power will be positive for underexcited behavior (Q absorption, decreases voltage) and negative
     for overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox import pq_from_cosphi
+    from pandapower.toolbox.power_factor import pq_from_cosphi
 
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="load")
     return create_load(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)

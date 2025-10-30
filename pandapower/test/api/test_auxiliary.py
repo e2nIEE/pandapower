@@ -21,7 +21,7 @@ try:
 except ImportError:
     GEOPANDAS_INSTALLED = False
 
-from pandapower import get_gc_objects_dict
+from pandapower.toolbox.element_selection import get_gc_objects_dict
 from pandapower.file_io import from_json_string, to_json, create_empty_network
 from pandapower.create import create_bus, create_lines, create_line, create_buses, create_shunt
 from pandapower.auxiliary import get_indices, pandapowerNet

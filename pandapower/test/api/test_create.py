@@ -23,7 +23,7 @@ from pandapower.create import (
 )
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type
-from pandapower.toolbox import nets_equal, dataframes_equal
+from pandapower.toolbox.comparison import nets_equal, dataframes_equal
 
 pd.set_option("display.max_rows", 500)
 pd.set_option("display.max_columns", 500)

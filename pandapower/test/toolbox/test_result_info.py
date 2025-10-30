@@ -6,11 +6,14 @@
 import numpy as np
 import pytest
 
-from pandapower import create_empty_network, create_buses, create_ext_grid, create_gen, create_load, create_sgen, \
-    create_storage, create_dcline, create_line, create_transformer, opf_task, runpp, overloaded_lines, create_bus, \
-    create_poly_cost, create_pwl_cost, violated_buses, clear_result_tables
+from pandapower.create import (
+    create_empty_network, create_buses, create_ext_grid, create_gen, create_load, create_sgen,
+    create_storage, create_dcline, create_line, create_transformer, create_bus, create_poly_cost, create_pwl_cost
+)
+from pandapower.run import runpp
 from pandapower.networks import create_cigre_network_lv, case9
-from pandapower.toolbox import dataframes_equal, res_power_columns
+from pandapower.toolbox.comparison import dataframes_equal
+from pandapower.toolbox.result_info import res_power_columns, opf_task, overloaded_lines, violated_buses, clear_result_tables
 
 
 def test_opf_task():

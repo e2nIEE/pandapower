@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_indices
-from pandapower.create import create_empty_network
+from pandapower.create.network_create import create_empty_network
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 
@@ -251,8 +251,8 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
 
     Examples
     --------
-    >>> net = pp.create_empty_network()
-    >>> idx0 = pp.create_bus(net, 110)
+    >>> net = create_empty_network()
+    >>> idx0 = create_bus(net, 110)
     >>> idx1 = 4
     >>> idx2 = 7
     >>> # Reindex using 'new_indices':
@@ -417,12 +417,12 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 def set_data_type_of_columns_to_default(net):
     """
     Overwrites dtype of DataFrame columns of PandapowerNet elements to default dtypes defined in
-    pandapower. The function "convert_format" does that authomatically for nets saved with
+    pandapower. The function "convert_format" does that automatically for nets saved with
     pandapower versions below 1.6. If this is required for versions starting with 1.6, it should be
     done manually with this function.
 
     INPUT:
-      **net** - pandapower network with unodered indices
+      **net** - pandapower network with unordered indices
 
     OUTPUT:
       No output; the net passed as input has pandapower-default dtypes of columns in element tables.

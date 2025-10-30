@@ -15,10 +15,11 @@ from pandapower import create_group_from_dict, create_group, set_group_out_of_se
     group_res_power_per_bus, group_res_q_mvar, to_json, from_json_string, count_group_elements, isin_group, \
     element_associated_groups, create_empty_network, create_buses, create_lines, create_ext_grid, create_loads, \
     create_switches, elements_connected_to_group, group_element_index, groups_equal, set_group_reference_column, \
-    remove_not_existing_group_members, ensure_lists_in_group_element_column, check_unique_group_rows, drop_lines, \
-    drop_trafos, drop_buses, drop_elements_simple, drop_group_and_elements, return_group_as_net
+    remove_not_existing_group_members, ensure_lists_in_group_element_column, check_unique_group_rows, drop_group_and_elements, return_group_as_net
 from pandapower.networks import case24_ieee_rts, create_cigre_network_mv
-from pandapower.toolbox import pp_elements, dataframes_equal
+from pandapower.toolbox.grid_modification import drop_lines, drop_trafos, drop_buses, drop_elements_simple
+from pandapower.toolbox.comparison import dataframes_equal
+from pandapower.toolbox.element_selection import pp_elements
 
 
 def typed_list(iterable, dtype):
