@@ -1,7 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-
 vsc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the VSC"),

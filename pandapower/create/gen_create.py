@@ -216,7 +216,7 @@ def create_gens(
     id_q_capability_characteristic: Int | Iterable[Int] | None = None,
     reactive_capability_curve: bool | Iterable[bool] = False,
     curve_style: str | Iterable[str] | None = None,
-    controllable: bool | float = nan,
+    controllable: bool | float | Iterable[bool | float] = nan,
     vn_kv: float | Iterable[float] = nan,
     xdss_pu: float | Iterable[float] = nan,
     rdss_ohm: float | Iterable[float] = nan,

@@ -1,8 +1,8 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools import (
-    validate_column_group_dependency,
+from pandapower.network_schema.tools.validation.group_dependency import (
+    create_column_group_dependency_validation_func,
     create_column_dependency_checks_from_metadata,
 )
 
@@ -196,11 +196,11 @@ tap_columns = [
 ]  # TODO: ideally tap_step_percent and tap_step_degree should not exist together
 trafo_checks = [
     pa.Check(
-        validate_column_group_dependency(tap_columns),
+        create_column_group_dependency_validation_func(tap_columns),
         error=f"Tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
     ),
     pa.Check(
-        validate_column_group_dependency(tap2_columns),
+        create_column_group_dependency_validation_func(tap2_columns),
         error=f"Tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
     ),
 ]

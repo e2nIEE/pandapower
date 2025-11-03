@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from network_schema.tools import create_column_dependency_checks_from_metadata
+from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _motor_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the motor"),
