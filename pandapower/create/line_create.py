@@ -1300,8 +1300,6 @@ def create_lines_dc_from_parameters(
     }
 
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent", max_loading_percent)
-    # _add_to_entries_if_not_nan(net, "line_dc", entries, index, "r0_ohm_per_km", r0_ohm_per_km)
-    # _add_to_entries_if_not_nan(net, "line_dc", entries, index, "g0_us_per_km", g0_us_per_km)
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "alpha", alpha)
 

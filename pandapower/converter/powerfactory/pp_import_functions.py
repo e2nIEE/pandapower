@@ -108,8 +108,8 @@ def from_pf(
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                            dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
-            logger.debug('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d loads' % n)
+            logger.debug(f'load failed at import and was not imported: {err}')
+    if n > 0: logger.info(f'imported {n} loads')
 
     logger.debug('creating lv loads')
     # create loads:
@@ -119,8 +119,8 @@ def from_pf(
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                            dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
-            logger.warning('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d lv loads' % n)
+            logger.warning(f'load failed at import and was not imported: {err}')
+    if n > 0: logger.info(f'imported {n} lv loads')
 
     logger.debug('creating mv loads')
     # create loads:
@@ -130,8 +130,8 @@ def from_pf(
             create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                            dict_net=dict_net, is_unbalanced=is_unbalanced)
         except RuntimeError as err:
-            logger.error('load failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d mv loads' % n)
+            logger.error(f'load failed at import and was not imported: {err}')
+    if n > 0: logger.info(f'imported {n} mv loads')
 
     #    logger.debug('sum loads: %.3f' % sum(net.load.loc[net.load.in_service, 'p_mw']))
 
@@ -307,8 +307,8 @@ def from_pf(
                 create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
                                dict_net=dict_net, is_unbalanced=is_unbalanced)
             except RuntimeError as err:
-                logger.warning('load failed at import and was not imported: %s' % err)
-        if n > 0: logger.info('imported %d lv loads' % n)
+                logger.warning(f'load failed at import and was not imported: {err}')
+        if n > 0: logger.info(f'imported {n} lv loads')
         
         
     # create station controllers (ElmStactrl):
@@ -2605,13 +2605,18 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             tap_dependency_table = False
             tap_changer_type = None
 
+        # Add epsilon to avoid zero impedance on one transformer side (pandapower limitation)
+        epsilon = 1e-6
+        itrdr = np.clip(pf_type.itrdr, epsilon, 1 - epsilon)
+        itrdl = np.clip(pf_type.itrdl, epsilon, 1 - epsilon)
+
         tid = create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
                                  std_type=std_type, tap_pos=tap_pos,
                                  tap_dependency_table=tap_dependency_table,
                                  tap_changer_type=tap_changer_type,
                                  id_characteristic_table=id_characteristic_table,
                                  in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
-                                 leakage_resistance_ratio_hv=pf_type.itrdr, leakage_reactance_ratio_hv=pf_type.itrdl)
+                                 leakage_resistance_ratio_hv=itrdr, leakage_reactance_ratio_hv=itrdl)
         trafo_dict[item] = tid
         logger.debug('created trafo at index <%d>' % tid)
     else:
@@ -4678,9 +4683,7 @@ def break_coords_sections(coords, section_length, scale_factor_length):
     else:  # array or list
         if np.any(np.isnan(coords)):
             return [[np.nan, np.nan]], [[np.nan, np.nan]]
-    
-    # if any(coords) is np.nan:
-    #     return [[np.nan, np.nan]], [[np.nan, np.nan]]
+
 
     num_coords = len(coords)
     if num_coords < 2:

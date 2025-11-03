@@ -521,54 +521,54 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
     Creates a plotly trace of branch elements. The rather generic, non-power net specific names
     were introduced to make it usable in other packages, e.g. for pipe networks.
 
-   INPUT:
-       **net** (pandapowerNet) - The network
+    INPUT:
+        **net** (pandapowerNet) - The network
 
-   OPTIONAL:
-       **branches** (list, None) - The branches for which the collections are created.
+    OPTIONAL:
+        **branches** (list, None) - The branches for which the collections are created.
                                    If None, all branches in the network are considered.
 
-       **use_branch_geodata** (bool, True) - whether the geodata of the branch tables should be used
+        **use_branch_geodata** (bool, True) - whether the geodata of the branch tables should be used
 
-       **respect_separators** (bool, True) - whether separating elements like switches should be
+        **respect_separators** (bool, True) - whether separating elements like switches should be
                                              considered
 
-       **width** (int, 1) - branch width
+        **width** (int, 1) - branch width
 
-       **color** (String, "grey") - color of lines in the trace
+        **color** (String, "grey") - color of lines in the trace
 
-       **infofunc** (pd.Series, None) - hoverinfo for line elements. Indices should correspond to
+        **infofunc** (pd.Series, None) - hoverinfo for line elements. Indices should correspond to
            the pandapower element indices
 
-       **trace_name** (String, "lines") - name of the trace which will appear in the legend
+        **trace_name** (String, "lines") - name of the trace which will appear in the legend
 
-       **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
-       e.g. groups according to voltage level (as used in `vlevel_plotly`)
+        **legendgroup** (String, None) - defines groups of layers that will be displayed in a legend
+        e.g. groups according to voltage level (as used in `vlevel_plotly`)
 
-       **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
-       colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
-       Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+        **cmap** (String, None) - name of a colormap which exists within plotly if set to True default `Jet`
+        colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
+        Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
 
-       **cmap_vals** (list, None) - values used for coloring using colormap
+        **cmap_vals** (list, None) - values used for coloring using colormap
 
-       **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
+        **show_colorbar** (bool, False) - flag for showing or not corresponding colorbar
 
-       **cbar_title** (String, None) - title for the colorbar
+        **cbar_title** (String, None) - title for the colorbar
 
-       **cmin** (float, None) - colorbar range minimum
+        **cmin** (float, None) - colorbar range minimum
 
-       **cmax** (float, None) - colorbar range maximum
+        **cmax** (float, None) - colorbar range maximum
 
-       **cpos** (float, 1.1) - position of the colorbar
+        **cpos** (float, 1.1) - position of the colorbar
 
-       **branch_element** (str, "line") - name of the branch element in the net. In a pandapower
-                                          net, this is alwas "line"
+        **branch_element** (str, "line") - name of the branch element in the net. In a pandapower
+                                           net, this is alwas "line"
 
-       **separator_element** (str, "switch") - name of the separator element in the net. In a
-                                               pandapower net, this is alwas "switch"
+        **separator_element** (str, "switch") - name of the separator element in the net. In a
+                                                pandapower net, this is alwas "switch"
 
-      **node_element** (str, "bus") - name of the node element in the net. In a pandapower net,
-                                      this is alwas "bus" (net.bus)
+        **node_element** (str, "bus") - name of the node element in the net. In a pandapower net,
+                                        this is alwas "bus" (net.bus)
 
        """
     if not PLOTLY_INSTALLED:
@@ -691,14 +691,18 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
             from_bus_idx = net[branch_element][f"from_{node_element}"].iloc[0]
             bus_geo = net[node_element].loc[from_bus_idx, "geo"]
             x, y = next(geojson.utils.coords(geojson.loads(bus_geo)))
-            branches_cbar = dict(type='scatter', x=[x], y=[y], mode='markers',
-                                 marker=Marker(size=0, cmin=cmin, cmax=cmax,
-                                               color='rgb(255,255,255)',
-                                               opacity=0,
-                                               colorscale=cbar_cmap_name,
-                                               colorbar=ColorBar(thickness=10,
-                                                                 x=cpos),
-                                               ))
+            branches_cbar = {
+                "type": 'scatter',
+                "x": [x], "y": [y],
+                "mode": 'markers',
+                "marker": Marker(
+                    size=0, cmin=cmin, cmax=cmax,
+                    color='rgb(255,255,255)',
+                    opacity=0,
+                    colorscale=cbar_cmap_name,
+                    colorbar=ColorBar(thickness=10, x=cpos),
+                )
+            }
             if cbar_title:
                 branches_cbar['marker']['colorbar']['title'] = cbar_title
 
@@ -712,10 +716,16 @@ def _create_branch_trace(net, branches=None, use_branch_geodata=True, respect_se
         no_go_branches_to_plot = net[branch_element].loc[list(no_go_branches)]
         for idx, branch in no_go_branches_to_plot.iterrows():
             line_color = color
-            line_trace = dict(type='scatter',
-                              text=[], hoverinfo='text', mode='lines', name='disconnected branches',
-                              line=Line(width=width / 2, color='grey', dash='dot'),
-                              legendgroup="disconnected " + legendgroup, showlegend=False)
+            line_trace = {
+                "type": 'scatter',
+                "text": [],
+                "hoverinfo": 'text',
+                "mode": 'lines',
+                "name": 'disconnected branches',
+                "line": Line(width=width / 2, color='grey', dash='dot'),
+                "legendgroup": "disconnected " + legendgroup,
+                "showlegend": False
+            }
 
             line_trace['x'], line_trace['y'] = _get_branch_geodata_plotly(net,
                                                                           no_go_branches_to_plot.loc[
