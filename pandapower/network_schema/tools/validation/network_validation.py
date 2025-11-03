@@ -76,10 +76,10 @@ def validate_network(net: pandapowerNet):
             continue
 
         # validate element schema
-        # try:
-        #     schema.validate(net[element])
-        # except Exception as e:
-        #     raise pa.errors.SchemaError(data=e, message=f"Validation failed for {element}", schema=schema)
+        try:
+            schema.validate(net[element])
+        except Exception as e:
+            raise pa.errors.SchemaError(data=e, message=f"Validation failed for {element}", schema=schema)
 
         # validate bus index dependency
         _bus_index_validation(element, net)
