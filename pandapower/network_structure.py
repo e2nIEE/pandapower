@@ -1,7 +1,7 @@
 from numpy import dtype
 
 from pandapower._version import __version__, __format_version__
-from pandapower.network_schema.tools import get_dtypes
+from pandapower.network_schema.tools.helper import get_dtypes
 from pandapower.network_schema import *
 
 
