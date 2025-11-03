@@ -257,7 +257,7 @@ def create_buses(
             geo = _geodata_to_geo_series([geodata], nr_buses)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata, nr_buses)
+            geo = _geodata_to_geo_series(geodata, nr_buses)  # type: ignore
     else:
         geo = [None] * nr_buses  # type: ignore[list-item,assignment]
 
