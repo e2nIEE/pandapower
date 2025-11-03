@@ -1,8 +1,7 @@
 import logging
 import time
-
 import pandas as pd
-
+import numpy as np
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
@@ -62,7 +61,7 @@ class SynchronousMachinesCim16:
         eq_generating_units['type'] = eq_generating_units['type'].fillna('Nuclear')
         eq_generating_units = eq_generating_units.rename(columns={'rdfId': 'GeneratingUnit'})
 
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             synchronous_machines = self.cimConverter.merge_eq_other_profiles(
                 ['ssh', 'sc'], 'SynchronousMachine', add_cim_type_column=True)
         else:
@@ -89,7 +88,6 @@ class SynchronousMachinesCim16:
         eqssh_reg_control = pd.merge(eqssh_reg_control, self.cimConverter.net.bus[['vn_kv', sc['o_id']]].rename(
             columns={sc['o_id']: 'reg_control_cnode'}), how='left', on='reg_control_cnode')
         # merge with RegulatingControl to check if it is a voltage controlled generator
-        eqssh_reg_control = eqssh_reg_control.loc[eqssh_reg_control['mode'] == 'voltage']
         synchronous_machines = pd.merge(
             synchronous_machines, eqssh_reg_control.rename(columns={'rdfId': 'RegulatingControl'}),
             how='left', on='RegulatingControl')
@@ -97,6 +95,8 @@ class SynchronousMachinesCim16:
         synchronous_machines = pd.merge(synchronous_machines, self.cimConverter.bus_merge, how='left', on='rdfId')
         synchronous_machines = synchronous_machines.drop_duplicates(['rdfId'], keep='first')
         synchronous_machines['vm_pu'] = synchronous_machines.targetValue / synchronous_machines.vn_kv
+        # ignore targetValues with mode != voltage
+        synchronous_machines.loc[synchronous_machines['mode'] != 'voltage', 'vm_pu'] = np.nan
         synchronous_machines['vm_pu'] = synchronous_machines['vm_pu'].fillna(1.)
         synchronous_machines = synchronous_machines.rename(columns={'vn_kv': 'bus_voltage'})
         synchronous_machines['slack'] = False
@@ -104,17 +104,19 @@ class SynchronousMachinesCim16:
         # set the slack = True for gens with highest prio
         # get the highest prio from SynchronousMachines
         sync_ref_prio_min = synchronous_machines.loc[
-            (synchronous_machines['referencePriority'] > 0) & (synchronous_machines['enabled']),
-            'referencePriority'].min()
+            (synchronous_machines['referencePriority'] > 0) &
+            (synchronous_machines['enabled'] & (synchronous_machines['mode'] == 'voltage')),
+            'referencePriority'
+        ].min()
         # get the highest prio from ExternalNetworkInjection and check if the slack is an ExternalNetworkInjection
-        enis = self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection')
-        regulation_controllers = self.cimConverter.merge_eq_ssh_profile('RegulatingControl')
-        regulation_controllers = regulation_controllers.loc[regulation_controllers['mode'] == 'voltage']
-        regulation_controllers = regulation_controllers[['rdfId', 'targetValue', 'enabled']]
-        regulation_controllers = regulation_controllers.rename(columns={'rdfId': 'RegulatingControl'})
-        enis = pd.merge(enis, regulation_controllers, how='left', on='RegulatingControl')
+        enis = pd.merge(
+            self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection'),
+            self.cimConverter.merge_eq_ssh_profile('RegulatingControl')[
+                ['rdfId', 'targetValue', 'enabled', 'mode']
+            ].rename(columns={'rdfId': 'RegulatingControl'}), how='left', on='RegulatingControl')
 
-        eni_ref_prio_min = enis.loc[(enis['referencePriority'] > 0) & (enis['enabled']), 'referencePriority'].min()
+        eni_ref_prio_min = enis.loc[(enis['referencePriority'] > 0) & (enis['enabled']) & (
+                    enis['mode'] == 'voltage'), 'referencePriority'].min()
         if pd.isna(sync_ref_prio_min):
             ref_prio_min = eni_ref_prio_min
         elif pd.isna(eni_ref_prio_min):
@@ -145,14 +147,17 @@ class SynchronousMachinesCim16:
         synchronous_machines['rx'] = synchronous_machines['r2'] / synchronous_machines['x2']
         synchronous_machines['scaling'] = 1.
         synchronous_machines['generator_type'] = 'current_source'
-        synchronous_machines.loc[synchronous_machines['referencePriority'] == 0, 'referencePriority'] = float('NaN')
         synchronous_machines['referencePriority'] = synchronous_machines['referencePriority'].astype(float)
+        synchronous_machines['slack_weight'] = synchronous_machines['referencePriority'][:]
+        synchronous_machines.loc[synchronous_machines['slack_weight'] == 0, 'slack_weight'] = np.nan
+        synchronous_machines['RegulatingControl.enabled'] = synchronous_machines['enabled'][:]
+        synchronous_machines['RegulatingControl.mode'] = synchronous_machines['mode'][:]
         if 'inService' in synchronous_machines.columns:
             synchronous_machines['connected'] = (synchronous_machines['connected'] & synchronous_machines['inService'])
         synchronous_machines = synchronous_machines.rename(columns={
             'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service', 'index_bus': 'bus',
             'minOperatingP': 'min_p_mw', 'maxOperatingP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
-            'ratedPowerFactor': 'cos_phi', 'referencePriority': 'slack_weight'})
+            'ratedPowerFactor': 'cos_phi', 'targetValue': 'RegulatingControl.targetValue'})
         return synchronous_machines
 
     def _create_gen_characteristics_table(self, syn_gen_df_origin) -> pd.DataFrame:
@@ -160,7 +165,7 @@ class SynchronousMachinesCim16:
         if not eq['ReactiveCapabilityCurve'].empty and not eq['CurveData'].empty:
             if 'id_q_capability_characteristic' not in syn_gen_df_origin.columns:
                     syn_gen_df_origin['id_q_capability_characteristic'] = float('NaN')
-            if 'q_capability_curve_table' not in self.cimConverter.net.keys():
+            if 'q_capability_curve_table' not in self.cimConverter.net:
                 self.cimConverter.net['q_capability_curve_table'] = pd.DataFrame(
                     columns=['id_capability_curve', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
 

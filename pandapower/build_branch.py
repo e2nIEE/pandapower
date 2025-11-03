@@ -12,7 +12,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_values
+from pandapower.auxiliary import get_values, pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, BR_G_ASYM, BR_B_ASYM, branch_cols
 from pandapower.pypower.idx_brch_dc import branch_dc_cols, DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS, DC_F_BUS, \
@@ -28,7 +28,7 @@ from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
 
-def _build_branch_ppc(net, ppc):
+def _build_branch_ppc(net, ppc, sequence=1):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.
@@ -65,7 +65,7 @@ def _build_branch_ppc(net, ppc):
     if "line" in lookup:
         _calc_line_parameter(net, ppc)
     if "trafo" in lookup:
-        _calc_trafo_parameter(net, ppc)
+        _calc_trafo_parameter(net, ppc, sequence)
     if "trafo3w" in lookup:
         _calc_trafo3w_parameter(net, ppc)
     if "impedance" in lookup:
@@ -346,7 +346,7 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
         branch_dc[f:t, DC_RATE_A] = 0. if mode == "opf" else 100.
 
 
-def _calc_trafo_parameter(net, ppc):
+def _calc_trafo_parameter(net, ppc, sequence=1):
     """
     Calculates the transformer parameter in per unit.
 
@@ -376,6 +376,8 @@ def _calc_trafo_parameter(net, ppc):
     branch[f:t, BR_G_ASYM] = g_asym
     branch[f:t, BR_B_ASYM] = b_asym
     branch[f:t, TAP] = ratio
+    if sequence == 2:
+        shift = - shift
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = trafo["in_service"].values
     if any(trafo.df.values <= 0):
@@ -493,6 +495,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
             if "leakage_resistance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
         x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv") \
             if "leakage_reactance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
+
         return _wye_delta(r, x, g, b, r_ratio, x_ratio)
     else:
         raise ValueError("Unknown Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
@@ -1358,8 +1361,8 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net, sequence=1):
-    trafo2 = dict()
+def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
+    trafo2: dict[str, dict] = {}
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
     t3 = net["trafo3w"]

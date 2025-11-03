@@ -51,7 +51,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         >>> import pandapower
         >>> from pandapower.test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
-        >>> net = pandapower.converter.from_ppc(ppc, f_hz=60)
+        >>> net = pandapower.converter.pypower.from_ppc(ppc, f_hz=60)
     """
     # --- catch common failures
     if np.any(ppc['bus'][:, BASE_KV] <= 0):
