@@ -47,7 +47,7 @@ class BinarySearchControl(Controller):
 
         **input_element** - Measurement location, can be "res_trafo", "res_switch", "res_line", or "res_bus".
 
-        **input_invert** - Boolean that indicates if the measurement of the input element must be inverted. Required
+        **input_inverted** - Boolean that indicates if the measurement of the input element must be inverted. Required
         when importing from PowerFactory.
 
         **input_element_index** - Element of input element in net.

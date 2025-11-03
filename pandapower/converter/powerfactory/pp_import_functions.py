@@ -318,8 +318,17 @@ def from_pf(
     # create station controllers (ElmStactrl):
     if export_controller:
         n = 0
+        # Create nx graph for further usage
+        # top is needed to check connectivity between inpout and output elements, therefore respect switches
+        # top_all is the full topology to identify the sign of measurements, that is why respect_switches = False
+        top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
+                            include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
+                            calc_branch_impedances=False, branch_impedance_unit='ohm', include_out_of_service=True)
+        top_all = create_nxgraph(net, respect_switches=False, include_lines=True, include_trafos=True,
+                                include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
+                                calc_branch_impedances=False, branch_impedance_unit='ohm', include_out_of_service=True)
         for n, stactrl in enumerate(dict_net['ElmStactrl'], 1):
-            create_stactrl(net=net, item=stactrl)
+            create_stactrl(net=net, item=stactrl, top=top, top_all=top_all)
         if n > 0: logger.info('imported %d station controllers' % n)
 
     remove_folder_of_std_types(net)
@@ -3925,7 +3934,7 @@ def create_vsc(net, item):
         net.res_vsc.loc[vid_2, ["pf_p_mw", "pf_q_mvar", "pf_p_dc_mw"]] = np.nan
 
 
-def create_stactrl(net, item):
+def create_stactrl(net, item, top, top_all):
     stactrl_in_service = True
     logger.info(f"Creating Station Controller {item.loc_name}")
     if item.outserv:
@@ -4038,15 +4047,7 @@ def create_stactrl(net, item):
     variable = None
     res_element_table = None
     res_element_index = None
-    # Create nx graph for further usage
-    # top is needed to check connectivity between inpout and output elements, therefore respect switches
-    # top_all is the full topology to identify the sign of measurements, that is why respect_switches = False
-    top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
-                         include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                         calc_branch_impedances=False, branch_impedance_unit='ohm', include_out_of_service=True)
-    top_all = create_nxgraph(net, respect_switches=False, include_lines=True, include_trafos=True,
-                             include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                             calc_branch_impedances=False, branch_impedance_unit='ohm', include_out_of_service=True)
+
     if control_mode == 1 or item.i_droop:
         q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas  # Feld
         if q_control_cubicle is None:
@@ -4297,9 +4298,6 @@ def create_stactrl(net, item):
         for index in gen_element_index:
             output_busses.append(net.sgen.at[index, 'bus'])
 
-    top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
-                         include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                         calc_branch_impedances=False, branch_impedance_unit='ohm')
     has_path = False
     for n in range(len(input_busses)):
         for m in range(len(output_busses)):
@@ -4330,7 +4328,7 @@ def create_stactrl(net, item):
                                       output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(),
                                       input_element=res_element_table,
                                       input_variable=variable,
-                                      input_invert=input_invert, gen_Q_response=gen_Q_response,
+                                      input_inverted=input_inverted, gen_Q_response=gen_Q_response,
                                       input_element_index=res_element_index,
                                       set_point=v_setpoint_pu,
                                       voltage_ctrl=True,
@@ -4354,7 +4352,7 @@ def create_stactrl(net, item):
                                output_max_q_mvar=net[gen_element].loc[gen_element_index].max_q_mvar.to_list(),
                                input_element="res_bus",
                                input_variable="vm_pu",
-                               input_invert=input_invert, gen_Q_response=gen_Q_response,
+                               input_inverted=input_inverted, gen_Q_response=gen_Q_response,
                                input_element_index=bus,
                                set_point=v_setpoint_pu,
                                voltage_ctrl=True,
