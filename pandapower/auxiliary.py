@@ -466,6 +466,8 @@ def element_types_to_ets(element_types=None):
 def empty_defaults_per_dtype(dtype):
     if is_numeric_dtype(dtype):
         return np.nan
+    elif isinstance(dtype, pd.StringDtype):
+        return pd.NA
     elif is_string_dtype(dtype):
         return ""
     elif is_object_dtype(dtype):
@@ -475,7 +477,7 @@ def empty_defaults_per_dtype(dtype):
 
 
 def _preserve_dtypes(df, dtypes):
-    for item, dtype in list(dtypes.items()):
+    for item, dtype in dtypes.items():
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
                 raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "

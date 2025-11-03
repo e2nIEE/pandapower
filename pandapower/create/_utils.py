@@ -292,13 +292,15 @@ def _add_branch_geodata(net: pandapowerNet, geodata, index, table="line"):
             raise ValueError("geodata needs to be list or tuple")
         geodata = f'{{"coordinates": {_branch_geodata(geodata)}, "type": "LineString"}}'
     else:
-        geodata = None
+        geodata = pd.NA
     net[table].loc[index, "geo"] = geodata
+    net[table]["geo"] = net[table]["geo"].astype(get_structure_dict(required_only=False)[table]["geo"])
 
 
 def _add_multiple_branch_geodata(net, geodata, index, table="line"):
+    dtype = get_structure_dict(required_only=False)[table]["geo"]
     if not geodata:
-        net[table].loc[index, "geo"] = None
+        net[table].loc[index, "geo"] = pd.Series(data=[pd.NA]*len(net[table]), index=net[table].index, dtype=dtype)
         return
     dtypes = net[table].dtypes
     if hasattr(geodata, "__iter__") and all(isinstance(g, tuple) and len(g) == 2 for g in geodata):
@@ -308,13 +310,13 @@ def _add_multiple_branch_geodata(net, geodata, index, table="line"):
     elif hasattr(geodata, "__iter__") and all(isinstance(g, Iterable) for g in geodata):
         # geodata is Iterable of coordinate tuples
         geo = [[[x, y] for x, y in g] for g in geodata]
-        series = pd.Series([f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo], index=index)
+        series = [f'{{"coordinates": {g}, "type": "LineString"}}' for g in geo]
     else:
         raise ValueError(
             "geodata must be an Iterable of Iterable of coordinate tuples or an Iterable of coordinate tuples"
         )
 
-    net[table].loc[index, "geo"] = series
+    net[table].loc[index, "geo"] = pd.Series(series, index=index, dtype=dtype)
 
     _preserve_dtypes(net[table], dtypes)
 

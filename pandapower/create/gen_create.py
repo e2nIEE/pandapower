@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Sequence
 
+import pandas as pd
 from numpy import nan, bool_
 import numpy.typing as npt
 
@@ -365,7 +366,7 @@ def create_gens(
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo", power_station_trafo, dtype="Int64")
     _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_, default_val=True)
-    defaults_to_fill = [("controllable", True), ("reactive_capability_curve", False), ("curve_style", None)]
+    defaults_to_fill = [("controllable", True), ("reactive_capability_curve", False), ("curve_style", pd.NA)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
