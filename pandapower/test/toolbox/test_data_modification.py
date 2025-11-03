@@ -36,13 +36,13 @@ def test_add_column_from_node_to_elements():
         for elm in elements:
             if "bus" in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values,
-                                          np.array(["subnet_%i" % bus for bus in ntw[elm].bus])))
+                                          np.array([f"subnet_{bus}" for bus in ntw[elm].bus]).astype(object)))
             elif branch_bus_el[0] in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values, np.array([
-                    "subnet_%i" % bus for bus in ntw[elm][branch_bus_el[0]]])))
+                    f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[0]]]).astype(object)))
             elif branch_bus_el[1] in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values, np.array([
-                    "subnet_%i" % bus for bus in ntw[elm][branch_bus_el[1]]])))
+                    f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[1]]]).astype(object)))
 
     check_subnet_correctness(net, pp_elements(bus=False) - {"sgen"}, branch_bus)
 
@@ -143,7 +143,7 @@ def test_continuos_bus_numbering():
                     continue
 
     # assert that no buses were used except the ones in net.bus
-    assert set(list(used_buses)) - set(list(net.bus.index.values)) == set()
+    assert set(used_buses) - set(net.bus.index.values) == set()
 
 
 def test_reindex_elements():

@@ -39,7 +39,7 @@ def to_mpc(net, filename=None, **kwargs):
     """
     ppc = to_ppc(net, **kwargs)
 
-    mpc = dict()
+    mpc = {}
     mpc["mpc"] = _ppc2mpc(ppc)
     if filename is not None:
         # savemat
@@ -72,7 +72,3 @@ def _ppc2mpc(ppc):
     # baseMVA has to be a float instead of int
     mpc["baseMVA"] = mpc["baseMVA"] * 1.0
     return mpc
-
-
-if "__main__" == __name__:
-    pass

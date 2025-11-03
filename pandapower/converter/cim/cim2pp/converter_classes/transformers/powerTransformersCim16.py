@@ -56,8 +56,8 @@ class PowerTransformersCim16:
 
     def _create_trafo_characteristic_table(self, trafo_type, trafo_df_origin):
         if 'id_characteristic_table' not in trafo_df_origin.columns:
-            trafo_df_origin['id_characteristic_table'] = pd.Series(pd.NA, dtype="Int64")
-        if 'trafo_characteristic_table' not in self.cimConverter.net.keys():
+            trafo_df_origin['id_characteristic_table'] = float("NaN")
+        if 'trafo_characteristic_table' not in self.cimConverter.net:
             self.cimConverter.net['trafo_characteristic_table'] = pd.DataFrame(
                 columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent',
                          'vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent',
@@ -136,8 +136,8 @@ class PowerTransformersCim16:
                 (abs(trafo_df.r_lv) ** 2 + abs(trafo_df.x_lv) ** 2) ** 0.5 * \
                 (trafo_df.ratedS * 1e3) / (10. * trafo_df.ratedU_lv ** 2)
             trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
-            append_dict = dict({'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
-                                'vk_percent': [], 'vkr_percent': []})
+            append_dict = {'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [], 'vk_percent': [],
+                           'vkr_percent': []}
         else:
             trafo_df = trafo_df_origin.copy()
             trafo_df = trafo_df.sort_values(['PowerTransformer', 'endNumber']).reset_index()
@@ -234,9 +234,9 @@ class PowerTransformersCim16:
                          trafo_df.ratedU_lv / trafo_df.ratedU) ** 2) ** 2) ** 0.5 * \
                 trafo_df.min_s_lvhv * 100 / trafo_df.ratedU_lv ** 2
             trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
-            append_dict = dict({'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
-                                'vkr_hv_percent': [], 'vkr_mv_percent': [], 'vkr_lv_percent': [], 'vk_hv_percent': [],
-                                'vk_mv_percent': [], 'vk_lv_percent': []})
+            append_dict = {'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
+                           'vkr_hv_percent': [], 'vkr_mv_percent': [], 'vkr_lv_percent': [], 'vk_hv_percent': [],
+                           'vk_mv_percent': [], 'vk_lv_percent': []}
 
         def append_row(res_dict, id_c, row, cols):
             res_dict['id_characteristic'].append(id_c)
@@ -285,14 +285,14 @@ class PowerTransformersCim16:
             self.cimConverter.net['trafo_characteristic_table']['step'].astype(int)
 
     def _prepare_power_transformers_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             power_transformers = self.cimConverter.merge_eq_sc_profile('PowerTransformer')
         else:
             power_transformers = self.cimConverter.cim['eq']['PowerTransformer']
         power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
         power_transformers[sc['o_cl']] = 'PowerTransformer'
 
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             power_transformer_ends = self.cimConverter.merge_eq_sc_profile('PowerTransformerEnd')
         else:
             power_transformer_ends = self.cimConverter.cim['eq']['PowerTransformerEnd']
@@ -386,7 +386,7 @@ class PowerTransformersCim16:
             eq_ssh_tap_controllers[['rdfId', 'Terminal', 'discrete', 'enabled', 'targetValue', 'targetDeadband']]
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'rdfId': 'TapChangerControl'})
         # first merge with the VoltageLimits
-        if 'VoltageLimit' in self.cimConverter.cim['ssh'].keys():
+        if 'VoltageLimit' in self.cimConverter.cim['ssh']:
             vl = self.cimConverter.merge_eq_ssh_profile('VoltageLimit')[['OperationalLimitSet', 'OperationalLimitType',
                                                                          'value']]
         else:
@@ -465,6 +465,14 @@ class PowerTransformersCim16:
         power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap2_side'] = 'lv'
         # just keep one transformer
         power_trafo2w = power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first')
+        # shift lv tap changer from tap2 to tap if there is no hv tap changer
+        hv_taps_na = power_trafo2w['step'].isna() & power_trafo2w['step_lv'].notna()
+        power_trafo2w['tap_side'] = power_trafo2w['tap_side'].fillna(power_trafo2w['tap2_side'])
+        power_trafo2w.loc[hv_taps_na, 'tap2_side'] = None
+        for one_item in ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement',
+                         'step', 'tap_changer_type', sc['tc'], sc['tc_id']]:
+            power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
+            power_trafo2w.loc[hv_taps_na, one_item + '_lv'] = np.nan
 
         power_trafo2w['pfe_kw'] = (power_trafo2w.g * power_trafo2w.ratedU ** 2 +
                                    power_trafo2w.g_lv * power_trafo2w.ratedU_lv ** 2) * 1000
@@ -527,8 +535,8 @@ class PowerTransformersCim16:
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_lv': 'vn_lv_kv',
             'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc',
             'neutralStep_lv': 'tap2_neutral',  'lowStep_lv': 'tap2_min', 'highStep_lv': 'tap2_max',
-            'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',\
-            'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',\
+            'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',
+            'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',
             'tapchanger_class_lv': sc['tc2'], 'tapchanger_id_lv': sc['tc2_id']})
         return power_trafo2w
 

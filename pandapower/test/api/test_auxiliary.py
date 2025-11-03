@@ -98,8 +98,8 @@ def test_get_indices():
 
 def test_net_deepcopy():
     net = example_simple()
-    net.line.at[0, 'geo'] = geojson.LineString([(0., 1.), (1., 2.)])
-    net.bus.at[0, 'geo'] = geojson.Point((0., 1.))
+    net.line.at[0, 'geo'] = geojson.dumps(geojson.LineString([(0., 1.), (1., 2.)]))
+    net.bus.at[0, 'geo'] = geojson.dumps(geojson.Point((0., 1.)))
 
     ContinuousTapControl(net, element_index=0, vm_set_pu=1)
     ds = DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
@@ -113,9 +113,9 @@ def test_net_deepcopy():
 
     if GEOPANDAS_INSTALLED:
         for tab in ('bus', 'line'):
-            net[f'{tab}_geodata'] = gpd.GeoDataFrame(net[tab].geo.dropna().apply(
-                lambda x: x["coordinates"]), geometry=net[tab].geo.dropna())
-        net1 = net.deepcopy()
+            net[f'{tab}_geodata'] = gpd.GeoDataFrame(net[tab].geo.dropna().apply(geojson.loads).apply(
+                lambda x: x["coordinates"] if x is not None else x), geometry=net[tab].geo.dropna().apply(geojson.loads))
+        net1 = copy.deepcopy(net)
         assert isinstance(net1.line_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata.geometry.iat[0], shapely.geometry.Point)

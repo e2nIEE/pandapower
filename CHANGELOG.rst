@@ -3,10 +3,67 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] legacy np.random.random uses
+- [FIXED] SonarCube reliabilty complaints
+- [FIXED] remove imports from converter init, change code usage and docu accordingly
+- [FIXED] fixed broken converter import in runpm
+- [REMOVED] deprecated functions removed: wrapper for deepcopy, get_connected_lines, get_connected_switches, connected_bus_in_line, get_line_path
+- [FIXED] diagnostic: increase readabillity
+- [CHANGED] removed general imports again
+- [CHANGED] updated all tutorials to remove general imports
+- [FIXED] toolbox: increase readabillity
+- [FIXED] io_utils: increase readabillity
+- [ADDED] cim2pp: added EquipmentContainer to BusbarSection and Junction, added max and min p to sgen, updated schemas
+- [FIXED] network_structure: id_q_capability_characteristic -> pd.Int64Dtype(), id_characteristic_table -> pd.Int64Dtype()
+- [FIXED] cim2pp: extracting the additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
+- [CHANGED] create.py: refactored to create module with smaller files. Backwards compatible, importing does not require change!
+- [FIXED] cim2pp: update docu with correct dependancy install
+- [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
+- [ADDED] cim2pp: additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
+
+[3.2.1] - 2025-10-27
+-------------------------------
+- [HOTFIX] Fixed changelog, added lxml back.
+- [ADDED] Feature to plot multiple layers for buses using plotly
+- [CHANGED] Plotly is switching from mapbox to maplibre. This was also changed in our plotting functions.
+- [FIXED] Fixed res_trafo_3ph, including converter since it was wrong in code and did not adhere to documentation: 'p_a_l_mw' is now 'pl_a_mw', same for ql and all phases.
+- [FIXED] Fixed res_line_3ph, including converter since it was wrong in code and did not adhere to documentation: 'p_a_l_mw' is now 'pl_a_mw', same for ql and all phases.
+- [FIXED] Transformer Phase shift in negative sequence is reversed.
+- [FIXED] Transformer LV currents in result table are now taken from ppc isntead of adding load currents, as transformers are no more out-of-service in zero sequence
+- [FIXED] In zero-sequence transformers are no more out-of-service, but having very large impedance
+- [FIXED] Zero-Sequence parameters of traformers added to "branch" in ppc instead of bus for loadflow
+- [FIXED] Added "p_c_mw" attribute in res_line_3ph in network_structure.py
+- [ADDED] pf2pp: ElmLodlvp partial loads in lv loads inkl. night heat storage is implemented for conversion to pp
+- [ADDED] Station Controller for local voltage control with droop, adjusted powerfactory import
+- [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
+- [FIXED] FACTS tests through restructuring all of the tests
+- [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
+- [ADDED] DMR controller, which calculates the current on metallic return lines
+- [ADDED] Back2Back VSC converter, including extensive tests
+- [FIXED] Setting the correct Dtype in io_utils for sql databases
+- [ADDED] std_types as a dict to be fetched from the network_structure
+- [ADDED] Station controller support for measurements on trafo3w and impedance
+- [CHANGED] Station controller with measurements at switches: added a topological search to find nearby line or transformer and relocated measurement to avoid small impedances on switches
+- [FIXED] Station controller bug with Q(U) (wrong sign in equation for droop calculation)
+- [ADDED] python: support for version 3.13 added to the test pipelines
+- [FIXED] create_buses_dc: incorrect handling of geodata
+- [ADDED] postgresql: support for setting a port for the connection
+- [FIXED] ensure proper handling of `indent` parameter for PPJSONEncoder, fixing compatibility with Python3.13
+- [FIXED] Case5 tests, now the calculated values are compared to results from powerfactory
+- [FIXED] FACTS tests through restructuring all of the tests
+- [ADDED] Load_dc and Source_dc, which represent a conventional load and a generator in dc
+- [ADDED] DMR controller, which calculates the current on metallic return lines
+- [ADDED] Back2Back VSC converter, including extensive tests
+- [ADDED] description for `slack` argument in docstring of create_gen function
+- [FIXED] pf2pp: dc-lines geodata error is fixed, outdated line_dc_geodata field replaced by newer geo-column
+- [FIXED] pf2pp: zip load import error fixed by replacing unknown ga() function with actual GetAttribute-function
+- [FIXED] pf2pp: Ipython tutorial converter_powerfactory import statements (pf) corrected by directly importing powerfactory as pf
+- [ADDED] pf2pp: Ipython tutorial converter_powerfactory now has additional text description and uses a standard 14-bus network example network
 - [REMOVED] kwargs in basic controller class
 - [ADDED] name attribute in basic controller class
 - [FIXED] remove print statement from results_bus.py
 - [FIXED] cim2pp: Make sure that the controllable flag is never nan for any generators
+- [FIXED] saturate_sn_mva parameter in DER controller
 - [CHANGED] move pandapower network pandas structure dict from create_empty_network to its own file
 - [FIXED] cim2pp: use pandapower network pandas structure dict to set needed dtypes instead of hardcoded values
 - [ADDED] cim2pp: export trafo `tap_step_degree` parameter
@@ -19,6 +76,23 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
+- [FIXED] cim2pp: add more dtype parameters, fix some tests
+- [FIXED] convert_format fix check when net version is below format version
+- [FIXED] json io test with new network structure dict
+- [FIXED] DC OPF bug if verbose = True
+- [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
+- [ADDED] Parellel contingency analysis using multiple cores through a multiprocessing worker pool
+- [Changed] DC-line mode to handle negative values in 2 different ways, inversing the line direction or considering powerflow always to correlate with the given from_bus 
+- [FIXED] type annotations in create methods
+- [CHANGED] drop_inactive_elements performance improvements: using pandas methods instead of looping
+- [ADDED] add a few more tests for the grid modification functions
+- [FIXED] cim2pp: minor speed increase through faster dict creation and removal of not needed .keys() call
+- [Fixed] JAO converter: rename_locnames table updated to suit newest JAO network, _multi_str_repl function was refactored
+- [CHANGED] file_io.to_json: allow passing through sort_keys argument
+- [FIXED] create.py: remove needlessly slow dict(zip) constructs in favor of fast literal dict creation, some other small code refactoring
+- [ADDED] cim2pp: new shema files, added Junctions and shorcuts for busbars
+- [FIXED] create.pu set_multiple_entries remove not needed dict translation
 
 [3.1.2] - 2025-06-16
 -------------------------------
@@ -73,6 +147,7 @@ Change Log
 - [ADDED] cim2pp: add normalSections for shunts at CIM100 and removed old schema
 - [ADDED] cim2pp: add DCLine component to cim16 and cim100 datastructures
 - [FIXED] cim2pp: fix deprecation warning in cim_classes.py and fix bug in measurements
+- [ADDED] possibility to directly compare "geo" columns of dataframes (not assume geojson strings)
 
 [3.0.0] - 2025-03-06
 -------------------------------
@@ -207,6 +282,7 @@ Change Log
 - [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 - [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
+- [ADDED] Added vectorgroup Dynyn and corrected vectorgroup Ynyy
 - [FIXED] index error during unbalanced powerflow if multiple external grids are present
 - [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
@@ -231,6 +307,7 @@ Change Log
 [2.14.9] - 2024-06-25
 -------------------------------
 - [FIXED] scipy version
+
 
 [2.14.7] - 2024-06-14
 -------------------------------

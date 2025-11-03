@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import pandapower.test as test
-from pandapower.converter import convert_pp_to_pm
+from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.create import create_poly_cost
 from pandapower.pd2ppc import _pd2ppc

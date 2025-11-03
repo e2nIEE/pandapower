@@ -170,7 +170,7 @@ def test_recycle_dc_trafo_shift(recycle_net):
     net["trafo"].at[0, "tap_pos"] = 0
     net["trafo"].at[0, "tap_step_percent"] = 1
     net["trafo"].at[0, "tap_step_degree"] = 30
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     pl = 1.2
     ql = 0.
     net["load"].at[0, "q_mvar"] = ql
@@ -199,7 +199,7 @@ def test_recycle_dc_trafo_ideal(recycle_net):
     create_transformer_from_parameters(net, 3, b4, 10, v, v, 0.5, 12, 10, 0.1, 0,
                                        tap_side='hv', tap_neutral=0, tap_max=10, tap_min=-10,
                                        tap_step_percent=0, tap_step_degree=30, tap_pos=0, tap_changer_type="Ideal")
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     pl = 1.2
     ql = 0.
     net["load"].at[0, "q_mvar"] = ql

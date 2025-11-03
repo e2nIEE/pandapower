@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-                  bus_size=10, filename="temp-plot.html", auto_open=True):
+                  bus_size=10, filename="temp-plot.html", auto_open=True, zoomlevel=11):
     """
     Plots a pandapower network in plotly
     using lines/buses colors according to the voltage level they belong to.
@@ -38,20 +38,29 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
         *colors_dict** (dict, None) - dictionary for customization of colors for each voltage level
         in the form: voltage : color
 
-        **on_map** (bool, False) - enables using mapbox plot in plotly If provided geodata are not
+        **on_map** (bool, False) - enables using mapLibre plot in plotly If provided geodata are not
         real geo-coordinates in lon/lat form, on_map will be set to False.
 
         **projection** (String, None) - defines a projection from which network geo-data will be
         transformed to lat-long. For each projection a string can be found at
         http://spatialreference.org/ref/epsg/
 
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+        **map_style** (str, 'basic') - enables using mapLibre plot in plotly
 
-            - 'streets'
-            - 'bright'
-            - 'light'
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
             - 'dark'
-            - 'satellite'
+            - 'light'
+            - 'open-street-map'
+            - 'outdoors'           
+            - 'satellite''
+            - 'satellite-streets'
+            - 'streets'
 
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
@@ -66,11 +75,13 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
 
         **auto_open** (bool, True) - automatically open plot in browser
 
+        **zoomlevel** (int, 11) - initial zoomlevel of map plot (only if on_map=True)
+
     OUTPUT:
         **figure** (graph_objs._figure.Figure) figure object
 
     """
-    # getting connected componenets without consideration of trafos
+    # getting connected components without consideration of trafos
     graph = create_nxgraph(net, include_trafos=False)
     vlev_buses = connected_components(graph)
     # getting unique sets of buses for each voltage level
@@ -94,13 +105,13 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
         net, bus_groups, respect_switches=respect_switches,
         use_line_geo=use_line_geo, on_map=on_map, projection=projection,
         map_style=map_style, figsize=figsize, aspectratio=aspectratio, line_width=line_width,
-        bus_size=bus_size, filename=filename, auto_open=auto_open)
+        bus_size=bus_size, filename=filename, auto_open=auto_open,zoomlevel=zoomlevel)
 
 
 def _draw_colored_bus_groups_plotly(
     net, bus_groups, respect_switches=True, use_line_geo=None,
     on_map=False, projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-    bus_size=10, filename="temp-plot.html", auto_open=True):
+    bus_size=10, filename="temp-plot.html", auto_open=True,zoomlevel=11):
     """
     Internal function of vlevel_plotly()
 
@@ -163,7 +174,7 @@ def _draw_colored_bus_groups_plotly(
 
     return draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
                        aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
-                       filename=filename, auto_open=auto_open)
+                       filename=filename, auto_open=auto_open,zoomlevel=zoomlevel)
 
 
 if __name__ == '__main__':
@@ -212,7 +223,7 @@ if __name__ == '__main__':
                               net.line.to_bus.isin(buses_vl)].index.tolist()
         print(vlev_lines)
         line_trace_vlev = create_line_trace(
-            net, lines=vlev_lines, use_line_geodata=use_line_geodata,
+            net, lines=vlev_lines, use_line_geo=use_line_geodata,
             respect_switches=respect_switches, legendgroup=str(vn_kv), color="r",
             width=line_width, trace_name='lines {0} kV'.format(vn_kv))
         if line_trace_vlev is not None:
