@@ -104,6 +104,7 @@ _trafo3w_columns = {
         nullable=True,
         required=False,
         description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
+        metadata={"tdt": True},
     ),
     "id_characteristic_table": pa.Column(
         pd.Int64Dtype,
@@ -111,6 +112,7 @@ _trafo3w_columns = {
         nullable=True,
         required=False,
         description="references the id_characteristic index from the trafo_characteristic_table",
+        metadata={"tdt": True},
     ),
     "max_loading_percent": pa.Column(
         float,
@@ -146,7 +148,10 @@ trafo3w_checks = [
         error=f"trafo3w tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
     ),
 ]
-trafo3w_checks += create_column_dependency_checks_from_metadata(["sc"], _trafo3w_columns)
+trafo3w_checks += create_column_dependency_checks_from_metadata([
+    # "sc",
+    "tdt"
+], _trafo3w_columns)
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,

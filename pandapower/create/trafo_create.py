@@ -45,10 +45,9 @@ def create_transformer(
     parallel: int = 1,
     df: float = 1.0,
     tap_changer_type: str | None = None,
-    tap_dependency_table: bool = False,
+    # tap_dependency_table: bool = False,
     id_characteristic_table: int | None = None,
     pt_percent: float = nan,
-    oltc: bool = False,
     xn_ohm: float = nan,
     tap2_pos: int | float = nan,
     **kwargs,
@@ -204,12 +203,11 @@ def create_transformer(
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo", dtype="Int64")
-    _set_value_if_not_nan(
-        net, index, tap_dependency_table, "tap_dependency_table", "trafo", dtype=bool_, default_val=False
-    )
+    # _set_value_if_not_nan(
+    #     net, index, tap_dependency_table, "tap_dependency_table", "trafo", dtype=bool_, default_val=False
+    # )
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo", dtype=object, default_val=None)
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
-    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
@@ -231,7 +229,7 @@ def create_transformers(
     tap_dependency_table: bool | Iterable[bool] = False,
     id_characteristic_table: int | Iterable[int] | None = None,
     pt_percent: float | Iterable[float] = nan,
-    oltc: bool | Iterable[bool] = False,
+    # oltc: bool | Iterable[bool] = False,
     xn_ohm: float | Iterable[float] = nan,
     tap2_pos: int | Iterable[int] | float = nan,
     **kwargs,
@@ -288,7 +286,9 @@ def create_transformers(
         net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
         max_loading_percent=max_loading_percent, parallel=parallel, df=df, tap_changer_type=tap_changer_type,
         tap_dependency_table=tap_dependency_table, id_characteristic_table=id_characteristic_table,
-        pt_percent=pt_percent, oltc=oltc, xn_ohm=xn_ohm, tap2_pos=tap2_pos, std_type=std_type,
+        pt_percent=pt_percent,
+        # oltc=oltc,
+        xn_ohm=xn_ohm, tap2_pos=tap2_pos, std_type=std_type,
         **params
     )
 
@@ -327,7 +327,7 @@ def create_transformer_from_parameters(
     mag0_rx: float = nan,
     si0_hv_partial: float = nan,
     pt_percent: float = nan,
-    oltc: bool = False,
+    # oltc: bool = False,
     tap_dependency_table: bool = False,
     xn_ohm: float = nan,
     tap2_side: HVLVType | None = None,
@@ -569,7 +569,7 @@ def create_transformer_from_parameters(
         _set_value_if_not_nan(net, index, vector_group, "vector_group", "trafo", dtype=str)
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
-    _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
+    # _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
@@ -609,7 +609,7 @@ def create_transformers_from_parameters(  # index missing ?
     mag0_rx: float | Iterable[float] = nan,
     si0_hv_partial: float | Iterable[float] = nan,
     pt_percent: float | Iterable[float] = nan,
-    oltc: bool | Iterable[bool] = False,
+    # oltc: bool | Iterable[bool] = False,
     tap_dependency_table: bool | Iterable[bool] = False,
     xn_ohm: float | Iterable[float] = nan,
     tap2_side: HVLVType | Iterable[str] | None = None,
@@ -792,7 +792,7 @@ def create_transformers_from_parameters(  # index missing ?
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "si0_hv_partial", si0_hv_partial)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "max_loading_percent", max_loading_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "vector_group", vector_group, dtype=str)
-    _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, bool_, False)
+    # _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, bool_, False)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "pt_percent", pt_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "xn_ohm", xn_ohm)
 

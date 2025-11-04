@@ -263,7 +263,6 @@ class TestIntegration:
         with pytest.raises(pa.errors.SchemaError):
             full_workflow_invalid_schema.validate(df_invalid)
 
-
     def test_full_workflow_invalid_entry_dependencies(self):
         """Test complete workflow with invalid column dependencies, because of nullable entry."""
         # Setup schema with dependencies
@@ -298,10 +297,9 @@ class TestIntegration:
             full_workflow_invalid_schema.validate(df_invalid_nan)
 
         # Test with invalid DataFrame (multi row null entry)
-        df_invalid_row = pd.DataFrame({
-            "lat": [1.0, np.nan, 1.0, 1.0, 1.0],
-            "name": ["Test", "Test", pd.NA, "Test", "Test"]
-        })
+        df_invalid_row = pd.DataFrame(
+            {"lat": [1.0, np.nan, 1.0, 1.0, 1.0], "name": ["Test", "Test", pd.NA, "Test", "Test"]}
+        )
 
         with pytest.raises(pa.errors.SchemaError):
             full_workflow_invalid_schema.validate(df_invalid_row)

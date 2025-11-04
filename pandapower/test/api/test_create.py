@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-import math
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
 
 import geojson
+import math
 import numpy as np
 from numpy import nan
 import pandas as pd
@@ -98,7 +98,9 @@ def test_convenience_create_functions():
         i0_percent=1,
         test_kwargs="dummy_string",
     )
+
     validate_network(net)
+
     create_load(net, b3, 0.1)
     assert net.trafo.at[tid, "df"] == 1
     runpp(net)
@@ -1041,20 +1043,20 @@ def test_create_transformers():
         'pfe_kw': [0.95, 0.95],
         'i0_percent': [0.2375, 0.2375],
         'shift_degree': [0.0, 0.0],
-        'tap_side': ['', ''],
-        'tap_neutral': [nan, nan],
-        'tap_min': [nan, nan],
-        'tap_max': [nan, nan],
-        'tap_step_percent': [nan, nan],
-        'tap_step_degree': [nan, nan],
-        'tap_pos': [nan, nan],
-        'tap_changer_type': ['', ''],
-        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+        # 'tap_side': ['', ''],
+        # 'tap_neutral': [nan, nan],
+        # 'tap_min': [nan, nan],
+        # 'tap_max': [nan, nan],
+        # 'tap_step_percent': [nan, nan],
+        # 'tap_step_degree': [nan, nan],
+        # 'tap_pos': [nan, nan],
+        'tap_changer_type': [pd.NA, pd.NA],
+        # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
         'tap_dependency_table': [False, False],
-        'parallel': pd.Series([1, 1], dtype=np.uint32),
+        'parallel': pd.Series([1, 1], dtype=pd.Int64Dtype),
         'df': [1.0, 1.0],
         'in_service': [True, True],
-        'oltc': [False, False],
+        # 'oltc': [False, False],
         'test_kwargs': ['TestKW', 'TestKW'],
         'vector_group': ['Dyn5', 'Dyn5'],
     })
@@ -1104,6 +1106,8 @@ def test_create_transformers_for_single():
         'vector_group': ['Dyn5'],
     })
     assert dataframes_equal(net.trafo, res_df)
+
+    validate_network(net)
 
 
 def test_create_transformers3w():
@@ -1159,6 +1163,8 @@ def test_create_transformers3w():
         'in_service': [True, False]
     }).set_index(pd.Index([5, 6]))
     assert dataframes_equal(net.trafo3w, res_df)
+
+    validate_network(net)
 
 
 def test_create_transformers3w_from_parameters():

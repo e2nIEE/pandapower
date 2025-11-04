@@ -334,7 +334,10 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
         if not pd.isna(val):  # TODO: questionable
             net[table].at[index, col] = val
             try:
-                net[table][col] = net[table][col].astype(get_structure_dict(required_only=False)[table][col])
+                dtype = get_structure_dict(required_only=False)[table][col]
+                if dtype == bool and net[table][col].isna().any(): # default value for bool entries # TODO: check if wanted behaviour
+                    net[table][col] = net[table][col].astype(pd.BooleanDtype()).fillna(False)
+                net[table][col] = net[table][col].astype(dtype)
             except KeyError:
                 pass
 

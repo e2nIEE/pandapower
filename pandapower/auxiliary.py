@@ -1721,11 +1721,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         numba = _check_if_numba_is_installed()
 
     if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_p_percent"].values)
-                or np.any(net["load"]["const_i_p_percent"].values)
-                or np.any(net["load"]["const_z_q_percent"].values)
-                or np.any(net["load"]["const_i_q_percent"].values)):
-            voltage_depend_loads = False
+        cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
+        # if const parameters are not set voltage_depend_loads is deactivated
+        voltage_depend_loads = cols.issubset(net.load.columns) and not net.load[list(cols)].any().any()
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
                                                        distributed_slack, tdpf)
