@@ -24,11 +24,7 @@ from pandapower.create import (
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type
 from pandapower.toolbox import nets_equal, dataframes_equal
-
-from pandapower.network_schema import *
-from network_schema.tools.validation.network_validation import validate_network
-from pandapower.network_structure import get_structure_dict
-
+from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 def test_convenience_create_functions():
     net = create_empty_network()
@@ -517,7 +513,7 @@ def test_create_lines_from_parameters():
     assert all(net.line["r0_ohm_per_km"].values == 0.1)
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
-    assert net.line.in_service.dtype == bool
+    assert isinstance(net.line.in_service.dtype, bool)
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
@@ -571,7 +567,7 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "x0_ohm_per_km"] == 0.25
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
-    assert net.line.in_service.dtype == bool
+    assert isinstance(net.line.in_service.dtype, pd.BooleanDtype)
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
@@ -1611,7 +1607,7 @@ def test_create_loads():
     assert net.load.q_mvar.at[0] == 0
     assert net.load.q_mvar.at[1] == 0
     assert net.load.q_mvar.at[2] == 0
-    assert net.load.controllable.dtype == bool
+    assert isinstance(net.load.controllable.dtype, pd.BooleanDtype)
     assert net.load.controllable.at[0]
     assert not net.load.controllable.at[1]
     assert not net.load.controllable.at[2]
@@ -1738,7 +1734,7 @@ def test_create_storages():
     assert net.storage.q_mvar.at[0] == 0.5
     assert net.storage.q_mvar.at[1] == 0.5
     assert net.storage.q_mvar.at[2] == 0.5
-    assert net.storage.controllable.dtype == bool
+    assert isinstance(net.storage.controllable.dtype, pd.BooleanDtype)
     assert net.storage.controllable.at[0]
     assert not net.storage.controllable.at[1]
     assert not net.storage.controllable.at[2]
@@ -1834,8 +1830,7 @@ def test_create_sgens():
     assert net.sgen.q_mvar.at[0] == 0
     assert net.sgen.q_mvar.at[1] == 0
     assert net.sgen.q_mvar.at[2] == 0
-    # assert net.sgen.controllable.dtype == pd.BooleanDtype
-    assert net.sgen.controllable.dtype == get_structure_dict(required_only=False)['sgen']['controllable']
+    assert isinstance(net.sgen.controllable.dtype, pd.BooleanDtype)
     assert net.sgen.controllable.at[0]
     assert not net.sgen.controllable.at[1]
     assert not net.sgen.controllable.at[2]
@@ -1947,8 +1942,7 @@ def test_create_gens():
     assert net.gen.p_mw.at[0] == 0
     assert net.gen.p_mw.at[1] == 0
     assert net.gen.p_mw.at[2] == 1
-    # assert net.gen.controllable.dtype == bool
-    assert net.gen.controllable.dtype == get_structure_dict(required_only=False)['gen']['controllable']
+    assert isinstance(net.gen.controllable.dtype, pd.BooleanDtype)
     assert net.gen.controllable.at[0]
     assert not net.gen.controllable.at[1]
     assert not net.gen.controllable.at[2]

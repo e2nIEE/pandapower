@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Final, Iterable
 
+import pandas as pd
 from numpy import nan
 import numpy.typing as npt
 
@@ -259,7 +260,7 @@ def create_buses(
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
             geo = _geodata_to_geo_series(geodata, nr_buses)  # type: ignore
     else:
-        geo = [None] * nr_buses  # type: ignore[list-item,assignment]
+        geo = [pd.NA] * nr_buses  # type: ignore[list-item,assignment]
 
     if coords:
         raise UserWarning(BUSBAR_WARNING)
@@ -268,8 +269,6 @@ def create_buses(
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, entries=entries)
-    if "geo" in net.bus.columns:
-        net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
 
     return index
 

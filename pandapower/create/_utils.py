@@ -383,6 +383,12 @@ def _set_multiple_entries(
                 except KeyError:
                     pass
 
+    # set correct dtypes
+    dtype_dict = get_structure_dict(required_only=False)[table]
+    for col in dd.columns:
+        if col in dtype_dict:
+            dd[col] = dd[col].astype(dtype_dict[col])
+
     # extend the table by the frame we just created
     if len(net[table]):
         net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
@@ -393,15 +399,7 @@ def _set_multiple_entries(
             key: empty_defaults_per_dtype(dtype)
             for key, dtype in net[table][net[table].columns.difference(dd_columns)].dtypes.to_dict().items()
         }
-        # net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
-        df_temp = dd[dd_columns].assign(**empty_dict)[complete_columns]
-        dtype_dict = get_structure_dict(required_only=False)[table]
-
-        for col in df_temp.columns:
-            if col in dtype_dict:
-                df_temp[col] = df_temp[col].astype(dtype_dict[col])
-
-        net[table] = df_temp
+        net[table] = dd[dd_columns].assign(**empty_dict)[complete_columns]
 
     # and preserve dtypes
     if preserve_dtypes:
