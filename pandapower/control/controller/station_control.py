@@ -60,12 +60,15 @@ class BinarySearchControl(Controller):
         input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
         control.
 
+        **gen_Q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
+        order to invert the droop value of the controller.
 
         **voltage_ctrl** - Whether the controller is used for voltage control.
 
         **output_min_q_mvar** - Minimum reactive power limits for each output element.
 
         **output_max_q_mvar** - Maximum reactive power limits for each output element.
+
         **bus_idx=None** - Bus index used for voltage control.
 
         **tol=0.001** - Tolerance for controller convergence.
@@ -391,7 +394,7 @@ class BinarySearchControl(Controller):
                     reached_max_qmvar = x>self.output_max_q_mvar
 
                     if reached_min_qmvar or reached_max_qmvar:
-                        logging.info('Station %s controlled by %s reached a reactive power limit.' % (self.machines[0], self.name))
+                        logging.info('Station %s controlled by %s reached a reactive power limit.' % (self.output_element_index, self.name))
                         self.output_adjustable = np.array([False], dtype=np.bool)
                         if reached_min_qmvar:
                             self.output_values_old, self.output_values = self.output_values, self.output_min_q_mvar
