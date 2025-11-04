@@ -7,8 +7,9 @@ def create_column_group_dependency_validation_func(columns):
     Creates a validator function that ensures column group dependency.
 
     Returns a validator that checks whether the specified columns are either
-    all present or all absent in a DataFrame. This is useful for validating
-    that related columns exist together as a group.
+    all present and properly filled, or all absent in a DataFrame. This is
+    useful for validating that related columns exist together as a group and
+    contain valid data.
 
     Args:
         columns (list): List of column names that must exist together as a group.
@@ -21,8 +22,8 @@ def create_column_group_dependency_validation_func(columns):
     Examples:
         >>> validator = create_column_group_dependency_validation_func(['lat', 'lon', 'altitude'])
         >>>
-        >>> # Valid: All columns present
-        >>> df1 = pd.DataFrame({'lat': [1], 'lon': [2], 'altitude': [3], 'other': [4]})
+        >>> # Valid: All columns present and filled
+        >>> df1 = pd.DataFrame({'lat': [1.0], 'lon': [2.0], 'altitude': [3.0], 'other': [4]})
         >>> validator(df1)  # Returns True
         >>>
         >>> # Valid: No columns present
@@ -30,15 +31,26 @@ def create_column_group_dependency_validation_func(columns):
         >>> validator(df2)  # Returns True
         >>>
         >>> # Invalid: Only some columns present
-        >>> df3 = pd.DataFrame({'lat': [1], 'lon': [2], 'name': ['John']})
+        >>> df3 = pd.DataFrame({'lat': [1.0], 'lon': [2.0], 'name': ['John']})
         >>> validator(df3)  # Returns False
+        >>>
+        >>> # Invalid: All columns present but some have null values
+        >>> df4 = pd.DataFrame({'lat': [1.0, pd.NA], 'lon': [2.0, 3.0], 'altitude': [3.0, 4.0]})
+        >>> validator(df4)  # Returns False
 
     Note:
         The validator returns True when either:
-        - None of the specified columns exist in the DataFrame
-        - All of the specified columns exist in the DataFrame
 
-        It returns False when only a subset of the columns exist.
+        - None of the specified columns exist in the DataFrame
+        - All of the specified columns exist AND all rows have non-null values
+
+          in all these columns
+
+        It returns False when:
+
+        - Only a subset of the columns exist
+        - All columns exist but at least one row has null/NA values in any column
+
     """
 
     def validator(df):
@@ -46,8 +58,21 @@ def create_column_group_dependency_validation_func(columns):
         target_columns = set(columns)
         present_columns = target_columns & df_columns
 
-        # Either all present or none present
-        return len(present_columns) in {0, len(target_columns)}
+        # Case 1: None of the columns are present - valid
+        if len(present_columns) == 0:
+            return True
+
+        # Case 2: Not all columns are present - invalid
+        if len(present_columns) != len(target_columns):
+            return False
+
+        # Case 3: All columns are present - check if they're properly filled
+        # For each target column, check if any null values exist
+        for col in target_columns:
+            if df[col].isna().any():
+                return False
+
+        return True
 
     return validator
 
@@ -89,11 +114,6 @@ def create_column_dependency_checks_from_metadata(names: list, schema_columns: d
     """
     checks = []
     for name in names:
-        # for cols in [
-        #     col_name
-        #     for col_name, col_schema in schema_columns.items()
-        #     if getattr(col_schema, "metadata", None) and col_schema.metadata.get(name)
-        # ]:
         cols = [
             col_name
             for col_name, col_schema in schema_columns.items()

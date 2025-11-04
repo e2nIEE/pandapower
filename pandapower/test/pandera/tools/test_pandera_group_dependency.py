@@ -1,6 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 import pytest
+import numpy as np
 
 from pandapower.network_schema.tools.validation.group_dependency import (
     create_column_group_dependency_validation_func,
@@ -224,9 +225,9 @@ class TestIntegration:
         # Setup schema with dependencies
         names = ["location_group"]
         schema_columns = {
-            "lat": pa.Column(metadata={"location_group": True}),
-            "lon": pa.Column(metadata={"location_group": True}),
-            "name": pa.Column(metadata={"other_group": True}),
+            "lat": pa.Column(nullable=True, metadata={"location_group": True}),
+            "lon": pa.Column(nullable=True, metadata={"location_group": True}),
+            "name": pa.Column(nullable=True, metadata={"other_group": True}),
         }
 
         # Create checks
@@ -261,3 +262,46 @@ class TestIntegration:
 
         with pytest.raises(pa.errors.SchemaError):
             full_workflow_invalid_schema.validate(df_invalid)
+
+
+    def test_full_workflow_invalid_entry_dependencies(self):
+        """Test complete workflow with invalid column dependencies, because of nullable entry."""
+        # Setup schema with dependencies
+        names = ["location_group"]
+        schema_columns = {
+            "lat": pa.Column(metadata={"location_group": True}),
+            "lon": pa.Column(metadata={"location_group": True}),
+        }
+
+        # Create checks
+        checks = create_column_dependency_checks_from_metadata(names, schema_columns)
+
+        # Create schema
+        full_workflow_invalid_schema = pa.DataFrameSchema(schema_columns, strict=False, checks=checks)
+
+        # Test with invalid DataFrame (not assigned entry)
+        df_invalid_na = pd.DataFrame({"lat": [pd.NA], "name": ["Test"]})
+
+        with pytest.raises(pa.errors.SchemaError):
+            full_workflow_invalid_schema.validate(df_invalid_na)
+
+        # Test with invalid DataFrame (None entry)
+        df_invalid_none = pd.DataFrame({"lat": None, "name": ["Test"]})
+
+        with pytest.raises(pa.errors.SchemaError):
+            full_workflow_invalid_schema.validate(df_invalid_none)
+
+        # Test with invalid DataFrame (nan entry)
+        df_invalid_nan = pd.DataFrame({"lat": float(np.nan), "name": ["Test"]})
+
+        with pytest.raises(pa.errors.SchemaError):
+            full_workflow_invalid_schema.validate(df_invalid_nan)
+
+        # Test with invalid DataFrame (multi row null entry)
+        df_invalid_row = pd.DataFrame({
+            "lat": [1.0, np.nan, 1.0, 1.0, 1.0],
+            "name": ["Test", "Test", pd.NA, "Test", "Test"]
+        })
+
+        with pytest.raises(pa.errors.SchemaError):
+            full_workflow_invalid_schema.validate(df_invalid_row)
