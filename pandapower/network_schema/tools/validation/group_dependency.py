@@ -89,16 +89,21 @@ def create_column_dependency_checks_from_metadata(names: list, schema_columns: d
     """
     checks = []
     for name in names:
-        for col in [
+        # for cols in [
+        #     col_name
+        #     for col_name, col_schema in schema_columns.items()
+        #     if getattr(col_schema, "metadata", None) and col_schema.metadata.get(name)
+        # ]:
+        cols = [
             col_name
             for col_name, col_schema in schema_columns.items()
-            if col_schema.metadata
-            and col_schema.metadata.get(name)  # Extract column names that have opf=True in their metadata.
-        ]:
+            if getattr(col_schema, "metadata", None) and col_schema.metadata.get(name)
+        ]
+        if len(cols) > 0:
             checks.append(
                 pa.Check(
-                    create_column_group_dependency_validation_func(col),
-                    error=f"{name} columns have dependency violations. Please ensure {col} columns are present in the dataframe.",
+                    create_column_group_dependency_validation_func(cols),
+                    error=f"{name} columns have dependency violations. Please ensure columns {cols} are present in the dataframe.",
                 )
             )
     return checks

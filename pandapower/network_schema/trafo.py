@@ -197,11 +197,11 @@ tap_columns = [
 trafo_checks = [
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
-        error=f"Tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
+        error=f"trafo tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
     ),
     pa.Check(
         create_column_group_dependency_validation_func(tap2_columns),
-        error=f"Tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
+        error=f"trafo tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
     ),
 ]
 trafo_checks += create_column_dependency_checks_from_metadata(["opf", "sc", "3ph"], _trafo_columns)
