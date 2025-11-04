@@ -375,17 +375,25 @@ class BinarySearchControl(Controller):
                 self.control_modus = "Q_ctrl"
 
             if self.control_modus == "V_ctrl":
-                if self.input_element != 'res_bus' and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
-                                                                        self.index for x in net.controller.index):
-                    logger.warning(f"'input_element' must be 'res_bus' for V_ctrl not {self.input_element}, correcting.")
-                    self.input_element = 'res_bus'
-                    if np.atleast_1d(self.input_variable)[0] != 'vm_pu':
-                        logger.warning(f"'input_variable' must be 'vm_pu' for V_ctrl not {self.input_variable}, correcting ")
-                        self.input_variable = 'vm_pu'
-
-                self.diff_old = self.diff #V_ctrl
-                self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.input_element_index)[0]]
-                self.converged = np.all(np.abs(self.diff) < self.tol)
+                if self.input_element != 'res_bus':# and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
+                            #self.index for x in net.controller.index):#no droop, disable for legacy, see below
+                    if hasattr(self, 'bus_idx') and getattr(self, 'bus_idx') is not None: #legacy
+                        self.diff_old = self.diff
+                        self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
+                        self.converged = np.all(np.abs(self.diff) < self.tol)
+                    else:
+                        logger.warning(f"'input_element' must be 'res_bus' for V_ctrl not {self.input_element}, correcting.")
+                        self.input_element = 'res_bus'
+                        if np.atleast_1d(self.input_variable)[0] != 'vm_pu':
+                            logger.warning(f"'input_variable' must be 'vm_pu' for V_ctrl not {self.input_variable}, correcting ")
+                            self.input_variable = 'vm_pu'
+                        self.diff_old = self.diff #V_ctrl
+                        self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.input_element_index)[0]]
+                        self.converged = np.all(np.abs(self.diff) < self.tol)
+                else:
+                    self.diff_old = self.diff  # V_ctrl
+                    self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.input_element_index)[0]]
+                    self.converged = np.all(np.abs(self.diff) < self.tol)
             else:
                 if self.control_modus != 'Q_ctrl':
                     logger.warning(f"No Controller Modus specified for Controller {self.index}, using Q_ctrl.\n"
@@ -452,8 +460,6 @@ class DroopControl(Controller):
 
         **q_droop_var** - Droop Value in Mvar/p.u.
 
-        **bus_idx** - Bus index in case of voltage control.
-
         **vm_set_pu_bsc** - Initial voltage set point in case of voltage control.
 
         **controller_idx** - Index of linked Binary< search control (if present).
@@ -471,7 +477,7 @@ class DroopControl(Controller):
         **vm_set_ub=None** - Upper band border of dead band
        """
 
-    def __init__(self, net, q_droop_mvar, bus_idx, controller_idx, voltage_ctrl, tol=1e-6,
+    def __init__(self, net, q_droop_mvar, controller_idx, voltage_ctrl, bus_idx=None, tol=1e-6,
                  q_set_mvar_bsc=None, in_service=True, order=-1, level=0, name="", drop_same_existing_ctrl=False,
                  matching_params=None, vm_set_pu_bsc=None, vm_set_lb=None, vm_set_ub=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
@@ -528,8 +534,7 @@ class DroopControl(Controller):
         if self.bus_idx is None:
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
-            self.converged = net.controller.at[self.controller_idx, "object"].converged
-
+            self.converged = net.controller.at[self.controller_idx, "object"].converged and np.all(np.abs(self.diff) < self.tol)
         return self.converged
 
     def control_step(self, net):
@@ -543,7 +548,7 @@ class DroopControl(Controller):
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
             if hasattr(net.controller.object[self.controller_idx], 'gen_q_response'):
                 gen_q_response = net.controller.object[self.controller_idx].gen_q_response[0]
-            else: gen_q_response = None
+            else: gen_q_response = None #todo gen_q_response fällt weg
             if gen_q_response is None: gen_q_response = 1 #legacy and robustness
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
@@ -576,12 +581,8 @@ class DroopControl(Controller):
                                                   input_variable[counter], read_flag[counter]))
             input_values = (
                         net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
-            if self.vm_set_pu_new is None: #first iteration
-                self.vm_set_pu_new = self.vm_set_pu_bsc + sum(
-                    input_values) / self.q_droop_mvar  # net.controller.at[self.controller_idx, "object"].gen_q_response[0] *
-            else:
-                self.vm_set_pu_new = self.vm_set_pu_new + sum(
-                        input_values) / self.q_droop_mvar
+            self.vm_set_pu_new = self.vm_set_pu_bsc + sum(
+                input_values) / self.q_droop_mvar  # net.controller.at[self.controller_idx, "object"].gen_Q_response[0] *
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
 
 

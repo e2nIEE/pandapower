@@ -47,7 +47,7 @@ def test_volt_ctrl():
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
 
 
-def test_volt_ctrl_droop(): #todo not converging
+def test_volt_ctrl_droop():
     net = simple_test_net()
     tol = 1e-6
     bsc = BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
@@ -56,14 +56,14 @@ def test_volt_ctrl_droop(): #todo not converging
                                          input_element="res_trafo", input_variable="q_hv_mvar", input_element_index=[0],
                                          set_point=1.02, voltage_ctrl=True, bus_idx=1, tol=tol)
     DroopControl(net, name="DC1", q_droop_mvar=40, bus_idx=1,
-                            vm_set_pu=1.02, controller_idx=bsc.index, voltage_ctrl=True)
+                            vm_set_pu=1.02, controller_idx=bsc.index, voltage_ctrl=True, tol = tol)
     runpp(net, run_control=False)
     assert(abs(net.res_bus.loc[1, "vm_pu"] - 0.999648) < tol)
     runpp(net, run_control=True)
     assert(abs(net.res_bus.loc[1, "vm_pu"] - (1.02 + net.res_trafo.loc[0, "q_hv_mvar"] / 40)) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].control_modus == 'V_ctrl')#test correct control_modus
-    assert(net.controller.at[1, 'object'].control_modus == 'V_ctrl')  # test correct control_modus
+    assert(net.controller.at[1, 'object'].voltage_ctrl is True)  # test correct control_modus
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
@@ -116,10 +116,10 @@ def test_station_ctrl_pf_import():
     print("Controlled line 0 to, expected constQ = -0.86 MVar for q_from_mvar and constQ = 0.5 MVar for q_to_mvar: \n",
           net.res_line.loc[0, "q_from_mvar"], "\t", net.res_line.loc[0, "q_to_mvar"])
     print("Controlled line 1 to, expected constQ = -0.86 MVar for q_from_mvar and constQ = 0.5 MVar for q_to_mvar: \n",
-          net.res_line.loc[1, "q_from_mvar"], "\t", net.res_line.loc[1, "q_to_mvar"])
+          net.res_line.loc[2, "q_from_mvar"], "\t", net.res_line.loc[2, "q_to_mvar"])
     assert(abs(net.res_line.loc[0, "q_to_mvar"] - 0.5) < tol)
-    assert(abs(net.res_line.loc[1, "q_to_mvar"] - 0.5) < tol)
-    assert(net.controller.at[1, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
+    assert(abs(net.res_line.loc[2, "q_to_mvar"] - 0.5) < tol)
+    assert(net.controller.at[0, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
     print("--------------------------------------")
     print("Scenario 2 - Constant V, droop 40 MVar/pu")
     print("Input Measurement line 4 q_from_mvar and q_to_mvar, expected: \n -0.6215 MVar \t 0.2442 MVar \n",
@@ -131,25 +131,25 @@ def test_station_ctrl_pf_import():
     assert(abs(net.res_bus.loc[62, "vm_pu"] - (1.01 + ((net.res_line.loc[4, "q_to_mvar"] +
                                              net.res_line.loc[5, "q_to_mvar"]) /
                                             40))) < tol)  # still not close enough, increased tolerance
-    assert(net.controller.at[2, 'object'].control_modus == 'V_ctrl')  # test correct control_modus
+    assert(net.controller.at[4, 'object'].voltage_ctrl is True)  # test correct droop control_modus
     assert(net.controller.at[3, 'object'].control_modus == 'V_ctrl')  # test correct control_modus
-    assert(net.controller.at[3, 'object'].controller_idx == 2)  # test droop controller linkage
+    assert(net.controller.at[4, 'object'].controller_idx == 3)  # test droop controller linkage
     print("--------------------------------------")
     print("Scenario 3 - Constant V")
     print("Controlled bus, set point = 1.03 pu, vm_pu: ", net.res_bus.loc[84, "vm_pu"])
     assert(abs(net.res_bus.loc[84, "vm_pu"] - 1.03) < tol)
-    assert(net.controller.at[0, 'object'].control_modus == 'V_ctrl')  # test correct control_modus
+    assert(net.controller.at[5, 'object'].control_modus == 'V_ctrl')  # test correct control_modus
     print("--------------------------------------")
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
-    print("Input Measurement vm_pu: ", net.res_bus.loc[103, "vm_pu"])
+    print("Input Measurement vm_pu: ", net.res_bus.loc[91, "vm_pu"])
     print("Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, q_hv_mvar, "
           "expected: \n -(1 MVar + (0.999 pu  - 0.99585 pu) * 40 MVar/pu)= -1.12618: \n",
           net.res_trafo.loc[3, "q_hv_mvar"])
-    assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[103, "vm_pu"]) * 40))) < tol)
+    assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - (1 + (0.999 - net.res_bus.loc[91, "vm_pu"]) * 40)) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
-    assert(net.controller.at[4, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
-    assert(net.controller.at[5, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
-    assert(net.controller.at[5, 'object'].controller_idx == 4) #test droop controller linkage
+    assert(net.controller.at[2, 'object'].voltage_ctrl is False)  # test correct droop control_modus
+    assert(net.controller.at[1, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
+    assert(net.controller.at[2, 'object'].controller_idx == 1) #test droop controller linkage
 
 ### Testing after rework of station controller###
 
@@ -176,10 +176,10 @@ def test_volt_ctrl_droop_new():
     bsc = BinarySearchControl(net, ctrl_in_service=True,
                                          output_element="sgen", output_variable="q_mvar", output_element_index=0,
                                          output_element_in_service=True, output_values_distribution=1,
-                                         input_element="res_bus", input_variable="vm_pu", input_element_index=1,
-                                         set_point=1.02,control_modus = 'V_ctrl', tol=tol)
+                                         input_element="res_trafo", input_variable="q_hv_mvar", input_element_index=0,
+                                         set_point=1.02,control_modus = 'V_ctrl', tol=tol, bus_idx =1)
     DroopControl(net, q_droop_mvar=40, controller_idx=bsc.index, voltage_ctrl = True, input_element_q_meas='res_trafo',
-                 input_variable_q_meas='q_hv_mvar', input_element_index_q_meas=0, bus_idx=1, vm_set_pu_bsc = bsc.set_point)
+                 input_variable_q_meas='q_hv_mvar', bus_idx=1, vm_set_pu_bsc = 1.02, tol = tol)
     runpp(net, run_control=False)
     assert(abs(net.res_bus.loc[1, "vm_pu"] - 0.999648) < tol)
     runpp(net, run_control=True)
