@@ -1,5 +1,6 @@
 import numbers
 import numpy as np
+from collections.abc import Sequence
 
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
@@ -122,6 +123,34 @@ class BinarySearchControl(Controller):
             self.input_element_index.append(input_element_index)
         if self.tol is None: #old order
             self.tol = 0.001
+
+        ###Q direction at element
+        n = len(self.input_element_index)
+        if input_inverted is None or (isinstance(input_inverted, Sequence) and len(input_inverted) == 0):
+            # empty, then set all entries to 1
+            self.input_sign = [1] * n
+        elif isinstance(input_inverted, bool):
+            # single bool, then set all entries to desired value +/-1
+            self.input_sign = ([-1] if input_inverted else [1]) * n
+        else:
+            inv_list = list(input_inverted)[:n]
+            if len(inv_list) < n:
+                inv_list += [False] * (n - len(inv_list))
+            self.input_sign = [-1 if inv else 1 for inv in inv_list]
+        self.output_element = output_element
+        self.output_element_index = output_element_index
+        self.output_element_in_service = output_element_in_service
+        # normalize the values distribution:
+        self.output_values_distribution = np.array(output_values_distribution, dtype=np.float64) / np.sum(
+            output_values_distribution)
+        n = len(np.atleast_1d(self.output_element_index))
+        if gen_q_response is None or (isinstance(gen_q_response, Sequence) and len(gen_q_response) == 0):
+            # empty, then set all entries to 1
+            self.gen_q_response = [1] * n
+        else:
+            if len(gen_q_response) < n:
+                gen_q_response += [1] * (n - len(gen_q_response))  # missing entries with +1
+            self.gen_q_response = gen_q_response
         ###finding correct control_modus, catching deprecated voltage_ctrl argument###todo unambiguous control_modus also with droop
         if control_modus is None: #catching old attribute voltage_ctrl
             if hasattr(self, 'voltage_ctrl'):
@@ -226,7 +255,7 @@ class BinarySearchControl(Controller):
     def initialize_control(self, net):
         #reread output elements
         #net.controller.at[self.index, 'object'].converged = converged
-        output_element_index = self.output_element_index[0] if self.write_flag == 'single_index' else\
+        output_element_index = np.atleast_1d(self.output_element_index)[0] if self.write_flag == 'single_index' else\
                                             self.output_element_index #ruggedize for single index
         self.output_values = read_from_net(net, self.output_element, output_element_index, self.output_variable,
                                            self.write_flag)
@@ -242,10 +271,10 @@ class BinarySearchControl(Controller):
             self.converged = True
             return self.converged
         ###updating input & output elements in service lists
-        self.input_element_in_service = list(self.input_element_in_service)
-        self.output_element_in_service = list(self.output_element_in_service)
-        self.input_element_in_service.clear()
-        self.output_element_in_service.clear()
+        self.input_element_in_service = list(np.atleast_1d(self.input_element_in_service)).clear()
+        self.output_element_in_service = list(np.atleast_1d(self.output_element_in_service)).clear()
+        self.input_element_in_service = []
+        self.output_element_in_service = []
         for input_index in np.atleast_1d(self.input_element_index):
             if self.input_element == "res_line":
                 self.input_element_in_service.append(net.line.in_service[input_index])
@@ -259,7 +288,7 @@ class BinarySearchControl(Controller):
                 self.input_element_in_service.append(net.bus.in_service[input_index])
             elif self.input_element == "res_gen":
                 self.input_element_in_service.append(net.gen.in_service[input_index])
-        for output_index in self.output_element_index:
+        for output_index in np.atleast_1d(self.output_element_index):
             if self.output_element == "gen":
                 self.output_element_in_service.append(net.gen.in_service[output_index])
             elif self.output_element == "sgen":
@@ -504,9 +533,9 @@ class DroopControl(Controller):
         return self.converged
 
     def control_step(self, net):
-        self._droopcontrol_step(net)
+        self._droop_control_step(net)
 
-    def _droopcontrol_step(self, net):
+    def _droop_control_step(self, net):
         self.vm_pu_old = self.vm_pu
         self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
         if not self.voltage_ctrl:
@@ -528,7 +557,7 @@ class DroopControl(Controller):
             else:
                 self.q_set_old_mvar, self.q_set_mvar = (
                     self.q_set_mvar, self.q_set_mvar + net.controller.object[self.controller_idx].gen_q_response[0] * (
-                                self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
+                                self.q_set_mvar_bsc - self.vm_pu) * self.q_droop_mvar)
 
             if self.q_set_old_mvar is not None:
                 self.diff = self.q_set_mvar - self.q_set_old_mvar
@@ -547,8 +576,12 @@ class DroopControl(Controller):
                                                   input_variable[counter], read_flag[counter]))
             input_values = (
                         net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
-            self.vm_set_pu_new = self.vm_set_pu_bsc + sum(
-                input_values) / self.q_droop_mvar  # net.controller.at[self.controller_idx, "object"].gen_Q_response[0] *
+            if self.vm_set_pu_new is None: #first iteration
+                self.vm_set_pu_new = self.vm_set_pu_bsc + sum(
+                    input_values) / self.q_droop_mvar  # net.controller.at[self.controller_idx, "object"].gen_q_response[0] *
+            else:
+                self.vm_set_pu_new = self.vm_set_pu_new + sum(
+                        input_values) / self.q_droop_mvar
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
 
 

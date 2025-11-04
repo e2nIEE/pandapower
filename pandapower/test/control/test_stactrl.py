@@ -47,7 +47,7 @@ def test_volt_ctrl():
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
 
 
-def test_volt_ctrl_droop():
+def test_volt_ctrl_droop(): #todo not converging
     net = simple_test_net()
     tol = 1e-6
     bsc = BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
@@ -179,7 +179,7 @@ def test_volt_ctrl_droop_new():
                                          input_element="res_bus", input_variable="vm_pu", input_element_index=1,
                                          set_point=1.02,control_modus = 'V_ctrl', tol=tol)
     DroopControl(net, q_droop_mvar=40, controller_idx=bsc.index, voltage_ctrl = True, input_element_q_meas='res_trafo',
-                 input_variable_q_meas='q_hv_mvar', input_element_index_q_meas=0, bus_idx=1, vm_set_pu = bsc.set_point)
+                 input_variable_q_meas='q_hv_mvar', input_element_index_q_meas=0, bus_idx=1, vm_set_pu_bsc = bsc.set_point)
     runpp(net, run_control=False)
     assert(abs(net.res_bus.loc[1, "vm_pu"] - 0.999648) < tol)
     runpp(net, run_control=True)
