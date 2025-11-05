@@ -20,7 +20,7 @@ from pandapower.create import create_empty_network, create_buses, create_lines_f
 from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 from pandapower.toolbox import drop_buses, fuse_buses
-from utils import ColumnFuzzyMatchingUtils, NameNormalizationUtils, MiscUtils
+from pandapower.converter.jao.utils import ColumnFuzzyMatchingUtils, NameNormalizationUtils, MiscUtils
 import logging
 
 logger = logging.getLogger(__name__)
