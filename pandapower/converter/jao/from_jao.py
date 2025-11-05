@@ -506,6 +506,35 @@ def _create_lines(
             continue
         df = data[key]
 
+        # VN
+        vn_tuple = ColumnFuzzyMatchingUtils.get_voltage_tuple(df)
+        if vn_tuple is None:
+            raise KeyError(f"{key}: Voltage_level (fuzzy) not found.")
+        vn_kvs = df.loc[:, vn_tuple].values
+
+        # Substation names
+        s1_full = ColumnFuzzyMatchingUtils.best_fullname_tuple_fuzzy(df, "Substation_1")
+        s2_full = ColumnFuzzyMatchingUtils.best_fullname_tuple_fuzzy(df, "Substation_2")
+        if s1_full is None or s2_full is None:
+            raise KeyError(f"{key}: Substation_1/2 Full_name (fuzzy) not found.")
+
+        valid_mask = (
+                ~pd.isna(vn_kvs) &
+                (df[s1_full].astype(str).str.strip() != "") &
+                (df[s1_full].astype(str).str.strip() != "NAN") &
+                (df[s2_full].astype(str).str.strip() != "") &
+                (df[s2_full].astype(str).str.strip() != "NAN")
+        )
+
+        # Logge entfernte ungültige Zeilen
+        invalid_count = len(df) - valid_mask.sum()
+        if invalid_count > 0:
+            logger.warning(f"{invalid_count} {key.lower()} wurden aufgrund fehlender oder ungültiger Daten entfernt")
+
+        # Filtere ungültige Zeilen heraus
+        df = df[valid_mask].copy()
+        vn_kvs = vn_kvs[valid_mask]
+
         # Length
         length_km = df[(ELECTRICAL_PARAMETER_STR, LENGTH_STR)].values
         zero_length = np.isclose(length_km, 0)
@@ -514,18 +543,6 @@ def _create_lines(
             logger.warning(
                 f"Nach den Daten haben {sum(zero_length)} {key.lower()} 0 km Länge und {sum(no_length)} ohne Länge; beide auf 1 km gesetzt.")
             length_km[zero_length | no_length] = 1
-
-        # VN
-        vn_tuple = ColumnFuzzyMatchingUtils.get_voltage_tuple(df)
-        if vn_tuple is None:
-            raise KeyError(f"{key}: Voltage_level (fuzzy) nicht gefunden.")
-        vn_kvs = df.loc[:, vn_tuple].values
-
-        # Substation names
-        s1_full = ColumnFuzzyMatchingUtils.best_fullname_tuple_fuzzy(df, "Substation_1")
-        s2_full = ColumnFuzzyMatchingUtils.best_fullname_tuple_fuzzy(df, "Substation_2")
-        if s1_full is None or s2_full is None:
-            raise KeyError(f"{key}: Substation_1/2 Full_name (fuzzy) nicht gefunden.")
 
         # Bus indices
         from_bus = bus_idx.loc[list(zip(df.loc[:, s1_full].astype(str).values, vn_kvs))].values
@@ -616,26 +633,37 @@ def _create_transformers_and_buses(
     vn_hv_kv, vn_lv_kv = _get_transformer_voltages(data, bus_idx)
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(
         net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
-
     # Imax primary
-    max_i_a = data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
-    empty_i_idx = max_i_a.index[max_i_a.isnull()]
-    max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, ("Maximum Current Imax (A) primary", "Max")].values
-
+    max_fixed = pd.to_numeric(data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")], errors="coerce")
+    max_max = pd.to_numeric(data[key].loc[:, ("Maximum Current Imax (A) primary", "Max")], errors="coerce")
+    max_i_a = np.asarray(max_fixed.fillna(max_max), dtype=float)
     # Base quantities
-    sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
-    z_pu = vn_lv_kv ** 2 / sn_mva
-
-    # Transformer parameters (fuzzy)
-    R_ohm = ColumnFuzzyMatchingUtils.values_by_lvl1_fuzzy_numeric(dfT, "resistance r ohm", tokens=["resistance"], default=0.0)
-    X_ohm = ColumnFuzzyMatchingUtils.values_by_lvl1_fuzzy_numeric(dfT, "reactance x ohm", tokens=["reactance"], default=0.0)
-    B_uS = ColumnFuzzyMatchingUtils.values_by_lvl1_fuzzy_numeric(dfT, "susceptance b us", tokens=["susceptance", "b", "us"], default=0.0)
-    G_uS = ColumnFuzzyMatchingUtils.values_by_lvl1_fuzzy_numeric(dfT, "conductance g us", tokens=["conductance", "g", "us"], default=0.0)
+    vn_hv_arr = vn_hv_kv.astype(float)
+    vn_lv_arr = vn_lv_kv.astype(float)
+    sn_mva = (np.sqrt(3.0) * max_i_a * vn_hv_arr) / 1e3
+    z_pu = (vn_lv_arr ** 2) / sn_mva
+    # Transformerparameter (R/X/B/G als floats)
+    R_ohm = np.asarray(pd.to_numeric(
+        ColumnFuzzyMatchingUtils.values_by_lvl1_fuzzy_numeric(
+            dfT, "resistance r ohm", tokens=["resistance"], default=0.0
+        ), errors="coerce"), dtype=float)
+    X_ohm = np.asarray(pd.to_numeric(
+        ColumnFuzzyMatchingUtils.values_by_lvl1_fuzzy_numeric(
+            dfT, "reactance x ohm", tokens=["reactance"], default=0.0
+        ), errors="coerce"), dtype=float)
+    B_uS = np.asarray(pd.to_numeric(
+        ColumnFuzzyMatchingUtils.values_by_lvl1_fuzzy_numeric(
+            dfT, "susceptance b us", tokens=["susceptance", "b", "us"], default=0.0
+        ), errors="coerce"), dtype=float)
+    G_uS = np.asarray(pd.to_numeric(
+        ColumnFuzzyMatchingUtils.values_by_lvl1_fuzzy_numeric(
+            dfT, "conductance g us", tokens=["conductance", "g", "us"], default=0.0
+        ), errors="coerce"), dtype=float)
 
     rk = R_ohm / z_pu
     xk = X_ohm / z_pu
-    b0 = B_uS * 1e-6 * z_pu
-    g0 = G_uS * 1e-6 * z_pu
+    b0 = (B_uS * 1e-6) * z_pu
+    g0 = (G_uS * 1e-6) * z_pu
     zk = np.sqrt(rk ** 2 + xk ** 2)
     vk_percent = np.sign(xk) * zk * 100
     vkr_percent = rk * 100
