@@ -1350,7 +1350,7 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_0['closed'].item()
     assert element_0['name'].item() == 'BE_DSC_5'
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_0['in_ka'].item())
+    assert element_0['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert element_0['origin_class'].item() == 'Disconnector'
     assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
