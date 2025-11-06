@@ -728,6 +728,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
 
         if "step_dependency_table" in s:
+            # TODO: remove step_dependency_table and infer from id_characterists_table if it exsists
             if np.any(vl & (s.step_dependency_table == True) & (pd.isna(s.id_characteristic_table))):
                 raise UserWarning("Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
                                   "Please set an id_characteristic_table or set step_dependency_table to False.")
