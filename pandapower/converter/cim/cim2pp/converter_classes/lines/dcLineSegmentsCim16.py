@@ -104,7 +104,7 @@ class DcLineSegmentsCim16:
             if len(new_cn_dict) > 0:
                 visited_cns.extend(list(cn_ids))
                 return search_converter(cn_ids=new_cn_dict, visited_cns=visited_cns)  # type: ignore[arg-type]
-            
+
             return None
 
         for row_index, row in dc_line_segments[dc_line_segments['converters'].isna()].iterrows():

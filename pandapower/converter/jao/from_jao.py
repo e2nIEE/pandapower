@@ -680,7 +680,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                                " in line_geo_data. No value exists more often than others. "
                                "The first of most used geo positions is used.")
             return _geo_json_str(this_bus_geo.loc[how_often.idxmax()])  # type: ignore[arg-type]
-        
+
         return None
 
     net.bus.geo = [_add_bus_geo_inner(bus) for bus in net.bus.index]

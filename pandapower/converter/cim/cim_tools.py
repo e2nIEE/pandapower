@@ -167,5 +167,5 @@ def get_cim_schema(cgmes_version: str = '2.4.15') -> Dict[str, Dict[str, Dict[st
             with open(path_to_schema, encoding='UTF-8', mode='r') as f:
                 cim_schema = json.load(f)
             return cim_schema
-    
+
     raise RuntimeError("This line should not be reached")
