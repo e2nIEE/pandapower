@@ -61,7 +61,6 @@ def from_pf(
     line_dict = {}
     trafo_dict = {}
     trafo3w_dict = {}
-    # TODO typing: impedance_dict is not defined as global variable is this by purpose?
     impedance_dict = {}  # type: ignore[name-defined]
     switch_dict = {}
     logger.debug("__name__: %s" % __name__)

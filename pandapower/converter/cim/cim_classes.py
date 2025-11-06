@@ -506,13 +506,13 @@ class CimParser:
         self.file_names[prf] = file
         self._parse_xml_tree(xml_tree.getroot(), prf, output)  # type: ignore[arg-type]
 
-    def _parse_xml_tree(self, xml_tree, profile_name: str, output: dict | None = None):
+    def _parse_xml_tree(self, xml_tree: etree._Element, profile_name: str, output: dict | None = None):
         output = self.cim if output is None else output
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in xml_tree])  # type: ignore[attr_defined]
         element_types = element_types.drop_duplicates()
         prf_content: dict[str, pd.DataFrame] = {}
-        ns_dict = {}
+        ns_dict: dict = {}
         prf = profile_name
         if prf not in ns_dict:
             ns_dict[prf] = {}

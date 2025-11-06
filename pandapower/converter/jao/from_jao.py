@@ -679,7 +679,6 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                 logger.warning(f"Bus {bus} (name {net.bus.at[bus, 'name']}) was found multiple times"
                                " in line_geo_data. No value exists more often than others. "
                                "The first of most used geo positions is used.")
-            # TODO typing: _geo_json_str accepts only pd.Series but a pd.DataFrame is provided
             return _geo_json_str(this_bus_geo.loc[how_often.idxmax()])  # type: ignore[arg-type]
         
         return None
