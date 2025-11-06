@@ -143,8 +143,8 @@ def correct_dtypes(net, error):
     raised.
     """
     empty_net = create_empty_network()
-    not_corrected = list()
-    failed = dict()
+    not_corrected = []
+    failed = {}
     for key, table in empty_net.items():
         if isinstance(table, pd.DataFrame):
             if key in net.keys() and isinstance(net[key], pd.DataFrame):
