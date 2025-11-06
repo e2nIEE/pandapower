@@ -8,53 +8,20 @@ from pandapower.create import create_empty_network, create_bus
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.network_schema.tools.helper import get_dtypes
 from pandapower.network_schema.bus import bus_schema
-
-# Boolean types
-bools = [True, False, np.bool_(True), np.bool_(False)]
-# Numeric types
-floats = [0, 0.0, 1.0, float("inf"), float("-inf"), np.float32(1.0), np.float64(1.0)]
-ints = [0, 1, -1, 42, np.int8(1), np.int16(1), np.int32(1), np.int64(1), np.uint8(1)]
-# String types
-strings = [
-    "True",
-    "False",
-    "true",
-    "false",
-    "1",
-    "0",
-    "yes",
-    "no",
-    "not a number",
-    "",
-    " ",
-]
-others = [
-    # None and NaN variants
-    None,
-    pd.NaT,
-    np.nan,
-    # Collections
-    {},
-    {"value": True},
-    # Objects
-    object(),
-    type,
-    lambda x: x,
-    # Complex numbers
-    complex(1, 0),
-    1 + 0j,
-]
-
-not_boolean_list = [*others, *strings, *ints, *floats]
-not_floats_list = [*others, *strings, *ints, *bools]
-not_strings_list = [*others, *strings, *ints, *bools]
-
+from pandapower.test.pandera.elements.helper import (
+    strings,
+    floats,
+    bools,
+    not_strings_list,
+    not_floats_list,
+    not_boolean_list,
+)
 
 class TestBusRequiredFields:
     """Tests for required bus fields"""
 
     @pytest.mark.parametrize(
-        "parameter,invalid_value",
+        "parameter,valid_value",
         list(
             itertools.chain(
                 itertools.product(["name"], [pd.NA, *strings]),
@@ -63,14 +30,13 @@ class TestBusRequiredFields:
             )
         ),
     )
-    def test_invalid_required_values(self, parameter, invalid_value):
+    def test_valid_required_values(self, parameter, valid_value):
         """Test: Invalid required values are rejected"""
         net = create_empty_network()
         create_bus(net, 0.4)
-        net.bus[parameter] = invalid_value
+        net.bus[parameter] = valid_value
 
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+        validate_network(net)
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",
@@ -125,7 +91,7 @@ class TestBusOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["min_vm_pu", "max_vm_pu"], [-1.5, *not_floats_list]),
+                itertools.product(["min_vm_pu", "max_vm_pu"], [float(np.nan), -1.5, *not_floats_list]),
                 itertools.product(["type", "zone", "geo"], [float(np.nan), -1.5, *not_strings_list]),
             )
         ),
