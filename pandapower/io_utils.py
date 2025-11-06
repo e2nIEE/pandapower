@@ -256,11 +256,13 @@ def from_dict_of_dfs(dodfs, net=None):
         elif item.endswith("_std_types"):
             # when loaded from Excel, the lists in the DataFrame cells are strings -> we want to convert them back
             # to lists here. There is probably a better way to deal with it.
-            if item.startswith("fuse"):
+            item_name = item.replace("_std_types", "")
+            if item_name not in net:
                 for c in table.columns:
                     table[c] = table[c].apply(
                         lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else x)
-            net["std_types"][item[:-10]] = table.T.to_dict()
+            # remove nan from std_types dicts
+            net["std_types"][item_name] = {name: {k: v for k, v in tab.items() if not isinstance(v, float) or pd.notnull(v)} for name, tab in table.T.to_dict().items()}
             continue  # don't go into try…except
         elif item.endswith("_profiles"):
             if "profiles" not in net:

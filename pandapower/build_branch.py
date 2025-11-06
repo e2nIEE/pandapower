@@ -12,7 +12,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_values
+from pandapower.auxiliary import get_values, pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, BR_G_ASYM, BR_B_ASYM, branch_cols
 from pandapower.pypower.idx_brch_dc import branch_dc_cols, DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS, DC_F_BUS, \
@@ -495,6 +495,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
             if "leakage_resistance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
         x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv") \
             if "leakage_reactance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
+
         return _wye_delta(r, x, g, b, r_ratio, x_ratio)
     else:
         raise ValueError("Unknown Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
@@ -1360,8 +1361,8 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net, sequence=1):
-    trafo2 = dict()
+def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
+    trafo2: dict[str, dict] = {}
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
     t3 = net["trafo3w"]

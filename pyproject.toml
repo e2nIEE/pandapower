@@ -46,6 +46,7 @@ dependencies = [
     "deepdiff~=8.6",
     "geojson~=3.2",
     "typing_extensions~=4.9",
+    "pandera~=0.26.1"
 ]
 keywords = [
     "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
@@ -77,9 +78,20 @@ fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=46.0", "geopandas~=
 converter = ["matpowercaseframes~=1.1", "lxml~=6.0"]
 pgm = ["power-grid-model-io~=1.2"]
 control = ["shapely~=2.1"]
-typing = ["mypy~=1.18", "pandas-stubs~=2.3", "types-shapely~=2.1", "types-psycopg2~=2.9", "types-openpyxl~=3.1",
-    "types-networkx~=3.4", "types-tqdm~=4.67", "scipy-stubs~=1.15", "types-geopandas~=1.1", "types-seaborn~=0.13",
-    "lxml-stubs"]
+typing = [
+    "mypy~=1.18",
+    "pandas-stubs~=2.3",
+    "types-shapely~=2.1",
+    "types-psycopg2~=2.9",
+    "types-openpyxl~=3.1",
+    "types-networkx~=3.4",
+    "types-tqdm~=4.67",
+    "scipy-stubs~=1.15",
+    "types-geopandas~=1.1",
+    "types-seaborn~=0.13",
+    "lxml-stubs",
+    "pandera[mypy]~=0.26.1"
+]
 
 all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,typing]"]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
