@@ -937,7 +937,7 @@ def test_fullgrid_switch(fullgrid_v2):
     assert element_0['closed'].item()
     assert element_0['name'].item() == 'BE_DSC_5'
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_0['in_ka'].item())
+    assert element_0['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert 'Disconnector' == element_0['origin_class'].item()
     assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
@@ -1364,7 +1364,7 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_1['closed'].item()
     assert element_1['name'].item() == 'BE_LB_1'
     assert element_1['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_1['in_ka'].item())
+    assert element_1['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert element_1['origin_class'].item() == 'LoadBreakSwitch'
     assert element_1['terminal_bus'].item() == '_1c134839-5bad-124e-93a4-b11663025232'
     assert element_1['terminal_element'].item() == '_ea6bb748-b513-0947-a59b-abd50155dad2'
