@@ -65,9 +65,13 @@ class BinarySearchControl(Controller):
 
         **voltage_ctrl** - Whether the controller is used for voltage control.
 
-        **output_min_q_mvar** - Minimum reactive power limits for each output element.
+        **output_min_q_mvar** - List of minimum reactive power limits for each output element. Comes into action if runpp 
+        is executed with enforce_q_lims=True. If the output element is an sgen and has a q_characteristic_curve,
+        then this will be considered as the output_min_q_mvar
 
-        **output_max_q_mvar** - Maximum reactive power limits for each output element.
+        **output_max_q_mvar** - List of maximum reactive power limits for each output element. Comes into action if runpp 
+        is executed with enforce_q_lims=True. If the output element is an sgen and has a q_characteristic_curve,
+        then this will be considered as the output_min_q_mvar
 
         **bus_idx=None** - Bus index used for voltage control.
 
@@ -89,7 +93,7 @@ class BinarySearchControl(Controller):
     """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[], # TODO: add missing docstring
+                 input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[],
                  output_min_q_mvar=None, output_max_q_mvar=None, bus_idx=None, tol=0.001, in_service=True, order=0,
                  level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
@@ -127,11 +131,31 @@ class BinarySearchControl(Controller):
         if output_min_q_mvar is not None:
             self.output_min_q_mvar = np.array(output_min_q_mvar, dtype=np.float64)
         else:
-            self.output_min_q_mvar = np.array([-np.inf]*len(output_element_index), dtype=np.float64)
+            if output_element == "sgen":
+                if net.sgen.loc[self.output_element_index, 'id_q_capability_characteristic'].notna().any():
+                    output_min_q_mvar_char = []
+                    for oe in self.output_element_index:
+                        if np.isnan(net.sgen.id_q_capability_characteristic.at[oe]):
+                            output_min_q_mvar_char.append(-np.inf)
+                        else:
+                            output_min_q_mvar_char.append(-np.inf) # TODO: replace this np.inf with get_q_from_capability
+                    self.output_min_q_mvar = np.array(output_min_q_mvar_char, dtype=np.float64)
+            else:
+                self.output_min_q_mvar = np.array([-np.inf]*len(output_element_index), dtype=np.float64)
         if output_max_q_mvar is not None:
             self.output_max_q_mvar = np.array(output_max_q_mvar, dtype=np.float64)
         else:
-            self.output_max_q_mvar = np.array([np.inf]*len(output_element_index), dtype=np.float64)
+            if output_element == "sgen":
+                if net.sgen.loc[self.output_element_index, 'id_q_capability_characteristic'].notna().any():
+                    output_max_q_mvar_char = []
+                    for oe in self.output_element_index:
+                        if np.isnan(net.sgen.id_q_capability_characteristic.at[oe]):
+                            output_max_q_mvar_char.append(np.inf)
+                        else:
+                            output_max_q_mvar_char.append(np.inf) # TODO: replace this np.inf with get_q_from_capability
+                    self.output_max_q_mvar = np.array(output_max_q_mvar_char, dtype=np.float64)
+            else:
+                self.output_max_q_mvar = np.array([np.inf]*len(output_element_index), dtype=np.float64)
 
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(self.output_values_distribution,
