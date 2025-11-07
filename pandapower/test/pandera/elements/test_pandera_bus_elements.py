@@ -10,12 +10,14 @@ from pandapower.network_schema.tools.helper import get_dtypes
 from pandapower.network_schema.bus import bus_schema
 from pandapower.test.pandera.elements.helper import (
     strings,
-    floats,
     bools,
     not_strings_list,
     not_floats_list,
     not_boolean_list,
+    negativ_floats,
+    positiv_floats,
 )
+
 
 class TestBusRequiredFields:
     """Tests for required bus fields"""
@@ -25,7 +27,7 @@ class TestBusRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["name"], [pd.NA, *strings]),
-                itertools.product(["vn_kv"], floats),
+                itertools.product(["vn_kv"], positiv_floats),
                 itertools.product(["in_service"], bools),
             )
         ),
@@ -35,6 +37,8 @@ class TestBusRequiredFields:
         net = create_empty_network()
         create_bus(net, 0.4)
         net.bus[parameter] = valid_value
+        if parameter == "name":
+            net.bus[parameter] = net.bus[parameter].astype(pd.StringDtype())
 
         validate_network(net)
 
@@ -42,9 +46,9 @@ class TestBusRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], [float(np.nan), -1.5, *not_strings_list]),
-                itertools.product(["vn_kv"], [float(np.nan), -1.5, pd.NA, *not_floats_list]),
-                itertools.product(["in_service"], [float(np.nan), -1.5, pd.NA, *not_boolean_list]),
+                itertools.product(["name"], [float(np.nan), *not_strings_list]),
+                itertools.product(["vn_kv"], [float(np.nan), pd.NA, *not_floats_list, *negativ_floats]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -64,7 +68,7 @@ class TestBusOptionalFields:
     def test_bus_with_optional_fields(self):
         """Test: Bus with every optional fields is valid"""
         net = create_empty_network()
-        create_bus(net, 0.4, zone='everywhere', max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0))
+        create_bus(net, 0.4, zone="everywhere", max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0))
         validate_network(net)
 
     def test_buses_with_optional_fields_including_nullvalues(self):
@@ -91,8 +95,8 @@ class TestBusOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["min_vm_pu", "max_vm_pu"], [float(np.nan), -1.5, *not_floats_list]),
-                itertools.product(["type", "zone", "geo"], [float(np.nan), -1.5, *not_strings_list]),
+                itertools.product(["min_vm_pu", "max_vm_pu"], [float(np.nan), *not_floats_list]),
+                itertools.product(["type", "zone", "geo"], [float(np.nan), *not_strings_list]),
             )
         ),
     )
