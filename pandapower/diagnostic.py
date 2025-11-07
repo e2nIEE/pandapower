@@ -3,33 +3,42 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import copy
+import logging
+from functools import partial
+from typing import Literal, Any, Concatenate
+from collections.abc import Callable
+
 import pandas as pd
 import numpy as np
 
-from pandapower import create_impedance, create_switch
-
-import logging
-
-logger = logging.getLogger(__name__)
-
-from functools import partial
-from pandapower.auxiliary import (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged,
-                                  NetCalculationNotConverged)
+from pandapower.create import create_impedance, create_switch
+from pandapower.auxiliary import (
+    LoadflowNotConverged, OPFNotConverged, ControllerNotConverged, NetCalculationNotConverged, pandapowerNet
+)
 from pandapower.run import runpp
 from pandapower.toolbox import get_connected_elements, replace_xward_by_ward
 from pandapower.diagnostic_reports import diagnostic_report
 
-# separator between log messages
-log_message_sep = "\n --------\n"
+logger = logging.getLogger(__name__)
 
 expected_exceptions = (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged, NetCalculationNotConverged)
 
 
-def diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True,
-               overload_scaling_factor=0.001, min_r_ohm=0.001, min_x_ohm=0.001, max_r_ohm=100,
-               max_x_ohm=100, nom_voltage_tolerance=0.3, numba_tolerance=1e-05, **kwargs):
+def diagnostic(
+        net: pandapowerNet,
+        report_style: Literal['detailed', 'compact'] | None = 'detailed',
+        warnings_only: bool = False,
+        return_result_dict: bool = True,
+        overload_scaling_factor: float = 0.001,
+        min_r_ohm: float = 0.001,
+        min_x_ohm: float = 0.001,
+        max_r_ohm: float = 100,
+        max_x_ohm: float = 100,
+        nom_voltage_tolerance: float = 0.3,
+        numba_tolerance: float = 1e-05,
+        **kwargs
+) -> dict[str, Any] | None:
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
@@ -78,11 +87,10 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
       Format: {'check_name': check_results}
 
     EXAMPLE:
-
-    <<< pandapower.diagnostic(net, report_style='compact', warnings_only=True)
+    >>> pandapower.diagnostic(net, report_style='compact', warnings_only=True)
 
     """
-    diag_functions = [
+    diag_functions: list[tuple[Callable[..., dict | None], dict[str, Any]]] = [
         (missing_bus_indices, {}),
         (disconnected_elements, {}),
         (different_voltage_levels_connected, {}),
@@ -100,7 +108,7 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         (parallel_switches, {}),
     ]
 
-    diag_results = {}
+    diag_results: dict[str, Any] = {}
     diag_errors = {}
     for diag_function, kwargs in diag_functions:
         try:
@@ -121,14 +129,9 @@ def diagnostic(net, report_style='detailed', warnings_only=False, return_result_
         "numba_tolerance": numba_tolerance
     }
 
-    if report_style == 'detailed':
-        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=False,
-                          warnings_only=warnings_only)
-    elif report_style == 'compact':
-        diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report=True,
-                          warnings_only=warnings_only)
-    if return_result_dict:
-        return diag_results
+    if report_style is not None:
+        diagnostic_report(net, diag_results, diag_errors, diag_params, report_style=='compact', warnings_only)
+    return diag_results if return_result_dict else None
 
 
 def check_greater_zero(element, element_index, column):
