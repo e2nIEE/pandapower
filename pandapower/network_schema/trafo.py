@@ -8,7 +8,7 @@ from pandapower.network_schema.tools.validation.group_dependency import (
 
 _trafo_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
-    "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
+    "std_type": pa.Column(pd.StringDtype, nullable=True, required=False, description="transformer standard type name"),
     "hv_bus": pa.Column(
         int,
         pa.Check.ge(0),
@@ -144,7 +144,13 @@ _trafo_columns = {
         description="specifies if the transformer is part of a power_station_unit (short-circuit relevant) refer to IEC60909-0-2016 section 6.7.1",
         metadata={"sc": True},
     ),
-    "tap2_side": pa.Column(pd.StringDtype, pa.Check.isin(["hv", "lv"]), nullable=True, required=False, description=""),
+    "tap2_side": pa.Column(
+        pd.StringDtype,
+        pa.Check.isin(["hv", "lv"]),
+        nullable=True,
+        required=False,
+        description="position of the second tap changer (hv, lv)",
+    ),
     "tap2_neutral": pa.Column(pd.Float64Dtype, nullable=True, required=False, description="rated tap position"),
     "tap2_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap2_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
@@ -158,7 +164,7 @@ _trafo_columns = {
         pd.Float64Dtype, nullable=True, required=False, description="current position of tap changer"
     ),
     "tap2_changer_type": pa.Column(
-        str,
+        pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "nan"]),
         nullable=True,
         required=False,
@@ -206,12 +212,15 @@ trafo_checks = [
         error=f"trafo tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
     ),
 ]
-trafo_checks += create_column_dependency_checks_from_metadata([
-    "opf",
-    # "sc",
-    # "3ph",
-    "tdt"
-], _trafo_columns)
+trafo_checks += create_column_dependency_checks_from_metadata(
+    [
+        "opf",
+        # "sc",
+        # "3ph",
+        "tdt",
+    ],
+    _trafo_columns,
+)
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,

@@ -6,7 +6,7 @@ from pandapower.network_schema.tools.validation.group_dependency import create_c
 _line_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the line"),
     "std_type": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="standard type which can be used to easily define line parameters with the pandapower standard type library",

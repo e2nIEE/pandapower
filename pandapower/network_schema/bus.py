@@ -6,7 +6,7 @@ from pandapower.network_schema.tools.validation.group_dependency import create_c
 _bus_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=True, description="name of the bus"),
     "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the bus [kV]"),
-    "type": pa.Column(str, nullable=True, required=False, description="type variable to classify buses"),
+    "type": pa.Column(pd.StringDtype, nullable=True, required=False, description="type variable to classify buses"),
     "zone": pa.Column(
         pd.StringDtype,
         nullable=True,

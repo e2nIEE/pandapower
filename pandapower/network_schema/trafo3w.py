@@ -118,13 +118,14 @@ _trafo3w_columns = {
         float,
         nullable=True,
         required=False,
-        description="",
+        description="maximum current loading (only needed for OPF)",
+        metadata={"opf": True},
     ),
     "vector_group": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
-        description="",
+        description="vector group of the 3w-transformer",
         metadata={"sc": True},
     ),
     "vkr0_x": pa.Column(
@@ -148,10 +149,14 @@ trafo3w_checks = [
         error=f"trafo3w tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
     ),
 ]
-trafo3w_checks += create_column_dependency_checks_from_metadata([
-    # "sc",
-    "tdt"
-], _trafo3w_columns)
+trafo3w_checks += create_column_dependency_checks_from_metadata(
+    [
+        # "sc",
+        "tdt",
+        "opf",
+    ],
+    _trafo3w_columns,
+)
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,
