@@ -87,7 +87,8 @@ def diagnostic(
       Format: {'check_name': check_results}
 
     EXAMPLE:
-    >>> pandapower.diagnostic(net, report_style='compact', warnings_only=True)
+    >>> from pandapower.diagnostic import diagnostic
+    >>> diagnostic(net, report_style='compact', warnings_only=True)
 
     """
     diag_functions: list[tuple[Callable[..., dict | None], dict[str, Any]]] = [
@@ -182,6 +183,14 @@ def check_less_15(element, element_index, column):
         return element_index
 
 
+def check_less_20(element, element_index, column):
+    if check_number(element, element_index, column) is None:
+        if element[column] >= 20:
+            return element_index
+    else:
+        return element_index
+
+
 def check_less_equal_zero(element, element_index, column):
     if check_number(element, element_index, column) is None:
         if element[column] > 0:
@@ -268,8 +277,8 @@ def invalid_values(net):
                                     ('vkr_lv_percent', '>=0'), ('vk_hv_percent', '>0'),
                                     ('vk_mv_percent', '>0'), ('vk_lv_percent', '>0'),
                                     ('vkr_hv_percent', '<15'), ('vkr_mv_percent', '<15'),
-                                    ('vkr_lv_percent', '<15'), ('vk_hv_percent', '<15'),
-                                    ('vk_mv_percent', '<15'), ('vk_lv_percent', '<15'),
+                                    ('vkr_lv_percent', '<15'), ('vk_hv_percent', '<20'),
+                                    ('vk_mv_percent', '<20'), ('vk_lv_percent', '<20'),
                                     ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
                                     ('in_service', 'boolean')],
                         'load': [('bus', 'positive_integer'), ('p_mw', 'number'),
@@ -290,6 +299,7 @@ def invalid_values(net):
                    '>=0': check_greater_equal_zero,
                    '<0': check_less_zero,
                    '<15': check_less_15,
+                   '<20': check_less_20,
                    '<=0': check_less_equal_zero,
                    'boolean': check_boolean,
                    'positive_integer': check_pos_int,

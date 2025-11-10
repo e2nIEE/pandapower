@@ -130,7 +130,7 @@ class TestInvalidValues:
                             (0, 'vn_lv_kv', False, '>0'),
                             (0, 'vk_mv_percent', 'nan', '>0'),
                             (0, 'vk_lv_percent', 0.0, '>0'),
-                            (0, 'vk_mv_percent', 'nan', '<15')]}
+                            (0, 'vk_mv_percent', 'nan', '<20')]}
 
         diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
         check_report_function(diag_report.report_invalid_values)
