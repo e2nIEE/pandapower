@@ -97,7 +97,6 @@ class BinarySearchControl(Controller):
         self.diff = None
         self.diff_old = None
         self.converged = False  # criteria for success of controller
-        self.overwrite_convergence = False  # for droop
         self.redistribute_values = None  # Values to save for redistributed gens
         self.counter_warning = False  # only one message that only one active output element
         self.read_flag = []  # type of read value
@@ -402,12 +401,7 @@ class BinarySearchControl(Controller):
                 self.diff_old = self.diff #Q_ctrl
                 self.diff = self.set_point - sum(input_values)
                 self.converged = np.all(np.abs(self.diff) < self.tol)
-
-        if getattr(self,'overwrite_convergence', False): ###overwrite convergence in case of droop controller
-            self.overwrite_convergence = False
-            return self.overwrite_convergence
-        else:
-            return self.converged
+        return self.converged
 
     def control_step(self, net):
         self._binary_search_control_step(net)
