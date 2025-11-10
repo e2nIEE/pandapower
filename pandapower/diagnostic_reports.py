@@ -86,7 +86,7 @@ class DiagnosticReports:
             logger.info("PASSED: No problematic switches found")
 
     def report_different_voltage_levels_connected(self):
-        from pandapower.toolbox import get_connected_buses_at_element
+        from pandapower.toolbox.element_selection import get_connected_buses_at_element
         if "different_voltage_levels_connected" in self.diag_results:
             # message header
             if self.compact_report:

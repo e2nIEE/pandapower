@@ -13,8 +13,9 @@ from pandapower.create import create_empty_network, create_buses, create_ext_gri
 from pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.get_equivalent import get_equivalent, merge_internal_net_and_equivalent_external_net
 from pandapower.grid_equivalents.ward_generation import create_passive_external_net_for_ward_admittance
-from pandapower.groups import group_element_lists, create_group, compare_group_elements, group_row, \
+from pandapower.groups import group_element_lists, compare_group_elements, group_row, \
     set_group_reference_column, count_group_elements, group_element_index
+from pandapower.create.group_create import create_group
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.run import runpp

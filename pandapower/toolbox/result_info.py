@@ -9,7 +9,7 @@ from itertools import chain
 import numpy as np
 import pandas as pd
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.toolbox import pp_elements
+from pandapower.toolbox.element_selection import pp_elements
 
 import logging
 

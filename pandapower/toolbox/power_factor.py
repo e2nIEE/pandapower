@@ -199,7 +199,7 @@ def cosphi_pos_neg_from_pq(p, q):
     Examples
     --------
     >>> import numpy as np
-    >>> from pandapower.toolbox import cosphi_pos_neg_from_pq
+    >>> from pandapower.toolbox.power_factor import cosphi_pos_neg_from_pq
     >>> np.round(cosphi_pos_neg_from_pq(0.76, 0.25), 5)
     0.94993
     >>> np.round(cosphi_pos_neg_from_pq(0.76, -0.25), 5)

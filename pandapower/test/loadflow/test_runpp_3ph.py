@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import copy
 from pandapower import pp_dir
-from pandapower import replace_line_by_impedance
+from pandapower.toolbox.grid_modification import replace_line_by_impedance
 from pandapower.auxiliary import get_free_id
 from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_asymmetric_load, \
     create_line_from_parameters, create_load, create_transformer_from_parameters, create_sgen, create_asymmetric_sgen, \
@@ -22,7 +22,7 @@ from pandapower.std_types import create_std_type, add_zero_impedance_parameters
 from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks, \
     trafo_currents_consistent_3ph
 from pandapower.test.loadflow.PF_Results import get_PF_Results
-from pandapower.toolbox import dataframes_equal
+from pandapower.toolbox.comparison import dataframes_equal
 
 
 @pytest.fixture

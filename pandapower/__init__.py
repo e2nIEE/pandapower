@@ -12,7 +12,6 @@ from pandapower.sql_io import to_postgresql, from_postgresql, delete_postgresql_
 from pandapower.powerflow import *
 from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.run import *
-from pandapower.toolbox import *  # to be removed -> in future via package namespace available
 from pandapower.groups import *
 from pandapower.diagnostic import *
 from pandapower.runpm import *

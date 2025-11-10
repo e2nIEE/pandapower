@@ -18,7 +18,8 @@ from functools import partial
 from pandapower.auxiliary import (LoadflowNotConverged, OPFNotConverged, ControllerNotConverged,
                                   NetCalculationNotConverged)
 from pandapower.run import runpp
-from pandapower.toolbox import get_connected_elements, replace_xward_by_ward
+from pandapower.toolbox.element_selection import get_connected_elements
+from pandapower.toolbox.grid_modification import replace_xward_by_ward
 from pandapower.diagnostic_reports import diagnostic_report
 
 # separator between log messages
