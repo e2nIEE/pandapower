@@ -6,7 +6,7 @@
 import copy
 import logging
 from functools import partial
-from typing import Literal, Any, Concatenate
+from typing import Literal, Any
 from collections.abc import Callable
 
 import pandas as pd

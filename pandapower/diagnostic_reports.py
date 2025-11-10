@@ -388,7 +388,6 @@ class DiagnosticReports:
             if diag_result["load"]:
                 logger.warning(f"overload found: Power flow converges with load scaled down to {osf_percent}")
             else:
-                assert diag_result["generation"]
                 logger.warning(f"overload found: Power flow converges with generation scaled down to {osf_percent}")
 
     def report_wrong_switch_configuration(self):
