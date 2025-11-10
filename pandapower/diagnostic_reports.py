@@ -366,7 +366,7 @@ class DiagnosticReports:
             return
         if "overload" not in self.diag_results:
             logger.info("PASSED: Power flow converges. No overload found.")
-
+            return
         # message header
         logger.compact("overload:\n")
         logger.detailed("Checking for overload...\n")
@@ -552,7 +552,7 @@ class DiagnosticReports:
             logger.warning("numba_comparison failed due to the following error:")
             logger.warning(self.diag_errors["numba_comparison"])
             return
-        if "numba_comparison" in self.diag_results:
+        if "numba_comparison" not in self.diag_results:
             logger.info("PASSED: No results with deviations between numba = True vs. False found.")
             return
         # message header
@@ -602,7 +602,7 @@ class DiagnosticReports:
             logger.warning("Check for missing bus indices failed due to the following error:")
             logger.warning(self.diag_errors["missing_bus_indices"])
             return
-        if "missing_bus_indices" in self.diag_results:
+        if "missing_bus_indices" not in self.diag_results:
             logger.info("PASSED: No missing bus indices found.")
             return
         # message header
