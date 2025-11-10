@@ -428,8 +428,14 @@ class BinarySearchControl(Controller):
             self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
 
     def _update_min_max_q_mvar(self, net):
-        self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
-        self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
+        if 'min_q_mvar' in net[self.output_element].columns:
+            self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
+        else:
+            self.output_min_q_mvar = np.array([-np.inf]*len(self.output_element_index), dtype=np.float64)
+        if 'max_q_mvar' in net[self.output_element].columns:
+            self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
+        else:
+            self.output_max_q_mvar = np.array([np.inf]*len(self.output_element_index), dtype=np.float64)
 
 
     def __str__(self):
