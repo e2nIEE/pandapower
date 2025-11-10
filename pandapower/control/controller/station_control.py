@@ -89,9 +89,9 @@ class BinarySearchControl(Controller):
     """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[], # TODO: add missing docstring
-                 output_min_q_mvar=None, output_max_q_mvar=None, bus_idx=None, tol=0.001, in_service=True, order=0,
-                 level=0, drop_same_existing_ctrl=False, matching_params=None, **kwargs):
+                 input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[],
+                 bus_idx=None, tol=0.001, in_service=True, order=0, level=0, drop_same_existing_ctrl=False,
+                 matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
@@ -124,14 +124,7 @@ class BinarySearchControl(Controller):
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
 
-        if output_min_q_mvar is not None:
-            self.output_min_q_mvar = np.array(output_min_q_mvar, dtype=np.float64)
-        else:
-            self.output_min_q_mvar = np.array([-np.inf]*len(output_element_index), dtype=np.float64)
-        if output_max_q_mvar is not None:
-            self.output_max_q_mvar = np.array(output_max_q_mvar, dtype=np.float64)
-        else:
-            self.output_max_q_mvar = np.array([np.inf]*len(output_element_index), dtype=np.float64)
+        self._update_min_max_q_mvar(net)
 
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(self.output_values_distribution,
@@ -196,6 +189,10 @@ class BinarySearchControl(Controller):
     def initialize_control(self, net):
         self.output_values = read_from_net(net, self.output_element, self.output_element_index,
                                            self.output_variable, self.write_flag)
+        self.output_adjustable = np.array([False if not distribution else service
+                                            for distribution, service in zip(self.output_values_distribution,
+                                                                            self.output_element_in_service)],
+                                            dtype=np.bool)
 
     def is_converged(self, net):
         """
@@ -337,6 +334,8 @@ class BinarySearchControl(Controller):
 
             if self.output_adjustable is not None and net._options['enforce_q_lims']: # none if output element is a shunt
                 if isinstance(x, np.ndarray) and len(x)>1:
+                    self._update_min_max_q_mvar(net)
+
                     # check if x is a list, multiple assets in station controller
 
                     # check if a limit is reached, consider element in service
@@ -390,6 +389,8 @@ class BinarySearchControl(Controller):
                 else:
                     # check when x is a single value (only one adjustable machine)
                     # check if limit is reached
+                    self._update_min_max_q_mvar(net)
+
                     reached_min_qmvar = x<self.output_min_q_mvar
                     reached_max_qmvar = x>self.output_max_q_mvar
 
@@ -425,6 +426,10 @@ class BinarySearchControl(Controller):
             self.output_values_distribution = np.array(self.output_values_distribution, dtype=np.float64) / total
         else:
             self.output_values_distribution = np.zeros_like(self.output_values_distribution, dtype=np.float64)
+
+    def _update_min_max_q_mvar(self, net):
+        self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
+        self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
 
 
     def __str__(self):
