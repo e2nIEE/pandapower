@@ -300,16 +300,16 @@ class PowerTransformersCim16:
             ['rdfId', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0',
              'phaseAngleClock', 'connectionKind', 'grounded']]
         # merge the CurrentLimits to the power_transformer_ends
-        if 'CurrentLimit' in self.cimConverter.cim['ssh']:
+        if 'CurrentLimit' in self.cimConverter.cim['ssh']:  # CGMES 3.0
             current_limits = self.cimConverter.merge_eq_ssh_profile('CurrentLimit')[['OperationalLimitSet', 'value',
                                                                                      'OperationalLimitType']]
-        else:
+        else:  # CGMES 2.4.15
             current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['OperationalLimitSet', 'OperationalLimitType',
                                                                           'value']]
         current_limits = current_limits.rename(columns={'OperationalLimitSet': 'rdfId'})
         current_limits = pd.merge(current_limits,
                                   self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']],
-                                  how='left', on='rdfId')
+                                  how='left', on='rdfId', validate='1:1')
         current_limits = current_limits.drop(columns='rdfId')
         current_limits = current_limits.rename(columns={'OperationalLimitType': 'rdfId'})
         if 'kind' in self.cimConverter.cim['eq']['OperationalLimitType']:  # CGMES 3.0
@@ -317,12 +317,13 @@ class PowerTransformersCim16:
                    .rename(columns={'kind': 'limitType'}))
         else:  # CGMES 2.4.15
             olt = self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType', 'acceptableDuration']]
-        current_limits = pd.merge(current_limits, olt, how='left', on='rdfId')
+        current_limits = pd.merge(current_limits, olt, how='left', on='rdfId', validate='1:1')
         current_limits = current_limits.drop(columns='rdfId')
         current_limits = current_limits.rename(columns={
             'value': 'CurrentLimit.value', 'limitType': 'OperationalLimitType.limitType',
             'acceptableDuration': 'OperationalLimitType.acceptableDuration'})
-        power_transformer_ends = pd.merge(power_transformer_ends, current_limits, how='left', on='Terminal')
+        power_transformer_ends = pd.merge(power_transformer_ends, current_limits, how='left', on='Terminal',
+                                          validate='1:m')
         # make sure there is only one CurrentLimit per winding, keep the one with the lowest value (and choose patl
         # first: sort ascending for OperationalLimitType.limitType)
         power_transformer_ends = (
