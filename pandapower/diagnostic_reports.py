@@ -137,13 +137,15 @@ def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_repor
 
 class DiagnosticReports:
     @overload
-    @deprecated("use of keyword 'compact_report' is deprecated. Use a message filter to remove compact or detailed messages.")
+    @deprecated(
+        "use of keyword 'compact_report' is deprecated. Use a message filter to remove compact or detailed messages."
+    )
     def __init__(self, net, diag_results, diag_errors, diag_params, compact_report): ...
 
     @overload
     def __init__(self, net, diag_results, diag_errors, diag_params): ...
 
-    def __init__(self, net, diag_results, diag_errors, diag_params, compact_report = None):
+    def __init__(self, net, diag_results, diag_errors, diag_params, compact_report=None):
         self.net = net
         self.diag_results = diag_results
         self.diag_errors = diag_errors
