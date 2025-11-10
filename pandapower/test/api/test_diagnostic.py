@@ -179,9 +179,8 @@ class TestInvalidValues:
                          (3, 'scaling', '1', '>=0')],
                 'sgen': [(0, 'scaling', False, '>=0')]}
 
-        for bool_value in [True, False]:
-            diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
-            check_report_function(diag_report.report_invalid_values)
+        diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
+        check_report_function(diag_report.report_invalid_values)
 
 
     def test_boolean(self, test_net, diag_params, diag_errors):
@@ -224,9 +223,8 @@ class TestInvalidValues:
                 'trafo': [(0, 'in_service', 'True', 'boolean')],
                 'trafo3w': [(0, 'in_service', 'nan', 'boolean')]}
 
-        for bool_value in [True, False]:
-            diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
-            check_report_function(diag_report.report_invalid_values)
+        diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
+        check_report_function(diag_report.report_invalid_values)
 
     def test_pos_int(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -264,9 +262,8 @@ class TestInvalidValues:
                 'trafo3w': [(0, 'hv_bus', False, 'positive_integer'),
                             (0, 'mv_bus', 0.5, 'positive_integer')]}
 
-        for bool_value in [True, False]:
-            diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
-            check_report_function(diag_report.report_invalid_values)
+        diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
+        check_report_function(diag_report.report_invalid_values)
 
     def test_number(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -289,9 +286,8 @@ class TestInvalidValues:
                 'load': [(0, 'p_mw', '1000', 'number'), (1, 'q_mvar', 'nan', 'number')],
                 'sgen': [(1, 'q_mvar', 'nan', 'number')]}
 
-        for bool_value in [True, False]:
-            diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
-            check_report_function(diag_report.report_invalid_values)
+        diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
+        check_report_function(diag_report.report_invalid_values)
 
     def test_between_zero_and_one(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -307,9 +303,8 @@ class TestInvalidValues:
         assert diag_results[check_function] == \
                {'line': [(0, 'df', 1.5, '0<x<=1')]}
 
-        for bool_value in [True, False]:
-            diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
-            check_report_function(diag_report.report_invalid_values)
+        diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
+        check_report_function(diag_report.report_invalid_values)
 
     def test_switch_type(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
