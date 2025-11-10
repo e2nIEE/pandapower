@@ -257,7 +257,7 @@ def invalid_values(net):
                         'trafo': [('hv_bus', 'positive_integer'), ('lv_bus', 'positive_integer'),
                                   ('sn_mva', '>0'), ('vn_hv_kv', '>0'), ('vn_lv_kv', '>0'),
                                   ('vkr_percent', '>=0'), ('vk_percent', '>0'),
-                                  ('vkr_percent', '<15'), ('vk_percent', '<15'),
+                                  ('vkr_percent', '<15'), ('vk_percent', '<20'),
                                   ('pfe_kw', '>=0'), ('i0_percent', '>=0'),
                                   ('in_service', 'boolean')],
                         'trafo3w': [('hv_bus', 'positive_integer'), ('mv_bus', 'positive_integer'),
