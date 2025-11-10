@@ -309,7 +309,7 @@ class PowerTransformersCim16:
         current_limits = current_limits.rename(columns={'OperationalLimitSet': 'rdfId'})
         current_limits = pd.merge(current_limits,
                                   self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']],
-                                  how='left', on='rdfId', validate='1:1')
+                                  how='left', on='rdfId', validate='m:1')
         current_limits = current_limits.drop(columns='rdfId')
         current_limits = current_limits.rename(columns={'OperationalLimitType': 'rdfId'})
         if 'kind' in self.cimConverter.cim['eq']['OperationalLimitType']:  # CGMES 3.0
