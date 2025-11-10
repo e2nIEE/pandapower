@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] refactored diagnostic and diagnostic_report for cleaner output
 - [FIXED] legacy np.random.random uses
 - [FIXED] SonarCube reliabilty complaints
 - [FIXED] remove imports from converter init, change code usage and docu accordingly
