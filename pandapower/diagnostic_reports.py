@@ -5,6 +5,9 @@
 
 import logging
 from collections import defaultdict
+from typing import overload
+
+from typing_extensions import deprecated
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +31,8 @@ def add_log_level(levelno: int, levelname: str) -> None:
     setattr(logging, levelname.lower(), log_for_level)
 
 
-add_log_level(logging.WARNING + 4, "compact")
-add_log_level(logging.WARNING + 2, "detailed")
+add_log_level(logging.WARNING + 2, "compact")
+add_log_level(logging.WARNING + 4, "detailed")
 
 
 class NotCompactFilter(logging.Filter):
@@ -38,8 +41,10 @@ class NotCompactFilter(logging.Filter):
 
     Returns True if the message is not on log level 'COMPACT'
     """
+
     def filter(self, record):
         return record.levelno != logging.COMPACT
+
 
 class NotDetailedFilter(logging.Filter):
     """
@@ -47,8 +52,10 @@ class NotDetailedFilter(logging.Filter):
 
     Returns True if the message is not on log level 'DETAILED'
     """
+
     def filter(self, record):
         return record.levelno != logging.DETAILED
+
 
 class LogCount(logging.Filter):
     """
@@ -56,6 +63,7 @@ class LogCount(logging.Filter):
 
     This is used to detect if a separator should be printed or not
     """
+
     def __init__(self):
         super().__init__()
         self.count = defaultdict(int)
@@ -77,12 +85,7 @@ log_message_sep = f"\n{'':-<{log_format_len}}\n"
 
 
 def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_report, warnings_only):
-    diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params, compact_report)
-    if warnings_only:
-        log_level = logging.WARNING
-    else:
-        log_level = logging.INFO
-    logger.setLevel(log_level)
+    diag_report = DiagnosticReports(net, diag_results, diag_errors, diag_params)
 
     report_methods = {
         "missing_bus_indices": diag_report.report_missing_bus_indices,
@@ -101,10 +104,21 @@ def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_repor
         "parallel_switches": diag_report.report_parallel_switches,
     }
 
-    log_counter = LogCount()
+    # setup logger
+    if warnings_only:
+        log_level = logging.WARNING
+    else:
+        log_level = logging.INFO
 
-    logger.warning(f"\n\n{' PANDAPOWER DIAGNOSTIC TOOL ':-^{log_format_len}}\n")
+    original_log_level = logger.getEffectiveLevel()
+    logger.setLevel(log_level)
+    log_counter = LogCount()
+    log_detail_filter = NotDetailedFilter() if compact_report else NotCompactFilter()
     logger.addFilter(log_counter)
+    logger.addFilter(log_detail_filter)
+
+    # generate diagnostic output
+    logger.warning(f"\n\n{' PANDAPOWER DIAGNOSTIC TOOL ':-^{log_format_len}}\n")
 
     for key in report_methods:
         if (key in diag_results) or not warnings_only:
@@ -113,21 +127,27 @@ def diagnostic_report(net, diag_results, diag_errors, diag_params, compact_repor
             log_counter.reset()
             report_methods[key]()
 
-    logger.removeFilter(log_counter)
     logger.warning(f"\n\n{' END OF PANDAPOWER DIAGNOSTIC ':-^{log_format_len}}\n")
+
+    # teardown logger (if this is ommited it might affect next run)
+    logger.removeFilter(log_counter)
+    logger.removeFilter(log_detail_filter)
+    logger.setLevel(original_log_level)
 
 
 class DiagnosticReports:
-    def __init__(self, net, diag_results, diag_errors, diag_params, compact_report):
+    @overload
+    @deprecated("use of keyword 'compact_report' is deprecated. Use a message filter to remove compact or detailed messages.")
+    def __init__(self, net, diag_results, diag_errors, diag_params, compact_report): ...
+
+    @overload
+    def __init__(self, net, diag_results, diag_errors, diag_params): ...
+
+    def __init__(self, net, diag_results, diag_errors, diag_params, compact_report = None):
         self.net = net
         self.diag_results = diag_results
         self.diag_errors = diag_errors
         self.diag_params = diag_params
-        # if compact report filter out detailed messages and vice versa
-        if compact_report:
-            logger.addFilter(NotDetailedFilter())
-        else:
-            logger.addFilter(NotCompactFilter())
 
     def report_disconnected_elements(self):
         # error and success checks
@@ -147,8 +167,7 @@ class DiagnosticReports:
         element_counter = 0
         for disc_section in diag_result:
             logger.compact(f"disconnected_section: {disc_section}")
-            logger.detailed("Disconnected section found,"
-                           " consisting of the following elements:")
+            logger.detailed("Disconnected section found, consisting of the following elements:")
             for key in disc_section:
                 element_counter += len(disc_section[key])
                 logger.detailed(f"{key}: {disc_section[key]}")
@@ -158,6 +177,7 @@ class DiagnosticReports:
 
     def report_different_voltage_levels_connected(self):
         from pandapower.toolbox import get_connected_buses_at_element
+
         # error and success checks
         if "different_voltage_levels_connected" in self.diag_errors:
             logger.warning("Check for connection of different voltage levels failed due to the following error:")
@@ -193,12 +213,10 @@ class DiagnosticReports:
         # message summary
         logger.detailed(f"\nSUMMARY: {element_counter} element(s) that connect different voltage levels found.")
 
-
     def report_impedance_values_close_to_zero(self):
         # error and success checks
         if "impedance_values_close_to_zero" in self.diag_errors:
-            logger.warning("Check for elements with impedance values close to zero failed due "
-                           "to the following error:")
+            logger.warning("Check for elements with impedance values close to zero failed due to the following error:")
             logger.warning(self.diag_errors["impedance_values_close_to_zero"])
             return
         if "impedance_values_close_to_zero" not in self.diag_results:
@@ -227,28 +245,27 @@ class DiagnosticReports:
                     min_r_type = "r_dc_ohm"
                     min_x_type = "x_ohm"
                 logger.warning(
-                    f"{key} {element}: {min_r_type} <= {self.diag_params['min_'+min_r_type]} or "
-                    f"{min_x_type} <= {self.diag_params['min_'+min_x_type]}"
+                    f"{key} {element}: {min_r_type} <= {self.diag_params['min_' + min_r_type]} or "
+                    f"{min_x_type} <= {self.diag_params['min_' + min_x_type]}"
                 )
 
         if len(self.diag_results["impedance_values_close_to_zero"]) > 1:
             switch_replacement = self.diag_results["impedance_values_close_to_zero"][1]
             if switch_replacement["loadflow_converges_with_switch_replacement"]:
-                logger.warning("Switch replacement successful: Power flow converges after "
-                               "replacing implausible elements with switches.")
+                logger.warning(
+                    "Switch replacement successful: Power flow converges after "
+                    "replacing implausible elements with switches."
+                )
             else:
-                logger.warning("Power flow still does not converge after replacing implausible "
-                               "elements with switches.")
+                logger.warning("Power flow still does not converge after replacing implausible elements with switches.")
 
         # message summary
         logger.detailed(f"\nSUMMARY: {element_counter} element(s) with impedance values close to zero found.")
 
-
     def report_nominal_voltages_dont_match(self):
         # error and success checks
         if "nominal_voltages_dont_match" in self.diag_errors:
-            logger.warning("Check for components with deviating nominal voltages failed due "
-                           "to the following error:")
+            logger.warning("Check for components with deviating nominal voltages failed due to the following error:")
             logger.warning(self.diag_errors["nominal_voltages_dont_match"])
             return
         if "nominal_voltages_dont_match" not in self.diag_results:
@@ -346,8 +363,7 @@ class DiagnosticReports:
             logger.warning(f"{element_type}:")
             for inv_value in diag_result[element_type]:
                 logger.compact(
-                    f"{element_type} {inv_value[0]}: '{inv_value[1]}' = {inv_value[2]} "
-                    f"(restriction: {inv_value[3]})"
+                    f"{element_type} {inv_value[0]}: '{inv_value[1]}' = {inv_value[2]} (restriction: {inv_value[3]})"
                 )
                 logger.detailed(
                     f"Invalid value found: '{element_type} {inv_value[0]}' with attribute "
@@ -406,11 +422,9 @@ class DiagnosticReports:
         # message body
         diag_result = self.diag_results["wrong_switch_configuration"]
         if diag_result:
-            logger.warning("Possibly wrong switch configuration found: power flow "
-                           "converges with all switches closed.")
+            logger.warning("Possibly wrong switch configuration found: power flow converges with all switches closed.")
         else:
             logger.warning("Power flow still does not converge with all switches closed.")
-
 
     def report_no_ext_grid(self):
         # error and success checks
@@ -466,7 +480,6 @@ class DiagnosticReports:
         # message summary
         logger.detailed(f"\nSUMMARY: {element_counter} bus(ses) with multiple gens and/or ext_grids found.")
 
-
     def report_wrong_reference_system(self):
         # error and success checks
         if "wrong_reference_system" in self.diag_errors:
@@ -494,19 +507,19 @@ class DiagnosticReports:
                 )
 
         # message summary
-        if 'loads' in diag_result:
+        if "loads" in diag_result:
             logger.detailed(
                 f"\nSUMMARY: Found {len(diag_result['loads'])} load(s) with negative p_mw. "
                 "In load reference system, p_mw should be positive. "
                 "If the intention was to model a constant generation, please use an sgen instead."
             )
-        if 'gens' in diag_result:
+        if "gens" in diag_result:
             logger.detailed(
                 f"\nSUMMARY: Found {len(diag_result['gens'])} gen(s) with positive p_mw. "
                 "In load reference system, p_mw should be negative. "
                 "If the intention was to model a load, please use a load instead."
             )
-        if 'sgens' in diag_result:
+        if "sgens" in diag_result:
             logger.detailed(
                 f"\nSUMMARY: Found {len(diag_result['sgens'])} sgen(s) with positive p_mw. "
                 "In load reference system, p_mw should be negative. "
@@ -533,7 +546,7 @@ class DiagnosticReports:
             for eid in diag_result[et]:
                 element_counter += 1
                 values = diag_result[et][eid]
-                if values['std_type_in_lib']:
+                if values["std_type_in_lib"]:
                     logger.warning(
                         f"{et} {eid}: {values['param']} = {values['e_value']}, "
                         f"std_type_value = {values['std_type_value']}"
@@ -543,7 +556,6 @@ class DiagnosticReports:
 
         # message summary
         logger.detailed(f"\nSUMMARY: {element_counter} elements with deviations from std_type found.")
-
 
     def report_numba_comparison(self):
         # error and success checks
@@ -563,9 +575,7 @@ class DiagnosticReports:
         element_counter = 0
         for element_type in diag_result:
             for res_type in diag_result[element_type]:
-                logger.compact(
-                    f"{element_type}.{res_type} absolute deviations:\n{diag_result[element_type][res_type]}"
-                )
+                logger.compact(f"{element_type}.{res_type} absolute deviations:\n{diag_result[element_type][res_type]}")
                 for idx in diag_result[element_type][res_type].index:
                     element_counter += 1
                     dev = diag_result[element_type][res_type].loc[idx]
