@@ -7,15 +7,15 @@ import pytest
 import gc
 import copy
 import geojson
+import numpy as np
+import pandas as pd
 
 from pandapower.control import SplineCharacteristic, Characteristic
 from pandapower.control.util.characteristic import LogSplineCharacteristic
 from math import isclose
-from numpy import array_equal, isclose, allclose, nan, int64
-from pandas import DataFrame, Int64Dtype, isna, notna, concat
 
 try:
-    from geopandas import GeoDataFrame, GeoSeries
+    import geopandas as gpd
     import shapely.geometry
     GEOPANDAS_INSTALLED = True
 except ImportError:
@@ -46,7 +46,7 @@ class MemoryLeakDemo:
         self.net = net
         # it is interesting, that if "self" is just an attribute of net, there are no problems
         # if "self" is saved in a DataFrame, it causes a memory leak
-        net['memory_leak_demo'] = DataFrame(data=[self], columns=['object'])
+        net['memory_leak_demo'] = pd.DataFrame(data=[self], columns=['object'])
 
 
 class MemoryLeakDemoDF:
@@ -78,22 +78,22 @@ def test_get_indices():
     # First without fused buses no magic here
     # after fuse
     result = get_indices([102, 107], lookup, fused_indices=True)
-    assert array_equal(result, [2, 7])
+    assert np.array_equal(result, [2, 7])
 
     # before fuse
     result = get_indices([2, 7], lookup, fused_indices=False)
-    assert array_equal(result, [102, 107])
+    assert np.array_equal(result, [102, 107])
 
     # Same setup EXCEPT we have fused buses now (bus 102 and 107 are fused)
     lookup[107] = lookup[102]
 
     # after fuse
     result = get_indices([102, 107], lookup, fused_indices=True)
-    assert array_equal(result, [2, 2])
+    assert np.array_equal(result, [2, 2])
 
     # before fuse
     result = get_indices([2, 7], lookup, fused_indices=False)
-    assert array_equal(result, [102, 107])
+    assert np.array_equal(result, [102, 107])
 
 
 def test_net_deepcopy():
@@ -102,7 +102,7 @@ def test_net_deepcopy():
     net.bus.at[0, 'geo'] = geojson.dumps(geojson.Point((0., 1.)))
 
     ContinuousTapControl(net, element_index=0, vm_set_pu=1)
-    ds = DFData(DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
+    ds = DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
     ConstControl(net, element='load', variable='p_mw', element_index=[0],
                             profile_name=[0], data_source=ds)
 
@@ -113,11 +113,11 @@ def test_net_deepcopy():
 
     if GEOPANDAS_INSTALLED:
         for tab in ('bus', 'line'):
-            net[f'{tab}_geodata'] = GeoDataFrame(net[tab].geo.dropna().apply(geojson.loads).apply(
+            net[f'{tab}_geodata'] = gpd.GeoDataFrame(net[tab].geo.dropna().apply(geojson.loads).apply(
                 lambda x: x["coordinates"] if x is not None else x), geometry=net[tab].geo.dropna().apply(geojson.loads))
         net1 = copy.deepcopy(net)
-        assert isinstance(net1.line_geodata, GeoDataFrame)
-        assert isinstance(net1.bus_geodata, GeoDataFrame)
+        assert isinstance(net1.line_geodata, gpd.GeoDataFrame)
+        assert isinstance(net1.bus_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata.geometry.iat[0], shapely.geometry.Point)
         assert isinstance(net1.line_geodata.geometry.iat[0], shapely.geometry.LineString)
 
@@ -195,7 +195,7 @@ def test_memory_leak_df():
     types_dict1 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
-        df = DataFrame()
+        df = pd.DataFrame()
         MemoryLeakDemoDF(df)
 
     gc.collect()
@@ -217,11 +217,11 @@ def test_memory_leak_dict():
 
 def test_create_trafo_characteristics():
     net = example_multivoltage()
-    net["trafo_characteristic_table"] = DataFrame(
+    net["trafo_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
-         'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': nan, 'vkr_hv_percent': nan,
-         'vk_mv_percent': nan, 'vkr_mv_percent': nan, 'vk_lv_percent': nan, 'vkr_lv_percent': nan})
+         'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
+         'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     net.trafo['id_characteristic_table'].at[1] = 0
     net.trafo['tap_dependency_table'].at[0] = False
     net.trafo['tap_dependency_table'].at[1] = True
@@ -230,9 +230,9 @@ def test_create_trafo_characteristics():
     assert "trafo_characteristic_spline" in net
     assert "id_characteristic_spline" in net.trafo.columns
     assert len(net.trafo_characteristic_spline) == 1
-    assert net.trafo.id_characteristic_spline.dtype == Int64Dtype()
-    assert isinstance(net.trafo.id_characteristic_spline.at[1], int64)
-    assert isna(net.trafo.id_characteristic_spline.at[0])
+    assert net.trafo.id_characteristic_spline.dtype == pd.Int64Dtype()
+    assert isinstance(net.trafo.id_characteristic_spline.at[1], np.int64)
+    assert pd.isna(net.trafo.id_characteristic_spline.at[0])
     assert all(col in net.trafo_characteristic_spline.columns for col in [
         'voltage_ratio_characteristic', 'angle_deg_characteristic',
         'vk_percent_characteristic', 'vkr_percent_characteristic'])
@@ -242,15 +242,15 @@ def test_create_trafo_characteristics():
     assert isclose(net.trafo_characteristic_spline.at[
                        net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-2).item(),
                    2, rel_tol=1e-9)
-    assert isna(net.trafo_characteristic_spline.at[
+    assert pd.isna(net.trafo_characteristic_spline.at[
                        net.trafo.id_characteristic_spline.at[1], 'vkr_hv_percent_characteristic'])
 
     # create spline characteristics again for two transformers based on the updated trafo_characteristic_table
-    new_rows = DataFrame(
+    new_rows = pd.DataFrame(
         {'id_characteristic': [1, 1, 1, 1, 1], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
          'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327]})
-    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
     net.trafo['id_characteristic_table'].at[0] = 1
     net.trafo['tap_dependency_table'].at[0] = True
     create_trafo_characteristic_object(net)
@@ -266,26 +266,26 @@ def test_create_trafo_characteristics():
                       SplineCharacteristic)
     assert isclose(net.trafo_characteristic_spline.at[
                net.trafo.id_characteristic_spline.at[1], 'vk_percent_characteristic'](-1).item(), 3, rel_tol=1e-9)
-    assert isna(net.trafo_characteristic_spline.at[
+    assert pd.isna(net.trafo_characteristic_spline.at[
                        net.trafo.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'])
-    assert isna(net.trafo_characteristic_spline.at[
+    assert pd.isna(net.trafo_characteristic_spline.at[
                        net.trafo.id_characteristic_spline.at[1], 'vkr_hv_percent_characteristic'])
 
     # test for 3w trafo
-    new_rows = DataFrame(
+    new_rows = pd.DataFrame(
         {'id_characteristic': [2, 2, 2, 2, 2], 'step': [-8, -4, 0, 4, 8], 'voltage_ratio': [1, 1, 1, 1, 1],
          'angle_deg': [0, 0, 0, 0, 0], 'vk_hv_percent': [8.1, 9.5, 10, 11.1, 12.9],
          'vkr_hv_percent': [1.323, 1.325, 1.329, 1.331, 1.339], 'vk_mv_percent': [8.1, 9.5, 10, 11.1, 12.9],
          'vkr_mv_percent': [1.323, 1.325, 1.329, 1.331, 1.339], 'vk_lv_percent': [8.1, 9.5, 10, 11.1, 12.9],
          'vkr_lv_percent': [1.323, 1.325, 1.329, 1.331, 1.339]})
-    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
     net.trafo3w['id_characteristic_table'].at[0] = 2
     net.trafo3w['tap_dependency_table'].at[0] = True
     # create spline characteristics again including a 3-winding transformer
     create_trafo_characteristic_object(net)
     assert len(net.trafo_characteristic_spline) == 3
     assert "id_characteristic_spline" in net.trafo3w.columns
-    assert isinstance(net.trafo3w.id_characteristic_spline.at[0], int64)
+    assert isinstance(net.trafo3w.id_characteristic_spline.at[0], np.int64)
     assert net.trafo_characteristic_spline.loc[net.trafo3w['id_characteristic_table'].at[0]].notna().sum() == 9
     assert isinstance(net.trafo_characteristic_spline.at[
                           net.trafo3w.id_characteristic_spline.at[0], 'vkr_hv_percent_characteristic'],
@@ -301,7 +301,7 @@ def test_create_trafo_characteristics():
     assert isclose(net.trafo_characteristic_spline.at[
                net.trafo3w.id_characteristic_spline.at[0], 'vkr_lv_percent_characteristic'](8).item(), 1.339,
                    rel_tol=1e-9)
-    assert isna(net.trafo_characteristic_spline.at[
+    assert pd.isna(net.trafo_characteristic_spline.at[
                        net.trafo3w.id_characteristic_spline.at[0], 'vk_percent_characteristic'])
 
     # this should be enough testing for adding columns
@@ -335,7 +335,7 @@ def test_creation_of_shunt_characteristics():
     net = create_empty_network()
     b = create_buses(net, 2, 110)
     create_shunt(net, bus=b[1], q_mvar=-50, p_mw=0, step=1, max_step=5)
-    net["shunt_characteristic_table"] = DataFrame(
+    net["shunt_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
          'p_mw': [1, 1.5, 3, 4.5, 5]})
     net.shunt.step_dependency_table.at[0] = True
@@ -343,32 +343,32 @@ def test_creation_of_shunt_characteristics():
 
     create_shunt_characteristic_object(net)
 
-    assert isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](1), -25.)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](3), -75.)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](5), -125.)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](1), 1)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](3), 3)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 5)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](1), -25.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](3), -75.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](5), -125.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](1), 1)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](3), 3)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 5)
 
     # test re-creation of shunt characteristic object (and deletion of old one)
-    net["shunt_characteristic_table"] = DataFrame(
+    net["shunt_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [1, 1, 1, 1, 1], 'step': [1, 2, 3, 4, 5], 'q_mvar': [25, 55, 75, 120, 125],
          'p_mw': [6, 6.5, 7, 8.5, 10]})
     net.shunt.id_characteristic_table.at[0] = 1
 
     create_shunt_characteristic_object(net)
 
-    assert isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](1), 25.)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](3), 75.)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](5), 125.)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](1), 6)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](3), 7)
-    assert isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 10)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](1), 25.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](3), 75.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "q_mvar_characteristic"](5), 125.)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](1), 6)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](3), 7)
+    assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 10)
 
 
 def test_creation_of_q_capability_characteristics():
     net = example_multivoltage()
-    net["q_capability_curve_table"] = DataFrame(
+    net["q_capability_curve_table"] = pd.DataFrame(
         {'id_q_capability_curve': [0, 0, 0, 0, 0], 'p_mw': [0.0, 50.0, 100.0, 125.0, 125.0],
          'q_min_mvar': [-100.0, -75.0, -50.0, -25.0, -10], 'q_max_mvar': [150.0, 125.0, 75, 50.0, 10.0]})
     net.gen.id_q_capability_characteristic.at[0] = 0
@@ -378,9 +378,9 @@ def test_creation_of_q_capability_characteristics():
     create_q_capability_characteristics_object(net)
     assert "q_capability_characteristic" in net
     assert len(net.q_capability_characteristic) == 1
-    assert net.gen.id_q_capability_characteristic.dtype == Int64Dtype()
-    assert isinstance(net.gen.id_q_capability_characteristic.at[0], int64)
-    assert notna(net.gen.id_q_capability_characteristic.at[0])
+    assert net.gen.id_q_capability_characteristic.dtype == pd.Int64Dtype()
+    assert isinstance(net.gen.id_q_capability_characteristic.at[0], np.int64)
+    assert pd.notna(net.gen.id_q_capability_characteristic.at[0])
     assert all(col in net.q_capability_characteristic.columns for col in ["q_max_characteristic",
                                                                                 "q_min_characteristic"])
     assert isinstance(net.q_capability_characteristic.loc
@@ -389,14 +389,14 @@ def test_creation_of_q_capability_characteristics():
     assert isclose(net.q_capability_characteristic.at
                    [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'](-2).item(), 150,
                    rel_tol=1e-9)
-    assert notna(net.q_capability_characteristic.at
+    assert pd.notna(net.q_capability_characteristic.at
                     [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'])
 
     # Create q_capability_characteristic again for the same gen based on the updated q_capability_curve_table
-    new_rows = DataFrame(
+    new_rows = pd.DataFrame(
         {'id_q_capability_curve': [1, 1, 1, 1, 1], 'p_mw': [0.0, 30.0, 50.0, 70.0, 130],
          'q_min_mvar': [-29.0, -27, -26.0, -25.0, -20.0], 'q_max_mvar': [141.0, 141.0, 137.0, 134.0, 128.0]})
-    net["q_capability_curve_table"] = concat([net["q_capability_curve_table"], new_rows], ignore_index=True)
+    net["q_capability_curve_table"] = pd.concat([net["q_capability_curve_table"], new_rows], ignore_index=True)
     net.gen.id_q_capability_characteristic.at[0] = 1
     create_q_capability_characteristics_object(net)
     assert len(net.q_capability_characteristic) == 2
@@ -415,9 +415,9 @@ def test_creation_of_q_capability_characteristics():
     assert isclose(net.q_capability_characteristic.at[
                        net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'](0).item(), 141.0,
                    rel_tol=1e-9)
-    assert notna(net.q_capability_characteristic.loc
+    assert pd.notna(net.q_capability_characteristic.loc
                     [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'])
-    assert notna(net.q_capability_characteristic.loc
+    assert pd.notna(net.q_capability_characteristic.loc
                     [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'])
 
 def test_get_min_max_q_capability():
@@ -427,7 +427,7 @@ def test_get_min_max_q_capability():
     p_mw = [-2.0, -1.0, 0.0, 0.5, 2.0, -5.0, 0.5, 4.0]
     q_min_mvar = [-0.5, -0.3, -0.2, -0.3, -0.5, -0.25, -0.35, -0.45]
     q_max_mvar = [0.6, 0.4, 0.25, 0.4, 0.56, 0.25, 0.35, 0.55]
-    net["q_capability_curve_table"] = DataFrame(
+    net["q_capability_curve_table"] = pd.DataFrame(
         {'id_q_capability_curve': [0, 0, 0, 0, 0, 1, 1, 1],
          'p_mw': p_mw,
          'q_min_mvar': q_min_mvar,
@@ -465,7 +465,7 @@ def test_characteristic(file_io):
         net_copy = from_json_string(to_json(net))
         c1, c2, c3, c4 = net_copy.characteristic.object.values
 
-    assert allclose(c1([-1]), [0], rtol=0, atol=1e-6)
+    assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
     # assert c1(3) == 4
     # assert c1(1) == 1
     # assert c1(2) == 4
@@ -498,10 +498,10 @@ def test_geo_accessor_geojson():
     create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
 
     assert len(net.line.geo.geojson._coords) == 2
-    assert array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
-    assert array_equal(net.line.geo.geojson._coords.at[l[1]], [[1, 1], [1, 2]])
-    assert array_equal(net.bus.geo.geojson._coords.at[b1], [1, 1])
-    assert array_equal(net.bus.geo.geojson._coords.at[b2], [2, 2])
+    assert np.array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
+    assert np.array_equal(net.line.geo.geojson._coords.at[l[1]], [[1, 1], [1, 2]])
+    assert np.array_equal(net.bus.geo.geojson._coords.at[b1], [1, 1])
+    assert np.array_equal(net.bus.geo.geojson._coords.at[b2], [2, 2])
     assert net.bus.geo.geojson.type.at[b1] == "Point"
     assert net.bus.geo.geojson.type.at[b2] == "Point"
     assert net.line.geo.geojson.type.at[l[0]] == "LineString"
@@ -517,7 +517,7 @@ def test_geo_accessor_geopandas():
     net = mv_oberrhein()
     reference_point = (7.781067, 48.389774)
     radius_m = 2200
-    circle_polygon = GeoSeries([shapely.geometry.Point(reference_point)],
+    circle_polygon = gpd.GeoSeries([shapely.geometry.Point(reference_point)],
                                    crs=4326).to_crs(epsg=31467).buffer(radius_m).to_crs(epsg=4326).iloc[0]
     assert net.line.geo.geojson.within(circle_polygon).sum() == 11
     assert all(net.line[net.line.geo.geojson.within(circle_polygon)].index == [14, 17, 46, 47, 55, 116,
@@ -528,7 +528,7 @@ def test_geo_accessor_geopandas():
                                         [7.896173712216692, 48.41100311474432]])
 
     assert net.line.geo.geojson.as_shapely_obj.at[0] == line
-    assert allclose(net.line.geo.geojson.total_bounds, [7.74426069, 48.32845845, 7.93829196, 48.47484423])
+    assert np.allclose(net.line.geo.geojson.total_bounds, [7.74426069, 48.32845845, 7.93829196, 48.47484423])
 
 
 if __name__ == '__main__':
