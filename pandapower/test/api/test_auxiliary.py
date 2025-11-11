@@ -34,7 +34,7 @@ from pandapower.control import (
     create_trafo_characteristic_object,
 )
 from pandapower.control.util.auxiliary import (create_shunt_characteristic_object, _create_trafo_characteristics,
-                                               create_q_capability_characteristics_object)
+                                               create_q_capability_characteristics_object, get_min_max_q_mvar_from_characteristics_object)
 
 
 class MemoryLeakDemo:
@@ -420,6 +420,39 @@ def test_creation_of_q_capability_characteristics():
     assert pd.notna(net.q_capability_characteristic.loc
                     [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'])
 
+def test_get_min_max_q_capability():
+    net = example_multivoltage()
+    sgen_indices_with_char = [1, 2]
+    # create q characteristics table
+    p_mw = [-2.0, -1.0, 0.0, 0.5, 2.0, -5.0, 0.5, 4.0]
+    q_min_mvar = [-0.5, -0.3, -0.2, -0.3, -0.5, -0.25, -0.35, -0.45]
+    q_max_mvar = [0.6, 0.4, 0.25, 0.4, 0.56, 0.25, 0.35, 0.55]
+    net["q_capability_curve_table"] = pd.DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0, 1, 1, 1],
+         'p_mw': p_mw,
+         'q_min_mvar': q_min_mvar,
+         'q_max_mvar': q_max_mvar})
+
+    net.sgen.loc[sgen_indices_with_char, 'id_q_capability_characteristic'] = [0, 1]
+    net.sgen.loc[sgen_indices_with_char, 'curve_style'] = "straightLineYValues"
+
+    create_q_capability_characteristics_object(net)
+    
+    p_mw_sgen1 = p_mw[:5]
+    p_mw_sgen2 = p_mw[5:]
+    q_min_mvar_sgen1 = q_min_mvar[:5]
+    q_min_mvar_sgen2 = q_min_mvar[5:]
+    q_max_mvar_sgen1 = q_max_mvar[:5]
+    q_max_mvar_sgen2 = q_max_mvar[5:]
+
+    for i in range(len(p_mw_sgen1)):
+        for j in range(len(p_mw_sgen2)):
+            net.sgen.loc[sgen_indices_with_char, 'p_mw'] = [p_mw_sgen1[i], p_mw_sgen2[j]]
+            qmin, qmax = get_min_max_q_mvar_from_characteristics_object(net, 'sgen', sgen_indices_with_char)
+            assert qmin[0] == q_min_mvar_sgen1[i]
+            assert qmin[1] == q_min_mvar_sgen2[j]
+            assert qmax[0] == q_max_mvar_sgen1[i]
+            assert qmax[1] == q_max_mvar_sgen2[j]
 
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):

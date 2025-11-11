@@ -476,3 +476,40 @@ def create_q_capability_characteristics_object(net):
 
     else:
         logger.info("q_capability_curve_table is empty - no characteristic objects created.")
+
+def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
+    if element not in ["gen", "sgen"]:
+        logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
+                       f"of the {element}. Please give gen or sgen as an argument of the function")
+        return
+
+    if len(net[element]) == 0:
+        logger.warning(f"No. of {element} elements is zero.")
+        return
+
+    # Filter rows with True 'reactive_capability_curve'
+    element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
+
+    if len(element_data) > 0:
+        # Extract the relevant data
+        q_table_ids = element_data['id_q_capability_characteristic']
+        p_mw_values = element_data['p_mw']
+
+        # Retrieve the q_max and q_min characteristic functions as vectorized callables
+        q_max_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_max_characteristic']
+        q_min_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_min_characteristic']
+
+        # Vectorized function application using NumPy
+        calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
+        calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
+
+        if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
+            logger.warning(f"The reactive_capability_curve of {element} is True, but the relevant "
+                           f"characteristic value is None. So default Q limit value has been used in the load flow.")
+
+        curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
+        curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
+        q = curve_q.loc[element_index].values - (net['_options']['delta'])
+        qmin = q[:,0]
+        qmax = q[:,1]
+        return qmin, qmax
