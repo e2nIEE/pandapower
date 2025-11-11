@@ -529,7 +529,7 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
 
         curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
         curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
-        q = curve_q.loc[element_index].values - (net['_options']['delta'])
+        q = curve_q.loc[element_index].values
         qmin = q[:,0]
         qmax = q[:,1]
         return qmin, qmax
