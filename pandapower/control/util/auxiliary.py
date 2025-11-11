@@ -478,6 +478,26 @@ def create_q_capability_characteristics_object(net):
         logger.info("q_capability_curve_table is empty - no characteristic objects created.")
 
 def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
+    """
+    Calculates the minimum and maximum reactive power (q_mvar) for a given element ('gen' or 'sgen') 
+    using its Q capability characteristic curve.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower network containing the element and characteristic tables.
+    element : str
+        The type of element, either 'gen' or 'sgen'.
+    element_index : int or iterable
+        The index or indices of the element(s) for which to calculate min and max q_mvar.
+
+    Returns
+    -------
+    qmin : numpy.ndarray
+        Array of minimum reactive power values for the specified element(s).
+    qmax : numpy.ndarray
+        Array of maximum reactive power values for the specified element(s).
+    """
     if element not in ["gen", "sgen"]:
         logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
                        f"of the {element}. Please give gen or sgen as an argument of the function")

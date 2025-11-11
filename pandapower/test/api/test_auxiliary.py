@@ -435,9 +435,8 @@ def test_get_min_max_q_capability():
 
     net.sgen.loc[sgen_indices_with_char, 'id_q_capability_characteristic'] = [0, 1]
     net.sgen.loc[sgen_indices_with_char, 'curve_style'] = "straightLineYValues"
-
     create_q_capability_characteristics_object(net)
-    
+
     p_mw_sgen1 = p_mw[:5]
     p_mw_sgen2 = p_mw[5:]
     q_min_mvar_sgen1 = q_min_mvar[:5]
@@ -445,9 +444,9 @@ def test_get_min_max_q_capability():
     q_max_mvar_sgen1 = q_max_mvar[:5]
     q_max_mvar_sgen2 = q_max_mvar[5:]
 
-    for i in range(len(p_mw_sgen1)):
-        for j in range(len(p_mw_sgen2)):
-            net.sgen.loc[sgen_indices_with_char, 'p_mw'] = [p_mw_sgen1[i], p_mw_sgen2[j]]
+    for i, p1 in enumerate(p_mw_sgen1):
+        for j, p2 in enumerate(p_mw_sgen2):
+            net.sgen.loc[sgen_indices_with_char, 'p_mw'] = [p1, p2]
             qmin, qmax = get_min_max_q_mvar_from_characteristics_object(net, 'sgen', sgen_indices_with_char)
             assert qmin[0] == q_min_mvar_sgen1[i]
             assert qmin[1] == q_min_mvar_sgen2[j]
