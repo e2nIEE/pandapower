@@ -15,6 +15,8 @@ from pandapower.file_io import from_json
 from pandapower import pp_dir
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 
+from numpy import linspace, float64
+
 from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
@@ -152,31 +154,31 @@ def test_qlimits_voltctrl():
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.8) < tol)
 
 def test_qlimits_with_capability_curve():
-    net = simple_test_net()
-    tol = 1e-6
-    from pandapower.control.util.auxiliary import plot_characteristic
-    # create q characteristics table
-    net["q_capability_curve_table"] = DataFrame(
-        {'id_q_capability_curve': [0, 0, 0, 0, 0],
-         'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
-         'q_min_mvar': [-0.5, -0.3, -0.2, -0.3, -0.5],
-         'q_max_mvar': [0.6, 0.4, 0.25, 0.4, 0.56]})
 
-    net.sgen.id_q_capability_characteristic.at[0] = 0
-    net.sgen['curve_style'] = "straightLineYValues"
-    create_q_capability_characteristics_object(net)
+    for v in linspace(start=0.98, stop=1.02, num=5, dtype=float64):
+        for p in linspace(start=-2.5, stop=2.5, num=10, dtype=float64):
+            net = simple_test_net()
+            tol = 1e-6
+            from pandapower.control.util.auxiliary import plot_characteristic
+            # create q characteristics table
+            net["q_capability_curve_table"] = DataFrame(
+                {'id_q_capability_curve': [0, 0, 0, 0, 0],
+                'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
+                'q_min_mvar': [-0.5, -0.3, -0.2, -0.3, -0.5],
+                'q_max_mvar': [0.6, 0.4, 0.25, 0.4, 0.56]})
 
-    BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
-                                   output_element="sgen", output_variable="q_mvar", output_element_index=[0],
-                                   output_element_in_service=[True], output_values_distribution=[1],
-                                   output_max_q_mvar=None, output_min_q_mvar=None,
-                                   input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
-                                   set_point=1.02, voltage_ctrl=True, tol=tol)
-    runpp(net, run_control=True, enforce_q_lims=True)
-    # assert max(net.res_bus.vm_pu) < 1.02
-    # assert min(net.res_bus.vm_pu) > 0.96
-    # assert net.res_sgen.q_mvar.loc[0] < 218.0099945068
-    # assert net.res_sgen.q_mvar.loc[0] > -265.01001
+            net.sgen.id_q_capability_characteristic.at[0] = 0
+            net.sgen['curve_style'] = "straightLineYValues"
+            create_q_capability_characteristics_object(net)
+
+            BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
+                                        output_element="sgen", output_variable="q_mvar", output_element_index=[0],
+                                        output_element_in_service=[True], output_values_distribution=[1],
+                                        input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
+                                        set_point=v, voltage_ctrl=True, tol=tol)
+            net.sgen.loc[0, 'p_mw'] = p
+            runpp(net, run_control=True, enforce_q_lims=True)
+            assert -0.5 - tol <= net.res_sgen.loc[0, 'q_mvar'] <= 0.6 + tol
 
 def test_stactrl_pf_import():
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test.json')
