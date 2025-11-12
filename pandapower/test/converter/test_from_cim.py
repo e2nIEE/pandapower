@@ -796,6 +796,15 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert math.isnan(element_0['vkr0_lv_percent'].item())
     assert not element_0['power_station_unit'].item()
     assert element_0['tap_dependency_table'].item()
+    assert element_0['CurrentLimit.value_hv'].item() == pytest.approx(844.38, abs=0.000001)
+    assert element_0['CurrentLimit.value_mv'].item() == pytest.approx(1535.22, abs=0.000001)
+    assert element_0['CurrentLimit.value_lv'].item() == pytest.approx(16083.36, abs=0.000001)
+    assert element_0['OperationalLimitType.limitType_hv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.limitType_mv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_mv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
 
 def test_fullgrid_trafo3w_spline(fullgrid_v2_spline):
@@ -855,6 +864,12 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert not element_0['power_station_unit'].item()
     assert not element_0['oltc'].item()
     assert element_0['tap_dependency_table'].item()
+    assert element_0['CurrentLimit.value_hv'].item() == pytest.approx(413.9, abs=0.000001)
+    assert element_0['CurrentLimit.value_lv'].item() == pytest.approx(734.9, abs=0.000001)
+    assert element_0['OperationalLimitType.limitType_hv'].item() == 'patl'
+    assert element_0['OperationalLimitType.limitType_lv'].item() == 'patl'
+    assert element_0['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(20.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(20.0, abs=0.000001)
 
     element_1 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']
     assert element_1['name'].item() == 'BE-TR2_6'
@@ -896,6 +911,12 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert not element_1['power_station_unit'].item()
     assert not element_1['oltc'].item()
     assert element_1['tap_dependency_table'].item()
+    assert element_1['CurrentLimit.value_hv'].item() == pytest.approx(844.38, abs=0.000001)
+    assert element_1['CurrentLimit.value_lv'].item() == pytest.approx(3070.44, abs=0.000001)
+    assert element_1['OperationalLimitType.limitType_hv'].item() == 'patlt'
+    assert element_1['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_1['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_1['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
     element_2 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']
     assert element_2['tap_step_degree'].item() == pytest.approx(1.990, abs=0.000001)
@@ -903,6 +924,12 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert element_2['tap_changer_type'].item() == "Ideal"
     assert pd.isna(element_2['id_characteristic_table'].item())
     assert not element_2['tap_dependency_table'].item()
+    assert element_2['CurrentLimit.value_hv'].item() == pytest.approx(938.2, abs=0.000001)
+    assert element_2['CurrentLimit.value_lv'].item() == pytest.approx(3070.44, abs=0.000001)
+    assert element_2['OperationalLimitType.limitType_hv'].item() == 'patl'
+    assert element_2['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_2['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_2['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
 
 def test_fullgrid_trafo_spline(fullgrid_v2_spline):
