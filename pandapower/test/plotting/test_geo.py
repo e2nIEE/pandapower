@@ -15,7 +15,7 @@ from pandas.testing import assert_frame_equal, assert_index_equal
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.plotting.geo import _node_geometries_from_geodata, _branch_geometries_from_geodata, \
     _transform_node_geometry_to_geodata, _transform_branch_geometry_to_coords, _convert_xy_epsg, \
-    convert_gis_to_geodata, convert_geodata_to_gis, convert_geodata_to_geojson, dump_to_geojson
+    convert_geodata_to_geojson, dump_to_geojson, convert_crs
 from pandapower.test.helper_functions import create_test_network
 
 
@@ -168,86 +168,6 @@ def test__convert_xy_epsg():
     assert result_x == pytest.approx(expected_x)
     assert result_y == pytest.approx(expected_y)
 
-
-def test_convert_gis_to_geodata():
-    pytest.importorskip("geopandas")
-    pytest.importorskip("shapely")
-    from shapely.geometry import Point, LineString
-    from geopandas import testing
-
-    converted_node = pd.DataFrame({'x': [1., 1.], 'y': [2., 3.], 'coords': [float('nan'), float('nan')],
-                                   'geometry': [Point(1., 2.), Point(1., 3.)]})
-    converted_node.set_index(pd.Index([1, 7]), inplace=True)
-    converted_branch = pd.DataFrame({'coords': [[(1., 2.), (3., 4.)]], 'geometry': LineString([[1, 2], [3, 4]])})
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-
-    convert_geodata_to_gis(_net)
-    node_geodata = _net.bus_geodata
-    branch_geodata = _net.line_geodata
-
-    convert_gis_to_geodata(_net)
-    _net.bus_geodata.equals(converted_node)
-    _net.line_geodata.equals(converted_branch)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    convert_geodata_to_gis(_net)
-    convert_gis_to_geodata(_net, node_geodata=False)
-    testing.assert_geodataframe_equal(_net.bus_geodata, node_geodata)
-    _net.line_geodata.equals(converted_branch)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    convert_geodata_to_gis(_net)
-    convert_gis_to_geodata(_net, branch_geodata=False)
-    _net.bus_geodata.equals(converted_node)
-    testing.assert_geodataframe_equal(_net.line_geodata, branch_geodata)
-
-
-def test_convert_geodata_to_gis():
-    pytest.importorskip("geopandas")
-    pytest.importorskip("shapely")
-    from geopandas import GeoDataFrame, testing, points_from_xy
-    from shapely.geometry import LineString
-
-    pdf = pd.DataFrame({'x': [1., 1.], 'y': [2., 3.], 'coords': [float('nan'), float('nan')]})
-    pdf = pdf.astype({'coords': 'object'})
-    pdf.set_index(pd.Index([1, 7]), inplace=True)
-    converted_node = GeoDataFrame(crs="epsg:31467", geometry=points_from_xy(pdf.x, pdf.y), data=pdf)
-
-    pdf = pd.DataFrame({'coords': [[[1, 2], [3, 4]]], 'geometry': LineString([[1, 2], [3, 4]])})
-    converted_branch = GeoDataFrame(crs="epsg:31467", geometry=pdf.geometry, data=pdf)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    node_geodata = _net.bus_geodata
-    branch_geodata = _net.line_geodata
-
-    convert_geodata_to_gis(_net)
-    testing.assert_geodataframe_equal(_net.bus_geodata, converted_node)
-    testing.assert_geodataframe_equal(_net.line_geodata, converted_branch)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    convert_geodata_to_gis(_net, node_geodata=False)
-    _net.bus_geodata.equals(node_geodata)
-    testing.assert_geodataframe_equal(_net.line_geodata, converted_branch)
-
-    _net = create_test_network()
-    _bus_geojson_to_geodata_(_net)
-    _line_geojson_to_geodata_(_net)
-    convert_geodata_to_gis(_net, branch_geodata=False)
-    testing.assert_geodataframe_equal(_net.bus_geodata, converted_node)
-    _net.line_geodata.equals(branch_geodata)
-
-
 def test_convert_epsg_bus_geodata():
     pytest.skip("Not implemented")
 
@@ -255,6 +175,40 @@ def test_convert_epsg_bus_geodata():
 def test_convert_crs():
     pytest.skip("Not implemented")
 
+def test_convert_crs__bus_only():
+    def get_net_with_bus_geo():
+        net = mv_oberrhein()
+        net.line.geo = None
+        return net
+    # Test with geojson
+    net = get_net_with_bus_geo()
+    convert_crs(net)
+    # Test with geodata
+    net = get_net_with_bus_geo()
+    _bus_geojson_to_geodata_(net)
+    convert_crs(net)
+    # Test with geodata without coord column
+    net = get_net_with_bus_geo()
+    _bus_geojson_to_geodata_(net)
+    net.bus_geodata = net.bus_geodata[["x", "y"]]
+    convert_crs(net)
+    assert "coords" not in net.bus_geodata.columns
+
+    # Test with geodata, populate geodata coord
+    net = get_net_with_bus_geo()
+    _bus_geojson_to_geodata_(net)
+    for index, row in net.bus_geodata.iterrows():
+        net.bus_geodata.at[index, 'coords'] = [(row['x'], row['y']), (row['x'], row['y'])]
+    convert_crs(net)
+    assert "coords" in net.bus_geodata.columns
+    assert not (pd.isna(net.bus_geodata.coords)).any()
+
+def test_convert_crs__branch_only():
+    net = mv_oberrhein()
+    net.bus.geo = None
+    convert_crs(net)
+    _line_geojson_to_geodata_(net)
+    convert_crs(net)
 
 def test_dump_to_geojson():
     pytest.importorskip("geojson")
@@ -270,8 +224,8 @@ def test_dump_to_geojson():
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == '{"features": [], "type": "FeatureCollection"}'
 
-    # test exporting nodes
-    result = dump_to_geojson(_net, nodes=True)
+    # test exporting buses
+    result = dump_to_geojson(_net, buses=True)
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, '
                                              '"id": "bus-1", "properties": {"in_service": true, "name": "bus2", '
@@ -282,8 +236,8 @@ def test_dump_to_geojson():
                                              '"vn_kv": 0.4, "zone": null}, "type": "Feature"}], '
                                              '"type": "FeatureCollection"}')
 
-    # test exporting branches
-    result = dump_to_geojson(_net, branches=True)
+    # test exporting lines
+    result = dump_to_geojson(_net, lines=True)
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [[1.0, 2.0], [3.0, 4.0]], '
                                              '"type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": '
@@ -295,7 +249,7 @@ def test_dump_to_geojson():
                                              '"type": "FeatureCollection"}')
 
     # test exporting both
-    result = dump_to_geojson(_net, nodes=True, branches=True)
+    result = dump_to_geojson(_net, buses=True, lines=True)
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, '
                                              '"id": "bus-1", "properties": {"in_service": true, "name": "bus2", '
@@ -312,16 +266,16 @@ def test_dump_to_geojson():
                                              '"std_type": null, "to_bus": 7, "type": null, "x_ohm_per_km": '
                                              '0.1897522}, "type": "Feature"}], "type": "FeatureCollection"}')
 
-    # test exporting specific nodes
-    result = dump_to_geojson(_net, nodes=[1])
+    # test exporting specific buses
+    result = dump_to_geojson(_net, buses=[1])
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, '
                                              '"id": "bus-1", "properties": {"in_service": true, "name": "bus2", '
                                              '"pp_index": 1, "pp_type": "bus", "type": "b", "vn_kv": 0.4, '
                                              '"zone": null}, "type": "Feature"}], "type": "FeatureCollection"}')
 
-    # test exporting specific branches
-    result = dump_to_geojson(_net, branches=[0])
+    # test exporting specific lines
+    result = dump_to_geojson(_net, lines=[0])
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [[1.0, 2.0], [3.0, 4.0]], '
                                              '"type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": '
@@ -334,7 +288,7 @@ def test_dump_to_geojson():
 
     # test exporting props from bus and res_bus
     _net.res_bus.loc[1, ["vm_pu", "va_degree", "p_mw", "q_mvar"]] = [1.0, 1.0, 1.0, 1.0]
-    result = dump_to_geojson(_net, nodes=[1])
+    result = dump_to_geojson(_net, buses=[1])
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [1.0, 2.0], "type": "Point"}, '
                                              '"id": "bus-1", "properties": {"in_service": true, "name": "bus2", '
@@ -342,9 +296,9 @@ def test_dump_to_geojson():
                                              '"type": "b", "va_degree": 1.0, "vm_pu": 1.0, "vn_kv": 0.4, '
                                              '"zone": null}, "type": "Feature"}], "type": "FeatureCollection"}')
 
-    # test exporting props from bus and res_bus
+    # test exporting props from line and res_line
     _net.res_line.loc[0, _net.res_line.columns] = [7.0] * len(_net.res_line.columns)
-    result = dump_to_geojson(_net, branches=[0])
+    result = dump_to_geojson(_net, lines=[0])
     assert isinstance(result, FeatureCollection)
     assert dumps(result, sort_keys=True) == ('{"features": [{"geometry": {"coordinates": [[1.0, 2.0], [3.0, 4.0]], '
                                              '"type": "LineString"}, "id": "line-0", "properties": {"c_nf_per_km": '
@@ -381,9 +335,9 @@ def test_convert_geodata_to_geojson():
     convert_geodata_to_geojson(_net)
 
     # Überprüfe die Ergebnisse
-    assert _net.bus.at[0, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
-    assert _net.bus.at[1, "geo"] == geojson.dumps(geojson.Point((30, 40)), sort_keys=True)
-    assert _net.line.at[0, "geo"] == geojson.dumps(geojson.LineString([(10, 20), (30, 40)]), sort_keys=True)
+    assert _net.bus.at[0, "geo"] == geojson.dumps(geojson.Point((10., 20.)), sort_keys=True)
+    assert _net.bus.at[1, "geo"] == geojson.dumps(geojson.Point((30., 40.)), sort_keys=True)
+    assert _net.line.at[0, "geo"] == geojson.dumps(geojson.LineString([(10., 20.), (30., 40.)]), sort_keys=True)
     # TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
 
 

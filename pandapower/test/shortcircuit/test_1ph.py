@@ -84,26 +84,27 @@ def test_1ph_shortcircuit():
 
 def test_1ph_shortcircuit_3w():
     # vector groups without "N" have no impact on the 1ph
-    # here we check both functions, with Y inversion and with LU factorization for individual buses
+    # here we check both functions, with Y invertion and with LU factorization for individual buses
     # The currents are taken from the calculation with commercial software for reference
     results = {
-        "ddd": [1.5193429, 0, 0],
-        "ddy": [1.5193429, 0, 0],
-        "dyd": [1.5193429, 0, 0],
-        "dyy": [1.5193429, 0, 0],
-        "ydd": [1.5193429, 0, 0],
-        "ydy": [1.5193429, 0, 0],
-        "yyd": [1.5193429, 0, 0],
-        "yyy": [1.5193429, 0, 0],
-        "ynyd": [1.783257, 0, 0],
-        "yndy": [1.79376470, 0, 0],  # ok
-        "yynd": [1.5193429, 3.339398, 0],
-        "ydyn": [1.5193429, 0, 8.836452],  # ok
-        "ynynd": [1.783257, 3.499335, 0],
-        "yndyn": [1.79376470, 0, 9.04238714],  # ok
-        "yndd": [1.843545, 0, 0],
-        "ynyy": [1.5193429, 0, 0]  # ok but why?
-    }
+                "ddd":  [1.5193429, 0, 0],
+                "ddy":  [1.5193429, 0, 0],
+                "dyd":  [1.5193429, 0, 0],
+                "dyy":  [1.5193429, 0, 0],
+                "ydd":  [1.5193429, 0, 0],
+                "ydy":  [1.5193429, 0, 0],
+                "yyd":  [1.5193429, 0, 0],
+                "yyy":  [1.5193429, 0, 0],
+                "ynyd": [1.783257, 0, 0],
+                "yndy": [1.79376470, 0, 0], # ok
+                "yynd": [1.5193429, 3.339398, 0],
+                "ydyn": [1.5193429, 0, 8.836452], # ok
+                "ynynd": [1.783257, 3.499335, 0],
+                "yndyn": [1.79376470, 0, 9.04238714], # ok
+                "yndd": [1.843545, 0, 0],
+                "ynyy": [1.5193429, 0, 0], # ok but why?
+                "dynyn": [1.51934281, 3.4130868, 8.86290334] # Please verify with your commercial software -> results from sc calculations
+               }
 
     for vg, result in results.items():
         net = single_3w_trafo_grid(vg)

@@ -1,0 +1,21 @@
+import pandas as pd
+import pandera.pandas as pa
+
+source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
+    {
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the static generator"),
+        "type": pa.Column(pd.StringDtype, nullable=True, required=False, description="type of source"),
+        "bus_dc": pa.Column(int, description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}),
+        "vm_pu": pa.Column(
+            float,
+            description="set-point for the bus voltage magnitude at the connection bus",
+        ),
+        "in_service": pa.Column(bool, description="specifies if the generator is in service."),
+    },
+    strict=False,
+)
+
+res_source_dc_schema = pa.DataFrameSchema(
+    {"p_dc_mw": pa.Column(float, nullable=True, description="resulting active power demand after scaling [MW]")},
+    strict=False,
+)

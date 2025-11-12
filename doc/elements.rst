@@ -22,9 +22,11 @@ information about the definition and interpretation of the parameters in the fol
     elements/line_dc
     elements/switch
     elements/load
+    elements/load_dc
     elements/motor
     elements/asymmetric_load
     elements/sgen
+    elements/source_dc
     elements/asymmetric_sgen
     elements/ext_grid
     elements/trafo
@@ -41,3 +43,4 @@ information about the definition and interpretation of the parameters in the fol
     elements/tcsc
     elements/ssc
     elements/vsc
+    elements/b2b_vsc

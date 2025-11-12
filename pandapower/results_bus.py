@@ -261,7 +261,7 @@ def write_p_dc_results_to_element(net, ppc, element):
     """
     # info from net
     _is_elements = net["_is_elements"]
-    ac = net["_options"]["ac"]
+    # ac = net["_options"]["ac"]
 
     # info element
     element_data = net[element]
@@ -272,25 +272,30 @@ def write_p_dc_results_to_element(net, ppc, element):
 
     is_controllable = False
     if ctrl_ in _is_elements:
-        raise UserWarning("wrong idea about controllable")
         controlled_elements = net[element][net._is_elements[ctrl_]].index
         gen_idx = net._pd2ppc_lookups[ctrl_][controlled_elements]
         gen_sign = 1 if element == "sgen" else -1
         is_controllable = True
 
-    if element != "vsc":
-        raise NotImplementedError("Only VSC DC element is implemented for bus_dc P results")
+    if element == "vsc":
+        p_mw = "control_value_dc"  # in "vsc" element
+        vsc_p_mode = _is_elements[element] & (net.vsc.control_mode_dc == "p_mw")
 
-    p_mw = "control_value_dc"  # in "vsc" element
-    vsc_p_mode = _is_elements[element] & (net.vsc.control_mode_dc == "p_mw")
+        # P result in mw to element
+        # net[res_]["p_dc_mw"].values[:] = element_data[p_mw].values * vsc_p_mode
 
-    # P result in mw to element
-    # net[res_]["p_dc_mw"].values[:] = element_data[p_mw].values * vsc_p_mode
+        # use the ppc value for the result instead:
+        #res_p = np.nans(shape=(len(net[element])), dtype=np.float64)
+        #res_p[net._is_elements["vsc"]] = ppc[element][:, VSC_P_DC]
+        net[res_]["p_dc_mw"].values[:] = ppc[element][:, VSC_P_DC]
+    else:
+        scaling = element_data["scaling"].values if 'scaling' in element_data else 1.0
+        element_in_service = _is_elements[element]
+        net[res_]["p_dc_mw"].values[:] = element_data["p_dc_mw"].values * scaling * element_in_service
 
-    # use the ppc value for the result instead:
-    #res_p = np.nans(shape=(len(net[element])), dtype=np.float64)
-    #res_p[net._is_elements["vsc"]] = ppc[element][:, VSC_P_DC]
-    net[res_]["p_dc_mw"].values[:] = ppc[element][:, VSC_P_DC]
+        #if is_controllable:
+        #    net[res_].loc[controlled_elements, "p_dc_mw"] = ppc["gen"][gen_idx, PG] * gen_sign
+
     return net
 
 
@@ -445,7 +450,7 @@ def _get_p_dc_results(net, ppc, bus_lookup_aranged):
     # ac = net["_options"]["ac"]
     # elements = ["load", "motor", "sgen", "storage", "ward", "xward",
     #             "asymmetric_load", "asymmetric_sgen"]
-    elements = ["vsc"]  # we only have VSC element so far that injects or consumes P from DC bus
+    elements = ["vsc", "load_dc"]  # we only have VSC element so far that injects or consumes P from DC bus
 
     for element in elements:
         if len(net[element]) > 0:

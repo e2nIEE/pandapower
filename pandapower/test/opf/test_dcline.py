@@ -9,7 +9,7 @@ from numpy import array, allclose, isclose
 from pandapower.auxiliary import OPFNotConverged
 from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_dcline, \
     create_load, create_pwl_cost, create_poly_cost
-from pandapower.run import runopp
+from pandapower.run import runopp, runpp
 from pandapower.test.consistency_checks import consistency_checks
 
 import logging
@@ -49,6 +49,21 @@ def get_delta_try_except(net):
         except OPFNotConverged:
             continue
     return 1e-10
+
+
+def test_dcline_reverse(dcline_net):
+    """
+    Checks normal function of dcline. And will also reverse the powerflow and check if the flow reverses.
+    """
+    net = dcline_net
+
+    runpp(net)
+    assert allclose(net.res_ext_grid.p_mw, [200.732, 605.773], atol=1e-3)
+
+    net.dcline.p_mw = -200.
+    runpp(net)
+    assert allclose(net.res_ext_grid.p_mw, [-196.358, 1008.311], atol=1e-3)
+    pass
 
 
 @pytest.mark.xfail(reason="numerical issue with OPF convergence. The failure seems to depend on the"

@@ -9,13 +9,14 @@ import numpy as np
 import pandas as pd
 from copy import deepcopy
 from pandapower.auxiliary import _clean_up
-from pandapower.converter import logger
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
 from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.toolbox import pp_elements
+from logging import getLogger
+
+logger = getLogger('converter.pandamodels.from_pm')
 
 
 def read_pm_results_to_net(net, ppc, ppci, result_pm):

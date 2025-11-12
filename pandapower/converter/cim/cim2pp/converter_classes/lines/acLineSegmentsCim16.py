@@ -73,9 +73,9 @@ class AcLineSegmentsCim16:
 
     def _prepare_ac_line_segments_cim16(self, convert_line_to_switch, line_r_limit, line_x_limit) -> pd.DataFrame:
 
-        if 'sc' in self.cimConverter.cim.keys():  # todo  CGMES 3.0
+        if 'sc' in self.cimConverter.cim:  # CGMES 3.0
             ac_line_segments = self.cimConverter.merge_eq_sc_profile('ACLineSegment')
-        else:
+        else:  # CGMES 2.4.15
             ac_line_segments = self.cimConverter.cim['eq']['ACLineSegment']
 
         line_length_before_merge = ac_line_segments.index.size
@@ -116,10 +116,10 @@ class AcLineSegmentsCim16:
                                                   'Terminal': 'rdfId_Terminal'})
         ac_line_segments = pd.merge(ac_line_segments, eq_operational_limit_sets, how='left',
                                        on='rdfId_Terminal')
-        if 'CurrentLimit' in self.cimConverter.cim['ssh'].keys():  # CGMES 3.0
+        if 'CurrentLimit' in self.cimConverter.cim['ssh']:  # CGMES 3.0
             current_limits = self.cimConverter.merge_eq_ssh_profile('CurrentLimit')[['rdfId', 'OperationalLimitSet',
                                                                                      'value']]
-        else:
+        else:  # CGMES 2.4.15
             current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['rdfId', 'OperationalLimitSet', 'value']]
         current_limits = current_limits.rename(columns={'rdfId': 'rdfId_CurrentLimit',
                                           'OperationalLimitSet': 'rdfId_OperationalLimitSet'})

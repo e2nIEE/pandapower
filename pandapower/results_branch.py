@@ -61,7 +61,7 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
     """
     I012_f, S012_f, V012_f, I012_t, S012_t, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
     _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
-    _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
+    _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     # _get_trafo3w_results(net, ppc, s_ft, i_ft)
     # _get_impedance_results(net, ppc, i_ft)
     # _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
@@ -276,12 +276,12 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     net["res_line_3ph"]["q_a_to_mvar"] = Qabct_mvar[0, :].flatten()
     net["res_line_3ph"]["q_b_to_mvar"] = Qabct_mvar[1, :].flatten()
     net["res_line_3ph"]["q_c_to_mvar"] = Qabct_mvar[2, :].flatten()
-    net["res_line_3ph"]["p_a_l_mw"] = Pabcl_mw[0, :].flatten()
-    net["res_line_3ph"]["p_b_l_mw"] = Pabcl_mw[1, :].flatten()
-    net["res_line_3ph"]["p_c_l_mw"] = Pabcl_mw[2, :].flatten()
-    net["res_line_3ph"]["q_a_l_mvar"] = Qabcl_mvar[0, :].flatten()
-    net["res_line_3ph"]["q_b_l_mvar"] = Qabcl_mvar[1, :].flatten()
-    net["res_line_3ph"]["q_c_l_mvar"] = Qabcl_mvar[2, :].flatten()
+    net["res_line_3ph"]["pl_a_mw"] = Pabcl_mw[0, :].flatten()
+    net["res_line_3ph"]["pl_b_mw"] = Pabcl_mw[1, :].flatten()
+    net["res_line_3ph"]["pl_c_mw"] = Pabcl_mw[2, :].flatten()
+    net["res_line_3ph"]["ql_a_mvar"] = Qabcl_mvar[0, :].flatten()
+    net["res_line_3ph"]["ql_b_mvar"] = Qabcl_mvar[1, :].flatten()
+    net["res_line_3ph"]["ql_c_mvar"] = Qabcl_mvar[2, :].flatten()
     net["res_line_3ph"]["i_a_from_ka"] = Iabc_f_ka[0, :].flatten()
     net["res_line_3ph"]["i_b_from_ka"] = Iabc_f_ka[1, :].flatten()
     net["res_line_3ph"]["i_c_from_ka"] = Iabc_f_ka[2, :].flatten()
@@ -363,7 +363,7 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     res_trafo_df["loading_percent"].values[:] = loading_percent
 
 
-def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
+def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     ac = net["_options"]["ac"]
     trafo_loading = net["_options"]["trafo_loading"]
 
@@ -392,71 +392,6 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
 
     Iabc_hv_ka = np.abs(sequence_to_phase(I012_hv_ka))
     Iabc_lv_ka = np.abs(sequence_to_phase(I012_lv_ka))
-
-    # current calculation for trafo lv side for vector groups with zero seq. gap (Dyn, Yzn)
-    # in this case, the currents of elemnts that go out from the trafo are summed and the sum applied to the trafo lv side
-    gap_trafo_index = np.where(I012_lv_ka[0] == 0)[0]
-    if len(gap_trafo_index > 0):
-        for i_trafo in gap_trafo_index:
-            Iabc_sum = [0, 0, 0]
-            lv_bus = net.trafo.lv_bus.iat[i_trafo]
-            V_bus_abc = np.array([[net.res_bus_3ph['vm_a_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]],
-                                  [net.res_bus_3ph['vm_b_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]],
-                                  [net.res_bus_3ph['vm_c_pu'][lv_bus] * net.bus['vn_kv'][lv_bus]]])
-
-            # Branch Elements
-            i_branch = np.concatenate((np.where(ppc0['branch'][:, F_BUS] == lv_bus)[0],
-                                       np.where(ppc0['branch'][:, T_BUS] == lv_bus)[0]))
-            i_branch = np.delete(i_branch, np.where(i_branch == i_trafo + f))  # delete the trafo itself from the list
-            if len(i_branch > 0):
-                I_branch_012 = I012_f[:, i_branch]
-                I_branch_abc = sequence_to_phase(I_branch_012)
-                for x in range(len(I_branch_abc[0])):
-                    Iabc_sum += abs(I_branch_abc[:, x])
-
-            # Loads
-            load_index = net.asymmetric_load.index[net.asymmetric_load['bus'] == lv_bus]
-            if len(load_index > 0):
-                S_load_abc = abs(np.array([
-                    np.array(net.res_asymmetric_load_3ph['p_a_mw'][load_index]
-                             + (1j * net.res_asymmetric_load_3ph['q_a_mvar'][load_index])),
-                    np.array(net.res_asymmetric_load_3ph['p_b_mw'][load_index]
-                             + (1j * net.res_asymmetric_load_3ph['q_b_mvar'][load_index])),
-                    np.array(net.res_asymmetric_load_3ph['p_c_mw'][load_index]
-                             + (1j * net.res_asymmetric_load_3ph['q_c_mvar'][load_index]))]))
-                I_load_abc = S_load_abc / (V_bus_abc / np.sqrt(3))
-                for x in range(len(I_load_abc[0])):
-                    Iabc_sum += I_load_abc[:, x]
-
-            # Sgens
-            sgen_bus_index = np.where(net.asymmetric_sgen['bus'] == lv_bus)[0]
-            if len(sgen_bus_index > 0):
-                S_sgen_abc = abs(np.array([
-                    np.array(net.res_asymmetric_sgen_3ph['p_a_mw'][sgen_bus_index]
-                             + (1j * net.res_asymmetric_sgen_3ph['q_a_mvar'][sgen_bus_index])),
-                    np.array(net.res_asymmetric_sgen_3ph['p_b_mw'][sgen_bus_index]
-                             + (1j * net.res_asymmetric_sgen_3ph['q_b_mvar'][sgen_bus_index])),
-                    np.array(net.res_asymmetric_sgen_3ph['p_c_mw'][sgen_bus_index]
-                             + (1j * net.res_asymmetric_sgen_3ph['q_c_mvar'][sgen_bus_index]))]))
-                I_sgen_abc = S_sgen_abc / (V_bus_abc / np.sqrt(3))
-                for x in range(len(I_sgen_abc[0])):
-                    Iabc_sum -= I_sgen_abc[:, x]
-
-            Iabc_lv_ka[:, i_trafo] = Iabc_sum
-
-    # geting complex values of the sequence current
-#    Iabc_hv_ka_complex = sequence_to_phase(I012_hv_ka)
-#    Iabc_lv_ka_complex = sequence_to_phase(I012_lv_ka)
-#
-#    Iabc_hv_ka = np.abs(Iabc_hv_ka_complex)
-#    Iabc_lv_ka = np.abs(Iabc_lv_ka_complex)
-#
-#    In_hv_ka_complex = Iabc_hv_ka_complex.sum(axis=0)
-#    In_hv_ka = np.abs(In_hv_ka_complex)
-#    In_hv_ia_n_degree = np.angle(In_hv_ka_complex).flatten()*180/np.pi
-#    In_lv_ka_complex = Iabc_lv_ka_complex.sum(axis=0)
-#    In_lv_ka = np.abs(In_lv_ka_complex)
-#    In_lv_ia_n_degree = np.angle(In_lv_ka_complex).flatten()*180/np.pi
 
     if trafo_loading == "current":
         trafo_df = net["trafo"]
@@ -488,12 +423,12 @@ def _get_trafo_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t
     res_trafo_df["q_a_lv_mvar"] = Qabc_lv_mvar[0, :].flatten()
     res_trafo_df["q_b_lv_mvar"] = Qabc_lv_mvar[1, :].flatten()
     res_trafo_df["q_c_lv_mvar"] = Qabc_lv_mvar[2, :].flatten()
-    res_trafo_df["p_a_l_mw"] = Pabcl_mw[0, :].flatten()
-    res_trafo_df["p_b_l_mw"] = Pabcl_mw[1, :].flatten()
-    res_trafo_df["p_c_l_mw"] = Pabcl_mw[2, :].flatten()
-    res_trafo_df["q_a_l_mvar"] = Qabcl_mvar[0, :].flatten()
-    res_trafo_df["q_b_l_mvar"] = Qabcl_mvar[1, :].flatten()
-    res_trafo_df["q_c_l_mvar"] = Qabcl_mvar[2, :].flatten()
+    res_trafo_df["pl_a_mw"] = Pabcl_mw[0, :].flatten()
+    res_trafo_df["pl_b_mw"] = Pabcl_mw[1, :].flatten()
+    res_trafo_df["pl_c_mw"] = Pabcl_mw[2, :].flatten()
+    res_trafo_df["ql_a_mvar"] = Qabcl_mvar[0, :].flatten()
+    res_trafo_df["ql_b_mvar"] = Qabcl_mvar[1, :].flatten()
+    res_trafo_df["ql_c_mvar"] = Qabcl_mvar[2, :].flatten()
     res_trafo_df["i_a_hv_ka"] = Iabc_hv_ka[0, :].flatten()
     res_trafo_df["i_b_hv_ka"] = Iabc_hv_ka[1, :].flatten()
     res_trafo_df["i_c_hv_ka"] = Iabc_hv_ka[2, :].flatten()

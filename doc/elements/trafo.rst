@@ -196,7 +196,7 @@ tap_changer_type "Symmetrical".
    :nowrap:
 
    \begin{align*}
-    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100} \exp(\mathrm j \phi)
+    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100} e^{(\mathrm j \phi)}
     \end{align*}
 
 **Ideal phase shifter**

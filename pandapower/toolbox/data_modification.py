@@ -44,7 +44,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     """
     branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
-        raise ValueError("%s is not in net.bus.columns" % column)
+        raise ValueError(f"{column} is not in net.bus.columns")
     elements = elements if elements is not None else pp_elements(bus=False, other_elements=False)
     elements_to_replace = elements if replace else [
         el for el in elements if column not in net[el].columns or net[el][column].isnull().all()]
@@ -131,7 +131,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
                 raise KeyError(message)
             else:
                 logger.debug(message)
-        for et in list(set(element_type) - set(element_types_without_column)):
+        for et in set(element_type) - set(element_types_without_column):
             idx_et = element_type.index[element_type == et]
             net[el].loc[idx_et, column] = net[et][column].loc[net[el].element[idx_et]].values
 
@@ -370,15 +370,12 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
         element_types |= {"trafo_characteristic_table"}
 
     # run reindex_elements() for all element_types
-    for et in list(element_types):
-        net[et].sort_index(inplace=True)
+    for et in element_types:
+        net[et] = net[et].sort_index()
         new_index = list(np.arange(start, len(net[et]) + start))
         if et == "trafo_characteristic_table":
             ids = net[et].id_characteristic.dropna().unique()
-            reindex_lookup = {
-                old_id: new_id for old_id, new_id in zip(sorted(ids), range(0, len(ids)))
-            }
-            reindex_elements(net, et, lookup = reindex_lookup)
+            reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
         elif et in net and isinstance(net[et], pd.DataFrame):
             if et in ["bus_geodata", "line_geodata"]:
                 logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +

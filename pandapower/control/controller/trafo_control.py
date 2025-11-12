@@ -36,8 +36,7 @@ class TrafoController(Controller):
 
     def __init__(self, net, element_index, side, tol, in_service, element, level=0, order=0,
                  recycle=True, **kwargs):
-        super().__init__(net, in_service=in_service, level=level, order=order, recycle=recycle,
-                         **kwargs)
+        super().__init__(net, in_service=in_service, level=level, order=order, recycle=recycle) 
 
         self.element = element
         self.element_index = element_index
@@ -47,12 +46,16 @@ class TrafoController(Controller):
         # self._set_valid_controlled_index_and_bus(net)
         self._set_tap_parameters(net)
         self._set_tap_side_coeff(net)
-
         self.tol = tol
-
         self.set_recycle(net)
-
         self.trafobus = None
+  
+         # write kwargs in self
+        for key, value in kwargs.items():
+            if key=="vm_set_pu":
+                continue
+            else:
+                setattr(self, key, value)
 
     def _set_read_write_flag(self, net):
         # if someone changes indices of the controller from single index to array and vice versa

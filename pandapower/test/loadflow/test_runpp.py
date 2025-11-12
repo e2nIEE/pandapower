@@ -14,7 +14,6 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
-from pandapower.control import _create_trafo_characteristics, SplineCharacteristic
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
     create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
     create_line_from_parameters, create_line, create_impedance, create_storage, create_buses, \
@@ -95,8 +94,8 @@ def test_set_user_pf_options():
     # priority
     set_user_pf_options(net, tolerance_mva=1e-6, max_iteration=20)
     runpp(net, tolerance_mva=1e-2)
-    assert net.user_pf_options['tolerance_mva'] == 1e-6
-    assert net._options['tolerance_mva'] == 1e-2
+    assert np.isclose(net.user_pf_options['tolerance_mva'], 1e-6)
+    assert np.isclose(net._options['tolerance_mva'], 1e-2)
     assert net._options['max_iteration'] == 20
 
 
@@ -787,7 +786,7 @@ def test_zip_loads_out_of_service():
     create_line(net, from_bus=bus2, to_bus=bus3, length_km=0.1,
                 std_type="NAYY 4x50 SE", name="Line")
 
-    net1 = net.deepcopy()
+    net1 = copy.deepcopy(net)
     oos_load = create_load(
         net1, bus=bus3, p_mw=0.100, q_mvar=0.05, in_service=False,
         const_i_p_percent=0, const_i_q_percent=0, const_z_p_percent=100, const_z_q_percent=100)
@@ -1189,10 +1188,10 @@ def test_no_branches():
     create_sgen(net, 1, 10)
     create_load(net, 2, 10)
     runpp(net)
-    assert net.res_ext_grid.p_mw.at[0] == 0.
-    assert net.res_ext_grid.q_mvar.at[0] == 0.
-    assert net.res_bus.vm_pu.at[0] == 1.
-    assert net.res_bus.va_degree.at[0] == 0.
+    assert np.isclose(net.res_ext_grid.p_mw.at[0], 0.0)
+    assert np.isclose(net.res_ext_grid.q_mvar.at[0], 0.0)
+    assert np.isclose(net.res_bus.vm_pu.at[0], 1.0)
+    assert np.isclose(net.res_bus.va_degree.at[0], 0.0)
     assert np.all(pd.isnull(net.res_bus.loc[[1, 2], 'vm_pu']))
 
 
@@ -1205,11 +1204,11 @@ def test_only_ref_buses():
     create_ext_grid(net, bus=0, vm_pu=1)
     create_ext_grid(net, bus=1, vm_pu=1)
     runpp(net)
-    assert np.all(net.res_bus.vm_pu == 1.)
-    assert np.all(net.res_bus.va_degree == 0.)
-    assert net.res_line.loading_percent.at[0] == 0.
-    assert np.all(net.res_ext_grid.p_mw == 0.)
-    assert np.all(net.res_ext_grid.q_mvar == 0.)
+    assert np.all(np.isclose(net.res_bus.vm_pu, 1.0))
+    assert np.all(np.isclose(net.res_bus.va_degree, 0.0))
+    assert np.isclose(net.res_line.loading_percent.at[0], 0.0)
+    assert np.all(np.isclose(net.res_ext_grid.p_mw, 0.0))
+    assert np.all(np.isclose(net.res_ext_grid.q_mvar, 0.0))
 
     net.ext_grid.at[1, "vm_pu"] = 0.5
     runpp(net)
@@ -1617,7 +1616,7 @@ def test_at_isolated_bus():
     create_gen(net, 3, 0, vm_pu=0, in_service=False)
 
     runpp(net)
-    assert net._options["init_vm_pu"] == 1.
+    assert np.isclose(net._options["init_vm_pu"], 1.0)
 
 
 def test_shunt_with_missing_vn_kv():

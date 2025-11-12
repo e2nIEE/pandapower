@@ -60,13 +60,13 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
         overloading is defined by net.line["max_loading_percent_nminus1"] (if set) or net.line["max_loading_percent"]
         "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
         "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
-    :param callable contingency_evaluation_function: function to use for power flow calculation, default pp.runpp
+    :param callable contingency_evaluation_function: function to use for power flow calculation, default runpp
 
     :return: contingency results dict of arrays per element for index, min/max result
     :rtype: dict
     """
     # set up the dict for results and relevant variables
-    # ".get" in case the options have been set in pp.set_user_pf_options:
+    # ".get" in case the options have been set in set_user_pf_options:
     raise_errors = kwargs.get("raise_errors", False)
     if "recycle" in kwargs:
         kwargs["recycle"] = False  # so that we can be sure it doesn't happen
@@ -159,7 +159,7 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     :param pandapowerNet net: The pandapower network
     :param dict nminus1_cases: describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
         Note: trafo3w is not supported
-    :param callable contingency_evaluation_function: function to use for power flow calculation, default pp.runpp (but only relevant for N-0 case)
+    :param callable contingency_evaluation_function: function to use for power flow calculation, default runpp (but only relevant for N-0 case)
     """
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
@@ -524,3 +524,4 @@ def report_contingency_results(element_limits, contingency_results, branch_tol=1
                 _log_violation(element, var, val[index], limit["index"], mask_max)
                 mask_min = val[index] < limit['min_limit'] - tol
                 _log_violation(element, var, val[index], limit["index"], mask_min)
+
