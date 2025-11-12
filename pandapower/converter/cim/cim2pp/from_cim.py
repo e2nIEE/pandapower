@@ -102,7 +102,7 @@ def from_cim(file_list: Union[str, List[str]] = None, encoding: str = None, conv
              repair_cim_class: Type[interfaces.CIMRepair] = None,
              repair_pp: Union[str, interfaces.PandapowerRepair] = None,
              repair_pp_class: Type[interfaces.PandapowerRepair] = None,
-             custom_converter_classes: Dict = None,
+             custom_converter_classes: Dict = None,  # todo maybe to kwargs
              cgmes_version: str = '2.4.15', **kwargs) -> pandapowerNet:
     """
     Converts a CIM net to a pandapower net from XML files.
@@ -120,21 +120,21 @@ def from_cim(file_list: Union[str, List[str]] = None, encoding: str = None, conv
     - run_powerflow (bool): Option to run to powerflow inside the converter to create res tables directly.
     Default: False.
     - ignore_errors (bool): Option to disable raising of internal errors. Useful if you need to get a network not matter
-    if there are errors in the conversion. Default: True.
+    if there are errors in the conversion. Default: True. # todo add as parameter and as default false
 
     :param file_list: The path to the CGMES files as a string or list.
     :param encoding: The encoding from the files. Optional, default: None
     :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
         resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
         switch. Optional, default: False
-    :param line_r_limit: The limit from resistance. Optional, default: 0.1
+    :param line_r_limit: The limit from resistance. Optional, default: 0.1 todo for convert_line_to_switch
     :param line_x_limit: The limit from reactance. Optional, default: 0.1
     :param repair_cim: The CIMRepair object or a path to its serialized object. Optional, default: None
     :param repair_cim_class: The CIMRepair class. Optional, default: None
     :param repair_pp: The PandapowerRepair object or a path to its serialized object. Optional, default: None
     :param repair_pp_class: The PandapowerRepair class. Optional, default: None
     :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
-    :param cgmes_version: The CGMES version of the files, can be 3.0 or 2.4.15. Optional, default: 2.4.15
+    :param cgmes_version: The CGMES version of the files, can be 3.0, 2.4.15 or LTDS. Optional, default: 2.4.15
     :return: The pandapower net.
     """
     time_start_parsing = time.time()

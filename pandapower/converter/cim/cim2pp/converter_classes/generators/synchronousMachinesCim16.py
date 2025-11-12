@@ -130,9 +130,9 @@ class SynchronousMachinesCim16:
         synchronous_machines['current_source'] = True
         synchronous_machines['sn_mva'] = \
             synchronous_machines['ratedS'].fillna(synchronous_machines['nominalP'])
-        # Convert governorSCD unit from percent to MW/Hz
+        # Convert governorSCD unit from percent to MW/Hz  # todo kann wird für verteilten Slack verwendet
         synchronous_machines['governorSCD'] = synchronous_machines['governorSCD'] * synchronous_machines[
-            'nominalP'] / 50 / 100
+            'nominalP'] / 50 / 100  # todo f_hz von pp
         # SC data
         synchronous_machines['vn_kv'] = synchronous_machines['ratedU'][:]
         synchronous_machines['rdss_ohm'] = \

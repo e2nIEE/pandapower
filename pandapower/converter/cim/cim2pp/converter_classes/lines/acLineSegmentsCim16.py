@@ -32,7 +32,7 @@ class AcLineSegmentsCim16:
                 'index_bus': 'from_bus', 'index_bus2': 'to_bus', 'length': 'length_km',
                 'shortCircuitEndTemperature': 'endtemp_degree', 'EquipmentContainer': 'EquipmentContainer_id'})
             line_df[sc['o_cl']] = 'ACLineSegment'
-            line_df['in_service'] = line_df.connected & line_df.connected2
+            line_df['in_service'] = line_df.connected & line_df.connected2  # todo move to prepare
             line_df['r_ohm_per_km'] = abs(line_df.r) / line_df.length_km
             line_df['x_ohm_per_km'] = abs(line_df.x) / line_df.length_km
             line_df['c_nf_per_km'] = abs(line_df.bch) / (2 * 50 * np.pi * line_df.length_km) * 1e9
@@ -57,7 +57,7 @@ class AcLineSegmentsCim16:
                 'rdfId_Terminal2': sc['t_ele']})
             switch_df['et'] = 'b'
             switch_df['type'] = None
-            switch_df['z_ohm'] = 0
+            switch_df['z_ohm'] = 0  # todo maybe use r and x
             if switch_df.index.size > 0:
                 switch_df['closed'] = switch_df.connected & switch_df.connected2
             self.cimConverter.copy_to_pp('switch', switch_df)
@@ -73,9 +73,9 @@ class AcLineSegmentsCim16:
 
     def _prepare_ac_line_segments_cim16(self, convert_line_to_switch, line_r_limit, line_x_limit) -> pd.DataFrame:
 
-        if 'sc' in self.cimConverter.cim:
+        if 'sc' in self.cimConverter.cim:  # CGMES 3.0
             ac_line_segments = self.cimConverter.merge_eq_sc_profile('ACLineSegment')
-        else:
+        else:  # CGMES 2.4.15
             ac_line_segments = self.cimConverter.cim['eq']['ACLineSegment']
 
         line_length_before_merge = ac_line_segments.index.size
@@ -84,8 +84,7 @@ class AcLineSegmentsCim16:
         #   _x01    line1   0.056   ...
         #   _x02    line2   0.471   ...
         # now join with the terminals
-        ac_line_segments = pd.merge(ac_line_segments, self.cimConverter.bus_merge,
-                                       how='left', on='rdfId')
+        ac_line_segments = pd.merge(ac_line_segments, self.cimConverter.bus_merge, how='left', on='rdfId')
         ac_line_segments[sc['o_cl']] = 'ACLineSegment'
         # now ac_line_segments looks like:
         #   rdfId   name    r       rdfId_Terminal  connected   ...
@@ -109,7 +108,7 @@ class AcLineSegmentsCim16:
                 self.cimConverter.report_container.add_log(Report(
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count)))
-            ac_line_segments = ac_line_segments[0:0]
+            ac_line_segments = ac_line_segments[0:0]  # todo ac_line_segments = dups.loc[dups == 2] or respect ignore_errors
         ac_line_segments = ac_line_segments.reset_index()
         # now merge with OperationalLimitSets and CurrentLimits
         eq_operational_limit_sets = self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']]
@@ -117,10 +116,10 @@ class AcLineSegmentsCim16:
                                                   'Terminal': 'rdfId_Terminal'})
         ac_line_segments = pd.merge(ac_line_segments, eq_operational_limit_sets, how='left',
                                        on='rdfId_Terminal')
-        if 'CurrentLimit' in self.cimConverter.cim['ssh']:
+        if 'CurrentLimit' in self.cimConverter.cim['ssh']:  # CGMES 3.0
             current_limits = self.cimConverter.merge_eq_ssh_profile('CurrentLimit')[['rdfId', 'OperationalLimitSet',
                                                                                      'value']]
-        else:
+        else:  # CGMES 2.4.15
             current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['rdfId', 'OperationalLimitSet', 'value']]
         current_limits = current_limits.rename(columns={'rdfId': 'rdfId_CurrentLimit',
                                           'OperationalLimitSet': 'rdfId_OperationalLimitSet'})

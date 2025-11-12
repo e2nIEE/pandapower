@@ -163,9 +163,10 @@ class CimConverter:
                     message="Creating the coordinates failed, returning the net without coordinates!"))
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                                                      message=traceback.format_exc()))
-        self.net = pp_tools.set_pp_col_types(net=self.net)
 
-        # create transformer tap controller
+        # set the datatypes after the conversion, especially for integer and boolean columns
+        self.net = pp_tools.set_pp_col_types(net=self.net)
+        # create transformer tap controller # todo check why here
         self.classes_dict['tapController'](cimConverter=self).create_tap_controller_for_power_transformers()
 
         self.logger.info("Running a power flow.")
@@ -187,7 +188,7 @@ class CimConverter:
                 self.logger.info("Power flow solved normal.")
                 self.report_container.add_log(Report(
                     level=LogLevel.INFO, code=ReportCode.INFO, message="Power flow solved normal."))
-        try:
+        try:  #todo sv =loadflow res and analog raw measurement
             create_measurements = kwargs.get('create_measurements', None)
             if create_measurements is not None and create_measurements.lower() == 'sv':
                 CreateMeasurements(self.net, self.cim).create_measurements_from_sv()
@@ -210,7 +211,7 @@ class CimConverter:
                 level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                 message=traceback.format_exc()))
             self.net.measurement = self.net.measurement[0:0]
-            if not kwargs.get('ignore_errors', True):
+            if not kwargs.get('ignore_errors', True): # todo move ignore_errors to cunstroctur
                 raise e
         # a special fix for BB and NB mixed networks:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
@@ -224,8 +225,8 @@ class CimConverter:
                 self.logger.info("Fusing buses: b1: %s, b2: %s" % (b1, b2))
                 fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
-        # network behind this boundary node is attached. In this case, disable the EquivalentInjection.
-        ward_t = self.net.ward.copy()
+        # network behind this boundary node is attached. In this case, disable the EquivalentInjection. todo add 2 grids connected
+        ward_t = self.net.ward.copy()  # todo check performance
         ward_t['bus_prf'] = ward_t['bus'].map(self.net.bus[[sc['o_prf']]].to_dict().get(sc['o_prf']))
         self.net.ward.loc[(self.net.ward.bus.duplicated(keep=False) &
                            ((ward_t['bus_prf'] == 'eq_bd') | (ward_t['bus_prf'] == 'tp_bd'))), 'in_service'] = False
