@@ -17,7 +17,12 @@ shunt_schema = pa.DataFrameSchema(
             int, pa.Check.ge(1), description="step position of the shunt with which power values are multiplied"
         ),
         "max_step": pa.Column(
-            pd.Int64Dtype, pa.Check.ge(1), nullable=True, required=False, description="maximum allowed step of shunt"
+            pd.Int64Dtype,
+            pa.Check.ge(1),
+            nullable=True,
+            required=False,
+            description="maximum allowed step of shunt",
+            metadata={"opf": True},
         ),
         "in_service": pa.Column(bool, description="specifies if the shunt is in service"),
         "step_dependency_table": pa.Column(

@@ -81,7 +81,7 @@ _sgen_columns = {
         pd.BooleanDtype,
         nullable=True,
         required=False,
-        description=" Model this sgen as a current source during short- circuit calculations; useful in some cases, for example the simulation of full- size converters per IEC 60909-0:2016.",
+        description="Model this sgen as a current source during short- circuit calculations; useful in some cases, for example the simulation of full- size converters per IEC 60909-0:2016.",
         metadata={"sc": True},
     ),
     "generator_type": pa.Column(  # TODO: is this not an sgen, did someone model motor as an sgen?
