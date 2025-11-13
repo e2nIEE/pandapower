@@ -668,9 +668,9 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     vn[mask] = vn[mask] * ratio
                     trafo_shift[mask] += shift
             if any(tap_no_table):
-                tap_ideal = np.logical_and(tap_changer_type == "Ideal", tap_no_table)
-                tap_complex = np.logical_and(np.logical_or(tap_changer_type == "Ratio",
-                                                           tap_changer_type == "Symmetrical"), tap_no_table)
+                tap_ideal = np.logical_and(list(tap_changer_type) == "Ideal", tap_no_table)
+                tap_complex = np.logical_and(np.logical_or(list(tap_changer_type) == "Ratio",
+                                                           list(tap_changer_type) == "Symmetrical"), tap_no_table)
                 for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                     mask_ideal = (tap_ideal & (tap_side == side))
                     mask_complex = (tap_complex & (tap_side == side))

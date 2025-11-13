@@ -38,7 +38,7 @@ def _build_gen_ppc(net, ppc):
     distributed_slack = net["_options"]["distributed_slack"]
 
     _is_elements = net["_is_elements"]
-    gen_order = dict()
+    gen_order = {}
     f = 0
     for element in ["ext_grid", "gen"]:
         f = add_gen_order(gen_order, element, _is_elements, f)
@@ -211,9 +211,9 @@ def _build_pp_gen(net, ppc, f, t):
     gen_buses = bus_lookup[net["gen"]["bus"].values[gen_is]]
     gen_is_vm = net["gen"]["vm_pu"].values[gen_is]
     ppc["gen"][f:t, GEN_BUS] = gen_buses
-    ppc["gen"][f:t, PG] = (net["gen"]["p_mw"].values[gen_is] * net["gen"]["scaling"].values[gen_is])
-    ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is]
-    ppc["gen"][f:t, SL_FAC] = net["gen"]["slack_weight"].values[gen_is]
+    ppc["gen"][f:t, PG] = net["gen"]["p_mw"].values[gen_is] * net["gen"]["scaling"].values[gen_is]
+    ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is] if "sn_mva" in net["gen"].columns else np.empty(len(net["gen"]["bus"])) # TODO: sn_mva should not be required
+    ppc["gen"][f:t, SL_FAC] = net["gen"]["slack_weight"].values[gen_is] # TODO: slack_weight should not be required
     ppc["gen"][f:t, VG] = gen_is_vm
 
     # set bus values for generator buses
@@ -397,15 +397,15 @@ def _different_values_at_one_bus(buses, values):
 
 
 def _gen_xward_mask(net, ppc):
-    gen_mask = ~np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", dict()).get("xward", []))
-    xward_mask = np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", dict()).get("xward", []))
+    gen_mask = ~np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", {}).get("xward", []))
+    xward_mask = np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", {}).get("xward", []))
     return gen_mask, xward_mask
 
 
 def _get_xward_pq_buses(net, ppc):
     # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to
     # the auxiliary PV bus
-    ft = net["_pd2ppc_lookups"].get('branch', dict()).get("xward", [])
+    ft = net["_pd2ppc_lookups"].get('branch', {}).get("xward", [])
     if len(ft) > 0:
         f, t = ft
         xward_pq_buses = ppc['branch'][f:t, F_BUS].real.astype(np.int64)
