@@ -13,6 +13,7 @@ from pandapower.test.pandera.elements.helper import (
     bools,
     not_strings_list,
     not_floats_list,
+    not_allowed_floats,
     not_boolean_list,
     negativ_floats,
     positiv_floats,
@@ -35,10 +36,9 @@ class TestBusRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: Invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 0.4)
-        net.bus[parameter] = valid_value
-        if parameter == "name":
-            net.bus[parameter] = net.bus[parameter].astype(pd.StringDtype())
+        kwargs = {parameter: valid_value}
+        vn_kv = kwargs.pop("vn_kv", 0.4)
+        create_bus(net, vn_kv, **kwargs)
 
         validate_network(net)
 
@@ -68,7 +68,7 @@ class TestBusOptionalFields:
     def test_bus_with_optional_fields(self):
         """Test: Bus with every optional fields is valid"""
         net = create_empty_network()
-        create_bus(net, 0.4, zone="everywhere", max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0))
+        create_bus(net, 0.4, zone="everywhere", max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0), type="x")
         validate_network(net)
 
     def test_buses_with_optional_fields_including_nullvalues(self):
@@ -78,6 +78,7 @@ class TestBusOptionalFields:
         # create_bus(net, 0.4, max_vm_pu=1)
         # create_bus(net, 0.4, min_vm_pu=0.9)
         create_bus(net, 0.4, geodata=(1, 2))
+        create_bus(net, 0.4, type="x")
         validate_network(net)
 
     def test_valid_type_values(self):
@@ -92,11 +93,27 @@ class TestBusOptionalFields:
         validate_network(net)
 
     @pytest.mark.parametrize(
+        "parameter,valid_value",
+        list(
+            itertools.chain(
+                itertools.product(["min_vm_pu", "max_vm_pu"], [float(np.nan), np.nan, *positiv_floats]),
+                itertools.product(["type", "zone", "geo"], [pd.NA, *strings]),
+            )
+        ),
+    )
+    def test_valid_optional_values(self, parameter, valid_value):
+        """Test: valid optional values are accepted"""
+        net = create_empty_network()
+        create_bus(net, 0.4, **{parameter: valid_value})
+
+        validate_network(net)
+
+    @pytest.mark.parametrize(
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["min_vm_pu", "max_vm_pu"], [float(np.nan), *not_floats_list]),
-                itertools.product(["type", "zone", "geo"], [float(np.nan), *not_strings_list]),
+                itertools.product(["min_vm_pu", "max_vm_pu"], [*not_floats_list, *not_allowed_floats]),
+                itertools.product(["type", "zone", "geo"], [np.nan, float(np.nan), *not_strings_list]),
             )
         ),
     )

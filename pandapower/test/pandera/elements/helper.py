@@ -21,7 +21,6 @@ others = [
     # None and NaN variants
     None,
     pd.NaT,
-    np.nan,
     # Collections
     {},
     {"value": True},
