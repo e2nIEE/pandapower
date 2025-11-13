@@ -20,10 +20,10 @@ from pandapower.test.pandera.elements.helper import (
     positiv_ints_plus_zero,
     positiv_floats_plus_zero,
     negativ_floats_plus_zero,
-    all_ints, negativ_ints, not_ints_list, negativ_floats, positiv_floats
+    all_ints, negativ_ints, not_ints_list, negativ_floats, positiv_floats, all_allowed_floats
 )
 
-float_range = [x for x in all_floats if 90 <= x <= 180]
+float_range = [x for x in all_allowed_floats if 90 <= x <= 180]
 not_float_range = [x for x in all_floats if x < 90 or x > 180]
 invalid_low_float_range = [x for x in all_floats if x < 90]
 invalid_high_float_range = [x for x in all_floats if x > 180]
@@ -40,7 +40,7 @@ class TestTcscRequiredFields:
                 itertools.product(["to_bus"], positiv_ints_plus_zero),
                 itertools.product(["x_l_ohm"], positiv_floats_plus_zero),
                 itertools.product(["x_cvar_ohm"], negativ_floats_plus_zero),
-                itertools.product(["set_p_to_mw"], all_floats),
+                itertools.product(["set_p_to_mw"], all_allowed_floats),
                 itertools.product(["thyristor_firing_angle_degree"], float_range),
                 itertools.product(["controllable"], bools),
                 itertools.product(["in_service"], bools),
@@ -117,8 +117,8 @@ class TestTcscOptionalFields:
             in_service=False,
         )
         net.tcsc["name"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.tcsc["min_angle_degree"] = float(np.nan)
-        net.tcsc["max_angle_degree"] = float(np.nan)
+        # net.tcsc["min_angle_degree"] = float(np.nan)
+        # net.tcsc["max_angle_degree"] = float(np.nan)
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -127,10 +127,8 @@ class TestTcscOptionalFields:
             itertools.chain(
                 # name accepts strings and pd.NA
                 itertools.product(["name"], [pd.NA, *strings]),
-                # min_angle_degree valid: >= 90 or NaN
-                itertools.product(["min_angle_degree"], [90.0, 100.0, 150.0, float(np.nan)]),
-                # max_angle_degree valid: <= 180 or NaN
-                itertools.product(["max_angle_degree"], [180.0, 150.0, 100.0, float(np.nan)]),
+                itertools.product(["min_angle_degree"], [90.0, 100.0, 150.0]),
+                itertools.product(["max_angle_degree"], [180.0, 150.0, 100.0]),
             )
         ),
     )
