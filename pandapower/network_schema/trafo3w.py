@@ -197,11 +197,13 @@ res_trafo3w_schema = pa.DataFrameSchema(
         "vm_hv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the high voltage bus [pu]"),
         "va_hv_degree": pa.Column(float, nullable=True, description="voltage angle at the high voltage bus [degrees]"),
         "vm_mv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the medium voltage bus [pu]"),
-        "va_mv_degree": pa.Column(float, nullable=True, description="voltage angle at the medium voltage bus [degrees]"),
+        "va_mv_degree": pa.Column(
+            float, nullable=True, description="voltage angle at the medium voltage bus [degrees]"
+        ),
         "vm_lv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the low voltage bus [pu]"),
         "va_lv_degree": pa.Column(float, nullable=True, description="voltage angle at the low voltage bus [degrees]"),
-        "va_internal_degree": pa.Column(float, nullable=True, description=""),
-        "vm_internal_pu": pa.Column(float, nullable=True, description=""),
+        "va_internal_degree": pa.Column(float, nullable=True, description="voltage angle at internal bus"),
+        "vm_internal_pu": pa.Column(float, nullable=True, description="voltage magnitude at internal bus"),
         "loading_percent": pa.Column(float, nullable=True, description="transformer utilization [%]"),
     },
     strict=False,

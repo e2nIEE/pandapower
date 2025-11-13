@@ -47,7 +47,9 @@ res_switch_schema = pa.DataFrameSchema(
         "p_to_mw": pa.Column(float, nullable=True, description="active power to element [MW]"),
         "q_to_mvar": pa.Column(float, nullable=True, description="reactive power to element [MVAr]"),
         "i_ka": pa.Column(float, nullable=True, description="current on switch [kA]"),
-        "loading_percent": pa.Column(float, nullable=True, description="loading of switch in percent of maximum current [%]"),
+        "loading_percent": pa.Column(
+            float, nullable=True, description="loading of switch in percent of maximum current [%]"
+        ),
     },
     strict=False,
 )

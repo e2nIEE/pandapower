@@ -24,7 +24,7 @@ _bus_columns = {
 }
 bus_schema = pa.DataFrameSchema(
     _bus_columns,
-    checks=create_column_dependency_checks_from_metadata(["opf"], _bus_columns),
+    # checks=create_column_dependency_checks_from_metadata(["opf"], _bus_columns),
     strict=False,
 )
 

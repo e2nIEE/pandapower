@@ -19,14 +19,14 @@ _trafo_columns = {
         int, pa.Check.ge(0), description="low voltage bus index of the transformer", metadata={"foreign_key": "bus"}
     ),
     "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power of the transformer [MVA]"),
-    "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage bus [kV]"),
-    "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage bus [kV]"),
+    "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage side [kV]"),
+    "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage side [kV]"),
     "vk_percent": pa.Column(float, pa.Check.gt(0), description="short circuit voltage [%]", metadata={"sc": True}),
     "vkr_percent": pa.Column(
         float, pa.Check.ge(0), description="real component of short circuit voltage [%]", metadata={"sc": True}
     ),
     "pfe_kw": pa.Column(float, pa.Check.ge(0), description="iron losses [kW]"),
-    "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop losses in [%]"),
+    "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop current in [%]"),
     "vk0_percent": pa.Column(
         float,
         pa.Check.ge(0),
