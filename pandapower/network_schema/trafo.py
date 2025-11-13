@@ -250,8 +250,8 @@ res_trafo_schema = pa.DataFrameSchema(
             float, nullable=True, description="current at the low voltage side of the transformer [kA]"
         ),
         "vm_hv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the high voltage bus [pu]"),
-        "va_hv_degree": pa.Column(float, nullable=True, description="voltage magnitude at the low voltage bus [pu]"),
-        "vm_lv_pu": pa.Column(float, nullable=True, description="voltage angle at the high voltage bus [degrees]"),
+        "va_hv_degree": pa.Column(float, nullable=True, description="voltage angle at the high voltage bus [degrees]"),
+        "vm_lv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the low voltage bus [pu]"),
         "va_lv_degree": pa.Column(float, nullable=True, description="voltage angle at the low voltage bus [degrees]"),
         "loading_percent": pa.Column(float, nullable=True, description="load utilization relative to rated power [%]"),
     },
