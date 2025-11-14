@@ -17,6 +17,8 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
     Args:
         prj_name: Name (”Project”), full qualified name (”Project.IntPrj”) or full qualified path
             (”nUsernProject.IntPrj”) of a project.
+        script_name: Name of the DPL script that shall be executed prior to the import to pandapower.
+        script_settings: Dict of arguments for the DPL script, e.g., {'Script variable name in PF': Value}
         path_dst: Destination for the export of .p file (full file path)
         pv_as_slack: whether "PV" nodes are imported as "Slack" nodes
         pf_variable_p_loads: PowerFactory variable for generators: "plini", "plini_a", "m:P:bus1"
