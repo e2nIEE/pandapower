@@ -4553,7 +4553,7 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                 for elm in ['load', 'sgen', 'gen', 'shunt', 'ext_grid']:
                     if elm in net:
                         df = net[elm]
-                        if isinstance(df, pd.DataFrame):
+                        if isinstance(df, DataFrame):
                             if 'bus' in df.columns and current in df.bus.values:
                                 elements_at_bus.append(elm)
                                 break
