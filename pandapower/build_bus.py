@@ -334,7 +334,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     nr_trafo3w = len(net.trafo3w)
     nr_ssc = len(net.ssc)
     nr_vsc = len(net.vsc)
-    aux = dict()
+    aux = {}
     if nr_xward > 0 or nr_trafo3w > 0 or nr_ssc > 0 or nr_vsc > 0:
         bus_indices = [net["bus"].index.values, np.array([], dtype=np.int64)]
         max_idx = max(net["bus"].index) + 1
@@ -450,7 +450,7 @@ def _build_bus_dc_ppc(net, ppc):
     # get bus indices
     bus_index = net["bus_dc"].index.values
     # get in service elements
-    aux = dict()
+    aux = {}
     nr_vsc = len(net.vsc)
     if nr_vsc > 0:
         max_idx = max(net["bus_dc"].index) + 1
@@ -963,11 +963,11 @@ def _add_ext_grid_sc_impedance(net, ppc):
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 1.1
-    if not "s_sc_%s_mva" % case in eg:
+    if "s_sc_%s_mva" % case not in eg:
         raise ValueError(("short circuit apparent power s_sc_%s_mva needs to be specified for "
                           "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000") % case)
     s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
-    if not "rx_%s" % case in eg:
+    if "rx_%s" % case not in eg:
         raise ValueError(("short circuit R/X rate rx_%s needs to be specified for external grid \n"
                           " Try: net.ext_grid['rx_max'] = 0.1") % case)
     rx = eg["rx_%s" % case].values
