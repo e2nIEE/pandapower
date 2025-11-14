@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] refactored diagnostic and diagnostic_report for cleaner output
 - [FIXED] legacy np.random.random uses
 - [FIXED] SonarCube reliabilty complaints
 - [FIXED] remove imports from converter init, change code usage and docu accordingly
@@ -20,6 +21,8 @@ Change Log
 - [FIXED] cim2pp: update docu with correct dependancy install
 - [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
 - [ADDED] cim2pp: additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
+- [ADDED] cim2pp: added ratedCurrent as in_ka to switch
+- [ADDED] cim2pp: added CurrentLimit values and OperationalLimitType to trafo and trafo3w
 
 [3.2.1] - 2025-10-27
 -------------------------------
