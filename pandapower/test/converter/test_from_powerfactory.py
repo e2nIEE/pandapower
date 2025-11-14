@@ -230,7 +230,7 @@ def test_pf_SC_meas_relocate():
     # TODO: Currently the station controllers in PowerFactory 2025 and 2023 behave different. To be checked with PowerFactory.
     net.controller.object[0:6].tol = 1e-9
 
-    if Version(str(pf.__version__)) > Version("25.0.0"):
+    if Version(str(pf.__version__)) < Version("25.0.0"):
         net.controller.object[4].q_droop_mvar = -net.controller.object[4].q_droop_mvar
 
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)

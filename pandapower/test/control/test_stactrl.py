@@ -109,7 +109,7 @@ def test_qctrl_droop():
     assert (abs(net.res_line.loc[0, "q_to_mvar"] - (-1e-13)) < tol)
     runpp(net, run_control=True)
     assert (abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
-                net.controller.object[1].q_set_mvar_bsc + (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
+                net.controller.object[1].q_set_mvar_bsc + (net.res_bus.loc[1, "vm_pu"] - 0.995) * 40)) < tol)
 
 def test_qlimits_qctrl():
     net = simple_test_net()
@@ -234,15 +234,15 @@ def test_stactrl_pf_import():
     #if Version(str(pf.__version__)) > Version("25.0.0"):
     print(
         "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
-        "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995778 pu) * -40 MVar/pu) = -0.87112 MVar: \n",
+        "q_hv_mvar, expected: \n 1 MVar + (0.995778 - 0.999 pu) * 40 MVar/pu) = 0.87112 MVar: \n",
         net.res_trafo.loc[3, "q_hv_mvar"])
     #else:
     #    print(
     #        "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
     #        "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995846 pu) * 40 MVar/pu) = -1.126176 MV1ar: \n",
     #        net.res_trafo.loc[3, "q_hv_mvar"])
-    assert (net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[91, "vm_pu"])
-                                                   * net.controller.object[2].q_droop_mvar)) < tol)
+    assert (net.res_trafo.loc[3, "q_hv_mvar"] - (1 + (net.res_bus.loc[91, "vm_pu"] - 0.999)
+                                                   * net.controller.object[2].q_droop_mvar) < tol)
 
 
 if __name__ == '__main__':

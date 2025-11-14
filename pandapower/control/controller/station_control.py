@@ -94,7 +94,7 @@ class BinarySearchControl(Controller):
     """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[],
+                 input_element_index, set_point, voltage_ctrl, name="", input_inverted=[],
                  bus_idx=None, tol=0.001, in_service=True, order=0, level=0, drop_same_existing_ctrl=False,
                  matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
@@ -135,13 +135,6 @@ class BinarySearchControl(Controller):
                                             dtype=np.bool)
 
         n = len(self.output_element_index)
-        if gen_Q_response is None or (isinstance(gen_Q_response, Sequence) and len(gen_Q_response) == 0):
-            # empty, then set all entries to 1
-            self.gen_Q_response = [1] * n
-        else:
-            if len(gen_Q_response) < n:
-                gen_Q_response += [1] * (n - len(gen_Q_response))  # missing entries with +1
-            self.gen_Q_response = gen_Q_response
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx
@@ -569,19 +562,17 @@ class DroopControl(Controller):
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
-                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            net.controller.object[self.controller_idx].gen_Q_response[0
-                                                            ] * (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc + (
+                            self.vm_pu - self.ub_voltage) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
-                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            net.controller.object[self.controller_idx].gen_Q_response[0]
-                                                             * (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc + (
+                            self.vm_pu - self.lb_voltage) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
             else:
                 self.q_set_old_mvar, self.q_set_mvar = (
-                    self.q_set_mvar, self.q_set_mvar + net.controller.object[self.controller_idx].gen_Q_response[0] * (
-                                self.vm_set_pu - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_mvar, self.q_set_mvar + (
+                                self.vm_pu - self.vm_set_pu) * self.q_droop_mvar)
 
             if self.q_set_old_mvar is not None:
                 self.diff = self.q_set_mvar - self.q_set_old_mvar
@@ -601,7 +592,7 @@ class DroopControl(Controller):
             input_values = (
                         net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
             self.vm_set_pu_new = self.vm_set_pu_bsc + sum(
-                input_values) / self.q_droop_mvar  # net.controller.at[self.controller_idx, "object"].gen_Q_response[0] *
+                input_values) / self.q_droop_mvar
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
 
 
