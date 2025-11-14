@@ -8,7 +8,7 @@ from typing import Literal, Optional, Union
 import geojson
 import networkx as nx
 import numpy as np
-from pandas import DataFrame, concat
+from pandas import DataFrame, Series, concat
 
 from pandapower.auxiliary import ADict, get_free_id
 from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
@@ -25,7 +25,8 @@ from pandapower.std_types import add_zero_impedance_parameters, std_type_exists,
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
 from pandapower.topology import create_nxgraph, calc_distance_to_bus
-from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object, \
+    get_min_max_q_mvar_from_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
 
 import logging
@@ -350,6 +351,15 @@ def from_pf(
     if 'q_capability_curve_table' in net and not net['q_capability_curve_table'].empty:
         logger.info('Create q_capability_characteristics_object')
         create_q_capability_characteristics_object(net)
+
+        for element in ("sgen", "gen", "ext_grid"):
+            if "reactive_capability_curve" not in net[element].columns:
+                continue
+            mask = net[element]["reactive_capability_curve"].fillna(False).astype(bool)
+            for eid in net[element].index[mask]:
+                min_q_mvar, max_q_mvar = get_min_max_q_mvar_from_characteristics_object(net, element, eid)
+                net[element].loc[eid, 'min_q_mvar'] = min_q_mvar
+                net[element].loc[eid, 'max_q_mvar'] = max_q_mvar
 
     logger.info('imported net')
     return net
@@ -4553,7 +4563,7 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                 for elm in ['load', 'sgen', 'gen', 'shunt', 'ext_grid']:
                     if elm in net:
                         df = net[elm]
-                        if isinstance(df, pd.DataFrame):
+                        if isinstance(df, DataFrame):
                             if 'bus' in df.columns and current in df.bus.values:
                                 elements_at_bus.append(elm)
                                 break

@@ -498,7 +498,7 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
     qmax : numpy.ndarray
         Array of maximum reactive power values for the specified element(s).
     """
-    if element not in ["gen", "sgen"]:
+    if element not in ["gen", "sgen", "ext_grid"]:
         logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
                        f"of the {element}. Please give gen or sgen as an argument of the function")
         return
@@ -529,7 +529,6 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
 
         curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
         curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
-        q = curve_q.loc[element_index].values
-        qmin = q[:,0]
-        qmax = q[:,1]
+        qmin = curve_q.loc[element_index, "min_q_mvar"]
+        qmax = curve_q.loc[element_index, "max_q_mvar"]
         return qmin, qmax

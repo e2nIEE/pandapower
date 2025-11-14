@@ -129,8 +129,6 @@ class BinarySearchControl(Controller):
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
 
-        self._update_min_max_q_mvar(net)
-
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(self.output_values_distribution,
                                                                             self.output_element_in_service)],
@@ -437,6 +435,7 @@ class BinarySearchControl(Controller):
             if not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values)):
                 qmin, _ = get_min_max_q_mvar_from_characteristics_object(net, self.output_element, self.output_element_index)
                 self.output_min_q_mvar = np.nan_to_num(qmin, nan=-np.inf)
+                net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
             else:
                 self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
         else:
@@ -445,6 +444,7 @@ class BinarySearchControl(Controller):
             if not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values)):
                 _, qmax = get_min_max_q_mvar_from_characteristics_object(net, self.output_element, self.output_element_index)
                 self.output_max_q_mvar = np.nan_to_num(qmax, nan=np.inf)
+                net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar
             else:
                 self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
         else:
