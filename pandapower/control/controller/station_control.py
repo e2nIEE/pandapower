@@ -129,8 +129,6 @@ class BinarySearchControl(Controller):
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
 
-        self._update_min_max_q_mvar(net)
-
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(self.output_values_distribution,
                                                                             self.output_element_in_service)],

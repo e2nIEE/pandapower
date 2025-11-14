@@ -8,7 +8,7 @@ from typing import Literal, Optional, Union
 import geojson
 import networkx as nx
 import numpy as np
-from pandas import DataFrame, Series, concat
+from pandas import DataFrame, Series, concat, isna
 
 from pandapower.auxiliary import ADict, get_free_id
 from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
@@ -263,13 +263,13 @@ def from_pf(
         create_vsc(net=net, item=vsc)
     if n > 0: logger.info('imported %d VSC' % n)
 
-    logger.debug('creating switches')
-    # create switches (StaSwitch):
-    n = 0
-    for switch in dict_net['StaSwitch']:
-        create_switch(net=net, item=switch)
-        n += 1
-    logger.info('imported %d switches' % n)
+    # logger.debug('creating switches')
+    # # create switches (StaSwitch):
+    # n = 0
+    # for switch in dict_net['StaSwitch']:
+    #     create_switch(net=net, item=switch)
+    #     n += 1
+    # logger.info('imported %d switches' % n)
 
     for idx, row in net.trafo.iterrows():
         propagate_bus_coords(net, row.lv_bus, row.hv_bus)
@@ -4568,8 +4568,8 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                                 elements_at_bus.append(elm)
                                 break
                             elif 'from_bus' in df.columns or 'to_bus' in df.columns:
-                                if current in df.get('from_bus', pd.Series()).values or \
-                                        current in df.get('to_bus', pd.Series()).values:
+                                if current in df.get('from_bus', Series()).values or \
+                                        current in df.get('to_bus', Series()).values:
                                     elements_at_bus.append(elm)
                                     break
                 if elements_at_bus:
@@ -4775,10 +4775,10 @@ def calc_segment_length(x1, y1, x2, y2):
 
 def get_scale_factor(length_line, coords):
     if np.isscalar(coords):  # single value
-        if pd.isna(coords):
+        if isna(coords):
             return None
     else:  # array or list
-        if np.any(pd.isna(coords)):
+        if np.any(isna(coords)):
             return None
     temp_len = 0
     num_coords = len(coords)
@@ -4839,7 +4839,7 @@ def set_new_coords(net, bus_id, line_idx, new_line_idx, line_length, pos_at_line
 
     scale_factor_length = get_scale_factor(line_length, line_coords)
     
-    if pd.isna(scale_factor_length):
+    if isna(scale_factor_length):
         logger.warning("Could not generate geodata for line sections (partial loads on line)!")
     else:
         section_coords, new_coords = break_coords_sections(line_coords, pos_at_line,
