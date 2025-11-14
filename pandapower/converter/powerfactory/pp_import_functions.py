@@ -252,24 +252,24 @@ def from_pf(
     if n > 0: logger.info('imported %d VAC' % n)
 
     # create vac (ElmVsc):
-    # n = 0
-    # for n, vscmono in enumerate(dict_net['ElmVscmono'], 1):
-    #     create_vscmono(net=net, item=vscmono)
-    # if n > 0: logger.info('imported %d VSC (mono)' % n)
+    n = 0
+    for n, vscmono in enumerate(dict_net['ElmVscmono'], 1):
+        create_vscmono(net=net, item=vscmono)
+    if n > 0: logger.info('imported %d VSC (mono)' % n)
 
-    # # create vac (ElmVsc):
-    # n = 0
-    # for n, vsc in enumerate(dict_net['ElmVsc'], 1):
-    #     create_vsc(net=net, item=vsc)
-    # if n > 0: logger.info('imported %d VSC' % n)
+    # create vac (ElmVsc):
+    n = 0
+    for n, vsc in enumerate(dict_net['ElmVsc'], 1):
+        create_vsc(net=net, item=vsc)
+    if n > 0: logger.info('imported %d VSC' % n)
 
-    # logger.debug('creating switches')
-    # # create switches (StaSwitch):
-    # n = 0
-    # for switch in dict_net['StaSwitch']:
-    #     create_switch(net=net, item=switch)
-    #     n += 1
-    # logger.info('imported %d switches' % n)
+    logger.debug('creating switches')
+    # create switches (StaSwitch):
+    n = 0
+    for switch in dict_net['StaSwitch']:
+        create_switch(net=net, item=switch)
+        n += 1
+    logger.info('imported %d switches' % n)
 
     for idx, row in net.trafo.iterrows():
         propagate_bus_coords(net, row.lv_bus, row.hv_bus)
@@ -2458,7 +2458,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", 
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",
                                                                   "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"},
                                                       attr_list=["sernum", "chr_name"])
     if item.pQlimType and element != 'ext_grid':

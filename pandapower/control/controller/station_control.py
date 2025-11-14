@@ -48,14 +48,14 @@ class BinarySearchControl(Controller):
 
         **input_element** - Measurement location, can be "res_trafo", "res_switch", "res_line", or "res_bus".
 
-        **input_inverted** - Boolean that indicates if the measurement of the input element must be inverted. Required
+        **input_inverted** - List of Booleans that indicates if the measurement of the input elements must be inverted. Required
         when importing from PowerFactory.
 
         **input_element_index** - Element of input element in net.
 
 
         **input_element_index** - Index or list of indices of the input element(s) in net.
-            
+
         **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
         case of voltage set point, voltage control must be set to true, bus_idx must be set to measurement bus and
         input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
@@ -66,11 +66,11 @@ class BinarySearchControl(Controller):
 
         **voltage_ctrl** - Whether the controller is used for voltage control.
 
-        **output_min_q_mvar** - List of minimum reactive power limits for each output element. Comes into action if runpp 
+        **output_min_q_mvar** - List of minimum reactive power limits for each output element. Comes into action if runpp
         is executed with enforce_q_lims=True. If the output element is an sgen and has a q_characteristic_curve,
         then this will be considered as the output_min_q_mvar
 
-        **output_max_q_mvar** - List of maximum reactive power limits for each output element. Comes into action if runpp 
+        **output_max_q_mvar** - List of maximum reactive power limits for each output element. Comes into action if runpp
         is executed with enforce_q_lims=True. If the output element is an sgen and has a q_characteristic_curve,
         then this will be considered as the output_min_q_mvar
 
@@ -128,6 +128,8 @@ class BinarySearchControl(Controller):
 
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
+
+        self._update_min_max_q_mvar(net)
 
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(self.output_values_distribution,
@@ -325,22 +327,22 @@ class BinarySearchControl(Controller):
             x = self.output_values + delta
 
             if not all(self.output_adjustable) and net._options['enforce_q_lims']:
-                positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val] # gives which is/are adjustable
-                positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val] # can be one or multiple ## gives which is/are not adjustable anymore
+                positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val]  # gives which is/are adjustable
+                positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val]  # can be one or multiple ## gives which is/are not adjustable anymore
 
-                sum_adjustable = sum(x) - sum(self.output_values[positions_not_adjustable]) # anlagen, die noch adjustable sind, rest der Leistung muss noch erreicht werden
+                sum_adjustable = sum(x) - sum(self.output_values[positions_not_adjustable])  # stations that are still adjustablke, rest of the power must be achieved
                 x[positions_adjustable] = sum_adjustable * self.output_values_distribution[positions_adjustable]
 
                 for i in positions_not_adjustable:
                     if self.output_element_in_service[i]:
-                        x[i] = self.output_values[i] # reset value to q_limit
+                        x[i] = self.output_values[i]  # reset value to q_limit
                     else:
-                        x[i] = 0 # reset value to 0 because station is oout of service
+                        x[i] = 0  # reset value to 0 because station is out of service
 
             else:
                 x = sum(x) * self.output_values_distribution
 
-            if self.output_adjustable is not None and net._options['enforce_q_lims']: # none if output element is a shunt
+            if self.output_adjustable is not None and net._options['enforce_q_lims']:  # none if output element is a shunt
                 if isinstance(x, np.ndarray) and len(x)>1:
                     self._update_min_max_q_mvar(net)
 
@@ -355,7 +357,7 @@ class BinarySearchControl(Controller):
                                          in zip(x, self.output_max_q_mvar, self.output_element_in_service)]
 
                     if any(reached_max_qmvar):
-                        positions = [i for i, val in enumerate(reached_max_qmvar) if val is np.True_] # can be one or multiple
+                        positions = [i for i, val in enumerate(reached_max_qmvar) if val is np.True_]  # can be one or multiple
                         reached_index = [self.output_element_index[i] for i in positions]
                         logging.info('Station(s) controlled by %s reached the maximum reactive power limit: %s'
                               % (self.name, ', '.join(net[self.output_element].loc[reached_index].name.tolist())))

@@ -46,30 +46,6 @@ def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
         'ElmStactrl'
     }
 
-    # here define all element types that have to be configured to have MW as power values
-    # assigned but never used?
-    elm_units = {
-        'ElmLod': ['W', 'var', 'VA'],
-        'ElmLodlv': ['W', 'var', 'VA'],
-        'ElmLodlvp': ['W', 'var', 'VA'],
-        'ElmLodmv': ['W', 'var', 'VA'],
-        'ElmGenstat': ['W', 'var', 'VA'],
-        'ElmPvsys': ['W', 'var', 'VA'],
-        'ElmXnet': ['W', 'var', 'VA'],
-        'ElmSym': ['W', 'var', 'VA'],
-        'ElmSvs': ['W', 'var', 'VA'],
-        'ElmAsm': ['W', 'var', 'VA'],
-        'ElmShnt': ['W', 'var', 'VA'],
-        'ElmZpu': ['W', 'var', 'VA'],
-        'ElmSind': ['W', 'var', 'VA', 'V'],
-        'ElmScap': ['W', 'var', 'VA', 'V'],
-        'ElmVac': ['W', 'var', 'VA'],
-        'ElmTr2': ['W', 'var'],
-        'ElmTr3': ['W', 'var'],
-        'TypTr2': ['W', 'var', 'VA'],
-        'TypTr3': ['W', 'var', 'VA'],
-        'TypLne': ['A', 'm']
-    }
 
     # make all values in MW
     logger.info('applying unit settings')
