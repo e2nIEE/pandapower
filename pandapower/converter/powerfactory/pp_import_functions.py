@@ -263,13 +263,13 @@ def from_pf(
     #     create_vsc(net=net, item=vsc)
     # if n > 0: logger.info('imported %d VSC' % n)
 
-    # logger.debug('creating switches')
-    # # create switches (StaSwitch):
-    # n = 0
-    # for switch in dict_net['StaSwitch']:
-    #     create_switch(net=net, item=switch)
-    #     n += 1
-    # logger.info('imported %d switches' % n)
+    logger.debug('creating switches')
+    # create switches (StaSwitch):
+    n = 0
+    for switch in dict_net['StaSwitch']:
+        create_switch(net=net, item=switch)
+        n += 1
+    logger.info('imported %d switches' % n)
 
     for idx, row in net.trafo.iterrows():
         propagate_bus_coords(net, row.lv_bus, row.hv_bus)
@@ -2458,7 +2458,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         logger.debug('created sgen at index <%s>' % sid)
 
     net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", 
+    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",
                                                                   "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"},
                                                       attr_list=["sernum", "chr_name"])
     if item.pQlimType and element != 'ext_grid':
@@ -4568,8 +4568,8 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                                 elements_at_bus.append(elm)
                                 break
                             elif 'from_bus' in df.columns or 'to_bus' in df.columns:
-                                if current in df.get('from_bus', pd.Series()).values or \
-                                        current in df.get('to_bus', pd.Series()).values:
+                                if current in df.get('from_bus', Series()).values or \
+                                        current in df.get('to_bus', Series()).values:
                                     elements_at_bus.append(elm)
                                     break
                 if elements_at_bus:
