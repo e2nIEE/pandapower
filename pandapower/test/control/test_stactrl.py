@@ -205,42 +205,31 @@ def test_stactrl_pf_import():
     net.controller.object[2].tol = 0.00001
 
     runpp(net, run_control=True)
-    print("\n")
-    print("--------------------------------------")
-    print("Scenario 1 - Constant Q")
-    print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
+    logger.info("Scenario 1 - Constant Q")
+    logger.info("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
           net.res_line.loc[0, "q_to_mvar"], "\t", net.res_line.loc[0, "q_from_mvar"])
-    print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
+    logger.info("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
           net.res_line.loc[2, "q_to_mvar"], "\t", net.res_line.loc[1, "q_from_mvar"])
     assert (net.res_line.loc[0, "q_to_mvar"] - 0.5 < tol)
     assert (net.res_line.loc[2, "q_to_mvar"] - 0.5 < tol)
-    print("--------------------------------------")
-    print("Scenario 2 - Constant U, droop 40 MVar/pu")
-    print("Input Measurement q_from_mvar and q_to_mvar, expected: \n 0.2442 MVar, -0.6215 MVar: \n",
+    logger.info("Scenario 2 - Constant U, droop 40 MVar/pu")
+    logger.info("Input Measurement q_from_mvar and q_to_mvar, expected: \n 0.2442 MVar, -0.6215 MVar: \n",
           net.res_line.loc[4, "q_to_mvar"], "\t", net.res_line.loc[4, "q_from_mvar"])
-    print("Input Measurement q_from_mvar and q_to_mvar, expected:\n 0.2442 MVar, -0.6215 MVar: \n",
+    logger.info("Input Measurement q_from_mvar and q_to_mvar, expected:\n 0.2442 MVar, -0.6215 MVar: \n",
           net.res_line.loc[5, "q_to_mvar"], "\t", net.res_line.loc[5, "q_from_mvar"])
-    print("Controlled bus, initial set point 1.01 pu and 40 MVar/pu, vm_pu, \n expected: "
+    logger.info("Controlled bus, initial set point 1.01 pu and 40 MVar/pu, vm_pu, \n expected: "
         "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[62, "vm_pu"])
     assert (net.res_bus.loc[62, "vm_pu"] - (1.01 + (net.res_line.loc[4, "q_to_mvar"] + net.res_line.loc[5, "q_to_mvar"])
                                             / net.controller.object[4].q_droop_mvar) < tol)
-    print("--------------------------------------")
-    print("Scenario 3 - Constant U")
-    print("Controlled bus, set point = 1.03 pu, vm_pu: \n", net.res_bus.loc[84, "vm_pu"])
+    logger.info("Scenario 3 - Constant U")
+    logger.info("Controlled bus, set point = 1.03 pu, vm_pu: \n", net.res_bus.loc[84, "vm_pu"])
     assert (net.res_bus.loc[84, "vm_pu"] - 1.03 < tol)
-    print("--------------------------------------")
-    print("Scenario 4 - Q(U) - droop 40 MVar/pu")
-    print("Input Measurement vm_pu: \n", net.res_bus.loc[103, "vm_pu"])
-    #if Version(str(pf.__version__)) > Version("25.0.0"):
-    print(
+    logger.info("Scenario 4 - Q(U) - droop 40 MVar/pu")
+    logger.info("Input Measurement vm_pu: \n", net.res_bus.loc[103, "vm_pu"])
+    logger.info(
         "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
         "q_hv_mvar, expected: \n 1 MVar + (0.995778 - 0.999 pu) * 40 MVar/pu) = 0.87112 MVar: \n",
         net.res_trafo.loc[3, "q_hv_mvar"])
-    #else:
-    #    print(
-    #        "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
-    #        "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995846 pu) * 40 MVar/pu) = -1.126176 MV1ar: \n",
-    #        net.res_trafo.loc[3, "q_hv_mvar"])
     assert (net.res_trafo.loc[3, "q_hv_mvar"] - (1 + (net.res_bus.loc[91, "vm_pu"] - 0.999)
                                                    * net.controller.object[2].q_droop_mvar) < tol)
 
