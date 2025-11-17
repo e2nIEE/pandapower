@@ -90,6 +90,7 @@ _trafo_columns = {
     "tap_step_degree": pa.Column(
         float, pa.Check.ge(0), nullable=True, required=False, description="tap step size for voltage angle"
     ),
+    # "tap_step_degree": pa.Column(float, pa.Check.ge(0), description="tap step size for voltage angle"),
     "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
     "tap_changer_type": pa.Column(
         pd.StringDtype,
