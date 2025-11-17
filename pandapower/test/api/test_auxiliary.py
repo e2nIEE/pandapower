@@ -448,10 +448,10 @@ def test_get_min_max_q_capability():
         for j, p2 in enumerate(p_mw_sgen2):
             net.sgen.loc[sgen_indices_with_char, 'p_mw'] = [p1, p2]
             qmin, qmax = get_min_max_q_mvar_from_characteristics_object(net, 'sgen', sgen_indices_with_char)
-            assert qmin[0] == q_min_mvar_sgen1[i]
-            assert qmin[1] == q_min_mvar_sgen2[j]
-            assert qmax[0] == q_max_mvar_sgen1[i]
-            assert qmax[1] == q_max_mvar_sgen2[j]
+            assert qmin[1] == q_min_mvar_sgen1[i]
+            assert qmin[2] == q_min_mvar_sgen2[j]
+            assert qmax[1] == q_max_mvar_sgen1[i]
+            assert qmax[2] == q_max_mvar_sgen2[j]
 
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
