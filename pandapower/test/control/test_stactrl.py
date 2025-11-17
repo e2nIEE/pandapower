@@ -169,7 +169,6 @@ def test_qlimits_voltctrl():
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.8) < tol)
 
 def test_qlimits_with_capability_curve():
-
     for v in linspace(start=0.98, stop=1.02, num=5, dtype=float64):
         for p in linspace(start=-2.5, stop=2.5, num=10, dtype=float64):
             net = simple_test_net()
@@ -179,8 +178,8 @@ def test_qlimits_with_capability_curve():
             net["q_capability_curve_table"] = DataFrame(
                 {'id_q_capability_curve': [0, 0, 0, 0, 0],
                 'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
-                'q_min_mvar': [-0.5, -0.3, -0.2, -0.3, -0.5],
-                'q_max_mvar': [0.6, 0.4, 0.25, 0.4, 0.56]})
+                'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
+                'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
 
             net.sgen.id_q_capability_characteristic.at[0] = 0
             net.sgen['curve_style'] = "straightLineYValues"
@@ -193,7 +192,7 @@ def test_qlimits_with_capability_curve():
                                         set_point=v, voltage_ctrl=True, tol=tol)
             net.sgen.loc[0, 'p_mw'] = p
             runpp(net, run_control=True, enforce_q_lims=True)
-            assert -0.5 - tol <= net.res_sgen.loc[0, 'q_mvar'] <= 0.6 + tol
+            assert -0.1 <= net.res_sgen.loc[0, 'q_mvar'] <= 0.1
 
 def test_stactrl_pf_import():
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test.json')
