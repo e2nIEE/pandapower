@@ -75,12 +75,10 @@ def test_pf_export():
         assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
 
 
-@pytest.mark.xfail(reason="implementation of the trafo3w data model is not completely consistent with PowerFactory")
 @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 def test_pf_export_trafo3w():
     app = pf.GetApplication()
     # import the 3W-Trafo test grid to powerfactory
-    # todo: at the moment the 3W-Trafo model is not accurate enough, here testing with lower tol
     path = os.path.join(pp_dir, 'test', 'converter', 'testfiles', 'test_trafo3w.pfd')
     prj = import_project(path, app, 'TEST_PF_CONVERTER', import_folder='TEST_IMPORT', clear_import_folder=True)
     prj_name = prj.GetFullName()
@@ -131,7 +129,7 @@ def test_trafo3w_tap_dependent_imp_with_tc():
         'diff_vm': 5e-3,
         'diff_va': 0.1,
         'trafo_diff': 1e-2,
-        'trafo3w_diff': 2e-1,
+        'trafo3w_diff': 1e-2,
         'load_p_diff_is': 1e-5,
         'load_q_diff_is': 1e-5,
         'ext_grid_p_diff': 0.1,
@@ -154,6 +152,8 @@ def test_pf_export_tap_changer():
     prj_name = prj.GetFullName()
 
     net = from_pfd(app, prj_name=prj_name)
+
+    net.trafo3w["tap_changer_type"] = "Tabular"
 
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
 
@@ -195,7 +195,7 @@ def test_pf_export_partial_loads():
         'diff_va': 1e-3,
         'line_diff': 1e-1,
         'trafo_diff': 1e-2,
-        'trafo3w_diff': 2e-1,
+        'trafo3w_diff': 1e-2,
         'sgen_p_diff_is': 1e-5,
         'sgen_q_diff_is': 1e-5,
         'load_p_diff_is': 1e-5,
@@ -286,7 +286,7 @@ def test_pf_export_q_capability_curve():
         'diff_vm': 5e-3,
         'diff_va': 0.1,
         'trafo_diff': 1e-2,
-        'trafo3w_diff': 2e-1,
+        'trafo3w_diff': 1e-2,
         'line_diff': 1e-2,
         'gen_p_diff_is': 1e-5,
         'gen_q_diff_is': 1e-5,
