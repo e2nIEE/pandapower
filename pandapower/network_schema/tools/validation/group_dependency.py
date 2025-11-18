@@ -66,13 +66,18 @@ def create_column_group_dependency_validation_func(columns):
         if len(present_columns) != len(target_columns):
             return False
 
-        # Case 3: All columns are present - check if they're properly filled
-        # For each target column, check if any null values exist
-        for col in target_columns:
-            if df[col].isna().any():
-                return False
+        # Case 3: All columns are present - check if they're consistently filled
+        # For each row, either all target columns should be NA or none should be NA
+        target_cols_list = list(target_columns)
+        na_mask = df[target_cols_list].isna()
 
-        return True
+        # Count NA values per row across target columns
+        na_counts = na_mask.sum(axis=1)
+
+        # Valid if each row has either 0 NAs (all filled) or len(target_columns) NAs (all empty)
+        valid_counts = (na_counts == 0) | (na_counts == len(target_columns))
+
+        return all(valid_counts)
 
     return validator
 

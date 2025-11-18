@@ -237,7 +237,10 @@ class TestIntegration:
         full_workflow_valid_schema = pa.DataFrameSchema(schema_columns, strict=False, checks=checks)
 
         # Test with valid DataFrame (all location columns present)
-        df_valid = pd.DataFrame({"lat": [1.0], "lon": [2.0], "name": [pd.NA], "other": ["value"]})
+        df_valid = pd.DataFrame({"lat": [1.0, pd.NA, pd.NA],
+                                 "lon": [2.0, pd.NA, pd.NA],
+                                 "name": [pd.NA, "a", "b"],
+                                 "other": ["value", "a", pd.NA]})
 
         # All checks should pass
         full_workflow_valid_schema.validate(df_valid)
