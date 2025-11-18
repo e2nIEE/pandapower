@@ -45,7 +45,7 @@ def create_transformer(
     parallel: int = 1,
     df: float = 1.0,
     tap_changer_type: str | None = None,
-    # tap_dependency_table: bool = False,
+    tap_dependency_table: bool = pd.NA,
     id_characteristic_table: int | None = None,
     pt_percent: float = nan,
     xn_ohm: float = nan,
@@ -203,9 +203,7 @@ def create_transformer(
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo", dtype="Int64")
-    # _set_value_if_not_nan(
-    #     net, index, tap_dependency_table, "tap_dependency_table", "trafo", dtype=bool_, default_val=False
-    # )
+    _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo")
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo", dtype=object, default_val=None)
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
@@ -226,7 +224,7 @@ def create_transformers(
     parallel: int | Iterable[int] = 1,
     df: float | Iterable[float] = 1.0,
     tap_changer_type: TapChangerWithTabularType | Iterable[str] | None = None,
-    tap_dependency_table: bool | Iterable[bool] = False,
+    tap_dependency_table: bool | Iterable[bool] = pd.NA,
     id_characteristic_table: int | Iterable[int] | None = None,
     pt_percent: float | Iterable[float] = nan,
     # oltc: bool | Iterable[bool] = False,
@@ -328,7 +326,7 @@ def create_transformer_from_parameters(
     si0_hv_partial: float = nan,
     pt_percent: float = nan,
     # oltc: bool = False,
-    tap_dependency_table: bool = False,
+    tap_dependency_table: bool = pd.NA,
     xn_ohm: float = nan,
     tap2_side: HVLVType | None = None,
     tap2_neutral: int | float = nan,
@@ -529,9 +527,7 @@ def create_transformer_from_parameters(
 
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo", dtype="Int64")
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo", dtype=object, default_val=None)
-    _set_value_if_not_nan(
-        net, index, tap_dependency_table, "tap_dependency_table", "trafo", dtype=bool_, default_val=False
-    )
+    _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo")
 
     _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo", dtype=str)
     _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo", dtype=float64)
@@ -610,7 +606,7 @@ def create_transformers_from_parameters(  # index missing ?
     si0_hv_partial: float | Iterable[float] = nan,
     pt_percent: float | Iterable[float] = nan,
     # oltc: bool | Iterable[bool] = False,
-    tap_dependency_table: bool | Iterable[bool] = False,
+    tap_dependency_table: bool | Iterable[bool] = pd.NA,
     xn_ohm: float | Iterable[float] = nan,
     tap2_side: HVLVType | Iterable[str] | None = None,
     tap2_neutral: int | Iterable[int] | float = nan,
@@ -805,7 +801,7 @@ def create_transformers_from_parameters(  # index missing ?
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_pos", tap2_pos)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_changer_type", tap2_changer_type, dtype=object)
 
-    defaults_to_fill = [("tap_dependency_table", False)]
+    defaults_to_fill = [("tap_dependency_table", pd.NA)]
 
     for key in ["tap_dependent_impedance", "vk_percent_characteristic", "vkr_percent_characteristic"]:
         if key in kwargs:
@@ -847,7 +843,7 @@ def create_transformer3w(
     max_loading_percent: float = nan,
     tap_changer_type: TapChangerWithTabularType | None = None,
     tap_at_star_point: bool = False,
-    tap_dependency_table: bool = False,
+    tap_dependency_table: bool = pd.NA,
     id_characteristic_table: int | None = None,
     **kwargs,
 ) -> Int:
@@ -966,9 +962,7 @@ def create_transformer3w(
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w", dtype="Int64")
-    _set_value_if_not_nan(
-        net, index, tap_dependency_table, "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False
-    )
+    _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo3w")
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo3w", dtype=str, default_val=None)
 
     for key in [
@@ -1008,7 +1002,7 @@ def create_transformers3w(
     max_loading_percent: float | Iterable[float] = nan,
     tap_at_star_point: bool | Iterable[bool] = False,
     tap_changer_type: float | Iterable[float] | None = None,
-    tap_dependency_table: bool | Iterable[bool] = False,
+    tap_dependency_table: bool | Iterable[bool] = pd.NA,
     id_characteristic_table: int | Iterable[int] | None = None,
     **kwargs,
 ) -> npt.NDArray[Int]:
@@ -1116,7 +1110,7 @@ def create_transformer3w_from_parameters(
     vkr0_mv_percent: float = nan,
     vkr0_lv_percent: float = nan,
     vector_group: str | None = None,
-    tap_dependency_table: bool = False,
+    tap_dependency_table: bool = pd.NA,
     id_characteristic_table: int | None = None,
     **kwargs,
 ) -> Int:
@@ -1304,7 +1298,7 @@ def create_transformer3w_from_parameters(
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w", dtype="Int64")
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo3w", dtype=str, default_val=None)
     _set_value_if_not_nan(
-        net, index, tap_dependency_table, "tap_dependency_table", "trafo3w", dtype=bool_, default_val=False
+        net, index, tap_dependency_table, "tap_dependency_table", "trafo3w"
     )
 
     return index
@@ -1351,7 +1345,7 @@ def create_transformers3w_from_parameters(  # no index ?
     vkr0_mv_percent: float | Iterable[float] = nan,
     vkr0_lv_percent: float | Iterable[float] = nan,
     vector_group: str | Iterable[str] | None = None,
-    tap_dependency_table: bool | Iterable[bool] = False,
+    tap_dependency_table: bool | Iterable[bool] = pd.NA,
     id_characteristic_table: int | Iterable[int] | None = None,
     **kwargs,
 ) -> npt.NDArray[integer]:
@@ -1526,7 +1520,7 @@ def create_transformers3w_from_parameters(  # no index ?
     _add_to_entries_if_not_nan(
         net, "trafo3w", entries, index, "tap_changer_type", tap_changer_type, dtype=str, default_val=None
     )
-    defaults_to_fill = [("tap_dependency_table", False)]
+    defaults_to_fill = [("tap_dependency_table", pd.NA)]
 
     for key in [
         "tap_dependent_impedance",

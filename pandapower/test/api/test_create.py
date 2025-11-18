@@ -4,6 +4,7 @@
 
 from copy import deepcopy
 
+from functools import partial
 import geojson
 import math
 import numpy as np
@@ -118,8 +119,6 @@ def test_convenience_create_functions():
 
 
 def test_nonexistent_bus():
-    from functools import partial
-
     net = create_empty_network()
     create_functions = [
         partial(create_load, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
@@ -515,7 +514,7 @@ def test_create_lines_from_parameters():
     assert all(net.line["r0_ohm_per_km"].values == 0.1)
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
-    assert isinstance(net.line.in_service.dtype, bool)
+    assert net.line.in_service.dtype == np.dtype(bool)
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
@@ -569,7 +568,7 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "x0_ohm_per_km"] == 0.25
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
-    assert isinstance(net.line.in_service.dtype, pd.BooleanDtype)
+    assert net.line.in_service.dtype == np.dtype(bool)
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)

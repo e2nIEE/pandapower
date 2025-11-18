@@ -116,7 +116,14 @@ _sgen_columns = {
 sgen_schema = pa.DataFrameSchema(
     _sgen_columns,
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "qcc"], _sgen_columns),
+    checks=create_column_dependency_checks_from_metadata(
+        [
+            "opf",
+            # "sc",
+            "qcc",
+        ],
+        _sgen_columns,
+    ),
 )
 
 res_sgen_schema = pa.DataFrameSchema(

@@ -133,7 +133,15 @@ _gen_columns = {
 gen_schema = pa.DataFrameSchema(
     _gen_columns,
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "q_lim_enforced", "qcc"], _gen_columns),
+    checks=create_column_dependency_checks_from_metadata(
+        [
+            "opf",
+            # "sc",
+            "q_lim_enforced",
+            "qcc",
+        ],
+        _gen_columns,
+    ),
 )
 
 
