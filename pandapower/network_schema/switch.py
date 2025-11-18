@@ -33,7 +33,6 @@ switch_schema = pa.DataFrameSchema(
         "z_ohm": pa.Column(
             float,
             nullable=True,
-            # required=False, #TODO: leads to loadflow crash
             description="indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0, the buses will be fused like before, if larger than 0 a branch will be created for the switch which has also effects on the bus mapping",
         ),
     },

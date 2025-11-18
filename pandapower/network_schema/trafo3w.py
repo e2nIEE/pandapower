@@ -85,6 +85,7 @@ _trafo3w_columns = {
         float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"
     ),
     "tap_step_degree": pa.Column(float, nullable=True, required=False, description="tap step size for voltage angle"),
+    # "tap_step_degree": pa.Column(float, description="tap step size for voltage angle"),
     "tap_at_star_point": pa.Column(
         bool,
         nullable=True,
