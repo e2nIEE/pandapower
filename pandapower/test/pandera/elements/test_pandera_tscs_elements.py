@@ -115,10 +115,32 @@ class TestTcscOptionalFields:
             thyristor_firing_angle_degree=100.0,
             controllable=True,
             in_service=False,
+            name='bye world'
         )
-        net.tcsc["name"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        # net.tcsc["min_angle_degree"] = float(np.nan)
-        # net.tcsc["max_angle_degree"] = float(np.nan)
+        create_tcsc(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=False,
+            min_angle_degree=100.0,
+        )
+        create_tcsc(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=False,
+            max_angle_degree=90
+        )
         validate_network(net)
 
     @pytest.mark.parametrize(
