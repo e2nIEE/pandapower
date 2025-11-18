@@ -77,21 +77,14 @@ _trafo_columns = {
     "tap_side": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["hv", "lv"]),
-        nullable=True,
-        required=False,
         description="defines if tap changer is at the high- or low voltage side",
     ),
-    "tap_neutral": pa.Column(float, nullable=True, required=False, description="rated tap position"),
+    "tap_neutral": pa.Column(float, description="rated tap position"),
     "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
-    "tap_step_percent": pa.Column(
-        float, pa.Check.gt(0), nullable=True, required=False, description="tap step size for voltage magnitude [%]"
-    ),
-    "tap_step_degree": pa.Column(
-        float, pa.Check.ge(0), nullable=True, required=False, description="tap step size for voltage angle"
-    ),
-    # "tap_step_degree": pa.Column(float, pa.Check.ge(0), description="tap step size for voltage angle"),
-    "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
+    "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size for voltage magnitude [%]"),
+    "tap_step_degree": pa.Column(float, pa.Check.ge(0), description="tap step size for voltage angle"),
+    "tap_pos": pa.Column(float, description="current position of tap changer"),
     "tap_changer_type": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
@@ -99,7 +92,7 @@ _trafo_columns = {
         description="specifies the tap changer type",
     ),
     "tap_dependency_table": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
@@ -120,9 +113,7 @@ _trafo_columns = {
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
         metadata={"opf": True},
     ),
-    "parallel": pa.Column(
-        int, pa.Check.ge(1), nullable=True, required=False, description="number of parallel transformers"
-    ),
+    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel transformers"),
     "df": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=1, include_min=False),

@@ -74,25 +74,20 @@ _trafo3w_columns = {
     "tap_side": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["hv", "mv", "lv"]),
-        nullable=True,
-        required=False,
         description="defines if tap changer is positioned on high- medium- or low voltage side",
     ),
-    "tap_neutral": pa.Column(float, nullable=True, required=False, description=""),
+    "tap_neutral": pa.Column(float, description=""),
     "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
-    "tap_step_percent": pa.Column(
-        float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"
-    ),
-    "tap_step_degree": pa.Column(float, nullable=True, required=False, description="tap step size for voltage angle"),
-    # "tap_step_degree": pa.Column(float, description="tap step size for voltage angle"),
+    "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size [%]"),
+    "tap_step_degree": pa.Column(float, description="tap step size for voltage angle"),
     "tap_at_star_point": pa.Column(
         bool,
         nullable=True,
         required=False,
         description="whether the tap changer is modelled at terminal or at star point",
     ),
-    "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
+    "tap_pos": pa.Column(float, description="current position of tap changer"),
     "tap_changer_type": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),

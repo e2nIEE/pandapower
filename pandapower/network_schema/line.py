@@ -191,7 +191,15 @@ _line_columns = {
 line_schema = pa.DataFrameSchema(
     _line_columns,
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "tdpf", "3ph"], _line_columns),
+    checks=create_column_dependency_checks_from_metadata(
+        [
+            "opf",
+            # "sc",
+            "tdpf",
+            # "3ph",
+        ],
+        _line_columns,
+    ),
 )
 
 res_line_schema = res_line_est_schema = pa.DataFrameSchema(

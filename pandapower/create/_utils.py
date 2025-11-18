@@ -205,7 +205,7 @@ def _not_nan(value, all_=True):
             return not any(isnan(value))
     else:
         try:
-            return not (value is None or isnan(value))
+            return pd.notna(value)
         except TypeError:
             return True
 
@@ -375,6 +375,8 @@ def _set_multiple_entries(
     dd = pd.DataFrame(index=index, columns=net[table].columns)
     dd = dd.assign(**entries)
 
+    dtype_dict = get_structure_dict(required_only=False)[table]
+
     # defaults_to_fill needed due to pandas bug https://github.com/pandas-dev/pandas/issues/46662:
     # concat adds new bool columns as object dtype -> fix it by setting default value to net[table]
     if defaults_to_fill is not None:
@@ -382,12 +384,11 @@ def _set_multiple_entries(
             if col in dd.columns and col not in net[table].columns:
                 net[table][col] = val
                 try:
-                    net[table][col] = net[table][col].astype(get_structure_dict(required_only=False)[table][col])
+                    net[table][col] = net[table][col].astype(dtype_dict[col])
                 except KeyError:
                     pass
 
     # set correct dtypes
-    dtype_dict = get_structure_dict(required_only=False)[table]
     for col in dd.columns:
         if col in dtype_dict:
             dd[col] = dd[col].astype(dtype_dict[col])
