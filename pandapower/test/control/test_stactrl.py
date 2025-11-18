@@ -5,18 +5,14 @@
 
 import pytest
 import os
+import logging
 import numpy as np
 from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
 from pandapower.create import create_empty_network, create_bus, create_buses, create_ext_grid, create_transformer, \
-    create_load, create_line, create_sgen
+    create_load, create_line, create_sgen, create_impedance
 from pandapower.run import runpp
 from pandapower.file_io import from_json
 from pandapower import pp_dir
-
-try:
-    from pandaplan.core import pplog as logging
-except ImportError:
-    import logging
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +79,21 @@ def test_qctrl():
     assert(net.controller.at[0, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
 
 
+def test_qctrl_Imp_Input():
+    net = simple_test_net()
+    tol = 1e-6
+    create_impedance(net, 1, 2, sn_mva=1, rft_pu=0.01, xft_pu=0.01, rtf_pu=0.01, xtf_pu=0.01)
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
+                                   output_element_index=[0], output_element_in_service=[True],
+                                   output_values_distribution=[1], input_element="res_impedance",
+                                   damping_factor=0.9, input_variable=["q_to_mvar"],
+                                   input_element_index=0, set_point=1, voltage_ctrl=False, tol=1e-6)
+    runpp(net, run_control=False)
+    assert (abs(net.res_impedance.loc[0, "q_to_mvar"] - 0.01373636) < tol)
+    runpp(net, run_control=True)
+    assert (abs(net.res_impedance.loc[0, "q_to_mvar"] - 1.0) < tol)
+
+
 def test_qctrl_droop():
     net = simple_test_net()
     tol = 1e-6
@@ -104,6 +115,62 @@ def test_qctrl_droop():
     assert(net.controller.at[1, 'object'].voltage_ctrl is False)  # test correct control_modus
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
+def test_qlimits_qctrl():
+    net = simple_test_net()
+    tol = 1e-6
+    net.sgen['min_q_mvar'] = -0.5
+    net.sgen['max_q_mvar'] = 0.5
+
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
+                                   output_element_index=[0], output_element_in_service=[True],
+                                   output_values_distribution=[1], input_element="res_line", damping_factor=0.9,
+                                   input_variable=["q_to_mvar"], input_element_index=0, set_point=1,
+                                   voltage_ctrl=False, tol=1e-6)
+    runpp(net, run_control=True, enforce_q_lims=True)
+    assert (abs(net.res_sgen.loc[0, "q_mvar"] - 0.5) < tol)
+
+    net = simple_test_net()
+    tol = 1e-6
+    net.sgen['min_q_mvar'] = -0.5
+    net.sgen['max_q_mvar'] = 0.5
+
+    create_load(net, bus=net.sgen.loc[0, 'bus'], p_mw=0, q_mvar=-2)
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
+                                   output_element_index=[0], output_element_in_service=[True],
+                                   output_values_distribution=[1], input_element="res_line", damping_factor=0.9,
+                                   input_variable=["q_to_mvar"], input_element_index=0, set_point=1,
+                                   voltage_ctrl=False, tol=1e-6)
+    runpp(net, run_control=True, enforce_q_lims=True)
+    assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.5) < tol)
+
+def test_qlimits_voltctrl():
+    net = simple_test_net()
+    tol = 1e-6
+    net.sgen['min_q_mvar'] = -0.7
+    net.sgen['max_q_mvar'] = 0.7
+
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
+                                   output_element="sgen", output_variable="q_mvar", output_element_index=[0],
+                                   output_element_in_service=[True], output_values_distribution=[1],
+                                   input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
+                                   set_point=1.02, voltage_ctrl=True, tol=tol)
+    runpp(net, run_control=True, enforce_q_lims=True)
+    assert (abs(net.res_sgen.loc[0, "q_mvar"] - 0.7) < tol)
+
+    net = simple_test_net()
+    tol = 1e-6
+    net.sgen['min_q_mvar'] = -0.7
+    net.sgen['max_q_mvar'] = 0.7
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
+                                   output_element="sgen", output_variable="q_mvar", output_element_index=[0],
+                                   output_element_in_service=[True], output_values_distribution=[1],
+                                   input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
+                                   set_point=.98, voltage_ctrl=True, tol=tol)
+    runpp(net, run_control=True, enforce_q_lims=True)
+    assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.7) < tol)
+    net.sgen.min_q_mvar = -0.8 # tests change of min_q_mvar afterwards
+    runpp(net, run_control=True, enforce_q_lims=True)
+    assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.8) < tol)
 
 def test_station_ctrl_pf_import():
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test.json')

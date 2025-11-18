@@ -3,25 +3,29 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [ADDED] pf2pp: possibility to convert a specific variant and scenario
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
+- [ADDED] Static Var Compensator with Voltage Control
 - [CHANGED] refactored diagnostic and diagnostic_report for cleaner output
 - [FIXED] legacy np.random.random uses
-- [FIXED] SonarCube reliabilty complaints
+- [FIXED] SonarCube reliability complaints
 - [FIXED] remove imports from converter init, change code usage and docu accordingly
 - [FIXED] fixed broken converter import in runpm
 - [REMOVED] deprecated functions removed: wrapper for deepcopy, get_connected_lines, get_connected_switches, connected_bus_in_line, get_line_path
-- [FIXED] diagnostic: increase readabillity
+- [FIXED] diagnostic: increase readability
 - [CHANGED] removed general imports again
 - [CHANGED] updated all tutorials to remove general imports
-- [FIXED] toolbox: increase readabillity
-- [FIXED] io_utils: increase readabillity
+- [FIXED] toolbox: increase readability
+- [FIXED] io_utils: increase readability
 - [ADDED] cim2pp: added EquipmentContainer to BusbarSection and Junction, added max and min p to sgen, updated schemas
 - [FIXED] network_structure: id_q_capability_characteristic -> pd.Int64Dtype(), id_characteristic_table -> pd.Int64Dtype()
 - [FIXED] cim2pp: extracting the additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
 - [CHANGED] create.py: refactored to create module with smaller files. Backwards compatible, importing does not require change!
-- [FIXED] cim2pp: update docu with correct dependancy install
+- [FIXED] cim2pp: update docu with correct dependency install
 - [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
 - [ADDED] cim2pp: additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
 - [ADDED] cim2pp: added ratedCurrent as in_ka to switch
+- [ADDED] cim2pp: added CurrentLimit values and OperationalLimitType to trafo and trafo3w
 
 [3.2.1] - 2025-10-27
 -------------------------------

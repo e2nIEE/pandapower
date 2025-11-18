@@ -616,18 +616,30 @@ def _update_object_attributes(obj):
     """
     Rename attributes of a given object. A new attribute is added and the old one is removed.
     """
-    to_rename = {"u_set": "vm_set_pu",
-                 "u_lower": "vm_lower_pu",
-                 "u_upper": "vm_upper_pu"}
+    if "name" not in obj.__dict__:
+        obj.__dict__["name"] = ""
 
-    for key, val in to_rename.items():
-        if key in obj.__dict__:
-            obj.__dict__[val] = obj.__dict__.pop(key)
+    if isinstance(obj, TrafoController):
+        to_rename = {"u_set": "vm_set_pu",
+                    "u_lower": "vm_lower_pu",
+                    "u_upper": "vm_upper_pu"}
 
-    if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
-        obj.__dict__["hunting_limit"] = None
+        for key, val in to_rename.items():
+            if key in obj.__dict__:
+                obj.__dict__[val] = obj.__dict__.pop(key)
 
-    if isinstance(obj, BinarySearchControl):
+        if "vm_lower_pu" in obj.__dict__ and "hunting_limit" not in obj.__dict__:
+            obj.__dict__["hunting_limit"] = None
+    elif isinstance(obj, BinarySearchControl):
+        if "output_adjustable" not in obj.__dict__:
+            obj.__dict__["output_adjustable"] = np.array([False if not distribution else service
+                                            for distribution, service in zip(obj.output_values_distribution,
+                                                                            obj.output_element_in_service)],
+                                            dtype=np.bool)
+        if "output_max_q_mvar" not in obj.__dict__:
+            obj.__dict__["output_max_q_mvar"] = np.array([np.inf]*len(obj.output_element_index), dtype=np.float64)
+        if "output_min_q_mvar" not in obj.__dict__:
+            obj.__dict__["output_min_q_mvar"] = np.array([-np.inf]*len(obj.output_element_index), dtype=np.float64)
         if "input_sign" not in obj.__dict__:
             n = len(obj.input_element_index)
             obj.__dict__["input_sign"] = [1] * n
