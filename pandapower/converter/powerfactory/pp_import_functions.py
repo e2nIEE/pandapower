@@ -44,7 +44,7 @@ grf_map = {}
 import pandas as pd
 
 
-def from_pf(
+def from_pf(net_name,
         dict_net,
         pv_as_slack=True,
         pf_variable_p_loads='plini',
@@ -57,6 +57,20 @@ def from_pf(
         is_unbalanced=False,
         create_sections=True
 ):
+    
+    ###    
+    
+    # log_file_path = r'C:\Users\mfischer\spyder_projects\nap26_edis\nap26_edis\convertpf2pp\validate_pf2pp\converter_logger\log'
+    # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings.log', level=logging.WARNING, 
+    #                 format='%(asctime)s - %(levelname)s - %(message)s')
+
+    logger = logging.getLogger(__name__)
+    
+    logger.warning('FhKassel - Initial log for net: %s' % net_name)
+    #logger = logging.getLogger(net_name) 
+    ####
+    
+    
     global line_dict, trafo_dict, trafo3w_dict, impedance_dict, switch_dict, bus_dict, grf_map
     line_dict = {}
     trafo_dict = {}
@@ -338,7 +352,8 @@ def from_pf(
         logger.info('Create q_capability_characteristics_object')
         create_q_capability_characteristics_object(net)
 
-    logger.info('imported net')
+    logger.info('imported net')    
+    
     return net
 
 
@@ -599,7 +614,7 @@ def get_connection_nodes(net, item, num_nodes):
         v = []
         pf_class = item.GetClassName()
         logger.warning("object %s of class %s is not properly connected - creating auxiliary buses."
-                       " check if the auxiliary buses have been created with correct voltages" % (
+                       " Check if the auxiliary buses have been created with correct voltages." % (
                            item, pf_class))
 
         if pf_class == "ElmTr2":
@@ -762,6 +777,15 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
             coords = get_coords_from_buses(net, params['bus1'], params['bus2'])  # todo
     else:
         coords = get_coords_from_grf_object(item)
+        
+    # check if line coordinates includes two values for x and y
+    if all(len(coord) == 3 for coord in coords):
+        logger.warning('line coordinates %s have there columns.' % (item))
+        
+        if all(coord[2] == 0.0 for coord in coords) or all(coord[2] in (coord[0], coord[1]) for coord in coords):
+            # check if third colum are all zeros
+            coords = [(x, y) for x, y, z in coords]
+            logger.warning('Third column of %s was filled with zeros and is deleted.' % (item))
 
     if len(line_sections) == 0:
         if coords:
@@ -776,6 +800,7 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
         if create_sections:
             if not ac:
                 raise NotImplementedError(f"Export of lines with line sections only implemented for AC lines ({item})")
+            
             sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
                                             coords=coords, is_unbalanced=is_unbalanced, **params)
         else:
@@ -994,7 +1019,8 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
                 # p2 = sec_coords[-1]
                 net.bus.loc[bus2, ['geo']] = geojson.dumps(geojson.Point(sec_coords[-1]))
             except ZeroDivisionError:
-                logger.warning("Could not generate geodata for line sections!")
+                logger.warning("For object %s of class %s no geodata could be generated for line sections! Check geodata." % (
+                                   item, item.GetClassName()))
 
     return sid_list
 
@@ -1112,19 +1138,20 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
                 'x0_ohm_per_km': x0_ohm / params['length_km'],
                 'c0_nf_per_km': c0_nf / params['length_km'] * 1e3  # internal unit for C in PF is uF,
             })
-
-            coupling = item.c_ptow
-            if coupling is not None:
-                coupling_type = coupling.GetClassName()
-                if coupling_type == 'TypCabsys':
-                    # line is part of "Cable System"
-                    params['type'] = 'cs'
-                elif coupling_type == 'ElmTow':
-                    params['type'] = 'ol'
+            
+            if item.HasAttribute('c_ptow'):
+                coupling = item.c_ptow
+                if coupling is not None:
+                    coupling_type = coupling.GetClassName()
+                    if coupling_type == 'TypCabsys':
+                        # line is part of "Cable System"
+                        params['type'] = 'cs'
+                    elif coupling_type == 'ElmTow':
+                        params['type'] = 'ol'
+                    else:
+                        params['type'] = None
                 else:
                     params['type'] = None
-            else:
-                params['type'] = None
 
             lid = create_line_from_parameters(net=net, from_bus=bus1, to_bus=bus2, **params)
         else:
