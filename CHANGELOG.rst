@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] diagnostics restructured for better extensibility
+- [FIXED] implausible impedance test results never showing in report
 - [ADDED] pf2pp: possibility to convert a specific variant and scenario
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [ADDED] Static Var Compensator with Voltage Control
