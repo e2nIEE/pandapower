@@ -8,7 +8,7 @@ from pandapower.network_schema.tools.validation.group_dependency import (
 
 _trafo3w_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
-    "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
+    "std_type": pa.Column(pd.StringDtype, nullable=True, required=False, description="transformer standard type name"),
     "hv_bus": pa.Column(
         int,
         pa.Check.ge(0),
@@ -66,28 +66,28 @@ _trafo3w_columns = {
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
     "i0_percent": pa.Column(float, description="open loop losses [%]"),
     "shift_mv_degree": pa.Column(
-        float, nullable=True, required=False, description="transformer phase shift angle at the MV side"
+        float, description="transformer phase shift angle at the MV side"
     ),
     "shift_lv_degree": pa.Column(
-        float, nullable=True, required=False, description="transformer phase shift angle at the LV side"
+        float, description="transformer phase shift angle at the LV side"
     ),
     "tap_side": pa.Column(
         pd.StringDtype,
-        pa.Check.isin(["hv", "mv", "lv"]),
+        pa.Check.isin(["hv", "mv", "lv"]), nullable=True, required=False,
         description="defines if tap changer is positioned on high- medium- or low voltage side",
     ),
-    "tap_neutral": pa.Column(float, description=""),
+    "tap_neutral": pa.Column(float, nullable=True, required=False, description=""),
     "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
-    "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size [%]"),
-    "tap_step_degree": pa.Column(float, description="tap step size for voltage angle"),
+    "tap_step_percent": pa.Column(float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"),
+    "tap_step_degree": pa.Column(float, nullable=True, required=False, description="tap step size for voltage angle"),
     "tap_at_star_point": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the tap changer is modelled at terminal or at star point",
     ),
-    "tap_pos": pa.Column(float, description="current position of tap changer"),
+    "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
     "tap_changer_type": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
@@ -96,7 +96,7 @@ _trafo3w_columns = {
         description="specifies the tap changer type",
     ),
     "tap_dependency_table": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",

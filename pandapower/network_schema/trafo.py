@@ -67,7 +67,7 @@ _trafo_columns = {
         metadata={"sc": True, "3ph": True},
     ),
     "vector_group": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="Vector Groups ( required for zero sequence model of transformer )",
@@ -77,18 +77,25 @@ _trafo_columns = {
     "tap_side": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["hv", "lv"]),
+        nullable=True,
+        required=False,
         description="defines if tap changer is at the high- or low voltage side",
     ),
-    "tap_neutral": pa.Column(float, description="rated tap position"),
+    "tap_neutral": pa.Column(float, nullable=True, required=False, description="rated tap position"),
     "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
-    "tap_step_percent": pa.Column(float, pa.Check.gt(0), description="tap step size for voltage magnitude [%]"),
-    "tap_step_degree": pa.Column(float, pa.Check.ge(0), description="tap step size for voltage angle"),
-    "tap_pos": pa.Column(float, description="current position of tap changer"),
+    "tap_step_percent": pa.Column(
+        float, pa.Check.gt(0), nullable=True, required=False, description="tap step size for voltage magnitude [%]"
+    ),
+    "tap_step_degree": pa.Column(
+        float, pa.Check.ge(0), nullable=True, required=False, description="tap step size for voltage angle"
+    ),
+    "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
     "tap_changer_type": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
         nullable=True,
+        required=False,
         description="specifies the tap changer type",
     ),
     "tap_dependency_table": pa.Column(
