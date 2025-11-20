@@ -34,7 +34,7 @@ class EquivalentInjectionsCim16:
                     (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start)))
 
     def _prepare_equivalent_injections_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             equivalent_injection = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'], 'EquivalentInjection',
                                                                              add_cim_type_column=True)
         else:

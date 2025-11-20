@@ -93,20 +93,20 @@ def branch_vectors(branch, nl):
     else:
         Yst = Ysf
 
-    Bcf = stat * (branch[:, BR_G] + 1j * branch[:, BR_B])  # branch charging admittance
+    Ycf = stat * (branch[:, BR_G] + 1j * branch[:, BR_B])  # branch charging admittance
     if any(branch[:, BR_G_ASYM]) or any(branch[:, BR_B_ASYM]):
-        Bct = stat * (branch[:, BR_G] + branch[:, BR_G_ASYM] +
+        Yct = stat * (branch[:, BR_G] + branch[:, BR_G_ASYM] +
                       1j * (branch[:, BR_B] + branch[:, BR_B_ASYM]))
     else:
-        Bct = Bcf
+        Yct = Ycf
 
     tap = ones(nl)  # default tap ratio = 1
     i = nonzero(real(branch[:, TAP]))  # indices of non-zero tap ratios
     tap[i] = real(branch[i, TAP])  # assign non-zero tap ratios
     tap = tap * exp(1j * pi / 180 * branch[:, SHIFT])  # add phase shifters
 
-    Ytt = Yst + Bct / 2
-    Yff = (Ysf + Bcf / 2) / (tap * conj(tap))
+    Ytt = Yst + Yct / 2
+    Yff = (Ysf + Ycf / 2) / (tap * conj(tap))
     Yft = - Ysf / conj(tap)
     Ytf = - Yst / tap
     return Ytt, Yff, Yft, Ytf

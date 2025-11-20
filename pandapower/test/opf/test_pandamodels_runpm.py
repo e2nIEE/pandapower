@@ -600,7 +600,7 @@ def test_storage_opt():
     storage_results_1 = read_pm_storage_results(net)
     assert net._pm_org_result["multinetwork"]
     assert net._pm["pm_solver"] == "juniper"
-    assert net._pm["pm_mip_solver"] == "cbc"
+    assert net._pm["pm_mip_solver"] == "highs"
     assert len(net.res_ts_opt) == 5
 
     net2 = create_cigre_grid_with_time_series(json_path)

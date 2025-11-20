@@ -13,7 +13,7 @@ from pandapower.opf.run_pandamodels import _runpm
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
-          pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
+          pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
           delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
           pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
@@ -65,7 +65,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
 
         **pm_solver** (str, "ipopt") - The "main" power models solver
 
-        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
+        **pm_mip_solver** (str, "highs") - The mixed integer solver (when "main" solver == juniper)
 
         **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
 
@@ -151,7 +151,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                pm_model="ACPPowerModel", pm_solver="juniper", correct_pm_network_data=True, silence=True,
-               pm_nl_solver="ipopt", pm_mip_solver="cbc", pm_time_limits=None, pm_log_level=0,
+               pm_nl_solver="ipopt", pm_mip_solver="highs", pm_time_limits=None, pm_log_level=0,
                delete_buffer_file=True, pm_file_path=None, opf_flow_lim="S", pm_tol=1e-8,
                pdm_dev_mode=False, **kwargs):
     """
@@ -185,7 +185,7 @@ def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_a
 def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
               trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
               pm_model="DCPPowerModel", pm_solver="juniper", pm_nl_solver="ipopt",
-              pm_mip_solver="cbc", correct_pm_network_data=True, silence=True, pm_time_limits=None,
+              pm_mip_solver="highs", correct_pm_network_data=True, silence=True, pm_time_limits=None,
               pm_log_level=0, delete_buffer_file=True, pm_file_path=None, opf_flow_lim="S", pm_tol=1e-8,
               pdm_dev_mode=False, **kwargs):
     """
@@ -213,7 +213,7 @@ def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_an
 def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       n_timesteps=24, time_elapsed=1., correct_pm_network_data=True, silence=True,
-                      pm_solver="juniper", pm_mip_solver="cbc", pm_nl_solver="ipopt",
+                      pm_solver="juniper", pm_mip_solver="highs", pm_nl_solver="ipopt",
                       pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
                       opf_flow_lim="S", charge_efficiency=1., discharge_efficiency=1.,
                       standby_loss=1e-8, p_loss=1e-8, q_loss=1e-8, pm_tol=1e-4, pdm_dev_mode=False,
@@ -234,7 +234,7 @@ def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angle
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=add_storage_opf_settings, julia_file="run_powermodels_multi_storage",
                      correct_pm_network_data=correct_pm_network_data, silence=silence, pm_model=pm_model,
-                     pm_solver=pm_solver, pm_time_limits=pm_time_limits,
+                     pm_solver=pm_solver, pm_time_limits=pm_time_limits, pm_mip_solver=pm_mip_solver, pm_nl_solver=pm_nl_solver,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol, pdm_dev_mode=pdm_dev_mode)
 
     net._options["n_time_steps"] = to_time_step - from_time_step
@@ -401,7 +401,7 @@ def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 def runpm_pf(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
              trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
              correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
-             pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
+             pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
              delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
              pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
