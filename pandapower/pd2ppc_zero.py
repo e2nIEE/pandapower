@@ -460,7 +460,9 @@ def _add_gen_sc_impedance_zero(net, ppc):
     # Update the bus entries in ppc for conductance (GS) and susceptance (BS)
     ppc["bus"][gen_buses_ppc, GS] += y0_gen.real / kg  # Update real part (conductance)
     ppc["bus"][gen_buses_ppc, BS] += y0_gen.imag / kg  # Update imaginary part (susceptance)
-
+    ppc["bus"][gen_buses_ppc, GS_GEN] = y0_gen.real/kg  # real part (conductance)
+    ppc["bus"][gen_buses_ppc, BS_GEN] = y0_gen.imag/kg  # imaginary part (susceptance)
+    #ppc["bus"][gen_buses_ppc, K_G] = kg not neccessary - we already add kg to zero sequence impedance of generator
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):
     mode = net["_options"]["mode"]
