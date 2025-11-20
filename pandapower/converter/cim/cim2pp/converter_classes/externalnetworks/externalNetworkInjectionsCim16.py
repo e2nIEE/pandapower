@@ -91,6 +91,8 @@ class ExternalNetworkInjectionsCim16:
         eni['s_sc_max_mva'] = 3 ** .5 * eni['ratedU'] * (eni['maxInitialSymShCCurrent'] / 1e3)
         eni['s_sc_min_mva'] = 3 ** .5 * eni['ratedU'] * (eni['minInitialSymShCCurrent'] / 1e3)
         # get the substations
+        if 'zone' not in self.cimConverter.net.bus:
+            self.cimConverter.net.bus["zone"] = pd.Series()
         eni = pd.merge(eni,
                        self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
                        how='left', left_on='ConnectivityNode', right_on='b_id')

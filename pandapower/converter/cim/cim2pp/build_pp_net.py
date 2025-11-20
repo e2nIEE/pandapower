@@ -18,6 +18,7 @@ from .. import cim_tools
 from .. import pp_tools
 from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
+from pandapower.network_structure import get_structure_dict
 
 logger = logging.getLogger('cim.cim2pp.build_pp_net')
 
@@ -65,7 +66,7 @@ class CimConverter:
                 message="Missing pandapower type %s in the pandapower network!" % pp_type))
             return
         self.net[pp_type] = pd.concat([self.net[pp_type],
-                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]],
+                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]], #TODO: needs columns from network_structure optionals but also custom cgmes like orgin_id
                                       ignore_index=True, sort=False)
 
     # noinspection PyShadowingNames

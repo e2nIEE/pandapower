@@ -726,7 +726,10 @@ def _detect_read_write_flag(net, element, index, variable):
 
 # read functions:
 def _read_from_single_index(net, element, variable, index):
-    return net[element].at[index, variable]
+    if variable in net[element]:
+        return net[element].at[index, variable]
+    else:
+        return pd.NA
 
 
 def _read_from_all_index(net, element, variable):
