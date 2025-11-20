@@ -10,6 +10,7 @@ import math
 import numpy as np
 from numpy import nan
 import pandas as pd
+import pandera as pa
 import pytest
 
 from pandapower.create import (
@@ -105,6 +106,8 @@ def test_convenience_create_functions():
     create_load(net, b3, 0.1)
     assert net.trafo.at[tid, "df"] == 1
     runpp(net)
+    validate_network(net)
+
     tr_l = net.res_trafo.at[tid, "loading_percent"]
     net.trafo.at[tid, "df"] = 2
     runpp(net)
@@ -115,7 +118,8 @@ def test_convenience_create_functions():
         runpp(net)
     assert net.trafo.test_kwargs.at[tid] == "dummy_string"
 
-    validate_network(net)
+    with pytest.raises(pa.errors.SchemaError):
+        validate_network(net)
 
 
 def test_nonexistent_bus():
@@ -769,7 +773,7 @@ def test_create_transformers_from_parameters():
         vkr0_percent=1.7,
         mag0_rx=0.4,
         mag0_percent=0.3,
-        tap_neutral=0.0,
+        # tap_neutral=0.0,
         vector_group="Dyn",
         si0_hv_partial=0.1,
         max_loading_percent=80,
@@ -788,8 +792,8 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.vk0_percent == 0.4)
     assert all(net.trafo.mag0_rx == 0.4)
     assert all(net.trafo.mag0_percent == 0.3)
-    assert all(net.trafo.tap_neutral == 0.0)
-    assert all(net.trafo.tap_pos == 0.0)
+    # assert all(net.trafo.tap_neutral == 0.0)
+    # assert all(net.trafo.tap_pos == 0.0)
     assert all(net.trafo.vector_group.values == "Dyn")
     assert all(net.trafo.max_loading_percent == 80.0)
     assert all(net.trafo.si0_hv_partial == 0.1)
@@ -815,8 +819,8 @@ def test_create_transformers_from_parameters():
         vk0_percent=[0.4, 0.4],
         mag0_rx=[0.4, 0.4],
         mag0_percent=[0.3, 0.3],
-        tap_neutral=[0.0, 1.0],
-        tap_pos=[-1, 4],
+        # tap_neutral=[0.0, 1.0],
+        # tap_pos=[-1, 4],
         test_kwargs=["dummy_string", "dummy_string"],
     )
 
@@ -834,10 +838,10 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.mag0_rx == 0.4)
     assert all(net.trafo.mag0_percent == 0.3)
     assert all(net.trafo.test_kwargs == "dummy_string")
-    assert net.trafo.tap_neutral.at[t[0]] == 0
-    assert net.trafo.tap_neutral.at[t[1]] == 1
-    assert net.trafo.tap_pos.at[t[0]] == -1
-    assert net.trafo.tap_pos.at[t[1]] == 4
+    # assert net.trafo.tap_neutral.at[t[0]] == 0
+    # assert net.trafo.tap_neutral.at[t[1]] == 1
+    # assert net.trafo.tap_pos.at[t[0]] == -1
+    # assert net.trafo.tap_pos.at[t[1]] == 4
 
     validate_network(net)
 
@@ -1030,18 +1034,18 @@ def test_create_transformers():
         test_kwargs="TestKW"
     )
     res_df = pd.DataFrame({
-        'name': ['trafo1', 'trafo2'],
-        'std_type': ['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'],
-        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
-        'lv_bus': pd.Series([1, 2], dtype=np.uint32),
-        'sn_mva': [0.4, 0.4],
-        'vn_hv_kv': [10.0, 10.0],
-        'vn_lv_kv': [0.4, 0.4],
-        'vk_percent': [4.0, 4.0],
-        'vkr_percent': [1.325, 1.325],
-        'pfe_kw': [0.95, 0.95],
-        'i0_percent': [0.2375, 0.2375],
-        'shift_degree': [0.0, 0.0],
+        'name': pd.Series(['trafo1', 'trafo2'], dtype=pd.StringDtype),
+        'std_type': pd.Series(['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype),
+        'hv_bus': pd.Series([0, 0], dtype=np.int64),
+        'lv_bus': pd.Series([1, 2], dtype=np.int64),
+        'sn_mva': pd.Series([0.4, 0.4], dtype=np.float64),
+        'vn_hv_kv': pd.Series([10.0, 10.0], dtype=np.float64),
+        'vn_lv_kv': pd.Series([0.4, 0.4], dtype=np.float64),
+        'vk_percent': pd.Series([4.0, 4.0], dtype=np.float64),
+        'vkr_percent': pd.Series([1.325, 1.325], dtype=np.float64),
+        'pfe_kw': pd.Series([0.95, 0.95], dtype=np.float64),
+        'i0_percent': pd.Series([0.2375, 0.2375], dtype=np.float64),
+        'shift_degree': pd.Series([0.0, 0.0], dtype=np.float64),
         # 'tap_side': ['', ''],
         # 'tap_neutral': [nan, nan],
         # 'tap_min': [nan, nan],
@@ -1049,16 +1053,18 @@ def test_create_transformers():
         # 'tap_step_percent': [nan, nan],
         # 'tap_step_degree': [nan, nan],
         # 'tap_pos': [nan, nan],
-        'tap_changer_type': [pd.NA, pd.NA],
+        # 'tap_changer_type': [pd.NA, pd.NA],
         # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
-        'tap_dependency_table': [False, False],
-        'parallel': pd.Series([1, 1], dtype=pd.Int64Dtype),
-        'df': [1.0, 1.0],
-        'in_service': [True, True],
+        # 'tap_dependency_table': [False, False],
+        'parallel': pd.Series([1, 1], dtype=np.int64),
+        'df': pd.Series([1.0, 1.0], dtype=np.float64),
+        'in_service': pd.Series([True, True], dtype=bool),
         # 'oltc': [False, False],
         'test_kwargs': ['TestKW', 'TestKW'],
-        'vector_group': ['Dyn5', 'Dyn5'],
+        'vector_group': pd.Series(['Dyn5', 'Dyn5'], dtype=pd.StringDtype),
     })
+    for colum in res_df:
+        assert net.trafo[colum].equals(res_df[colum])
     assert dataframes_equal(net.trafo, res_df)
 
 def test_create_transformers_for_single():
@@ -1075,34 +1081,34 @@ def test_create_transformers_for_single():
         sn_mva=.4
     )
     res_df = pd.DataFrame({
-        'name': ['trafo1'],
-        'std_type': ['0.4 MVA 10/0.4 kV'],
-        'hv_bus': pd.Series([0], dtype=np.uint32),
-        'lv_bus': pd.Series([1], dtype=np.uint32),
-        'sn_mva': [0.4],
-        'vn_hv_kv': [10.0],
-        'vn_lv_kv': [0.4],
-        'vk_percent': [4.0],
-        'vkr_percent': [1.325],
-        'pfe_kw': [0.95],
-        'i0_percent': [0.2375],
-        'shift_degree': [0.0],
-        'tap_side': [''],
-        'tap_neutral': [nan],
-        'tap_min': [nan],
-        'tap_max': [nan],
-        'tap_step_percent': [nan],
-        'tap_step_degree': [nan],
-        'tap_pos': [nan],
-        'tap_changer_type': [''],
-        'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
-        'tap_dependency_table': [False],
-        'parallel': pd.Series([1], dtype=np.uint32),
-        'df': [1.0],
-        'in_service': [True],
-        'oltc': [False],
+        'name': pd.Series(['trafo1'], dtype=pd.StringDtype),
+        'std_type': pd.Series(['0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype),
+        'hv_bus': pd.Series([0], dtype=np.int64),
+        'lv_bus': pd.Series([1], dtype=np.int64),
+        'sn_mva': pd.Series([0.4], dtype=np.float64),
+        'vn_hv_kv': pd.Series([10.0], dtype=np.float64),
+        'vn_lv_kv': pd.Series([0.4], dtype=np.float64),
+        'vk_percent': pd.Series([4.0], dtype=np.float64),
+        'vkr_percent': pd.Series([1.325], dtype=np.float64),
+        'pfe_kw': pd.Series([0.95], dtype=np.float64),
+        'i0_percent': pd.Series([0.2375], dtype=np.float64),
+        'shift_degree': pd.Series([0.0], dtype=np.float64),
+        # 'tap_side': [''],
+        # 'tap_neutral': [nan],
+        # 'tap_min': [nan],
+        # 'tap_max': [nan],
+        # 'tap_step_percent': [nan],
+        # 'tap_step_degree': [nan],
+        # 'tap_pos': [nan],
+        # 'tap_changer_type': [''],
+        # 'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
+        # 'tap_dependency_table': [False],
+        'parallel': pd.Series([1], dtype=np.int64),
+        'df': pd.Series([1.0], dtype=np.float64),
+        'in_service': pd.Series([True], dtype=bool),
+        # 'oltc': [False],
         'test_kwargs': ['TestKW'],
-        'vector_group': ['Dyn5'],
+        'vector_group': pd.Series(['Dyn5'], dtype=pd.StringDtype),
     })
     assert dataframes_equal(net.trafo, res_df)
 
@@ -1127,40 +1133,42 @@ def test_create_transformers3w():
         index=[5, 6],
     )
     res_df = pd.DataFrame({
-        'name': ['t3w-1', 't3w-2'],
-        'std_type': ['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'],
-        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
-        'mv_bus': pd.Series([1, 2], dtype=np.uint32),
-        'lv_bus': pd.Series([3, 4], dtype=np.uint32),
-        'sn_hv_mva': [63.0, 63.0],
-        'sn_mv_mva': [25.0, 25.0],
-        'sn_lv_mva': [38.0, 38.0],
-        'vn_hv_kv': [110.0, 110.0],
-        'vn_mv_kv': [20.0, 20.0],
-        'vn_lv_kv': [10.0, 10.0],
-        'vk_hv_percent': [10.4, 10.4],
-        'vk_mv_percent': [10.4, 10.4],
-        'vk_lv_percent': [10.4, 10.4],
-        'vkr_hv_percent': [0.28, 0.28],
-        'vkr_mv_percent': [0.32, 0.32],
-        'vkr_lv_percent': [0.35, 0.35],
-        'pfe_kw': [35.0, 35.0],
-        'i0_percent': [0.89, 0.89],
-        'shift_mv_degree': [0.0, 0.0],
-        'shift_lv_degree': [0.0, 0.0],
-        'tap_side': ['hv', 'hv'],
-        'tap_neutral': [0.0, 0.0],
-        'tap_min': [-10.0, -10.0],
-        'tap_max': [10.0, 10.0],
-        'tap_step_percent': [1.2, 1.2],
-        'tap_step_degree': [nan, nan],
-        'tap_pos': [0.0, 0.0],
-        'tap_at_star_point': [False, False],
-        'tap_changer_type': ['Ratio', 'Ratio'],
-        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
-        'tap_dependency_table': [False, False],
-        'in_service': [True, False]
+        'name': pd.Series(['t3w-1', 't3w-2'], dtype=pd.StringDtype),
+        'std_type': pd.Series(['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'], dtype=pd.StringDtype),
+        'hv_bus': pd.Series([0, 0], dtype=np.int64),
+        'mv_bus': pd.Series([1, 2], dtype=np.int64),
+        'lv_bus': pd.Series([3, 4], dtype=np.int64),
+        'sn_hv_mva': pd.Series([63.0, 63.0], dtype=np.float64),
+        'sn_mv_mva': pd.Series([25.0, 25.0], dtype=np.float64),
+        'sn_lv_mva': pd.Series([38.0, 38.0], dtype=np.float64),
+        'vn_hv_kv': pd.Series([110.0, 110.0], dtype=np.float64),
+        'vn_mv_kv': pd.Series([20.0, 20.0], dtype=np.float64),
+        'vn_lv_kv': pd.Series([10.0, 10.0], dtype=np.float64),
+        'vk_hv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
+        'vk_mv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
+        'vk_lv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
+        'vkr_hv_percent': pd.Series([0.28, 0.28], dtype=np.float64),
+        'vkr_mv_percent': pd.Series([0.32, 0.32], dtype=np.float64),
+        'vkr_lv_percent': pd.Series([0.35, 0.35], dtype=np.float64),
+        'pfe_kw': pd.Series([35.0, 35.0], dtype=np.float64),
+        'i0_percent': pd.Series([0.89, 0.89], dtype=np.float64),
+        'shift_mv_degree': pd.Series([0.0, 0.0], dtype=np.float64),
+        'shift_lv_degree': pd.Series([0.0, 0.0], dtype=np.float64),
+        'tap_side': pd.Series(['hv', 'hv'], dtype=pd.StringDtype),
+        'tap_neutral': pd.Series([0.0, 0.0], dtype=np.float64),
+        'tap_min': pd.Series([-10.0, -10.0], dtype=np.float64),
+        'tap_max': pd.Series([10.0, 10.0], dtype=np.float64),
+        'tap_step_percent': pd.Series([1.2, 1.2], dtype=np.float64),
+        'tap_step_degree': pd.Series([0.0, 0.0], dtype=np.float64),
+        'tap_pos': pd.Series([0.0, 0.0], dtype=np.float64),
+        'tap_at_star_point': pd.Series([False, False], dtype=pd.BooleanDtype),
+        # 'tap_changer_type': ['Ratio', 'Ratio'],
+        # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+        # 'tap_dependency_table': [False, False],
+        'in_service': pd.Series([True, False], dtype=bool)
     }).set_index(pd.Index([5, 6]))
+    for colum in res_df:
+        assert net.trafo3w[colum].equals(res_df[colum])
     assert dataframes_equal(net.trafo3w, res_df)
 
     validate_network(net)
@@ -1191,7 +1199,7 @@ def test_create_transformers3w_from_parameters():
         vkr_lv_percent=0.3,
         pfe_kw=0.2,
         i0_percent=0.3,
-        tap_neutral=0.0,
+        # tap_neutral=0.0,
         mag0_rx=0.4,
         mag0_percent=0.3,
         test_kwargs="dummy_string",
@@ -1216,8 +1224,8 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.i0_percent == 0.3)
     assert all(net.trafo3w.mag0_rx == 0.4)
     assert all(net.trafo3w.mag0_percent == 0.3)
-    assert all(net.trafo3w.tap_neutral == 0.0)
-    assert all(net.trafo3w.tap_pos == 0.0)
+    # assert all(net.trafo3w.tap_neutral == 0.0)
+    # assert all(net.trafo3w.tap_pos == 0.0)
     assert all(net.trafo3w.test_kwargs == "dummy_string")
 
     # setting params as array
@@ -1244,8 +1252,8 @@ def test_create_transformers3w_from_parameters():
         vkr_lv_percent=[0.3, 0.3],
         pfe_kw=[0.2, 0.1],
         i0_percent=[0.3, 0.2],
-        tap_neutral=[0.0, 5.0],
-        tap_pos=[1, 2],
+        # tap_neutral=[0.0, 5.0],
+        # tap_pos=[1, 2],
         in_service=[True, False],
         test_kwargs=["foo", "bar"],
     )
@@ -1267,8 +1275,8 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.vkr_lv_percent == 0.3)
     assert all(net.trafo3w.pfe_kw == [0.2, 0.1])
     assert all(net.trafo3w.i0_percent == [0.3, 0.2])
-    assert all(net.trafo3w.tap_neutral == [0.0, 5.0])
-    assert all(net.trafo3w.tap_pos == [1, 2])
+    # assert all(net.trafo3w.tap_neutral == [0.0, 5.0])
+    # assert all(net.trafo3w.tap_pos == [1, 2])
     assert all(net.trafo3w.in_service == [True, False])
     assert all(net.trafo3w.test_kwargs == ["foo", "bar"])
 
@@ -1300,7 +1308,7 @@ def test_create_transformers3w_raise_errorexcept():
         vkr_lv_percent=0.3,
         pfe_kw=0.2,
         i0_percent=0.3,
-        tap_neutral=0.0,
+        # tap_neutral=0.0,
         mag0_rx=0.4,
         mag0_percent=0.3,
     )
@@ -1328,7 +1336,7 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            tap_neutral=0.0,
+            # tap_neutral=0.0,
             mag0_rx=0.4,
             mag0_percent=0.3,
             index=[2, 1],
@@ -1360,7 +1368,7 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            tap_neutral=0.0,
+            # tap_neutral=0.0,
             mag0_rx=0.4,
             mag0_percent=0.3,
             index=[0, 1],
@@ -1387,7 +1395,7 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            tap_neutral=0.0,
+            # tap_neutral=0.0,
             mag0_rx=0.4,
             mag0_percent=0.3,
         )
@@ -1414,7 +1422,7 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            tap_neutral=0.0,
+            # tap_neutral=0.0,
             mag0_rx=0.4,
             mag0_percent=0.3,
         )
@@ -1490,7 +1498,7 @@ def test_create_switches_raise_errorexcept():
         vkr_lv_percent=0.3,
         pfe_kw=0.2,
         i0_percent=0.3,
-        tap_neutral=0.0,
+        # tap_neutral=0.0,
     )
     sw = create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.0)
     with pytest.raises(

@@ -192,7 +192,7 @@ def create_sgen(
     _set_value_if_not_nan(
         net, index, generator_type, "generator_type", "sgen", dtype="str", default_val="current_source"
     )
-    if generator_type == "current_source" or generator_type is None:
+    if pd.isna(generator_type) or generator_type == "current_source":
         _set_value_if_not_nan(net, index, k, "k", "sgen")
     elif generator_type == "async":
         _set_value_if_not_nan(net, index, lrc_pu, "lrc_pu", "sgen")
