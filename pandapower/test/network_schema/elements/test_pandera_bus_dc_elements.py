@@ -7,7 +7,7 @@ import pytest
 from pandapower import create_bus_dc
 from pandapower.create import create_empty_network
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-from pandapower.test.pandera.elements.helper import (
+from pandapower.test.network_schema.elements.helper import (
     strings,
     bools,
     not_strings_list,

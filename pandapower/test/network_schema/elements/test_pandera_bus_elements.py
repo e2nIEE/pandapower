@@ -8,7 +8,7 @@ from pandapower.create import create_empty_network, create_bus
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.network_schema.tools.helper import get_dtypes
 from pandapower.network_schema.bus import bus_schema
-from pandapower.test.pandera.elements.helper import (
+from pandapower.test.network_schema.elements.helper import (
     strings,
     bools,
     not_strings_list,

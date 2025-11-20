@@ -9,7 +9,7 @@ from pandapower.create import create_empty_network, create_bus
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.network_schema.tools.helper import get_dtypes
 from pandapower.network_schema.bus import bus_schema
-from pandapower.test.pandera.elements.helper import (
+from pandapower.test.network_schema.elements.helper import (
     strings,
     all_floats,
     bools,
@@ -141,6 +141,11 @@ class TestTcscOptionalFields:
             in_service=False,
             max_angle_degree=90
         )
+        net.tcsc['min_angle_degree'].at[0] = float(np.nan)
+        net.tcsc['max_angle_degree'].at[0] = float(np.nan)
+        net.tcsc['max_angle_degree'].at[1] = float(np.nan)
+        net.tcsc['min_angle_degree'].at[2] = float(np.nan)
+
         validate_network(net)
 
     @pytest.mark.parametrize(
