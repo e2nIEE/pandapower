@@ -15,21 +15,25 @@ except:
 app = pf.GetApplication()
 
 base_dir = os.getcwd()
-folder = os.path.join(base_dir, 'pandapower', 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.2_2.4')
+folder = os.path.join(base_dir, 'pandapower', 'test', 'shortcircuit', 'sce_tests', 'test_grids', 'wp_2.3')
 pfd_files = [f for f in os.listdir(folder) if f.endswith(".pfd")]
 net_dict = {}
 all_diff_dict = {}
 
 ## convert one grif
-prj_name = '1_four_bus_radial_grid_gen'
+prj_name = '1_four_bus_radial_1ph_grid_MP'
 net = from_pfd(app, prj_name=prj_name)
 to_json(net, rf"{folder}\\{prj_name}.json")
 
 ## convert all grids
+pfd_files.pop(1)
 for file in pfd_files:
     prj_name = file[:-4]
     net = from_pfd(app, prj_name=prj_name)
+    net.line['c_nf_per_km'] = 0
+    net.trafo['i0_percent'] = 0
     to_json(net, rf"{folder}\\{prj_name}.json")
+
 
 ##
 all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)

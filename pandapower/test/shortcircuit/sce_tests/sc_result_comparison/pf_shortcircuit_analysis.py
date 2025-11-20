@@ -3,8 +3,7 @@ from pandapower import pp_dir
 import pandas as pd
 import numpy as np
 import os
-
-from pandapower.test.shortcircuit.sce_tests.hmaschke.testing_grounding_impedance import grounding_type
+import re
 
 testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
@@ -13,7 +12,7 @@ class PFShortCircuitAnalysis:
     def __init__(self, app, proj_name, fault_type='LLL', calc_mode='max',
                  fault_impedance_rf=0.0, fault_impedance_xf=0.0,
                  lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None, activate_gens_at_bus=None,
-                 grounding_type=None, grounding_bank=None):
+                 grounding_type=None, grounding_bank=None, multiphase=False):
         """
                 Parameters:
                 - app: powerfactory.Application
@@ -44,6 +43,7 @@ class PFShortCircuitAnalysis:
         self.grounding_bank = grounding_bank
         self.pf_results_bus_sc = None
         self.pf_results_branch_sc = None
+        self.multiphase = multiphase
 
         # activate project
         app.ActivateProject(proj_name)
@@ -73,8 +73,9 @@ class PFShortCircuitAnalysis:
         fault_location_index = self.fault_location_index
 
         self.activate_elements()
-        self.initialize_grounding()
-        self.initialize_grounding_bank()
+        self.initialize_grounding() if self.grounding_type is not None else None
+        self.initialize_grounding_bank() if self.grounding_bank is not None else None
+        self.set_parameters_for_multiphase() if self.multiphase else None
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
                                 lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
@@ -144,8 +145,9 @@ class PFShortCircuitAnalysis:
         fault_location_index = self.fault_location_index
 
         self.activate_elements()
-        self.initialize_grounding()
-        self.initialize_grounding_bank()
+        self.initialize_grounding() if self.grounding_type is not None else None
+        self.initialize_grounding_bank() if self.grounding_bank is not None else None
+        self.set_parameters_for_multiphase() if self.multiphase else None
         res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
                                 fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
                                 lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
@@ -298,11 +300,14 @@ class PFShortCircuitAnalysis:
             return
         app = self.app
         grounding_type = self.grounding_type
-        trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
-        if grounding_type is None:
-            trafo.cgnd_l = 0
-            trafo.re0tr_l = 0
-            trafo.xe0tr_l = 0
+        try:
+            trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
+            if grounding_type is None:
+                trafo.cgnd_l = 0
+                trafo.re0tr_l = 0
+                trafo.xe0tr_l = 0
+                return
+        except IndexError:
             return
 
         trafo.cgnd_l = 1 if grounding_type == 'isolated' else 0
@@ -328,14 +333,15 @@ class PFShortCircuitAnalysis:
         app = self.app
         grounding_bank = self.grounding_bank
         grounding_type = self.grounding_type
-        trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
         wards = app.GetCalcRelevantObjects('*.ElmVac')
-        switches = app.GetCalcRelevantObjects('*.StaSwitch')
 
         if grounding_bank is None or grounding_bank == [None]:
             for ward in wards:
                 ward.outserv = 1
             return
+
+        trafo = app.GetCalcRelevantObjects('*.ElmTr2')[0]
+        switches = app.GetCalcRelevantObjects('*.StaSwitch')
 
         trafo.cgnd_l = 1  # set trafo grounding as isolated
         r0 = 0
@@ -380,3 +386,48 @@ class PFShortCircuitAnalysis:
                         break
             else:
                 ward.outserv = 1
+
+    def set_parameters_for_multiphase(self):
+        multiphase = self.multiphase
+        if not multiphase:
+            return
+
+        app = self.app
+        fault_location_index = self.fault_location_index
+        lv_tol_percent = self.lv_tol_percent
+        calc_mode = self.calc_mode
+
+        ext_grid = app.GetCalcRelevantObjects('*.ElmXnet')[0]
+        busbars = sorted(app.GetCalcRelevantObjects('*.ElmTerm'),
+                         key=lambda b: int(re.search(r'\d+', b.loc_name).group()))
+        fault_bus = busbars[fault_location_index]
+        trafos = app.GetCalcRelevantObjects('*.ElmTr2')
+
+        # set line capacitance to zero
+        lines = app.GetCalcRelevantObjects('*.ElmLne')
+        for line in lines:
+            line.typ_id.cline = 0
+
+        # set transformer no-load current (Leerlaufstrom) to zero
+        if len(trafos) >= 1:
+            for trafo in trafos:
+                trafo.typ_id.curmg = 0
+
+        # set voltage setpoints according to fault bus
+        if calc_mode == 'max':
+            if np.round(fault_bus.Vtarget, 2) == 20 and lv_tol_percent == 6:
+                ext_grid.usetp = 1.05
+            elif np.round(fault_bus.Vtarget, 2) == 20 and lv_tol_percent == 10:
+                ext_grid.usetp = 1.1
+            elif np.round(fault_bus.Vtarget, 2) == 0.4:
+                ext_grid.usetp = 1.1
+        elif calc_mode == 'min':
+            if np.round(fault_bus.Vtarget, 2) == 20 and lv_tol_percent == 6:
+                ext_grid.usetp = 0.95
+            elif np.round(fault_bus.Vtarget, 2) == 20 and lv_tol_percent == 10:
+                ext_grid.usetp = 0.9
+            elif np.round(fault_bus.Vtarget, 2) == 0.4:
+                ext_grid.usetp = 1.0
+
+
+
