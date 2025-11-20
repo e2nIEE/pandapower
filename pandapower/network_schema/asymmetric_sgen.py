@@ -6,7 +6,7 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the static generator"),
         "type": pa.Column(
             pd.StringDtype,
-            pa.Check.isin(["PV", "WP", "CHP"]),
+            # pa.Check.isin(["PV", "WP", "CHP"]),
             nullable=True,
             required=False,
             description="type of generator",
