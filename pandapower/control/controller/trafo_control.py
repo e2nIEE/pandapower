@@ -111,7 +111,7 @@ class TrafoController(Controller):
             self.tap_side_coeff = 1 if tap_side == 'hv' else -1
             if self.side == "hv":
                 self.tap_side_coeff *= -1
-            if self.tap_step_percent < 0:
+            if pd.notna(self.tap_step_percent) and self.tap_step_percent < 0:
                 self.tap_side_coeff *= -1
         else:
             self.tap_side_coeff = np.where(tap_side == 'hv', 1, -1)
