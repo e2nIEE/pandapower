@@ -170,7 +170,7 @@ class TestDclineOptionalFields:
         )
         validate_network(net)
 
-    # TODO failing on dependending columns
+
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
