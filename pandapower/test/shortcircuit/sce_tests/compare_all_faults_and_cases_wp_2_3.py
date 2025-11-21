@@ -14,7 +14,7 @@ from pandapower.test.shortcircuit.sce_tests.functions_tests import (
 )
 
 
-def compare_sc_results(net, excel_file, branch=False, fault_location=None):
+def compare_sc_results(net, excel_file, branch=False, fault_location=None, lv_tol_percent=10):
     pf_dataframes = load_pf_results(excel_file)
 
     # Toleranzen für relevante Größen
@@ -39,7 +39,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
                                                                                x_fault_ohm)
 
                 try:
-                    calc_sc(net, fault=fault, case=case, branch_results=branch, ip=False,
+                    calc_sc(net, fault=fault, case=case, branch_results=branch, ip=False, lv_tol_percent=lv_tol_percent,
                             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, bus=fault_location, return_all_currents=False)
                 except KeyError as e:
                     print(f"KeyError for fault={fault}, case={case}: {e}")
@@ -108,7 +108,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None):
     return pd.DataFrame(all_differences)
 
 
-def get_result_dfs(net_name, fault_location):
+def get_result_dfs(net_name, fault_location, lv_tol_percent):
     if 'four_bus' in net_name and fault_location not in [0, 1, 3]:
         print(f"For {net_name} only fault locations 0, 1, 3 are supported. Skipping fault location {fault_location}.")
         return None, None
@@ -137,16 +137,18 @@ def get_result_dfs(net_name, fault_location):
 
     # bus
     excel_file = f"{wp_folder}/{net_name}_pf_sc_results_{fault_location}_bus.xlsx"
-    diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file), fault_location=fault_location)
+    diff_df = compare_sc_results(net, os.path.join(result_files_path, excel_file),
+                                 fault_location=fault_location, lv_tol_percent=lv_tol_percent)
 
     # branch
     excel_file = f"{wp_folder}/{net_name}_pf_sc_results_{fault_location}_branch.xlsx"
-    diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), branch=True, fault_location=fault_location)
+    diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), branch=True,
+                                        fault_location=fault_location, lv_tol_percent=lv_tol_percent)
 
     return diff_df, diff_df_branch
 
 
-def generate_summary_tables(net_names, fault_locations, detailed=False):
+def generate_summary_tables(net_names, fault_locations, detailed=False, lv_tol_percent=10):
     bus_summary = []
     branch_summary = []
 
@@ -167,7 +169,7 @@ def generate_summary_tables(net_names, fault_locations, detailed=False):
 
     for net_name, fault_location in tqdm(combinations, desc="generate_summary", unit="grid"):
         try:
-            diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
+            diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, lv_tol_percent)
             if diff_df is None and diff_df_branch is None:
                 continue
 
@@ -250,21 +252,25 @@ if __name__ == "__main__":
     net_names.append(net_names.pop(0))
 
     ## show panadpower and powerfactory results for specified grid and location
-    net_name = '1_four_bus_radial_1ph_grid_MP'  # possible net_name in net_names and net_names_gen
-    fault_location = 1  # 0, 1, 3 for four-bus grids; 0, 2, 4 for five-bus grids, 0, 2, 4, 6 for eight-bus grids
+    net_name = '3_five_bus_radial_grid_1ph_dyn_MP'  # possible net_name in net_names
+    fault_location = 4  # 0, 1, 3 for four-bus grids; 0, 2, 4 for five-bus grids, 0, 2, 4, 6 for eight-bus grids
+    lv_tol_percent = 6
 
-    diff_df, diff_df_branch = get_result_dfs(net_name, fault_location)
+    diff_df, diff_df_branch = get_result_dfs(net_name, fault_location, lv_tol_percent)
 
     ## detailed overview for all grids
     names = [name for name in net_names]
-    fault_location = [0]
-    df_bus, df_branch = generate_summary_tables(names, fault_location, detailed=True)
+    fault_location = [4]
+    lv_tol_percent = 6
+    df_bus, df_branch = generate_summary_tables(names, fault_location,
+                                                detailed=True, lv_tol_percent=lv_tol_percent)
 
     ## simple overview for all grids
     names = [name for name in net_names]
-    fault_location = [0]
-    df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location, detailed=False)
+    fault_location = [4]
+    lv_tol_percent = 6
+    df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location,
+                                                              detailed=False, lv_tol_percent=lv_tol_percent)
 
 
 ##
-
