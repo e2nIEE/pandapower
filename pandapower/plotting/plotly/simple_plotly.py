@@ -251,7 +251,7 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
 
     settings = settings_defaults | settings if settings else {}  # add missing settings to settings dict
 
-    if len(net[node_element]["geo"].dropna()) == 0:
+    if "geo" not in net[node_element] or len(net[node_element]["geo"].dropna()) == 0:
         logger.warning(
             "No or insufficient geodata available --> Creating artificial coordinates. This may take some time..."
         )
