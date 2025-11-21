@@ -56,10 +56,19 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
             fl_buses = [0, 2, 4]
         else:
             fl_buses = [0, 2, 4, 6]
-        parametrize_values_wp23 += list(product(
-            [net_name], faults, cases, values, lv_tol_percents,
-            fl_buses, is_branch_test
-        ))
+
+        for fault, case, value, fault_bus, branch_test in product(
+                faults, cases, values, fl_buses, is_branch_test
+        ):
+            if case == "min":
+                for lv_tol in lv_tol_percents:
+                    parametrize_values_wp23.append(
+                        (net_name, fault, case, value, lv_tol, fault_bus, branch_test)
+                    )
+            elif case == "max":
+                parametrize_values_wp23.append(
+                    (net_name, fault, case, value, 10, fault_bus, branch_test)
+                )
 
     # parameter list for WP 2.2 and WP 2.4
     parametrize_values_wp22 = list(
