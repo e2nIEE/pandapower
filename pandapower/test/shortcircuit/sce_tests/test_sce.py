@@ -192,7 +192,7 @@ param_wp21, param_vec_wp21, param_wp22, param_vec_wp22, param_wp23, param_vec_wp
 @pytest.mark.slow
 @pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch",
                          param_wp23, ids=lambda val: str(val))
-def test_wp21_four_bus_radial_grid(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
+def test_wp23(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
     net, dataframes = load_test_case_data(net_name, fault_location_bus)
     results = run_test_cases(
         net,
