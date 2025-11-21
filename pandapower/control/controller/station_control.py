@@ -92,7 +92,7 @@ class BinarySearchControl(Controller):
     def __init__(self, net, ctrl_in_service:bool, output_element, output_variable, output_element_index,
                  output_element_in_service, input_element, input_variable,
                  input_element_index, set_point:float, output_values_distribution,
-                 control_modus:str = None, name = "", input_inverted:list=None, gen_q_response:list=None, tol=0.001, order=0, level=0,
+                 control_modus:str = None, name = "", input_inverted=None, gen_q_response:list=None, tol=0.001, order=0, level=0,
                  drop_same_existing_ctrl=False, matching_params=None, **kwargs):
         super().__init__(net, in_service=ctrl_in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
@@ -525,6 +525,10 @@ class BinarySearchControl(Controller):
 
                 self.diff = self.set_point - sum(input_values)
                 self.converged = np.all(np.abs(self.diff) < self.tol)
+        if self.converged and (
+                    any(np.atleast_1d(getattr(net.controller.at[x, 'object'], 'controller_idx', None)) == self.index
+                    and not net.controller.object[x].converged for x in net.controller.index)):
+            self.converged = False
         return self.converged
 
     def control_step(self, net):
@@ -771,10 +775,7 @@ class DroopControl(Controller):
             input_sign = np.asarray(net.controller.at[self.controller_idx, "object"].input_sign)
             input_values = (input_sign * np.asarray(input_values)).tolist()
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point - sum(input_values))
-        if self.bus_idx is None:
-            self.converged = np.all(np.abs(self.diff) < self.tol)
-        else:
-            self.converged = net.controller.at[self.controller_idx, "object"].converged and np.all(np.abs(self.diff) < self.tol)
+        self.converged = np.all(np.abs(self.diff) < self.tol)
         return self.converged
 
     def control_step(self, net):
