@@ -285,9 +285,8 @@ class BinarySearchControl(Controller):
 
                 self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
                 self.converged = np.all(np.abs(self.diff) < self.tol)
-        if self.converged and (
-                any(np.atleast_1d(getattr(net.controller.at[x, 'object'], 'controller_idx', None)) == self.index
-                    and not net.controller.object[x].converged for x in net.controller.index)):
+        if self.converged and net.controller['object'].apply(
+                lambda obj: getattr(obj, 'controller_idx', None) == self.index and not getattr(obj, 'converged', True)).any():
             self.converged = False
         return self.converged
 
