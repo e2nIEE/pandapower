@@ -16,18 +16,10 @@ impedance_schema = pa.DataFrameSchema(
             description="index of bus where the impedance ends",
             metadata={"foreign_key": "bus.index"},
         ),
-        "rft_pu": pa.Column(
-            float, pa.Check.gt(0), description="resistance of the impedance from ‘from’ to ‘to’ bus [p.u.]"
-        ),
-        "xft_pu": pa.Column(
-            float, pa.Check.gt(0), description="reactance of the impedance from ‘from’ to ‘to’ bus [p.u.]"
-        ),
-        "rtf_pu": pa.Column(
-            float, pa.Check.gt(0), description="resistance of the impedance from ‘to’ to ‘from’ bus [p.u.]"
-        ),
-        "xtf_pu": pa.Column(
-            float, pa.Check.gt(0), description="reactance of the impedance from ‘to’ to ‘from’ bus [p.u.]"
-        ),
+        "rft_pu": pa.Column(float, description="resistance of the impedance from ‘from’ to ‘to’ bus [p.u.]"),
+        "xft_pu": pa.Column(float, description="reactance of the impedance from ‘from’ to ‘to’ bus [p.u.]"),
+        "rtf_pu": pa.Column(float, description="resistance of the impedance from ‘to’ to ‘from’ bus [p.u.]"),
+        "xtf_pu": pa.Column(float, description="reactance of the impedance from ‘to’ to ‘from’ bus [p.u.]"),
         "rft0_pu": pa.Column(
             float,
             pa.Check.gt(0),
@@ -69,13 +61,13 @@ impedance_schema = pa.DataFrameSchema(
         "gt_pu": pa.Column(
             float,
             # pa.Check.gt(3),
-            description="conductance at the ‘from_bus’ [p.u.]",
-        ),  # TODO: duplicated description?
+            description="conductance at the ‘to_bus’ [p.u.]",
+        ),
         "bt_pu": pa.Column(
             float,
             # pa.Check.gt(4),
-            description="susceptance at the ‘from_bus’ [p.u.]",
-        ),  # TODO: duplicated description?
+            description="susceptance at the ‘to_bus’ [p.u.]",
+        ),
         "gf0_pu": pa.Column(
             float,
             # pa.Check.gt(1),
@@ -95,14 +87,14 @@ impedance_schema = pa.DataFrameSchema(
             # pa.Check.gt(3),
             nullable=True,
             required=False,
-            description="zero-sequence conductance at the ‘from_bus’ [p.u.]",
+            description="zero-sequence conductance at the ‘to_bus’ [p.u.]",
         ),
         "bt0_pu": pa.Column(
             float,
             # pa.Check.gt(4),
             nullable=True,
             required=False,
-            description="zero-sequence susceptance at the ‘from_bus’ [p.u.]",
+            description="zero-sequence susceptance at the ‘to_bus’ [p.u.]",
         ),
         "sn_mva": pa.Column(
             float, pa.Check.gt(0), description="reference apparent power for the impedance per unit values [MVA]"
