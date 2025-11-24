@@ -9,21 +9,14 @@ import copy
 import geojson
 import numpy as np
 import pandas as pd
+from math import isclose
 
 from pandapower.control import SplineCharacteristic, Characteristic
 from pandapower.control.util.characteristic import LogSplineCharacteristic
-from math import isclose
-
-try:
-    import geopandas as gpd
-    import shapely.geometry
-    GEOPANDAS_INSTALLED = True
-except ImportError:
-    GEOPANDAS_INSTALLED = False
-
 from pandapower import get_gc_objects_dict
 from pandapower.file_io import from_json_string, to_json, create_empty_network
 from pandapower.create import create_bus, create_lines, create_line, create_buses, create_shunt
+from pandapower.create._utils import add_column_to_df
 from pandapower.auxiliary import get_indices, pandapowerNet
 from pandapower.networks import example_simple, example_multivoltage, mv_oberrhein
 from pandapower.timeseries import DFData
@@ -35,6 +28,13 @@ from pandapower.control import (
 )
 from pandapower.control.util.auxiliary import (create_shunt_characteristic_object, _create_trafo_characteristics,
                                                create_q_capability_characteristics_object)
+
+try:
+    import geopandas as gpd
+    import shapely.geometry
+    GEOPANDAS_INSTALLED = True
+except ImportError:
+    GEOPANDAS_INSTALLED = False
 
 
 class MemoryLeakDemo:
@@ -222,6 +222,8 @@ def test_create_trafo_characteristics():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
          'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
     net.trafo['id_characteristic_table'].at[1] = 0
     net.trafo['tap_dependency_table'].at[0] = False
     net.trafo['tap_dependency_table'].at[1] = True
@@ -279,6 +281,8 @@ def test_create_trafo_characteristics():
          'vkr_mv_percent': [1.323, 1.325, 1.329, 1.331, 1.339], 'vk_lv_percent': [8.1, 9.5, 10, 11.1, 12.9],
          'vkr_lv_percent': [1.323, 1.325, 1.329, 1.331, 1.339]})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    add_column_to_df(net, "trafo3w", 'id_characteristic_table')
+    add_column_to_df(net, "trafo3w", 'tap_dependency_table')
     net.trafo3w['id_characteristic_table'].at[0] = 2
     net.trafo3w['tap_dependency_table'].at[0] = True
     # create spline characteristics again including a 3-winding transformer
@@ -371,6 +375,7 @@ def test_creation_of_q_capability_characteristics():
     net["q_capability_curve_table"] = pd.DataFrame(
         {'id_q_capability_curve': [0, 0, 0, 0, 0], 'p_mw': [0.0, 50.0, 100.0, 125.0, 125.0],
          'q_min_mvar': [-100.0, -75.0, -50.0, -25.0, -10], 'q_max_mvar': [150.0, 125.0, 75, 50.0, 10.0]})
+    add_column_to_df(net, "gen", "id_q_capability_characteristic")
     net.gen.id_q_capability_characteristic.at[0] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
