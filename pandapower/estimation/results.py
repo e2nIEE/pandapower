@@ -69,9 +69,10 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
             net["res_bus_est"].loc[bus,"q_mvar"] += Sinj.imag
             if element == "shunt":
                 element_res_est = "res_" + element + "_est"
-                net[element_res_est]["p_mw"] = Sinj.real
-                net[element_res_est]["q_mvar"] = Sinj.imag
-                net[element_res_est]["vm_pu"] = net["res_bus_est"].loc[bus,"vm_pu"].values
+                if element_res_est in net:
+                    net[element_res_est]["p_mw"] = Sinj.real
+                    net[element_res_est]["q_mvar"] = Sinj.imag
+                    net[element_res_est]["vm_pu"] = net["res_bus_est"].loc[bus,"vm_pu"].values
     return net
 
 

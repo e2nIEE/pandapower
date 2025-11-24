@@ -105,7 +105,8 @@ def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
     # read results from ppc for these buses
     scd_bus = ppc["source_dc"][scd_relevant, SOURCE_DC_BUS].astype(int).tolist()
     p[scd_relevant] = ppc["bus_dc"][scd_bus, DC_PD]
-    net['res_source_dc']['p_dc_mw'] = p
+    if 'res_source_dc' in net:
+        net['res_source_dc']['p_dc_mw'] = p
 
     #bus_dc_slack = ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF
 

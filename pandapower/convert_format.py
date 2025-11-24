@@ -351,7 +351,7 @@ def _rename_columns(net, elements_to_deserialize):
         if "controller" in net:
             net["controller"] = net["controller"].rename(columns={"controller": "object"})
 
-    if _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize):
+    if 'res_line_3ph' in net and _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize):
         if "p_a_l_mw" in net.res_line_3ph:
             net['res_line_3ph'] = net['res_line_3ph'].rename(columns={
                 'p_a_l_mw': 'pl_a_mw',
@@ -362,7 +362,7 @@ def _rename_columns(net, elements_to_deserialize):
                 'q_c_l_mvar': 'ql_c_mvar',
             })
 
-    if _check_elements_to_deserialize('res_trafo_3ph', elements_to_deserialize):
+    if 'res_trafo_3ph' in net and _check_elements_to_deserialize('res_trafo_3ph', elements_to_deserialize):
         if "p_a_l_mw" in net.res_trafo_3ph:
             net['res_trafo_3ph'] = net['res_trafo_3ph'].rename(columns={
                 'p_a_l_mw': 'pl_a_mw',
@@ -495,16 +495,16 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.switch['in_ka'] = np.nan
 
     # Update the switch table with 'in_ka'
-    if _check_elements_to_deserialize('res_switch', elements_to_deserialize) and \
-            'p_from_mw' not in net.res_switch:
-        net.res_switch['p_from_mw'] = np.nan
-        net.res_switch['q_from_mvar'] = np.nan
-        net.res_switch['p_to_mw'] = np.nan
-        net.res_switch['q_to_mvar'] = np.nan
+    if ('res_switch' in net and _check_elements_to_deserialize('res_switch', elements_to_deserialize) and
+            'p_from_mw' not in net.res_switch):
+            net.res_switch['p_from_mw'] = np.nan
+            net.res_switch['q_from_mvar'] = np.nan
+            net.res_switch['p_to_mw'] = np.nan
+            net.res_switch['q_to_mvar'] = np.nan
 
     # Update the switch table with 'in_ka'
-    if _check_elements_to_deserialize('res_switch_est', elements_to_deserialize) and \
-            'p_from_mw' not in net.res_switch_est:
+    if ('res_switch_est' in net and _check_elements_to_deserialize('res_switch_est', elements_to_deserialize) and
+            'p_from_mw' not in net.res_switch_est):
         net.res_switch_est['p_from_mw'] = np.nan
         net.res_switch_est['q_from_mvar'] = np.nan
         net.res_switch_est['p_to_mw'] = np.nan
@@ -538,8 +538,8 @@ def _add_missing_columns(net, elements_to_deserialize):
             "slack_weight" not in net.xward:
         net.xward['slack_weight'] = 0.0
 
-    if _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize) and \
-        "p_c_from_mw" not in net.res_line_3ph:
+    if ('res_line_3ph' in net and _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize) and
+            "p_c_from_mw" not in net.res_line_3ph):
             net.res_line_3ph['p_c_from_mw'] = np.nan
             net.res_line_3ph['loading_a_percent'] = np.nan
             net.res_line_3ph['loading_b_percent'] = np.nan

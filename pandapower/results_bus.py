@@ -48,7 +48,8 @@ def _get_bus_v_results(net, ppc, suffix=None):
 
 def _get_bus_dc_v_results(net, ppc):
     bus_idx = _get_bus_idx(net, "bus_dc")
-    net["res_bus_dc"]["vm_pu"] = ppc["bus_dc"][bus_idx][:, DC_VM]
+    if "res_bus_dc" in net:
+        net["res_bus_dc"]["vm_pu"] = ppc["bus_dc"][bus_idx][:, DC_VM]
 
 
 def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
@@ -112,12 +113,12 @@ def _get_bus_results(net, ppc, bus_pq):
 
 
 def _get_bus_dc_results(net, bus_p_dc):
+    if "res_bus_dc" in net:
+        # write sum of p and q values to bus
+        net["res_bus_dc"]["p_mw"].values[:] = bus_p_dc[:, 0]
 
-    # write sum of p and q values to bus
-    net["res_bus_dc"]["p_mw"].values[:] = bus_p_dc[:, 0]
-
-    # update index in res_bus_dc
-    net["res_bus_dc"].index = net["bus_dc"].index
+        # update index in res_bus_dc
+        net["res_bus_dc"].index = net["bus_dc"].index
 
 
 def _get_bus_results_3ph(net, bus_pq):
@@ -135,7 +136,6 @@ def _get_bus_results_3ph(net, bus_pq):
     # Todo: OPF
 
     # update index in res bus bus
-    # net["res_bus"].index = net["bus"].index
     net["res_bus_3ph"].index = net["bus"].index
 
 

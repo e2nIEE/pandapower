@@ -165,9 +165,12 @@ def reindex_buses(net, bus_lookup):
 
     # --- reindex buses
     net.bus.index = get_indices(net.bus.index, bus_lookup)
-    net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
-    net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
-    net.res_bus_sc.index = get_indices(net.res_bus_sc.index, bus_lookup)
+    if "res_bus" in net:
+        net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
+    if "res_bus_3ph" in net:
+        net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
+    if "res_bus_sc" in net:
+        net.res_bus_sc.index = get_indices(net.res_bus_sc.index, bus_lookup)
 
     # --- adapt link in bus elements
     for element, value in element_bus_tuples():

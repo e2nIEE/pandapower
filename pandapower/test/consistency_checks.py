@@ -54,7 +54,7 @@ def consistency_checks(net, rtol=1e-3, test_q=True):
 
 
 def indices_consistent(net):
-    elements = get_relevant_elements()
+    elements = get_relevant_elements(net)
     for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element].index
