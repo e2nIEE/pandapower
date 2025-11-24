@@ -6,6 +6,7 @@ from itertools import combinations
 from typing import Literal, Optional, Union
 
 import geojson
+import json
 import networkx as nx
 import numpy as np
 from pandas import DataFrame
@@ -60,9 +61,9 @@ def from_pf(net_name,
     
     ###    
     
-    # log_file_path = r'C:\Users\mfischer\spyder_projects\nap26_edis\nap26_edis\convertpf2pp\validate_pf2pp\converter_logger\log'
-    # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings.log', level=logging.WARNING, 
-    #                 format='%(asctime)s - %(levelname)s - %(message)s')
+    log_file_path = r'C:\Users\mfischer\spyder_projects\nap26_edis\nap26_edis\convertpf2pp\validate_pf2pp\converter_logger\log'
+    logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings_specialUW.log', level=logging.WARNING, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
     logger = logging.getLogger(__name__)
     
@@ -443,7 +444,23 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
         'type': usage[item.iUsage],
         'geodata': (x, y),
     }
-
+    
+    ####
+    if item.cpSite is not None:
+        if len(item.cpSite.desc):
+            params['TP_cpSite'] = item.cpSite.desc[0]
+        #print('jo')
+    if item.cpSubstat is not None:
+        if len(item.cpSubstat.desc):
+            if (len(item.cpSubstat.desc) == 1) and (item.cpSubstat.desc[0].strip() == ''):
+                # UW Rheinsberg
+                pass
+            elif (len(item.cpSubstat.desc) == 1) and (len(item.cpSubstat.desc[0])>1):
+                params['TP_Substat'] = item.cpSubstat.desc[0]
+            else:
+                params['TP_Substat'] = item.cpSubstat.desc[2]
+    ###
+        
     system_type = {0: "ac", 1: "dc", 2: "ac/bi"}[item.systype]
 
     try:
@@ -474,11 +491,34 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
             logger.debug('adding substat %s to descr of bus %s (#%d)' %
                          (substat, params['name'], bid))
             substat_descr = substat.loc_name
+            
+            if json.loads(net[table].at[bid, 'geo'])['coordinates']==[0, 0]:
+                
+                if flag_graphics == 'GPS':
+                    x = substat.GetAttribute('e:GPSlon')
+                    y = substat.GetAttribute('e:GPSlat')
+                    logger.warning('bus %s has no geo data, geodata of substation %s is used.' % (item, substat))
+                    if x == 0 and y == 0:
+                        pass
+                elif flag_graphics == 'graphic objects':
+                    graphic_object = get_graphic_object(substat)
+                    if graphic_object:
+                        x = graphic_object.GetAttribute('rCenterX')
+                        y = graphic_object.GetAttribute('rCenterY')
+                        # add gr coord data
+                    else:
+                        x, y = 0, 0
+                else:
+                    x, y = 0, 0
+                
+                geodata = (x, y)
+                net[table].at[bid, "geo"] = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
         else:
             logger.debug("bus has no substat description")
     else:
         logger.debug('bus %s is not part of any substation' %
                      params['name'])
+
 
     if len(item.desc) > 0:
         descr = ' \n '.join(item.desc)
@@ -780,7 +820,7 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
         
     # check if line coordinates includes two values for x and y
     if all(len(coord) == 3 for coord in coords):
-        logger.warning('line coordinates %s have there columns.' % (item))
+        logger.warning('line coordinates %s have three columns.' % (item))
         
         if all(coord[2] == 0.0 for coord in coords) or all(coord[2] in (coord[0], coord[1]) for coord in coords):
             # check if third colum are all zeros
