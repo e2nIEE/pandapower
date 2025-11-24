@@ -367,6 +367,9 @@ class BinarySearchControl(Controller):
                         p_input_values.append(read_from_net(net,self.input_element, input_index,
                                                         self.input_variable_p[counter], self.read_flag[counter]))
                 counter += 1
+            input_values = (self.input_sign * np.asarray(input_values)).tolist()
+            if self.control_modus == "PF_ctrl" or self.control_modus == 'tan(phi)_ctrl':
+                p_input_values = (self.input_sign * np.asarray(p_input_values)).tolist()
         # compare old and new set values
         if self.control_modus == "Q_ctrl" or (self.control_modus == 'V_ctrl' and self.input_element_index is None):
             if self.control_modus == 'V_ctrl':
@@ -525,9 +528,9 @@ class BinarySearchControl(Controller):
 
                 self.diff = self.set_point - sum(input_values)
                 self.converged = np.all(np.abs(self.diff) < self.tol)
-        if self.converged and (
-                    any(np.atleast_1d(getattr(net.controller.at[x, 'object'], 'controller_idx', None)) == self.index
-                    and not net.controller.object[x].converged for x in net.controller.index)):
+        ###check convergence of linked droop controller (if exists)
+        if self.converged and net.controller['object'].apply(
+                lambda obj: getattr(obj, 'controller_idx', None) == self.index and not getattr(obj, 'converged', True)).any():
             self.converged = False
         return self.converged
 
@@ -789,7 +792,7 @@ class DroopControl(Controller):
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
             if hasattr(net.controller.object[self.controller_idx], 'gen_q_response'):
                 gen_q_response = net.controller.object[self.controller_idx].gen_q_response[0]
-            else: gen_q_response = None #todo gen_q_response fällt weg
+            else: gen_q_response = None
             if gen_q_response is None: gen_q_response = 1 #legacy and robustness
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:

@@ -101,15 +101,16 @@ def test_qctrl_droop():
     bsc = BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                                          output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                                          output_element_in_service=[True], output_values_distribution=[1],
-                                         input_element="res_line", damping_factor=0.9, input_variable=["q_to_mvar"],
+                                         input_element="res_line", damping_factor=0.9, input_variable=["q_from_mvar"],
                                          input_inverted=True, input_element_index=0, set_point=1, voltage_ctrl=False, tol=1e-6)
     DroopControl(net, name="DC1", q_droop_mvar=40, bus_idx=1,
                             vm_set_pu=1, vm_set_ub=1.005, vm_set_lb=0.995,
                             controller_idx=bsc.index, voltage_ctrl=False)
     runpp(net, run_control=False)
-    assert(abs(net.res_line.loc[0, "q_to_mvar"] - (-7.094325e-13)) < tol)
+    assert(abs(net.res_line.loc[0, "q_to_mvar"] - (-1e-13)) < tol)
     runpp(net, run_control=True)
-    assert(abs(net.res_line.loc[0, "q_to_mvar"] - (1 + (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
+    assert (abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
+            net.controller.object[1].q_set_mvar_bsc + (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
     assert(net.controller.at[1, 'object'].voltage_ctrl is False)  # test correct control_modus
@@ -168,7 +169,7 @@ def test_qlimits_voltctrl():
                                    set_point=.98, voltage_ctrl=True, tol=tol)
     runpp(net, run_control=True, enforce_q_lims=True)
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.7) < tol)
-    net.sgen.min_q_mvar = -0.8 # tests change of min_q_mvar afterwards
+    net.sgen.min_q_mvar = -0.8 # tests change of min_q_mvar afterward
     runpp(net, run_control=True, enforce_q_lims=True)
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.8) < tol)
 
@@ -197,7 +198,7 @@ def test_station_ctrl_pf_import():
           "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[62, "vm_pu"])
     assert(abs(net.res_bus.loc[62, "vm_pu"] - (1.01 + ((net.res_line.loc[4, "q_to_mvar"] +
                                              net.res_line.loc[5, "q_to_mvar"]) /
-                                            40))) < tol)  # still not close enough, increased tolerance
+                                            net.controller.object[4].q_droop_mvar))) < tol)
     assert(net.controller.at[4, 'object'].voltage_ctrl is True)  # test correct droop control_modus
     assert(net.controller.at[3, 'object'].control_modus == 'V_ctrl')  # test correct control_modus
     assert(net.controller.at[4, 'object'].controller_idx == 3)  # test droop controller linkage
@@ -212,7 +213,8 @@ def test_station_ctrl_pf_import():
     print("Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, q_hv_mvar, "
           "expected: \n -(1 MVar + (0.999 pu  - 0.99585 pu) * 40 MVar/pu)= -1.12618: \n",
           net.res_trafo.loc[3, "q_hv_mvar"])
-    assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - (1 + (0.999 - net.res_bus.loc[91, "vm_pu"]) * 40)) < tol)
+    assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - -(1 + (0.999 - net.res_bus.loc[91, "vm_pu"])
+                                                    * net.controller.object[2].q_droop_mvar)) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[2, 'object'].voltage_ctrl is False)  # test correct droop control_modus
     assert(net.controller.at[1, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
