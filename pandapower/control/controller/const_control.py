@@ -6,10 +6,7 @@
 from pandapower.auxiliary import _detect_read_write_flag, write_to_net
 from pandapower.control.basic_controller import Controller
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +67,12 @@ class ConstControl(Controller):
                                "element_index": element_index}
         super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, initial_run=initial_run,
-                         **kwargs)
-
+                         matching_params=matching_params, initial_run=initial_run) 
+        
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        
         # data source for time series values
         self.data_source = data_source
         # ids of sgens or loads

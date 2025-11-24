@@ -17,10 +17,7 @@ from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, I
     PHI_IKSS1_DEGREE, PHI_IKSS2_DEGREE, PHI_IKCV_DEGREE
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -472,7 +469,7 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
     #         ikss[b] = ppci["bus"][b, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][b, PHI_IKSS1_DEGREE])) * baseI[b]
     #         V_ikss[:, ix] = ybus_fact(ikss)
 
-    # net_copy = net.deepcopy()
+    # net_copy = copy.deepcopy(net)
     # pp.runpp(net_copy)
     # Ybus_p = net_copy._ppc["internal"]["Ybus"]
     # Yf_p = net_copy._ppc["internal"]["Yf"]

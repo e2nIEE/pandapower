@@ -7,7 +7,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-
+import copy
 from pandapower import pp_dir
 from pandapower.create import create_empty_network, create_bus, create_line, create_load, create_ext_grid, \
     create_buses, create_sgen, create_gen, create_gens, create_line_from_parameters
@@ -53,7 +53,7 @@ def create_single_line_net(std_type):
 
     # Chose the load to match nominal current
     p_ac = vn_kv * max_i_ka * np.sqrt(3)  # Q=0
-    create_load(net, b2, sn_mva=p_ac, p_mw=p_ac, name="load_b8", const_i_percent=100)
+    create_load(net, b2, sn_mva=p_ac, p_mw=p_ac, name="load_b8", const_i_p_percent=100, const_i_q_percent=100)
 
     create_ext_grid(net, b1)
 
@@ -312,7 +312,7 @@ def test_default_parameters():
     net.line.x_ohm_per_km /= net.line.length_km
     net.line.r_ohm_per_km /= net.line.length_km
     net.line.c_nf_per_km /= net.line.length_km
-    net_backup = net.deepcopy()
+    net_backup = copy.deepcopy(net)
     runpp(net_backup)
 
     # test error is raised when 'tdpf' column is missng
@@ -333,7 +333,7 @@ def test_default_parameters():
         runpp(net, tdpf=True, tdpf_delay_s=120)
 
     # check for simplified method
-    net = net_backup.deepcopy()
+    net = copy.deepcopy(net_backup)
     net.line["tdpf"] = np.nan
     with pytest.raises(UserWarning, match="required columns .* are missing"):
         runpp(net, tdpf=True, tdpf_update_r_theta=False)
@@ -353,13 +353,13 @@ def test_default_parameters():
     runpp(net, tdpf=True, tdpf_update_r_theta=False)
 
     # now test with "normal" TDPF
-    net = net_backup.deepcopy()
+    net = copy.deepcopy(net_backup)
     net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
     net.line["conductor_outer_diameter_m"] = 2.5e-2  # 2.5 cm?
     runpp(net, tdpf=True)
     # here all the standard assumptions are filled
     # now we check that user-defined assumptions are preserved
-    net = net_backup.deepcopy()
+    net = copy.deepcopy(net_backup)
     net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
     net.line["conductor_outer_diameter_m"] = 2.5e-2  # 2.5 cm?
     net.line.loc[[2, 4], 'temperature_degree_celsius'] = 40
@@ -376,7 +376,7 @@ def test_default_parameters():
 
 def test_with_user_pf_options():
     net = simple_test_grid(0.5, 0.5)
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     set_user_pf_options(net, tdpf=True)
     runpp(net)
     assert "r_ohm_per_km" in net.res_line
@@ -406,7 +406,7 @@ def test_IEEE_example_1():
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.024 * np.sqrt(3)
-    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_p_percent=100, const_i_q_percent=100)
 
     create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
 
@@ -458,7 +458,7 @@ def test_IEEE_example_2():
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.0 * np.sqrt(3)  # Q=0
-    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_p_percent=100, const_i_q_percent=100)
 
     create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
 
@@ -506,7 +506,7 @@ def test_IEEE_example_3():
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.003 * np.sqrt(3)  # Q=0
-    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_percent=100)
+    create_load(net, b2, p_mw=p_ac, q_mvar=0, name="load_b8", const_i_p_percent=100, const_i_q_percent=100)
 
     create_ext_grid(net, b1, vm_pu=1, va_degree=0, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
 

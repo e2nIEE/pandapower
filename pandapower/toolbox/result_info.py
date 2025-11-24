@@ -11,10 +11,7 @@ import pandas as pd
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.toolbox import pp_elements
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +53,9 @@ def opf_task(net, delta_pq=1e-3, keep=False, log=True):
         net = copy.deepcopy(net)
     _check_necessary_opf_parameters(net, logger)
 
-    opf_task_overview = {"flexibilities": dict(),
-                         "network_constraints": dict(),
-                         "flexibilities_without_costs": dict()}
+    opf_task_overview = {"flexibilities": {},
+                         "network_constraints": {},
+                         "flexibilities_without_costs": {}}
     _determine_flexibilities_dict(net, opf_task_overview["flexibilities"], delta_pq)
     _determine_network_constraints_dict(net, opf_task_overview["network_constraints"])
     _determine_costs_dict(net, opf_task_overview)
@@ -225,7 +222,7 @@ def _determine_costs_dict(net, opf_task_overview):
 
         # determine keys of opf_task_overview["flexibilities"] ending with flex_element
         keys = [power_type + flex_element for power_type in ["P", "Q"] if (
-                power_type + flex_element) in opf_task_overview["flexibilities"].keys()]
+                power_type + flex_element) in opf_task_overview["flexibilities"]]
 
         # determine indices of all flexibles
         idx_without_cost = set()
@@ -357,7 +354,7 @@ def _log_opf_task_overview(opf_task_overview):
 
 
 def _get_keys_and_elements_from_opf_task_dict(dict_):
-    keys = list(dict_.keys())
+    keys = list(dict_)
     elms = ["".join(c for c in key if not c.isupper()) for key in keys]
     keys = list(np.array(keys)[np.argsort(elms)])
     elms = sorted(elms)
@@ -413,8 +410,8 @@ def clear_result_tables(net):
     """
     Clears all ``res_`` DataFrames in net.
     """
-    for key in net.keys():
-        if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
+    for key in net:
+        if isinstance(net[key], pd.DataFrame) and key.startswith("res") and net[key].shape[0]:
             net[key] = net[key].drop(net[key].index)
 
 

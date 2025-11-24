@@ -7,10 +7,7 @@
 import pandas as pd
 import warnings
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +92,7 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
             "si0_hv_partial": 0.9,}, name='Unsymmetric_trafo_type', element="trafo")
     """
 
-    if type(data) != dict:
+    if not isinstance(data, dict):
         raise UserWarning("type data has to be given as a dictionary of parameters")
 
     if check_required:
@@ -103,7 +100,7 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
         if len(missing):
             raise UserWarning("%s are required as %s type parameters." % (missing, element))
     library = net.std_types[element]
-    if overwrite or not (name in library):
+    if overwrite or name not in library:
         library.update({name: data})
 
 
@@ -333,7 +330,7 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
     fitting_types = []
     assert epsilon >= 0
     for name, stp in net.std_types[element].items():
-        for p, v in list(data.items()):
+        for p, v in data.items():
             if isinstance(v, float):
                 if abs(v - stp[p]) > epsilon:
                     break
@@ -344,7 +341,7 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
     return fitting_types
 
 
-def find_std_type_alternative(net, data, element = "line", voltage_rating = "", epsilon = 0.):
+def find_std_type_alternative(data, voltage_rating = "", epsilon = 0.):
     """
         Searches for a std_type that fits all values given in the standard types library with the margin of
         epsilon.
@@ -372,7 +369,7 @@ def find_std_type_alternative(net, data, element = "line", voltage_rating = "", 
         if voltage_rating == v.get("voltage_rating"):
             possible_alternatives.append((p, v))
     for name, stp in possible_alternatives:
-        for p, v in list(data.items()):
+        for p, v in data.items():
             if isinstance(v, float):
                 if abs(v - stp[p]) > epsilon:
                     break

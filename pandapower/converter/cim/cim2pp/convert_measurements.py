@@ -24,22 +24,21 @@ class CreateMeasurements:
     def _copy_to_measurement(self, input_df: pd.DataFrame):
         pp_type = 'measurement'
         self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
-        if pp_type not in self.net.keys():
+        if pp_type not in self.net:
             self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
             return
-        start_index_pp_net = self.net[pp_type].index.size
-        self.net[pp_type] = pd.concat([self.net[pp_type], pd.DataFrame(None, index=[list(range(input_df.index.size))])],
+        if input_df.empty:
+            return
+        self.net[pp_type] = pd.concat([self.net[pp_type],
+                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]],
                                       ignore_index=True, sort=False)
-        for one_attr in self.net[pp_type].columns:
-            if one_attr in input_df.columns:
-                self.net[pp_type].loc[start_index_pp_net:, one_attr] = input_df[one_attr][:]
 
     def create_measurements_from_analog(self):
         self.logger.info("------------------------- Creating measurements from Analog -------------------------")
         time_start = time.time()
         sc = cim_tools.get_pp_net_special_columns_dict()
         # join the Analogs with the AnalogValues and MeasurementValueSources
-        analogs_prf = 'op' if 'op' in self.cim.keys() else 'eq'
+        analogs_prf = 'op' if 'op' in self.cim else 'eq'
         analogs = pd.merge(
             self.cim[analogs_prf]['Analog'][['rdfId', 'name', 'description', 'measurementType', 'unitSymbol',
                                              'unitMultiplier', 'Terminal', 'PowerSystemResource', 'positiveFlowIn']],
@@ -55,17 +54,16 @@ class CreateMeasurements:
         analogs = analogs.rename(columns={'name': sc['src']})
         # collect all the assets (line, trafo, trafo3w) and its connections
         assets = pd.DataFrame(None, columns=['element_type', 'side'])
-        append_dict = dict({'line': {'from_bus': 'from', 'to_bus': 'to'},
-                            'trafo': {'hv_bus': 'hv', 'lv_bus': 'lv'},
-                            'trafo3w': {'hv_bus': 'hv', 'mv_bus': 'mv', 'lv_bus': 'lv'},
-                            'load': {'bus': None},
-                            'sgen': {'bus': None},
-                            'gen': {'bus': None},
-                            'shunt': {'bus': None},
-                            'ext_grid': {'bus': None},
-                            'ward': {'bus': None},
-                            'xward': {'bus': None}
-                            })
+        append_dict = {'line': {'from_bus': 'from', 'to_bus': 'to'},
+                       'trafo': {'hv_bus': 'hv', 'lv_bus': 'lv'},
+                       'trafo3w': {'hv_bus': 'hv', 'mv_bus': 'mv', 'lv_bus': 'lv'},
+                       'load': {'bus': None},
+                       'sgen': {'bus': None},
+                       'gen': {'bus': None},
+                       'shunt': {'bus': None},
+                       'ext_grid': {'bus': None},
+                       'ward': {'bus': None},
+                       'xward': {'bus': None}}
         for element_type, sides in append_dict.items():
             for side_name, side in sides.items():
                 temp = self.net[element_type][[sc['o_id'], side_name, sc[side_name]]]. \

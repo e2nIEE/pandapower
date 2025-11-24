@@ -14,10 +14,7 @@ from pandapower.create import create_empty_network
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +44,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     """
     branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
-        raise ValueError("%s is not in net.bus.columns" % column)
+        raise ValueError(f"{column} is not in net.bus.columns")
     elements = elements if elements is not None else pp_elements(bus=False, other_elements=False)
     elements_to_replace = elements if replace else [
         el for el in elements if column not in net[el].columns or net[el][column].isnull().all()]
@@ -134,7 +131,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
                 raise KeyError(message)
             else:
                 logger.debug(message)
-        for et in list(set(element_type) - set(element_types_without_column)):
+        for et in set(element_type) - set(element_types_without_column):
             idx_et = element_type.index[element_type == et]
             net[el].loc[idx_et, column] = net[et][column].loc[net[el].element[idx_et]].values
 
@@ -170,6 +167,7 @@ def reindex_buses(net, bus_lookup):
     net.bus.index = get_indices(net.bus.index, bus_lookup)
     net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
     net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
+    net.res_bus_sc.index = get_indices(net.res_bus_sc.index, bus_lookup)
 
     # --- adapt link in bus elements
     for element, value in element_bus_tuples():
@@ -334,9 +332,14 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
                                                                               element_in_cost_df], lookup)
 
     # --- adapt tap_characteristic
-    if element_type ==  "trafo":
-        if "trafo_characteristic_table" in net and  "id_characteristic" in net["trafo_characteristic_table"]:
-            net["trafo_characteristic_table"]["id_characteristic"] = net["trafo_characteristic_table"]["id_characteristic"].map(lookup)
+    if "trafo_characteristic_table" in net and "id_characteristic" in net["trafo_characteristic_table"]:
+        if element_type == "trafo_characteristic_table":
+            net["trafo_characteristic_table"]["id_characteristic"] = (
+                net["trafo_characteristic_table"]["id_characteristic"].map(lookup))
+            net["trafo"]["id_characteristic_table"] = (
+                net["trafo"]["id_characteristic_table"].map(lookup))
+            net["trafo3w"]["id_characteristic_table"] = (
+                net["trafo3w"]["id_characteristic_table"].map(lookup))
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
@@ -363,13 +366,17 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     element_types -= {"bus", "bus_geodata", "res_bus"}
 
     element_types |= add_df_to_reindex
+    if "trafo_characteristic_table" in net:
+        element_types |= {"trafo_characteristic_table"}
 
     # run reindex_elements() for all element_types
-    for et in list(element_types):
-        net[et].sort_index(inplace=True)
+    for et in element_types:
+        net[et] = net[et].sort_index()
         new_index = list(np.arange(start, len(net[et]) + start))
-
-        if et in net and isinstance(net[et], pd.DataFrame):
+        if et == "trafo_characteristic_table":
+            ids = net[et].id_characteristic.dropna().unique()
+            reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
+        elif et in net and isinstance(net[et], pd.DataFrame):
             if et in ["bus_geodata", "line_geodata"]:
                 logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
                             "already included by et=='" + et.split("_")[0] + "'.")

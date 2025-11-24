@@ -18,10 +18,7 @@ from pandapower.create import create_empty_network, create_buses, create_ext_gri
     create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs, create_impedances
 from pandapower.run import runpp
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 ppc_elms = ["bus", "branch", "gen"]
@@ -54,7 +51,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
         >>> import pandapower
         >>> from pandapower.test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
-        >>> net = pandapower.converter.from_ppc(ppc, f_hz=60)
+        >>> net = pandapower.converter.pypower.from_ppc(ppc, f_hz=60)
     """
     # --- catch common failures
     if np.any(ppc['bus'][:, BASE_KV] <= 0):

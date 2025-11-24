@@ -3,17 +3,10 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import os
-
 from typing_extensions import deprecated
+import logging
 
-from pandapower.plotting.geo import convert_crs
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
 logger = logging.getLogger(__name__)
 
 
@@ -36,31 +29,15 @@ def _on_map_test(x, y):
     try:
         location = geolocator.reverse(f"{x}, {y}", language='en-US')
     except GeocoderTimedOut:
-        logger.error("Existing net geodata cannot be geo-located: possible reason: geo-data not in lat/long ->"
-                     "try geo_data_to_latlong(net, projection) to transform geodata to lat/long!")
+        logger.error("Existing net geodata cannot be geo-located: possible reason: geo-data not in wgs84 ->"
+                     "try convert_crs(net, epsg_in=projection) to transform geodata to wgs84!")
     else:
         if location.address is None:
             return False
     return True
 
 
-@deprecated('geo_data_to_latlong is deprecated and will be removed shortly, use pandapower.geo.convert_crs instead')
-def geo_data_to_latlong(net, projection):
-    """
-    Transforms network's geodata (in `net.bus_geodata` and `net.line_geodata`) from specified projection to lat/long (WGS84).
-
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network
-
-        **projection** (String) - projection from which geodata are transformed to lat/long. some examples
-
-                - "epsg:31467" - 3-degree Gauss-Kruger zone 3
-                - "epsg:2032" - NAD27(CGQ77) / UTM zone 18N
-                - "epsg:2190" - Azores Oriental 1940 / UTM zone 26N
-    """
-    convert_crs(net, epsg_in=projection.split(':')[1], epsg_out=4326)
-
-
+@deprecated("A token is not required for maplibre. Call to set_mapbox_token can be removed.")
 def set_mapbox_token(token):
     from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
@@ -69,9 +46,14 @@ def set_mapbox_token(token):
         mapbox_file.write(token)
 
 
+@deprecated("A token is not required for maplibre. Call to _get_mapbox_token can be removed.")
 def _get_mapbox_token():
     from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
-    with open(filename, "r") as mapbox_file:
-        return mapbox_file.read()
+    try:
+        with open(filename, "r") as mapbox_file:
+            token = mapbox_file.read()
+    except FileNotFoundError:
+        token = "no_token"
+    return token

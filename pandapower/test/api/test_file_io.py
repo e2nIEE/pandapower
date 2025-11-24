@@ -69,9 +69,9 @@ def net_in(request):
         net.line.at[1, "geo"] = geojson.dumps(geojson.LineString([(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]))
         return net
 
-
-#    if request.param == 2:
-#        return networks.case145()
+@pytest.fixture()
+def net_charactistics():
+    return from_json(os.path.join(pp_dir, "test", "test_files", "from_excel_characteristics.json"))
 
 
 def test_pickle(net_in, tmp_path):
@@ -110,6 +110,24 @@ def test_excel_controllers(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
+@pytest.mark.skipif(not xlsxwriter_INSTALLED,
+                    reason="xlsxwriter is mandatory to write excel files, but is not installed.")
+def test_excel_characteristics(net_charactistics, tmp_path):
+    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
+    to_excel(net_charactistics, filename)
+    net_out = from_excel(filename)
+    pd.testing.assert_frame_equal(net_charactistics['q_capability_characteristic'],
+                                  net_out['q_capability_characteristic'], atol=1e-5)
+    for minmax in ['q_max_characteristic', 'q_min_characteristic']:
+        net_1_ch = net_charactistics['q_capability_characteristic'].loc[0, minmax].to_dict()
+        net_2_ch = net_out['q_capability_characteristic'].loc[0, minmax].to_dict()
+        for key in net_1_ch:
+            if isinstance(net_1_ch[key], list) or isinstance(net_1_ch[key], np.ndarray):
+                assert (net_1_ch[key] == net_2_ch[key]).all()
+            else:
+                assert net_1_ch[key] == net_2_ch[key]
+
+
 def test_json_basic(net_in, tmp_path):
     # tests the basic json functionality with the encoder/decoder classes
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
@@ -141,15 +159,13 @@ def test_json(net_in, tmp_path):
         import geopandas as gpd
 
         bus_geometry = net_geo.bus["geo"].dropna().apply(geojson.loads).apply(shape)
-        net_geo["bus_geodata"] = gpd.GeoDataFrame(geometry=bus_geometry, crs=f"epsg:4326")
+        net_geo["bus_geodata"] = gpd.GeoDataFrame(geometry=bus_geometry, crs="epsg:4326")
         line_geometry = net_geo.line["geo"].dropna().apply(geojson.loads).apply(shape)
-        net_geo["line_geodata"] = gpd.GeoDataFrame(geometry=line_geometry, crs=f"epsg:4326")
+        net_geo["line_geodata"] = gpd.GeoDataFrame(geometry=line_geometry, crs="epsg:4326")
 
         to_json(net_geo, filename)
         net_out = from_json(filename)
         assert_net_equal(net_geo, net_out)
-        # assert isinstance(net_out.line_geodata, gpd.GeoDataFrame)
-        # assert isinstance(net_out.bus_geodata, gpd.GeoDataFrame)
         assert isinstance(net_out.bus_geodata.geometry.iat[0], Point)
         assert isinstance(net_out.line_geodata.geometry.iat[0], LineString)
 
@@ -166,7 +182,7 @@ def test_json(net_in, tmp_path):
 def test_encrypted_json(net_in, tmp_path):
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     to_json(net_in, filename, encryption_key="verysecret")
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(UserWarning):
         from_json(filename)
     with pytest.raises(cryptography.fernet.InvalidToken):
         from_json(filename, encryption_key="wrong")
@@ -240,7 +256,7 @@ def test_json_encoding_decoding():
     net.tuple = (1, "4")
     net.mg = create_nxgraph(net)
     s = {'1', 4}
-    t = tuple(['2', 3])
+    t = ('2', 3)
     f = frozenset(['12', 3])
     a = np.array([1., 2.])
     d = {"a": net, "b": f}
@@ -494,13 +510,13 @@ def test_replace_elements_json_string(net_in):
 
 
 def test_json_generalized():
-    general_net0 = pandapowerNet({
+    general_net0 = pandapowerNet(pandapowerNet.create_dataframes({
         # structure data
-        "df1": [('col1', np.dtype(object)),
-                ('col2', 'f8'), ],
-        "df2": [("col3", 'bool'),
-                ("col4", "i8")]
-    })
+        "df1": {'col1': np.dtype(object),
+                'col2': 'f8'},
+        "df2": {"col3": 'bool',
+                "col4": "i8"}
+    }))
     general_net1 = copy.deepcopy(general_net0)
     general_net1.df1.loc[0] = ["hey", 1.2]
     general_net1.df2.loc[2] = [False, 2]
@@ -508,7 +524,7 @@ def test_json_generalized():
     for general_in in [general_net0, general_net1]:
         out = from_json_string(to_json(general_in),
                                empty_dict_like_object=pandapowerNet({}))
-        assert sorted(list(out.keys())) == ["df1", "df2"]
+        assert sorted(out.keys()) == ["df1", "df2"]
         assert nets_equal(out, general_in)
 
 
@@ -523,14 +539,13 @@ def test_json_simple_index_type():
     df4 = pd.DataFrame(s4)
     df5, df6, df7, df8 = df1.T, df2.T, df3.T, df4.T
     df9 = pd.DataFrame([[1, 2, 3], [4, 5, 7]], index=[1, "2"], columns=[4, "5", 6])
-    input = {key: val for key, val in zip("abcdefghijkl", [
-        s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9])}
-    json_str = to_json(input)
+    json_input = dict(zip("abcdefghijkl", [s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9]))
+    json_str = to_json(json_input)
     output = from_json_string(json_str, convert=False)
-    for key in list("abcd"):
-        assert_series_equal(input[key], output[key], check_dtype=False)
-    for key in list("efghijkl"):
-        assert_frame_equal(input[key], output[key], check_dtype=False)
+    for key in [*"abcd"]:
+        assert_series_equal(json_input[key], output[key], check_dtype=False)
+    for key in [*"efghijkl"]:
+        assert_frame_equal(json_input[key], output[key], check_dtype=False)
 
 
 def test_json_index_names():
@@ -547,7 +562,6 @@ def test_json_index_names():
 
 
 def test_json_multiindex_and_index_names():
-    # idx_tuples = tuple(zip(["a", "a", "b", "b"], ["bar", "baz", "foo", "qux"]))
     idx_tuples = tuple(zip([1, 1, 2, 2], ["bar", "baz", "foo", "qux"]))
     col_tuples = tuple(zip(["d", "d", "e"], ["bak", "baq", "fuu"]))
     idx1 = pd.MultiIndex.from_tuples(idx_tuples)
@@ -564,13 +578,13 @@ def test_json_multiindex_and_index_names():
         df_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), columns=col)
         df_mi_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), index=idx, columns=col)
 
-        input = {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
-        json_str = to_json(input)
+        json_input = dict(zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc]))
+        json_str = to_json(json_input)
         output = from_json_string(json_str, convert=False)
-        assert_series_equal(input["a"], output["a"], check_dtype=False)
-        assert_frame_equal(input["b"], output["b"], check_dtype=False, check_column_type=False)
-        assert_frame_equal(input["c"], output["c"], check_dtype=False, check_index_type=False)
-        assert_frame_equal(input["d"], output["d"], check_dtype=False, check_column_type=False,
+        assert_series_equal(json_input["a"], output["a"], check_dtype=False)
+        assert_frame_equal(json_input["b"], output["b"], check_dtype=False, check_column_type=False)
+        assert_frame_equal(json_input["c"], output["c"], check_dtype=False, check_index_type=False)
+        assert_frame_equal(json_input["d"], output["d"], check_dtype=False, check_column_type=False,
                            check_index_type=False)
 
 

@@ -9,7 +9,7 @@ import os
 import pytest
 
 from pandapower import pp_dir
-from pandapower.converter import from_mpc
+from pandapower.converter.matpower import from_mpc
 from pandapower.networks import case24_ieee_rts
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.toolbox import nets_equal
@@ -21,10 +21,7 @@ try:
 except ImportError:
     matpowercaseframes_imported = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

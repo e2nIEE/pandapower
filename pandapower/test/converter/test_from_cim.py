@@ -787,6 +787,7 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert element_0['tapchanger_id'].item() == '_fe25f43a-7341-446e-a71a-8ab7119ba806'
     assert element_0['vector_group'].item() == 'Yyy'
     assert isinstance(element_0['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_0['vk0_hv_percent'].item())
     assert math.isnan(element_0['vk0_mv_percent'].item())
     assert math.isnan(element_0['vk0_lv_percent'].item())
@@ -795,6 +796,15 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert math.isnan(element_0['vkr0_lv_percent'].item())
     assert not element_0['power_station_unit'].item()
     assert element_0['tap_dependency_table'].item()
+    assert element_0['CurrentLimit.value_hv'].item() == pytest.approx(844.38, abs=0.000001)
+    assert element_0['CurrentLimit.value_mv'].item() == pytest.approx(1535.22, abs=0.000001)
+    assert element_0['CurrentLimit.value_lv'].item() == pytest.approx(16083.36, abs=0.000001)
+    assert element_0['OperationalLimitType.limitType_hv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.limitType_mv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_mv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
 
 def test_fullgrid_trafo3w_spline(fullgrid_v2_spline):
@@ -847,12 +857,19 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert element_0['tapchanger_id'].item() == '_f6b6428b-d201-4170-89f3-4f630c662b7c'
     assert element_0['vector_group'].item() == 'YNyn'
     assert isinstance(element_0['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_0['vk0_percent'].item())
     assert math.isnan(element_0['vkr0_percent'].item())
     assert math.isnan(element_0['xn_ohm'].item())
     assert not element_0['power_station_unit'].item()
     assert not element_0['oltc'].item()
     assert element_0['tap_dependency_table'].item()
+    assert element_0['CurrentLimit.value_hv'].item() == pytest.approx(413.9, abs=0.000001)
+    assert element_0['CurrentLimit.value_lv'].item() == pytest.approx(734.9, abs=0.000001)
+    assert element_0['OperationalLimitType.limitType_hv'].item() == 'patl'
+    assert element_0['OperationalLimitType.limitType_lv'].item() == 'patl'
+    assert element_0['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(20.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(20.0, abs=0.000001)
 
     element_1 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']
     assert element_1['name'].item() == 'BE-TR2_6'
@@ -887,12 +904,19 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert math.isnan(element_1['tapchanger_id'].item())
     assert element_1['vector_group'].item() == 'Yy'
     assert isinstance(element_1['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_1['vk0_percent'].item())
     assert math.isnan(element_1['vkr0_percent'].item())
     assert math.isnan(element_1['xn_ohm'].item())
     assert not element_1['power_station_unit'].item()
     assert not element_1['oltc'].item()
     assert element_1['tap_dependency_table'].item()
+    assert element_1['CurrentLimit.value_hv'].item() == pytest.approx(844.38, abs=0.000001)
+    assert element_1['CurrentLimit.value_lv'].item() == pytest.approx(3070.44, abs=0.000001)
+    assert element_1['OperationalLimitType.limitType_hv'].item() == 'patlt'
+    assert element_1['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_1['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_1['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
     element_2 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']
     assert element_2['tap_step_degree'].item() == pytest.approx(1.990, abs=0.000001)
@@ -900,6 +924,12 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert element_2['tap_changer_type'].item() == "Ideal"
     assert pd.isna(element_2['id_characteristic_table'].item())
     assert not element_2['tap_dependency_table'].item()
+    assert element_2['CurrentLimit.value_hv'].item() == pytest.approx(938.2, abs=0.000001)
+    assert element_2['CurrentLimit.value_lv'].item() == pytest.approx(3070.44, abs=0.000001)
+    assert element_2['OperationalLimitType.limitType_hv'].item() == 'patl'
+    assert element_2['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_2['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_2['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
 
 def test_fullgrid_trafo_spline(fullgrid_v2_spline):
@@ -934,7 +964,7 @@ def test_fullgrid_switch(fullgrid_v2):
     assert element_0['closed'].item()
     assert element_0['name'].item() == 'BE_DSC_5'
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_0['in_ka'].item())
+    assert element_0['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert 'Disconnector' == element_0['origin_class'].item()
     assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
@@ -1008,8 +1038,10 @@ def test_fullgrid_load(fullgrid_v2):
     assert fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35'
     assert element_0['p_mw'].item() == pytest.approx(0.010, abs=0.000001)
     assert element_0['q_mvar'].item() == pytest.approx(0.010, abs=0.000001)
-    assert element_0['const_z_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_i_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['const_z_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['const_i_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['const_z_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['const_i_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
     assert math.isnan(element_0['sn_mva'].item())
     assert element_0['scaling'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_0['in_service'].item()
@@ -1099,9 +1131,20 @@ def test_fullgrid_gen(fullgrid_v2):
     assert math.isnan(element_0['xdss_pu'].item())
     assert element_0['cos_phi'].item() == pytest.approx(0.850, abs=0.000001)
     assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['reactive_capability_curve'].item()
+    assert element_0['id_q_capability_characteristic'].item() == 0
+    assert element_0['curve_style'].item() == 'straightLineYValues'
 
     element_1 = fullgrid_v2.gen[fullgrid_v2.gen['origin_id'] == '_3a3b27be-b18b-4385-b557-6735d733baf0']
     assert element_1['vm_pu'].item() == pytest.approx(1.050, abs=0.000001)
+
+
+def test_full_grid_q_capability_table(fullgrid_v2):
+    capa_df = pd.DataFrame({'id_q_capability_curve': {0: 0, 1: 0, 2: 0},
+                            'p_mw': {0: -100.0, 1: 0.0, 2: 100.0},
+                            'q_min_mvar': {0: -200.0, 1: -300.0, 2: -200.0},
+                            'q_max_mvar': {0: 200.0, 1: 300.0, 2: 200.0}})
+    pd.testing.assert_frame_equal(fullgrid_v2['q_capability_curve_table'], capa_df, atol=1e-5)
 
 
 def test_fullgrid_ext_grid(fullgrid_v2):
@@ -1334,7 +1377,7 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_0['closed'].item()
     assert element_0['name'].item() == 'BE_DSC_5'
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_0['in_ka'].item())
+    assert element_0['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert element_0['origin_class'].item() == 'Disconnector'
     assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
@@ -1348,7 +1391,7 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_1['closed'].item()
     assert element_1['name'].item() == 'BE_LB_1'
     assert element_1['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_1['in_ka'].item())
+    assert element_1['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert element_1['origin_class'].item() == 'LoadBreakSwitch'
     assert element_1['terminal_bus'].item() == '_1c134839-5bad-124e-93a4-b11663025232'
     assert element_1['terminal_element'].item() == '_ea6bb748-b513-0947-a59b-abd50155dad2'

@@ -14,10 +14,7 @@ try:
 except ImportError:
     GRAPHS_EQUAL_POSSIBLE = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -112,14 +109,14 @@ def _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=None):
     qmode[is_cap] = "overexcited"
 
     # qmode consideration
-    unknown_qmode = set(qmode) - set(["underexcited", "overexcited"])
+    unknown_qmode = set(qmode) - {"underexcited", "overexcited"}
     if len(unknown_qmode):
         raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
     qsign = np.ones(qmode.shape)
     qsign[qmode == "overexcited"] = -1
 
     # pmode consideration
-    unknown_pmode = set(pmode) - set(["load", "gen"])
+    unknown_pmode = set(pmode) - {"load", "gen"}
     if len(unknown_pmode):
         raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
     psign = np.ones(pmode.shape)
