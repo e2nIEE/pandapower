@@ -90,6 +90,8 @@ class DiagnosticFunction(ABC, Generic[T]):
         :type results: T | None
         """
         pass
+
+
 class NotCompactFilter(logging.Filter):
     """
     Filter compact messages if detailed view is required
@@ -132,6 +134,7 @@ class LogCount(logging.Filter):
 
     def reset(self):
         self.count = defaultdict(int)
+
 
 def check_boolean(element, element_index, column):
     if element[column] not in [True, False, 0, 1, 0.0, 1.0]:

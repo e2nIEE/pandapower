@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from pandapower import ADict
+from pandapower import ADict, select_subnet
 from pandapower.toolbox import replace_xward_by_ward, get_connected_elements
 from pandapower.create import create_impedance, create_switch
 from pandapower.run import runpp
@@ -41,6 +41,7 @@ expected_exceptions = (LoadflowNotConverged, OPFNotConverged, ControllerNotConve
 
 default_argument_values = {
     "overload_scaling_factor": 0.001,
+    "capacitance_scaling_factor": 0.01,
     "min_r_ohm": 0.001,
     "min_x_ohm": 0.001,
     "max_r_ohm": 100.,
@@ -137,8 +138,17 @@ class InvalidValues(DiagnosticFunction):
                 ("scaling", ">=0"),
                 ("in_service", "boolean"),
             ],
-            "gen": [("bus", "positive_integer"), ("p_mw", "number"), ("scaling", ">=0"), ("in_service", "boolean")],
-            "ext_grid": [("bus", "positive_integer"), ("vm_pu", ">0"), ("va_degree", "number")],
+            "gen": [
+                ("bus", "positive_integer"),
+                ("p_mw", "number"),
+                ("scaling", ">=0"),
+                ("in_service", "boolean")
+            ],
+            "ext_grid": [
+                ("bus", "positive_integer"),
+                ("vm_pu", ">0"),
+                ("va_degree", "number")
+            ],
             "switch": [
                 ("bus", "positive_integer"),
                 ("element", "positive_integer"),
@@ -364,6 +374,7 @@ class Overload(DiagnosticFunction):
             net.load.scaling = load_scaling
         except Exception as e:
             self.out.error(f"Overload check failed: {str(e)}")
+            raise e
 
         return check_result if check_result else None
 
@@ -400,6 +411,241 @@ class Overload(DiagnosticFunction):
                 self.out.warning(f"overload found: Power flow converges with load scaled down to {osf_percent}")
             else:
                 self.out.warning(f"overload found: Power flow converges with generation scaled down to {osf_percent}")
+
+
+class WrongLineCapacitance(DiagnosticFunction):
+    """
+    Checks, if a loadflow calculation converges. If not, checks, if line capacitance is too high, by scaling it to 1%.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.capacitance_scaling_factor: float | None = None
+
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
+        """
+        :param pandapowerNet net: pandapower network
+        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
+
+        :returns: dict with the results of the overload check
+                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        """
+        # get function to run power flow
+        run = partial(kwargs.pop("run", runpp), **kwargs)
+        check_result = None
+        line_capacitance = copy.copy(net.line.c_nf_per_km)
+
+        capacitance_scaling_factor = kwargs.pop(
+            "capacitance_scaling_factor", default_argument_values["capacitance_scaling_factor"]
+        )
+
+        self.capacitance_scaling_factor = capacitance_scaling_factor
+        try:
+            run(net)
+        except expected_exceptions:
+            check_result = False
+            try:
+                net.line.c_nf_per_km *= capacitance_scaling_factor
+                run(net)
+                check_result = True
+            except expected_exceptions:
+                self.out.debug("Line capacitance check failed.")
+
+        except Exception as e:
+            self.out.error(f"Line capacitance check failed: {str(e)}")
+            raise e
+
+        # teardown
+        net.line.c_nf_per_km = line_capacitance
+
+        return check_result
+
+    def report(self, error: Exception | None, results: bool | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for convergence error failed due to the following error:")
+            self.out.warning(error)
+            return
+        if results is None:
+            self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+            return
+
+        # message header
+        self.out.compact("line problems:\n")
+        self.out.detailed("Checking for too high line capacitance...\n")
+
+        # message body
+        if self.capacitance_scaling_factor is not None:
+            capacitance_scaling_factor = self.capacitance_scaling_factor
+        else:
+            raise RuntimeError('diagnostic was not executed before calling results?')
+
+        osf_percent = f"{capacitance_scaling_factor * 100} percent."
+
+        if results:
+            self.out.warning(
+                f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+        else:
+            self.out.warning(
+                f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
+
+
+class SubNetProblemTest(DiagnosticFunction):
+    """
+    Checks, if subnets are converging. This is done using the zone attribute.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.net: pandapowerNet | None = None
+        self.zones: list[str] = []
+
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, bool] | None:
+        """
+        :param pandapowerNet net: pandapower network
+        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
+
+        :returns: dict with the results of the overload check
+                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        """
+        # get function to run power flow
+        run = partial(kwargs.pop("run", runpp), **kwargs)
+        self.net = copy.deepcopy(net)
+
+        self.zones = self.net.bus.zone.unique()
+        check_result = {}
+
+        if len(self.zones) < 1:
+            return None
+
+        for zone, buses in self.net.bus.groupby(net.bus.zone):
+            subnet = select_subnet(self.net, buses=buses, include_switch_buses=True, keep_everything_else=True)
+            try:
+                run(subnet)
+                check_result[zone] = True
+            except expected_exceptions:
+                check_result[zone] = False
+                self.out.debug(f"Calculation on zone: {zone} failed.")
+            except Exception as e:
+                self.out.error(f"Calculation on subnets failed: {str(e)}")
+                raise e
+
+        return check_result if check_result else None
+
+    def report(self, error: Exception | None, results: dict[str, bool] | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for subnets error failed due to the following error:")
+            self.out.warning(error)
+            return
+
+        if results is None:
+            if len(self.zones) > 1:
+                self.out.info("PASSED: Power flow converges. No problems in zones found.")
+            else:
+                self.out.info("SKIPPED: Did not check zones, no zones are defined.")
+            return
+
+        # message header
+        self.out.compact("Zone problems:\n")
+        self.out.detailed("Checking problems in subnets derived from net.bus.zone...\n")
+
+        # message body
+        self.out.warning(f"Found loadflow problems in the following zones: {results.keys()}")
+
+
+class OptimisticPowerflow(DiagnosticFunction):
+    """
+    Checks, if powerflow converges, if a set of 'optimistic' tests is performed.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.net: pandapowerNet | None = None
+        self.zones: list[str] = []
+
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, bool] | None:
+        """
+        :param pandapowerNet net: pandapower network
+        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
+
+        :returns: dict with the results of the overload check
+                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        """
+        # get function to run power flow
+        run = partial(kwargs.pop("run", runpp), **kwargs)
+        self.net = copy.deepcopy(net)
+
+        check_result = {}
+
+        try:
+            net.line.c_nf_per_km = 0
+
+            run(net)
+            check_result["c_nf_per_km_zero"] = True
+        except expected_exceptions:
+            check_result["c_nf_per_km_zero"] = False
+            self.out.debug(f"Line susceptance = 0, did not solve the problem.")
+            try:
+                if 'trafo' in net:
+                    net.trafo.pfe_kw = 0
+                if 'trafo3w' in net:
+                    net.trafo3w.pfe_kw = 0
+
+                run(net)
+                check_result["trafo_pfe_kw_zero"] = True
+            except expected_exceptions:
+                check_result["trafo_pfe_kw_zero"] = False
+                self.out.debug(f"Line susceptance = 0 and iron losses = 0, did not solve the problem.")
+                try:
+                    if 'load' in net:
+                        net.load.p_mw = 0
+                        net.load.q_mvar = 0
+                    if 'sgen' in net:
+                        net.sgen.p_mw = 0
+                        net.sgen.q_mvar = 0
+
+                    run(net)
+                    check_result["load_sgen_zero"] = True
+                except expected_exceptions:
+                    check_result["load_sgen_zero"] = False
+                    self.out.debug(f"Line susceptance = 0, iron losses = 0 and no injection / consumption, did not solve the problem.")
+
+        except Exception as e:
+            self.out.error(f"Optimistic calculation on failed: {str(e)}")
+            raise e
+
+        return check_result if check_result else None
+
+    def report(self, error: Exception | None, results: dict[str, bool] | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for subnets error failed due to the following error:")
+            self.out.warning(error)
+            return
+
+        if results is None:
+            self.out.info("PASSED: Power flow converges. No problems in zones found.")
+            return
+
+        # message header
+        self.out.compact("Optimistic_powerflow:\n")
+        self.out.detailed(
+            "Checking if optimistic powerflow, line.c_nf_per_km = 0, trafo(3w).pfe_kw = 0 and load, sgen.p_mw/q_mvar = 0\n")
+
+        # message body
+        if "load_sgen_zero" in results:
+            if results['load_sgen_zero']:
+                self.out.warning(
+                    f"Powerflow problems solved, by setting line.c_nf_per_km = 0, trafo(3w).pfe_kw = 0 and load, sgen.p_mw/q_mvar = 0.")
+            else:
+                self.out.warning("Optimistic powerflow failed...")
+        elif 'trafo_pfe_kw_zero' in results:
+            self.out.warning(
+                f"Powerflow problems solved, by setting line.c_nf_per_km = 0 and trafo(3w).pfe_kw = 0.")
+        elif 'c_nf_per_km_zero' in results:
+            self.out.warning(
+                f"Powerflow problems solved, by setting line.c_nf_per_km = 0.")
 
 
 class WrongSwitchConfiguration(DiagnosticFunction):
@@ -1394,7 +1640,7 @@ class ParallelSwitches(DiagnosticFunction):
         # message summary
         self.out.detailed(f"\nSUMMARY: {len(results)} occurrences of parallel switches found.")
 
-
+# (name in result_dict, instance of class, list of arguments: None = all kwargs / [] = no arguments)
 default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | None]] = [
     ("missing_bus_indices", MissingBusIndices(), []),
     ("disconnected_elements", DisconnectedElements(), []),
@@ -1403,11 +1649,14 @@ default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | No
     ("nominal_voltages_dont_match", NominalVoltagesMismatch(), ["nominal_voltage_tolerance"]),
     ("invalid_values", InvalidValues(), []),
     ("overload", Overload(), None),
+    ("wrong_line_capacitance", WrongLineCapacitance(), None),
     ("wrong_switch_configuration", WrongSwitchConfiguration(), None),
+    ("test_subnet_from_zone", SubNetProblemTest(), None),
     ("multiple_voltage_controlling_elements_per_bus", MultipleVoltageControllingElementsPerBus(), []),
     ("no_ext_grid", NoExtGrid(), []),
     ("wrong_reference_system", WrongReferenceSystem(), []),
     ("deviation_from_std_type", DeviationFromStdType(), []),
     ("numba_comparison", NumbaComparison(), None),
     ("parallel_switches", ParallelSwitches(), []),
+    ("optimistic_powerflow", OptimisticPowerflow(), None)
 ]
