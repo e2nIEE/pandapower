@@ -6,7 +6,7 @@ from pandapower.network_schema.tools.validation.group_dependency import create_c
 _line_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the line"),
     "std_type": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="standard type which can be used to easily define line parameters with the pandapower standard type library",
@@ -116,6 +116,7 @@ _line_columns = {
     ),
     "wind_speed_m_per_s": pa.Column(
         float,
+        pa.Check.ge(0),
         nullable=True,
         required=False,
         description="wind speed at the line in m/s (TDPF)",
@@ -123,6 +124,7 @@ _line_columns = {
     ),
     "wind_angle_degree": pa.Column(
         float,
+        pa.Check.between(min_value=0, max_value=360),
         nullable=True,
         required=False,
         description="angle of attack between the wind direction and the line (TDPF)",
@@ -144,6 +146,7 @@ _line_columns = {
     ),
     "reference_temperature_degree_celsius": pa.Column(
         float,
+        pa.Check.gt(-273),
         nullable=True,
         required=False,
         description="reference temperature in °C for which r_ohm_per_km for the line is specified (TDPF)",
@@ -188,7 +191,15 @@ _line_columns = {
 line_schema = pa.DataFrameSchema(
     _line_columns,
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "tdpf", "3ph"], _line_columns),
+    checks=create_column_dependency_checks_from_metadata(
+        [
+            "opf",
+            # "sc",
+            "tdpf",
+            # "3ph",
+        ],
+        _line_columns,
+    ),
 )
 
 res_line_schema = res_line_est_schema = pa.DataFrameSchema(
@@ -207,8 +218,8 @@ res_line_schema = res_line_est_schema = pa.DataFrameSchema(
         "i_to_ka": pa.Column(float, nullable=True, description="Current at to bus [kA]"),
         "i_ka": pa.Column(float, nullable=True, description="Maximum of i_from_ka and i_to_ka [kA]"),
         "vm_from_pu": pa.Column(float, nullable=True, description="voltage magnitude at from bus"),
-        "va_from_degree": pa.Column(float, nullable=True, description="voltage magnitude at to bus"),
-        "vm_to_pu": pa.Column(float, nullable=True, description="voltage angle at from bus [degrees]"),
+        "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at to bus"),
+        "va_from_degree": pa.Column(float, nullable=True, description="voltage angle at from bus [degrees]"),
         "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at to bus [degrees]"),
         "loading_percent": pa.Column(float, nullable=True, description="line loading [%]"),
     },
@@ -267,13 +278,13 @@ res_line_3ph_schema = pa.DataFrameSchema(
         ),
         "i_a_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Phase A [kA]"),
         "i_a_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Phase A [kA]"),
-        "i_a_ka": pa.Column(float, nullable=True, description=""),
+        "i_a_ka": pa.Column(float, nullable=True, description="Current at Phase A [kA]"),
         "i_b_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Phase B [kA]"),
         "i_b_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Phase B [kA]"),
-        "i_b_ka": pa.Column(float, nullable=True, description=""),
+        "i_b_ka": pa.Column(float, nullable=True, description="Current at Phase B [kA]"),
         "i_c_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Phase C [kA]"),
         "i_c_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Phase C [kA]"),
-        "i_c_ka": pa.Column(float, nullable=True, description=""),
+        "i_c_ka": pa.Column(float, nullable=True, description="Current at Phase C [kA]"),
         "i_n_from_ka": pa.Column(
             float, nullable=True, description="Current at from bus: Neutral [kA]"
         ),  # TODO: muss mike schauen
