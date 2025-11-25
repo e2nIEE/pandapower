@@ -132,7 +132,7 @@ def verify_results(net, mode="pf"):
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
-        res_element, res_empty_element = get_result_tables(element, suffix)
+        res_element, _ = get_result_tables(element, suffix)
 
         index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
         if not index_equal:
@@ -174,7 +174,6 @@ def init_element(net, element, suffix=None):
     if len(index):
         # init empty dataframe
         if res_empty_element in net:
-            # columns = net[res_empty_element].columns
             net[res_element] = pd.DataFrame(np.nan, index=index, columns=list(get_structure_dict()[res_empty_element]), dtype='float')
         else:
             net[res_element] = pd.DataFrame(index=index, dtype='float')
@@ -268,8 +267,6 @@ def _ppci_internal_to_ppc(result, ppc):
         # Only for sc calculation
         # if branch current matrices have been stored they need to include out of service elements
         if key in BRANCH_RESULTS_KEYS:
-
-            # n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]
             # n_rows_result = np.shape(result['bus'])[0]
             # update_matrix = np.empty((n_branches, n_buses)) * np.nan

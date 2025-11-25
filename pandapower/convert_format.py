@@ -127,12 +127,12 @@ def _restore_index_names(net):
     """Restores dataframes index names stored as dictionary. With newer pp to_json() this
     information is stored to the dataframe its self.
     """
-    if "index_names" in net.keys():
+    if "index_names" in net:
         if not isinstance(net["index_names"], dict):
             raise ValueError("To restore the index names of the dataframes, a dict including this "
                              f"information is expected, not {type(net['index_names'])}")
         for key, index_name in net["index_names"].items():
-            if key in net.keys():
+            if key in net:
                 net[key].index.name = index_name
         del net["index_names"]
 
@@ -147,14 +147,14 @@ def correct_dtypes(net, error):
     failed = {}
     for key, table in empty_net.items():
         if isinstance(table, pd.DataFrame):
-            if key in net.keys() and isinstance(net[key], pd.DataFrame):
+            if key in net and isinstance(net[key], pd.DataFrame):
                 cols = table.columns.intersection(net[key].columns)
                 diff_cols = cols[~(table.dtypes.loc[cols] == net[key].dtypes.loc[cols])]
                 for col in diff_cols:
                     try:
                         net[key][col] = net[key][col].astype(table[col].dtype)
                     except ValueError:
-                        if key not in failed.keys():
+                        if key not in failed:
                             failed[key] = [col]
                         else:
                             failed[key].append(col)
@@ -185,19 +185,19 @@ def _convert_trafo_controller_parameter_names(net):
         controller = net.controller.at[ctrl_idx, "object"]
         if issubclass(type(controller), TrafoController):
 
-            if "tid" in controller.__dict__.keys():
+            if "tid" in controller.__dict__:
                 controller.__dict__["element_index"] = controller.__dict__.pop("tid")
-            elif "transformer_index" in controller.__dict__.keys():
+            elif "transformer_index" in controller.__dict__:
                 controller.__dict__["element_index"] = controller.__dict__.pop("transformer_index")
 
-            if "trafotable" in controller.__dict__.keys():
+            if "trafotable" in controller.__dict__:
                 controller.__dict__["element"] = controller.__dict__.pop("trafotable")
-                if "trafotype" in controller.__dict__.keys():
+                if "trafotype" in controller.__dict__:
                     del controller.__dict__["trafotype"]
-            elif "trafotype" in controller.__dict__.keys():
+            elif "trafotype" in controller.__dict__:
                 controller.__dict__["element"] = controller.__dict__.pop("trafotype")
 
-            if "controlled_bus" in controller.__dict__.keys():
+            if "controlled_bus" in controller.__dict__:
                 controller.__dict__["trafobus"] = controller.__dict__.pop("controlled_bus")
 
 
@@ -266,10 +266,8 @@ def _add_nominal_power(net):
 
 def _add_missing_tables(net):
     net_new = create_empty_network()
-    for key in net_new.keys():
-        if key.startswith("_empty_res"):
-            net[key] = net_new[key]
-        elif key not in net.keys():
+    for key in net_new:
+        if key.startswith("_empty_res") or key not in net:
             net[key] = net_new[key]
 
 
@@ -373,20 +371,19 @@ def _rename_columns(net, elements_to_deserialize):
                 'q_c_l_mvar': 'ql_c_mvar',
             })
 
-    if "options" in net:
-        if "recycle" in net["options"]:
-            if "Ybus" in net["options"]["recycle"]:
-                if net["options"]["recycle"]["Ybus"]:
-                    net["options"]["recycle"]["trafo"] = False
-                del net["options"]["recycle"]["Ybus"]
-            else:
-                net["options"]["recycle"]["trafo"] = True
-            if "ppc" in net["options"]["recycle"]:
-                if net["options"]["recycle"]["ppc"]:
-                    net["options"]["recycle"]["bus_pq"] = False
-                del net["options"]["recycle"]["ppc"]
-            else:
-                net["options"]["recycle"]["bus_pq"] = True
+    if "options" in net and "recycle" in net["options"]:
+        if "Ybus" in net["options"]["recycle"]:
+            if net["options"]["recycle"]["Ybus"]:
+                net["options"]["recycle"]["trafo"] = False
+            del net["options"]["recycle"]["Ybus"]
+        else:
+            net["options"]["recycle"]["trafo"] = True
+        if "ppc" in net["options"]["recycle"]:
+            if net["options"]["recycle"]["ppc"]:
+                net["options"]["recycle"]["bus_pq"] = False
+            del net["options"]["recycle"]["ppc"]
+        else:
+            net["options"]["recycle"]["bus_pq"] = True
 
 
 def _add_missing_columns(net, elements_to_deserialize):
@@ -548,8 +545,8 @@ def _add_missing_columns(net, elements_to_deserialize):
 
 def _update_trafo_type_parameter_names(net):
     for element in ('trafo', 'trafo3w'):
-        for type in net.std_types[element].keys():
-            keys = {col: _update_column(col) for col in net.std_types[element][type].keys() if
+        for type in net.std_types[element]:
+            keys = {col: _update_column(col) for col in net.std_types[element][type] if
                     col.startswith("tp") or col.startswith("vsc")}
             for old_key, new_key in keys.items():
                 net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
@@ -592,7 +589,7 @@ def _set_data_type_of_columns(net):
 
 def _convert_to_mw(net):
     replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
-    for element in net.keys():
+    for element in net:
         if isinstance(net[element], pd.DataFrame):
             for old, new in replace:
                 diff = {column: column.replace(old, new) for column in net[element].columns if
@@ -659,7 +656,7 @@ def _convert_objects(net, elements_to_deserialize):
     """
     _check_elements_to_deserialize('controller', elements_to_deserialize)
     if _check_elements_to_deserialize('controller', elements_to_deserialize) and \
-            "controller" in net.keys():
+            "controller" in net:
         for obj in net["controller"].object.values:
             _update_object_attributes(obj)
 

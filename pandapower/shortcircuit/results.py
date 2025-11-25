@@ -175,8 +175,9 @@ def _get_line_all_results(net, ppc, bus):
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 
-    multindex = pd.MultiIndex.from_product([net.res_line_sc.index, bus], names=['line','bus'])
-    net.res_line_sc = net.res_line_sc.reindex(multindex)
+    if "res_line_sc" in net:
+        multindex = pd.MultiIndex.from_product([net.res_line_sc.index, bus], names=['line','bus'])
+        net.res_line_sc = net.res_line_sc.reindex(multindex)
 
     if "line" in branch_lookup:
         f, t = branch_lookup["line"]
@@ -216,8 +217,9 @@ def _get_switch_all_results(net, ppc, bus):
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 
-    multindex = pd.MultiIndex.from_product([net.res_switch_sc.index, bus], names=['switch','bus'])
-    net.res_switch_sc = net.res_switch_sc.reindex(multindex)
+    if "res_switch_sc" in net:
+        multindex = pd.MultiIndex.from_product([net.res_switch_sc.index, bus], names=['switch','bus'])
+        net.res_switch_sc = net.res_switch_sc.reindex(multindex)
 
     if "switch" in branch_lookup:
         f, t = branch_lookup["switch"]
@@ -260,8 +262,9 @@ def _get_trafo_all_results(net, ppc, bus):
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 
-    multindex = pd.MultiIndex.from_product([net.res_trafo_sc.index, bus], names=['trafo', 'bus'])
-    net.res_trafo_sc = net.res_trafo_sc.reindex(multindex)
+    if "rest_trafo_sc" in net:
+        multindex = pd.MultiIndex.from_product([net.res_trafo_sc.index, bus], names=['trafo', 'bus'])
+        net.res_trafo_sc = net.res_trafo_sc.reindex(multindex)
 
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
@@ -285,8 +288,9 @@ def _get_trafo3w_all_results(net, ppc, bus):
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 
-    multindex = pd.MultiIndex.from_product([net.res_trafo3w_sc.index, bus], names=['trafo3w', 'bus'])
-    net.res_trafo3w_sc = net.res_trafo3w_sc.reindex(multindex)
+    if "res_trafo3w_sc" in net:
+        multindex = pd.MultiIndex.from_product([net.res_trafo3w_sc.index, bus], names=['trafo3w', 'bus'])
+        net.res_trafo3w_sc = net.res_trafo3w_sc.reindex(multindex)
 
     if "trafo3w" in branch_lookup:
         f, t = branch_lookup["trafo3w"]

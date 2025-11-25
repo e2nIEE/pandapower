@@ -302,7 +302,7 @@ def write_p_dc_results_to_element(net, ppc, element):
 def _extract_dist_slack_pq_results(net, ppc, element, res_):
     node_elements = ['sgen', 'load', 'ward', 'xward', 'storage']
     for b in net[element].bus.values:
-        connected = dict()
+        connected = {}
         for e in node_elements:
             conn = net[e].loc[net[e].in_service & (net[e].bus == b)].index.values
             if len(conn) > 0:

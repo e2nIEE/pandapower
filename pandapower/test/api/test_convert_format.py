@@ -26,7 +26,7 @@ def test_convert_format(version):
         raise ValueError("File for version %s does not exist" % version)
     try:
         net = from_json(filename, convert=False)
-        if ('version' in net) and (vs.parse(str(net.version)) > vs.parse('2.0.1')):
+        if 'version' in net and vs.parse(str(net.version)) > vs.parse('2.0.1'):
             _ = from_json(filename, elements_to_deserialize=['bus', 'load'])
     except:
         raise UserWarning("Can not load network saved in pandapower version %s" % version)

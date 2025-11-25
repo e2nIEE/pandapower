@@ -566,8 +566,8 @@ def validate_from_ppc(ppc, net, max_diff_values={"bus_vm_pu": 1e-6, "bus_va_degr
         raise ValueError(
             "net._from_ppc_lookups must contain a lookup (dict of keys 'branch' and 'gen')")
 
-    if net.res_bus.shape[0] == 0 and net.bus.shape[0] > 0:
-        logger.debug("runpp() is performed by validate_from_ppc() since res_bus is empty.")
+    if "res_bus" not in net or net.res_bus.shape[0] == 0 and net.bus.shape[0] > 0:
+        logger.debug("runpp() is performed by validate_from_ppc() since res_bus is not created or is empty.")
         runpp(net, calculate_voltage_angles=True, trafo_model="pi")
 
     # --- pypower powerflow results -> ppc_res -----------------------------------------------------

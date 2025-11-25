@@ -31,10 +31,10 @@ def typed_list(iterable, dtype):
 
 
 def nets_to_test_group():
-    nets = list()
+    nets = []
     reference_columns = [None, "name"]
     types = [int, str]
-    idxs = list()
+    idxs = []
     for reference_column, type_ in zip(reference_columns, types):
         net = case24_ieee_rts()
         for elm in pp_elements():

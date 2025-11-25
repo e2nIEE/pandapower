@@ -706,8 +706,9 @@ def drop_buses(net, buses, drop_elements=True):
 
     detach_from_groups(net, "bus", buses)
     net["bus"].drop(buses, inplace=True)
-    res_buses = net.res_bus.index.intersection(buses)
-    net["res_bus"] = net["res_bus"].drop(res_buses)
+    if "res_bus" in net:
+        res_buses = net.res_bus.index.intersection(buses)
+        net["res_bus"] = net["res_bus"].drop(res_buses)
     if drop_elements:
         drop_elements_at_buses(net, buses)
         drop_measurements_at_elements(net, "bus", idx=buses)
@@ -738,8 +739,9 @@ def drop_trafos(net, trafos, table="trafo"):
     # drop the trafos
     detach_from_groups(net, table, trafos)
     net[table] = net[table].drop(trafos)
-    res_trafos = net["res_" + table].index.intersection(trafos)
-    net["res_" + table] = net["res_" + table].drop(res_trafos)
+    if f"res_{table}" in net:
+        res_trafos = net["res_" + table].index.intersection(trafos)
+        net["res_" + table] = net["res_" + table].drop(res_trafos)
     logger.debug(f"Dropped {len(trafos)} {table}{plural_s(len(trafos))} with {num_switches} switches")
 
 
@@ -764,8 +766,9 @@ def drop_lines(net, lines):
     net["line"].drop(lines, inplace=True)
     if "line_geodata" in net:
         net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
-    res_lines = net.res_line.index.intersection(lines)
-    net["res_line"].drop(res_lines, inplace=True)
+    if "res_line" in net:
+        res_lines = net.res_line.index.intersection(lines)
+        net["res_line"].drop(res_lines, inplace=True)
     logger.debug(f"Dropped {len(lines)} line{plural_s(len(lines))} with {len(i)} line switches")
 
 
@@ -1070,7 +1073,7 @@ def create_replacement_switch_for_branch(net, element_type, element_index):
                         type='CB')
     # to enable unproblematic validation for the pf converter
     for col in ("pf_closed", "pf_in_service"):
-        if col in net.res_switch.columns:
+        if "res_switch" in net and col in net.res_switch:
             net.res_switch.loc[sid, col] = is_closed
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element_type, element_index))
@@ -1946,7 +1949,7 @@ def _adapt_result_tables_in_replace_functions(
     net, element_type_old, element_index_old, element_type_new, element_index_new):
     et_old, et_new = "res_" + element_type_old, "res_" + element_type_new
     idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
-    if net[et_old].shape[0]:
+    if et_old in net and et_new in net and net[et_old].shape[0]:
         in_res = pd.Series(idx_old).isin(net[et_old].index).values
         to_add = net[et_old].loc[idx_old[in_res]]
         to_add.index = idx_new[in_res]

@@ -272,8 +272,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         raise ValueError("Either new_indices or lookup must be given.")
     elif new_indices is not None and lookup is not None:
         raise ValueError("Only one can be considered, new_indices or lookup.")
-    if new_indices is not None and not len(new_indices) or lookup is not None and not len(
-            lookup.keys()):
+    if new_indices is not None and not len(new_indices) or lookup is not None and not len(lookup):
         return
 
     if new_indices is not None:

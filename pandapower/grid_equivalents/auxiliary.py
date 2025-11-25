@@ -290,7 +290,7 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
         target_elm_idx = net[elm].index[net[elm].name.astype(str).str.contains(
             "assist_" + elm, na=False, regex=False)]
         net[elm] = net[elm].drop(target_elm_idx)
-        if net["res_" + elm].shape[0]:
+        if f"res_{elm}" in net and net["res_" + elm].shape[0]:
             res_target_elm_idx = net["res_" +
                                      elm].index.intersection(target_elm_idx)
             net["res_" + elm] = net["res_" + elm].drop(res_target_elm_idx)
@@ -526,7 +526,8 @@ def replace_motor_by_load(net, all_external_buses):
         q = q_mvar if not np.isnan(net.res_bus.vm_pu[m.bus]) and m.in_service else 0.0
         net.res_load.loc[li] = p, q
     net.motor = net.motor.drop(motors)
-    net.res_motor = net.res_motor.drop(motors)
+    if "res_motor" in net:
+        net.res_motor = net.res_motor.drop(motors)
 
 
 if __name__ == "__main__":
