@@ -313,6 +313,7 @@ def build_ppc_and_Ybus(net):
                         tolerance_mva=1e-8,
                         trafo_model="t",
                         trafo_loading="current",
+                        enforce_p_lims=False,
                         enforce_q_lims=False,
                         check_connectivity=True,
                         voltage_depend_loads=True,

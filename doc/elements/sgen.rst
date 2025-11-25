@@ -44,21 +44,17 @@ The reactive power capability curve data can be imported into pandapower in a ta
 net.q_capability_curve_table. The characteristics can either be automatically generated via the CIM CGMES to
 pandapower converter or the PowerFactory to pandapower converter, or they can be created by the user using the
 pandapower.control.util.create_q_capability_characteristics_object function, provided that the
-q_capability_curve_table is previously defined in the network case.
+q_capability_curve_table is previously defined in the network case. Q capability curve characteristic objects are then
+generated from net.q_capability_curve_table, populating net.q_capability_characteristic.
 
-Q capability curve characteristic objects are then generated from net.q_capability_curve_table, populating
-net.q_capability_characteristic. The characteristics can either be automatically generated via the CIM CGMES to
-pandapower converter or the PowerFactory to pandapower converter, or they can be created by the user using the
-pandapower.control.util.create_q_capability_characteristics_object function, provided that the
-q_capability_curve_table is previously defined in the network case.
-
-If the variable reactive_capability_curve in net.sgen is set to True, it indicates that pairs of P vs Qmin/Qmax values
+If the variable `reactive_capability_curve` in net.sgen is set to True, it indicates that pairs of P vs Qmin/Qmax values
 and the corresponding characteristic are defined in net.q_capability_curve_table and net.q_capability_characteristic
-respectively. This overrides the default reactive power limits of the static generator when an optimal power flow
-is executed for static generators that have their "controllable" flag set to True.
-The variable id_q_capability_characteristic in net.sgen establishes a direct reference to the
-id_q_capability_curve column in both net.q_capability_curve_table and net.q_capability_characteristic, thereby
-associating each static generator with its corresponding capability curve.
+respectively. This overrides the default reactive power limits of the static generator when i) a power flow is executed
+and the `enforce_q_lims` option is enabled; or ii) an optimal power flow is executed for static generators that have
+their `controllable` flag set to True.
+The variable `id_q_capability_characteristic` in net.sgen establishes a direct reference to the `id_q_capability_curve`
+column in both net.q_capability_curve_table and net.q_capability_characteristic, thereby associating each static
+generator with its corresponding capability curve.
 
 Below is an example of a q_capability_curve_table populated for two sample static generators.
 

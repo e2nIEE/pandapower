@@ -25,12 +25,17 @@ from .pypower.idx_vsc import vsc_cols, VSC_BUS, VSC_INTERNAL_BUS, VSC_R, VSC_X, 
     VSC_MODE_DC_V, VSC_MODE_DC_P, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC, VSC_DIFF_REF_BUS, VSC_MODE_DC_DP, \
     VSC_MODE_DC_DM
 from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS, SOURCE_DC_VG, source_dc_cols
+from pandapower.build_gen import _calculate_qmin_qmax_from_q_capability_characteristics
 
 try:
     from numba import jit
     version_check('numba')
 except ImportError:
     from .pf.no_numba import jit
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @jit(nopython=True, cache=False)
@@ -636,6 +641,45 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
         elif element.endswith("ward"):
             p = np.hstack([p, tab["ps_mw"].values * active * sign])
             q = np.hstack([q, tab["qs_mvar"].values * active * sign])
+        elif element == "sgen":
+            scaling = tab["scaling"].values
+
+            # enforce sgen active power limits
+            if net._options["enforce_p_lims"]:
+                min_p = tab["min_p_mw"] if "min_p_mw" in tab.columns else pd.Series(index=tab.index, data=np.nan,
+                                                                                    dtype=float)
+                max_p = tab["max_p_mw"] if "max_p_mw" in tab.columns else pd.Series(index=tab.index, data=np.nan,
+                                                                                    dtype=float)
+                p_used = tab["p_mw"].clip(lower=min_p, upper=max_p)
+            else:
+                p_used = tab["p_mw"]
+
+            p = np.hstack([p, p_used.values * active * scaling * sign])
+
+            # enforce sgen reactive power limits
+            if net._options["enforce_q_lims"]:
+                # get default min/max limits (if they exist)
+                if "min_q_mvar" in tab.columns:
+                    min_q = tab["min_q_mvar"].copy()
+                else:
+                    min_q = pd.Series(index=tab.index, data=np.nan, dtype=float)
+                if "max_q_mvar" in tab.columns:
+                    max_q = tab["max_q_mvar"].copy()
+                else:
+                    max_q = pd.Series(index=tab.index, data=np.nan, dtype=float)
+
+                # overwrite with capability-curve-based limits where available
+                if "q_capability_characteristic" in net:
+                    curve_q = _calculate_qmin_qmax_from_q_capability_characteristics(net, element)
+                    if curve_q is not None and not curve_q.empty:
+                        min_q.update(curve_q["min_q_mvar"])
+                        max_q.update(curve_q["max_q_mvar"])
+
+                # clip q_mvar using effective min/max limits
+                q_used = tab["q_mvar"].clip(lower=min_q, upper=max_q)
+            else:
+                q_used = tab["q_mvar"]
+            q = np.hstack([q, q_used.values * active * scaling * sign])
         else:
             scaling = tab["scaling"].values
             p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
@@ -728,7 +772,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
 
         if "step_dependency_table" in s:
-            # TODO: remove step_dependency_table and infer from id_characterists_table if it exsists
+            # TODO: remove step_dependency_table and infer from id_characterists_table if it exists
             if np.any(vl & (s.step_dependency_table == True) & (pd.isna(s.id_characteristic_table))):
                 raise UserWarning("Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
                                   "Please set an id_characteristic_table or set step_dependency_table to False.")

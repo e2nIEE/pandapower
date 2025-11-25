@@ -37,11 +37,11 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     :param net: pandaPower network
     :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e. g. tolerance_mva = 1e-3
+    :param kwargs: load flow options, e.g. tolerance_mva = 1e-3
     :return: None
     """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
-                           'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_q_lims',
+                           'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_p_lims', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
                            'trafo3w_losses', 'init', 'init_vm_pu', 'init_va_degree', 'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
@@ -67,7 +67,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
 def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
-          trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
+          trafo_loading="current", enforce_p_lims=False, enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, consider_line_temperature=False,
           run_control=False, distributed_slack=False, tdpf=False, tdpf_delay_s=None, **kwargs):
     """
@@ -129,7 +129,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         pandapower provides two equivalent circuit models for the transformer:
 
             - "t" - transformer is modeled as equivalent with the T-model.
-            - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since it is less exact than the T-model. It is only recommended for valdiation with other software that uses the pi-model.
+            - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since it is less exact than the T-model. It is only recommended for validation with other software that uses the pi-model.
 
         **trafo_loading** (str, "current") - mode of calculation for transformer loading
 
@@ -138,19 +138,24 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
             - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
 
+        **enforce_p_lims** (bool, False) - respect generator active power limits
+
+            If True, the active power limits in net.gen.max_p_mw/min_p_mw and net.sgen.max_p_mw/min_p_mw
+            are respected in the loadflow.
+
         **enforce_q_lims** (bool, False) - respect generator reactive power limits
 
-            If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar are respected in the
-            loadflow. This is done by running a second loadflow if reactive power limits are
-            violated at any generator, so that the runtime for the loadflow will increase if reactive
-            power has to be curtailed.
+            If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar and net.sgen.max_q_mvar/min_q_mvar
+            are respected in the loadflow. If generator reactive power capability curves are defined, the corresponding
+            min & max q limits overwrite (internally) the default values coming from the max/min_q_mvar parameters.
+            Regarding gen elements, this is done by running a second loadflow if reactive power limits are violated
+            at any generator, so that the runtime for the loadflow will increase if reactive power has to be curtailed.
 
-            Note: enforce_q_lims only works if algorithm="nr"!
-
+            Note: enforce_q_lims only works for gen elements if algorithm="nr"!
 
         **check_connectivity** (bool, True) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
 
-            If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is performed.
             If check finds unsupplied buses, they are set out of service in the ppc
 
         **voltage_depend_loads** (bool, True) - consideration of voltage-dependent loads. 
@@ -240,7 +245,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         _init_runpp_options(net, algorithm=algorithm,
                             calculate_voltage_angles=calculate_voltage_angles,
                             init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
-                            trafo_model=trafo_model, trafo_loading=trafo_loading,
+                            trafo_model=trafo_model, trafo_loading=trafo_loading, enforce_p_lims=enforce_p_lims,
                             enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
                             voltage_depend_loads=voltage_depend_loads,
                             consider_line_temperature=consider_line_temperature,
@@ -368,7 +373,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
 
         **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
 
-        If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+        If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is performed.
         If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
 
         **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
@@ -452,7 +457,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
                 Starting solution vector (x0) for opf calculations is determined by this flag. Options are:
                 "flat" (default): starting vector is (upper bound - lower bound) / 2
                 "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
-                convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
+                convergence, but takes a longer runtime (which are probably neglectable for opf calculations)
                 "results": voltage magnitude vector is taken from result table
 
             **delta** (float, 1e-10) - power tolerance
@@ -470,7 +475,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
             - PDIPM_COSTTOL (1e-6) optimality tolerance
             - PDIPM_GRADTOL (1e-6) gradient tolerance
             - PDIPM_COMPTOL (1e-6) complementarity condition (inequality) tolerance
-            - PDIPM_FEASTOL (set to OPF_VIOLATION if not specified) feasibiliy (equality) tolerance
+            - PDIPM_FEASTOL (set to OPF_VIOLATION if not specified) feasibility (equality) tolerance
             - PDIPM_MAX_IT  (150) maximum number of iterations
             - SCPDIPM_RED_IT(20) maximum number of step size reductions per iteration
     """

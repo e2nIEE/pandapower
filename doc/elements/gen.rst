@@ -49,12 +49,12 @@ pandapower converter or the PowerFactory to pandapower converter, or they can be
 pandapower.control.util.create_q_capability_characteristics_object function, provided that the
 q_capability_curve_table is previously defined in the network case.
 
-If the variable reactive_capability_curve in net.gen is set to True, it indicates that pairs of P vs Qmin/Qmax values
+If the variable `reactive_capability_curve` in net.gen is set to True, it indicates that pairs of P vs Qmin/Qmax values
 and the corresponding characteristic are defined in net.q_capability_curve_table and net.q_capability_characteristic
 respectively. This overrides the default reactive power limits of the generator when i) a power flow is executed
-and the enforce_q_lims option is enabled; or ii) an optimal power flow is executed for generators that have their
-"controllable" flag set to True.
-The variable id_q_capability_characteristic in net.gen establishes a link to the id_q_capability_curve column
+and the `enforce_q_lims` option is enabled; or ii) an optimal power flow is executed for generators that have their
+`controllable` flag set to True.
+The variable `id_q_capability_characteristic` in net.gen establishes a link to the `id_q_capability_curve` column
 in both net.q_capability_curve_table and net.q_capability_characteristic, associating each generator with its
 respective capability curve.
 
@@ -74,9 +74,9 @@ The table below illustrates an example of a q_capability_characteristic table po
    :delim: ,
 
 .. note::
-    - reactive_capability_curve has to be set to True, and id_q_capability_characteristic and curve_style variables
+    - `reactive_capability_curve` has to be set to True, and `id_q_capability_characteristic` and `curve_style` variables
       need to be populated in order to consider the reactive power limits of the corresponding characteristic.
-    - Each generator supports only a single reactive_capability_curve.
+    - Each generator supports only a single reactive power capability curve.
     - In this version, only two types of generator reactive power capability characteristics are supported:
       1. constantYValue: The reactive power values are assumed constant until the next curve point and prior to the first curve point.
       2. straightLineYValues: The reactive power values are assumed to be a straight line between values.
@@ -142,6 +142,6 @@ The power flow returns reactive generator power and generator voltage angle:
    \end{align*}
 
 .. note::
-    If the power flow is run with the enforce_q_lims option and the generator reactive power exceeds / falls short of the maximum / minimum reactive power limit,
+    If the power flow is run with the `enforce_q_lims` option and the generator reactive power output is outside the reactive power limits,
     the generator is converted to a static generator with the maximum / minimum reactive power as constant reactive power generation.
     The voltage at the generator bus is then no longer equal to the voltage set point defined in the parameter table.

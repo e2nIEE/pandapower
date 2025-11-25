@@ -313,6 +313,60 @@ def add_test_enforce_qlims(net):
     return net
 
 
+def add_test_enforce_plims(net):
+    b1, b2, ln = add_grid_connection(net, zone="test_enforce_plims")
+    pl = 1.200
+    ql = 1.100
+    ps = 0.200
+    pmin = 0.500
+    vm_set_pu = 1.0
+
+    b3 = create_bus(net, zone="test_enforce_plims", vn_kv=.4)
+    create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                c_nf_per_km=300, max_i_ka=.2, df=.8)
+    create_load(net, b3, p_mw=pl, q_mvar=ql)
+    create_gen(net, b3, p_mw=ps, vm_pu=vm_set_pu, min_p_mw=pmin)
+
+    net.last_added_case = "test_enforce_plims"
+    return net
+
+
+def add_test_enforce_qlims_sgen(net):
+    b1, b2, ln = add_grid_connection(net, zone="test_enforce_qlims_sgen")
+    pl = 1.200
+    ql = 1.100
+    ps = 0.500
+    qs = 0.500
+    qmax = 0.200
+
+    b3 = create_bus(net, zone="test_enforce_qlims_sgen", vn_kv=.4)
+    create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                c_nf_per_km=300, max_i_ka=.2, df=.8)
+    create_load(net, b3, p_mw=pl, q_mvar=ql)
+    create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_q_mvar=qmax)
+
+    net.last_added_case = "test_enforce_qlims_sgen"
+    return net
+
+
+def add_test_enforce_plims_sgen(net):
+    b1, b2, ln = add_grid_connection(net, zone="test_enforce_plims_sgen")
+    pl = 1.200
+    ql = 1.100
+    ps = 0.500
+    qs = 0.500
+    pmax = 0.200
+
+    b3 = create_bus(net, zone="test_enforce_plims_sgen", vn_kv=.4)
+    create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                c_nf_per_km=300, max_i_ka=.2, df=.8)
+    create_load(net, b3, p_mw=pl, q_mvar=ql)
+    create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_p_mw=pmax)
+
+    net.last_added_case = "test_enforce_plims_sgen"
+    return net
+
+
 def add_test_trafo3w(net):
     b1, b2, ln = add_grid_connection(net, zone="test_trafo3w")
     b3 = create_bus(net, vn_kv=0.6, zone="test_trafo3w")

@@ -77,7 +77,7 @@ def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=
         **ppc** - The Pypower casefile for usage with pypower
 
     EXAMPLE:
-        >>> from pandapower.converter import to_ppc
+        >>> from pandapower.converter.pypower import to_ppc
         >>> from pandapower.networks.power_system_test_cases import case9
         >>>
         >>> net = case9()
@@ -105,7 +105,7 @@ def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
-                     init_va_degree=init, enforce_q_lims=True,
+                     init_va_degree=init, enforce_q_lims=True, enforce_p_lims=False,
                      recycle=None, voltage_depend_loads=voltage_depend_loads)
 
     if net["_options"]["voltage_depend_loads"] and not (
