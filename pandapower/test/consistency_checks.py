@@ -118,7 +118,8 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     """
     bus_p = pd.Series(data=0., index=net.bus.index)
     bus_q = pd.Series(data=0., index=net.bus.index)
-    bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
+    if "bus_dc" in net and net.bus_dc.shape[0] > 0:
+        bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
 
     for idx, tab in net.ext_grid.iterrows():
         if tab.in_service:
@@ -180,7 +181,8 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         bus_p_dc.at[tab.bus_dc_minus] += net.res_b2b_vsc.p_dc_mw_m.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
-    assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
+    if "bus_dc" in net and net.bus_dc.shape[0] > 0:
+        assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
     if test_q:
         assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
 
