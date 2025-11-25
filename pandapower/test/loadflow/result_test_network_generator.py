@@ -287,7 +287,7 @@ def add_test_gen(net):
 
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_gen(net, b3, p_mw=ps, vm_pu=vm_set_pu)
-    # adding out of serivce gens should not change the result
+    # adding out of service gens should not change the result
     create_gen(net, b2, p_mw=ps, vm_pu=vm_set_pu, in_service=False, index=get_free_id(net.gen) + 1)
 
     net.last_added_case = "test_gen"
@@ -350,7 +350,7 @@ def add_test_enforce_qlims_sgen(net):
 
 
 def add_test_enforce_plims_sgen(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_enforce_plims_sgen")
+    _, b2, _ = add_grid_connection(net, zone="test_enforce_plims_sgen")
     pl = 1.200
     ql = 1.100
     ps = 0.500
