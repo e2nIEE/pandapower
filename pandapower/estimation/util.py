@@ -205,14 +205,15 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
     # Added degree result for branches
     for br_type in branch_meas_type:
         for side in branch_meas_type[br_type]['side']:
-            p, q, vm, va = net["res_" + br_type]["p_%s_mw" % side].values, \
-                           net["res_" + br_type]["q_%s_mvar" % side].values, \
-                           net["res_" + br_type]["vm_%s_pu" % side].values, \
-                           net["res_" + br_type]["va_%s_degree" % side].values
-            S = p + q * 1j
-            V = vm * np.exp(np.deg2rad(va) * 1j)
-            I = np.conj(S / V)
-            net["res_" + br_type]["ia_%s_degree" % side] = np.rad2deg(np.angle(I))
+            if "res_" + br_type in net:
+                p, q, vm, va = net["res_" + br_type]["p_%s_mw" % side].values, \
+                               net["res_" + br_type]["q_%s_mvar" % side].values, \
+                               net["res_" + br_type]["vm_%s_pu" % side].values, \
+                               net["res_" + br_type]["va_%s_degree" % side].values
+                S = p + q * 1j
+                V = vm * np.exp(np.deg2rad(va) * 1j)
+                I = np.conj(S / V)
+                net["res_" + br_type]["ia_%s_degree" % side] = np.rad2deg(np.angle(I))
 
     for bus_ix, bus_res in net.res_bus.iterrows():
         for meas_type in bus_meas_types:
@@ -227,7 +228,7 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
     remove_shunt_injection_from_meas(net,"ward")
 
     for br_type in branch_meas_type:
-        if not net['res_' + br_type].empty:
+        if 'res_' + br_type in net and not net['res_' + br_type].empty:
             for br_ix, br_res in net['res_' + br_type].iterrows():
                 for side in branch_meas_type[br_type]['side']:
                     for meas_type in branch_meas_type[br_type]['meas_type']:
