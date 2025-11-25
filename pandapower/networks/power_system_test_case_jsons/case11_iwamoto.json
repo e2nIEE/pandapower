@@ -59,7 +59,7 @@
     "sgen": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"sn_mva\",\"scaling\",\"in_service\",\"type\",\"current_source\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"sn_mva\",\"scaling\",\"in_service\",\"type\",\"current_source\",\"id_q_capability_characteristic\",\"reactive_capability_curve\",\"curve_style\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -70,7 +70,10 @@
         "scaling": "float64",
         "in_service": "bool",
         "type": "object",
-        "current_source": "bool"
+        "current_source": "bool",
+        "id_q_capability_characteristic": "Int64",
+        "reactive_capability_curve": "bool",
+        "curve_style": "object"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -167,7 +170,7 @@
     "gen": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"vm_pu\",\"sn_mva\",\"min_q_mvar\",\"max_q_mvar\",\"scaling\",\"slack\",\"in_service\",\"slack_weight\",\"type\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"vm_pu\",\"sn_mva\",\"min_q_mvar\",\"max_q_mvar\",\"scaling\",\"slack\",\"in_service\",\"slack_weight\",\"type\",\"id_q_capability_characteristic\",\"reactive_capability_curve\",\"curve_style\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -181,7 +184,10 @@
         "slack": "bool",
         "in_service": "bool",
         "slack_weight": "float64",
-        "type": "object"
+        "type": "object",
+        "id_q_capability_characteristic": "Int64",
+        "reactive_capability_curve": "bool",
+        "curve_style": "object"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -207,7 +213,7 @@
     "shunt": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"bus\",\"name\",\"q_mvar\",\"p_mw\",\"vn_kv\",\"step\",\"max_step\",\"in_service\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10],\"data\":[[0,1,0.791,0.0,1.0,1,1,true],[1,2,-0.75,0.0,1.0,1,1,true],[2,3,-0.001,0.0,1.0,1,1,true],[3,4,1.232,-0.001,1.0,1,1,true],[4,5,-0.077,0.0,1.0,1,1,true],[5,6,-1.133,0.0,1.0,1,1,true],[6,7,0.559,0.421,1.0,1,1,true],[7,8,-0.033,-0.309,1.0,1,1,true],[8,9,-0.337,-0.034,1.0,1,1,true],[9,10,1.205,0.121,1.0,1,1,true],[10,11,-0.957,-0.091,1.0,1,1,true]]}",
+      "_object": "{\"columns\":[\"bus\",\"name\",\"q_mvar\",\"p_mw\",\"vn_kv\",\"step\",\"max_step\",\"in_service\",\"id_characteristic_table\",\"step_dependency_table\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10],\"data\":[[0,1,0.791,0.0,1.0,1,1,true,null,false],[1,2,-0.75,0.0,1.0,1,1,true,null,false],[2,3,-0.001,0.0,1.0,1,1,true,null,false],[3,4,1.232,-0.001,1.0,1,1,true,null,false],[4,5,-0.077,0.0,1.0,1,1,true,null,false],[5,6,-1.133,0.0,1.0,1,1,true,null,false],[6,7,0.559,0.421,1.0,1,1,true,null,false],[7,8,-0.033,-0.309,1.0,1,1,true,null,false],[8,9,-0.337,-0.034,1.0,1,1,true,null,false],[9,10,1.205,0.121,1.0,1,1,true,null,false],[10,11,-0.957,-0.091,1.0,1,1,true,null,false]]}",
       "orient": "split",
       "dtype": {
         "bus": "uint32",
@@ -217,7 +223,9 @@
         "vn_kv": "float64",
         "step": "uint32",
         "max_step": "uint32",
-        "in_service": "bool"
+        "in_service": "bool",
+        "id_characteristic_table": "Int64",
+        "step_dependency_table": "bool"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -367,12 +375,12 @@
         "i0_percent": "float64",
         "shift_degree": "float64",
         "tap_side": "object",
-        "tap_neutral": "int32",
-        "tap_min": "int32",
-        "tap_max": "int32",
+        "tap_neutral": "float64",
+        "tap_min": "float64",
+        "tap_max": "float64",
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
-        "tap_pos": "int32",
+        "tap_pos": "float64",
         "tap_phase_shifter": "bool",
         "parallel": "uint32",
         "df": "float64",
@@ -410,12 +418,12 @@
         "shift_mv_degree": "float64",
         "shift_lv_degree": "float64",
         "tap_side": "object",
-        "tap_neutral": "int32",
-        "tap_min": "int32",
-        "tap_max": "int32",
+        "tap_neutral": "float64",
+        "tap_min": "float64",
+        "tap_max": "float64",
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
-        "tap_pos": "int32",
+        "tap_pos": "float64",
         "tap_at_star_point": "bool",
         "in_service": "bool"
       },
@@ -605,7 +613,87 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "version": "3.0.0.dev1",
+    "source_dc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"bus_dc\",\"vm_pu\",\"in_service\",\"type\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "bus_dc": "uint32",
+        "vm_pu": "float64",
+        "in_service": "bool",
+        "type": "object"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "load_dc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"bus_dc\",\"p_dc_mw\",\"scaling\",\"in_service\",\"controllable\",\"type\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "bus_dc": "uint32",
+        "p_dc_mw": "float64",
+        "scaling": "float64",
+        "in_service": "bool",
+        "controllable": "bool",
+        "type": "object"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "b2b_vsc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"bus_dc_plus\",\"bus_dc_minus\",\"r_ohm\",\"x_ohm\",\"r_dc_ohm\",\"pl_dc_mw\",\"control_mode_ac\",\"control_value_ac\",\"control_mode_dc\",\"control_value_dc\",\"controllable\",\"in_service\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "bus": "uint32",
+        "bus_dc_plus": "uint32",
+        "bus_dc_minus": "uint32",
+        "r_ohm": "float64",
+        "x_ohm": "float64",
+        "r_dc_ohm": "float64",
+        "pl_dc_mw": "float64",
+        "control_mode_ac": "object",
+        "control_value_ac": "float64",
+        "control_mode_dc": "object",
+        "control_value_dc": "float64",
+        "controllable": "bool",
+        "in_service": "bool"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "bi_vsc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"bus_dc_plus\",\"bus_dc_minus\",\"r_ohm\",\"x_ohm\",\"r_dc_ohm\",\"pl_dc_mw\",\"control_mode_ac\",\"control_value_ac\",\"control_mode_dc\",\"control_value_dc\",\"controllable\",\"in_service\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "bus": "uint32",
+        "bus_dc_plus": "uint32",
+        "bus_dc_minus": "uint32",
+        "r_ohm": "float64",
+        "x_ohm": "float64",
+        "r_dc_ohm": "float64",
+        "pl_dc_mw": "float64",
+        "control_mode_ac": "object",
+        "control_value_ac": "float64",
+        "control_mode_dc": "object",
+        "control_value_dc": "float64",
+        "controllable": "bool",
+        "in_service": "bool"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "version": "3.2.0",
     "format_version": "3.1.0",
     "converged": false,
     "OPF_converged": false,
@@ -1374,10 +1462,22 @@
       "fuse": {},
       "line_dc": {}
     },
+    "user_pf_options": {},
+    "characteristic": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "object": "object"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
     "res_bus": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"vm_pu\",\"va_degree\",\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"vm_pu\",\"va_degree\",\"p_mw\",\"q_mvar\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10],\"data\":[[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null],[null,null,null,null]]}",
       "orient": "split",
       "dtype": {
         "vm_pu": "float64",
@@ -1388,22 +1488,10 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "res_bus_dc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"vm_pu\",\"p_mw\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "vm_pu": "float64",
-        "p_mw": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
     "res_line": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\",\"i_ka\",\"vm_from_pu\",\"va_from_degree\",\"vm_to_pu\",\"va_to_degree\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\",\"i_ka\",\"vm_from_pu\",\"va_from_degree\",\"vm_to_pu\",\"va_to_degree\",\"loading_percent\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10],\"data\":[[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null,null,null]]}",
       "orient": "split",
       "dtype": {
         "p_from_mw": "float64",
@@ -1424,100 +1512,10 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "res_line_dc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_from_mw\",\"p_to_mw\",\"pl_mw\",\"i_from_ka\",\"i_to_ka\",\"i_ka\",\"vm_from_pu\",\"vm_to_pu\",\"loading_percent\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_from_mw": "float64",
-        "p_to_mw": "float64",
-        "pl_mw": "float64",
-        "i_from_ka": "float64",
-        "i_to_ka": "float64",
-        "i_ka": "float64",
-        "vm_from_pu": "float64",
-        "vm_to_pu": "float64",
-        "loading_percent": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_trafo": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_hv_mw\",\"q_hv_mvar\",\"p_lv_mw\",\"q_lv_mvar\",\"pl_mw\",\"ql_mvar\",\"i_hv_ka\",\"i_lv_ka\",\"vm_hv_pu\",\"va_hv_degree\",\"vm_lv_pu\",\"va_lv_degree\",\"loading_percent\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_hv_mw": "float64",
-        "q_hv_mvar": "float64",
-        "p_lv_mw": "float64",
-        "q_lv_mvar": "float64",
-        "pl_mw": "float64",
-        "ql_mvar": "float64",
-        "i_hv_ka": "float64",
-        "i_lv_ka": "float64",
-        "vm_hv_pu": "float64",
-        "va_hv_degree": "float64",
-        "vm_lv_pu": "float64",
-        "va_lv_degree": "float64",
-        "loading_percent": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_trafo3w": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_hv_mw\",\"q_hv_mvar\",\"p_mv_mw\",\"q_mv_mvar\",\"p_lv_mw\",\"q_lv_mvar\",\"pl_mw\",\"ql_mvar\",\"i_hv_ka\",\"i_mv_ka\",\"i_lv_ka\",\"vm_hv_pu\",\"va_hv_degree\",\"vm_mv_pu\",\"va_mv_degree\",\"vm_lv_pu\",\"va_lv_degree\",\"va_internal_degree\",\"vm_internal_pu\",\"loading_percent\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_hv_mw": "float64",
-        "q_hv_mvar": "float64",
-        "p_mv_mw": "float64",
-        "q_mv_mvar": "float64",
-        "p_lv_mw": "float64",
-        "q_lv_mvar": "float64",
-        "pl_mw": "float64",
-        "ql_mvar": "float64",
-        "i_hv_ka": "float64",
-        "i_mv_ka": "float64",
-        "i_lv_ka": "float64",
-        "vm_hv_pu": "float64",
-        "va_hv_degree": "float64",
-        "vm_mv_pu": "float64",
-        "va_mv_degree": "float64",
-        "vm_lv_pu": "float64",
-        "va_lv_degree": "float64",
-        "va_internal_degree": "float64",
-        "vm_internal_pu": "float64",
-        "loading_percent": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_impedance": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_from_mw": "float64",
-        "q_from_mvar": "float64",
-        "p_to_mw": "float64",
-        "q_to_mvar": "float64",
-        "pl_mw": "float64",
-        "ql_mvar": "float64",
-        "i_from_ka": "float64",
-        "i_to_ka": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
     "res_ext_grid": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[0],\"data\":[[null,null]]}",
       "orient": "split",
       "dtype": {
         "p_mw": "float64",
@@ -1529,43 +1527,7 @@
     "res_load": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_motor": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_sgen": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_storage": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[0,1,2,3,4],\"data\":[[null,null],[null,null],[null,null],[null,null],[null,null]]}",
       "orient": "split",
       "dtype": {
         "p_mw": "float64",
@@ -1577,594 +1539,12 @@
     "res_shunt": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"vm_pu\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"vm_pu\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10],\"data\":[[null,null,null],[null,null,null],[null,null,null],[null,null,null],[null,null,null],[null,null,null],[null,null,null],[null,null,null],[null,null,null],[null,null,null],[null,null,null]]}",
       "orient": "split",
       "dtype": {
         "p_mw": "float64",
         "q_mvar": "float64",
         "vm_pu": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_gen": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"va_degree\",\"vm_pu\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64",
-        "va_degree": "float64",
-        "vm_pu": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_ward": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"vm_pu\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64",
-        "vm_pu": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_xward": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"vm_pu\",\"va_internal_degree\",\"vm_internal_pu\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64",
-        "vm_pu": "float64",
-        "va_internal_degree": "float64",
-        "vm_internal_pu": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_dcline": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"vm_from_pu\",\"va_from_degree\",\"vm_to_pu\",\"va_to_degree\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_from_mw": "float64",
-        "q_from_mvar": "float64",
-        "p_to_mw": "float64",
-        "q_to_mvar": "float64",
-        "pl_mw": "float64",
-        "vm_from_pu": "float64",
-        "va_from_degree": "float64",
-        "vm_to_pu": "float64",
-        "va_to_degree": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_asymmetric_load": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_asymmetric_sgen": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_switch": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\",\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "i_ka": "float64",
-        "loading_percent": "float64",
-        "p_from_mw": "float64",
-        "q_from_mvar": "float64",
-        "p_to_mw": "float64",
-        "q_to_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_tcsc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"thyristor_firing_angle_degree\",\"x_ohm\",\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_ka\",\"vm_from_pu\",\"va_from_degree\",\"vm_to_pu\",\"va_to_degree\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "thyristor_firing_angle_degree": "float64",
-        "x_ohm": "float64",
-        "p_from_mw": "float64",
-        "q_from_mvar": "float64",
-        "p_to_mw": "float64",
-        "q_to_mvar": "float64",
-        "pl_mw": "float64",
-        "ql_mvar": "float64",
-        "i_ka": "float64",
-        "vm_from_pu": "float64",
-        "va_from_degree": "float64",
-        "vm_to_pu": "float64",
-        "va_to_degree": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_svc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"thyristor_firing_angle_degree\",\"x_ohm\",\"q_mvar\",\"vm_pu\",\"va_degree\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "thyristor_firing_angle_degree": "float64",
-        "x_ohm": "float64",
-        "q_mvar": "float64",
-        "vm_pu": "float64",
-        "va_degree": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_ssc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"q_mvar\",\"vm_internal_pu\",\"va_internal_degree\",\"vm_pu\",\"va_degree\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "q_mvar": "float64",
-        "vm_internal_pu": "float64",
-        "va_internal_degree": "float64",
-        "vm_pu": "float64",
-        "va_degree": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_vsc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"p_dc_mw\",\"vm_internal_pu\",\"va_internal_degree\",\"vm_pu\",\"va_degree\",\"vm_internal_dc_pu\",\"vm_dc_pu\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64",
-        "p_dc_mw": "float64",
-        "vm_internal_pu": "float64",
-        "va_internal_degree": "float64",
-        "vm_pu": "float64",
-        "va_degree": "float64",
-        "vm_internal_dc_pu": "float64",
-        "vm_dc_pu": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_bus_est": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"vm_pu\",\"va_degree\",\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "vm_pu": "float64",
-        "va_degree": "float64",
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_line_est": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\",\"i_ka\",\"vm_from_pu\",\"va_from_degree\",\"vm_to_pu\",\"va_to_degree\",\"loading_percent\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_from_mw": "float64",
-        "q_from_mvar": "float64",
-        "p_to_mw": "float64",
-        "q_to_mvar": "float64",
-        "pl_mw": "float64",
-        "ql_mvar": "float64",
-        "i_from_ka": "float64",
-        "i_to_ka": "float64",
-        "i_ka": "float64",
-        "vm_from_pu": "float64",
-        "va_from_degree": "float64",
-        "vm_to_pu": "float64",
-        "va_to_degree": "float64",
-        "loading_percent": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_trafo_est": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_hv_mw\",\"q_hv_mvar\",\"p_lv_mw\",\"q_lv_mvar\",\"pl_mw\",\"ql_mvar\",\"i_hv_ka\",\"i_lv_ka\",\"vm_hv_pu\",\"va_hv_degree\",\"vm_lv_pu\",\"va_lv_degree\",\"loading_percent\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_hv_mw": "float64",
-        "q_hv_mvar": "float64",
-        "p_lv_mw": "float64",
-        "q_lv_mvar": "float64",
-        "pl_mw": "float64",
-        "ql_mvar": "float64",
-        "i_hv_ka": "float64",
-        "i_lv_ka": "float64",
-        "vm_hv_pu": "float64",
-        "va_hv_degree": "float64",
-        "vm_lv_pu": "float64",
-        "va_lv_degree": "float64",
-        "loading_percent": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_trafo3w_est": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_hv_mw\",\"q_hv_mvar\",\"p_mv_mw\",\"q_mv_mvar\",\"p_lv_mw\",\"q_lv_mvar\",\"pl_mw\",\"ql_mvar\",\"i_hv_ka\",\"i_mv_ka\",\"i_lv_ka\",\"vm_hv_pu\",\"va_hv_degree\",\"vm_mv_pu\",\"va_mv_degree\",\"vm_lv_pu\",\"va_lv_degree\",\"va_internal_degree\",\"vm_internal_pu\",\"loading_percent\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_hv_mw": "float64",
-        "q_hv_mvar": "float64",
-        "p_mv_mw": "float64",
-        "q_mv_mvar": "float64",
-        "p_lv_mw": "float64",
-        "q_lv_mvar": "float64",
-        "pl_mw": "float64",
-        "ql_mvar": "float64",
-        "i_hv_ka": "float64",
-        "i_mv_ka": "float64",
-        "i_lv_ka": "float64",
-        "vm_hv_pu": "float64",
-        "va_hv_degree": "float64",
-        "vm_mv_pu": "float64",
-        "va_mv_degree": "float64",
-        "vm_lv_pu": "float64",
-        "va_lv_degree": "float64",
-        "va_internal_degree": "float64",
-        "vm_internal_pu": "float64",
-        "loading_percent": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_impedance_est": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\",\"pl_mw\",\"ql_mvar\",\"i_from_ka\",\"i_to_ka\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_from_mw": "float64",
-        "q_from_mvar": "float64",
-        "p_to_mw": "float64",
-        "q_to_mvar": "float64",
-        "pl_mw": "float64",
-        "ql_mvar": "float64",
-        "i_from_ka": "float64",
-        "i_to_ka": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_switch_est": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\",\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "i_ka": "float64",
-        "loading_percent": "float64",
-        "p_from_mw": "float64",
-        "q_from_mvar": "float64",
-        "p_to_mw": "float64",
-        "q_to_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_shunt_est": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"vm_pu\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64",
-        "vm_pu": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_bus_sc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_line_sc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_trafo_sc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_trafo3w_sc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_ext_grid_sc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_gen_sc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_sgen_sc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_switch_sc": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_bus_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"vm_a_pu\",\"va_a_degree\",\"vm_b_pu\",\"va_b_degree\",\"vm_c_pu\",\"va_c_degree\",\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "vm_a_pu": "float64",
-        "va_a_degree": "float64",
-        "vm_b_pu": "float64",
-        "va_b_degree": "float64",
-        "vm_c_pu": "float64",
-        "va_c_degree": "float64",
-        "p_a_mw": "float64",
-        "q_a_mvar": "float64",
-        "p_b_mw": "float64",
-        "q_b_mvar": "float64",
-        "p_c_mw": "float64",
-        "q_c_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_line_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_a_from_mw\",\"q_a_from_mvar\",\"p_b_from_mw\",\"q_b_from_mvar\",\"p_c_from_mw\",\"q_c_from_mvar\",\"p_a_to_mw\",\"q_a_to_mvar\",\"p_b_to_mw\",\"q_b_to_mvar\",\"p_c_to_mw\",\"q_c_to_mvar\",\"p_a_l_mw\",\"q_a_l_mvar\",\"p_b_l_mw\",\"q_b_l_mvar\",\"p_c_l_mw\",\"q_c_l_mvar\",\"i_a_from_ka\",\"i_a_to_ka\",\"i_b_from_ka\",\"i_b_to_ka\",\"i_c_from_ka\",\"i_c_to_ka\",\"i_a_ka\",\"i_b_ka\",\"i_c_ka\",\"i_n_from_ka\",\"i_n_to_ka\",\"i_n_ka\",\"loading_a_percent\",\"loading_b_percent\",\"loading_c_percent\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_a_from_mw": "float64",
-        "q_a_from_mvar": "float64",
-        "p_b_from_mw": "float64",
-        "q_b_from_mvar": "float64",
-        "p_c_from_mw": "float64",
-        "q_c_from_mvar": "float64",
-        "p_a_to_mw": "float64",
-        "q_a_to_mvar": "float64",
-        "p_b_to_mw": "float64",
-        "q_b_to_mvar": "float64",
-        "p_c_to_mw": "float64",
-        "q_c_to_mvar": "float64",
-        "p_a_l_mw": "float64",
-        "q_a_l_mvar": "float64",
-        "p_b_l_mw": "float64",
-        "q_b_l_mvar": "float64",
-        "p_c_l_mw": "float64",
-        "q_c_l_mvar": "float64",
-        "i_a_from_ka": "float64",
-        "i_a_to_ka": "float64",
-        "i_b_from_ka": "float64",
-        "i_b_to_ka": "float64",
-        "i_c_from_ka": "float64",
-        "i_c_to_ka": "float64",
-        "i_a_ka": "float64",
-        "i_b_ka": "float64",
-        "i_c_ka": "float64",
-        "i_n_from_ka": "float64",
-        "i_n_to_ka": "float64",
-        "i_n_ka": "float64",
-        "loading_a_percent": "float64",
-        "loading_b_percent": "float64",
-        "loading_c_percent": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_trafo_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_a_hv_mw\",\"q_a_hv_mvar\",\"p_b_hv_mw\",\"q_b_hv_mvar\",\"p_c_hv_mw\",\"q_c_hv_mvar\",\"p_a_lv_mw\",\"q_a_lv_mvar\",\"p_b_lv_mw\",\"q_b_lv_mvar\",\"p_c_lv_mw\",\"q_c_lv_mvar\",\"p_a_l_mw\",\"q_a_l_mvar\",\"p_b_l_mw\",\"q_b_l_mvar\",\"p_c_l_mw\",\"q_c_l_mvar\",\"i_a_hv_ka\",\"i_a_lv_ka\",\"i_b_hv_ka\",\"i_b_lv_ka\",\"i_c_hv_ka\",\"i_c_lv_ka\",\"loading_a_percent\",\"loading_b_percent\",\"loading_c_percent\",\"loading_percent\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_a_hv_mw": "float64",
-        "q_a_hv_mvar": "float64",
-        "p_b_hv_mw": "float64",
-        "q_b_hv_mvar": "float64",
-        "p_c_hv_mw": "float64",
-        "q_c_hv_mvar": "float64",
-        "p_a_lv_mw": "float64",
-        "q_a_lv_mvar": "float64",
-        "p_b_lv_mw": "float64",
-        "q_b_lv_mvar": "float64",
-        "p_c_lv_mw": "float64",
-        "q_c_lv_mvar": "float64",
-        "p_a_l_mw": "float64",
-        "q_a_l_mvar": "float64",
-        "p_b_l_mw": "float64",
-        "q_b_l_mvar": "float64",
-        "p_c_l_mw": "float64",
-        "q_c_l_mvar": "float64",
-        "i_a_hv_ka": "float64",
-        "i_a_lv_ka": "float64",
-        "i_b_hv_ka": "float64",
-        "i_b_lv_ka": "float64",
-        "i_c_hv_ka": "float64",
-        "i_c_lv_ka": "float64",
-        "loading_a_percent": "float64",
-        "loading_b_percent": "float64",
-        "loading_c_percent": "float64",
-        "loading_percent": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_ext_grid_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_a_mw": "float64",
-        "q_a_mvar": "float64",
-        "p_b_mw": "float64",
-        "q_b_mvar": "float64",
-        "p_c_mw": "float64",
-        "q_c_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_shunt_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_load_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_sgen_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_storage_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_mw": "float64",
-        "q_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_asymmetric_load_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_a_mw": "float64",
-        "q_a_mvar": "float64",
-        "p_b_mw": "float64",
-        "q_b_mvar": "float64",
-        "p_c_mw": "float64",
-        "q_c_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "res_asymmetric_sgen_3ph": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_a_mw\",\"q_a_mvar\",\"p_b_mw\",\"q_b_mvar\",\"p_c_mw\",\"q_c_mvar\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "p_a_mw": "float64",
-        "q_a_mvar": "float64",
-        "p_b_mw": "float64",
-        "q_b_mvar": "float64",
-        "p_c_mw": "float64",
-        "q_c_mvar": "float64"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
-    "user_pf_options": {},
-    "characteristic": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "object": "object"
       },
       "is_multiindex": false,
       "is_multicolumn": false
