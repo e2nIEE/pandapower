@@ -1,7 +1,6 @@
 import copy
 from collections import defaultdict
 from functools import partial
-from collections.abc import Callable
 import logging
 from typing import Any
 
@@ -530,7 +529,7 @@ class SubNetProblemTest(DiagnosticFunction):
                 self.out.error(f"Calculation on subnets failed: {str(e)}")
                 raise e
 
-        return check_result if check_result else None
+        return check_result if not all(check_result.values()) else None
 
     def report(self, error: Exception | None, results: dict[str, bool] | None) -> None:
         # error and success checks
@@ -582,7 +581,7 @@ class OptimisticPowerflow(DiagnosticFunction):
             net.line.c_nf_per_km = 0
 
             run(net)
-            check_result["c_nf_per_km_zero"] = True
+            return None
         except expected_exceptions:
             check_result["c_nf_per_km_zero"] = False
             self.out.debug(f"Line susceptance = 0, did not solve the problem.")

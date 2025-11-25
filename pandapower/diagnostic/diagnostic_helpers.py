@@ -4,12 +4,13 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Literal
 from abc import abstractmethod, ABC
 from collections import defaultdict
 
 import numpy as np
 
+from pandapower import pandapowerNet
 from pandapower.auxiliary import ADict
 
 logger = logging.getLogger(__name__)
@@ -232,3 +233,69 @@ def check_switch_type(element, element_index, column):
     if element[column] not in ["b", "l", "t", "t3"]:
         return element_index
     return None
+
+
+def diagnostic(
+        net: pandapowerNet,
+        report_style: Literal['compact', 'detailed'] | None,
+        warnings_only: bool,
+        return_result_dict: bool,
+        overload_scaling_factor: float = 0.001,
+        lines_min_length_km: float = 0.,
+        lines_min_z_ohm: float = 0.,
+        nom_voltage_tolerance: float = 0.3,
+        **kwargs
+):
+    """
+    Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
+
+    INPUT:
+     **net** (pandapowerNet) : pandapower network
+
+    OPTIONAL:
+     - **report_style** (string, 'detailed') : style of the report, that gets ouput in the console
+
+      'detailled': full report with high level of additional descriptions
+      'compact'  : more compact report, containing essential information only
+      'None'     : no report
+
+
+     - **warnings_only** (boolean, False): Filters logging output for warnings
+
+      True: logging output for errors only
+      False: logging output for all checks, regardless if errors were found or not
+
+     - **return_result_dict** (boolean, True): returns a dictionary containing all check results
+
+      True: returns dict with all check results
+      False: no result dict
+
+     - **overload_scaling_factor** (float, 0.001): downscaling factor for loads and generation \
+     for overload check
+
+     - **lines_min_length_km** (float, 0): minimum length_km allowed for lines
+
+     - **lines_min_z_ohm** (float, 0): minimum z_ohm allowed for lines
+
+     - **nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal \
+     voltages and bus voltages
+
+     - **kwargs** - Keyword arguments for the power flow function to use during tests. If "run" is \
+     in kwargs the default call to runpp() is replaced by the function kwargs["run"]
+
+    OUTPUT:
+     - **diag_results** (dict): dict that contains the indices of all elements where errors were found
+
+      Format: {'check_name': check_results}
+
+    EXAMPLE:
+    >>> from pandapower.diagnostic.diagnostic_helpers import diagnostic
+    >>> diagnostic(net, report_style='compact', warnings_only=True)
+
+    """
+    from pandapower.diagnostic.diagnostic import Diagnostic
+    d = Diagnostic()
+    kwargs['overload_scaling_factor'] = overload_scaling_factor
+    kwargs['lines_min_length_km'] = lines_min_length_km
+    kwargs['nom_voltage_tolerance'] = nom_voltage_tolerance
+    return d.diagnose_network(net, report_style, warnings_only, return_result_dict, **kwargs)
