@@ -5,6 +5,7 @@ from pandapower.network_schema.tools.validation.group_dependency import (
     create_column_group_dependency_validation_func,
     create_column_dependency_checks_from_metadata,
 )
+from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
 
 _trafo3w_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
@@ -65,21 +66,21 @@ _trafo3w_columns = {
     ),
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
     "i0_percent": pa.Column(float, description="open loop losses [%]"),
-    "shift_mv_degree": pa.Column(
-        float, description="transformer phase shift angle at the MV side"
-    ),
-    "shift_lv_degree": pa.Column(
-        float, description="transformer phase shift angle at the LV side"
-    ),
+    "shift_mv_degree": pa.Column(float, description="transformer phase shift angle at the MV side"),
+    "shift_lv_degree": pa.Column(float, description="transformer phase shift angle at the LV side"),
     "tap_side": pa.Column(
         pd.StringDtype,
-        pa.Check.isin(["hv", "mv", "lv"]), nullable=True, required=False,
+        pa.Check.isin(["hv", "mv", "lv"]),
+        nullable=True,
+        required=False,
         description="defines if tap changer is positioned on high- medium- or low voltage side",
     ),
     "tap_neutral": pa.Column(float, nullable=True, required=False, description=""),
     "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
-    "tap_step_percent": pa.Column(float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"),
+    "tap_step_percent": pa.Column(
+        float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"
+    ),
     "tap_step_degree": pa.Column(float, nullable=True, required=False, description="tap step size for voltage angle"),
     "tap_at_star_point": pa.Column(
         pd.BooleanDtype,
@@ -153,6 +154,9 @@ trafo3w_checks += create_column_dependency_checks_from_metadata(
     ],
     _trafo3w_columns,
 )
+trafo3w_checks += create_lower_than_column_check(first_element="vkr_hv_percent", second_element="vk_hv_percent")
+trafo3w_checks += create_lower_than_column_check(first_element="vkr_mv_percent", second_element="vk_mv_percent")
+trafo3w_checks += create_lower_than_column_check(first_element="vkr_lv_percent", second_element="vk_lv_percent")
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,

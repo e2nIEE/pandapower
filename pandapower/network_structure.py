@@ -4,6 +4,7 @@ from pandapower._version import __version__, __format_version__
 from pandapower.network_schema.tools.helper import get_dtypes
 from pandapower.network_schema import *
 
+
 def get_structure_dict(required_only: bool = True) -> dict:
     """
     This function returns the structure dict of the network

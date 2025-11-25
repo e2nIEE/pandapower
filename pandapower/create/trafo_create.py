@@ -506,8 +506,6 @@ def create_transformer_from_parameters(
         entries["tap_pos"] = entries["tap_neutral"]
     else:
         entries["tap_pos"] = tap_pos
-        if type(tap_pos) is float:
-            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
 
     for key in ["tap_dependent_impedance", "vk_percent_characteristic", "vkr_percent_characteristic"]:
         if key in kwargs:

@@ -16,6 +16,7 @@ from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
+    ADict,
     pandapowerNet,
     get_free_id,
     _preserve_dtypes,
@@ -28,6 +29,20 @@ from pandapower.network_structure import get_structure_dict
 
 
 logger = logging.getLogger(__name__)
+
+
+def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
+    if table_name in net and column_name in net[table_name]:
+        return
+    # Add Table:
+    net_struct_dict = get_structure_dict()
+    if table_name not in net:
+        if table_name not in net_struct_dict:
+            raise ValueError(f"Table {table_name} has no definition in network structure.")
+        net[table_name] = pd.DataFrame(columns=net_struct_dict[table_name].keys(), dtype=net_struct_dict[table_name].values())
+    # Add Optional Column:
+    dtype = get_structure_dict(False)[table_name][column_name]
+    net[table_name][column_name] = pd.Series(dtype=dtype)
 
 
 def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int], nr_buses: int) -> list[str]:

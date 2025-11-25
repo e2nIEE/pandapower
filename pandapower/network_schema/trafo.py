@@ -5,6 +5,7 @@ from pandapower.network_schema.tools.validation.group_dependency import (
     create_column_group_dependency_validation_func,
     create_column_dependency_checks_from_metadata,
 )
+from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
 
 _trafo_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
@@ -220,6 +221,7 @@ trafo_checks += create_column_dependency_checks_from_metadata(
     ],
     _trafo_columns,
 )
+trafo_checks += create_lower_than_column_check(first_element="min_angle_degree", second_element="max_angle_degree")
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,
