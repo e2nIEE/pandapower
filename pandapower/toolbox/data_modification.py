@@ -373,19 +373,20 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
     # run reindex_elements() for all element_types
     for et in element_types:
-        net[et] = net[et].sort_index()
-        new_index = list(np.arange(start, len(net[et]) + start))
-        if et == "trafo_characteristic_table":
-            ids = net[et].id_characteristic.dropna().unique()
-            reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
-        elif et in net and isinstance(net[et], pd.DataFrame):
-            if et in ["bus_geodata", "line_geodata"]:
-                logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
-                            "already included by et=='" + et.split("_")[0] + "'.")
+        if et in net:
+            net[et] = net[et].sort_index()
+            new_index = list(np.arange(start, len(net[et]) + start))
+            if et == "trafo_characteristic_table":
+                ids = net[et].id_characteristic.dropna().unique()
+                reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
+            elif et in net and isinstance(net[et], pd.DataFrame):
+                if et in ["bus_geodata", "line_geodata"]:
+                    logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
+                                "already included by et=='" + et.split("_")[0] + "'.")
+                else:
+                    reindex_elements(net, et, new_index)
             else:
-                reindex_elements(net, et, new_index)
-        else:
-            logger.debug("No indices could be changed for element '%s'." % et)
+                logger.debug("No indices could be changed for element '%s'." % et)
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
