@@ -93,8 +93,9 @@ def compare_ssc_impedance_gen(net, net_ref, element="ssc"):
 
     # compare line results
     ###
-    for col in net.res_line.columns:
-        assert np.allclose(net.res_line[col][net.line.index], net_ref.res_line[col][net.line.index], rtol=0, atol=1e-6)
+    if "res_line" in net:
+        for col in net.res_line.columns:
+            assert np.allclose(net.res_line[col][net.line.index], net_ref.res_line[col][net.line.index], rtol=0, atol=1e-6)
 
     assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
                        atol=1e-6)

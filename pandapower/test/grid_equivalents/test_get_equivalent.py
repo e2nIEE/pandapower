@@ -101,7 +101,7 @@ def check_elements_amount(net, elms_dict, check_all_pp_elements=True):
     if check_all_pp_elements:
         elms_dict.update({elm: 0 for elm in pp_elements() if elm not in elms_dict.keys()})
     for key, val in elms_dict.items():
-        if not net[key].shape[0] == val:
+        if net[key].shape[0] != val:
             raise ValueError("The net has %i %ss but %i are expected." % (
                 net[key].shape[0], key, int(val)))
 
@@ -356,7 +356,6 @@ def test_adopt_columns_to_separated_eq_elms():
 
 def test_equivalent_groups():
     net = example_multivoltage()
-    # net.sn_mva = 100
     for elm in pp_elements():
         if net[elm].shape[0] and not net[elm].name.duplicated().any():
             net[elm]["origin_id"] = net[elm].name
@@ -423,7 +422,7 @@ def test_shifter_degree():
     net.trafo3w.at[0, "shift_lv_degree"] = 150
     runpp(net, calculate_voltage_angles=True)
 
-    boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
+    boundary_buses = [net.trafo.hv_bus.values[1]] + list(net.trafo.lv_bus.values) + \
                      list(net.trafo3w.hv_bus.values) + list(net.trafo3w.lv_bus.values)
     i = net.ext_grid.bus.values[0]
 
@@ -538,9 +537,9 @@ def test_controller():
     assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 2]
     for i in net.controller.index:
         assert set(net_eq.controller.object[i].__dict__["element_index"]) - \
-               set(net.controller.object[i].__dict__["element_index"]) == set([])
+               set(net.controller.object[i].__dict__["element_index"]) == set()
         assert set(net_eq.controller.object[i].__dict__["profile_name"]) - \
-               set(net.controller.object[i].__dict__["profile_name"]) == set([])
+               set(net.controller.object[i].__dict__["profile_name"]) == set()
 
     net_eq = get_equivalent(net, "rei", [4, 8], [0],
                             retain_original_internal_indices=True)
