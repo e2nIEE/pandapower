@@ -12,7 +12,7 @@ class PFShortCircuitAnalysis:
     def __init__(self, app, proj_name, fault_type='LLL', calc_mode='max',
                  fault_impedance_rf=0.0, fault_impedance_xf=0.0,
                  lv_tol_percent=10, fault_location_index=None, activate_sgens_at_bus=None, activate_gens_at_bus=None,
-                 grounding_type=None, grounding_bank=None, multiphase=False):
+                 grounding_type=None, grounding_bank=None, multiphase=False, complete_method=False):
         """
                 Parameters:
                 - app: powerfactory.Application
@@ -44,6 +44,7 @@ class PFShortCircuitAnalysis:
         self.pf_results_bus_sc = None
         self.pf_results_branch_sc = None
         self.multiphase = multiphase
+        self.complete_method = complete_method
 
         # activate project
         app.ActivateProject(proj_name)
@@ -71,16 +72,7 @@ class PFShortCircuitAnalysis:
         fault_impedance_xf = self.fault_impedance_xf
         lv_tol_percent = self.lv_tol_percent
         fault_location_index = self.fault_location_index
-
-        self.activate_elements()
-        self.initialize_grounding() if self.grounding_type is not None else None
-        self.initialize_grounding_bank() if self.grounding_bank is not None else None
-        self.set_parameters_for_multiphase() if self.multiphase else None
-        res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
-                                fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
-                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
-        if res == 1:
-            raise UserWarning("short circuit results could not be calculated in powerfactory")
+        complete_method = self.complete_method
 
         bus_results = []
         bus_elements = app.GetCalcRelevantObjects('*.ElmTerm')
@@ -115,6 +107,24 @@ class PFShortCircuitAnalysis:
             "pf_va_c_degree": "m:phiul:C"
         }
 
+        self.activate_elements()
+        self.initialize_grounding() if self.grounding_type is not None else None
+        self.initialize_grounding_bank() if self.grounding_bank is not None else None
+        self.set_parameters_for_multiphase() if self.multiphase else None
+        res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
+                                fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
+                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index,
+                                complete_method=complete_method)
+
+        if res == 1:
+            if self.fault_type == 'LLL':
+                columns = list(result_variables_3ph.keys())
+            else:
+                columns = list(result_variables.keys())
+
+            columns.insert(0, 'name')
+            return pd.DataFrame(columns=columns)
+
         if fault_type == 'LLL':
             result_variables = result_variables_3ph
         elif fault_type == 'LLG' or fault_type == 'LG':
@@ -143,16 +153,7 @@ class PFShortCircuitAnalysis:
         fault_impedance_xf = self.fault_impedance_xf
         lv_tol_percent = self.lv_tol_percent
         fault_location_index = self.fault_location_index
-
-        self.activate_elements()
-        self.initialize_grounding() if self.grounding_type is not None else None
-        self.initialize_grounding_bank() if self.grounding_bank is not None else None
-        self.set_parameters_for_multiphase() if self.multiphase else None
-        res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
-                                fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
-                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index)
-        if res == 1:
-            raise UserWarning("short circuit results could not be calculated in powerfactory")
+        complete_method = self.complete_method
 
         line_results = []
         line_elements = app.GetCalcRelevantObjects('*.ElmLne')
@@ -205,6 +206,24 @@ class PFShortCircuitAnalysis:
             "pf_ikss_c_to_degree": "m:phii:bus2:C"
         }
 
+        self.activate_elements()
+        self.initialize_grounding() if self.grounding_type is not None else None
+        self.initialize_grounding_bank() if self.grounding_bank is not None else None
+        self.set_parameters_for_multiphase() if self.multiphase else None
+        res = run_short_circuit(app=app, fault_type=fault_type, calc_mode=calc_mode,
+                                fault_impedance_rf=fault_impedance_rf, fault_impedance_xf=fault_impedance_xf,
+                                lv_tol_percent=lv_tol_percent, fault_location_index=fault_location_index,
+                                complete_method=complete_method)
+
+        if res == 1:
+            if self.fault_type == 'LLL':
+                columns = list(result_variables_lines_3ph.keys())
+            else:
+                columns = list(result_variables_lines.keys())
+
+            columns.insert(0, 'name')
+            return pd.DataFrame(columns=columns)
+
         if fault_type == 'LLL':
             result_variables_lines = result_variables_lines_3ph
         elif fault_type == 'LLG' or fault_type == 'LG':
@@ -228,18 +247,18 @@ class PFShortCircuitAnalysis:
                     line_data["pf_va_from_degree"] = from_bus.GetAttribute("m:phiu")
                     line_data["pf_va_to_degree"] = to_bus.GetAttribute("m:phiu")
                 else:
-                    line_data["pf_vm_a_from_pu"] = from_bus.GetAttribute("m:u:A")
-                    line_data["pf_vm_b_from_pu"] = from_bus.GetAttribute("m:u:B")
-                    line_data["pf_vm_c_from_pu"] = from_bus.GetAttribute("m:u:C")
-                    line_data["pf_vm_a_to_pu"] = to_bus.GetAttribute("m:u:A")
-                    line_data["pf_vm_b_to_pu"] = to_bus.GetAttribute("m:u:B")
-                    line_data["pf_vm_c_to_pu"] = to_bus.GetAttribute("m:u:C")
-                    line_data["pf_va_a_from_degree"] = from_bus.GetAttribute("m:phiu:A")
-                    line_data["pf_va_b_from_degree"] = from_bus.GetAttribute("m:phiu:B")
-                    line_data["pf_va_c_from_degree"] = from_bus.GetAttribute("m:phiu:C")
-                    line_data["pf_va_a_to_degree"] = to_bus.GetAttribute("m:phiu:A")
-                    line_data["pf_va_b_to_degree"] = to_bus.GetAttribute("m:phiu:B")
-                    line_data["pf_va_c_to_degree"] = to_bus.GetAttribute("m:phiu:C")
+                    line_data["pf_vm_a_from_pu"] = safe_get(from_bus, "m:u:A")
+                    line_data["pf_vm_b_from_pu"] = safe_get(from_bus, "m:u:B")
+                    line_data["pf_vm_c_from_pu"] = safe_get(from_bus, "m:u:C")
+                    line_data["pf_vm_a_to_pu"] = safe_get(to_bus, "m:u:A")
+                    line_data["pf_vm_b_to_pu"] = safe_get(to_bus, "m:u:B")
+                    line_data["pf_vm_c_to_pu"] = safe_get(to_bus, "m:u:C")
+                    line_data["pf_va_a_from_degree"] = safe_get(from_bus, "m:phiu:A")
+                    line_data["pf_va_b_from_degree"] = safe_get(from_bus, "m:phiu:B")
+                    line_data["pf_va_c_from_degree"] = safe_get(from_bus, "m:phiu:C")
+                    line_data["pf_va_a_to_degree"] = safe_get(to_bus, "m:phiu:A")
+                    line_data["pf_va_b_to_degree"] = safe_get(to_bus, "m:phiu:B")
+                    line_data["pf_va_c_to_degree"] = safe_get(to_bus, "m:phiu:C")
 
                 line_results.append(line_data)
 
@@ -413,21 +432,40 @@ class PFShortCircuitAnalysis:
             for trafo in trafos:
                 trafo.typ_id.curmg = 0
 
-        # set voltage setpoints according to fault bus
+        # # set voltage setpoints according to fault bus (2016)
+        # if calc_mode == 'max':
+        #     if np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 6:
+        #         ext_grid.usetp = 1.05
+        #     elif np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 10:
+        #         ext_grid.usetp = 1.1
+        #     elif np.round(fault_bus.Vtarget, 2) == 20:
+        #         ext_grid.usetp = 1.1
+        # elif calc_mode == 'min':
+        #     if np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 6:
+        #         ext_grid.usetp = 0.95
+        #     elif np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 10:
+        #         ext_grid.usetp = 0.9
+        #     elif np.round(fault_bus.Vtarget, 2) == 20:
+        #         ext_grid.usetp = 1.0
+
+        # set voltage setpoints according to fault bus (1990)
         if calc_mode == 'max':
-            if np.round(fault_bus.Vtarget, 2) == 20 and lv_tol_percent == 6:
-                ext_grid.usetp = 1.05
-            elif np.round(fault_bus.Vtarget, 2) == 20 and lv_tol_percent == 10:
+            if np.round(fault_bus.Vtarget, 2) == 20:
                 ext_grid.usetp = 1.1
-            elif np.round(fault_bus.Vtarget, 2) == 0.4:
-                ext_grid.usetp = 1.1
-        elif calc_mode == 'min':
-            if np.round(fault_bus.Vtarget, 2) == 20 and lv_tol_percent == 6:
-                ext_grid.usetp = 0.95
-            elif np.round(fault_bus.Vtarget, 2) == 20 and lv_tol_percent == 10:
-                ext_grid.usetp = 0.9
-            elif np.round(fault_bus.Vtarget, 2) == 0.4:
+            elif np.round(fault_bus.Vtarget, 2) == 0.4 or np.round(fault_bus.Vtarget, 2) == 0.23:
                 ext_grid.usetp = 1.0
+        elif calc_mode == 'min':
+            if np.round(fault_bus.Vtarget, 2) == 20:
+                ext_grid.usetp = 1.0
+            elif np.round(fault_bus.Vtarget, 2) == 0.4 or np.round(fault_bus.Vtarget, 2) == 0.23:
+                ext_grid.usetp = 0.95
+
+
+def safe_get(obj, attr):
+    try:
+        return obj.GetAttribute(attr)
+    except Exception:
+        return None
 
 
 

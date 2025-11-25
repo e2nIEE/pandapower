@@ -293,7 +293,7 @@ def setup_project_power_exponent(prj, exponent):
 
 
 def run_short_circuit(app, fault_type="LLL", calc_mode="max", fault_impedance_rf=0, fault_impedance_xf=0,
-                      lv_tol_percent=10, fault_location_index=None):
+                      lv_tol_percent=10, fault_location_index=None, complete_method=False):
     """
     Executes a short-circuit calculation in PowerFactory using IEC 60909 standard.
 
@@ -320,6 +320,9 @@ def run_short_circuit(app, fault_type="LLL", calc_mode="max", fault_impedance_rf
 
     # set method
     com_shc.iopt_mde = 1  # IEC 60909
+    com_shc.iec_pub = 2016
+    if complete_method:
+        com_shc.iopt_mde = 3
 
     # set fault type
     fault_types = {
