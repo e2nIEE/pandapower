@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower import ADict, select_subnet
-from pandapower.toolbox import replace_xward_by_ward, get_connected_elements
+from pandapower.toolbox import replace_xward_by_ward, get_connected_elements, create_continuous_bus_index
 from pandapower.create import create_impedance, create_switch
 from pandapower.run import runpp
 from pandapower.auxiliary import (
@@ -741,6 +741,52 @@ class SlackGenPlacement(DiagnosticFunction):
         # message body
         t = min(results.items())
         self.out.warning(f'Gen idx: {t[0]} as slack, reduces apparent power to: {t[1]}')
+
+
+class TestContinousBusIndices(DiagnosticFunction):
+    """
+    Checks, if powerflow works, when a continuous bus index is used.
+    """
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
+        """
+        :param pandapowerNet net: pandapower network
+        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
+
+        :returns: dict with the results of the overload check
+                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        """
+        # get function to run power flow
+        run = partial(kwargs.pop("run", runpp), **kwargs)
+        net = copy.deepcopy(net)
+
+        try:
+            run(net)
+            return None
+        except expected_exceptions:
+            create_continuous_bus_index(net)
+            return True
+        except Exception as e:
+            self.out.error(f"Continuous bus index calculation failed: {str(e)}")
+            raise e
+
+    def report(self, error: Exception | None, results: dict[str, float] | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Continuous bus index failed due to the following error:")
+            self.out.warning(error)
+            return
+
+        if results is None:
+            self.out.info("PASSED: Powerflow converges, no modifications needed.")
+            return
+
+        # message header
+        self.out.compact("test_continuous_bus_index:\n")
+        self.out.detailed("Checking if the powerflow works, when an continuous bus index is used\n")
+
+        # message body
+        self.out.warning('FAILED: Powerflow converges when pandapower.toolbox.create_continuous_bus_index was for reindexing.')
 
 
 class WrongSwitchConfiguration(DiagnosticFunction):
@@ -1747,6 +1793,7 @@ default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | No
     ("wrong_line_capacitance", WrongLineCapacitance(), None),
     ("wrong_switch_configuration", WrongSwitchConfiguration(), None),
     ("test_subnet_from_zone", SubNetProblemTest(), None),
+    ("test_continous_bus_indices", TestContinousBusIndices(), None),
     ("multiple_voltage_controlling_elements_per_bus", MultipleVoltageControllingElementsPerBus(), []),
     ("no_ext_grid", NoExtGrid(), []),
     ("wrong_reference_system", WrongReferenceSystem(), []),
