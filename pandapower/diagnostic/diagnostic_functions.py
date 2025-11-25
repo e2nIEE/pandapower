@@ -579,33 +579,33 @@ class OptimisticPowerflow(DiagnosticFunction):
         check_result = {}
 
         try:
-            net.line.c_nf_per_km = 0
+            self.net.line.c_nf_per_km = 0
 
-            run(net)
+            run(self.net)
             return None
         except expected_exceptions:
             check_result["c_nf_per_km_zero"] = False
             self.out.debug(f"Line susceptance = 0, did not solve the problem.")
             try:
-                if 'trafo' in net:
-                    net.trafo.pfe_kw = 0
-                if 'trafo3w' in net:
-                    net.trafo3w.pfe_kw = 0
+                if 'trafo' in self.net:
+                    self.net.trafo.pfe_kw = 0
+                if 'trafo3w' in self.net:
+                    self.net.trafo3w.pfe_kw = 0
 
-                run(net)
+                run(self.net)
                 check_result["trafo_pfe_kw_zero"] = True
             except expected_exceptions:
                 check_result["trafo_pfe_kw_zero"] = False
                 self.out.debug(f"Line susceptance = 0 and iron losses = 0, did not solve the problem.")
                 try:
-                    if 'load' in net:
-                        net.load.p_mw = 0
-                        net.load.q_mvar = 0
-                    if 'sgen' in net:
-                        net.sgen.p_mw = 0
-                        net.sgen.q_mvar = 0
+                    if 'load' in self.net:
+                        self.net.load.p_mw = 0
+                        self.net.load.q_mvar = 0
+                    if 'sgen' in self.net:
+                        self.net.sgen.p_mw = 0
+                        self.net.sgen.q_mvar = 0
 
-                    run(net)
+                    run(self.net)
                     check_result["load_sgen_zero"] = True
                 except expected_exceptions:
                     check_result["load_sgen_zero"] = False
@@ -667,7 +667,6 @@ class SlackGenPlacement(DiagnosticFunction):
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
-        self.net = copy.deepcopy(net)
 
         check_result = {}
 
