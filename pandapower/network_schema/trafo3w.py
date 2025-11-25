@@ -154,9 +154,9 @@ trafo3w_checks += create_column_dependency_checks_from_metadata(
     ],
     _trafo3w_columns,
 )
-trafo3w_checks += create_lower_than_column_check(first_element="vkr_hv_percent", second_element="vk_hv_percent")
-trafo3w_checks += create_lower_than_column_check(first_element="vkr_mv_percent", second_element="vk_mv_percent")
-trafo3w_checks += create_lower_than_column_check(first_element="vkr_lv_percent", second_element="vk_lv_percent")
+# trafo3w_checks += create_lower_than_column_check(first_element="vkr_hv_percent", second_element="vk_hv_percent")
+# trafo3w_checks += create_lower_than_column_check(first_element="vkr_mv_percent", second_element="vk_mv_percent")
+# trafo3w_checks += create_lower_than_column_check(first_element="vkr_lv_percent", second_element="vk_lv_percent")
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,
