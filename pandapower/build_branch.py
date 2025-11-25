@@ -1352,6 +1352,7 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, c, case):
         zt = vk / 100 / sn
         rt = vkr / 100 / sn
         xt = np.sqrt(zt ** 2 - rt ** 2)
+        c = c[0]  ## TODO: only temporary quick fix!
         kt = 0.95 * c / (1 + .6 * xt * sn)
     else:
         kt = 1

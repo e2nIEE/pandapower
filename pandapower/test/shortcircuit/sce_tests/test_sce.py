@@ -42,7 +42,7 @@ grounding_types = ["solid", "resistance", "inductance", "impedance", "isolated",
 ward_location = []
 
 # create parameter lists for WPs
-param_wp21, param_vec_wp21, param_wp22, param_vec_wp22, param_vec_wp25, param_vec_wp25_ward = create_parameter_list(
+param_wp21, param_vec_wp21, param_wp22, param_vec_wp22, param_wp23, param_vec_wp25, param_vec_wp25_ward = create_parameter_list(
     net_names, faults, cases, values, lv_tol_percents, fault_location_buses, is_branch_test, vector_groups,
     gen_idx, is_active_current, gen_mode, grounding_types)
 
@@ -176,6 +176,24 @@ def test_wp25_grounding_bank(net_name, fault, case, fault_values, lv_tol_percent
         return
     net, dataframes = load_test_case_data(net_name, fault_location_bus, vector_group, grounding_type=grounding_type,
                                           grounding_bank_idx=ward_loc)
+    results = run_test_cases(
+        net,
+        dataframes["branch" if is_branch else "bus"],
+        fault,
+        case,
+        fault_values,
+        lv_tol_percent,
+        fault_location_bus,
+        branch_results=is_branch
+    )
+    compare_results(*results)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch",
+                         param_wp23, ids=lambda val: str(val))
+def test_wp23(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
+    net, dataframes = load_test_case_data(net_name, fault_location_bus)
     results = run_test_cases(
         net,
         dataframes["branch" if is_branch else "bus"],
