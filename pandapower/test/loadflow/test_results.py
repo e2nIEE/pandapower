@@ -680,7 +680,7 @@ def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
 
     # now enforce sgen q limits
     runpp(net, enforce_q_lims=True)
-    assert not abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.q_mvar.at[sgen]) < s_tol
+    assert abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.q_mvar.at[sgen]) > s_tol
     assert abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.max_q_mvar.at[sgen]) < s_tol
 
 
@@ -701,7 +701,7 @@ def test_enforce_p_lims(s_tol=5e-3):
     buses = net.bus[net.bus.zone == "test_enforce_plims"]
     gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
     g1 = gens[0]
-    assert not abs(net.res_gen.p_mw.at[g1] - net.gen.p_mw.at[g1]) < s_tol
+    assert abs(net.res_gen.p_mw.at[g1] - net.gen.p_mw.at[g1]) > s_tol
     assert abs(net.res_gen.p_mw.at[g1] - net.gen.min_p_mw.at[g1]) < s_tol
 
     # test enforce_p_lims - sgen
@@ -715,7 +715,7 @@ def test_enforce_p_lims(s_tol=5e-3):
 
     # now enforce sgen p limits
     runpp(net, enforce_p_lims=True)
-    assert not abs(net.res_sgen.p_mw.at[sgen] - net.sgen.p_mw.at[sgen]) < s_tol
+    assert abs(net.res_sgen.p_mw.at[sgen] - net.sgen.p_mw.at[sgen]) > s_tol
     assert abs(net.res_sgen.p_mw.at[sgen] - net.sgen.max_p_mw.at[sgen]) < s_tol
 
 

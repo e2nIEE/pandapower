@@ -314,7 +314,7 @@ def add_test_enforce_qlims(net):
 
 
 def add_test_enforce_plims(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_enforce_plims")
+    _, b2, _ = add_grid_connection(net, zone="test_enforce_plims")
     pl = 1.200
     ql = 1.100
     ps = 0.200
@@ -332,7 +332,7 @@ def add_test_enforce_plims(net):
 
 
 def add_test_enforce_qlims_sgen(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_enforce_qlims_sgen")
+    _, b2, _ = add_grid_connection(net, zone="test_enforce_qlims_sgen")
     pl = 1.200
     ql = 1.100
     ps = 0.500

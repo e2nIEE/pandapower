@@ -294,7 +294,12 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
     min_max_q_lims[:] = np.nan
 
     # add qmin and qmax limit from q_capability_characteristic
-    if "q_capability_characteristic" in net.keys() and net._options["enforce_q_lims"] and element in ["gen", "sgen"]:
+    capability_curve_condition = (
+            "q_capability_characteristic" in net.keys()
+            and net._options["enforce_q_lims"]
+            and element in ["gen", "sgen"]
+    )
+    if capability_curve_condition:
         curve_q = _calculate_qmin_qmax_from_q_capability_characteristics(net, element)
         if curve_q is not None and not curve_q.empty:
             min_max_q_lims.update(curve_q[["min_q_mvar", "max_q_mvar"]])
@@ -316,15 +321,17 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
 
     # populate limits in ppc structure
     if inverted:
-        if valid_min.any():
-            ppc["gen"][gen_rows[valid_min], QMAX] = -qmin[valid_min] + delta
-        if valid_max.any():
-            ppc["gen"][gen_rows[valid_max], QMIN] = -qmax[valid_max] - delta
+        qmin_dest_col, qmin_sign, qmin_delta = QMAX, -1.0, +delta
+        qmax_dest_col, qmax_sign, qmax_delta = QMIN, -1.0, -delta
     else:
-        if valid_min.any():
-            ppc["gen"][gen_rows[valid_min], QMIN] = qmin[valid_min] - delta
-        if valid_max.any():
-            ppc["gen"][gen_rows[valid_max], QMAX] = qmax[valid_max] + delta
+        qmin_dest_col, qmin_sign, qmin_delta = QMIN, +1.0, -delta
+        qmax_dest_col, qmax_sign, qmax_delta = QMAX, +1.0, +delta
+
+    if valid_min.any():
+        ppc["gen"][gen_rows[valid_min], qmin_dest_col] = (qmin_sign * qmin[valid_min] + qmin_delta)
+
+    if valid_max.any():
+        ppc["gen"][gen_rows[valid_max], qmax_dest_col] = (qmax_sign * qmax[valid_max] + qmax_delta)
 
 
 def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
