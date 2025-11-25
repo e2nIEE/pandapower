@@ -1,4 +1,5 @@
 import copy
+import sys
 from collections import defaultdict
 from functools import partial
 import logging
@@ -645,6 +646,102 @@ class OptimisticPowerflow(DiagnosticFunction):
         elif 'c_nf_per_km_zero' in results:
             self.out.warning(
                 f"Powerflow problems solved, by setting line.c_nf_per_km = 0.")
+
+
+class SlackGenPlacement(DiagnosticFunction):
+    """
+    Checks, if powerflow converges/losses are minimized, if a different gen is used as slack
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.net: pandapowerNet | None = None
+
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, float] | None:
+        """
+        :param pandapowerNet net: pandapower network
+        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
+
+        :returns: dict with the results of the overload check
+                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        """
+        # get function to run power flow
+        run = partial(kwargs.pop("run", runpp), **kwargs)
+        self.net = copy.deepcopy(net)
+
+        check_result = {}
+
+        if 'gen' not in net:
+            return None
+
+        orig_gen = copy.copy(net.gen)
+
+        def _calculate_losses(net):
+            idx = net.gen.loc[net.gen.slack==True].index
+            res = np.linalg.norm(net.res_gen.loc[idx].p_mw + net.res_gen.loc[idx].q_mvar * 1j)
+            res += np.linalg.norm(net.res_ext_grid.p_mw + net.res_ext_grid.q_mvar * 1j)
+            return res
+
+        try:
+            run(net)
+
+            res = _calculate_losses(net)
+            check_result['base_case'] = res
+        except expected_exceptions:
+            self.out.debug(f"Base case did not converge, trying different combinations")
+            check_result['base_case'] = sys.float_info.max
+        except Exception as e:
+            self.out.error(f"Slack gen placement calculation failed: {str(e)}")
+            raise e
+
+        # disable all slack gen
+        net.gen.slack = False
+
+        # try all gen combinations
+        for idx, gen in net.gen.iterrows():
+            net.gen.loc[idx, 'slack'] = True
+
+            try:
+                run(net)
+
+                res = _calculate_losses(net)
+                check_result[idx] = res
+            except expected_exceptions:
+                self.out.debug(f"Gen[{idx}]=Slack did not converge, trying different one")
+                check_result[idx] = sys.float_info.max
+            except Exception as e:
+                self.out.error(f"Slack gen placement calculation failed: {str(e)}")
+                raise e
+
+            net.gen.loc[idx, 'slack'] = False
+
+        # teardown
+        net.gen = orig_gen
+
+        bc = check_result.pop('base_case')
+        if all(map(lambda x: bc < x, check_result.values())):
+            return None
+
+        return check_result
+
+    def report(self, error: Exception | None, results: dict[str, float] | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for slack gen placement failed due to the following error:")
+            self.out.warning(error)
+            return
+
+        if results is None:
+            self.out.info("PASSED: Power flow converges, no modifications needed.")
+            return
+
+        # message header
+        self.out.compact("slack_gen_placement:\n")
+        self.out.detailed("Checking if another generator as slack reduces losses / enables powerflow\n")
+
+        # message body
+        t = min(results.items())
+        self.out.warning(f'Gen idx: {t[0]} as slack, reduces apparent power to: {t[1]}')
 
 
 class WrongSwitchConfiguration(DiagnosticFunction):
