@@ -1948,10 +1948,11 @@ def _replace_group_member_element_type(
 
 def _adapt_result_tables_in_replace_functions(
     net, element_type_old, element_index_old, element_type_new, element_index_new):
-    init_results(net)
     et_old, et_new = "res_" + element_type_old, "res_" + element_type_new
+    if et_new not in net:
+        net[et_new] = net[et_old].head(0).copy()
     idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
-    if et_old in net and et_new in net and net[et_old].shape[0]:
+    if et_old in net and net[et_old].shape[0]:
         in_res = pd.Series(idx_old).isin(net[et_old].index).values
         to_add = net[et_old].loc[idx_old[in_res]]
         to_add.index = idx_new[in_res]
