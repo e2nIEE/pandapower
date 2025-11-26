@@ -173,7 +173,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
     add_virtual_meas_error(net, v_std_dev=v_std_dev, p_std_dev=p_std_dev, q_std_dev=q_std_dev,
                            with_random_error=with_random_error)
 
-def remove_shunt_injection_from_meas(net,type):
+def remove_shunt_injection_from_meas(net, type):
     index = net[type].index.tolist()
     bus = net[type]["bus"].tolist()
     for k in range(len(index)):

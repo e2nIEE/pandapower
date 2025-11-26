@@ -22,6 +22,7 @@ from pandapower.toolbox.result_info import clear_result_tables
 from pandapower.toolbox.data_modification import reindex_elements
 from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
     check_unique_group_rows, element_associated_groups
+from pandapower.results import init_results
 
 import logging
 
@@ -1947,6 +1948,7 @@ def _replace_group_member_element_type(
 
 def _adapt_result_tables_in_replace_functions(
     net, element_type_old, element_index_old, element_type_new, element_index_new):
+    init_results(net)
     et_old, et_new = "res_" + element_type_old, "res_" + element_type_new
     idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
     if et_old in net and et_new in net and net[et_old].shape[0]:

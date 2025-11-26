@@ -329,6 +329,7 @@ def test_adopt_columns_to_separated_eq_elms():
     # --- gen_separate
     net = case9()
     replace_ext_grid_by_gen(net, slack=True)
+    runpp(net)
     net.gen.index = [1, 2, 0]
     net.poly_cost["element"] = net.gen.index.values
     net.gen.sort_index(inplace=True)
