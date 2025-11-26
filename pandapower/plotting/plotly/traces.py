@@ -1034,9 +1034,7 @@ def create_weighted_marker_trace(
     )
 
     # additional info for the create_scale_trace function:
-    if scale_marker_size is None:
-        scale_marker_size = []
-    elif not isinstance(scale_marker_size, Iterable):
+    if not isinstance(scale_marker_size, Iterable):
         scale_marker_size = [scale_marker_size]
 
     marker_trace["meta"] = dict(
@@ -1085,7 +1083,7 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
         else:
             scale_size = sze * scale_info["marker_scaling"]
 
-        y_pos -= .005 * (sze + 2)
+        y_pos -= scale_size / 20000
         # TODO: y_pos increment not scaled properly to avoid overlap
 
         # second (dummy) position is needed for correct marker sizing
