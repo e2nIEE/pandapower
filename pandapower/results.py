@@ -189,7 +189,7 @@ def get_relevant_elements(net, mode="pf"):
                "switch", "tcsc", "svc", "ssc", "vsc", "b2b_vsc"],
         "sc": ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"],
         "se": ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"],
-        "pf_3ph": ["bus", "line", "trafo", "ext_grid", "shunt", "load", "sgen", "storage",
+        "pf_3ph": ["bus", "line", "trafo", "ext_grid", "shunt", "load", "sgen", "gen", "storage",
                    "asymmetric_load", "asymmetric_sgen"]
     }
     elements["opf"] = elements["pf"]
