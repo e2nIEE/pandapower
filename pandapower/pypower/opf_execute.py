@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,7 @@
 
 from sys import stdout, stderr
 
-from numpy import array, arange, pi, zeros, r_
+from numpy import array, arange, pi, zeros, r_, int64
 from pandapower.pypower.dcopf_solver import dcopf_solver
 from pandapower.pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
 from pandapower.pypower.idx_bus import VM
@@ -103,7 +103,7 @@ def opf_execute(om, ppopt):
     if success:
         if not dc:
             ## copy bus voltages back to gen matrix
-            results['gen'][:, VG] = results['bus'][results['gen'][:, GEN_BUS].astype(int), VM]
+            results['gen'][:, VG] = results['bus'][results['gen'][:, GEN_BUS].astype(int64), VM]
 
             ## gen PQ capability curve multipliers
             if (ll['N']['PQh'] > 0) | (ll['N']['PQl'] > 0): # pragma: no cover

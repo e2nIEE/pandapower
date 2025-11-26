@@ -1,0 +1,139 @@
+[build-system]
+requires = ["build", "wheel", "setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pandapower"
+dynamic = ["version"]
+authors = [
+    { name = "Leon Thurner", email = "leon.thurner@retoflow.de" },
+    { name = "Alexander Scheidler", email = "alexander.scheidler@iee.fraunhofer.de" },
+    { name = "Mike Vogt", email = "mike.vogt@iee.fraunhofer.de"}
+]
+maintainers = [
+    { name = "pandapower Developers", email = "info@pandapower.org" }
+]
+description = "An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation."
+readme = "README.rst"
+license-files = ["LICENSE", "AUTHORS"]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    # Add the specific Python versions supported here, e.g.:
+    #  REMINDER: When removeing or adding support for a Version here, please remember to update ALL github pipelines.
+    #  REMINDER: The mypy config also contains the lowest supported python version
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
+]
+dependencies = [
+    "pandas~=2.3",
+    "networkx~=3.4",
+    "scipy~=1.15",
+    "numpy~=2.2",
+    "packaging~=25.0",
+    "tqdm~=4.67",
+    "deepdiff~=8.6",
+    "geojson~=3.2",
+    "typing_extensions~=4.9",
+    "pandera~=0.26.1"
+]
+keywords = [
+    "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
+]
+
+[project.urls]
+Homepage = "https://www.pandapower.org"
+Documentation = "https://pandapower.readthedocs.io"
+Source = "https://www.github.com/e2nIEE/pandapower"
+Repository = "https://www.github.com/e2nIEE/pandapower.git"
+Issues = "https://www.github.com/e2nIEE/pandapower/issues"
+Download = "https://pypi.org/project/pandapower/#files"
+Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
+
+[project.optional-dependencies]
+docs = [
+    "numpydoc~=1.9",
+    "matplotlib~=3.10",
+    "sphinx~=8.1",
+    "sphinx_rtd_theme~=3.0",
+    "sphinx-pyproject~=0.3",
+    "sphinxcontrib-imagesvg~=0.1",
+    "pandapower[converter]"
+]
+plotting = ["plotly~=6.3", "matplotlib~=3.10", "igraph", "geopandas~=1.1"]
+test = ["pytest~=8.4", "pytest-xdist~=3.8", "nbmake~=1.5"]
+performance = ["ortools~=9.14", "numba~=0.61", "lightsim2grid~=0.10.3"]
+fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=46.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.0"]
+converter = ["matpowercaseframes~=1.1", "lxml~=6.0"]
+pgm = ["power-grid-model-io~=1.2"]
+control = ["shapely~=2.1"]
+typing = [
+    "mypy~=1.18",
+    "pandas-stubs~=2.3",
+    "types-shapely~=2.1",
+    "types-psycopg2~=2.9",
+    "types-openpyxl~=3.1",
+    "types-networkx~=3.4",
+    "types-tqdm~=4.67",
+    "scipy-stubs~=1.15",
+    "pandera[mypy]~=0.26.1"
+]
+
+all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,typing]"]
+# "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
+# "hashlib", "zlib", "base64" produce install problems, so they are not included
+
+
+[tool.setuptools.dynamic]
+version = {attr = "pandapower._version.__version__"}
+
+[tool.setuptools.packages.find]
+include = [
+    "pandapower*",
+]
+exclude = [
+    "pandapower.test*",
+]
+
+[tool.setuptools.package-data]
+"*" = [
+    "*.p",
+    "*.m",
+    "*.mat",
+    "*.json",
+    "*.jl",
+    "*.csv"
+]
+
+[tool.pytest.ini_options]
+addopts = ["--strict-markers"]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
+]
+
+[tool.coverage.run]
+omit = [
+    "pandapower/test/*"
+]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "if __name__ == .__main__.:"
+]
+
+# styling information for ruff formatter
+[tool.ruff]
+line-length = 120

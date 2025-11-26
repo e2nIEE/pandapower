@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pandas as pd
 import pytest
 
-import pandapower as pp
-import pandapower.networks as pn
+from pandapower.networks.create_examples import example_simple, example_multivoltage
+from pandapower.run import runpp
 
 
 def test_create_simple():
-    net = pn.example_simple()
-    pp.runpp(net)
+    net = example_simple()
+    runpp(net)
     assert net.converged
     for element in ["bus", "line", "gen", "sgen", "shunt", "trafo", "load", "ext_grid"]:
         assert len(net[element]) >= 1
@@ -22,8 +22,8 @@ def test_create_simple():
 
 
 def test_create_realistic():
-    net = pn.example_multivoltage()
-    pp.runpp(net)
+    net = example_multivoltage()
+    runpp(net)
     assert net.converged
     for element in ["bus", "line", "gen", "sgen", "shunt", "trafo", "trafo3w", "load", "ext_grid",
                     "impedance", "xward"]:
@@ -39,4 +39,4 @@ def test_create_realistic():
 
 
 if __name__ == '__main__':
-    pytest.main(['-x', "test_create_example.py"])
+    pytest.main([__file__, "-xs"])

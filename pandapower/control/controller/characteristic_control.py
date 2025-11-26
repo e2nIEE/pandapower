@@ -1,48 +1,42 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 from pandapower.control.basic_controller import Controller
-from pandapower.toolbox import _detect_read_write_flag, read_from_net, write_to_net
 
 
 class CharacteristicControl(Controller):
     """
     Controller that adjusts a certain parameter of an element in pandapower net based on a specified input parameter in pandapower net,
-    according to a provided characteristic. The characteristic is specified by the index in the net.characteristic table.
-    Example: change the tap position of the transformers (net.trafo.tap_pos) based on transformer loading (net.res_trafo.loading_percent)
-    according to a specified linear relationship. To this end, the input element is "res_trafo", the input variable is "loading_percent",
-    the output element is "trafo" and the output variable is "tap_pos". The relationship between the values of the input and output
-    variables is specified using the Characteristic class (or a scipy interpolator, e.g. scipy.interpolate.interp1d).
+    according to a provided characteristic. The characteristic is specified by the index in the ``net.characteristic table``.
+    Example: change the tap position of the transformers (``net.trafo.tap_pos``) based on transformer loading (``net.res_trafo.loading_percent``)
+    according to a specified linear relationship. To this end, the input element is ``res_trafo``, the input variable is ``loading_percent``,
+    the output element is ``trafo`` and the output variable is ``tap_pos``. The relationship between the values of the input and output
+    variables is specified using the Characteristic class (or a scipy interpolator, e.g. ``scipy.interpolate.interp1d``).
 
     INPUT:
         **net** (attrdict) - Pandapower net
 
         **output_element** (str) - name of the element table in pandapower net where the values are adjusted by the controller
 
-        **output_variable** (str) - variable in the output element table, values of which are adjusted by the controller. Can also be an
-                                        attribute of an object (e.g. parameter of a controller object), for this case it must start with
-                                        "object." (e.g. "object.vm_set_pu")
+        **output_variable** (str) - variable in the output element table, values of which are adjusted by the controller. Can also be an attribute of an object (e.g. parameter of a controller object), for this case it must start with "object." (e.g. "object.vm_set_pu")
 
-        **output_element_index** (int or list or numpy array) - index of the elements, values fro which are adjusted
+        **output_element_index** (int or list or numpy array) - index of the elements, values from which are adjusted
 
-        **input_element** (str) - name of the element table or the element result table in pandapower net that provides input values for
-                                    the controller
+        **input_element** (str) - name of the element table or the element result table in pandapower net that provides input values for the controller
 
-        **input_variable** (str) - name of the input variable in the input element table. Can also be an attribute of an object,
-                                    similarly to output_variable
+        **input_variable** (str) - name of the input variable in the input element table. Can also be an attribute of an object, similarly to output_variable
 
         **input_element_index** (int or list or numpy array) - index of elements in the input element table
 
-        **characteristic_index** (int) - index of the characteristic curve that describes the relationship between the input and
-                                         output values
+        **characteristic_index** (int) - index of the characteristic curve that describes the relationship between the input and output values
 
         **tol** (float) - tolerance for convergence
 
     OPTIONAL:
-
         **in_service** (bool, True) - Indicates if the controller is currently in_service
 
         **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped

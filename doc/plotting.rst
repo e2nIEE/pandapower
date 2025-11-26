@@ -11,5 +11,7 @@ and `Plotly <https://plot.ly/python/>`_ .
     
     plotting/matplotlib/matplotlib
     plotting/plotly/plotly
+    plotting/plotly/geo_data_to_latlong
     plotting/html
+    plotting/geo
 

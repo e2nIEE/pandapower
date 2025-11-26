@@ -5,15 +5,14 @@ import tkinter as tk
 from tkinter.filedialog import askdirectory
 import pandas
 
-import pandapower as pp
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
+root_logger = logging.getLogger()
 
+from pandapower.file_io import to_json, to_excel
+from pandapower.toolbox.grid_modification import create_replacement_switch_for_branch, replace_xward_by_ward
+from pandapower.diagnostic import diagnostic
 from pandapower.converter.powerfactory.echo_off import echo_off, echo_on
 from pandapower.converter.powerfactory.pp_import_functions import from_pf
 from pandapower.converter.powerfactory import pf_export_functions as pef
@@ -68,24 +67,28 @@ def get_filename(entry_fname, save_as="JSON"):
 
 def save_net(net, filepath, save_as):
     if save_as == "JSON":
-        pp.to_json(net, filepath)
+        to_json(net, filepath)
     elif save_as == "Excel":
-        pp.to_excel(net, filepath)
+        to_excel(net, filepath)
     else:
         raise ValueError('tried to save grid as %s to %s and failed :(' % (save_as, filepath))
 
 
-def exit_gracefully(msg, is_err):
+def exit_gracefully(app, input_panel, msg, is_err):
     if is_err:
         logger.error('Execution terminated: %s' % msg, exc_info=True)
     else:
         logger.info('Execution finished: %s' % msg)
     echo_on(app)
+    input_panel.destroy()
+    # del(app)
+    # quit()
+    sys.exit(1 if is_err else 0)
 
 
 def run_export(app, pv_as_slack, pf_variable_p_loads, pf_variable_p_gen, scale_feeder_loads=False,
                flag_graphics='GPS', handle_us="Deactivate", save_as="JSON", tap_opt="nntap",
-               export_controller=True, max_iter=None):
+               export_controller=True, max_iter=None, create_sections=True):
     # gather objects from the project
     logger.info('gathering network elements')
     dict_net = pef.create_network_dict(app, flag_graphics)
@@ -98,11 +101,10 @@ def run_export(app, pv_as_slack, pf_variable_p_loads, pf_variable_p_gen, scale_f
     logger.info('starting import to pandapower')
     app.SetAttributeModeInternal(1)
 
-    net = from_pf(dict_net, pv_as_slack=pv_as_slack,
-                  pf_variable_p_loads=pf_variable_p_loads,
-                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics,
-                  tap_opt=tap_opt, export_controller=export_controller,
-                  handle_us=handle_us, max_iter=max_iter)
+    net = from_pf(dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
+                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
+                  export_controller=export_controller, handle_us=handle_us, max_iter=max_iter,
+                  create_sections=create_sections)
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
@@ -115,9 +117,9 @@ def run_verify(net, load_flow_params=None):
     logger.info('Validating import...')
     if load_flow_params is None:
         load_flow_params = {
-            'tolerance_mva': 1e-9,  # tolerance of load flow calculation
-            'calculate_voltage_angles': True,  # set True for meshed networks
-            'init': 'dc',  # initialization of load flow: 'flat', 'dc', 'results'
+            # 'tolerance_mva': 1e-9,  # tolerance of load flow calculation
+            # 'calculate_voltage_angles': True,  # set True for meshed networks
+            # 'init': 'dc',  # initialization of load flow: 'flat', 'dc', 'results'
             'PF_MAX_IT': 500  # Pypower option, maximal iterations, passed with kwargs
         }
     logger.debug('load flow params: %s' % load_flow_params)
@@ -125,12 +127,16 @@ def run_verify(net, load_flow_params=None):
     return all_diffs
 
 
-def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, pv_as_slack,
-         pf_variable_p_loads, pf_variable_p_gen, flag_graphics, handle_us, save_as, tap_opt,
-         export_controller, max_iter_entry):
+def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_controller,
+         replace_zero_branches, min_ohm_entry, replace_inf_branches, max_ohm_entry,
+         is_to_verify, is_to_diagnostic, is_debug,
+         pf_variable_p_loads, pf_variable_p_gen, flag_graphics, handle_us,
+         save_as, tap_opt, max_iter_entry, create_sections_entry):
     # check if logger is to be in debug mode
     if is_debug():
-        pflog.set_PF_level(logger, app_handler, 'DEBUG')
+        pflog.set_PF_level(root_logger, app_handler, 'DEBUG')
+    else:
+        pflog.set_PF_level(root_logger, app_handler, 'INFO')
     logger.debug('starting script')
     echo_off(app, err=1, warn=1, info=1)
     # start_button.config(state="disabled")
@@ -138,13 +144,13 @@ def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, 
     try:
         dst_dir = get_dst_dir(input_panel, entry_path_dst)
     except Exception as err:
-        exit_gracefully(err, True)
+        exit_gracefully(app, input_panel, err, True)
         return
     # ask for file name
     try:
         filename = get_filename(entry_fname, save_as())
     except RuntimeError as err:
-        exit_gracefully(err, True)
+        exit_gracefully(app, input_panel, err, True)
         return
 
     logger.info('the destination directory is: <%s>' % dst_dir)
@@ -156,7 +162,91 @@ def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, 
         logger.info("max_iter: %s" % max_iter)
         net = run_export(app, pv_as_slack(), pf_variable_p_loads(), pf_variable_p_gen(), scale_feeder_loads=False,
                          flag_graphics=flag_graphics(), handle_us=handle_us(), save_as=save_as(), tap_opt=tap_opt(),
-                         export_controller=export_controller(), max_iter=max_iter)
+                         export_controller=export_controller(), max_iter=max_iter, create_sections=create_sections_entry())
+        if replace_zero_branches():
+            min_ohm = float(min_ohm_entry.get())
+            # to_replace = (np.abs(net.line.r_ohm_per_km * net.line.length_km +
+            #                      1j * net.line.x_ohm_per_km * net.line.length_km) <= min_ohm) & net.line.in_service
+            to_replace = (np.abs(net.line.x_ohm_per_km * net.line.length_km) <= min_ohm) & net.line.in_service
+
+            for i in net.line.loc[to_replace].index.values:
+                create_replacement_switch_for_branch(net, "line", i)
+                net.line.at[i, "in_service"] = False
+            if np.any(to_replace):
+                logger.info(f"replaced {sum(to_replace)} lines with switches")
+
+            # xward = net.xward[(np.abs(net.xward.r_ohm + 1j * net.xward.x_ohm) <= min_ohm) &
+            #                   net.xward.in_service].index.values
+            xward = net.xward[(np.abs(net.xward.x_ohm) <= min_ohm) & net.xward.in_service].index.values
+            if len(xward) > 0:
+                replace_xward_by_ward(net, index=xward, drop=False)
+                logger.info(f"replaced {len(xward)} xwards with wards")
+
+            zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+            zb_t_ohm = np.square(net.bus.loc[net.impedance.to_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+            # impedance = ((np.abs(net.impedance.rft_pu + 1j * net.impedance.xft_pu) <= min_ohm / zb_f_ohm) |
+            #              (np.abs(net.impedance.rtf_pu + 1j * net.impedance.xtf_pu) <= min_ohm / zb_t_ohm) &
+            #              net.impedance.in_service)
+            impedance = ((np.abs(net.impedance.xft_pu) <= min_ohm / zb_f_ohm) |
+                         (np.abs(net.impedance.xtf_pu) <= min_ohm / zb_t_ohm)) & net.impedance.in_service
+            for i in net.impedance.loc[impedance].index.values:
+                create_replacement_switch_for_branch(net, "impedance", i)
+                net.impedance.at[i, "in_service"] = False
+            if any(impedance):
+                logger.info(f"replaced {sum(impedance)} impedance elements with switches")
+
+            trafos = ((net.trafo.vk_percent/100 * np.square(net.trafo.vn_lv_kv) / net.trafo.sn_mva <= min_ohm) &
+                      net.trafo.in_service)
+            min_vk_percent = 4.
+            net.trafo.loc[trafos, "vk_percent"] = min_vk_percent
+            if any(trafos):
+                logger.info(f"adjusted {sum(trafos)} 2W transformers by setting vk_percent to {min_vk_percent}")
+
+            trafo3w = ((net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_hv_mva <= min_ohm) |
+                       (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_mv_mva <= min_ohm) |
+                       (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_lv_mva <= min_ohm)) & net.trafo3w.in_service
+            net.trafo3w.loc[trafo3w, ["vk_hv_percent", "vk_mv_percent", "vk_lv_percent"]] = min_vk_percent
+            if any(trafo3w):
+                logger.info(f"adjusted {sum(trafo3w)} 3W transformers by setting vk_percent to {min_vk_percent}")
+
+        if replace_inf_branches():
+            max_ohm = float(max_ohm_entry.get())
+            to_replace = (np.abs(net.line.r_ohm_per_km * net.line.length_km +
+                                 1j * net.line.x_ohm_per_km * net.line.length_km) >= max_ohm) & net.line.in_service
+
+            if np.any(to_replace):
+                net.line.loc[to_replace, "in_service"] = False
+                logger.info(f"deactivated {sum(to_replace)} lines")
+
+            xward = (np.abs(net.xward.r_ohm + 1j * net.xward.x_ohm) >= max_ohm) & net.xward.in_service
+            if np.any(xward):
+                net.xward.loc[xward, "in_service"] = False
+                logger.info(f"deactivated {sum(xward)} xwards")
+
+            zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+            zb_t_ohm = np.square(net.bus.loc[net.impedance.to_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+            impedance = ((np.abs(net.impedance.rft_pu + 1j * net.impedance.xft_pu) >= max_ohm / zb_f_ohm) |
+                         (np.abs(net.impedance.rtf_pu + 1j * net.impedance.xtf_pu) >= max_ohm / zb_t_ohm)) & net.impedance.in_service
+            if np.any(impedance):
+                net.impedance.loc[impedance, "in_service"] = False
+                logger.info(f"deactivated {sum(impedance)} impedance elements")
+
+            max_vk_percent = 15
+            trafos = (net.trafo.vk_percent/100 * np.square(net.trafo.vn_hv_kv) / net.trafo.sn_mva >= max_ohm) & net.trafo.in_service
+            if np.any(trafos):
+                # net.trafo.loc[trafos, "in_service"] = False
+                net.trafo.loc[trafos, "vk_percent"] = max_vk_percent
+                logger.info(f"adjusted {sum(trafos)} 2W transformers with vk_percent of {max_vk_percent}")
+
+            trafo3w = ((net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_hv_mva >= max_ohm) |
+                       (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_mv_mva >= max_ohm) |
+                       (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_lv_mva >= max_ohm)) & net.trafo3w.in_service
+            if np.any(trafo3w):
+                # net.trafo3w.loc[trafo3w, "in_service"] = False
+                net.trafo3w.loc[trafo3w, "vk_hv_percent"] = np.fmin(max_vk_percent, net.trafo3w.loc[trafo3w, "vk_hv_percent"])
+                net.trafo3w.loc[trafo3w, "vk_mv_percent"] = np.fmin(max_vk_percent, net.trafo3w.loc[trafo3w, "vk_mv_percent"])
+                net.trafo3w.loc[trafo3w, "vk_lv_percent"] = np.fmin(max_vk_percent, net.trafo3w.loc[trafo3w, "vk_lv_percent"])
+                logger.info(f"adjusted {sum(trafo3w)} 3W transformers with {max_vk_percent}")
 
         logger.info('saving file to: <%s>' % filepath)
         save_net(net, filepath, save_as())
@@ -172,11 +262,13 @@ def calc(app, input_panel, entry_path_dst, entry_fname, is_to_verify, is_debug, 
             # logger.info('saving file to: <%s>' % filepath)
             # save_net(net, filepath, save_as())
             # logger.info('exported validated net')
-    # wrapping up
-    exit_gracefully('exiting script', False)
-    input_panel.destroy()
-    logger.removeHandler(app_handler)
-    exit()
+        if is_to_diagnostic():
+            try:
+                diagnostic(net, report_style="compact", warnings_only=True, min_x_ohm=0.01)
+            except Exception as err:
+                logger.error('Error in diagnostic for net: %s', err, exc_info=True)
+    root_logger.removeHandler(app_handler)
+    exit_gracefully(app, input_panel, 'exiting script', False)
 
 
 # if called from powerfactory, __name__ is also '__main__'
@@ -194,7 +286,7 @@ if __name__ == '__main__':
         # logger, app_handler = pflog.setup_logger(app, __name__, 'INFO')
         # logger = logging.getLogger(__name__)
         app_handler = pflog.AppHandler(app, freeze_app_between_messages=True)
-        logger.addHandler(app_handler)
+        root_logger.addHandler(app_handler)
 
         logger.info('starting application')
         # user to store the project and folders
@@ -219,6 +311,6 @@ if __name__ == '__main__':
                 'No project is activated. Please activate a project to perform PandaPower '
                 'Export!')
             project_name = 'None'
-            logger.removeHandler(app_handler)
+            root_logger.removeHandler(app_handler)
 
         gui.make_gui(app, project_name, browse_dst, calc)

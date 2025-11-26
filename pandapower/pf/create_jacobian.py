@@ -1,5 +1,14 @@
-from numpy import complex128, float64, int32, r_
-from numpy.core.multiarray import zeros, empty, array
+# -*- coding: utf-8 -*-
+
+# Copyright 1996-2015 PSERC. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+
+from numpy import complex128, float64, int64, r_, zeros, empty, array
 from scipy.sparse import csr_matrix as sparse, vstack, hstack
 
 from pandapower.pypower.dSbus_dV import dSbus_dV
@@ -20,11 +29,11 @@ def _create_J_with_numba(Ybus, V, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref,
     Jx = empty(len(dVm_x) * 4, dtype=float64)
     # row pointer, dimension = pvpq.shape[0] + pq.shape[0] + 1
     if dist_slack:
-        Jp = zeros(refpvpq.shape[0] + pq.shape[0] + 1, dtype=int32)
+        Jp = zeros(refpvpq.shape[0] + pq.shape[0] + 1, dtype=int64)
     else:
-        Jp = zeros(pvpq.shape[0] + pq.shape[0] + 1, dtype=int32)
+        Jp = zeros(pvpq.shape[0] + pq.shape[0] + 1, dtype=int64)
     # indices, same with the preallocated space (see Jx)
-    Jj = empty(len(dVm_x) * 4, dtype=int32)
+    Jj = empty(len(dVm_x) * 4, dtype=int64)
 
     # fill Jx, Jj and Jp
     createJ(dVm_x, dVa_x, Ybus.indptr, Ybus.indices, pvpq_lookup, refpvpq, pvpq, pq, Jx, Jj, Jp, slack_weights)

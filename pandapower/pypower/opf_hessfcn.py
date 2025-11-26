@@ -4,14 +4,13 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 """Evaluates Hessian of Lagrangian for AC OPF.
 """
-
-from numpy import array, zeros, ones, exp, arange, r_, flatnonzero as find
+from numpy import array, zeros, ones, exp, arange, r_, int64, flatnonzero as find
 from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
 
 from pandapower.pypower.d2AIbr_dV2 import d2AIbr_dV2
@@ -181,8 +180,8 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
         else:
             Hfaa= Hfav= Hfva= Hfvv= Htaa= Htav= Htva= Htvv = sparse(zeros((nb,nb)))
     else: # pragma: no cover
-        f = branch[il, F_BUS].astype(int)    ## list of "from" buses
-        t = branch[il, T_BUS].astype(int)    ## list of "to" buses
+        f = branch[il, F_BUS].astype(int64)    ## list of "from" buses
+        t = branch[il, T_BUS].astype(int64)    ## list of "to" buses
         ## connection matrix for line & from buses
         Cf = sparse((ones(nl2), (arange(nl2), f)), (nl2, nb))
         ## connection matrix for line & to buses

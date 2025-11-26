@@ -21,14 +21,19 @@ The documentation describes how to use the exporter as a function in "Engine mod
  - ElmPvsys (PV System)
  - ElmSym (Synchronous Generators)
  - ElmAsm (Asynchronous Machines)
+ - ElmStactrl (Station Controller)
  - ElmShnt (Shunts)
  - ElmVac (AC Voltage Source)
  - ElmCoup (Bus-Bus switches)
  - RelFuse (Fuses)
  - ElmZpu (pu Impedance)
  - ElmSind (Series Reactor)
+ - Elmscap (Series Capacitor)
+ - ElmSvs (Static Var Compensator with Voltage Control)
 
- 
+.. Note:: Not all possible settings from PowerFactory can be imported to pandapower, as either pandapower does not support the same range of functionality or the import is not yet possible.
+
+
 Setup PowerFactory and Python
 =====================================
 
@@ -135,7 +140,7 @@ The icon is contained in the file 'icon.pfd' in the directory *power_factory_fil
 PowerFactory as a .pfd import. A folder 'icon' will appear in PowerFactory, and the element from this folder should be
 copied to the database folder ~\\Configuration \\Icons.
 
-.. image:: /doc/pics/converter/export_pf_to_pp/import_icon.png
+.. image:: /pics/converter/export_pf_to_pp/import_icon.png
         :height: 337px
         :width: 584px
         :scale: 80%
@@ -156,7 +161,7 @@ where the path to the Python file ~\\export_pf_to_pp \\main_pf.py should be prov
 The 'ComPython' object can be created by selecting the target folder in the Data Manager and
 clicking the pictogram "New Object" -- see illustration below.
 
-.. image:: /doc/pics/converter/export_pf_to_pp/new_object.png
+.. image:: /pics/converter/export_pf_to_pp/new_object.png
         :height: 502px
         :width: 792px
         :scale: 50%
@@ -166,7 +171,7 @@ clicking the pictogram "New Object" -- see illustration below.
 The following image illustrates the path configuration in the 'ComPython' object:
 
 
-.. image:: /doc/pics/converter/export_pf_to_pp/com_python.png
+.. image:: /pics/converter/export_pf_to_pp/com_python.png
         :height: 638px
         :width: 992px
         :scale: 50%
@@ -181,7 +186,7 @@ In newer versions of PowerFactory, the Tool Configuration can be found in the Ad
 The Tool Configuration window appears, where the icon and the script should be input into a free row.
 Click on the cells to provide path to the icon and the 'ComPython' object. The result is shown in the following figure.
 
-.. image:: /doc/pics/converter/export_pf_to_pp/configure_tool.png
+.. image:: /pics/converter/export_pf_to_pp/configure_tool.png
         :height: 516px
         :width: 1102px
         :scale: 80%
@@ -195,7 +200,7 @@ Using the Converter
 After configuring the tool, the icon appears in the *User-Defined Tools* Toolbox. It can be accessed by clicking the
 symbol that is marked by a red circle in the following figure. The icon of the tool is marked with a blue circle.
 
-.. image:: /doc/pics/converter/export_pf_to_pp/toolbox.png
+.. image:: /pics/converter/export_pf_to_pp/toolbox.png
         :height: 63px
         :width: 509px
         :scale: 80%
@@ -207,7 +212,7 @@ for saving the .json file. The button 'Export' activates the export, and the but
 The interface window is shown below:
 
 
-.. image:: /doc/pics/converter/export_pf_to_pp/interface.png
+.. image:: /pics/converter/export_pf_to_pp/interface.png
         :height: 194px
         :width: 707px
         :scale: 100%
@@ -219,8 +224,8 @@ The filename can not contain special characters, such as "/".
 The User interface has additional options that can be defined using CheckBoxes:
  * Export 'PV' bus as Slack: defines whether 'PV' power injections are to be defined as Slack in pandapower
  * Verify conversion: defines whether the network should be verified after the conversion. If the option is set, the
-pandapower network will be verified by executing a load flow calculation and comparing the results to values in
-PowerFactory. This happens after the .json file has been saved to the hard drive.
+   pandapower network will be verified by executing a load flow calculation and comparing the results to values in
+   PowerFactory. This happens after the .json file has been saved to the hard drive.
  * Logger in debug mode: can be used in case exporter stops at error. In this case more logging messages are shown.
  * Export Controller: feature is not yet implemented with the user-defined tool
 

@@ -5,5 +5,4 @@ Empty Network
 Create Function
 ==================
 
-.. autofunction:: pandapower.create_empty_network
-
+.. autofunction:: pandapower.create.create_empty_network

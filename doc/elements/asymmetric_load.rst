@@ -14,7 +14,7 @@ Asymmetric Load
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_asymmetric_load
+.. autofunction:: pandapower.create.create_asymmetric_load
 
 
 Input Parameters
@@ -34,7 +34,7 @@ Input Parameters
 
 .. note::
     
-    - The apparent power value sn_mva is provided as additional information for usage in controller or other applications based on panadapower. It is not considered in the power flow!
+    - The apparent power value sn_mva is provided as additional information for usage in controller or other applications based on pandapower. It is not considered in the power flow!
     
     - 'wye' is the same as PH-E loads
 
@@ -90,6 +90,3 @@ Result Parameters
    :file: load_asymmetric_res.csv
    :delim: ;
    :widths: 10, 10, 45
-
-
-

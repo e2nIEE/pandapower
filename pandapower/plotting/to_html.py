@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 # File created my Massimo Di Pierro
@@ -99,7 +99,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
 
         edges += [{'from': int(fb),
                    'to': int(tb),
-                   'label': '%.2f Mw %.2f Km' % (imax, length)}
+                   'label': '%.2f kA %.2f Km' % (imax, length)}
                   for fb, tb, length, idx, inservice, imax in
                   list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
                            net.line.index, net.line.in_service, net.line.max_i_ka))
@@ -113,7 +113,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
 
         edges += [{'from': int(fb),
                    'to': int(tb), 'dashes': 'true',
-                   'label': '%.2f Mw %.2f Km' % (imax, length)}
+                   'label': '%.2f kA %.2f Km' % (imax, length)}
                   for fb, tb, length, idx, inservice, imax in
                   list(zip(net.line.from_bus, net.line.to_bus, net.line.length_km,
                            net.line.index, net.line.in_service, net.line.max_i_ka))
@@ -194,12 +194,14 @@ def _net_to_html(net, respect_switches=True, include_lines=True, include_trafos=
 
     tables = []
     if show_tables:
-        for name in ['bus', 'trafo', 'line', 'dcline', 'load', 'ext_grid', 'gen', 'sgen',
-                     'res_bus', 'res_trafo', 'res_line', 'res_dcline', 'res_load', 'res_ext_grid', 'res_gen', 'res_sgen']:
+        for name in ['bus', 'trafo', 'line', 'dcline', 'load', 'asymmetric_load', 'ext_grid', 'gen', 'sgen',
+                     'res_bus', 'res_trafo', 'res_line', 'res_dcline', 'res_load', 'res_ext_grid', 'res_gen', 'res_sgen',
+                     'res_bus_3ph', 'res_trafo_3ph', 'res_line_3ph', 'res_load_3ph', 'res_asymmetric_load_3ph', 'res_ext_grid_3ph', 'res_sgen_3ph']:
             item = getattr(net, name)
-            table = TABLE(TR(*map(TH, item.columns)),
-                          *[TR(*map(TD, row)) for row in item.values])
-            tables.append(DIV(H2(name), table))
+            if len(item):
+                table = TABLE(TR(*map(TH, item.columns)),
+                              *[TR(*map(TD, row)) for row in item.values])
+                tables.append(DIV(H2(name), table))
 
     page = HTML(
         HEAD(STYLE(style)),

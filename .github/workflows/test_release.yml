@@ -1,0 +1,58 @@
+# This workflow will create a Python package and upload it to testPyPi or PyPi
+# Then, it installs pandapower from there and all dependencies and runs tests with different Python versions
+
+name: test
+
+# Controls when the action will run.
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  push:
+    branches:
+      - release/*
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+        os:  [ ubuntu-latest, windows-latest ]
+        group: [ 1, 2 ]
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras          
+          uv pip install pytest-split
+
+      - name: Install specific dependencies (Windows)
+        if: matrix.os  == 'windows-latest'
+        run: |
+          if ( '${{ matrix.python-version }}'  -eq '3.10' ) { uv pip install pypower }
+          if ( '${{ matrix.python-version }}'  -ne '3.10' ) { uv pip install numba }
+          if ( '${{ matrix.python-version }}'  -eq '3.11' ) { uv pip install lightsim2grid }
+
+      - name: Install specific dependencies (Ubuntu)
+        if: matrix.os  == 'ubuntu-latest'
+        run: |
+          if ${{ matrix.python-version == '3.10' }}; then uv pip install pypower; fi
+          if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
+          if ${{ matrix.python-version == '3.11' }}; then uv pip install lightsim2grid; fi
+
+      - name: List all installed packages
+        run: |
+          uv pip list
+
+      - name: Test with pytest
+        run: |
+          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }}

@@ -2,7 +2,15 @@
 Optimization with PYPOWER
 ===========================
 
+.. warning::
+
+    The optimization with pypower functionality does not have the best convergence properties.
+    Therefore, even if the network configuration is appropriate as an optimization problem,
+    e.g. easily checked by :py:meth:`pandapower.opf_task`, :py:meth:`pandapower.runopp` may not converge.
+
+
 You can run an Optimal Power Flow using the PYPOWER OPF
+
 
 AC OPF
 -----------------------------------
@@ -11,7 +19,7 @@ AC OPF
 
 The internal solver uses the interior point method. By default, the initial state is the center of the operational constraints.
 Another option would be to initialize the optimisation with a valid loadflow solution.
-For optimiation of a timeseries, this warm start possibilty could imply a significant speedup.
+For optimization of a timeseries, this warm start possibility could imply a significant speedup.
 This is not yet provided in the actual version, but could be an useful extension in the future.
 
 
@@ -28,13 +36,6 @@ References:
         Power Systems, IEEE Transactions on, vol. 26, no. 1, pp. 12-19, Feb. 2011.
 
 
-.. note::
-
-    The optimization with pypower does not have the best convergence properties.
-    Therefore, even if the network configuration is appropriate as an optimization problem,
-    e.g. easily checked by :ref:`pandapower.opf_task<pandapower.opf_task>`, :ref:`pandapower.runopp<pandapower.runopp>` may not converge.
-
-
 DC OPF
 ---------
 The dc optimal power flow is a linearized optimization of the grid state. It offers two cost function options, that are fitting special use cases.
@@ -43,13 +44,13 @@ To understand the usage, the `DC OPF tutorial <https://github.com/e2nIEE/pandapo
 .. autofunction:: pandapower.rundcopp
 
 Flexibilities, costs and constraints (except voltage constraints) are handled as in the :ref:`opf`.
-Voltage constraints are not considered in the DC OPF, since voltage magnitutes are not part of the
+Voltage constraints are not considered in the DC OPF, since voltage magnitudes are not part of the
 linearized power flow equations.
 
 .. note::
 
     If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_ppc_opf"].
-    However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.
+    However all necessary information is written into the pandapower format net, so the pandapower user should not usually have to deal with pypower.
 
 
 

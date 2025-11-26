@@ -7,7 +7,7 @@
 
 import sys
 
-from numpy import zeros, arange, flatnonzero as find
+from numpy import zeros, arange, flatnonzero as find, int64
 
 from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST
 
@@ -32,8 +32,8 @@ def polycost(gencost, Pg, der=0):
         sys.stderr.write('polycost: all costs must be polynomial\n')
 
     ng = len(Pg)
-    maxN = max( gencost[:, NCOST].astype(int) )
-    minN = min( gencost[:, NCOST].astype(int) )
+    maxN = max(gencost[:, NCOST].astype(int64))
+    minN = min(gencost[:, NCOST].astype(int64))
 
     ## form coefficient matrix where 1st column is constant term, 2nd linear, etc.
     c = zeros((ng, maxN))

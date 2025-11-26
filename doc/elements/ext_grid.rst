@@ -12,7 +12,7 @@ External Grid
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_ext_grid
+.. autofunction:: pandapower.create.create_ext_grid
 
 
 Input Parameters
@@ -53,7 +53,7 @@ with:
    \end{align*}
 
 
-** Unbalanced Load Flow / Single phase short ciruit **
+** Unbalanced Load Flow / Single phase short circuit **
 
 The external grid is modelled as a voltage source for positive sequence model, which means the node the grid is connected to is treated as a slack node.
 For zero sequence and negative sequence external grid impedance is calculated:

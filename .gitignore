@@ -11,7 +11,7 @@ pandapower.egg-info/
 doc/api/
 doc/.build/*
 doc/_build/*
-tutorials/.ipynb_checkpoints
+*.ipynb_checkpoints
 .cache
 *__pycache__*
 .vs
@@ -21,13 +21,15 @@ tutorials/.ipynb_checkpoints
 *.bak
 *.orig
 *.ini
+!mypy.ini
 pandapower/plotting/plotly/mapbox_token.txt
 pandapower/plotting/plotly/temp-plot.html
 pandapower/test/timeseries/run_timeseries_output/*
 pandapower/timeseries/logs/*
 */data/*
 /.vscode/
-
 pandapower/test/opf/buffer_file.json
-
 pandapower/test/buffer_file.json
+/pandapower/test/test_files/postgresql_connect_data.json
+sonar-project.properties
+.scannerwork/

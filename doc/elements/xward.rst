@@ -1,6 +1,6 @@
-﻿=============
+﻿==============
 Extended Ward
-=============
+==============
 
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`
@@ -8,7 +8,7 @@ Extended Ward
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_xward
+.. autofunction:: pandapower.create.create_xward
 
 Input Parameters
 =========================

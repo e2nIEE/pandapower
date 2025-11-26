@@ -1,0 +1,2937 @@
+{
+  "gen": {
+    "_module": "numpy",
+    "_class": "array",
+    "_object": [
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 3.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 50.916789947891964
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -3.7787204090706297
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 30.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -30.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.02
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 100.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 100.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 4.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 30.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 9.999999999382595
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 30.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -30.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.01
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 100.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 100.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 5.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 20.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 52.28957364198044
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 30.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -30.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.02
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 100.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 100.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          }
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "dtype": "float64"
+  },
+  "bus": {
+    "_module": "numpy",
+    "_class": "array",
+    "_object": [
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 3.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 3.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.02
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 110.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.1
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 10.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -10.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -10.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -5.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9673449057900133
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -1.3959011617142048
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 20.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.1
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 100.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 50.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 2.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9620980395265021
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -1.5646165434336605
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 20.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.1
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 2.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -10.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 10.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9661187754065664
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -1.1881226862714493
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 20.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.1
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 4.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 10.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9764822609434244
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -1.175782587838459
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 20.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.1
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 5.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 2.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 2.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0199999999999998
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -0.1229402144915331
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 110.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.1
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.9
+          }
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "dtype": "float64"
+  },
+  "version": "2",
+  "baseMVA": 100.0,
+  "order": {
+    "gen": {
+      "e2i": {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "int64",
+            "_object": 0
+          },
+          {
+            "_module": "numpy",
+            "_class": "int64",
+            "_object": 1
+          },
+          {
+            "_module": "numpy",
+            "_class": "int64",
+            "_object": 2
+          }
+        ],
+        "dtype": "int64"
+      },
+      "i2e": {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "int64",
+            "_object": 0
+          },
+          {
+            "_module": "numpy",
+            "_class": "int64",
+            "_object": 1
+          },
+          {
+            "_module": "numpy",
+            "_class": "int64",
+            "_object": 2
+          }
+        ],
+        "dtype": "int64"
+      },
+      "status": {
+        "on": {
+          "_module": "numpy",
+          "_class": "array",
+          "_object": [
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 0
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 1
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 2
+            }
+          ],
+          "dtype": "int64"
+        },
+        "off": {
+          "_module": "numpy",
+          "_class": "array",
+          "_object": [],
+          "dtype": "int64"
+        }
+      }
+    },
+    "branch": {
+      "status": {
+        "on": {
+          "_module": "numpy",
+          "_class": "array",
+          "_object": [
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 0
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 1
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 2
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 3
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 4
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 5
+            }
+          ],
+          "dtype": "int64"
+        },
+        "off": {
+          "_module": "numpy",
+          "_class": "array",
+          "_object": [],
+          "dtype": "int64"
+        }
+      }
+    },
+    "int": {
+      "gen": {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 51.434038941668966
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -33.5815430969289
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 30.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -30.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.02
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 100.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 100.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 4.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 30.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 9.999999999382595
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 30.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -30.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.01
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 100.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 100.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 5.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 20.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 84.76356891122238
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 30.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -30.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.02
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 100.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 100.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              }
+            ],
+            "dtype": "float64"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "branch": {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0576
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.05
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 36.5533692825638
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -18.743319344557477
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -36.55336928256384
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 19.773312734520076
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 2.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.01
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.01
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 36.21195977633068
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -14.602607979805127
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -36.05411664264586
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 14.760451113489948
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 2.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 3.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.01
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -63.94588335663829
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -64.7604511143551
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 63.9458833566383
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 65.62185515294578
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 3.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 4.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.01
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.01
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -53.94588335655607
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -75.62185515197598
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 54.83124776491177
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 76.50721956033168
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 5.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.01
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.01
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 14.880669659105289
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -14.838223752371007
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -14.838223752374336
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 14.880669659101963
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 4.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 5.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0576
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 250.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.02
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 360.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -34.838223753410745
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -66.50721956095055
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 34.83822375341086
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 69.88289925211978
+              }
+            ],
+            "dtype": "float64"
+          }
+        ],
+        "dtype": "float64"
+      },
+      "bus": {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 3.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.02
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 14.999999999999998
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 110.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.1
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 10.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -10.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -10.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -5.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9827812826185203
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 13.736311622475808
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 20.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.1
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 2.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 100.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 50.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 2.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9805961185588772
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 13.434201112464118
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 20.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.1
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 3.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": -10.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 10.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9872218486031727
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 13.812672849695637
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 20.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.1
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 4.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 10.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0003487386620944
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 13.686914922313912
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 20.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.1
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9
+              }
+            ],
+            "dtype": "float64"
+          },
+          {
+            "_module": "numpy",
+            "_class": "array",
+            "_object": [
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 5.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 2.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 2.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.0199999999999998
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 14.836335113426351
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 110.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.0
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 1.1
+              },
+              {
+                "_module": "numpy",
+                "_class": "float64",
+                "_object": 0.9
+              }
+            ],
+            "dtype": "float64"
+          }
+        ],
+        "dtype": "float64"
+      }
+    },
+    "state": "e",
+    "bus": {
+      "e2i": {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 2.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 3.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 4.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 5.0
+          }
+        ],
+        "dtype": "float64"
+      },
+      "i2e": {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 3.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 2.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 4.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 5.0
+          }
+        ],
+        "dtype": "float64"
+      },
+      "status": {
+        "on": {
+          "_module": "numpy",
+          "_class": "array",
+          "_object": [
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 0
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 1
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 2
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 3
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 4
+            },
+            {
+              "_module": "numpy",
+              "_class": "int64",
+              "_object": 5
+            }
+          ],
+          "dtype": "int64"
+        },
+        "off": {
+          "_module": "numpy",
+          "_class": "array",
+          "_object": [],
+          "dtype": "int64"
+        }
+      }
+    }
+  },
+  "et": 0.026001453399658203,
+  "branch": {
+    "_module": "numpy",
+    "_class": "array",
+    "_object": [
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 3.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0576
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.05
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 39.742831952666755
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 7.3712871818335
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -39.74283195266676
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -6.374029883905207
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.01
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.01
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 39.10039362024596
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 11.695249050115198
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -38.92239643564036
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -11.51725186550959
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 2.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.01
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -61.077603564359904
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -38.482748134490365
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 61.07760356435991
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 39.0457571889591
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 2.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 4.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.01
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.01
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -51.07760356435969
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -49.04575718895769
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 51.61483153153362
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 49.582985156131606
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 3.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 5.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.01
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.01
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 11.173957995224974
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -11.150007590904043
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -11.150007590903916
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 11.173957995225097
+          }
+        ],
+        "dtype": "float64"
+      },
+      {
+        "_module": "numpy",
+        "_class": "array",
+        "_object": [
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 4.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 5.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0576
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 250.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.02
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 0.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 1.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 360.0
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -31.150007590905357
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": -39.582985156748954
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 31.15000759090536
+          },
+          {
+            "_module": "numpy",
+            "_class": "float64",
+            "_object": 41.115615646754186
+          }
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "dtype": "float64"
+  },
+  "success": 1
+}

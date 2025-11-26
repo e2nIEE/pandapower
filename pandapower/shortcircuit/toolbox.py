@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+from pandapower.auxiliary import _preserve_dtypes
 
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +13,14 @@ import pandas as pd
 import networkx as nx
 from copy import deepcopy
 
-import pandapower as pp
-from pandapower.shortcircuit import calc_sc
+from pandapower.create import create_bus
+from pandapower.run import rundcpp
+from pandapower.topology.graph_searches import connected_component
+from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.create import _get_index_with_check
 from pandapower.topology import create_nxgraph
+from pandapower.pypower.idx_bus import BUS_I
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
 
 __all__ = ["detect_power_station_unit", "calc_sc_on_line"]
 
@@ -73,20 +74,21 @@ def detect_power_station_unit(net, mode="auto",
             # Check parallel trafo
             if not len(np.intersect1d(connected_bus_at_lv_side, trafo_lv_bus)) == 1:
                 raise UserWarning("Failure in power station units detection! Parallel trafos on generator detected!")
-            if np.in1d(required_gen_bus, gen_bus_at_lv_side).sum() > 1:
+            if np.isin(required_gen_bus, gen_bus_at_lv_side).sum() > 1:
                 logger.info("More than 1 gen detected at the lv side of a power station trafo! Will not be considered as power station unit")
                 continue
-            net.gen.loc[np.in1d(net.gen.bus.values, gen_bus_at_lv_side),
+            net.gen.loc[np.isin(net.gen.bus.values, gen_bus_at_lv_side),
                         "power_station_trafo"] = t_ix
 
 
 def _create_element_from_exisiting(net, ele_type, ele_ix):
-    net[ele_type] = net[ele_type].append(pd.Series(net[ele_type].loc[ele_ix, :].to_dict(),
-                                         name=_get_index_with_check(net, ele_type, None)))
-    # todo: replace append by concat properly (shortcircuit/test_iec60909_4 fails if append is just replaced by concat)
-    #  this leads to the error:
-    # net[ele_type] = pd.concat([net[ele_type], pd.Series(net[ele_type].loc[ele_ix, :].to_dict(),
-    #                                                     name=_get_index_with_check(net, ele_type, None))], sort=False)
+    dtypes = net[ele_type].dtypes
+    ps = pd.Series(net[ele_type].loc[ele_ix, :].to_dict(), name=_get_index_with_check(net, ele_type,
+                                                                                      None))
+
+    net[ele_type] = pd.concat([net[ele_type], ps.to_frame().T])
+    _preserve_dtypes(net[ele_type], dtypes)
+
     return net[ele_type].index.to_numpy()[-1]
 
 
@@ -96,7 +98,7 @@ def _create_aux_net(net, line_ix, distance_to_bus0):
     aux_net = deepcopy(net)
 
     # Create auxiliary bus
-    aux_bus = pp.create_bus(aux_net, vn_kv=aux_net.bus.at[aux_net.line.at[line_ix, "from_bus"], "vn_kv"],
+    aux_bus = create_bus(aux_net, vn_kv=aux_net.bus.at[aux_net.line.at[line_ix, "from_bus"], "vn_kv"],
                             name="aux_bus_sc_calc")
 
     # Create auxiliary line, while preserve the original index
@@ -145,8 +147,84 @@ def calc_sc_on_line(net, line_ix, distance_to_bus0, **kwargs):
     # Update network
     aux_net, aux_bus = _create_aux_net(net, line_ix, distance_to_bus0)
 
-    pp.rundcpp(aux_net)
+    rundcpp(aux_net)
     calc_sc(aux_net, bus=aux_bus, **kwargs)
 
     # Return the new net and the aux bus
     return aux_net, aux_bus
+
+
+def adjust_V0_for_trafo_tap(ppci, V0, bus_idx):
+    branch = ppci["branch"]
+    tap = ppci["branch"][:, TAP]
+    tap_branch_idx = np.flatnonzero(tap != 1)
+
+    if len(tap_branch_idx) == 0:
+        return
+
+    Zbus = ppci["internal"]["Zbus"]
+    bus = ppci["bus"]
+
+    f = (branch[:, F_BUS]).real.astype(np.int64)  ## list of "from" buses
+    t = (branch[:, T_BUS]).real.astype(np.int64)  ## list of "to" buses
+    nl = len(branch)
+    nb = len(bus)
+
+    mg = nx.MultiGraph()
+    mg.add_nodes_from(bus[:, BUS_I].astype(np.int64).tolist())
+    mg.add_edges_from(branch[:, [F_BUS, T_BUS]].real.astype(np.int64).tolist())
+
+    hv_buses = branch[tap_branch_idx, F_BUS].real.astype(np.int64)
+    lv_buses = branch[tap_branch_idx, T_BUS].real.astype(np.int64)
+
+    for bh, bl, t in zip(hv_buses, lv_buses, tap[tap_branch_idx]):
+        c = connected_component(mg, bh, notravbuses={bl})
+        c = [cc for cc in c if cc != bl]
+
+        if not np.intersect1d(c, bus_idx):
+            for b in c:
+                V0[b] = (Zbus[:, b] / Zbus[b, b] * V0[b] * t)[b]
+        else:
+            c = connected_component(mg, bl, notravbuses={bh})
+            c = [cc for cc in c if cc != bh]
+            if not np.intersect1d(c, bus_idx):
+                for b in c:
+                    V0[b] = (Zbus[:, b] / Zbus[b, b] * V0[b] / t)[b]
+
+        # V0[c] = (Zbus[:, c] / Zbus[c, c] * V0[c] * tap[tap_branch_idx])[c]
+
+    ## build connection matrix Cft = Cf - Ct for line and from - to buses
+    # i = np.r_[range(nl), range(nl)]  ## double set of row indices
+    ## connection matrix
+    # Cft = sparse((np.r_[np.ones(nl), -np.ones(nl)], (i, np.r_[f, t])), (nl, nb))
+
+
+def adjacency(ppci):
+    branch = ppci["branch"]
+    bus = ppci["bus"]
+    tap = ppci["branch"][:, TAP].real
+    tap_branch_idx = np.flatnonzero(tap != 1)
+    all_vertices = bus[:, BUS_I]
+    num_vertices = len(bus)
+    f = (branch[:, F_BUS]).real.astype(np.int64)  ## list of "from" buses
+    t = (branch[:, T_BUS]).real.astype(np.int64)  ## list of "to" buses
+
+    hv_buses = branch[tap_branch_idx, F_BUS].real.astype(np.int64)
+    lv_buses = branch[tap_branch_idx, T_BUS].real.astype(np.int64)
+
+    matrix = np.zeros((num_vertices, num_vertices))
+    matrix[f, t] = -1
+    matrix[t, f] = -1
+    matrix[np.diag_indices(num_vertices)] = -matrix.sum(axis=1)
+
+    # matrix[hv_buses, lv_buses] = 1 / tap[tap_branch_idx]
+    # matrix[lv_buses, hv_buses] = 1 / tap[tap_branch_idx]
+    # matrix[hv_buses, hv_buses] = 1 / np.square(tap[tap_branch_idx])
+    #
+    # init = np.ones(num_vertices)
+    # init[4] = 1.1
+    # fake_i = matrix.dot(init)
+    # print(fake_i)
+    # np.flatnonzero(fake_i)
+
+    return matrix

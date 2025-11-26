@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -12,7 +12,7 @@ from scipy.sparse.linalg import factorized
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
 from pandapower.pypower.idx_bus import BUS_I, GS, BS, BASE_KV
 
-from pandapower.shortcircuit.idx_bus import KAPPA, R_EQUIV, X_EQUIV, GS_P, BS_P, K_G
+from pandapower.pypower.idx_bus_sc import KAPPA, R_EQUIV, X_EQUIV, GS_P, BS_P, K_G
 from pandapower.shortcircuit.impedance import _calc_ybus, _calc_zbus, _calc_rx
 
 
@@ -89,7 +89,7 @@ def _kappa_method_b(net, ppc):
     if topology == "auto":
         kappa_korr = np.full(ppc["bus"].shape[0], 1.)
         mg = nxgraph_from_ppc(net, ppc)
-        for bidx in ppc["bus"][:, BUS_I].astype(int):
+        for bidx in ppc["bus"][:, BUS_I].astype(np.int64):
             paths = list(nx.all_simple_paths(mg, bidx, "earth"))
             if len(paths) > 1:
                 kappa_korr[bidx] = 1.15
@@ -106,7 +106,7 @@ def _kappa_method_b(net, ppc):
 def nxgraph_from_ppc(net, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]
     mg = nx.MultiGraph()
-    mg.add_nodes_from(ppc["bus"][:, BUS_I].astype(int))
+    mg.add_nodes_from(ppc["bus"][:, BUS_I].astype(np.int64))
     mg.add_edges_from((int(branch[T_BUS]), int(branch[F_BUS]),
                        {"r": branch[BR_R], "x": branch[BR_X]}) for branch in ppc["branch"].real)
     mg.add_node("earth")

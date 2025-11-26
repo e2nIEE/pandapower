@@ -12,10 +12,9 @@ pandapower uses PYPOWER to solve the DC power flow problem:
 		:alt: alternate Text
 		:align: center
     
-.. autofunction:: pandapower.rundcpp
+.. autofunction:: pandapower.run.rundcpp
 
 .. note::
 
     If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_ppc"].
-    However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.
-
+    However all necessary information is written into the pandapower format net, so the pandapower user should not usually have to deal with pypower.

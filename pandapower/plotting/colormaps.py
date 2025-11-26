@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColormap, Normalize, \
-    LogNorm
+try:
+    from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColormap, Normalize, LogNorm
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
 import numpy as np
 
 
@@ -31,6 +35,8 @@ def cmap_discrete(cmap_list):
         >>> lc = create_line_collection(net, cmap=cmap, norm=norm)
         >>> draw_collections([lc])
     """
+    if not MATPLOTLIB_INSTALLED:
+        raise UserWarning("install matplotlib to use this function")
     cmap_colors = []
     boundaries = []
     last_upper = None
@@ -69,6 +75,8 @@ def cmap_continuous(cmap_list):
         >>> bc = create_bus_collection(net, size=70, cmap=cmap, norm=norm)
         >>> draw_collections([bc])
     """
+    if not MATPLOTLIB_INSTALLED:
+        raise UserWarning("install matplotlib to use this function")
     min_loading = cmap_list[0][0]
     max_loading = cmap_list[-1][0]
     cmap_colors = [((loading-min_loading)/(max_loading - min_loading), color) for

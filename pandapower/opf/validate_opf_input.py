@@ -21,10 +21,7 @@ def _check_necessary_opf_parameters(net, logger):
                 controllables = net[element_type].index
             else:
                 if "controllable" in net[element_type].columns:
-                    if element_type == 'gen':
-                        net[element_type].controllable.fillna(True, inplace=True)
-                    else:  # 'sgen', 'load', 'storage'
-                        net[element_type].controllable.fillna(False, inplace=True)
+                    net[element_type].controllable = net[element_type].controllable.fillna(element_type == 'gen')
                     controllables = net[element_type].index[net[element_type].controllable.astype(
                         bool)]
                 else:
@@ -35,7 +32,7 @@ def _check_necessary_opf_parameters(net, logger):
 
                 missing_col = columns.loc[~columns.isin(net[element_type].columns)].values
                 na_col = [col for col in set(columns)-set(missing_col) if
-                          net[element_type][col].isnull().any()]
+                          net[element_type][col].loc[controllables].isnull().any()]
 
                 if len(missing_col):
                     if element_type != "ext_grid":

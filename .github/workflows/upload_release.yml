@@ -1,0 +1,102 @@
+# This workflow will create a Python package and upload it to testPyPi or PyPi
+# Then, it installs pandapower from there and all dependencies and runs tests with different Python versions
+
+name: upload
+
+# Controls when the action will run.
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    inputs:
+      upload_server:
+        description: 'upload server'
+        required: true
+        default: 'testpypi'
+        type: choice
+        options:
+          - 'testpypi'
+          - 'pypi'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  upload:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      # Sets up python3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # Installs and upgrades pip, installs other dependencies and installs the package
+      - name: Install dependencies
+        run: |
+          # Upgrade pip
+          python3 -m pip install --upgrade pip
+          # Install twine
+          python3 -m pip install build setuptools wheel twine
+          python3 -m build
+
+      # Upload to TestPyPI
+      - name: Build and Upload to TestPyPI
+        if: ${{ inputs.upload_server == 'testpypi' }}
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e #release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
+          skip-existing: true
+        #run: |
+        #  python3 -m build
+        #  python3 -m twine check dist/* --strict
+        #  python3 -m twine upload dist/*
+        #env:
+        #  TWINE_USERNAME: __token__
+        #  TWINE_PASSWORD: ${{ secrets.TESTPYPI }}
+        #  TWINE_REPOSITORY: testpypi
+
+      # Upload to PyPI
+      - name: Build and Upload to PyPI
+        if: ${{ inputs.upload_server == 'pypi' }}
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e #release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/
+        #run: |
+        #  python3 -m build
+        #  python3 -m twine check dist/* --strict
+        #  python3 -m twine upload dist/*
+        #env:
+        #  TWINE_USERNAME: __token__
+        #  TWINE_PASSWORD: ${{ secrets.PYPI }}
+        #  TWINE_REPOSITORY: pypi
+
+      # Waste some time
+      #- name: Sleep for 150s to make release available
+      #  if: ${{ inputs.upload_server == 'pypi' }}
+      #  uses: juliangruber/sleep-action@<insert commit sha> #v1
+      #  with:
+      #    time: 150s
+
+      # Notify fraunhofer ci about the new version
+      - uses: eic/trigger-gitlab-ci@1318fa9f4adda50e003db101bc3f9d5ae1b6ab91 #v3
+        if: ${{ inputs.upload_server == 'pypi' }}
+        with:
+          url: https://gitlab.cc-asp.fraunhofer.de
+          project_id: 27329
+          token: ${{secrets.GITLAB_TRIGGER_TOKEN}}
+          ref_name: develop
+
+
+      # Run an installation for testing
+      - name: Install pandapower from PyPI
+        if: ${{ inputs.upload_server == 'pypi' }}
+        run: |
+          python3 -m pip install --pre pandapower
+          python3 -c "import pandapower; print(pandapower.__version__)"

@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
-
-logger = logging.getLogger(__name__)
 
 from copy import deepcopy
 import numpy as np
@@ -19,14 +12,20 @@ from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
 from pandapower.pypower.idx_bus import GS, BS, BASE_KV
 from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS, F_BUS
-from pandapower.shortcircuit.idx_bus import  C_MAX, K_G, K_SG, V_G,\
-    PS_TRAFO_IX, GS_P, BS_P, KAPPA
-from pandapower.shortcircuit.idx_brch import K_T, K_ST
+from pandapower.pypower.idx_bus_sc import C_MAX, K_G, K_SG, V_G, \
+    PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
+from pandapower.pypower.idx_brch_sc import K_T, K_ST
+
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _get_is_ppci_bus(net, bus):
-    is_bus = bus[np.in1d(bus, net._is_elements_final["bus_is_idx"])]
+    is_bus = bus[np.isin(bus, net._is_elements_final["bus_is_idx"])]
     ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
     return ppci_bus
+
 
 def _init_ppc(net):
     _check_sc_data_integrity(net)
@@ -34,7 +33,7 @@ def _init_ppc(net):
     ppc, _ = _pd2ppc(net)
 
     # Init the required columns to nan
-    ppc["bus"][:, [K_G, K_SG, V_G, PS_TRAFO_IX, GS_P, BS_P,]] = np.nan
+    ppc["bus"][:, [K_G, K_SG, V_G, PS_TRAFO_IX, GS_P, BS_P, GS_GEN, BS_GEN]] = np.nan
     ppc["branch"][:, [K_T, K_ST]] = np.nan
 
     # Add parameter K into ppc
@@ -175,6 +174,10 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     ppc["bus"][buses, GS] += gs
     ppc["bus"][buses, BS] += bs
 
+    # we need to keep track of the GS abd BS values that only come from generators
+    ppc["bus"][buses, GS_GEN] = gs
+    ppc["bus"][buses, BS_GEN] = bs
+
     # Calculate K_G
     cmax = ppc["bus"][gen_buses_ppc, C_MAX]
     # if the terminal voltage of the generator is permanently different from the nominal voltage of the generator, it may be
@@ -204,12 +207,12 @@ def _add_gen_sc_z_kg_ks(net, ppc):
     ppc["bus"][buses, BS_P] = gen_bs_p
 
     # Calculate K_S on power station configuration
-    if np.any(~np.isnan(gen.power_station_trafo.values)):
+    if np.any(~gen.power_station_trafo.isnull().values):
         f, _ = net["_pd2ppc_lookups"]["branch"]["trafo"]
 
         # If power station units defined with index in gen, no topological search needed
-        ps_gen_mask = ~np.isnan(gen.power_station_trafo.values)
-        ps_trafo_ix = gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(int)
+        ps_gen_mask = ~gen.power_station_trafo.isnull().values
+        ps_trafo_ix = gen.loc[ps_gen_mask, "power_station_trafo"].values.astype(np.int64)
         ps_trafo = net.trafo.loc[ps_trafo_ix, :]
         _ps_trafo_real_ix =\
             pd.Series(index=net.trafo.index.values,
@@ -279,20 +282,24 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
 
     if np.any(ps_trafo_mask):
         ps_trafo_ppci_ix = np.argwhere(ps_trafo_mask)
-        ps_trafo_ppci_lv_bus = ppci["branch"][ps_trafo_mask, T_BUS].real.astype(int)
-        ps_trafo_ppci_hv_bus = ppci["branch"][ps_trafo_mask, F_BUS].real.astype(int)
+        ps_trafo_ppci_lv_bus = ppci["branch"][ps_trafo_mask, T_BUS].real.astype(np.int64)
+        ps_trafo_ppci_hv_bus = ppci["branch"][ps_trafo_mask, F_BUS].real.astype(np.int64)
         ppci["bus"][np.ix_(ps_trafo_ppci_lv_bus, [PS_TRAFO_IX])] = ps_trafo_ppci_ix
         # if zero_sequence:
         #     ppci["bus"][np.ix_(ps_trafo_ppci_hv_bus, [BS])] += 1/(3 * 22 / (110 ** 2))
 
     if np.any(ps_gen_bus_mask):
-        ppci["bus"][np.ix_(ps_gen_bus_mask, [GS, BS, GS_P, BS_P])] /= ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]
+        ppci["bus"][np.ix_(ps_gen_bus_mask, [GS_P, BS_P])] /= ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]
+        ppci["bus"][np.ix_(ps_gen_bus_mask, [GS, BS])] += (1 / ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])] - 1) * \
+                                                          ppci["bus"][np.ix_(ps_gen_bus_mask, [GS_GEN, BS_GEN])]
         # Then, the R and X are multiplied by K_S (named K_ST here)
         ppci["branch"][np.ix_(ps_trafo_mask, [BR_X, BR_R])] *= ppci["branch"][np.ix_(ps_trafo_mask, [K_ST])]
 
     gen_bus_mask = np.isnan(ppci["bus"][:, K_SG]) & (~np.isnan(ppci["bus"][:, K_G]))
     if np.any(gen_bus_mask):
-        ppci["bus"][np.ix_(gen_bus_mask, [GS, BS, GS_P, BS_P])] /= ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
+        ppci["bus"][np.ix_(gen_bus_mask, [GS_P, BS_P])] /= ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
+        ppci["bus"][np.ix_(gen_bus_mask, [GS, BS])] += (1 / ppci["bus"][np.ix_(gen_bus_mask, [K_G])] - 1) * \
+                                                       ppci["bus"][np.ix_(gen_bus_mask, [GS_GEN, BS_GEN])]
 
     bus_ppci = {}
     if ps_gen_bus.size > 0:
@@ -301,10 +308,12 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
             if not np.isfinite(ppci_gen["bus"][bus, K_SG]):
                 raise UserWarning("Parameter error of K SG")
             # Correct ps gen bus
-            ppci_gen["bus"][bus, [GS, BS, GS_P, BS_P]] /= (ppci_gen["bus"][bus, K_G] / ppci_gen["bus"][bus, K_SG])
+            ppci_gen["bus"][bus, [GS_P, BS_P]] /= (ppci_gen["bus"][bus, K_G] / ppci_gen["bus"][bus, K_SG])
+            ppci_gen["bus"][bus, [GS, BS]] += (1 / (ppci_gen["bus"][bus, K_G]) - 1 / (ppci_gen["bus"][bus, K_SG])) * \
+                                              ppci_gen["bus"][bus, [GS_GEN, BS_GEN]]
 
             # Correct ps transfomer
-            trafo_ix = ppci_gen["bus"][bus, PS_TRAFO_IX].astype(int)
+            trafo_ix = ppci_gen["bus"][bus, PS_TRAFO_IX].astype(np.int64)
             # Calculating SC inside power system unit
             ppci_gen["branch"][trafo_ix, [BR_X, BR_R]] /= ppci_gen["branch"][trafo_ix, K_ST]
 
@@ -314,4 +323,3 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
 
 # TODO Roman: correction factor for 1ph cases
 
-# TODO Roman: Implementation wind generation units IEC 60909-2016

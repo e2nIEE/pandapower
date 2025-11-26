@@ -1,35 +1,27 @@
 import inspect
-import collections
-import functools
 
 import numpy as np
 from numpy import complex128, zeros
 
-import pandapower as pp
-import pandapower.pf.run_newton_raphson_pf as nr_pf
-
-from pandapower.control.controller.const_control import ConstControl
-from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.auxiliary import _clean_up
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
-from pandapower.build_bus import _calc_pq_elements_and_add_on_ppc, \
-    _calc_shunts_and_add_on_ppc
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, TAP, SHIFT, BR_STATUS, RATE_A
-from pandapower.pypower.idx_bus import PD, QD
+from pandapower.build_bus import _calc_pq_elements_and_add_on_ppc
+from pandapower.control.controller.const_control import ConstControl
+from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.makeSbus import _get_Sbus, _get_Cg, makeSbus
 from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_full, pf_solution_single_slack
+from pandapower.pf.run_newton_raphson_pf import newtonpf, _get_pf_variables_from_ppci, _get_Y_bus, makeYbus_numba
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
+from pandapower.pypower.idx_bus import PD, QD
+from pandapower.pypower.idx_bus_dc import DC_PD
+from pandapower.pypower.makeSbus import makeSbus
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results, _get_aranged_lookup
 from pandapower.results_branch import _get_branch_flows, _get_line_results, _get_trafo3w_results, _get_trafo_results
-from pandapower.results_bus import write_pq_results_to_element, _get_bus_v_results, _get_bus_results
+from pandapower.results_bus import _get_bus_results, _get_bus_dc_results
 from pandapower.results_gen import _get_gen_results
-from pandapower.timeseries.output_writer import OutputWriter
+from pandapower.run import runpp
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +31,8 @@ class TimeSeriesRunpp:
     Class for time series runpp.
     The goal of this class is a runpp function, which reuses many NR variables in each time step of a time series
     calculation.
-    Also not all powerflow results are calculated in each runpp. Instead only the results the output writer wants
-    are calculated. Therefore this class must be initiliazed with an output writer
+    Also, not all power flow results are calculated in each runpp. Instead, only the results the output writer wants
+    are calculated. Therefore, this class must be initialized with an output writer
     """
 
     def __init__(self, net):
@@ -58,13 +50,24 @@ class TimeSeriesRunpp:
         bus = self.ppci["bus"]
         branch = self.ppci["branch"]
         gen = self.ppci["gen"]
+        svc = self.ppci["svc"]
+        tcsc = self.ppci["tcsc"]
+        ssc = self.ppci["ssc"]
+        vsc = self.ppci["vsc"]
         # compute complex bus power injections [generation - load]
         # self.Cg = _get_Cg(gen_on, bus)
         # Sbus = _get_Sbus(self.baseMVA, bus, gen, self.Cg)
         Sbus = makeSbus(self.baseMVA, bus, gen)
 
-        # run the newton power  flow
-        V, success, _, _, _, _ = nr_pf.newtonpf(self.Ybus, Sbus, self.V, self.pv, self.pq, self.ppci, options)
+        # run the newton power flow
+        V, success, _, _, _, _, _ = newtonpf(Ybus=self.Ybus,
+                                             Sbus=Sbus,
+                                             V0=self.V,
+                                             ref=self.ref,
+                                             pv=self.pv,
+                                             pq=self.pq,
+                                             ppci=self.ppci,
+                                             options=options)
 
         if not success:
             logger.warning("Loadflow not converged")
@@ -77,8 +80,8 @@ class TimeSeriesRunpp:
         else:
             pfsoln = pfsoln_full
 
-        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, self.Ybus, self.Yf, self.Yt, V, self.ref,
-                                  self.ref_gens, Ibus=self.Ibus)
+        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, self.Ybus, self.Yf, self.Yt, V,
+                                  self.ref, self.ref_gens, Ibus=self.Ibus)
 
         self.ppci["bus"] = bus
         self.ppci["branch"] = branch
@@ -113,10 +116,14 @@ class TimeSeriesRunpp:
         bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
         bus_pq[net_bus_idx, 0] = ppc["bus"][ppc_bus_idx, PD] * 1e3
         bus_pq[net_bus_idx, 1] = ppc["bus"][ppc_bus_idx, QD] * 1e3
+        bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)
+        bus_dc_lookup_aranged = _get_aranged_lookup(net, "bus_dc")
+        bus_p_dc[bus_dc_lookup_aranged, 0] = ppc["bus_dc"][:, DC_PD]  # todo test this
 
         bus_lookup_aranged = _get_aranged_lookup(net)
         _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
         _get_bus_results(net, ppc, bus_pq)
+        _get_bus_dc_results(net, bus_p_dc)
 
         net["res_bus"].index = net["bus"].index
 
@@ -138,10 +145,10 @@ class TimeSeriesRunpp:
         self.init_newton_variables()
         net = self.net
         # get ppc and ppci
-        # pp.runpp(net, init_vm_pu="flat", init_va_degree="dc")
-        # pp.runpp(net, init_vm_pu="results", init_va_degree="results")
-        pp.runpp(net, init="dc")
-        pp.runpp(net, init="results")
+        # runpp(net, init_vm_pu="flat", init_va_degree="dc")
+        # runpp(net, init_vm_pu="results", init_va_degree="results")
+        runpp(net, init="dc")
+        runpp(net, init="results")
         net._options["init_results"] = True
         net._options["init_vm_pu"] = "results"
         net._options["init_va_degree"] = "results"
@@ -151,9 +158,9 @@ class TimeSeriesRunpp:
         net["_ppc"] = self.ppc
 
         self.baseMVA, bus, gen, branch, self.ref, self.pv, self.pq, _, _, self.V, self.ref_gens = \
-            nr_pf._get_pf_variables_from_ppci(self.ppci)
+            _get_pf_variables_from_ppci(self.ppci)
         self.ppci, self.Ybus, self.Yf, self.Yt = \
-            nr_pf._get_Y_bus(self.ppci, options, nr_pf.makeYbus_numba, self.baseMVA, bus, branch)
+            _get_Y_bus(self.ppci, options, makeYbus_numba, self.baseMVA, bus, branch)
         self.Ibus = zeros(len(self.V), dtype=complex128)
 
         # self.Cg = _get_Cg(gen, bus)  # assumes that all gens are on!
@@ -233,9 +240,9 @@ class TimeSeriesRunpp:
 
         # update Ybus based on this
         options = net._options
-        baseMVA, bus, gen, branch, ref, pv, pq, _, _, V, _ = nr_pf._get_pf_variables_from_ppci(ppci)
-        self.ppci, self.Ybus, self.Yf, self.Yt = nr_pf._get_Y_bus(ppci, options, nr_pf.makeYbus_numba, baseMVA, bus,
-                                                                  branch)
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V, _ = _get_pf_variables_from_ppci(ppci)
+        self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(ppci, options, makeYbus_numba, baseMVA, bus,
+                                                            branch)
 
     def get_update_ctrl(self):
         controllers = self.net.controller["object"]

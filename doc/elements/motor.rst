@@ -5,7 +5,7 @@ Motor
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_motor
+.. autofunction:: pandapower.create.create_motor
 
 Input Parameters
 =====================
@@ -46,4 +46,3 @@ Result Parameters
    :widths: 10, 10, 45
    
 The power values in the net.res_motor table are equivalent to :math:`P_{motor}` and :math:`Q_{motor}`.
-

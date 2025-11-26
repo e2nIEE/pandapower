@@ -1,8 +1,8 @@
 from cmath import rect
 
-from numpy import real, vectorize, deg2rad, maximum, sqrt, empty, zeros, nan
+from numpy import real, vectorize, deg2rad, maximum, sqrt, empty, zeros, nan, int64
 
-from pandapower import F_BUS, T_BUS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pf.pfsoln_numba import calc_branch_flows_batch
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.results_branch import _get_trafo3w_lookups
@@ -113,8 +113,8 @@ def v_to_i_s(net, vm, va):
     baseMVA = internal["baseMVA"]
     branch = internal["branch"]
     base_kv = internal["bus"][:, BASE_KV]
-    f_bus = real(branch[:, F_BUS]).astype(int)
-    t_bus = real(branch[:, T_BUS]).astype(int)
+    f_bus = real(branch[:, F_BUS]).astype(int64)
+    t_bus = real(branch[:, T_BUS]).astype(int64)
 
     # batch read
     Sb_f, sf_abs, if_abs = calc_branch_flows_batch(Yf.data, Yf.indptr, Yf.indices, V, baseMVA, Yf.shape[0],

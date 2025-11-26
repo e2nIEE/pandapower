@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -11,10 +11,7 @@ from scipy.io import savemat
 
 from pandapower.converter.pypower import to_ppc
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +31,15 @@ def to_mpc(net, filename=None, **kwargs):
         ****kwargs** - please look at to_ppc() documentation
 
     EXAMPLE:
-        import pandapower.converter as pc
-        import pandapower.networks as pn
-        net = pn.case9()
-        pc.to_mpc(net, "case9.mat")
-
+        >>> from pandapower.converter import to_mpc
+        >>> from pandapower.networks.power_system_test_cases import case9
+        >>>
+        >>> net = case9()
+        >>> to_mpc(net, "case9.mat")
     """
     ppc = to_ppc(net, **kwargs)
 
-    mpc = dict()
+    mpc = {}
     mpc["mpc"] = _ppc2mpc(ppc)
     if filename is not None:
         # savemat
@@ -75,7 +72,3 @@ def _ppc2mpc(ppc):
     # baseMVA has to be a float instead of int
     mpc["baseMVA"] = mpc["baseMVA"] * 1.0
     return mpc
-
-
-if "__main__" == __name__:
-    pass

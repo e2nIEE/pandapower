@@ -1,0 +1,13 @@
+**Parameter**;**Datatype**;**Explanation**
+ikss_hv_ka;float;magnitude of the initial SC current at HV transformer bus [kA]
+ikss_hv_degree;float;degree of the initial SC current at HV transformer bus [degrees]
+ikss_lv_ka;float;magnitude of the initial SC current at LV transformer bus [kA]
+ikss_lv_degree;float;degree of the initial SC current at LV transformer bus [degrees]
+p_hv_mw;float;active SC power flow at HV transformer bus [MW]
+q_hv_mvar;float;reactive SC power flow at HV transformer bus [MVAr]
+p_lv_mw;float;active SC power flow at LV transformer bus [MW]
+q_lv_mvar;float;reactive SC power flow at LV transformer bus [MVAr]
+vm_hv_pu;float;voltage magnitude at the high voltage (HV) bus [p.u.]
+va_hv_degree;float;voltage angle at the high voltage (HV) bus [degrees]
+vm_lv_pu;float;voltage magnitude at the low voltage (LV) bus [p.u.]
+va_lv_degree;float;voltage angle at the low voltage (LV) bus [degrees]

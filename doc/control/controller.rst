@@ -12,7 +12,7 @@ The basic controller is the base controller class that should be subclassed when
 
 .. autoclass:: pandapower.control.basic_controller.Controller
     :members:
-	
+
 ConstControl
 ==============
 .. _ConstControl:
@@ -48,7 +48,14 @@ Discrete Tap Control
 
 .. autoclass:: pandapower.control.controller.trafo.DiscreteTapControl.DiscreteTapControl
     :members:
-    
+
+
+DER Controller
+===============
+.. autoclass:: pandapower.control.controller.DERController.der_control.DERController
+    :members:
+
+
 CharacteristicControl
 =====================
 
@@ -63,10 +70,10 @@ CharacteristicControl
 -------------
 
 **********************
-USetTapControl
+VmSetTapControl
 **********************
 
-.. autoclass:: pandapower.control.controller.trafo.USetTapControl.USetTapControl
+.. autoclass:: pandapower.control.controller.trafo.VmSetTapControl.VmSetTapControl
     :members:
 
 -------------
@@ -99,3 +106,41 @@ SplineCharacteristic
 
 .. autoclass:: pandapower.control.util.characteristic.SplineCharacteristic
     :members:
+
+
+Station Controller
+==================
+The following controllers are used for the representation of station controllers as used in PowerFactory. The Vdroop is
+a new controller class used for the local droop voltage control.
+
+**********************
+Binary Search Control
+**********************
+
+.. autoclass:: pandapower.control.controller.station_control.BinarySearchControl
+    :members:
+
+***************
+Droop Control
+***************
+
+.. autoclass:: pandapower.control.controller.station_control.DroopControl
+    :members:
+
+**********************
+Local VDroop Control
+**********************
+
+.. autoclass:: pandapower.control.controller.station_control.VDroopControl_local
+    :members:
+
+Shunt Controller
+==================
+
+**********************
+Discrete Shunt Control
+**********************
+
+.. autoclass:: pandapower.control.controller.shunt_control.DiscreteShuntController
+    :members:
+

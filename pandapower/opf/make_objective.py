@@ -4,17 +4,14 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import zeros, array
+from numpy import zeros, array, int64
 from pandapower.pypower.idx_cost import MODEL, NCOST, COST, PW_LINEAR, POLYNOMIAL
 from pandapower.pypower.idx_gen import PMIN, PMAX
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +56,7 @@ def _map_costs_to_gen(net, cost):
                   for et, element in zip(cost.et.values, cost.element.values)])
     cost_is = array([gen is not None for gen in gens])
     cost = cost[cost_is]
-    gens = gens[cost_is].astype(int)
+    gens = gens[cost_is].astype(int64)
     signs = array([-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et])
     return gens, cost, signs
 

@@ -5,10 +5,10 @@ from_bus*;integer;;Index of bus where the line starts
 to_bus*;integer;;Index of bus where the line ends
 length_km*;float;:math:`>` 0;length of the line [km]
 r_ohm_per_km*;float;:math:`\geq` 0   ;resistance of the line [Ohm per km]
-x_ohm_per_km*;float;:math:`\geq` 0   ;inductance of the line [Ohm per km]
+x_ohm_per_km*;float;:math:`\geq` 0   ;reactance of the line [Ohm per km]
 c_nf_per_km*;float;:math:`\geq` 0   ;capacitance of the line (line-to-earth) [nano Farad per km]
 r0_ohm_per_km****;float;:math:`\geq` 0   ;zero sequence resistance of the line [Ohm per km]
-x0_ohm_per_km****;float;:math:`\geq` 0   ;zero sequence inductance of the line [Ohm per km]
+x0_ohm_per_km****;float;:math:`\geq` 0   ;zero sequence reactance of the line [Ohm per km]
 c0_nf_per_km****;float;:math:`\geq` 0   ;zero sequence capacitance of the line [nano Farad per km]
 g_us_per_km*;float;:math:`\geq` 0   ;dielectric conductance of the line [micro Siemens per km]
 max_i_ka*;float;:math:`>` 0   ;maximal thermal current [kilo Ampere]
@@ -21,3 +21,4 @@ type;string;"| Naming conventions:
 max_loading_percent**;float;:math:`>` 0   ;Maximum loading of the line
 endtemp_degree***;float;:math:`>` 0   ;Short-Circuit end temperature of the line
 in_service*;boolean;True / False;specifies if the line is in service.
+geo;string / object; ; geojson.LineString object or its string representation

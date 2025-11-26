@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2022 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -13,7 +13,8 @@
 
 from sys import stdout, stderr
 
-from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, Inf, flatnonzero as find
+from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, inf, \
+    flatnonzero as find, int64, full
 from scipy.sparse import hstack, csr_matrix as sparse
 from pandapower.pypower.idx_brch import RATE_A
 from pandapower.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
@@ -122,7 +123,7 @@ def opf_setup(ppc, ppopt):
         stdout.write(errstr)
 
     ## set up initial variables and bounds
-    gbus = gen[:, GEN_BUS].astype(int)
+    gbus = gen[:, GEN_BUS].astype(int64)
     Va   = bus[:, VA] * (pi / 180.0)
     Vm   = bus[:, VM].copy()
     Vm[gbus] = gen[:, VG]   ## buses with gens, init Vm from gen data
@@ -140,7 +141,7 @@ def opf_setup(ppc, ppopt):
         q1    = array([])    ## index of 1st Qg column in Ay
 
         ## power mismatch constraints
-        B, Bf, Pbusinj, Pfinj = makeBdc(bus, branch)
+        B, Bf, Pbusinj, Pfinj, _ = makeBdc(bus, branch)
         neg_Cg = sparse((-ones(ng), (gen[:, GEN_BUS], arange(ng))), (nb, ng))   ## Pbus w.r.t. Pg
         Amis = hstack([B, neg_Cg], 'csr')
         bmis = -(bus[:, PD] + bus[:, GS]) / baseMVA - Pbusinj
@@ -148,7 +149,7 @@ def opf_setup(ppc, ppopt):
         ## branch flow constraints
         il = find((branch[:, RATE_A] != 0) & (branch[:, RATE_A] < 1e10))
         nl2 = len(il)         ## number of constrained lines
-        lpf = -Inf * ones(nl2)
+        lpf = full(nl2, -inf)
         upf = branch[il, RATE_A] / baseMVA - Pfinj[il]
         upt = branch[il, RATE_A] / baseMVA + Pfinj[il]
 
@@ -170,7 +171,7 @@ def opf_setup(ppc, ppopt):
         ycon_vars = ['Pg', 'Qg', 'y']
 
     ## voltage angle reference constraints
-    Vau = Inf * ones(nb)
+    Vau = full(nb, inf)
     Val = -Vau
     Vau[refs] = Va[refs]
     Val[refs] = Va[refs]

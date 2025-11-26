@@ -1,0 +1,34 @@
+name: Blank template
+description: Template for issues that are no bug report or feature request
+title: 'YOUR TITLE'
+labels: []
+
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Feature Checklist
+      description: Please make sure that the feature does not already exist.
+      options:
+        - label: >
+            Searched the [issues page](https://github.com/e2nIEE/pandapower/issues) for similar reports
+        - label: >
+            Read the relevant sections of the [documentation](https://pandapower.readthedocs.io/en/latest/about.html)
+        - label: >
+            Browse the [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for usefull code snippets and examples of use
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue
+      description: Describe your issue.
+
+    validations:
+      required: true
+  - type: checkboxes
+    id: label_checks
+    attributes:
+      label: Label
+      description: Choose `labels` at the right side (e.g. `bug`, `controller`, `OPF`...).
+      options:
+        - label: >
+            Relevant labels are selected

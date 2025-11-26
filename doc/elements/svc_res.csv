@@ -1,0 +1,6 @@
+**Parameter**;**Datatype**;**Explanation**
+thyristor_firing_angle_degree*;float;the resulting value of thyristor firing angle of svc [degree]
+x_ohm;float;resulting value of the shunt impedance of svc [Ohm]
+q_mvar;float;shunt reactive power consumption of svc [MVAr]
+vm_pu;float;voltage magnitude at svc bus [pu]
+va_degree;float;voltage angle at svc bus [degree]
