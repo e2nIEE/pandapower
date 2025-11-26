@@ -654,14 +654,14 @@ def test_ignore_unknown_objects():
     assert_net_equal(net, net3)
     assert_net_equal(net, net4)
 
+
 def test_omitting_tables_from_json(net_in):
     net = copy.deepcopy(net_in)
-    control.ConstControl(net, 'load', 'p_mw', 0)
-    json_string = pp.to_json(net)
-    net1 = pp.from_json_string(json_string, omit_tables=['controller'])
-    net2 = pp.from_json_string(json_string)
-    net3 = pp.from_json_string(json_string, omit_modules=['control.controller'])
-
+    ConstControl(net, 'load', 'p_mw', 0)
+    json_string = to_json(net)
+    net1 = from_json(json_string, omit_tables=['controller'])
+    net2 = from_json(json_string)
+    net3 = from_json(json_string, omit_modules=['control.controller'])
 
     assert(nets_equal(net, net2))
     assert(not nets_equal(net, net1))
@@ -670,6 +670,7 @@ def test_omitting_tables_from_json(net_in):
     assert(not nets_equal(net, net3))
     net3.controller.drop(net3.controller.index, inplace=True)
     assert(nets_equal(net, net3))
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
