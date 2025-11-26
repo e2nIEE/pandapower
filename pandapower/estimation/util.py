@@ -162,7 +162,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
     remove_shunt_injection_from_meas(net,"ward")
 
     for br_type in branch_meas_type:
-        if not net['res_' + br_type].empty:
+        if f'res_{br_type}' in net and not net['res_' + br_type].empty:
             for br_ix, br_res in net['res_' + br_type].iterrows():
                 for side in branch_meas_type[br_type]['side']:
                     for meas_type in branch_meas_type[br_type]['meas_type']:
