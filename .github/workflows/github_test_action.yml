@@ -4,11 +4,9 @@
 name: pandapower
 on:
   push:
-    branches: '*'
     paths-ignore:
       - 'CHANGELOG.rst'
   pull_request:
-    branches: '*'
     paths-ignore:
       - 'CHANGELOG.rst'
 
@@ -20,11 +18,10 @@ jobs:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
         # Reminder: when removing the support of an old python version here, then don't forget to
-        # remove it also in pyproject.toml 'requires-python'
+        # remove it also in pyproject.toml 'requires-python' and the release pipelines
         group: [ 1, 2 ]
     steps:
-#      - uses: actions/checkout@v4
-#      - uses: julia-actions/setup-julia@v1.5
+#      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
@@ -72,7 +69,7 @@ jobs:
         group: [ 1 ]
     steps:
       - uses: actions/checkout@v5
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
@@ -125,13 +122,13 @@ jobs:
           cp coverage-2.xml codacy-coverage-2.xml
       - name: Upload coverage to Codacy
         continue-on-error: true
-        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+        uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 #v1.3
         with:
           coverage-reports: codacy-coverage-1.xml,codacy-coverage-2.xml
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 #v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage-1.xml,./coverage-2.xml
@@ -350,7 +347,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check sphinx build
-        uses: ammaraskar/sphinx-action@7.4.7
+        uses: ammaraskar/sphinx-action@54e52bfb642e9b60ea5b6bcb05fe3f74b40d290a #8.2.3
         with:
           pre-build-command: "python -m pip install uv && uv pip install .[docs] --system --link-mode=copy"
           build-command: "sphinx-build -b html . _build -W"

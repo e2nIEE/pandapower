@@ -13,7 +13,7 @@ from pandapower.create import create_transformer, create_line, create_transforme
 from pandapower.groups import group_element_index, count_group_elements
 from pandapower.networks.cigre_networks import create_cigre_network_mv, create_cigre_network_lv
 from pandapower.networks.create_examples import example_simple, example_multivoltage
-from pandapower.networks.ieee_europen_lv_asymmetric import ieee_european_lv_asymmetric
+from pandapower.networks.ieee_european_lv_asymmetric import ieee_european_lv_asymmetric
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
@@ -303,7 +303,7 @@ def test_merge_with_characteristics():
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
 
     # merge networks
-    merged, lookup = merge_nets(net1, net2, validate=False, return_net2_reindex_lookup=True)
+    merged, _ = merge_nets(net1, net2, validate=False, return_net2_reindex_lookup=True)
 
     # The second transformer should have the second characteristic
     result = merged.trafo_characteristic_table[
@@ -639,14 +639,14 @@ def test_drop_elements_at_buses():
                         std_type='24-AL1/4-ST1A 0.4', name='line1')
     create_sgen(net, 1, 0)
 
-    switch0a = create_switch(net, bus=bus0, element=trafo0, et='t3')
-    switch0b = create_switch(net, bus=bus1, element=trafo0, et='t3')
-    switch0c = create_switch(net, bus=bus2, element=trafo0, et='t3')
-    switch1 = create_switch(net, bus=bus1, element=bus5, et='b')
-    switch2a = create_switch(net, bus=bus2, element=trafo1, et='t')
-    switch2b = create_switch(net, bus=bus3, element=trafo1, et='t')
-    switch3a = create_switch(net, bus=bus3, element=line1, et='l')
-    switch3b = create_switch(net, bus=bus4, element=line1, et='l')
+    create_switch(net, bus=bus0, element=trafo0, et='t3')
+    create_switch(net, bus=bus1, element=trafo0, et='t3')
+    create_switch(net, bus=bus2, element=trafo0, et='t3')
+    create_switch(net, bus=bus1, element=bus5, et='b')
+    create_switch(net, bus=bus2, element=trafo1, et='t')
+    create_switch(net, bus=bus3, element=trafo1, et='t')
+    create_switch(net, bus=bus3, element=line1, et='l')
+    create_switch(net, bus=bus4, element=line1, et='l')
     # bus id needs to be entered as iterable, not done in the function
 
     for b in net.bus.index.values:
@@ -873,7 +873,7 @@ def test_replace_ward_by_internal_elements():
 
     new_ets = pd.Index(["load", "shunt"])
     assert count_group_elements(net_org, 0).to_dict() == {"ward": 1}
-    assert count_group_elements(net, 0).to_dict() == {et: 1 for et in new_ets}
+    assert count_group_elements(net, 0).to_dict() == dict.fromkeys(new_ets, 1)
     elm_change = count_elements(net, return_empties=True) - count_elements(
         net_org, return_empties=True)
     assert set(elm_change.loc[new_ets]) == {3}
@@ -913,7 +913,7 @@ def test_replace_xward_by_internal_elements():
 
     new_ets = pd.Index(["load", "shunt", "gen", "impedance", "bus"])
     assert count_group_elements(net_org, 0).to_dict() == {"xward": 1}
-    assert count_group_elements(net, 0).to_dict() == {et: 1 for et in new_ets}
+    assert count_group_elements(net, 0).to_dict() == dict.fromkeys(new_ets, 1)
     elm_change = count_elements(net, return_empties=True) - count_elements(
         net_org, return_empties=True)
     assert set(elm_change.loc[new_ets]) == {3}

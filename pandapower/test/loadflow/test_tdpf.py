@@ -333,7 +333,7 @@ def test_default_parameters():
         runpp(net, tdpf=True, tdpf_delay_s=120)
 
     # check for simplified method
-    net = net_backup.deepcopy()
+    net = copy.deepcopy(net_backup)
     net.line["tdpf"] = np.nan
     with pytest.raises(UserWarning, match="required columns .* are missing"):
         runpp(net, tdpf=True, tdpf_update_r_theta=False)
@@ -353,13 +353,13 @@ def test_default_parameters():
     runpp(net, tdpf=True, tdpf_update_r_theta=False)
 
     # now test with "normal" TDPF
-    net = net_backup.deepcopy()
+    net = copy.deepcopy(net_backup)
     net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
     net.line["conductor_outer_diameter_m"] = 2.5e-2  # 2.5 cm?
     runpp(net, tdpf=True)
     # here all the standard assumptions are filled
     # now we check that user-defined assumptions are preserved
-    net = net_backup.deepcopy()
+    net = copy.deepcopy(net_backup)
     net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
     net.line["conductor_outer_diameter_m"] = 2.5e-2  # 2.5 cm?
     net.line.loc[[2, 4], 'temperature_degree_celsius'] = 40

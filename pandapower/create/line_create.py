@@ -358,7 +358,7 @@ def create_lines(
     from_buses: Sequence,
     to_buses: Sequence,
     length_km: float | Iterable[float],
-    std_type: str,
+    std_type: str | Iterable[str],
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
     geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
@@ -473,7 +473,7 @@ def create_lines(
         if "type" in lineparam:
             entries["type"] = lineparam["type"]
     else:
-        lineparam = list(map(load_std_type, [net] * len(std_type), std_type, ["line"] * len(std_type)))
+        lineparam = list(map(load_std_type, [net] * len(index), std_type, ["line"] * len(index)))
         entries["r_ohm_per_km"] = list(map(itemgetter("r_ohm_per_km"), lineparam))
         entries["x_ohm_per_km"] = list(map(itemgetter("x_ohm_per_km"), lineparam))
         entries["c_nf_per_km"] = list(map(itemgetter("c_nf_per_km"), lineparam))
@@ -502,7 +502,8 @@ def create_lines(
         _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
 
     _set_multiple_entries(net, "line", index, entries=entries)
-    net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
+    if "geo" in net.bus.columns:
+        net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
 
     _add_multiple_branch_geodata(net, geodata, index)
 
@@ -1300,8 +1301,6 @@ def create_lines_dc_from_parameters(
     }
 
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent", max_loading_percent)
-    # _add_to_entries_if_not_nan(net, "line_dc", entries, index, "r0_ohm_per_km", r0_ohm_per_km)
-    # _add_to_entries_if_not_nan(net, "line_dc", entries, index, "g0_us_per_km", g0_us_per_km)
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "alpha", alpha)
 

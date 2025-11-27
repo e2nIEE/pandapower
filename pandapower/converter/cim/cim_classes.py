@@ -9,7 +9,6 @@ import re
 import tempfile
 import zipfile
 from types import MappingProxyType
-from typing import Dict, List
 import pandas as pd
 import numpy as np
 from lxml import etree
@@ -18,8 +17,9 @@ from .cim_tools import get_cim_schema
 
 
 class CimParser:
-
-    def __init__(self, cim: Dict[str, Dict[str, pd.DataFrame]] = None, cgmes_version: str = None, **kwargs):
+    def __init__(
+        self, cim: dict[str, dict[str, pd.DataFrame]] | None = None, cgmes_version: str | None = None, **kwargs
+    ):
         """
         This class parses CIM files and loads its content to a dictionary of
         CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
@@ -29,14 +29,17 @@ class CimParser:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
-        self.__cim_blueprint = self._initialize_cim_data_structure(self.cgmes_version)
-        self.cim: Dict[str, Dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
-        self.file_names: Dict[str, str] = {}
+        self.__cim_blueprint: MappingProxyType[str, MappingProxyType[str, pd.DataFrame]] =\
+            self._initialize_cim_data_structure(self.cgmes_version)
+        self.cim: dict[str, dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
+        self.file_names: dict[str, str] = {}
         self.report_container = ReportContainer()
         self.ignore_errors = bool(kwargs.get("ignore_errors", False))
 
-    def parse_files(self, file_list: List[str] | str = None, encoding: str = None, prepare_cim_net: bool = False,
-                    set_data_types: bool = False) -> CimParser:
+    def parse_files(
+        self, file_list: list[str] | str | None = None,
+        encoding: str | None = None, prepare_cim_net: bool = False, set_data_types: bool = False,
+    ) -> CimParser:
         """
         Parse CIM XML files from a storage.
 
@@ -98,8 +101,9 @@ class CimParser:
                             data_type_col = data_types_map[data_type_col_str]
                         else:
                             continue
-                        self.logger.debug("Setting data type of %s from CIM element %s as type %s" %
-                                          (col, cim_element_type, data_type_col_str))
+                        self.logger.debug(
+                            f"Setting data type of {col} from CIM element {cim_element_type} as type {data_type_col_str}"
+                        )
                         if col in default_values:  # todo deprecated due to repair function?
                             self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(
                                 value=default_values[col])
@@ -114,10 +118,12 @@ class CimParser:
                             self.cim[profile][cim_element_type][col] = \
                                 self.cim[profile][cim_element_type][col].astype(data_type_col)
                         except Exception as e:
-                            self.logger.warning("Couldn't set the datatype to %s for field %s at CIM type %s in "
-                                                "profile %s!" % (data_type_col_str, col, cim_element_type, profile))
-                            self.logger.warning("This may be harmless if the data is not need by the converter. "
-                                                "Message: %s" % e)
+                            self.logger.warning(f"Couldn't set the datatype to {data_type_col_str} for field {col} "
+                                                f"at CIM type {cim_element_type} in profile {profile}!")
+                            self.logger.warning(
+                                "This may be harmless if the data is not need by the converter. "
+                                f"Message: {e}"
+                            )
         self.logger.info("Finished setting the cim data types.")
         self.report_container.add_log(Report(level=LogLevel.INFO, code=ReportCode.INFO_PARSING,
                                              message="CIM parser set the data types from the CIM data."))
@@ -130,11 +136,9 @@ class CimParser:
         """
         self.logger.info("Start preparing the cim data.")
         cim_data_structure = self.get_cim_data_structure()
-        for profile in list(self.cim):
-            if profile not in cim_data_structure:
-                # this profile is not used by the converter, drop it
-                del self.cim[profile]
-                continue
+        # drop profiles not used by the converter
+        self.cim = {profile: v for profile, v in self.cim.items() if profile in cim_data_structure}
+        for profile in self.cim:
             for cim_element_type in self.cim[profile]:
                 # check if the CIM element type is a pd.DataFrame
                 if not isinstance(self.cim[profile][cim_element_type], pd.DataFrame):
@@ -170,11 +174,11 @@ class CimParser:
                                              message="CIM parser finished preparing the CIM data."))
         return self
 
-    def _initialize_cim16_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim16_data_structure(self) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         """
-           Get the cim data structure used by the converter for cgmes version less than 3.
-           :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
-           """
+        Get the cim data structure used by the converter for cgmes version less than 3.
+        :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
+        """
         self.logger.debug("Returning the CIM data structure.")
         return MappingProxyType({
             'eq': MappingProxyType({
@@ -199,7 +203,7 @@ class CimParser:
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
-                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'limitType']),
+                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'limitType', 'acceptableDuration']),
                 'CurrentLimit': pd.DataFrame(columns=[
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType', 'value']),
                 'VoltageLimit': pd.DataFrame(columns=[
@@ -216,13 +220,13 @@ class CimParser:
                 'ACDCConverterDCTerminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'DCNode', 'DCConductingEquipment', 'sequenceNumber']),
                 'Breaker': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'Disconnector': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'Switch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'LoadBreakSwitch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'EnergyConsumer': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'EquipmentContainer']),
                 'ConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
@@ -397,7 +401,7 @@ class CimParser:
     def _get_df(self, items):
         return pd.DataFrame([self._parse_element(child) for child in iter(items)])
 
-    def _get_cgmes_profile_from_xml(self, root: etree.Element, default_profile: str = 'unknown') -> str:
+    def _get_cgmes_profile_from_xml(self, root: etree._Element, default_profile: str = 'unknown') -> str:
         """
         Get the CGMES profile from the XML file.
 
@@ -470,8 +474,8 @@ class CimParser:
                                                  message="The CGMES profile could not be parsed from the XML."))
             raise Exception("The CGMES profile could not be parsed from the XML.")
 
-    def _parse_source_file(self, file: str, output: dict, encoding: str, profile_name: str = None):
-        self.logger.info("Parsing file: %s" % file)
+    def _parse_source_file(self, file: str, output: dict, encoding: str | None, profile_name: str | None = None):
+        self.logger.info(f"Parsing file: {file}")
         if not self._check_file(file):
             return
         # check if the file is a zip archive
@@ -502,12 +506,12 @@ class CimParser:
         self.file_names[prf] = file
         self._parse_xml_tree(xml_tree.getroot(), prf, output)
 
-    def _parse_xml_tree(self, xml_tree: etree.ElementTree, profile_name: str, output: Dict | None = None):
+    def _parse_xml_tree(self, xml_tree, profile_name: str, output: dict | None = None):
         output = self.cim if output is None else output
         # get all CIM elements to parse
         element_types = pd.Series([ele.tag for ele in xml_tree])
         element_types = element_types.drop_duplicates()
-        prf_content: Dict[str, pd.DataFrame] = {}
+        prf_content: dict[str, pd.DataFrame] = {}
         ns_dict = {}
         prf = profile_name
         if prf not in ns_dict:
@@ -566,30 +570,32 @@ class CimParser:
         else:
             return False
 
-    def get_cim_dict(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def get_cim_dict(self) -> dict[str, dict[str, pd.DataFrame]]:
         return self.cim
 
-    def set_cim_dict(self, cim: Dict[str, Dict[str, pd.DataFrame]]):
+    def set_cim_dict(self, cim: dict[str, dict[str, pd.DataFrame]]):
         self.cim = cim
 
-    def get_file_names(self) -> Dict[str, str]:
+    def get_file_names(self) -> dict[str, str]:
         return self.file_names
 
     def get_report_container(self) -> ReportContainer:
         return self.report_container
 
-    def _initialize_cim_data_structure(self, cgmes_version: str) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim_data_structure(
+            self, cgmes_version: str
+    ) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         if cgmes_version == '2.4.15':
             return self._initialize_cim16_data_structure()
         if cgmes_version == '3.0':
             return self._initialize_cim100_data_structure()
         raise NotImplementedError(f"CGMES version {cgmes_version} is not supported.")
 
-    def _initialize_cim100_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+    def _initialize_cim100_data_structure(self) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         """
-           Get the cim data structure used by the converter for cgmes version 3.
-           :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
-           """
+        Get the cim data structure used by the converter for cgmes version 3.
+        :return MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]: The cim data structure used by the converter.
+        """
         self.logger.debug("Returning the CIM data structure.")
         return MappingProxyType({
             'eq': MappingProxyType({
@@ -612,7 +618,7 @@ class CimParser:
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
-                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'kind']),
+                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'kind', 'acceptableDuration']),
                 'CurrentLimit': pd.DataFrame(columns=[
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
                 'VoltageLimit': pd.DataFrame(columns=[
@@ -629,13 +635,13 @@ class CimParser:
                 'ACDCConverterDCTerminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'DCNode', 'DCConductingEquipment', 'sequenceNumber']),
                 'Breaker': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'Disconnector': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'Switch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'LoadBreakSwitch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'EnergyConsumer': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'EquipmentContainer']),
                 'ConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
@@ -812,8 +818,8 @@ class CimParser:
                 'PositionPoint': pd.DataFrame(columns=['rdfId', 'Location', 'sequenceNumber', 'xPosition', 'yPosition'])
             })})
 
-    def get_cim_data_structure(self) -> Dict[str, Dict[str, pd.DataFrame]]:
-        cim_data_structure = {}
+    def get_cim_data_structure(self) -> dict[str, dict[str, pd.DataFrame]]:
+        cim_data_structure: dict[str, dict[str, pd.DataFrame]] = {}
         for one_profile, one_profile_dict in self.__cim_blueprint.items():
             cim_data_structure[one_profile] = {}
             for one_class, one_class_df in one_profile_dict.items():
