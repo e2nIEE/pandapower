@@ -147,6 +147,7 @@ def runpp_3ph(
     recycle=None,
     check_connectivity=True,
     switch_rx_ratio=2.0,
+    v_debug=False,
     **kwargs,
 ):
     """
@@ -278,6 +279,9 @@ def runpp_3ph(
         transformers are considered. Valid options are "hv", "mv", "lv"
         for HV/MV/LV side or "star" for the star point.
 
+        **v_debug** (bool, False) (Not tested with 3 Phase load flow) - if True,
+        voltage values in each newton-raphson iteration are logged in the ppc.
+
         **init_vm_pu** (string/float/array/Series, None) (Not tested with 3
         Phase load flow) - Allows to define initialization specifically for
         voltage magnitudes. Only works with ``init == "auto"``!
@@ -406,6 +410,7 @@ def runpp_3ph(
         use_umfpack=use_umfpack,
         permc_spec=permc_spec,
         lightsim2grid=False,
+        # v_debug=v_debug
     )
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)

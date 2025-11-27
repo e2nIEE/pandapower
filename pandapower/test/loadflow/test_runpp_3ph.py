@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import copy
 
-from networks import create_cigre_network_mv
+from pandapower.networks import create_cigre_network_mv
 from pandapower import pp_dir
 from pandapower import replace_line_by_impedance
 from pandapower.auxiliary import get_free_id
