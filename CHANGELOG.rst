@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] add missing tests for runpp_3ph parameters
+- [FIXED] remove never used parameter from runpp_3ph method signature
 - [CHANGED] Documentation configuration to support custom keywords
 - [CHANGED] Offset for weighted marker legend
 - [ADDED] pf2pp: possibility to convert a specific variant and scenario
