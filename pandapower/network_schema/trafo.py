@@ -74,14 +74,14 @@ _trafo_columns = {
         description="Vector Groups ( required for zero sequence model of transformer )",
         metadata={"sc": True, "3ph": True},
     ),
-    "shift_degree": pa.Column(float, description="transformer phase shift angle"), #Thomas: optional
+    "shift_degree": pa.Column(float, description="transformer phase shift angle"),  # Thomas: optional
     "tap_side": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["hv", "lv"]),
         nullable=True,
         required=False,
         description="defines if tap changer is at the high- or low voltage side",
-    ), #Thomas: null only if no tap_changer_type
+    ),  # Thomas: null only if no tap_changer_type
     "tap_neutral": pa.Column(float, nullable=True, required=False, description="rated tap position"),
     "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
