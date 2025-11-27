@@ -410,8 +410,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             y_asym = -y_sym
 
         elif vector_group.lower() == "ynyn":
-            ppc["branch"][f:t, BR_R] = zc.astype(complex).real
-            ppc["branch"][f:t, BR_X] = zc.astype(complex).imag
+            ppc["branch"][ppc_idx, BR_R] = zc.astype(complex).real
+            ppc["branch"][ppc_idx, BR_X] = zc.astype(complex).imag
             y_sym = YAN.astype(complex) * in_service.values * 2
             y_asym = YBN.astype(complex) * in_service.values * 2 - y_sym
 
