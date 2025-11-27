@@ -63,7 +63,7 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
             "Please install pyjulia properly to run pandapower with PandaModels.jl.")
 
     if not Base.find_package("PandaModels"):
-        logger.info("PandaModels.jl is not installed in julia. It is added now!")
+        logger.info("PandaModels.jl is missing, adding.")
         Pkg.Registry.update()
         Pkg.add("PandaModels")  
         

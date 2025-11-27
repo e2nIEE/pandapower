@@ -17,8 +17,7 @@ from pandapower.run import runpp, runopp
 from pandapower.runpm import runpm_ac_opf
 
 try:
-    from juliacall import JuliaError
-    UnsupportedPythonError = JuliaError
+    from juliacall import JuliaError as UnsupportedPythonError
 except ImportError:
     UnsupportedPythonError = Exception
 

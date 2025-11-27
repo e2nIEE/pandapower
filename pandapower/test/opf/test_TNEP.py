@@ -14,8 +14,7 @@ from pandapower.run import runpp
 from pandapower.runpm import runpm_tnep
 
 try:
-    from juliacall import JuliaError
-    UnsupportedPythonError = JuliaError
+    from juliacall import JuliaError as UnsupportedPythonError
 except ImportError:
     UnsupportedPythonError = Exception
 

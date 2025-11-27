@@ -4,8 +4,7 @@
 import pytest
 
 try:
-    from juliacall import JuliaError
-    UnsupportedPythonError = JuliaError
+    from juliacall import JuliaError as UnsupportedPythonError
 except ImportError:
     UnsupportedPythonError = Exception
 
@@ -20,15 +19,6 @@ except (ImportError, RuntimeError, UnsupportedPythonError) as e:
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_julia_connection():
-    try:
-        import juliacall
-    except:
-        raise ImportError("install juliacall properlly to run PandaModels.jl")
 
 
 @pytest.mark.slow

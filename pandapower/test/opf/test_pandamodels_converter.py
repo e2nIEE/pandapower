@@ -19,8 +19,7 @@ from pandapower.run import runopp
 from pandapower.test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf
 
 try:
-    from juliacall import JuliaError
-    UnsupportedPythonError = JuliaError
+    from juliacall import JuliaError as UnsupportedPythonError
 except ImportError:
     UnsupportedPythonError = Exception
 
