@@ -39,9 +39,10 @@ add_log_level(logging.WARNING + 2, "compact")
 add_log_level(logging.WARNING + 4, "detailed")
 
 T = TypeVar('T')
+N = TypeVar('N', bound=ADict)
 
 
-class DiagnosticFunction(ABC, Generic[T]):
+class DiagnosticFunction(ABC, Generic[N, T]):
     """
     A meta class for creating custom Diagnostic Functions that can be executed with the pandapower Diagnostic API.
     """
@@ -49,7 +50,7 @@ class DiagnosticFunction(ABC, Generic[T]):
         self.out = logger
 
     @abstractmethod
-    def diagnostic(self, net: ADict, **kwargs) -> T | None:
+    def diagnostic(self, net: N, **kwargs) -> T | None:
         """
         A diagnostic method that should be run on the network.
         

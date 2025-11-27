@@ -50,20 +50,23 @@ default_argument_values = {
 }
 
 
-class InvalidValues(DiagnosticFunction):
+class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
     """
     Applies type check functions to find violations of input type restrictions.
     """
-    def diagnostic(self, net, **kwargs):
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, Any] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs:
-        :return: dict that contains all input type restriction violations
-                 grouped by element (keys)
-                 Format: {'element': [element_index, 'element_attribute', attribute_value]}
-        :rtype: dict[str, Any]
+        Parameters:
+            net: pandapower network
+        Keyword Arguments:
+            Any: kwargs are passed to
+        
+        Returns:
+            dict that contains all input type restriction violations grouped by element (keys)
+            Format: {'element': [element_index, 'element_attribute', attribute_value]}
+            
         """
-        check_results = {}
+        check_results: dict[str, Any] = {}
 
         # Contains all element attributes that are necessary to initiate a power flow calculation.
         # There's a tuple with the structure (attribute_name, input type restriction)
@@ -188,7 +191,7 @@ class InvalidValues(DiagnosticFunction):
 
         return check_results if check_results else None
 
-    def report(self, error: Exception | None, results: Any | None):
+    def report(self, error: Exception | None, results: dict[str, Any] | None):
         # error and success checks
         if error is not None:
             self.out.warning("Check for invalid values failed due to the following error:")
@@ -220,15 +223,16 @@ class InvalidValues(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} invalid values found.")
 
 
-class NoExtGrid(DiagnosticFunction):
+class NoExtGrid(DiagnosticFunction[pandapowerNet, bool]):
     """
     Checks, if at least one external grid exists.
     """
-    def diagnostic(self, net, **kwargs):
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         if net.ext_grid.in_service.sum() + (net.gen.slack & net.gen.in_service).sum() == 0:
             return True
-
-    def report(self, error: Exception, results: bool | None):
+        return None
+    
+    def report(self, error: Exception | None, results: bool | None):
         # error and success checks
         if error is not None:
             self.out.warning("Check for external grid failed due to the following error:")
@@ -246,7 +250,7 @@ class NoExtGrid(DiagnosticFunction):
             self.out.warning("No ext_grid found. There has to be at least one ext_grid!")
 
 
-class MultipleVoltageControllingElementsPerBus(DiagnosticFunction):
+class MultipleVoltageControllingElementsPerBus(DiagnosticFunction[pandapowerNet, dict[str, list[Any]]]):
     """
     Checks, if there are buses with more than one generator and/or more than one external grid.
     """
@@ -254,7 +258,7 @@ class MultipleVoltageControllingElementsPerBus(DiagnosticFunction):
         super().__init__()
         self.net = None
 
-    def diagnostic(self, net, **kwargs) -> dict[str, list[Any]] | None:
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, list[Any]] | None:
         """
         :returns: dict that contains all buses with multiple generator and
                   all buses with multiple external grids
@@ -311,7 +315,7 @@ class MultipleVoltageControllingElementsPerBus(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} bus(ses) with multiple gens and/or ext_grids found.")
 
 
-class Overload(DiagnosticFunction):
+class Overload(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
     """
     Checks, if a loadflow calculation converges. If not, checks, if an overload is the reason for
     that by scaling down the loads, gens and sgens to 0.1%.
@@ -412,7 +416,7 @@ class Overload(DiagnosticFunction):
                 self.out.warning(f"overload found: Power flow converges with generation scaled down to {osf_percent}")
 
 
-class WrongLineCapacitance(DiagnosticFunction):
+class WrongLineCapacitance(DiagnosticFunction[pandapowerNet, bool]):
     """
     Checks, if a loadflow calculation converges. If not, checks, if line capacitance is too high, by scaling it to 1%.
     """
@@ -489,7 +493,7 @@ class WrongLineCapacitance(DiagnosticFunction):
                 f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
 
 
-class SubNetProblemTest(DiagnosticFunction):
+class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
     """
     Checks, if subnets are converging. This is done using the zone attribute.
     """
@@ -553,7 +557,7 @@ class SubNetProblemTest(DiagnosticFunction):
         self.out.warning(f"Found loadflow problems in the following zones: {results.keys()}")
 
 
-class OptimisticPowerflow(DiagnosticFunction):
+class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
     """
     Checks, if powerflow converges, if a set of 'optimistic' tests is performed.
     """
@@ -647,7 +651,7 @@ class OptimisticPowerflow(DiagnosticFunction):
                 f"Powerflow problems solved, by setting line.c_nf_per_km = 0.")
 
 
-class SlackGenPlacement(DiagnosticFunction):
+class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
     """
     Checks, if powerflow converges/losses are minimized, if a different gen is used as slack
     """
@@ -742,7 +746,7 @@ class SlackGenPlacement(DiagnosticFunction):
         self.out.warning(f'Gen idx: {t[0]} as slack, reduces apparent power to: {t[1]}')
 
 
-class TestContinousBusIndices(DiagnosticFunction):
+class TestContinuousBusIndices(DiagnosticFunction[pandapowerNet, bool]):
     """
     Checks, if powerflow works, when a continuous bus index is used.
     """
@@ -769,7 +773,7 @@ class TestContinousBusIndices(DiagnosticFunction):
             self.out.error(f"Continuous bus index calculation failed: {str(e)}")
             raise e
 
-    def report(self, error: Exception | None, results: dict[str, float] | None) -> None:
+    def report(self, error: Exception | None, results: bool | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Continuous bus index failed due to the following error:")
@@ -788,7 +792,7 @@ class TestContinousBusIndices(DiagnosticFunction):
         self.out.warning('FAILED: Powerflow converges when pandapower.toolbox.create_continuous_bus_index was for reindexing.')
 
 
-class WrongSwitchConfiguration(DiagnosticFunction):
+class WrongSwitchConfiguration(DiagnosticFunction[pandapowerNet, bool]):
     """
     Checks, if a loadflow calculation converges. If not, checks, if the switch configuration is
     the reason for that by closing all switches
@@ -836,7 +840,7 @@ class WrongSwitchConfiguration(DiagnosticFunction):
             self.out.warning("Power flow still does not converge with all switches closed.")
 
 
-class MissingBusIndices(DiagnosticFunction):
+class MissingBusIndices(DiagnosticFunction[pandapowerNet, dict]):
     """
     Checks for missing bus indices.
     """
@@ -896,7 +900,7 @@ class MissingBusIndices(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} missing bus indices found.")
 
 
-class DifferentVoltageLevelsConnected(DiagnosticFunction):
+class DifferentVoltageLevelsConnected(DiagnosticFunction[pandapowerNet, dict]):
     """
     Checks if there are lines or switches that connect different voltage levels.
     """
@@ -971,7 +975,7 @@ class DifferentVoltageLevelsConnected(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} element(s) that connect different voltage levels found.")
 
 
-class ImplausibleImpedanceValues(DiagnosticFunction):
+class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
     """
     Checks, if there are lines, xwards or impedances with an impedance value close to zero.
     """
@@ -1186,7 +1190,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} element(s) with impedance values close to zero found.")
 
 
-class NominalVoltagesMismatch(DiagnosticFunction):
+class NominalVoltagesMismatch(DiagnosticFunction[pandapowerNet, dict]):
     """
     Checks, if there are components whose nominal voltages differ from the nominal voltages of the
     buses they're connected to. At the moment, only trafos and trafo3w are checked.
@@ -1396,15 +1400,15 @@ class NominalVoltagesMismatch(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} component(s) with deviating nominal voltages found")
 
 
-class DisconnectedElements(DiagnosticFunction):
+class DisconnectedElements(DiagnosticFunction[pandapowerNet, list]):
     """
     Checks, if there are network sections without a connection to an ext_grid. Returns all network
     elements in these sections, that are in service. Elements belonging to the same disconnected
     networks section are grouped in lists (e.g. disconnected lines: [[1, 2, 3], [4, 5]]
-    means, that lines 1, 2 and 3 are in one disconncted section but are connected to each other.
+    means, that lines 1, 2 and 3 are in one disconnected section but are connected to each other.
     The same stands for lines 4, 5.)
     """
-    def diagnostic(self, net: ADict, **kwargs) -> dict | None:
+    def diagnostic(self, net: ADict, **kwargs) -> list | None:
         """
 
         Parameters:
@@ -1413,13 +1417,13 @@ class DisconnectedElements(DiagnosticFunction):
         Returns:
             list that contains all network elements, without a connection to an ext_grid.
 
-            Format: {'disconnected buses'    : bus_indices,
-                     'disconnected switches' : switch_indices,
-                     'disconnected lines'    : line_indices,
-                     'disconnected trafos'   : trafo_indices
-                     'disconnected loads'    : load_indices,
-                     'disconnected gens'     : gen_indices,
-                     'disconnected sgens'    : sgen_indices}
+            Format: [disconnected_bus_indices,
+                     disconnected_switch_indices,
+                     disconnected_line_indices,
+                     disconnected_trafo_indices
+                     disconnected_load_indices,
+                     disconnected_gen_indices,
+                     disconnected_sgen_indices]
         """
         from pandapower.topology import create_nxgraph, connected_components
 
@@ -1482,7 +1486,7 @@ class DisconnectedElements(DiagnosticFunction):
 
         return disc_elements if disc_elements else None
 
-    def report(self, error: Exception | None, results: dict | None) -> None:
+    def report(self, error: Exception | None, results: list | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for disconnected elements failed due to the following error:")
@@ -1508,7 +1512,7 @@ class DisconnectedElements(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} disconnected element(s) found.")
 
 
-class WrongReferenceSystem(DiagnosticFunction):
+class WrongReferenceSystem(DiagnosticFunction[pandapowerNet, dict]):
     """
     Checks usage of wrong reference system for loads, sgens and gens.
     """
@@ -1591,11 +1595,11 @@ class WrongReferenceSystem(DiagnosticFunction):
             )
 
 
-class NumbaComparison(DiagnosticFunction):
+class NumbaComparison(DiagnosticFunction[pandapowerNet, dict]):
     """
     Compares the results of loadflows with numba=True vs. numba=False.
     """
-    def diagnostic(self, net: ADict, **kwargs) -> dict | None:
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
         Parameters:
             net: pandapower network
@@ -1659,21 +1663,19 @@ class NumbaComparison(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} results with deviations between numba = True vs. False found.")
 
 
-class DeviationFromStdType(DiagnosticFunction):
+class DeviationFromStdType(DiagnosticFunction[pandapowerNet, dict[str, dict]]):
     """
     Checks, if element parameters match the values in the standard type library.
     """
-    def diagnostic(self, net: ADict, **kwargs) -> dict[str, dict] | None:
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, dict] | None:
         """
-         INPUT:
-            **net** (pandapowerNet)    - pandapower network
+        Parameters:
+            net: pandapower network
 
 
-         OUTPUT:
-            **check_results** (dict)   - All elements, that don't match the values in the
-                                         standard type library
-
-                                         Format: (element_type, element_index, parameter)
+        Returns:
+            All elements, that don't match the values in the standard type library
+            Format: (element_type, element_index, parameter)
         """
         check_results: dict[str, dict] = defaultdict(dict)
         for key, std_types in net.std_types.items():
@@ -1735,18 +1737,18 @@ class DeviationFromStdType(DiagnosticFunction):
         self.out.detailed(f"\nSUMMARY: {element_counter} elements with deviations from std_type found.")
 
 
-class ParallelSwitches(DiagnosticFunction):
+class ParallelSwitches(DiagnosticFunction[pandapowerNet, list[list]]):
     """
     Checks for parallel switches.
     """
-    def diagnostic(self, net: ADict, **kwargs) -> list[tuple] | None:
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> list[list] | None:
         """
 
         Parameters:
             net: pandapower network
 
         Returns:
-            List of tuples each containing parallel switches.
+            List of lists each containing parallel switches.
         
         """
         found_parallel_switches = []
@@ -1757,7 +1759,7 @@ class ParallelSwitches(DiagnosticFunction):
 
         return found_parallel_switches if found_parallel_switches else None
 
-    def report(self, error: Exception | None, results: list[tuple] | None) -> None:
+    def report(self, error: Exception | None, results: list[list] | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for parallel_switches failed due to the following error:")
@@ -1777,6 +1779,7 @@ class ParallelSwitches(DiagnosticFunction):
         # message summary
         self.out.detailed(f"\nSUMMARY: {len(results)} occurrences of parallel switches found.")
 
+
 # (name in result_dict, instance of class, list of arguments: None = all kwargs / [] = no arguments)
 default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | None]] = [
     ("missing_bus_indices", MissingBusIndices(), []),
@@ -1789,7 +1792,7 @@ default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | No
     ("wrong_line_capacitance", WrongLineCapacitance(), None),
     ("wrong_switch_configuration", WrongSwitchConfiguration(), None),
     ("test_subnet_from_zone", SubNetProblemTest(), None),
-    ("test_continous_bus_indices", TestContinousBusIndices(), None),
+    ("test_continuous_bus_indices", TestContinuousBusIndices(), None),
     ("multiple_voltage_controlling_elements_per_bus", MultipleVoltageControllingElementsPerBus(), []),
     ("no_ext_grid", NoExtGrid(), []),
     ("wrong_reference_system", WrongReferenceSystem(), []),
