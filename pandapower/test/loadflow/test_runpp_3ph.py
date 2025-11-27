@@ -23,6 +23,7 @@ from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks
     trafo_currents_consistent_3ph
 from pandapower.test.loadflow.PF_Results import get_PF_Results
 from pandapower.toolbox import dataframes_equal
+from pandapower.test.conftest import result_test_network
 
 
 @pytest.fixture
@@ -618,6 +619,33 @@ def test_shunt_3ph():
           -0.3300249368894127, -0.3300249368948133, -0.3300249368894127, -0.3300249368948133, -0.3300249368894127,
           -0.3300249368948134]]))
     assert np.max(np.abs(line_power_pp - line_power_expected)) < 1e-5
+
+
+def test_3ph_enforce_q_lims(result_test_network):
+    v_tol = 1e-6
+    i_tol = 1e-6
+    s_tol = 5e-3
+    l_tol = 1e-3
+
+    net = result_test_network
+    net.ext_grid["s_sc_max_mva"] = 1000
+    net.ext_grid['rx_max'] = 0.1
+    buses = net.bus[net.bus.zone == "test_enforce_qlims"]
+    gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+    b2 = buses.index[1]
+    b3 = buses.index[2]
+    g1 = gens[0]
+
+    # enforce reactive power limits
+    runpp_3ph(net, enforce_q_lims=True)
+
+    # powerfactory results
+    u2 = 1.00607194
+    u3 = 1.00045091
+
+    assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
+    assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < s_tol
 
 
 if __name__ == "__main__":
