@@ -1,0 +1,46 @@
+Index	Variable	Value	Description
+0	BUS_I	1.0	Bus number
+1	BUS_TYPE	1.0	Bus type
+2	PD	0.0	Real power demand (MW)
+3	QD	0.0	Reactive power demand (MVAr)
+4	GS	0.0	Shunt conductance (MW at V = 1.0 p.u.)
+5	BS	-854.830911	Shunt susceptance (MVAr at V = 1.0 p.u.)
+6	BUS_AREA	1.0	Area number (1–100)
+7	VM	1.0	Voltage magnitude (p.u.)
+8	VA	0.0	Voltage angle (degrees)
+9	BASE_KV	20.0	Base voltage (kV)
+10	ZONE	1.0	Loss zone (1–999)
+11	VMAX	2.0	Maximum voltage magnitude (p.u.)
+12	VMIN	0.0	Minimum voltage magnitude (p.u.)
+13	CID_P	0.0	Active power constant current load coefficient
+14	CZD_P	0.0	Active power constant impedance load coefficient
+15	SL_FAC	0.0	ZIP load scaling factor
+16	CID_Q	0.0	Reactive power constant current load coefficient
+17	CZD_Q	0.0	Reactive power constant impedance load coefficient
+18	R_EQUIV	1.73472348e-18	Short-circuit equivalent resistance
+19	X_EQUIV	0.116982199	Short-circuit equivalent reactance
+20	KAPPA		Short-circuit kappa factor
+21	M		Short-circuit M parameter
+22	C_MIN	1.0	Minimum short-circuit coefficient
+23	C_MAX	1.1	Maximum short-circuit coefficient
+24	IKSSV	0.0	Initial symmetrical short-circuit current (variant V)
+25	IKSSC	0.0	Initial symmetrical short-circuit current (variant C)
+26	IKCV	0.0	Peak short-circuit current
+27	IP		Peak current
+28	IB		Breaker current
+29	ITH		Thermal short-circuit current
+30	IK		General short-circuit current
+31	R_EQUIV_OHM	6.9388939e-18	Equivalent resistance in Ohms
+32	X_EQUIV_OHM	0.467928797	Equivalent reactance in Ohms
+33	K_G		Generator short-circuit scaling factor
+34	K_SG		Synchronous generator scaling factor
+35	V_G		Generator voltage
+36	PS_TRAFO_IX		Transformer index
+37	GS_P		Shunt conductance of passive elements
+38	BS_P		Shunt susceptance of passive elements
+39	GS_GEN		Shunt conductance of generators
+40	BS_GEN		Shunt susceptance of generators
+41	SKSS	0.0	Short-circuit power
+42	PHI_IKSSV_DEGREE	0.0	Angle of IKSSV in degrees
+43	PHI_IKSSC_DEGREE		Angle of IKSSC in degrees
+44	PHI_IKCV_DEGREE	-90.0	Angle of IKCV in degrees

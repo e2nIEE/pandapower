@@ -70,7 +70,7 @@ def _kappa_method_c(net, ppc):
         # Factorization Ybus once
         ppc_c["internal"]["ybus_fact"] = factorized(ppc_c["internal"]["Ybus"])
 
-    _calc_rx(net, ppc_c, np.arange(ppc_c["bus"].shape[0]))
+    _calc_rx(net, ppc_c, np.arange(ppc_c["bus"].shape[0]),sequence=1)
     rx_equiv_c = ppc_c["bus"][:, R_EQUIV] / ppc_c["bus"][:, X_EQUIV] * fc / net.f_hz
     return _kappa(rx_equiv_c)
 
