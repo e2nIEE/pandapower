@@ -21,7 +21,6 @@ from pandapower.auxiliary import (
 )
 from pandapower.diagnostic.diagnostic_helpers import (
     DiagnosticFunction,
-    T, # TODO: remove T import
     check_boolean,
     check_less_zero,
     check_number,
@@ -980,7 +979,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction):
         super().__init__()
         self.params = {}
 
-    def diagnostic(self, net: pandapowerNet, **kwargs) -> T | None: # TODO: T typing
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> list[dict] | None:
         """
         :param pandapowerNet net: pandapower network
         :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
@@ -1142,7 +1141,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction):
 
         return check_results if implausible_elements else None
 
-    def report(self, error: Exception | None, results: T | None) -> None:
+    def report(self, error: Exception | None, results: list[dict] | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for elements with impedance values close to zero failed due to the following error:")
@@ -1169,7 +1168,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction):
                 min_r_type = self.params["min_r_ohm"] / self.params["zb_f_ohm"]
                 min_x_type = self.params["min_x_ohm"] / self.params["zb_f_ohm"]
             for element in value:
-                self.out.warning(f"{key} {element}: r_ <= {min_r_type} or x_ <= {min_x_type}") # TODO r_ and x_ should output violating column
+                self.out.warning(f"{key} {element}: r_ <= {min_r_type} or x_ <= {min_x_type}")
 
         if len(results) > 1:
             switch_replacement = results[1]
@@ -1198,7 +1197,7 @@ class NominalVoltagesMismatch(DiagnosticFunction):
         self.nom_voltage_tolerance: float | None = None
         self.net: pandapowerNet | None = None
 
-    def diagnostic(self, net: pandapowerNet, **kwargs) -> T | None:
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
         :param pandapowerNet net: pandapower network
 
@@ -1315,7 +1314,7 @@ class NominalVoltagesMismatch(DiagnosticFunction):
 
         return results if len(results) > 0 else None
 
-    def report(self, error: Exception | None, results: T | None) -> None:
+    def report(self, error: Exception | None, results: dict | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for components with deviating nominal voltages failed due to the following error:")
@@ -1405,23 +1404,22 @@ class DisconnectedElements(DiagnosticFunction):
     means, that lines 1, 2 and 3 are in one disconncted section but are connected to each other.
     The same stands for lines 4, 5.)
     """
-    def diagnostic(self, net: ADict, **kwargs) -> T | None: # TODO: T typing
+    def diagnostic(self, net: ADict, **kwargs) -> dict | None:
         """
 
-         INPUT:
-            **net** (pandapowerNet)         - pandapower network
+        Parameters:
+            net: pandapower network
 
-         OUTPUT:
-            **disc_elements** (dict)        - list that contains all network elements, without a
-                                              connection to an ext_grid.
+        Returns:
+            list that contains all network elements, without a connection to an ext_grid.
 
-                                              format: {'disconnected buses'   : bus_indices,
-                                                       'disconnected switches' : switch_indices,
-                                                       'disconnected lines'    : line_indices,
-                                                       'disconnected trafos'   : trafo_indices
-                                                       'disconnected loads'    : load_indices,
-                                                       'disconnected gens'     : gen_indices,
-                                                       'disconnected sgens'    : sgen_indices}
+            Format: {'disconnected buses'    : bus_indices,
+                     'disconnected switches' : switch_indices,
+                     'disconnected lines'    : line_indices,
+                     'disconnected trafos'   : trafo_indices
+                     'disconnected loads'    : load_indices,
+                     'disconnected gens'     : gen_indices,
+                     'disconnected sgens'    : sgen_indices}
         """
         from pandapower.topology import create_nxgraph, connected_components
 
@@ -1484,11 +1482,11 @@ class DisconnectedElements(DiagnosticFunction):
 
         return disc_elements if disc_elements else None
 
-    def report(self, error: Exception | None, results: T | None) -> None:
+    def report(self, error: Exception | None, results: dict | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for disconnected elements failed due to the following error:")
-            self.out.warning(self.diag_errors["disconnected_elements"])
+            self.out.warning(error)
             return
         if results is None:
             self.out.info("PASSED: No problematic switches found")
@@ -1518,17 +1516,16 @@ class WrongReferenceSystem(DiagnosticFunction):
         super().__init__()
         self.net: pandapowerNet | None = None
 
-    def diagnostic(self, net: pandapowerNet, **kwargs) -> T | None: # TODO: T typing
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
+        
+        Parameters:
+            net: pandapower network
 
-         INPUT:
-            **net** (pandapowerNet)    - pandapower network
-
-         OUTPUT:
-            **check_results** (dict)        - dict that contains the indices of all components where the
-                                              usage of the wrong reference system was found.
-
-                                              Format: {'element_type': element_indices}
+        Returns:
+            check_results: dict that contains the indices of all components where the usage of the wrong reference
+                system was found.
+                Format: {'element_type': element_indices}
 
         """
         self.net = net
@@ -1546,7 +1543,7 @@ class WrongReferenceSystem(DiagnosticFunction):
 
         return check_results if check_results else None
 
-    def report(self, error: Exception | None, results: T | None) -> None:
+    def report(self, error: Exception | None, results: dict | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for wrong reference system failed due to the following error:")
@@ -1598,17 +1595,15 @@ class NumbaComparison(DiagnosticFunction):
     """
     Compares the results of loadflows with numba=True vs. numba=False.
     """
-    def diagnostic(self, net: ADict, **kwargs) -> T | None: # TODO: T typing
+    def diagnostic(self, net: ADict, **kwargs) -> dict | None:
         """
-         INPUT:
-            **net** (pandapowerNet)    - pandapower network
-            **numba_tolerance** (float) - Maximum absolute deviation allowed between
-                                          numba=True/False results.
-         OPTIONAL:
-            **kwargs** - Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-                         is replaced by the function kwargs["run"]
-         OUTPUT:
-            **check_result** (dict)    - Absolute deviations between numba=True/False results.
+        Parameters:
+            net: pandapower network
+        Keyword Arguments:
+            Any: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+                is replaced by the function kwargs["run"]
+        Returns:
+            Absolute deviations between numba=True/False results.
         """
         numba_tolerance = kwargs.pop("numba_tolerance", default_argument_values.get("numba_tolerance", None))
         if numba_tolerance is None:
@@ -1637,7 +1632,7 @@ class NumbaComparison(DiagnosticFunction):
 
         return check_results if check_results else None
 
-    def report(self, error: Exception | None, results: T | None) -> None:
+    def report(self, error: Exception | None, results: dict | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("numba_comparison failed due to the following error:")
@@ -1744,14 +1739,15 @@ class ParallelSwitches(DiagnosticFunction):
     """
     Checks for parallel switches.
     """
-    def diagnostic(self, net: ADict, **kwargs) -> T | None: # TODO: T typing
+    def diagnostic(self, net: ADict, **kwargs) -> list[tuple] | None:
         """
 
-         INPUT:
-            **net** (PandapowerNet)    - pandapower network
+        Parameters:
+            net: pandapower network
 
-         OUTPUT:
-            **found_parallel_switches** (list)   - List of tuples each containing parallel switches.
+        Returns:
+            List of tuples each containing parallel switches.
+        
         """
         found_parallel_switches = []
         compare_parameters = ["bus", "element", "et"]
@@ -1761,7 +1757,7 @@ class ParallelSwitches(DiagnosticFunction):
 
         return found_parallel_switches if found_parallel_switches else None
 
-    def report(self, error: Exception | None, results: T | None) -> None:
+    def report(self, error: Exception | None, results: list[tuple] | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for parallel_switches failed due to the following error:")
