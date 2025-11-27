@@ -77,23 +77,28 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         net (ADict): The pandapower format network
         algorithm (str, "nr"): algorithm that is used to solve the power flow problem.
             The following algorithms are available:
+
             - "nr" Newton-Raphson (pypower implementation with numba accelerations)
             - "iwamoto_nr" Newton-Raphson with Iwamoto multiplier (maybe slower than NR but more robust)
             - "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
             - "gs" gauss-seidel (pypower implementation)
             - "fdbx" fast-decoupled (pypower implementation)
             - "fdxb" fast-decoupled (pypower implementation)
+
         calculate_voltage_angles (str or bool, True): consider voltage angles in loadflow calculation
             If True, voltage angles of ext_grids and transformer shifts are considered in the
             loadflow calculation. Considering the voltage angles is only necessary in meshed
             networks that are usually found in higher voltage levels. calculate_voltage_angles
             in "auto" mode defaults to:
+
             - True, if the network voltage level is above 70 kV
             - False otherwise
+
             The network voltage level is defined as the maximum rated voltage of any bus in the network that
             is connected to a line.
         init (str, "auto"): initialization method of the loadflow
             pandapower supports four methods for initializing the loadflow:
+
             - "auto": init defaults to "dc" if calculate_voltage_angles is True or "flat" otherwise
             - "flat": flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as
                 initial solution, the slack bus is initialized with the values provided in `net["ext_grid"]`
@@ -101,31 +106,39 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
                 solution for the AC loadflow. Note that the DC loadflow only calculates voltage angles at PQ and PV
                 buses, voltage magnitudes are still flat started.
             - "results": voltage vector of last loadflow from net.res_bus is used as initial solution. This can be
-                useful to accelerate convergence in iterative loadflows like time series calculations.
+                useful to accelerate convergence in iterative load flows like time series calculations.
+
             Considering the voltage angles might lead to non-convergence of the power flow in flat start.
             That is why in "auto" mode, init defaults to "dc" if calculate_voltage_angles is True or "flat" otherwise
+
         max_iteration (int, "auto"): maximum number of iterations carried out in the power flow algorithm.
             In "auto" mode, the default value depends on the power flow solver:
+
             - 10 for "nr"
             - 100 for "bfsw"
             - 1000 for "gs"
             - 30 for "fdbx"
             - 30 for "fdxb"
             - 30 for "nr" with "tdpf"
+
         tolerance_mva (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
         trafo_model (str, "t"): transformer equivalent circuit model
             pandapower provides two equivalent circuit models for the transformer:
+
             - "t" - transformer is modeled as equivalent with the T-model.
             - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since it is less exact than
                 the T-model. It is only recommended for validation with other software that uses the pi-model.
+
         trafo_loading (str, "current"): mode of calculation for transformer loading
             Transformer loading can be calculated relative to the rated current or the rated power. In both cases the
             overall transformer loading is defined as the maximum loading on the two sides of the transformer.
+
             - "current" - transformer loading is given as ratio of current flow and rated current of the transformer.
                 This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on
                 the current.
             - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the
                 transformer.
+
         enforce_p_lims (bool, False): respect generator active power limits
             If True, the active power limits in net.gen.max_p_mw/min_p_mw and net.sgen.max_p_mw/min_p_mw
             are respected in the loadflow.
@@ -168,13 +181,16 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         v_debug (bool, False): if True, voltage values in each newton-raphson iteration are logged in the ppc
         init_vm_pu (string/float/array/Series, None): Allows to define initialization specifically for voltage
             magnitudes. Only works with init == "auto"!
+
             - "auto": all buses are initialized with the mean value of all voltage controlled elements in the grid
             - "flat": for flat start from 1.0
             - "results": voltage magnitude vector is taken from result table
             - a float with which all voltage magnitudes are initialized
             - an iterable with a voltage magnitude value for each bus (length and order has to match with the buses in net.bus)
             - a pandas Series with a voltage magnitude value for each bus (indexes have to match the indexes in net.bus)
+
         init_va_degree (string/float/array/Series, None): Allows to define initialization specifically for voltage angles. Only works with init == "auto"!
+
             - "auto": voltage angles are initialized from DC power flow if angles are calculated or as 0 otherwise
             - "dc": voltage angles are initialized from DC power flow
             - "flat" for flat start from 0
@@ -182,11 +198,14 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             - a float with which all voltage angles are initialized
             - an iterable with a voltage angle value for each bus (length and order has to match with the buses in net.bus)
             - a pandas Series with a voltage angle value for each bus (indexes have to match the indexes in net.bus)
+
         recycle (dict, none): Reuse of internal powerflow variables for time series calculation
             Contains a dict with the following parameters:
+
             - bus_pq: If True PQ values of buses are updated
             - trafo: If True trafo relevant variables, e.g., the Ybus matrix, is recalculated
             - gen: If True Sbus and the gen table in the ppc are recalculated
+
         neglect_open_switch_branches (bool, False): If True no auxiliary buses are created for branches when switches are opened at the branch. Instead branches are set out of service
         tdpf_update_r_theta (bool, True): TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
     """
