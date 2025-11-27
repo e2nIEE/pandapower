@@ -588,7 +588,7 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
             return None
         except expected_exceptions:
             check_result["c_nf_per_km_zero"] = False
-            self.out.debug(f"Line susceptance = 0, did not solve the problem.")
+            self.out.debug("Line susceptance = 0, did not solve the problem.")
             try:
                 if 'trafo' in self.net:
                     self.net.trafo.pfe_kw = 0
@@ -599,7 +599,7 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
                 check_result["trafo_pfe_kw_zero"] = True
             except expected_exceptions:
                 check_result["trafo_pfe_kw_zero"] = False
-                self.out.debug(f"Line susceptance = 0 and iron losses = 0, did not solve the problem.")
+                self.out.debug("Line susceptance = 0 and iron losses = 0, did not solve the problem.")
                 try:
                     if 'load' in self.net:
                         self.net.load.p_mw = 0
@@ -612,7 +612,10 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
                     check_result["load_sgen_zero"] = True
                 except expected_exceptions:
                     check_result["load_sgen_zero"] = False
-                    self.out.debug(f"Line susceptance = 0, iron losses = 0 and no injection / consumption, did not solve the problem.")
+                    self.out.debug(
+                        "Line susceptance = 0, iron losses = 0 and no injection / consumption, "
+                        "did not solve the problem."
+                    )
 
         except Exception as e:
             self.out.error(f"Optimistic calculation on failed: {str(e)}")
@@ -634,21 +637,23 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
         # message header
         self.out.compact("Optimistic_powerflow:\n")
         self.out.detailed(
-            "Checking if optimistic powerflow, line.c_nf_per_km = 0, trafo(3w).pfe_kw = 0 and load, sgen.p_mw/q_mvar = 0\n")
+            "Checking if optimistic powerflow, line.c_nf_per_km = 0, trafo(3w).pfe_kw = 0 and load, "
+            "sgen.p_mw/q_mvar = 0\n"
+        )
 
         # message body
         if "load_sgen_zero" in results:
             if results['load_sgen_zero']:
                 self.out.warning(
-                    f"Powerflow problems solved, by setting line.c_nf_per_km = 0, trafo(3w).pfe_kw = 0 and load, sgen.p_mw/q_mvar = 0.")
+                    "Powerflow problems solved, by setting line.c_nf_per_km = 0, trafo(3w).pfe_kw = 0 and load, "
+                    "sgen.p_mw/q_mvar = 0."
+                )
             else:
                 self.out.warning("Optimistic powerflow failed...")
         elif 'trafo_pfe_kw_zero' in results:
-            self.out.warning(
-                f"Powerflow problems solved, by setting line.c_nf_per_km = 0 and trafo(3w).pfe_kw = 0.")
+            self.out.warning("Powerflow problems solved, by setting line.c_nf_per_km = 0 and trafo(3w).pfe_kw = 0.")
         elif 'c_nf_per_km_zero' in results:
-            self.out.warning(
-                f"Powerflow problems solved, by setting line.c_nf_per_km = 0.")
+            self.out.warning("Powerflow problems solved, by setting line.c_nf_per_km = 0.")
 
 
 class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
@@ -690,7 +695,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
             res = _calculate_losses(net)
             check_result['base_case'] = res
         except expected_exceptions:
-            self.out.debug(f"Base case did not converge, trying different combinations")
+            self.out.debug("Base case did not converge, trying different combinations")
             check_result['base_case'] = sys.float_info.max
         except Exception as e:
             self.out.error(f"Slack gen placement calculation failed: {str(e)}")
@@ -721,7 +726,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
         net.gen = orig_gen
 
         bc = check_result.pop('base_case')
-        if all(map(lambda x: bc < x, check_result.values())):
+        if all(bc < x for x in check_result.values()):
             return None
 
         return check_result
