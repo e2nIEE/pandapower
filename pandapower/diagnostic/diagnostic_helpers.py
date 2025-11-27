@@ -42,6 +42,9 @@ T = TypeVar('T')
 
 
 class DiagnosticFunction(ABC, Generic[T]):
+    """
+    A meta class for creating custom Diagnostic Functions that can be executed with the pandapower Diagnostic API.
+    """
     def __init__(self):
         self.out = logger
 
@@ -49,11 +52,13 @@ class DiagnosticFunction(ABC, Generic[T]):
     def diagnostic(self, net: ADict, **kwargs) -> T | None:
         """
         A diagnostic method that should be run on the network.
-
-        :param ADict net: the network to run it on
-        :param kwargs: any kwargs passed to diagnose_network
-        :returns: the diagnostic result or None if successful
-        :rtype: T | None
+        
+        Parameters:
+            net: the network to run it on
+            kwargs: any kwargs passed to diagnose_network
+        
+        Returns:
+            the diagnostic result or None if successful
         """
         pass
 
@@ -61,8 +66,13 @@ class DiagnosticFunction(ABC, Generic[T]):
     def report(self, error: Exception | None, results: T | None) -> None:
         """
         A method to generate a report for the result of diagnostic.
+        
+        Parameters:
+            error: when the diagnostic encountered an error it will be passed here
+            results: when the diagnostic produced an output it will be passed here
 
         The first lines should always check if an error occurred or there are no results
+        
         >>> # error and success checks
         >>> if error is not None:
         >>>     self.out.warning("Check for < > failed due to the following error:")
@@ -78,17 +88,16 @@ class DiagnosticFunction(ABC, Generic[T]):
         >>> # message summary
 
         There are additional levels defined for the `self.out` logger.
+        
         >>> self.out.detailed
+        
         and
+        
         >>> self.out.compact
+        
         These will only print in the resepctive reports.
         Use info if the message should only show when warnings_only is False.
         Use warning if the message should always be shown.
-
-        :param error: any Error raised by diagnostic()
-        :type error: Exception | None
-        :param results: the results returned by diagnostic()
-        :type results: T | None
         """
         pass
 
@@ -249,48 +258,35 @@ def diagnostic(
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
 
-    INPUT:
-     **net** (pandapowerNet) : pandapower network
+    Parameters:
+        net: A pandapower network
+        report_style: style of the report, that gets ouput in the console
+            'detailed': full report with high level of additional descriptions
+            'compact'  : more compact report, containing essential information only
+            'None'     : no report
+        warnings_only: Filters logging output for warnings
+            True: logging output for errors only
+            False: logging output for all checks, regardless if errors were found or not
+        return_result_dict: returns a dictionary containing all check results
+            True: returns dict with all check results
+            False: no result dict
+        overload_scaling_factor: downscaling factor for loads and generation for overload check
+        lines_min_length_km: minimum length_km allowed for lines
+        lines_min_z_ohm: minimum z_ohm allowed for lines
+        nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal voltages and bus
+            voltages
+            
+    Keyword Arguments:
+        Any: Keyword arguments for the power flow function to use during tests. If "run" is in kwargs the default call to
+            runpp() is replaced by the function kwargs["run"]
 
-    OPTIONAL:
-     - **report_style** (string, 'detailed') : style of the report, that gets ouput in the console
+    Returns:
+        dict that contains the indices of all elements where errors were found
+            Format: {'check_name': check_results}
 
-      'detailled': full report with high level of additional descriptions
-      'compact'  : more compact report, containing essential information only
-      'None'     : no report
-
-
-     - **warnings_only** (boolean, False): Filters logging output for warnings
-
-      True: logging output for errors only
-      False: logging output for all checks, regardless if errors were found or not
-
-     - **return_result_dict** (boolean, True): returns a dictionary containing all check results
-
-      True: returns dict with all check results
-      False: no result dict
-
-     - **overload_scaling_factor** (float, 0.001): downscaling factor for loads and generation \
-     for overload check
-
-     - **lines_min_length_km** (float, 0): minimum length_km allowed for lines
-
-     - **lines_min_z_ohm** (float, 0): minimum z_ohm allowed for lines
-
-     - **nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal \
-     voltages and bus voltages
-
-     - **kwargs** - Keyword arguments for the power flow function to use during tests. If "run" is \
-     in kwargs the default call to runpp() is replaced by the function kwargs["run"]
-
-    OUTPUT:
-     - **diag_results** (dict): dict that contains the indices of all elements where errors were found
-
-      Format: {'check_name': check_results}
-
-    EXAMPLE:
-    >>> from pandapower.diagnostic.diagnostic_helpers import diagnostic
-    >>> diagnostic(net, report_style='compact', warnings_only=True)
+    Example:
+        >>> from pandapower.diagnostic.diagnostic_helpers import diagnostic
+        >>> diagnostic(net, report_style='compact', warnings_only=True)
 
     """
     from pandapower.diagnostic.diagnostic import Diagnostic
@@ -298,4 +294,5 @@ def diagnostic(
     kwargs['overload_scaling_factor'] = overload_scaling_factor
     kwargs['lines_min_length_km'] = lines_min_length_km
     kwargs['nom_voltage_tolerance'] = nom_voltage_tolerance
+    kwargs['lines_min_z_ohm'] = lines_min_z_ohm
     return d.diagnose_network(net, report_style, warnings_only, return_result_dict, **kwargs)
