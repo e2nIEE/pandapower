@@ -5,6 +5,7 @@ Change Log
 -------------------------------
 - [CHANGED] diagnostics restructured for better extensibility
 - [FIXED] implausible impedance test results never showing in report
+- [FIXED] remove not used method in test_rundcpp
 - [FIXED] add missing tests for runpp_3ph parameters
 - [FIXED] remove never used parameter from runpp_3ph method signature
 - [CHANGED] Documentation configuration to support custom keywords
