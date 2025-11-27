@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
              pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
-             export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
+             export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True, export_pf_ZoneArea=False):
     """
 
     Args:
@@ -27,6 +27,7 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
         tap_opt: PowerFactory variable for tap position: "nntap" or "c:nntap"
         export_controller: whether to create and export controllers
         handle_us (str, "Deactivate"): What to do with unsupplied buses -> Can be "Deactivate", "Drop" or "Nothing"
+        export_pf_ZoneArea: Boolean that indicates if Zone and Area information should be exported for busses.
 
     Returns: pandapower network "net" and controller, saves pp-network as .p file at path_dst
 
@@ -71,7 +72,7 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
     net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
                   pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
                   export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced,
-                  create_sections=create_sections)
+                  create_sections=create_sections, export_pf_ZoneArea=export_pf_ZoneArea)
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
