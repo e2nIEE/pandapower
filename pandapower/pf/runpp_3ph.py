@@ -410,7 +410,7 @@ def runpp_3ph(
         use_umfpack=use_umfpack,
         permc_spec=permc_spec,
         lightsim2grid=False,
-        # v_debug=v_debug
+        v_debug=v_debug
     )
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
