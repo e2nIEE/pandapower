@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 - [FIXED] typo in ieee_european_lv_asymmetric
+- [ADDED] pf2pp: added possibility to export pf_area and pf_zone to busses
 - [FIXED] remove not used method in test_rundcpp
 - [FIXED] add missing tests for runpp_3ph parameters
 - [FIXED] remove never used parameter from runpp_3ph method signature
