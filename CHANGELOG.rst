@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] typo in ieee_european_lv_asymmetric
 - [FIXED] remove not used method in test_rundcpp
 - [FIXED] add missing tests for runpp_3ph parameters
 - [FIXED] remove never used parameter from runpp_3ph method signature
