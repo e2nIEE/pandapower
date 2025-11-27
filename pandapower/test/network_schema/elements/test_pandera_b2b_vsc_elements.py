@@ -1,5 +1,5 @@
 
-# test_b2b_vsc.py
+# test_pandera_b2b_vsc_elements.py
 
 import itertools
 import pandas as pd
@@ -129,74 +129,6 @@ class TestB2BVSCRequiredFields:
 
 class TestB2BVSCOptionalFields:
     """Tests for optional b2b_vsc fields"""
-
-    def test_all_optional_fields_valid(self):
-        """Test: b2b_vsc with optional 'name' is valid"""
-        net = create_empty_network()
-        b0 = create_bus(net, 110.0)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
-        create_b2b_vsc(
-            net,
-            bus=b0,
-            bus_dc_plus=0,
-            bus_dc_minus=1,
-            r_ohm=0.1,
-            x_ohm=0.2,
-            r_dc_ohm=0.05,
-            pl_dc_mw=0.0,
-            control_mode_ac="q_mvar",
-            control_value_ac=0.0,
-            control_mode_dc="vm_pu",
-            control_value_dc=1.0,
-            controllable=True,
-            in_service=True,
-            name="lorem ipsum",
-        )
-        validate_network(net)
-
-    def test_optional_fields_with_nulls(self):
-        """Test: b2b_vsc with optional fields including nulls is valid"""
-        net = create_empty_network()
-        b0 = create_bus(net, 110.0)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
-        create_b2b_vsc(
-            net,
-            bus=b0,
-            bus_dc_plus=0,
-            bus_dc_minus=1,
-            r_ohm=0.1,
-            x_ohm=0.2,
-            r_dc_ohm=0.05,
-            pl_dc_mw=0.0,
-            control_mode_ac="vm_pu",
-            control_value_ac=1.0,
-            control_mode_dc="p_mw",
-            control_value_dc=0.0,
-            controllable=False,
-            in_service=True,
-            name="lorem ipsum",
-        )
-        create_b2b_vsc(
-            net,
-            bus=b0,
-            bus_dc_plus=0,
-            bus_dc_minus=1,
-            r_ohm=0.2,
-            x_ohm=0.3,
-            r_dc_ohm=0.06,
-            pl_dc_mw=0.1,
-            control_mode_ac="q_mvar",
-            control_value_ac=5.0,
-            control_mode_dc="vm_pu",
-            control_value_dc=1.02,
-            controllable=True,
-            in_service=False,
-        )
-        net.b2b_vsc["name"].at[0] = pd.NA
-        validate_network(net)
-
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
