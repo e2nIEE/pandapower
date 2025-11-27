@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] added a check for droop controller that ensure the correct convergence for VDroop controller and Q(U) controller
 - [ADDED] pf2pp: possibility to convert a specific variant and scenario
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [ADDED] Static Var Compensator with Voltage Control
