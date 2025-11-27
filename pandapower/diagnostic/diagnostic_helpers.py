@@ -246,9 +246,9 @@ def check_switch_type(element, element_index, column):
 
 def diagnostic(
         net: pandapowerNet,
-        report_style: Literal['compact', 'detailed'] | None,
-        warnings_only: bool,
-        return_result_dict: bool,
+        report_style: Literal['compact', 'detailed'] | None = 'detailed',
+        warnings_only: bool = False,
+        return_result_dict: bool = True,
         overload_scaling_factor: float = 0.001,
         lines_min_length_km: float = 0.,
         lines_min_z_ohm: float = 0.,
