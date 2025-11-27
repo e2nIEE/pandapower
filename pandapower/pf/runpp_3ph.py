@@ -134,11 +134,21 @@ def _load_mapping(net, ppci1):
 # =============================================================================
 # 3 phase algorithm function
 # =============================================================================
-def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
-              max_iteration="auto", tolerance_mva=1e-8, trafo_model='t',
-              trafo_loading="current", enforce_q_lims=False, numba=True,
-              recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
-              delta_q=0, **kwargs):
+def runpp_3ph(
+    net,
+    calculate_voltage_angles=True,
+    init="auto",
+    max_iteration="auto",
+    tolerance_mva=1e-8,
+    trafo_model="t",
+    trafo_loading="current",
+    enforce_q_lims=False,
+    numba=True,
+    recycle=None,
+    check_connectivity=True,
+    switch_rx_ratio=2.0,
+    **kwargs,
+):
     """
  runpp_3ph: Performs Unbalanced/Asymmetric/Three Phase Load flow
 
@@ -261,11 +271,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
         model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
         as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
-
-        **delta_q**
-
-        (Not tested with 3 Phase load flow) - Reactive power tolerance for option "enforce_q_lims"
-        in kvar - helps convergence in some cases.
 
         **trafo3w_losses**
 
