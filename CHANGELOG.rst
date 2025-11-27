@@ -4,6 +4,10 @@ Change Log
 [upcoming release] - 2025-..-..
 -------------------------------
 - [ADDED] pf2pp: added possibility to export pf_area and pf_zone to busses
+- [FIXED] add missing tests for runpp_3ph parameters
+- [FIXED] remove never used parameter from runpp_3ph method signature
+- [CHANGED] Documentation configuration to support custom keywords
+- [CHANGED] Offset for weighted marker legend
 - [ADDED] pf2pp: possibility to convert a specific variant and scenario
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [ADDED] Static Var Compensator with Voltage Control

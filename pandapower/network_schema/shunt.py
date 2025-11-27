@@ -16,7 +16,14 @@ shunt_schema = pa.DataFrameSchema(
         "step": pa.Column(
             int, pa.Check.ge(1), description="step position of the shunt with which power values are multiplied"
         ),
-        "max_step": pa.Column(int, pa.Check.ge(1), description="maximum allowed step of shunt"),
+        "max_step": pa.Column(
+            pd.Int64Dtype,
+            pa.Check.ge(1),
+            nullable=True,
+            required=False,
+            description="maximum allowed step of shunt",
+            metadata={"opf": True},
+        ),
         "in_service": pa.Column(bool, description="specifies if the shunt is in service"),
         "step_dependency_table": pa.Column(
             pd.BooleanDtype,
@@ -32,6 +39,14 @@ shunt_schema = pa.DataFrameSchema(
             description="references the id_characteristic index from the shunt_characteristic_table",
         ),
     },
+    checks=[
+        pa.Check(
+            lambda df: (
+                df["step"] <= df["max_step"] if all(col in df.columns for col in ["step", "max_step"]) else True
+            ),
+            error="Column 'step' must be <= column 'max_step'",
+        )
+    ],
     strict=False,
 )
 
