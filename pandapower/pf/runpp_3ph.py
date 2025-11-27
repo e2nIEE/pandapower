@@ -97,7 +97,7 @@ def _load_mapping(net, ppci1):
     maps them in ppc bus order and forms s_abc matrix
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    params = dict()
+    params = {}
     phases = ['a', 'b', 'c']
     load_types = ['wye', 'delta']
     load_elements = ['load', 'asymmetric_load', 'sgen', 'asymmetric_sgen']
@@ -641,10 +641,9 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 
 
 def _current_from_voltage_results(y_0_pu, y_1_pu, y_2_pu, v_012_pu):
-    I012_pu = combine_X012(
+    return combine_X012(
         I0_from_V012(v_012_pu, y_0_pu), I1_from_V012(v_012_pu, y_1_pu), I2_from_V012(v_012_pu, y_2_pu)
     )
-    return I012_pu
 
 
 def _get_y_bus(ppci0, ppci1, ppci2, recycle):

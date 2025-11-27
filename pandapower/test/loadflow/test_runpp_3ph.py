@@ -34,7 +34,6 @@ from pandapower.test.loadflow.test_runpp import get_isolated
 def net():
     v_base = 110  # 110kV Base Voltage
     k_va_base = 100  # 100 MVA
-    #    I_base = (kVA_base/V_base) * 1e-3           # in kA
     net = create_empty_network(sn_mva=k_va_base)
     create_bus(net, vn_kv=v_base, index=1)
     create_bus(net, vn_kv=v_base, index=5)
@@ -449,17 +448,10 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
                                p_c_mw=0.0032, q_c_mvar=0.0013, type='wye')
         create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
                                p_c_mw=0.027, q_c_mvar=0.0043, type='delta')
-
-    elif case == "wye":
+    elif case == "wye" or case == "delta":
         # Unsymmetric Heavy Load
         create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
                                p_c_mw=0.027, q_c_mvar=0.0043, type=case)
-    elif case == "delta":
-        create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
-                               p_c_mw=0.027, q_c_mvar=0.0043, type=case)
-
-
-#    add_zero_impedance_parameters(net) Not required here since added through parameters
 
 
 def test_trafo_asym():
@@ -628,9 +620,7 @@ def test_shunt_3ph():
 @pytest.mark.xfail
 def test_3ph_enforce_q_lims(result_test_network):
     v_tol = 1e-6
-    i_tol = 1e-6
     s_tol = 5e-3
-    l_tol = 1e-3
 
     net = result_test_network
     buses = net.bus[net.bus.zone == "test_enforce_qlims"]
@@ -654,20 +644,21 @@ def test_3ph_enforce_q_lims(result_test_network):
 @pytest.mark.xfail
 def test_recycle_pq():
     net = create_empty_network()
-    b1, b2, ln = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     pl = 1.2
     ql = 1.1
     ps = 0.5
     u_set = 1.0
 
-    b3 = create_bus(net, vn_kv=.4)
-    create_bus(net, vn_kv=.4, in_service=False)
-    create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
-                                c_nf_per_km=300, max_i_ka=.2, df=.8)
+    b3 = create_bus(net, vn_kv=0.4)
+    create_bus(net, vn_kv=0.4, in_service=False)
+    create_line_from_parameters(
+        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_gen(net, b2, p_mw=ps, vm_pu=u_set)
     pl = 1.2
-    ql = 0.
+    ql = 0.0
     net["load"].at[0, "q_mvar"] = ql
     runpp_3ph(net, recycle={"trafo": False, "gen": False, "bus_pq": True})
     assert np.allclose(net.res_load.at[0, "p_mw"], pl)
@@ -690,11 +681,11 @@ def test_connectivity_check_island_without_pv_bus():
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
 
-    isolated_bus1 = create_bus(net, vn_kv=20., name="isolated Bus1")
-    isolated_bus2 = create_bus(net, vn_kv=20., name="isolated Bus2")
-    create_line(net, isolated_bus2, isolated_bus1, length_km=1,
-                std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
-                name="IsolatedLine")
+    isolated_bus1 = create_bus(net, vn_kv=20.0, name="isolated Bus1")
+    isolated_bus2 = create_bus(net, vn_kv=20.0, name="isolated Bus2")
+    create_line(
+        net, isolated_bus2, isolated_bus1, length_km=1, std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine"
+    )
     iso_buses, iso_p, iso_q, *_ = get_isolated(net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 0)
@@ -717,12 +708,12 @@ def test_connectivity_check_island_without_pv_bus():
 def test_z_switch(numba):
     net = create_empty_network()
     for i in range(3):
-        create_bus(net, vn_kv=.4)
+        create_bus(net, vn_kv=0.4)
         create_load(net, i, p_mw=0.1)
     create_ext_grid(net, 0, vm_pu=1.0)
-    create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.1 / np.sqrt(2),
-                                x_ohm_per_km=0.1 / np.sqrt(2),
-                                c_nf_per_km=0, max_i_ka=.2)
+    create_line_from_parameters(
+        net, 0, 1, 1, r_ohm_per_km=0.1 / np.sqrt(2), x_ohm_per_km=0.1 / np.sqrt(2), c_nf_per_km=0, max_i_ka=0.2
+    )
     create_switch(net, 0, 2, et="b", z_ohm=0.1)
 
     runpp_3ph(net, numba=numba, switch_rx_ratio=1)
