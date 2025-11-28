@@ -56,9 +56,9 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         #from julia import Main
         #from julia import Pkg
         #from julia import Base
-        from juliacall import Main
-        from juliacall import Base
-        from juliacall import Pkg
+        from juliacall import Main # type: ignore
+        from juliacall import Base # type: ignore
+        from juliacall import Pkg # type: ignore
     except ImportError:
         raise ImportError(
             "Please install pyjulia properly to run pandapower with PandaModels.jl.")

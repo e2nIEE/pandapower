@@ -14,12 +14,12 @@ from pandapower.run import runpp
 from pandapower.runpm import runpm_tnep
 
 try:
-    from juliacall import JuliaError as UnsupportedPythonError
+    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
 
 try:
-    from juliacall import Main
+    from juliacall import Main # type: ignore
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False

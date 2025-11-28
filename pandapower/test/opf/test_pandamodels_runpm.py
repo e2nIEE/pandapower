@@ -32,7 +32,7 @@ from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.timeseries import DFData, run_timeseries
 
 try:
-    from juliacall import JuliaError as UnsupportedPythonError
+    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
 

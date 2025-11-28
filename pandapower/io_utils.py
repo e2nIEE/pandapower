@@ -42,7 +42,7 @@ try:
 except ImportError:
     from pandas.util.testing import assert_series_equal, assert_frame_equal  # type: ignore[no-redef,import-not-found]
 try:
-    from cryptography.fernet import Fernet
+    from cryptography.fernet import Fernet # type: ignore
 
     cryptography_INSTALLED = True
 except ImportError:

@@ -4,7 +4,7 @@
 import pytest
 
 try:
-    from juliacall import JuliaError as UnsupportedPythonError
+    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
 
