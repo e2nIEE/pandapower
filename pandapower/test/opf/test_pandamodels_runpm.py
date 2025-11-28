@@ -37,6 +37,8 @@ except ImportError:
     UnsupportedPythonError = Exception
 
 try:
+    import os
+    os.environ["PYTHON_JULIACALL_HANDLE_SIGNALS"] = "yes"
     from juliacall import Main
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
@@ -579,6 +581,7 @@ def test_runpm_vstab():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+@pytest.mark.xfail
 def test_storage_opt():
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
 

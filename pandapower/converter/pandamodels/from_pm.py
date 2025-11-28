@@ -7,8 +7,9 @@
 import math
 import numpy as np
 import pandas as pd
+from typing import Any
 from copy import deepcopy
-from pandapower.auxiliary import _clean_up
+from pandapower.auxiliary import _clean_up, pandapowerNet
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
 from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
@@ -53,7 +54,7 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
         raise OPFNotConverged("PowerModels.jl OPF not converged")
 
 
-def add_storage_results(net, result_pmi):
+def add_storage_results(net: pandapowerNet, result_pmi):
     if "storage" in result_pmi:
         df = net.res_storage
         df[["ps", "qs", "se", "qsc"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)

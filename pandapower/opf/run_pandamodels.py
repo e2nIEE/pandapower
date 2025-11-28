@@ -2,6 +2,7 @@ import os
 from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump_pm_json
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.optimal_powerflow import OPFNotConverged
+import copy
 
 import logging
 logger = logging.getLogger(__name__)
@@ -84,18 +85,20 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         Pkg.resolve()
         Pkg.activate("PandaModels")
 
-    try:
-        # Main.using("PandaModels")
-        Main.seval("using PandaModels")
-    except ImportError:
-        raise ImportError("cannot use PandaModels")
+    # try:
+    #     # Main.using("PandaModels")
+    #     Main.seval("using PandaModels")
+    # except ImportError:
+    #     raise ImportError("cannot use PandaModels")
 
-    try:
-        Main.buffer_file = buffer_file
-    except Exception:
-        Main.buffer_file = buffer_file
+    #try:
+    Main.seval("global buffer_file")
+    Main.buffer_file = buffer_file
+    #except Exception:
+    #    Main.buffer_file = buffer_file
 
-    result_pm = Main.seval(julia_file + "(buffer_file)")
+    seval_str = f'using PandaModels; PandaModels.{julia_file}(buffer_file)'
+    result_pm = Main.seval(seval_str)
 
     # if dev_mode:
     #     Pkg.activate()
