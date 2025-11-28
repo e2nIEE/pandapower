@@ -221,7 +221,7 @@ trafo_checks += create_column_dependency_checks_from_metadata(
     ],
     _trafo_columns,
 )
-trafo_checks += create_lower_than_column_check(first_element="min_angle_degree", second_element="max_angle_degree")
+trafo_checks.append(create_lower_than_column_check(first_element="min_angle_degree", second_element="max_angle_degree"))
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,
