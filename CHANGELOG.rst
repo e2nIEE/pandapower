@@ -5,6 +5,8 @@ Change Log
 -------------------------------
 - [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
 - [CHANGED] runpp: expanded enforce_q_lims functionality to consider max & min q limits for sgen elements (from either net.sgen.min/max_q_mvar parameters or reactive power capability curves)
+- [CHANGED] diagnostics restructured for better extensibility
+- [FIXED] implausible impedance test results never showing in report
 - [ADDED] load_case_engine for matpower converter
 - [FIXED] added a check for droop controller that ensure the correct convergence for VDroop controller and Q(U) controller
 - [FIXED] typo in ieee_european_lv_asymmetric
