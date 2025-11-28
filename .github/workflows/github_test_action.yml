@@ -6,9 +6,11 @@ on:
   push:
     paths-ignore:
       - 'CHANGELOG.rst'
+      - '**/CHANGELOG.rst'
   pull_request:
     paths-ignore:
       - 'CHANGELOG.rst'
+      - '**/CHANGELOG.rst'
 
 jobs:
   build:
@@ -58,7 +60,7 @@ jobs:
   julia:
     # needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
     continue-on-error: true
     strategy:
       matrix:
@@ -80,7 +82,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --all-extras
-          uv pip install pypower pytest-split pytest-cov julia
+          uv pip install pypower pytest-split pytest-cov juliacall julia
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       #- name: Install Julia
       #  run: |
@@ -99,8 +101,8 @@ jobs:
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          # uv run pytest -n=auto --cov=./ --cov-report=xml
-          uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
+          uv run pytest -n=auto --cov=./ --cov-report=xml
+          # uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
   upload-coverage:
