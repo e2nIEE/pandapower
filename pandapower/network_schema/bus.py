@@ -18,7 +18,7 @@ _bus_columns = {
         float, pa.Check.gt(0), nullable=True, required=False, description="Maximum voltage", metadata={"opf": True}
     ),
     "min_vm_pu": pa.Column(
-        float, pa.Check.gt(0), nullable=True, required=False, description="Minimum voltage", metadata={"opf": True}
+        float, pa.Check.ge(0), nullable=True, required=False, description="Minimum voltage", metadata={"opf": True}
     ),
     "in_service": pa.Column(bool, description="specifies if the bus is in service."),
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
@@ -26,8 +26,8 @@ _bus_columns = {
 bus_schema = pa.DataFrameSchema(
     _bus_columns,
     checks=[
-        create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
         *create_column_dependency_checks_from_metadata(["opf"], _bus_columns),
+        create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
     ],
     strict=False,
 )
