@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] diagnostics restructured for better extensibility
+- [FIXED] implausible impedance test results never showing in report
 - [ADDED] load_case_engine for matpower converter
 - [FIXED] added a check for droop controller that ensure the correct convergence for VDroop controller and Q(U) controller
 - [FIXED] typo in ieee_european_lv_asymmetric
