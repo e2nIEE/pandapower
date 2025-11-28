@@ -57,53 +57,54 @@ jobs:
           name: coverage-${{ matrix.group }}
           path: ./coverage-${{ matrix.group }}.xml
 
-  julia:
-    # needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    continue-on-error: true
-    strategy:
-      matrix:
-        python-version: ['3.13']
-        julia-version: ['1.10']
-        # Reminder: when removing the support of an old python version here, then don't forget to
-        # remove it also in pyproject.toml 'requires-python'
-        group: [ 1 ]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
-        with:
-          version: ${{ matrix.julia-version }}
-          arch: 'x64'
-      - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          uv sync --all-extras
-          uv pip install pypower pytest-split pytest-cov juliacall julia
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-      #- name: Install Julia
-      #  run: |
-      #    ./.install_julia.sh 1.10.4
-      #    uv pip install julia
-      #    uv run python ./.install_pycall.py
-      - name: Install PandaModels.jl
-        run: |
-          julia -e 'using Pkg; Pkg.add("PandaModels")'
-          julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
-          uv run python -c "import julia; julia.install(color=True)"
-      - name: List of installed packages
-        run: |
-          uv python find
-          uv pip list
-          julia -e 'using Pkg; Pkg.status()'
-      - name: Test with pytest, Codecov and Coverage
-        run: |
-          uv run pytest -n=auto --cov=./ --cov-report=xml
-          # uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
-          cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
+# Julia stage deactivated, since it will get tested with the normal stage through juliacall
+#  julia:
+#    # needs: build
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 20
+#    continue-on-error: true
+#    strategy:
+#      matrix:
+#        python-version: ['3.13']
+#        julia-version: ['1.10']
+#        # Reminder: when removing the support of an old python version here, then don't forget to
+#        # remove it also in pyproject.toml 'requires-python'
+#        group: [ 1 ]
+#    steps:
+#      - uses: actions/checkout@v5
+#      - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
+#        with:
+#          version: ${{ matrix.julia-version }}
+#          arch: 'x64'
+#      - name: Install uv
+#        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+#        with:
+#          python-version: ${{ matrix.python-version }}
+#      - name: Install dependencies
+#        run: |
+#          uv sync --all-extras
+#          uv pip install pypower pytest-split pytest-cov juliacall julia
+#          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+#      #- name: Install Julia
+#      #  run: |
+#      #    ./.install_julia.sh 1.10.4
+#      #    uv pip install julia
+#      #    uv run python ./.install_pycall.py
+#      - name: Install PandaModels.jl
+#        run: |
+#          julia -e 'using Pkg; Pkg.add("PandaModels")'
+#          julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
+#          uv run python -c "import julia; julia.install(color=True)"
+#      - name: List of installed packages
+#        run: |
+#          uv python find
+#          uv pip list
+#          julia -e 'using Pkg; Pkg.status()'
+#      - name: Test with pytest, Codecov and Coverage
+#        run: |
+#          uv run pytest -n=auto --cov=./ --cov-report=xml
+#          # uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
+#          cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
   upload-coverage:
     runs-on: ubuntu-latest
