@@ -52,7 +52,7 @@ These will be added to Diagnostic instances by default.
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.ParallelSwitches
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.SlackGenPlacement
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.SubNetProblemTest
-.. autoclass:: pandapower.diagnostic.diagnostic_functions.TestContinousBusIndices
+.. autoclass:: pandapower.diagnostic.diagnostic_functions.TestContinuousBusIndices
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.WrongLineCapacitance
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.WrongReferenceSystem
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.WrongSwitchConfiguration
