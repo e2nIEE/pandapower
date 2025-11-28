@@ -44,14 +44,16 @@ not_allowed_ints = [np.int8(1), np.int16(1), np.int32(1), np.uint8(1), np.uint16
 all_ints = [*all_allowed_ints, *not_allowed_ints]
 # floats
 zero_float = [0.0, np.float64(0.0)]
-positiv_floats = [1.0, float("inf"), np.float64(1.0)]
+positiv_floats = [1.0, np.float64(1.0)]
 positiv_floats_plus_zero = [*positiv_floats, *zero_float]
-negativ_floats = [-1.0, float("-inf"), np.float64(-1.0)]
+negativ_floats = [-1.0, np.float64(-1.0)]
 negativ_floats_plus_zero = [*negativ_floats, *zero_float]
 all_allowed_floats = [*zero_float, *positiv_floats, *negativ_floats]
 not_allowed_floats = [
     np.float32(1.0),
     np.float16(1.0),
+    float("inf"),
+    float("-inf")
 ]
 all_floats = [*all_allowed_floats, *not_allowed_floats]
 
