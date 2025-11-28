@@ -1070,7 +1070,7 @@ def deviation_from_std_type(net):
     """
     check_results = {}
     for key in net.std_types:
-        if key in net:
+        if key in net and "std_type" in net[key].columns:
             for i, element in net[key].iterrows():
                 std_type = element.std_type
                 if std_type in net.std_types[key]:

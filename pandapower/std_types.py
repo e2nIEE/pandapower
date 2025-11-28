@@ -224,7 +224,8 @@ def rename_std_type(net, old_name, new_name, element="line"):
     if new_name in library:
         raise UserWarning(f"{element} standard type '{new_name}' already exists.")
     library[new_name] = library.pop(old_name)
-    net[element].loc[net[element].std_type == old_name, "std_type"] = new_name
+    if "std_type" in net[element].columns:
+        net[element].loc[net[element].std_type == old_name, "std_type"] = new_name
 
 
 def available_std_types(net, element="line"):
@@ -276,13 +277,14 @@ def parameter_from_std_type(net, parameter, element="line", fill=None):
     """
     if parameter not in net[element]:
         net[element][parameter] = fill
-    for typ in net[element].std_type.unique():
-        if pd.isnull(typ) or not std_type_exists(net, typ, element):
-            continue
-        typedata = load_std_type(net, name=typ, element=element)
-        if parameter in typedata:
-            util = net[element].loc[net[element].std_type == typ].index
-            net[element].loc[util, parameter] = typedata[parameter]
+    if "std_type" in net[element].columns:
+        for typ in net[element].std_type.unique():
+            if pd.isnull(typ) or not std_type_exists(net, typ, element):
+                continue
+            typedata = load_std_type(net, name=typ, element=element)
+            if parameter in typedata:
+                util = net[element].loc[net[element].std_type == typ].index
+                net[element].loc[util, parameter] = typedata[parameter]
     if fill is not None:
         net[element].loc[pd.isnull(net[element][parameter]).values, parameter] = fill
 
