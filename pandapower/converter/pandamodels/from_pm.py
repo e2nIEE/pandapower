@@ -60,7 +60,7 @@ def add_storage_results(net: pandapowerNet, result_pmi):
         df[["ps", "qs", "se", "qsc"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
         df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
         controllable_storages = net.storage.index[net.storage.controllable]
-        df_pm = pd.DataFrame.from_dict(result_pmi["storage"]).T
+        df_pm = pd.DataFrame.from_dict(result_pmi["storage"], orient="index")
         df_pm.index = controllable_storages
         df.loc[controllable_storages] = df_pm
 

@@ -581,7 +581,6 @@ def test_runpm_vstab():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-@pytest.mark.xfail
 def test_storage_opt():
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
 
