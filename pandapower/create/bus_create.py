@@ -103,11 +103,17 @@ def create_bus(
         raise UserWarning(BUSBAR_WARNING)
 
     entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
-    _set_entries(net, "bus", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.0)
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.0)
+    if pd.notna(min_vm_pu) or pd.notna(max_vm_pu):
+        if pd.notna(min_vm_pu):
+            entries["min_vm_pu"] = min_vm_pu
+            entries["max_vm_pu"] = 2.0
+        if pd.notna(max_vm_pu):
+            entries["min_vm_pu"] = 0.0
+            entries["max_vm_pu"] = max_vm_pu
+
+    _set_entries(net, "bus", index, True, entries=entries)
 
     return index
 

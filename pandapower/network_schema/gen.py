@@ -1,6 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _gen_columns = {
@@ -130,10 +131,7 @@ _gen_columns = {
         metadata={"opf": True},
     ),
 }
-gen_schema = pa.DataFrameSchema(
-    _gen_columns,
-    strict=False,
-    checks=create_column_dependency_checks_from_metadata(
+gen_checks = create_column_dependency_checks_from_metadata(
         [
             "opf",
             # "sc",
@@ -141,7 +139,14 @@ gen_schema = pa.DataFrameSchema(
             "qcc",
         ],
         _gen_columns,
-    ),
+    )
+gen_checks.append(create_lower_equals_column_check(first_element="min_q_mvar", second_element="max_q_mvar"))
+gen_checks.append(create_lower_equals_column_check(first_element="min_p_mw", second_element="max_p_mw"))
+gen_checks.append(create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"))
+gen_schema = pa.DataFrameSchema(
+    _gen_columns,
+    strict=False,
+    checks=gen_checks,
 )
 
 
