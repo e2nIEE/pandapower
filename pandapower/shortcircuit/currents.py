@@ -144,7 +144,7 @@ def _current_source_current(net, ppci, bus_idx):
     # _is_elements_final exists for some reason, and weirdly it can be different than _is_elements. 
     # it is not documented anywhere why it exists and I don't have any time to find out, but this here fixes the problem.
 
-    if "curent_source" not in net.sgen.columns or np.all(net.sgen.current_source.values):
+    if "current_source" not in net.sgen.columns or np.all(net.sgen.current_source.values):
         sgen = net.sgen[net._is_elements_final["sgen"]]
     else:
         sgen = net.sgen[net._is_elements_final["sgen"] & net.sgen.current_source]
