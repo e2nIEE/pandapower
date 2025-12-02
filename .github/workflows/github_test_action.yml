@@ -49,12 +49,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.10' }}
         run: |
-          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }}
+          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.10' }}
         run: |
           uv pip install pytest-cov
-          uv run pytest -n=auto --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }}
+          uv run pytest -n=auto --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         if: ${{ matrix.python-version == '3.10' }}
@@ -64,7 +64,7 @@ jobs:
           path: ./coverage-${{ matrix.group }}.xml
 
 
-  julia:
+  opf:
     # needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -82,14 +82,15 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
-      - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
+      #- name: Install uv
+      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      #  with:
+      #    python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           # uv sync --all-extras
-          python -m pip install pypower pytest-split pytest-cov juliacall julia pandapower[pandamodels]
+          python -m pip install pypower pytest-split pytest-cov juliacall julia
+          python -m pip install .[pandamodels]
           # if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       #- name: Install Julia
       #  run: |
@@ -314,7 +315,7 @@ jobs:
       - name: Install dependencies
         run: |
           # uv sync --all-extras
-          python -m pip install seaborn pandapower[all]
+          python -m pip install .[all]
           # ./.install_julia.sh 1.10.4
           python -m pip install julia seaborn jupyter juliacall
           # uv run python ./.install_pycall.py
@@ -339,7 +340,8 @@ jobs:
         run: |
           # uv sync --all-extras
           # ./.install_julia.sh 1.10.4
-          python -m pip install julia seaborn juliacall
+          python -m pip install .[all]
+          python -m pip install julia seaborn juliacall jupyter
           # uv run python ./.install_pycall.py
       - name: List all installed packages
         run: |
