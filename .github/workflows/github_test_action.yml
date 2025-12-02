@@ -99,7 +99,7 @@ jobs:
         run: |
           julia -e 'using Pkg; Pkg.add("PandaModels")'
           julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
-          run python -c "import julia; julia.install(color=True)"
+          python -c "import julia; julia.install(color=True)"
       - name: List of installed packages
         run: |
           pip list
