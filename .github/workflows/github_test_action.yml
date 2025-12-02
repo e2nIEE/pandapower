@@ -88,7 +88,7 @@ jobs:
       - name: Install dependencies
         run: |
           # uv sync --all-extras
-          pip install pypower pytest-split pytest-cov juliacall julia
+          python -m pip install pypower pytest-split pytest-cov juliacall julia pandapower[pandamodels]
           # if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       #- name: Install Julia
       #  run: |
@@ -100,14 +100,13 @@ jobs:
           julia -e 'using Pkg; Pkg.add("PandaModels")'
           julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
           python -c "import julia; julia.install(color=True)"
-          python -m pip install pandapower[pandamodels]
       - name: List of installed packages
         run: |
           pip list
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          pytest -n=auto --cov=./ --cov-report=xml pandapower/test/opf
+          pytest --cov=./ --cov-report=xml pandapower/test/opf
           # uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
