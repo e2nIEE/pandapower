@@ -92,7 +92,7 @@ typing = [
     "pandera[mypy]~=0.26.1"
 ]
 
-all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,typing,pandamodels]"]
+all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,typing]"]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 
