@@ -251,7 +251,7 @@ class UCTEParser:
         df["status"] = df[0].str[20:21].str.strip()
         df["r"] = df[0].str[22:28].str.strip()
         df["x"] = df[0].str[29:35].str.strip()
-        df["b"] = df[0].str[36:44].str.strip()
+        df["b"] = df[0].str[36:44].str.strip().fillna(0.0)
         df["i"] = df[0].str[45:51].str.strip()
         df["name"] = df[0].str[52:64].str.strip()
 
@@ -273,8 +273,8 @@ class UCTEParser:
         df["s"] = df[0].str[34:39].str.strip()
         df["r"] = df[0].str[40:46].str.strip()
         df["x"] = df[0].str[47:53].str.strip()
-        df["b"] = df[0].str[54:62].str.strip()
-        df["g"] = df[0].str[63:69].str.strip()
+        df["b"] = df[0].str[54:62].str.strip().fillna(0.0)
+        df["g"] = df[0].str[63:69].str.strip().fillna(0.0)
         df["i"] = df[0].str[70:76].str.strip()
         df["name"] = df[0].str[77:89].str.strip()
 

@@ -94,9 +94,6 @@ class UCTE2pandapower:
             )
             self.u_d[one_asset] = self.u_d[one_asset].drop(columns=["node1", "node2"])
 
-        if self.u_d["R"].empty:
-            logging.info("Empty R table detected. It is assumed that all the trafo tap data is merged into the T table")
-
         # prepare the element tables
         self._convert_nodes()
         self._convert_loads()
@@ -338,35 +335,28 @@ class UCTE2pandapower:
         impedances["rtf_pu"] = impedances["r"] / impedances["z_ohm"]
         impedances["xft_pu"] = impedances["x"] / impedances["z_ohm"]
         impedances["xtf_pu"] = impedances["x"] / impedances["z_ohm"]
-        impedances["gf_pu"] = impedances["g"].fillna(0.0) / impedances["z_ohm"]
-        impedances["gt_pu"] = impedances["g"].fillna(0.0) / impedances["z_ohm"]
-        impedances["bf_pu"] = impedances["b"].fillna(0.0) / impedances["z_ohm"]
-        impedances["bt_pu"] = impedances["b"].fillna(0.0) / impedances["z_ohm"]
+        impedances["gf_pu"] = impedances["g"] / impedances["z_ohm"]
+        impedances["gt_pu"] = impedances["g"] / impedances["z_ohm"]
+        impedances["bf_pu"] = impedances["b"] / impedances["z_ohm"]
+        impedances["bt_pu"] = impedances["b"] / impedances["z_ohm"]
         self._fill_empty_names(impedances)
         self._copy_to_pp("impedance", impedances)
         self.logger.info("Finished converting the impedances.")
 
     def _get_trafos_modelled_as_impedances(self):
         ### get transformers that will be transformed to impedances and append them ###
-        if not self.u_d["R"].empty:
-            trafos = pd.merge(
-                self.u_d["T"],
-                self.u_d["R"],
-                how="left",
-                on=["hv_bus", "lv_bus", "order_code"],
-            )
-            # check for trafos connecting same voltage levels
-            trafos_to_impedances = trafos.loc[
-                trafos.loc[:, "0_x"].map(lambda s: s[6])
-                == trafos.loc[:, "0_x"].map(lambda s: s[15])
-            ]
+        trafos = pd.merge(
+            self.u_d["T"],
+            self.u_d["R"],
+            how="left",
+            on=["hv_bus", "lv_bus", "order_code"],
+        )
 
-        else:
-            trafos = self.u_d["T"]
-            trafos_to_impedances = trafos.loc[
-                trafos.loc[:, "0"].map(lambda s: s[6])
-                == trafos.loc[:, "0"].map(lambda s: s[15])
-            ]
+        # check for trafos connecting same voltage levels
+        trafos_to_impedances = trafos.loc[
+            trafos.loc[:, "0_x"].map(lambda s: s[6])
+            == trafos.loc[:, "0_x"].map(lambda s: s[15])
+        ]
 
         trafos_to_impedances = trafos_to_impedances.loc[
             trafos_to_impedances.phase_reg_delta_u.isnull()
@@ -376,16 +366,16 @@ class UCTE2pandapower:
         ]
         # calculate iron losses in kW
         trafos_to_impedances["pfe_kw"] = (
-            trafos_to_impedances.g.fillna(0.0) * trafos_to_impedances.voltage1**2 / 1e3
+            trafos_to_impedances.g * trafos_to_impedances.voltage1**2 / 1e3
         )
         # calculate open loop losses in percent of rated current
         trafos_to_impedances["i0_percent"] = (
             (
                 (
-                    (trafos_to_impedances.b.fillna(0.0) * 1e-6 * trafos_to_impedances.voltage1**2)
+                    (trafos_to_impedances.b * 1e-6 * trafos_to_impedances.voltage1**2)
                     ** 2
                     + (
-                        trafos_to_impedances.g.fillna(0.0)
+                        trafos_to_impedances.g
                         * 1e-6
                         * trafos_to_impedances.voltage1**2
                     )
@@ -435,15 +425,12 @@ class UCTE2pandapower:
 
     def _convert_trafos(self):
         self.logger.info("Converting the transformers.")
-        if not self.u_d["R"].empty:
-            trafos = pd.merge(
-                self.u_d["T"],
-                self.u_d["R"],
-                how="left",
-                on=["hv_bus", "lv_bus", "order_code"],
-            )
-        else:
-            trafos = self.u_d["T"]
+        trafos = pd.merge(
+            self.u_d["T"],
+            self.u_d["R"],
+            how="left",
+            on=["hv_bus", "lv_bus", "order_code"],
+        )
         if not len(trafos):
             self.logger.info("Finished converting the transformers (no transformers existing).")
             return
@@ -464,13 +451,13 @@ class UCTE2pandapower:
         # calculate vkr_percent
         trafos["vkr_percent"] = trafos.r * trafos.s * 100 / trafos.voltage1**2
         # calculate iron losses in kW
-        trafos["pfe_kw"] = trafos.g.fillna(0.0) * trafos.voltage1**2 / 1e3
+        trafos["pfe_kw"] = trafos.g * trafos.voltage1**2 / 1e3
         # calculate open loop losses in percent of rated current
         trafos["i0_percent"] = (
             (
                 (
-                    (trafos.b.fillna(0.0) * 1e-6 * trafos.voltage1**2) ** 2
-                    + (trafos.g.fillna(0.0) * 1e-6 * trafos.voltage1**2) ** 2
+                    (trafos.b * 1e-6 * trafos.voltage1**2) ** 2
+                    + (trafos.g * 1e-6 * trafos.voltage1**2) ** 2
                 )
                 ** 0.5
             )
@@ -606,13 +593,8 @@ class UCTE2pandapower:
         trafos.loc[trafos.phase_reg_n.isnull(), "tap_neutral"] = np.nan
         trafos["shift_degree"] = 0
         trafos["parallel"] = 1
-        if "0_x" in trafos.columns:
-            self._fill_empty_names(trafos, "0_x")
-            self._fill_amica_names(trafos, ":trf", "0_x")
-        else:
-            self._fill_empty_names(trafos, "0")
-            self._fill_amica_names(trafos, ":trf", "0")
-
+        self._fill_empty_names(trafos, "0_x")
+        self._fill_amica_names(trafos, ":trf", "0_x")
         trafos["tap_changer_type"] = trafos["tap_changer_type"].fillna("Ratio").astype(str)
         trafos["tap2_changer_type"] = trafos["tap2_changer_type"].fillna("Ratio").astype(str)
         # rename the columns to the pandapower schema
