@@ -482,7 +482,7 @@ def create_transformer_from_parameters(
         "hv_bus": hv_bus,
         "lv_bus": lv_bus,
         "in_service": in_service,
-        "std_type": None,
+        "std_type": pd.NA,
         "sn_mva": sn_mva,
         "vn_hv_kv": vn_hv_kv,
         "vn_lv_kv": vn_lv_kv,
@@ -751,7 +751,7 @@ def create_transformers_from_parameters(  # index missing ?
         "hv_bus": hv_buses,
         "lv_bus": lv_buses,
         "in_service": array(in_service).astype(bool_),
-        "std_type": None,
+        "std_type": pd.NA,
         "sn_mva": sn_mva,
         "vn_hv_kv": vn_hv_kv,
         "vn_lv_kv": vn_lv_kv,
@@ -1278,7 +1278,7 @@ def create_transformer3w_from_parameters(
         "tap_min": tap_min,
         "in_service": in_service,
         "name": name,
-        "std_type": None,
+        "std_type": pd.NA,
         "tap_at_star_point": tap_at_star_point,
         "vk0_hv_percent": vk0_hv_percent,
         "vk0_mv_percent": vk0_mv_percent,
@@ -1287,6 +1287,7 @@ def create_transformer3w_from_parameters(
         "vkr0_mv_percent": vkr0_mv_percent,
         "vkr0_lv_percent": vkr0_lv_percent,
         "vector_group": vector_group,
+        **kwargs
     }
     _set_entries(net, "trafo3w", index, entries=entries)
 
