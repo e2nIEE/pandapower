@@ -162,8 +162,7 @@ def test_pm_tnep_cigre_ac_I():
     assert np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
 
     # run power models tnep optimization
-    runpm_tnep(net, pm_solver="juniper", pm_model="ACPPowerModel",
-               opf_flow_lim="I")  # gurobi is a better option, but not for travis
+    runpm_tnep(net, pm_solver="juniper", pm_model="ACPPowerModel", opf_flow_lim="I")
     # print the information about the newly built lines
     # print("These lines are to be built:")
     # print(net["res_ne_line"])

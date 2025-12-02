@@ -37,8 +37,6 @@ except ImportError:
     UnsupportedPythonError = Exception
 
 try:
-    import os
-    os.environ["PYTHON_JULIACALL_HANDLE_SIGNALS"] = "yes"
     from juliacall import Main
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
