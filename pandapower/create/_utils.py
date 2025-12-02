@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Iterable
+from typing import Iterable, Any
 
 import pandas as pd
 from numpy import nan, isnan, arange, isin, any as np_any, all as np_all, float64, intersect1d, unique as uni, c_
@@ -232,39 +232,38 @@ def _try_astype(df, column, dtyp):
         pass
 
 
-def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64, default_val=nan):
+def _set_value_if_not_nan(
+        net: pandapowerNet,
+        index: int,
+        value: Any,
+        column: str,
+        element_type: str,
+        default_val=pd.NA
+):
     """Sets the given value to the dataframe net[element_type]. If the value is nan, default_val
     is assumed if this is not nan.
     If the value is not nan and the column does not exist already, the column is created and filled
     by default_val.
 
-    Parameters
-    ----------
-    net : pp.pandapowerNet
-        pp net
-    index : int
-        index of the element to get a value
-    value : Any
-        value to be set
-    column : str
-        name of column
-    element_type : str
-        element_type type, e.g. "gen"
-    dtype : Any, optional
-        e.g. float64, "Int64", bool_, ..., by default float64
-    default_val : Any, optional
-        default value to be set if the column exists and value is nan and if the column does not
-        exist and the value is not nan, by default nan
+    Parameters:
+        net: the pandapower net
+        index: index of the element to get a value
+        value: value to be set
+        column: name of column
+        element_type: element_type type, e.g. "gen"
+        default_val: default value to be set if the column exists and value is nan and if the column does not
+            exist and the value is not nan, by default nan
 
-    See Also
-    --------
-    _add_to_entries_if_not_nan
+    See Also:
+        _add_to_entries_if_not_nan
     """
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
+    if dtype == "float":
+        default_val = float("nan")
     if _not_nan(value):
         if not column_exists:
-            net[element_type].loc[:, column] = pd.Series(data=default_val, index=net[element_type].index)
+            net[element_type][column] = pd.Series(data=default_val, index=net[element_type].index)
         _try_astype(net[element_type], column, dtype)
         net[element_type].at[index, column] = value
     elif column_exists:
@@ -273,7 +272,16 @@ def _set_value_if_not_nan(net, index, value, column, element_type, dtype=float64
         _try_astype(net[element_type], column, dtype)
 
 
-def _add_to_entries_if_not_nan(net, element_type, entries, index, column, values, dtype=float64, default_val=nan):
+def _add_to_entries_if_not_nan(
+        net: pandapowerNet,
+        element_type,
+        entries,
+        index: int,
+        column,
+        values,
+        dtype=None,
+        default_val=pd.NA
+):
     """
 
     See Also
@@ -353,8 +361,8 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
                 if dtype == bool and net[table][col].isna().any(): # default value for bool entries # TODO: check if wanted behaviour
                     net[table][col] = net[table][col].astype(pd.BooleanDtype()).fillna(False)
                 net[table][col] = net[table][col].astype(dtype)
-            except KeyError:
-                pass
+            except KeyError as e:
+                logger.error(f"column {col} has no dtype in network structure")
 
     # and preserve dtypes
     if preserve_dtypes:

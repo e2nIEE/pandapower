@@ -202,9 +202,9 @@ def create_transformer(
         )
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
-    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo")
     _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo")
-    _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo", dtype=object, default_val=None)
+    _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo", default_val=None)
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
@@ -523,20 +523,20 @@ def create_transformer_from_parameters(
     entries.update(kwargs)
     _set_entries(net, "trafo", index, entries=entries)
 
-    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo", dtype="Int64")
-    _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo", dtype=object, default_val=None)
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo")
+    _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo", default_val=None)
     _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo")
 
-    _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo", dtype=str)
-    _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo", dtype=float64)
-    _set_value_if_not_nan(net, index, tap2_min, "tap2_min", "trafo", dtype=float64)
-    _set_value_if_not_nan(net, index, tap2_max, "tap2_max", "trafo", dtype=float64)
-    _set_value_if_not_nan(net, index, tap2_step_percent, "tap2_step_percent", "trafo", dtype=float64)
-    _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo", dtype=float64)
+    _set_value_if_not_nan(net, index, tap2_side, "tap2_side", "trafo")
+    _set_value_if_not_nan(net, index, tap2_neutral, "tap2_neutral", "trafo")
+    _set_value_if_not_nan(net, index, tap2_min, "tap2_min", "trafo")
+    _set_value_if_not_nan(net, index, tap2_max, "tap2_max", "trafo")
+    _set_value_if_not_nan(net, index, tap2_step_percent, "tap2_step_percent", "trafo")
+    _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo")
     _set_value_if_not_nan(
-        net, index, tap2_pos if pd.notnull(tap2_pos) else tap2_neutral, "tap2_pos", "trafo", dtype=float64
+        net, index, tap2_pos if pd.notnull(tap2_pos) else tap2_neutral, "tap2_pos", "trafo"
     )
-    _set_value_if_not_nan(net, index, tap2_changer_type, "tap2_changer_type", "trafo", dtype=object)
+    _set_value_if_not_nan(net, index, tap2_changer_type, "tap2_changer_type", "trafo")
 
     if any(key in kwargs for key in ["tap_phase_shifter", "tap2_phase_shifter"]):
         convert_trafo_pst_logic(net)
@@ -560,10 +560,10 @@ def create_transformer_from_parameters(
         _set_value_if_not_nan(net, index, mag0_percent, "mag0_percent", "trafo")
         _set_value_if_not_nan(net, index, mag0_rx, "mag0_rx", "trafo")
         _set_value_if_not_nan(net, index, si0_hv_partial, "si0_hv_partial", "trafo")
-        _set_value_if_not_nan(net, index, vector_group, "vector_group", "trafo", dtype=str)
+        _set_value_if_not_nan(net, index, vector_group, "vector_group", "trafo")
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
-    # _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
+    # _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
 
     return index
@@ -957,9 +957,9 @@ def create_transformer3w(
     net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(net["trafo3w"].columns, axis=1)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
-    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w")
     _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo3w")
-    _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo3w", dtype=str, default_val=None)
+    _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo3w", default_val=None)
 
     for key in [
         "tap_dependent_impedance",
@@ -1291,8 +1291,8 @@ def create_transformer3w_from_parameters(
     _set_entries(net, "trafo3w", index, entries=entries)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
-    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w", dtype="Int64")
-    _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo3w", dtype=str, default_val=None)
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w")
+    _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo3w", default_val=None)
     _set_value_if_not_nan(
         net, index, tap_dependency_table, "tap_dependency_table", "trafo3w"
     )
