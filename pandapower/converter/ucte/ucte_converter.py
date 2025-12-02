@@ -338,10 +338,10 @@ class UCTE2pandapower:
         impedances["rtf_pu"] = impedances["r"] / impedances["z_ohm"]
         impedances["xft_pu"] = impedances["x"] / impedances["z_ohm"]
         impedances["xtf_pu"] = impedances["x"] / impedances["z_ohm"]
-        impedances["gf_pu"] = impedances["g"] / impedances["z_ohm"]
-        impedances["gt_pu"] = impedances["g"] / impedances["z_ohm"]
-        impedances["bf_pu"] = impedances["b"] / impedances["z_ohm"]
-        impedances["bt_pu"] = impedances["b"] / impedances["z_ohm"]
+        impedances["gf_pu"] = impedances["g"].fillna(0.0) / impedances["z_ohm"]
+        impedances["gt_pu"] = impedances["g"].fillna(0.0) / impedances["z_ohm"]
+        impedances["bf_pu"] = impedances["b"].fillna(0.0) / impedances["z_ohm"]
+        impedances["bt_pu"] = impedances["b"].fillna(0.0) / impedances["z_ohm"]
         self._fill_empty_names(impedances)
         self._copy_to_pp("impedance", impedances)
         self.logger.info("Finished converting the impedances.")
@@ -376,16 +376,16 @@ class UCTE2pandapower:
         ]
         # calculate iron losses in kW
         trafos_to_impedances["pfe_kw"] = (
-            trafos_to_impedances.g * trafos_to_impedances.voltage1**2 / 1e3
+            trafos_to_impedances.g.fillna(0.0) * trafos_to_impedances.voltage1**2 / 1e3
         )
         # calculate open loop losses in percent of rated current
         trafos_to_impedances["i0_percent"] = (
             (
                 (
-                    (trafos_to_impedances.b * 1e-6 * trafos_to_impedances.voltage1**2)
+                    (trafos_to_impedances.b.fillna(0.0) * 1e-6 * trafos_to_impedances.voltage1**2)
                     ** 2
                     + (
-                        trafos_to_impedances.g
+                        trafos_to_impedances.g.fillna(0.0)
                         * 1e-6
                         * trafos_to_impedances.voltage1**2
                     )
@@ -464,13 +464,13 @@ class UCTE2pandapower:
         # calculate vkr_percent
         trafos["vkr_percent"] = trafos.r * trafos.s * 100 / trafos.voltage1**2
         # calculate iron losses in kW
-        trafos["pfe_kw"] = trafos.g * trafos.voltage1**2 / 1e3
+        trafos["pfe_kw"] = trafos.g.fillna(0.0) * trafos.voltage1**2 / 1e3
         # calculate open loop losses in percent of rated current
         trafos["i0_percent"] = (
             (
                 (
-                    (trafos.b * 1e-6 * trafos.voltage1**2) ** 2
-                    + (trafos.g * 1e-6 * trafos.voltage1**2) ** 2
+                    (trafos.b.fillna(0.0) * 1e-6 * trafos.voltage1**2) ** 2
+                    + (trafos.g.fillna(0.0) * 1e-6 * trafos.voltage1**2) ** 2
                 )
                 ** 0.5
             )
