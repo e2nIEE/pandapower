@@ -307,46 +307,46 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-        with:
-          python-version: '3.11'
+      #- name: Install uv
+      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      #  with:
+      #    python-version: '3.11'
       - name: Install dependencies
         run: |
-          uv sync --all-extras
-          uv pip install seaborn
+          # uv sync --all-extras
+          python -m pip install seaborn pandapower[all]
           # ./.install_julia.sh 1.10.4
-          uv pip install julia seaborn jupyter
+          python -m pip install julia seaborn jupyter juliacall
           # uv run python ./.install_pycall.py
       - name: List all installed packages
         run: |
-          uv pip list
+          python -m pip list
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          uv run pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-        with:
-          python-version: '3.11'
+      #- name: Install uv
+      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      #  with:
+      #    python-version: '3.11'
       - name: Install dependencies
         run: |
-          uv sync --all-extras          
+          # uv sync --all-extras
           # ./.install_julia.sh 1.10.4
-          uv pip install julia seaborn
+          python -m pip install julia seaborn juliacall
           # uv run python ./.install_pycall.py
       - name: List all installed packages
         run: |
-          uv pip list
+          python -m pip list
       - name: Test with pytest
         run: |
-          uv run pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   docs_check:
     needs: build
