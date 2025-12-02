@@ -94,6 +94,9 @@ class UCTE2pandapower:
             )
             self.u_d[one_asset] = self.u_d[one_asset].drop(columns=["node1", "node2"])
 
+        if self.u_d["R"].empty:
+            logging.info("Empty R table detected. It is assumed that all the trafo tap data is merged into the T table")
+
         # prepare the element tables
         self._convert_nodes()
         self._convert_loads()
@@ -345,18 +348,25 @@ class UCTE2pandapower:
 
     def _get_trafos_modelled_as_impedances(self):
         ### get transformers that will be transformed to impedances and append them ###
-        trafos = pd.merge(
-            self.u_d["T"],
-            self.u_d["R"],
-            how="left",
-            on=["hv_bus", "lv_bus", "order_code"],
-        )
+        if not self.u_d["R"].empty:
+            trafos = pd.merge(
+                self.u_d["T"],
+                self.u_d["R"],
+                how="left",
+                on=["hv_bus", "lv_bus", "order_code"],
+            )
+            # check for trafos connecting same voltage levels
+            trafos_to_impedances = trafos.loc[
+                trafos.loc[:, "0_x"].map(lambda s: s[6])
+                == trafos.loc[:, "0_x"].map(lambda s: s[15])
+            ]
 
-        # check for trafos connecting same voltage levels
-        trafos_to_impedances = trafos.loc[
-            trafos.loc[:, "0_x"].map(lambda s: s[6])
-            == trafos.loc[:, "0_x"].map(lambda s: s[15])
-        ]
+        else:
+            trafos = self.u_d["T"]
+            trafos_to_impedances = trafos.loc[
+                trafos.loc[:, "0"].map(lambda s: s[6])
+                == trafos.loc[:, "0"].map(lambda s: s[15])
+            ]
 
         trafos_to_impedances = trafos_to_impedances.loc[
             trafos_to_impedances.phase_reg_delta_u.isnull()
@@ -425,12 +435,15 @@ class UCTE2pandapower:
 
     def _convert_trafos(self):
         self.logger.info("Converting the transformers.")
-        trafos = pd.merge(
-            self.u_d["T"],
-            self.u_d["R"],
-            how="left",
-            on=["hv_bus", "lv_bus", "order_code"],
-        )
+        if not self.u_d["R"].empty:
+            trafos = pd.merge(
+                self.u_d["T"],
+                self.u_d["R"],
+                how="left",
+                on=["hv_bus", "lv_bus", "order_code"],
+            )
+        else:
+            trafos = self.u_d["T"]
         if not len(trafos):
             self.logger.info("Finished converting the transformers (no transformers existing).")
             return
@@ -593,8 +606,13 @@ class UCTE2pandapower:
         trafos.loc[trafos.phase_reg_n.isnull(), "tap_neutral"] = np.nan
         trafos["shift_degree"] = 0
         trafos["parallel"] = 1
-        self._fill_empty_names(trafos, "0_x")
-        self._fill_amica_names(trafos, ":trf", "0_x")
+        if "0_x" in trafos.columns:
+            self._fill_empty_names(trafos, "0_x")
+            self._fill_amica_names(trafos, ":trf", "0_x")
+        else:
+            self._fill_empty_names(trafos, "0")
+            self._fill_amica_names(trafos, ":trf", "0")
+
         trafos["tap_changer_type"] = trafos["tap_changer_type"].fillna("Ratio").astype(str)
         trafos["tap2_changer_type"] = trafos["tap2_changer_type"].fillna("Ratio").astype(str)
         # rename the columns to the pandapower schema
