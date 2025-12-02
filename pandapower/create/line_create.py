@@ -171,7 +171,7 @@ def create_line(
     if "type" in lineparam:
         entries["type"] = lineparam["type"]
 
-    # if net.line column already has alpha, add it from std_type
+    # only add alpha from std_type if any line already has an alpha # TODO inconsistent behavior: Document this CLEARLY!
     if "alpha" in net.line.columns and "alpha" in lineparam:
         entries["alpha"] = lineparam["alpha"]
 

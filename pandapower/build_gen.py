@@ -212,8 +212,8 @@ def _build_pp_gen(net, ppc, f, t):
     gen_is_vm = net["gen"]["vm_pu"].values[gen_is]
     ppc["gen"][f:t, GEN_BUS] = gen_buses
     ppc["gen"][f:t, PG] = net["gen"]["p_mw"].values[gen_is] * net["gen"]["scaling"].values[gen_is]
-    ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is] if "sn_mva" in net["gen"].columns else np.empty(len(net["gen"]["bus"])) # TODO: sn_mva should not be required
-    ppc["gen"][f:t, SL_FAC] = net["gen"]["slack_weight"].values[gen_is] if "slack_weight" in net["gen"].columns else np.empty(len(net["gen"]["bus"]))# TODO: slack_weight should not be required
+    ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is] if "sn_mva" in net["gen"].columns else np.empty(len(gen_buses)) # TODO: sn_mva should not be required
+    ppc["gen"][f:t, SL_FAC] = net["gen"]["slack_weight"].values[gen_is] if "slack_weight" in net["gen"].columns else np.empty(len(gen_buses))# TODO: slack_weight should not be required
     ppc["gen"][f:t, VG] = gen_is_vm
 
     # set bus values for generator buses

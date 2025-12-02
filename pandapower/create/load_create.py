@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Sequence
 
+import pandas as pd
 from numpy import nan, bool_
 import numpy.typing as npt
 
@@ -47,7 +48,7 @@ def create_load(
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
-    controllable: bool | float = nan,
+    controllable: bool = False,
     **kwargs,
 ) -> Int:
     """
@@ -141,6 +142,7 @@ def create_load(
         "sn_mva": sn_mva,
         "in_service": in_service,
         "type": type,
+        "controllable": controllable,
         **kwargs,
     }
     _set_entries(net, "load", index, True, entries=entries)
@@ -149,7 +151,6 @@ def create_load(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "load")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "load")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "load")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtype=bool_, default_val=False)
 
     return index
 
@@ -173,7 +174,7 @@ def create_loads(
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
-    controllable: bool | Iterable[bool] | float = nan,
+    controllable: bool | Iterable[bool] = False,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -277,11 +278,10 @@ def create_loads(
     _add_to_entries_if_not_nan(net, "load", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "load", entries, index, "max_q_mvar", max_q_mvar)
     _add_to_entries_if_not_nan(
-        net, "load", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+        net, "load", entries, index, "controllable", controllable, default_val=False
     )
-    defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, entries=entries)
+    _set_multiple_entries(net, "load", index, entries=entries)
 
     return index
 
