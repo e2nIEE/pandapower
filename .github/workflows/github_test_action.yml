@@ -315,9 +315,9 @@ jobs:
         run: |
           uv sync --all-extras
           uv pip install seaborn
-          ./.install_julia.sh 1.10.4
+          # ./.install_julia.sh 1.10.4
           uv pip install julia seaborn jupyter
-          uv run python ./.install_pycall.py
+          # uv run python ./.install_pycall.py
       - name: List all installed packages
         run: |
           uv pip list
@@ -338,9 +338,9 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --all-extras          
-          ./.install_julia.sh 1.10.4
+          # ./.install_julia.sh 1.10.4
           uv pip install julia seaborn
-          uv run python ./.install_pycall.py
+          # uv run python ./.install_pycall.py
       - name: List all installed packages
         run: |
           uv pip list
