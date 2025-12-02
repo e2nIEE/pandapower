@@ -100,6 +100,7 @@ jobs:
           julia -e 'using Pkg; Pkg.add("PandaModels")'
           julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
           python -c "import julia; julia.install(color=True)"
+          python -m pip install pandapower[pandamodels]
       - name: List of installed packages
         run: |
           pip list
