@@ -190,7 +190,7 @@ def create_sgen(
     _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
     _set_value_if_not_nan(
-        net, index, generator_type, "generator_type", "sgen", dtype="str", default_val="current_source"
+        net, index, generator_type, "generator_type", "sgen", default_val="current_source"
     )
     if pd.isna(generator_type) or generator_type == "current_source":
         _set_value_if_not_nan(net, index, k, "k", "sgen")

@@ -1547,7 +1547,7 @@ def _calculate_3w_tap_changers(t3, t2, sides):
             if var in t3:
                 tap_arrays[var][side][tap_mask] = t3[var].values[tap_mask]
             else:
-                tap_arrays[var][side][tap_mask] = np.array([float("nan")]*len(tap_mask))
+                tap_arrays[var][side][tap_mask] = np.full(sum(tap_mask), float('nan'), dtype=float)
 
         # t3 trafos with tap changer at terminals
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
