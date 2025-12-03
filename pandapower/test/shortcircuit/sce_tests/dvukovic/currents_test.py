@@ -110,7 +110,7 @@ logger = logging.getLogger(__name__)
 #     elif fault == "LL":
 #         ppci["bus"][bus_idx, SKSS] = ikss * ppci["bus"][bus_idx, BASE_KV] / np.sqrt(3)
 
-#     # Correct voltage of generator bus inside power station  
+#     # Correct voltage of generator bus inside power station
 #     if np.any(~np.isnan(ppci["bus"][:, K_SG])):
 #         gen_bus_idx = bus_idx[~np.isnan(ppci["bus"][bus_idx, K_SG])]
 #         ppci["bus"][gen_bus_idx, IKSSV] *=\
@@ -255,7 +255,7 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
         ppci_2["bus"][bus_idx, IKSSC] = factor * ikssc_1
     elif fault == "LLG":
         ppci_0["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_1*z_equiv_2) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
-        ppci_1["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_1*(z_equiv_0+z_equiv_2)) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
+        ppci_1["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_1*(z_equiv_0+z_equiv_1)) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
         ppci_2["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_0*z_equiv_1) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
 
     # calculate skss
@@ -372,7 +372,8 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
         if sgen_angle is None:  # check logic here of type_c
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(Zbus[buses, buses], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
-        i_kss_2 = 1 / diagZ * np.dot(Zbus,ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
+        i_kss_2 = 1 / diagZ * np.dot(Zbus,
+                                     ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]  # TO BE UPDATED, does not include modifications done in SCE project
         diagZ = _calc_zbus_diag(net, ppci)

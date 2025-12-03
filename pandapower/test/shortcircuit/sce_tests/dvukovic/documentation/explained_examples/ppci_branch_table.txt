@@ -1,0 +1,49 @@
+Index	Variable	Value	Description
+0	F_BUS	3.0	From bus number
+1	T_BUS	2.0	To bus number
+2	BR_R	0.923750028	Resistance (p.u.)
+3	BR_X	0.3675	Reactance (p.u.)
+4	BR_B	0.0	Line charging susceptance (p.u.)
+5	RATE_A	250.0	MVA rating A (long term)
+6	RATE_B	250.0	MVA rating B (short term)
+7	RATE_C	250.0	MVA rating C (emergency)
+8	TAP	1.0	Transformer turns ratio
+9	SHIFT	0.0	Transformer phase shift angle (degrees)
+10	BR_STATUS	1.0	Branch status (1=in service, 0=out)
+11	ANGMIN	-360.0	Minimum angle difference (degrees)
+12	ANGMAX	360.0	Maximum angle difference (degrees)
+13	PF	0.0	Real power at 'from' bus (MW)
+14	QF	0.0	Reactive power at 'from' bus (MVAr)
+15	PT	0.0	Real power at 'to' bus (MW)
+16	QT	0.0	Reactive power at 'to' bus (MVAr)
+17	MU_SF	0.0	Multiplier on MVA limit at 'from' bus
+18	MU_ST	0.0	Multiplier on MVA limit at 'to' bus
+19	MU_ANGMIN	0.0	Multiplier on lower angle limit
+20	MU_ANGMAX	0.0	Multiplier on upper angle limit
+21	BR_R_ASYM	0.0	Asymmetric resistance
+22	BR_X_ASYM	0.0	Asymmetric reactance
+23	BR_G	0.0	Line charging conductance (p.u.)
+24	BR_G_ASYM	0.0	Asymmetric conductance
+25	BR_B_ASYM	0.0	Asymmetric susceptance
+26	IKSS_F		Short-circuit current at 'from' bus
+27	IKSS_T		Short-circuit current at 'to' bus
+28	ITH_F		Thermal short-circuit current at 'from' bus
+29	ITH_T		Thermal short-circuit current at 'to' bus
+30	IP_F		Peak current at 'from' bus
+31	IP_T		Peak current at 'to' bus
+32	IK_F		General short-circuit current at 'from' bus
+33	IK_T		General short-circuit current at 'to' bus
+34	IB_F		Breaker current at 'from' bus
+35	IB_T		Breaker current at 'to' bus
+36	K_T		Short-circuit K factor at 'to' bus
+37	K_ST		Short-circuit K factor at transformer
+38	PKSS_F		Short-circuit active power at 'from' bus
+39	QKSS_F		Short-circuit reactive power at 'from' bus
+40	PKSS_T		Short-circuit active power at 'to' bus
+41	QKSS_T		Short-circuit reactive power at 'to' bus
+42	VKSS_MAGN_F		Voltage magnitude at 'from' bus
+43	VKSS_MAGN_T		Voltage magnitude at 'to' bus
+44	VKSS_ANGLE_F		Voltage angle at 'from' bus
+45	VKSS_ANGLE_T		Voltage angle at 'to' bus
+46	IKSS_ANGLE_F		Current angle at 'from' bus
+47	IKSS_ANGLE_T		Current angle at 'to' bus
