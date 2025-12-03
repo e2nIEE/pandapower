@@ -102,8 +102,12 @@ class TrafoController(Controller):
 
     def _set_tap_side_coeff(self, net):
         tap_side = read_from_net(net, self.element, self.element_index, 'tap_side', self._read_write_flag)
-        if pd.isna(tap_side) or (len(np.setdiff1d(tap_side, ['hv', 'lv'])) > 0 and self.element == "trafo") or \
-                (len(np.setdiff1d(tap_side, ['hv', 'lv', 'mv'])) > 0 and self.element == "trafo3w"):
+        tap_side_contains_na = pd.isna(tap_side) if pd.api.types.is_scalar(tap_side) else pd.isna(tap_side).any()
+        if (
+                tap_side_contains_na or
+                (len(np.setdiff1d(tap_side, ['hv', 'lv'])) > 0 and self.element == "trafo") or
+                (len(np.setdiff1d(tap_side, ['hv', 'lv', 'mv'])) > 0 and self.element == "trafo3w")
+        ):
             raise ValueError("Trafo tap side (in net.%s) has to be either hv or lv, "
                              "but received: %s for trafo %s" % (self.element, tap_side, self.element_index))
 
