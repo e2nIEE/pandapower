@@ -432,33 +432,37 @@ class PFShortCircuitAnalysis:
             for trafo in trafos:
                 trafo.typ_id.curmg = 0
 
-        # # set voltage setpoints according to fault bus (2016)
+        # set voltage setpoints according to fault bus (2016)
+        if calc_mode == 'max':
+            if np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 6:
+                ext_grid.usetp = 1.05
+            elif np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 10:
+                ext_grid.usetp = 1.1
+            elif np.round(fault_bus.Vtarget, 2) == 20:
+                ext_grid.usetp = 1.1
+        elif calc_mode == 'min':
+            if np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 6:
+                ext_grid.usetp = 0.95
+            elif np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 10:
+                ext_grid.usetp = 0.9
+            elif np.round(fault_bus.Vtarget, 2) == 20:
+                ext_grid.usetp = 1.0
+
+        # # set voltage setpoints according to fault bus (1990)
         # if calc_mode == 'max':
-        #     if np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 6:
-        #         ext_grid.usetp = 1.05
-        #     elif np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 10:
+        #     if fault_location_index == 0:
         #         ext_grid.usetp = 1.1
         #     elif np.round(fault_bus.Vtarget, 2) == 20:
         #         ext_grid.usetp = 1.1
+        #     elif np.round(fault_bus.Vtarget, 2) == 0.4 or np.round(fault_bus.Vtarget, 2) == 0.23:
+        #         ext_grid.usetp = 1.0
         # elif calc_mode == 'min':
-        #     if np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 6:
-        #         ext_grid.usetp = 0.95
-        #     elif np.round(fault_bus.Vtarget, 2) == 0.4 and lv_tol_percent == 10:
-        #         ext_grid.usetp = 0.9
+        #     if fault_location_index == 0:
+        #         ext_grid.usetp = 1.0
         #     elif np.round(fault_bus.Vtarget, 2) == 20:
         #         ext_grid.usetp = 1.0
-
-        # set voltage setpoints according to fault bus (1990)
-        if calc_mode == 'max':
-            if np.round(fault_bus.Vtarget, 2) == 20:
-                ext_grid.usetp = 1.1
-            elif np.round(fault_bus.Vtarget, 2) == 0.4 or np.round(fault_bus.Vtarget, 2) == 0.23:
-                ext_grid.usetp = 1.0
-        elif calc_mode == 'min':
-            if np.round(fault_bus.Vtarget, 2) == 20:
-                ext_grid.usetp = 1.0
-            elif np.round(fault_bus.Vtarget, 2) == 0.4 or np.round(fault_bus.Vtarget, 2) == 0.23:
-                ext_grid.usetp = 0.95
+        #     elif np.round(fault_bus.Vtarget, 2) == 0.4 or np.round(fault_bus.Vtarget, 2) == 0.23:
+        #         ext_grid.usetp = 0.95
 
 
 def safe_get(obj, attr):
