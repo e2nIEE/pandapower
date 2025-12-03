@@ -832,7 +832,7 @@ def create_transformer3w(
     mv_bus: Int,
     lv_bus: Int,
     std_type: str,
-    name: str | None = None,
+    name: pd.StringDtype = pd.NA,
     tap_pos: int | float = nan,
     in_service: bool = True,
     index: Int | None = None,
@@ -859,7 +859,7 @@ def create_transformer3w(
         **std_type** (str) - the used standard type from the standard type library
 
     OPTIONAL:
-        **name** (str) - a custom name for this transformer
+        **name** (str, pd.NA) - a custom name for this transformer
 
         **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
 
@@ -953,8 +953,7 @@ def create_transformer3w(
         if type(tap_pos) is float:
             net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
 
-    dd = pd.DataFrame(entries, index=[index])
-    net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(net["trafo3w"].columns, axis=1)
+    _set_entries(net, "trafo3w", index, entries=entries)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w")
@@ -992,7 +991,7 @@ def create_transformers3w(
     lv_buses: Sequence,
     std_type: str,
     tap_pos: float | Iterable[float] = nan,
-    name: Iterable[str] = pd.NA,
+    name: Iterable[pd.StringDtype] | pd.StringDtype = pd.NA,
     in_service: bool | Iterable[bool] = True,
     index: Iterable[Int] | None = None,
     max_loading_percent: float | Iterable[float] = nan,
@@ -1094,7 +1093,7 @@ def create_transformer3w_from_parameters(
     tap_max: int | float = nan,
     tap_changer_type: TapChangerWithTabularType | None = None,
     tap_min: float | None = nan,
-    name: str | None = None,
+    name: pd.StringDtype = pd.NA,
     in_service: bool = True,
     index: Int | None = None,
     max_loading_percent: float = nan,
@@ -1176,7 +1175,7 @@ def create_transformer3w_from_parameters(
         **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the 3w-transformer \
                                           or at the bus
 
-        **name** (str, None) - name of the 3-winding transformer
+        **name** (str, pd.NA) - name of the 3-winding transformer
 
         **in_service** (boolean, True) - True for in_service or False for out of service
 
@@ -1329,7 +1328,7 @@ def create_transformers3w_from_parameters(  # no index ?
     tap_neutral: float | Iterable[float] = nan,
     tap_max: float | Iterable[float] = nan,
     tap_min: float | Iterable[float] = nan,
-    name: Iterable[str] = pd.NA,
+    name: Iterable[pd.StringDtype] | pd.StringDtype = pd.NA,
     in_service: bool | Iterable[bool] = True,
     index: Iterable[Int] | None = None,
     max_loading_percent: float | Iterable[float] = nan,
