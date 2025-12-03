@@ -52,7 +52,9 @@ _storage_columns = {
         metadata={"opf": True},
     ),
     "in_service": pa.Column(bool, description="Specifies if the generator is in service"),
-    "type": pa.Column(pd.StringDtype, nullable=True, required=False, description=""),
+    "type": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="type variable to classify the storage"
+    ),
 }
 storage_schema = pa.DataFrameSchema(
     _storage_columns,

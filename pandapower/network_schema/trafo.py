@@ -8,7 +8,7 @@ from pandapower.network_schema.tools.validation.group_dependency import (
 
 _trafo_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
-    "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
+    "std_type": pa.Column(pd.StringDtype, nullable=True, required=False, description="transformer standard type name"),
     "hv_bus": pa.Column(
         int,
         pa.Check.ge(0),
@@ -19,14 +19,14 @@ _trafo_columns = {
         int, pa.Check.ge(0), description="low voltage bus index of the transformer", metadata={"foreign_key": "bus"}
     ),
     "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power of the transformer [MVA]"),
-    "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage bus [kV]"),
-    "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage bus [kV]"),
+    "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage side [kV]"),
+    "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage side [kV]"),
     "vk_percent": pa.Column(float, pa.Check.gt(0), description="short circuit voltage [%]", metadata={"sc": True}),
     "vkr_percent": pa.Column(
         float, pa.Check.ge(0), description="real component of short circuit voltage [%]", metadata={"sc": True}
     ),
     "pfe_kw": pa.Column(float, pa.Check.ge(0), description="iron losses [kW]"),
-    "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop losses in [%]"),
+    "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop current in [%]"),
     "vk0_percent": pa.Column(
         float,
         pa.Check.ge(0),
@@ -67,7 +67,7 @@ _trafo_columns = {
         metadata={"sc": True, "3ph": True},
     ),
     "vector_group": pa.Column(
-        str,
+        pd.StringDtype,
         nullable=True,
         required=False,
         description="Vector Groups ( required for zero sequence model of transformer )",
@@ -95,13 +95,15 @@ _trafo_columns = {
         pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
         nullable=True,
+        required=False,
         description="specifies the tap changer type",
     ),
     "tap_dependency_table": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
+        metadata={"tdt": True},
     ),
     "id_characteristic_table": pa.Column(
         pd.Int64Dtype,
@@ -109,6 +111,7 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="references the id_characteristic index from the trafo_characteristic_table",
+        metadata={"tdt": True},
     ),
     "max_loading_percent": pa.Column(
         int,
@@ -117,9 +120,7 @@ _trafo_columns = {
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
         metadata={"opf": True},
     ),
-    "parallel": pa.Column(
-        int, pa.Check.ge(1), nullable=True, required=False, description="number of parallel transformers"
-    ),
+    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel transformers"),
     "df": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=1, include_min=False),
@@ -142,7 +143,13 @@ _trafo_columns = {
         description="specifies if the transformer is part of a power_station_unit (short-circuit relevant) refer to IEC60909-0-2016 section 6.7.1",
         metadata={"sc": True},
     ),
-    "tap2_side": pa.Column(pd.StringDtype, pa.Check.isin(["hv", "lv"]), nullable=True, required=False, description=""),
+    "tap2_side": pa.Column(
+        pd.StringDtype,
+        pa.Check.isin(["hv", "lv"]),
+        nullable=True,
+        required=False,
+        description="position of the second tap changer (hv, lv)",
+    ),
     "tap2_neutral": pa.Column(pd.Float64Dtype, nullable=True, required=False, description="rated tap position"),
     "tap2_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap2_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
@@ -156,7 +163,7 @@ _trafo_columns = {
         pd.Float64Dtype, nullable=True, required=False, description="current position of tap changer"
     ),
     "tap2_changer_type": pa.Column(
-        str,
+        pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "nan"]),
         nullable=True,
         required=False,
@@ -197,14 +204,22 @@ tap_columns = [
 trafo_checks = [
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
-        error=f"Tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
+        error=f"trafo tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
     ),
     pa.Check(
         create_column_group_dependency_validation_func(tap2_columns),
-        error=f"Tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
+        error=f"trafo tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
     ),
 ]
-trafo_checks += create_column_dependency_checks_from_metadata(["opf", "sc", "3ph"], _trafo_columns)
+trafo_checks += create_column_dependency_checks_from_metadata(
+    [
+        "opf",
+        # "sc",
+        # "3ph",
+        "tdt",
+    ],
+    _trafo_columns,
+)
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,
@@ -234,8 +249,8 @@ res_trafo_schema = pa.DataFrameSchema(
             float, nullable=True, description="current at the low voltage side of the transformer [kA]"
         ),
         "vm_hv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the high voltage bus [pu]"),
-        "va_hv_degree": pa.Column(float, nullable=True, description="voltage magnitude at the low voltage bus [pu]"),
-        "vm_lv_pu": pa.Column(float, nullable=True, description="voltage angle at the high voltage bus [degrees]"),
+        "va_hv_degree": pa.Column(float, nullable=True, description="voltage angle at the high voltage bus [degrees]"),
+        "vm_lv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the low voltage bus [pu]"),
         "va_lv_degree": pa.Column(float, nullable=True, description="voltage angle at the low voltage bus [degrees]"),
         "loading_percent": pa.Column(float, nullable=True, description="load utilization relative to rated power [%]"),
     },
