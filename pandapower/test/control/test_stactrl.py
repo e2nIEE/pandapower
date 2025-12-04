@@ -111,7 +111,7 @@ def test_qctrl_droop():
     assert(abs(net.res_line.loc[0, "q_to_mvar"] - (-1e-13)) < tol)
     runpp(net, run_control=True)
     assert (net.controller.object[0].converged == True and net.controller.object[1].converged == True)
-    assert (abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
+    assert(abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
             net.controller.object[1].q_set_mvar_bsc + (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
     assert(all(net.controller.at[i, 'object'].converged) for i in net.controller.index)
     assert(net.controller.at[0, 'object'].control_modus == 'Q_ctrl')  # test correct control_modus
@@ -130,13 +130,11 @@ def test_qlimits_qctrl():
                                    input_variable=["q_to_mvar"], input_element_index=0, set_point=1,
                                    voltage_ctrl=False, tol=1e-6)
     runpp(net, run_control=True, enforce_q_lims=True)
-    assert (abs(net.res_sgen.loc[0, "q_mvar"] - 0.5) < tol)
-
+    assert(abs(net.res_sgen.loc[0, "q_mvar"] - 0.5) < tol)
     net = simple_test_net()
     tol = 1e-6
     net.sgen['min_q_mvar'] = -0.5
     net.sgen['max_q_mvar'] = 0.5
-
     create_load(net, bus=net.sgen.loc[0, 'bus'], p_mw=0, q_mvar=-2)
     BinarySearchControl(net, name="BSC1", ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
                                    output_element_index=[0], output_element_in_service=[True],
