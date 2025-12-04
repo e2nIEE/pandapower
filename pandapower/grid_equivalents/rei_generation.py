@@ -335,8 +335,11 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 net_zpbn[elm].loc[elm_idx, ext_grid_cols] = net.ext_grid[ext_grid_cols][
                     net.ext_grid.bus == bus].values[0]
             else:
-                names = elm_org.name[elm_org.bus == bus].values
-                names = [str(n) for n in names]
+                if "name" not in elm_org.columns:
+                    names = [""] * elm_org.shape[1]
+                else:
+                    names = elm_org.name[elm_org.bus == bus].values
+                    names = [str(n) for n in names]
                 net_zpbn[elm].loc[elm_idx, "name"] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
                 if len(names) > 1:
                     net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \

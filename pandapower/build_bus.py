@@ -389,14 +389,11 @@ def _build_bus_ppc(net, ppc, sequence=None):
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    if nr_xward > 0 or nr_trafo3w > 0 or nr_ssc > 0 or nr_vsc > 0:
-        in_service = np.concatenate([net["bus"]["in_service"].values,
-                                     net["xward"]["in_service"].values,
-                                     net["trafo3w"]["in_service"].values,
-                                     net["ssc"]["in_service"].values,
-                                     net["vsc"]["in_service"].values])
-    else:
-        in_service = net["bus"]["in_service"].values
+    in_service = np.concatenate([net["bus"]["in_service"].values,
+                                 net["xward"]["in_service"].values,
+                                 net["trafo3w"]["in_service"].values,
+                                 net["ssc"]["in_service"].values,
+                                 net["vsc"]["in_service"].values]).astype(bool)
     ppc["bus"][~in_service, BUS_TYPE] = NONE
     if mode != "nx":
         set_reference_buses(net, ppc, bus_lookup, mode)

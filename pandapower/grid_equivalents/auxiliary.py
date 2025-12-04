@@ -212,7 +212,11 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
                 S.loc[k, power] += sum(net[res_ele].p_mw[ind].values * sign) / net.sn_mva + \
                                    1j * sum(net[res_ele].q_mvar[ind].values *
                                             sign) / net.sn_mva
-                S.loc[k, sn] = sum(net[ele].sn_mva[ind].values) + \
+                if "sn_mva" not in net[ele].columns:
+                    sum_sn_mva = float("nan")
+                else:
+                    sum_sn_mva = sum(net[ele].sn_mva[ind].values)
+                S.loc[k, sn] = sum_sn_mva + \
                                1j * 0 if ele != "ext_grid" else 1e6 + 1j * 0
                 S[power.replace('_separate', '_integrated')] += S[power][k]
                 S[sn.replace('_separate', '_integrated')] += S[sn][k]
