@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*
+# -*- coding: utf-8 -*-
 
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -9,9 +9,7 @@ import os
 import json
 from functools import reduce
 import numpy as np
-import re
 import difflib
-import unicodedata
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_object_dtype
 from pandapower.io_utils import pandapowerNet
@@ -44,93 +42,86 @@ def from_jao(excel_file_path: str,
              apply_data_correction: bool = True,
              max_i_ka_fillna: float | int = 999,
              **kwargs) -> pandapowerNet:
-    """
-    Convert a JAO Core EHV static grid model into a pandapowerNet.
+    """Convert a JAO Core EHV static grid model into a pandapowerNet.
 
-    Overview:
-      - Reads Excel multi-sheet data (Lines, Tielines, Transformers).
-      - Optionally reads HTML to extract geodata for lines.
-      - Optionally applies robust data correction and name normalization.
-      - Creates buses, lines, and transformers in pandapower.
-      - Optionally invents synthetic connections between grid groups to reduce islanding.
-      - Optionally drops islanded grid groups based on size or supply condition.
-      - Attaches geodata to buses and lines when possible.
+    Reads multi-sheet Excel data (Lines, Tielines, Transformers), optionally parses
+    line geodata from an accompanying HTML, applies robust normalization/correction,
+    and builds a pandapower network (buses, lines, transformers). Optionally augments
+    connectivity between grid groups to reduce islanding and can drop islanded groups.
+    Geodata is attached to buses and lines when available.
 
+    Parameters:
+        excel_file_path:
+            Path to the Excel file (typically includes sheets: "Lines", "Tielines", "Transformers").
+            A 2-level MultiIndex header is expected; fuzzy matching is used to resolve variations.
+        html_file_path:
+            Optional path to an HTML file containing embedded map/geodata for lines.
+            Set to None to skip geodata extraction.
+        extend_data_for_grid_group_connections:
+            If True, attempts to connect islanded grid groups by:
 
-    Note
-    ----
-    This module deliberately includes robust fallback heuristics and fuzzy matching logic to
-    handle real-world inconsistencies in published data and thus may trade strictness for
-    practical usability.
+            - Inserting representative transformers between same-location buses of different voltage levels.
+            - Fusing buses with the same base name and same voltage across different groups.
 
-    Parameters
-    ----------
-    excel_file_path : str
-        Path to the Excel file (typically contains sheets: "Lines", "Tielines", "Transformers").
-        A MultiIndex header (2 levels) is expected; variations are matched via fuzzy logic.
-    html_file_path : str | None
-        Optional path to an HTML file that contains embedded map/geodata for lines.
-        Pass None to skip geodata extraction.
-    extend_data_for_grid_group_connections : bool
-        If True, attempts to connect islanded grid groups by:
-          - Inserting representative transformers between same-location buses of different voltage levels.
-          - Fusing buses with the same base name and same voltage but in different groups.
-          - Fusing some special-case close buses.
-    drop_grid_groups_islands : bool, optional
-        If True, drops islanded grid groups determined by `min_bus_number` in kwargs (default 6).
-        Special modes: min_bus_number can be "max" (keep only the largest group) or "unsupplied"
-        (drop groups without slack generation).
-    apply_data_correction : bool, optional
-        If True, apply correction routines:
-          - Comprehensive rename normalization across sheets.
-          - Numeric conversions and column harmonization.
-          - Minor cleanup for tap settings and shifter columns.
-    max_i_ka_fillna : float | int, optional
-        Fallback (in kA) for missing/invalid Imax data (lines/transformers).
-        Use np.nan to avoid filling. Default is 999 (treated as 999 kA).
+            - Fusing selected special-case nearby buses.
 
-    Additional Parameters (via kwargs)
-    ----------------------------------
-    minimal_trafo_invention : bool, optional
-        When connecting grid groups, if True, stop adding transformers as soon as no islands remain.
-        Note: Not applied for release version 5 or 6 (value ignored).
-    min_bus_number : Union[int, str], optional
-        For drop_grid_groups_islands:
-          - int: drop groups smaller than this
-          - "max": keep only the largest group
-          - "unsupplied": drop groups without any slack generator/element
-    rel_deviation_threshold_for_trafo_bus_creation : float, optional
-        When matching transformer voltage to buses by location, if the nearest bus voltage
-        deviates more than this fraction (default 0.2), create a new bus instead.
-    log_rel_vn_deviation : float, optional
-        Log-warning threshold for voltage deviation (default 0.12).
-    sn_mva : float, optional
-        System base apparent power (MVA) for the pandapower net.
+        drop_grid_groups_islands:
+            If True, drops islanded grid groups based on `min_bus_number` in kwargs (default: 6).
+            Special modes for `min_bus_number`: "max" (keep only the largest group) or
+            "unsupplied" (drop groups without slack generation). Defaults to False.
+        apply_data_correction:
+            If True, applies correction routines:
 
-    Returns
-    -------
-    pandapowerNet
-        The constructed pandapower network with buses, lines, transformers, and possibly geodata.
+            - Rename normalization across sheets.
+            - Numeric conversions and column harmonization.
 
-    Raises
-    ------
-    KeyError
-        If essential columns cannot be found even via fuzzy matching.
-    ValueError
-        If transformer locations cannot be matched to buses (after robust normalization).
-    json.JSONDecodeError
-        If the HTML geodata JSON part cannot be parsed (caught and logged; conversion proceeds).
+            - Cleanup for tap settings and phase shifter columns.
 
-    Examples
-    --------
-    >>> from pathlib import Path
-    >>> import os
-    >>> from pandapower.converter import from_jao
-    >>> net = pp.converter.from_jao()
-    >>> home = str(Path.home())
-    >>> excel_file_path = os.path.join(home, "desktop", "202409_Core Static Grid Mode_6th release")
-    >>> html_file_path = os.path.join(home, "desktop", "2024-09-13_Core_SGM_publication.html")
-    >>> net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
+            Defaults to True.
+        max_i_ka_fillna:
+            Fallback short-circuit current limit (kA) for missing/invalid Imax in lines/transformers.
+            Use numpy.nan to avoid filling. Defaults to 999.
+
+    Keyword Parameters:
+        minimal_trafo_invention:
+            When connecting grid groups, if True, stop adding transformers as soon as no islands remain.
+            Ignored for releases 5 or 6.
+        min_bus_number:
+            For `drop_grid_groups_islands`:
+
+            - int: drop groups smaller than this size (default: 6).
+            - "max": keep only the largest group.
+
+            - "unsupplied": drop groups without any slack generator/element.
+
+        rel_deviation_threshold_for_trafo_bus_creation:
+            When matching transformer voltage to buses by location, if the nearest bus voltage
+            deviates by more than this fraction, create a new bus instead. Defaults to 0.2.
+        log_rel_vn_deviation:
+            Relative voltage deviation threshold for warning logs. Defaults to 0.12.
+        sn_mva:
+            System base apparent power (MVA) for the pandapower net.
+
+    Returns:
+        pandapowerNet: The constructed pandapower network with buses, lines, transformers,
+        and optionally geodata.
+
+    Raises:
+        KeyError: If essential columns cannot be found even with fuzzy matching.
+        ValueError: If transformer locations cannot be matched to buses after normalization.
+        json.JSONDecodeError: If HTML geodata JSON cannot be parsed (caught and logged; conversion proceeds).
+
+    Notes:
+        This function employs robust heuristics and fuzzy matching to handle real-world
+        inconsistencies in published data, prioritizing practical usability over strictness.
+
+    Examples:
+        >>> from pathlib import Path
+        >>> import os
+        >>> net_home = str(Path.home())
+        >>> excel_file = os.path.join(net_home, "desktop", "202409_Core Static Grid Mode_6th release.xlsx")
+        >>> html_file = os.path.join(net_home, "desktop", "2024-09-13_Core_SGM_publication.html")
+        >>> net = from_jao(excel_file, html_file, True, drop_grid_groups_islands=True)
     """
 
     # --- read data
@@ -185,38 +176,42 @@ def _data_correction(
         data: dict[str, pd.DataFrame],
         html_str: str | None,
         max_i_ka_fillna: float | int) -> str | None:
-    """
-    Apply corrections and normalizations to Excel and HTML data before building the network.
+    """Apply corrections and normalizations to Excel and HTML data before building the network.
 
     Corrections include:
+
       - Compute rename rules from cross-sheet analysis and apply them to Lines/Tielines/Transformers
+
         location columns and to HTML geodata (string replace).
+
       - Harmonize known column naming variants under consistent top-level and level-1 labels
+
         (e.g., unify "Full Name" -> "Full_name", "Voltage_level [kV]" -> "Voltage_level(kV)").
+
       - Ensure a (None, "TSO") column in Lines/Tielines when only side-specific TSO columns exist.
       - Numeric coercions for key electrical parameters (Length, R, X, B) and Imax.
+
       - Clean up tap strings and duplicate shifter data.
 
-    Parameters
-    ----------
-    data : dict[str, pd.DataFrame]
-        Excel sheets dict; modified in-place.
-    html_str : str | None
-        HTML geodata raw text; rename rules are applied to embedded names/EICs via find/replace.
-    max_i_ka_fillna : float | int
-        Value to fill missing or invalid maximum currents (Imax) in lines and transformers.
-        Pass np.nan to disable filling.
+    Parameters:
+        data:
+            Excel sheets dict; modified in-place.
+        html_str:
+            HTML geodata raw text; rename rules are applied to embedded names/EICs via find/replace.
+        max_i_ka_fillna:
+            Value to fill missing or invalid maximum currents (Imax) in lines and transformers.
+            Pass np.nan to disable filling.
 
-    Returns
-    -------
-    str | None
+    Returns:
         Corrected HTML string (same value if None was provided).
 
-    Notes
-    -----
-    - Additional filtering is applied to rename rules based on string similarity >= 0.8 and to
-      avoid mapping between two names that already exist in bus set.
-    - Uses robust fuzzy matching for detection of R/X/B columns as well as TSO columns where needed.
+    Notes:
+
+        - Additional filtering is applied to rename rules based on string similarity >= 0.8 and to
+
+          avoid mapping between two names that already exist in the bus set.
+
+        - Uses robust fuzzy matching for detection of R/X/B columns as well as TSO columns where needed.
     """
     # old name -> new name
     combined = NameNormalizationUtils.report_problematic_names_after_normalization(data)
@@ -247,17 +242,17 @@ def _data_correction(
             "Voltage_level [kV]": voltage_str,
         }
         cols.iloc[:, 1] = cols.iloc[:, 1].replace(replace_map)
-        # setze Top-Level = None für diese Felder
+        # set Top-Level = None for these fields
         cols.loc[cols.iloc[:, 1].isin([voltage_str, "Comment"]), cols.columns[0]] = None
         cols.loc[cols.iloc[:, 0].astype(str).str.startswith("Unnamed:"), cols.columns[0]] = None
-        # Länge unter "Electrical Parameters" sicherstellen
+        # confirm "Electrical Parameters" length
         cols.loc[cols.iloc[:, 1] == LENGTH_STR, cols.columns[0]] = ELECTRICAL_PARAMETER_STR
-        # rekonstruieren
+        # reconstruct
         df.columns = pd.MultiIndex.from_frame(cols)
-        # Stelle (None, "TSO") bereit, falls TSO 1/TSO 2-Struktur verwendet wird
+        # load (None, "TSO"), if TSO 1/TSO 2-structure is going to be used
         ColumnFuzzyMatchingUtils.ensure_line_tso_column(df)
 
-        # Imax-Festwert säubern (falls vorhanden)
+        # Imax value cleaning
         imax_fixed = ("Maximum Current Imax (A)", "Fixed")
         if imax_fixed in df.columns:
             df[imax_fixed] = (
@@ -266,22 +261,22 @@ def _data_correction(
                 .astype(str).str.replace(",", "."))
             df[imax_fixed] = pd.to_numeric(df[imax_fixed], errors="coerce")
 
-        # --- numerische Konvertierung für Basis-Spalten (falls exakt vorhanden)
+        # --- numerical conversion for base-columns (if they exist)
         static_cols = [(ELECTRICAL_PARAMETER_STR, LENGTH_STR),
                         (ELECTRICAL_PARAMETER_STR, RESISTANCE_STR),
                         (ELECTRICAL_PARAMETER_STR, REACTANCE_STR),]
         for col in static_cols:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col].astype(str).str.replace(",", "."), errors="coerce")
-        # --- Fuzzy-Matching für R/X/B (Level-1), inkl. Susceptance_B (µ/μS)
+        # --- Fuzzy-Matching for R/X/B (Level-1), incl. Susceptance_B (µ/μS)
         R_col = ColumnFuzzyMatchingUtils.best_resistance_col_lines_fuzzy(df)
         X_col = ColumnFuzzyMatchingUtils.best_reactance_col_lines_fuzzy(df)
         B_col = ColumnFuzzyMatchingUtils.best_susceptance_col_lines_fuzzy(df)
         for fuzzy_col in [R_col, X_col, B_col]:
             if fuzzy_col is not None:
-                pos = ColumnFuzzyMatchingUtils.get_col_pos(df, fuzzy_col)  # positionsbasiert, robust gg. (None/NaN)-Top-Level
+                pos = ColumnFuzzyMatchingUtils.get_col_pos(df, fuzzy_col)  # position based, robust. (None/NaN)-Top-Level
                 df.iloc[:, pos] = pd.to_numeric(df.iloc[:, pos].astype(str).str.replace(",", "."), errors="coerce")
-        # Namensnormierung anwenden (NE_name, Full_name, ...)
+        # use name norm (NE_name, Full_name, ...)
         for loc_name in [(None, "NE_name"),
                          ColumnFuzzyMatchingUtils.best_fullname_tuple_fuzzy(df, "Substation_1"),
                          ColumnFuzzyMatchingUtils.best_fullname_tuple_fuzzy(df, "Substation_2")]:
@@ -289,11 +284,11 @@ def _data_correction(
                 df.loc[:, loc_name] = df.loc[:, loc_name].astype(str).str.strip().apply(MiscUtils.multi_str_repl,
                                                                                         repl=rename_locnames)
     html_str = MiscUtils.multi_str_repl(html_str, rename_locnames)
-    # --- Transformer-Daten: nur kleinere Anpassungen, Rest bleibt wie im Original
+    # --- Transformer-data: just minor changes
     key = "Transformers"
     if key in data:
         df = data[key]
-        # Location vereinheitlichen
+        # Location
         loc_name = ("Location", FULL_NAME_STR)
         if loc_name in df.columns:
             df.loc[:, loc_name] = df.loc[:, loc_name].astype(str).str.strip().apply(MiscUtils.multi_str_repl,
@@ -309,7 +304,7 @@ def _data_correction(
         nonnull_taps.loc[nonnull_taps == "0"] = "0;0"
         df.loc[nonnull, (PHASE_SHIFT_PROPERTIES_STR, TAPS_STR)] = nonnull_taps
         df.loc[~nonnull, (PHASE_SHIFT_PROPERTIES_STR, TAPS_STR)] = "0;0"
-        # Phase Shifter Doppelinfos
+        # Phase Shifter double infos
         cols = ["Phase Regulation δu (%)", "Angle Regulation δu (%)"]
         for col in cols:
             tup = (PHASE_SHIFT_PROPERTIES_STR, col)
@@ -334,24 +329,21 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
       - NE name (line name)
       - Coordinates (lng/lat) for 'from' and 'to' endpoints
 
-    Parameters
-    ----------
-    html_str : str
-        Full HTML content as a string.
+    Parameters:
+        html_str:
+            Full HTML content as a string.
 
-    Returns
-    -------
-    pd.DataFrame
-        Tidy DataFrame with columns:
-          ["EIC_Code", "name", "bus", "geo_dim", "value"]
-        Where 'bus' is ["from", "to"], 'geo_dim' is ["lng", "lat"], and 'value' is numeric.
+    Returns:
+        pd.DataFrame:
+            Tidy DataFrame with columns:
+              ["EIC_Code", "name", "bus", "geo_dim", "value"]
+            Where 'bus' is ["from", "to"], 'geo_dim' is ["lng", "lat"], and 'value' is numeric.
 
-    Raises
-    ------
-    AssertionError
-        If EIC list length does not match polyline list length.
-    KeyError, json.JSONDecodeError
-        If the internal widget structure is not found or JSON is malformed.
+    Raises:
+        AssertionError:
+            If EIC list length does not match polyline list length.
+        KeyError, json.JSONDecodeError:
+            If the internal widget structure is not found or JSON is malformed.
     """
     def _filter_name(st: str) -> str:
         name_start = "<b>NE name: "
@@ -389,21 +381,20 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
 def _lng_lat_to_df(dict_: dict, line_EIC: str, line_name: str) -> pd.DataFrame:
     """
     Helper: convert a small lng/lat dict from map JSON into a tidy 4-row DataFrame
-    for 'from'/'to' endpoints.
+    covering 'from' and 'to' endpoints.
 
-    Parameters
-    ----------
-    dict_ : dict
-        Dict with 'lng' and 'lat' lists (each size 2).
-    line_EIC : str
-        EIC code string for the line.
-    line_name : str
-        NE name for the line.
+    Parameters:
+        dict_:
+            Dictionary with 'lng' and 'lat' lists (each of length 2).
+        line_EIC:
+            EIC code string for the line.
+        line_name:
+            NE name for the line.
 
-    Returns
-    -------
-    pd.DataFrame
-        Rows with columns ["EIC_Code", "name", "bus", "geo_dim", "value"].
+    Returns:
+        pd.DataFrame:
+            DataFrame with columns ["EIC_Code", "name", "bus", "geo_dim", "value"]
+            and exactly four rows: two buses ('from', 'to') × two geo dims ('lng', 'lat').
     """
     return pd.DataFrame([
         [line_EIC, line_name, "from", "lng", dict_["lng"][0]],
@@ -422,16 +413,20 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
     Create pandapower buses from Lines and Tielines data.
 
     Logic:
+
       - Fuzzy-detect voltage (kV) and substation "Full_name" columns.
       - Build a DataFrame of (name, vn_kv, TSO) for Substation_1 and Substation_2.
-      - Drop duplicates (join TSO labels when multiple), then create buses in pandapower.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        Target pandapower network (modified in-place).
-    data : dict[str, pd.DataFrame]
-        Excel sheets dict.
+      - Drop duplicates (merge TSO labels when multiple), then create buses in pandapower.
+
+    Parameters:
+        net:
+            Target pandapower network (modified in-place).
+        data:
+            Excel sheets dict with at least Lines and Tielines.
+
+    Returns:
+        None
     """
     bus_df_empty = pd.DataFrame({"name": str(), "vn_kv": float(), "TSO": str()}, index=[])
     bus_df = deepcopy(bus_df_empty)
@@ -478,26 +473,27 @@ def _create_lines(
     Create pandapower lines from Lines/Tielines data.
 
     Steps:
-      - Validate/repair length (km), set zero/NaN lengths to 1 km with a warning.
+
+      - Validate/repair length (km); set zero/NaN lengths to 1 km with a warning.
       - Determine from/to buses via (Substation, Full_name) and voltage (vn_kv).
-      - Fuzzy-detect R, X, B columns, compute per-km values.
+
+      - Fuzzy-detect R, X, B columns and compute per-km values.
       - Read Imax (kA) from Fixed column if present, else use fallback.
+
       - Attach metadata (name/EIC/TSO/comment) via fuzzy detection.
       - Create lines in pandapower; set Tieline=True for tielines.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        Target pandapower network (modified in-place).
-    data : dict[str, pd.DataFrame]
-        Excel sheets dict.
-    max_i_ka_fillna : float | int
-        Fallback Imax (kA) if missing; use np.nan to avoid filling.
+    Parameters:
+        net:
+            Target pandapower network (modified in-place).
+        data:
+            Excel sheets dict.
+        max_i_ka_fillna:
+            Fallback Imax (kA) if missing; pass np.nan to avoid filling.
 
-    Raises
-    ------
-    KeyError
-        If voltage or substation name columns cannot be found via fuzzy matching.
+    Raises:
+        KeyError:
+            If voltage or substation name columns cannot be found via fuzzy matching.
     """
     bus_idx = _get_bus_idx(net)
 
@@ -526,12 +522,12 @@ def _create_lines(
                 (df[s2_full].astype(str).str.strip() != "NAN")
         )
 
-        # Logge entfernte ungültige Zeilen
+        # Logg deleted invalid rows
         invalid_count = len(df) - valid_mask.sum()
         if invalid_count > 0:
             logger.warning(f"{invalid_count} {key.lower()} wurden aufgrund fehlender oder ungültiger Daten entfernt")
 
-        # Filtere ungültige Zeilen heraus
+        # filter invalid rows
         df = df[valid_mask].copy()
         vn_kvs = vn_kvs[valid_mask]
 
@@ -606,24 +602,35 @@ def _create_transformers_and_buses(
     Create transformers from the Transformers sheet and ensure valid bus connections.
 
     Flow:
+
       - Determine transformer HV/LV nominal voltages (fuzzy).
       - Match each transformer to a bus pair at its location; create buses when:
-          * no bus exists at the required voltage and best existing voltage deviates more than
+
+          * no bus exists at the required voltage and the best existing voltage deviates by more than
+
             rel_deviation_threshold_for_trafo_bus_creation, or
+
           * HV and LV sides would connect to the same bus (duplicate LV bus with suffix " (2)").
       - Compute transformer parameters (vk%, vkr%, pfe, i0, etc.) from R/X/B/G and base values.
+
       - Add tap/phase-shifter settings.
       - Create pandapower transformers.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        Target pandapower network (modified in-place).
-    data : dict[str, pd.DataFrame]
-        Excel sheets dict.
-    kwargs :
-        - rel_deviation_threshold_for_trafo_bus_creation: float (default 0.2)
-        - log_rel_vn_deviation: float (default 0.12)
+    Parameters:
+        net:
+            Target pandapower network (modified in-place).
+        data:
+            Excel sheets dict.
+
+    Keyword Parameters:
+        rel_deviation_threshold_for_trafo_bus_creation:
+            Fractional voltage deviation threshold for deciding to create a new bus when matching
+            transformer voltages by location. Default: 0.2.
+        log_rel_vn_deviation:
+            Relative voltage deviation threshold for warning logs. Default: 0.12.
+
+    Returns:
+        None
     """
     key = "Transformers"
     dfT = data[key]
@@ -742,48 +749,49 @@ def _allocate_trafos_to_buses_and_create_buses(
         rel_deviation_threshold_for_trafo_bus_creation: float = 0.2,
         log_rel_vn_deviation: float = 0.12, **kwargs) -> pd.DataFrame:
     """
-    Allocate transformers to bus pairs by matching location names and voltages and create buses
+    Allocate transformers to bus pairs by matching location names and voltages, creating buses
     when needed.
 
     For each transformer:
+
       - Determine its location name (fuzzy).
       - Try mapping to an existing bus (same name, same voltage).
+
       - If no exact match, pick nearest available voltage at the location; compute relative
-        deviation. If deviation > threshold, create a new bus at transformer's VN.
+
+        deviation. If deviation > threshold, create a new bus at the transformer's VN.
+
       - If HV and LV map to the same bus, duplicate the LV bus (" (2)") to avoid same-bus trafos.
       - Log warnings for moderate deviations (> log_rel_vn_deviation).
+
       - Return a DataFrame of allocations and deviations.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        Target pandapower network; modified when new buses must be created.
-    data : dict[str, pd.DataFrame]
-        Excel sheets dict.
-    bus_idx : pd.Series
-        Mapping (name, vn_kv) -> bus index.
-    vn_hv_kv : np.ndarray
-        HV nominal voltages for each transformer.
-    vn_lv_kv : np.ndarray
-        LV nominal voltages for each transformer.
-    rel_deviation_threshold_for_trafo_bus_creation : float, optional
-        Threshold for creating new buses when nearest existing voltage deviates too much.
-    log_rel_vn_deviation : float, optional
-        Warning threshold for voltage deviations when not creating a bus.
+    Parameters:
+        net:
+            Target pandapower network; modified when new buses must be created.
+        data:
+            Excel sheets dict.
+        bus_idx:
+            Mapping (name, vn_kv) -> bus index.
+        vn_hv_kv:
+            HV nominal voltages for each transformer.
+        vn_lv_kv:
+            LV nominal voltages for each transformer.
+        rel_deviation_threshold_for_trafo_bus_creation:
+            Threshold for creating new buses when nearest existing voltage deviates too much.
+        log_rel_vn_deviation:
+            Warning threshold for voltage deviations when not creating a bus.
 
-    Returns
-    -------
-    pd.DataFrame
-        Allocation info with columns:
+    Returns:
+        Allocation info DataFrame with columns:
         ["name", "hv_bus", "lv_bus", "vn_hv_kv", "vn_lv_kv",
          "vn_hv_kv_next_bus", "vn_lv_kv_next_bus",
          "hv_rel_deviation", "lv_rel_deviation",
          "trafo_hv_to_bus_deviation", "trafo_lv_to_bus_deviation"]
 
-    Raises
-    ------
-    ValueError
-        If transformer locations cannot be resolved to any bus/location after robust normalization.
+    Raises:
+        ValueError:
+            If transformer locations cannot be resolved to any bus/location after robust normalization.
     """
     if rel_deviation_threshold_for_trafo_bus_creation < log_rel_vn_deviation:
         logger.warning(
@@ -794,7 +802,7 @@ def _allocate_trafos_to_buses_and_create_buses(
     dfT = data[key]
     bus_location_names = set(net.bus.name)
 
-    # Standortnamen (fuzzy)
+    # location names(fuzzy)
     trafo_bus_names = ColumnFuzzyMatchingUtils.get_transformer_location_fullname_series_fuzzy(dfT)
     trafo_location_names = _find_trafo_locations(trafo_bus_names, bus_location_names)
 
@@ -882,31 +890,32 @@ def _allocate_trafos_to_buses_and_create_buses(
 def _find_trafo_locations(trafo_bus_names, bus_location_names):
     """
     Resolve transformer location strings to existing bus location names via normalization.
-    The procedure:
+
+    Procedure:
+
       - Split original names into tokens on spaces and patterns like '-A\\d+', '-TD\\d+', '-PF\\d+', and '/'.
       - Remove tokens that are stopwords (tr, pst, trafo, kv), empties, or contain digits.
+
       - Compose two candidates:
           * joined string of remaining tokens
+
           * longest single token
       - Try exact matches against bus names; if failed, try a close match (cutoff=0.8).
+
       - If still unmatched, raise a ValueError for the count of unmatched transformers.
 
-    Parameters
-    ----------
-    trafo_bus_names : pd.Series
-        Series of transformer location strings (raw).
-    bus_location_names : set[str]
-        Known bus location names from Lines/Tielines.
+    Parameters:
+        trafo_bus_names:
+            Series of transformer location strings (raw).
+        bus_location_names:
+            Known bus location names from Lines/Tielines.
 
-    Returns
-    -------
-    pd.Series
+    Returns:
         Best-matched bus location names for each transformer entry.
 
-    Raises
-    ------
-    ValueError
-        If after robust tries some transformers remain unresolved.
+    Raises:
+        ValueError:
+            After robust tries, some transformers remain unresolved.
     """
     # Convert bus_location_names to a list for easier searching
     bus_names_list = list(bus_location_names)
@@ -1004,28 +1013,30 @@ def _invent_connections_between_grid_groups(
     """
     Connect islanded grid groups through synthetic links to improve network connectivity.
 
-    Three mechanisms:
+    Mechanisms:
       1) Add representative transformers between equally named buses in different groups
-         (same location, different voltage levels) using parameters copied from existing trafos
+         (same location, different voltage levels) using parameters copied from existing transformers
          that connect the same voltage pair (prefer same TSO).
-      2) Fuse buses with same base name and same voltage level that belong to different groups.
+      2) Fuse buses with the same base name and same voltage level that belong to different groups.
       3) Fuse specific known close-by bus pairs (hardcoded list).
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        Network to modify in-place.
-    minimal_trafo_invention : bool, optional
-        If True, stop adding transformers as soon as the grid is no longer islanded. Not applied
-        for certain published releases (value may be ignored).
-    kwargs : dict
-        Passed through; not used currently.
+    Parameters:
+        net:
+            Network to modify in-place.
+        minimal_trafo_invention:
+            If True, stop adding transformers as soon as the grid is no longer islanded.
+            Not applied for certain published releases (value may be ignored).
 
-    Notes
-    -----
-    - Replaces "Wuergau (2)" with "Wuergau" for base-name equality before matching.
-    - After each synthetic connection, group assignments are updated.
-    - Emits info logs when transformer data are copied.
+    Returns:
+        None
+
+    Notes:
+
+        - Replaces "Wuergau (2)" with "Wuergau" for base-name equality before matching.
+        - After each synthetic connection, group assignments are updated.
+
+        - Emits info logs when transformer data are copied.
+
     """
     grid_groups = get_grid_groups(net)
     bus_idx = _get_bus_idx(net)
@@ -1128,27 +1139,29 @@ def drop_islanded_grid_groups(
     Drop islanded grid groups based on group size or supply condition.
 
     Modes:
+
       - Integer (e.g., 6): drop groups with number of buses < min_bus_number.
       - "max": keep only the largest group (drop all others).
+
       - "unsupplied": drop groups that do not contain any slack element (ext_grid or slack gen).
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        Network to clean up (modified in-place).
-    min_bus_number : int | str
-        Threshold or special mode ("max", "unsupplied").
-    kwargs : dict
-        Additional parameters passed to get_grid_groups.
+    Parameters:
+        net:
+            Network to clean up (modified in-place).
+        min_bus_number:
+            Threshold or special mode ("max", "unsupplied").
+        kwargs:
+            Additional parameters forwarded to get_grid_groups.
 
-    Raises
-    ------
-    NotImplementedError
-        If 'min_bus_number' is neither an int nor one of the special strings.
+    Returns:
+        None
 
-    Notes
-    -----
-    Logs the number of dropped groups and total buses dropped.
+    Raises:
+        NotImplementedError:
+            If 'min_bus_number' is neither an int nor one of the special strings.
+
+    Notes:
+        Logs the number of dropped groups and the total number of buses dropped.
     """
 
     def _grid_groups_to_drop_by_min_bus_number():
@@ -1188,25 +1201,31 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
     Add geodata to buses using line endpoint geodata from the HTML-exported map.
 
     Method:
+
       - Build two pivot tables of geodata: by EIC_Code/bus and by name/bus.
       - For each bus, inspect connected lines and decide whether to use EIC_Code or name
+
         as the primary lookup key (based on duplicates/availability).
+
       - If multiple candidate coordinates remain, reduce by rounding and pick the most
+
         frequently occurring coordinate across lines.
+
       - Write GeoJSON-like strings into net.bus.geo.
       - Lines receive geodata via set_line_geodata_from_bus_geodata elsewhere.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        Target network (modified in-place).
-    line_geo_data : pd.DataFrame
-        Tidy DataFrame from _parse_html_str().
+    Parameters:
+        net:
+            Target network (modified in-place).
+        line_geo_data:
+            Tidy DataFrame from _parse_html_str().
 
-    Notes
-    -----
-    For ambiguous geodata (all EIC/Name keys duplicated), the function falls back to any
-    available (non-missing) value and logs info.
+    Returns:
+        None
+
+    Notes:
+        For ambiguous geodata (all EIC/name keys duplicated), the function falls back to any
+        available non-missing value and logs info.
     """
     iSl = pd.IndexSlice
     lgd_EIC_bus = line_geo_data.pivot_table(values="value", index=["EIC_Code", "bus"],
@@ -1304,19 +1323,22 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
     Propagate bus geodata across branches when only one end has geodata.
 
     Iteratively:
+
       - Find lines/transformers where one end bus has geo and the other has not.
       - Copy the available geodata to the missing side.
+
       - Repeat until no more one-sided geo branches exist.
       - Finally, compute line geodata from bus geodata.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        Network with potentially partial geodata.
+    Parameters:
+        net:
+            Network with potentially partial geodata.
 
-    Notes
-    -----
-    Intended as a post-processing helper to fill gaps if initial geodata coverage is sparse.
+    Returns:
+        None
+
+    Notes:
+        Intended as a post-processing helper to fill gaps if initial geodata coverage is sparse.
     """
 
     def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, pd.Index | int]:
@@ -1344,38 +1366,3 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
                 net.bus.loc[net[et].loc[geo_avail[idx_key], bus_w_geo].values, "geo"].values
         geo_avail = _check_geo_availablitiy(net)
     set_line_geodata_from_bus_geodata(net)
-
-
-# ==================================================================================================
-# __main__ demo
-# ==================================================================================================
-if __name__ == "__main__":
-    from pathlib import Path
-    import os
-    from pandapower.file_io import from_json, to_json
-
-    home = str(Path.home())
-    jao_data_folder = os.path.join(home, "Documents", "JAO Static Grid Model")
-
-    release5 = os.path.join(jao_data_folder, "20240329_Core Static Grid Model – 5th release")
-    excel_file_path = os.path.join(release5, "20240329_Core Static Grid Model_public.xlsx")
-    html_file_path = os.path.join(release5, "20240329_Core Static Grid Model Map_public",
-                                  "2024-03-18_Core_SGM_publication.html")
-
-    release6 = os.path.join(jao_data_folder, "202409_Core Static Grid Mode_6th release")
-    excel_file_path = os.path.join(release6, "20240916_Core Static Grid Model_for publication.xlsx")
-    html_file_path = os.path.join(release6, "2024-09-13_Core_SGM_publication_files",
-                                  "2024-09-13_Core_SGM_publication.html")
-
-    pp_net_json_file = os.path.join(home, "desktop", "jao_grid.json")
-
-    if 1:  # read from original data
-        net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
-        to_json(net, pp_net_json_file)
-    else:  # load net from already converted and stored net
-        net = from_json(pp_net_json_file)
-    print(net)
-    grid_groups = get_grid_groups(net)
-    print(grid_groups)
-
-    _fill_geo_at_one_sided_branches_without_geo_extent(net)
