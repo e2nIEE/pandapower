@@ -161,8 +161,7 @@ def test_cost_consideration():
         boundary_buses = [0, 2]
         internal_buses = [1]
         eq_net1 = get_equivalent(net, "rei", boundary_buses, internal_buses)
-        eq_net2 = get_equivalent(net, "rei", boundary_buses, internal_buses,
-                                 return_internal=False)
+        eq_net2 = get_equivalent(net, "rei", boundary_buses, internal_buses, return_internal=False)
 
         # check elements
         check_elements_amount(eq_net1, {"bus": 6, "load": 3, "sgen": 3, "shunt": 5, "ext_grid": 1,
