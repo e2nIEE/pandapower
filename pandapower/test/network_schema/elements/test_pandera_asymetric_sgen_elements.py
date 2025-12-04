@@ -2,10 +2,8 @@
 # test_asymmetric_sgen.py
 
 import itertools
-import pandas as pd
 import pandera as pa
 import pytest
-import numpy as np
 
 from pandapower import create_asymmetric_sgen
 from pandapower.create import create_empty_network, create_bus

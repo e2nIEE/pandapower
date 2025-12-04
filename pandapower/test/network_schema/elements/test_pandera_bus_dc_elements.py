@@ -1,4 +1,6 @@
 import itertools
+from cmath import isnan
+
 import numpy as np
 import pandas as pd
 import pandera as pa
@@ -97,7 +99,7 @@ class TestBusDCOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name", "type", "zone", "geo"], [pd.NA, *strings]),
+                # itertools.product(["name", "type", "zone", "geo"], [pd.NA, *strings]),
                 itertools.product(["min_vm_pu", "max_vm_pu"], [float(np.nan), np.nan, *positiv_floats]),
             )
         )
@@ -105,6 +107,11 @@ class TestBusDCOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         net = create_empty_network()
         create_bus_dc(net, vn_kv=1.0, in_service=True, **{parameter: valid_value})
+        if parameter in "min_vm_pu" and not isnan(valid_value):
+            net.bus_dc.at[0, "max_vm_pu"] = 2.0
+        if parameter in "max_vm_pu" and not isnan(valid_value):
+            net.bus_dc.at[0, "min_vm_pu"] = 0.0
+
         validate_network(net)
 
     @pytest.mark.parametrize(

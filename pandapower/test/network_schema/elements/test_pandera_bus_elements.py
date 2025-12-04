@@ -68,7 +68,7 @@ class TestBusOptionalFields:
     def test_bus_with_optional_fields(self):
         """Test: Bus with every optional fields is valid"""
         net = create_empty_network()
-        create_bus(net, 0.4, zone="everywhere", max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0), type="x")
+        create_bus(net, vn_kv=0.4, zone="everywhere", max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0), type="b")
         validate_network(net)
 
     def test_buses_with_optional_fields_including_nullvalues(self):
