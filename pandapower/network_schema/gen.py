@@ -132,14 +132,14 @@ _gen_columns = {
     ),
 }
 gen_checks = create_column_dependency_checks_from_metadata(
-        [
-            "opf",
-            # "sc",
-            "q_lim_enforced",
-            "qcc",
-        ],
-        _gen_columns,
-    )
+    [
+        "opf",
+        # "sc",
+        "q_lim_enforced",
+        "qcc",
+    ],
+    _gen_columns,
+)
 gen_checks.append(create_lower_equals_column_check(first_element="min_q_mvar", second_element="max_q_mvar"))
 gen_checks.append(create_lower_equals_column_check(first_element="min_p_mw", second_element="max_p_mw"))
 gen_checks.append(create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"))
