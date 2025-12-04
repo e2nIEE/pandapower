@@ -22,15 +22,15 @@ from pandapower.test.loadflow.result_test_network_generator import result_test_n
 
 def test_rundcpp_init():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
-    tidx = create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
+    create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
     rundcpp(net)
 
 
 def test_rundcpp_init_auxiliary_buses():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    _, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
     tidx = create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV')
@@ -61,7 +61,7 @@ def test_result_iter():
 
 def test_two_open_switches():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    b1, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=20.)
     l2 = create_test_line(net, b2, b3)
     create_test_line(net, b3, b1)
@@ -69,16 +69,6 @@ def test_two_open_switches():
     create_switch(net, b3, l2, et="l", closed=False)
     rundcpp(net)
     assert np.isnan(net.res_line.i_ka.at[l2]) or net.res_line.i_ka.at[l2] == 0
-
-
-def get_isolated(net):
-    net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=False,
-                     trafo_model="t", check_connectivity=False,
-                     mode="pf", switch_rx_ratio=0.0,
-                     enforce_q_lims=False, recycle=None)
-    ppc, ppci = _pd2ppc(net)
-    return _check_connectivity(ppc)
 
 
 def test_test_sn_mva():

@@ -296,6 +296,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
                     "percent at trafo3w %d (%s)" % (
                         max(abs(tr3w_diff_is)), max_diff_idx, net.trafo3w.at[max_diff_idx, 'name']))
 
+        all_diffs["trafo3w_diff"] = trafo3w_diff
 
     if len(net.sgen[net.sgen.in_service]) > 0:
         logger.debug('verifying sgen')
