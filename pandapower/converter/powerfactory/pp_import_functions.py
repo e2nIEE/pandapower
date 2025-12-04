@@ -62,7 +62,9 @@ def from_pf(net_name,
     ###    
     
     log_file_path = r'C:\Users\mfischer\spyder_projects\nap26_edis\nap26_edis\convertpf2pp\validate_pf2pp\converter_logger\log'
-    logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings_specialUW.log', level=logging.WARNING, 
+    # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings_specialUW.log', level=logging.WARNING, 
+    #                 format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings.log', level=logging.WARNING, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
     logger = logging.getLogger(__name__)
@@ -445,20 +447,20 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
         'geodata': (x, y),
     }
     
-    ####
-    if item.cpSite is not None:
-        if len(item.cpSite.desc):
-            params['TP_cpSite'] = item.cpSite.desc[0]
-        #print('jo')
-    if item.cpSubstat is not None:
-        if len(item.cpSubstat.desc):
-            if (len(item.cpSubstat.desc) == 1) and (item.cpSubstat.desc[0].strip() == ''):
-                # UW Rheinsberg
-                pass
-            elif (len(item.cpSubstat.desc) == 1) and (len(item.cpSubstat.desc[0])>1):
-                params['TP_Substat'] = item.cpSubstat.desc[0]
-            else:
-                params['TP_Substat'] = item.cpSubstat.desc[2]
+    #### for 6 special UWs
+    # if item.cpSite is not None:
+    #     if len(item.cpSite.desc):
+    #         params['TP_cpSite'] = item.cpSite.desc[0]
+    #     #print('jo')
+    # if item.cpSubstat is not None:
+    #     if len(item.cpSubstat.desc):
+    #         if (len(item.cpSubstat.desc) == 1) and (item.cpSubstat.desc[0].strip() == ''):
+    #             # UW Rheinsberg
+    #             pass
+    #         elif (len(item.cpSubstat.desc) == 1) and (len(item.cpSubstat.desc[0])>1):
+    #             params['TP_Substat'] = item.cpSubstat.desc[0]
+    #         else:
+    #             params['TP_Substat'] = item.cpSubstat.desc[2]
     ###
         
     system_type = {0: "ac", 1: "dc", 2: "ac/bi"}[item.systype]
