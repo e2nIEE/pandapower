@@ -1072,7 +1072,7 @@ def deviation_from_std_type(net):
     for key in net.std_types:
         if key in net and "std_type" in net[key].columns:
             for i, element in net[key].iterrows():
-                std_type = element.std_type
+                std_type: pd.StringDtype = element.std_type
                 if std_type in net.std_types[key]:
                     std_type_values = net.std_types[key][std_type]
                     for param in std_type_values:
@@ -1092,7 +1092,7 @@ def deviation_from_std_type(net):
                                     "std_type_value": std_type_values[param],
                                     "std_type_in_lib": True,
                                 }
-                elif std_type is not None:
+                elif not pd.isna(std_type):
                     if key not in check_results:
                         check_results[key] = {}
                     check_results[key][i] = {"std_type_in_lib": False}

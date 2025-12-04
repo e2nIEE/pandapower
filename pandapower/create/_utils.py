@@ -354,7 +354,8 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
         dtypes = net[table][intersect1d(net[table].columns, list(entries))].dtypes
 
     for col, val in entries.items():
-        if not pd.isna(val):  # TODO: questionable
+        val_not_na: bool = pd.notna(val) if pd.api.types.is_scalar(val) else pd.notna(val).any()
+        if val_not_na:
             net[table].at[index, col] = val
             try:
                 dtype = get_structure_dict(required_only=False)[table][col]

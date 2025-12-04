@@ -249,7 +249,6 @@ def test_nonexistent_bus():
 
 
 def test_tap_changer_type_default():
-    expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
     net = create_empty_network()
     create_bus(net, 110)
     create_bus(net, 20)
@@ -259,7 +258,6 @@ def test_tap_changer_type_default():
     create_std_type(net, data, "without_tap_shifter_info", "trafo")
     create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
     create_transformer(net, 0, 1, "without_tap_shifter_info")
-    #assert (net.trafo.tap_changer_type == expected_default).all() # comparison with NaN is always false. revert back to this
     if 'tap_changer_type' in net.trafo.columns:
         assert (net.trafo.tap_changer_type.isna()).all()
 
