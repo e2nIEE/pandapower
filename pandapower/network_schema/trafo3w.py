@@ -139,7 +139,8 @@ _trafo3w_columns = {
     ),
     "in_service": pa.Column(bool, description="specifies if the transformer is in service."),
 }
-tap_columns = ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_step_degree"]
+# FIXME: either tap_step_percent or tap_step_degree for each row
+tap_columns = ["tap_pos", "tap_neutral", "tap_side"]  # , "tap_step_percent", "tap_step_degree"]
 trafo3w_checks = [
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),

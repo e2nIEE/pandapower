@@ -176,50 +176,37 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
     """
     #    runpp_fct(net, calculate_voltage_angles=True)
     be_buses = boundary_buses + all_external_buses
-    if ((net.trafo.hv_bus.isin(be_buses)) & (net.trafo.shift_degree != 0)).any() \
-            or ((net.trafo3w.hv_bus.isin(be_buses)) & \
-                ((net.trafo3w.shift_mv_degree != 0) | (net.trafo3w.shift_lv_degree != 0))).any():
+    if (((net.trafo.hv_bus.isin(be_buses)) & (net.trafo.shift_degree != 0)).any() or
+            ((net.trafo3w.hv_bus.isin(be_buses)) & ((net.trafo3w.shift_mv_degree != 0) |
+                                                    (net.trafo3w.shift_lv_degree != 0))).any()):
         existing_shift_degree = True
-        logger.info("Transformers with non-zero shift-degree are existed," +
-                    " they could cause small inaccuracy.")
-    # creata dataframe to collect the current injections of the external area
+        logger.info("Transformers with non-zero shift-degree are existed, they could cause small inaccuracy.")
+    # create dataframe to collect the current injections of the external area
     nb_ext_buses = len(all_external_buses)
     S = pd.DataFrame(np.zeros((nb_ext_buses, 15)), dtype=complex)
-    S.columns = ["ext_bus", "v_m", "v_cpx", "gen_integrated", "gen_separate",
-                 "load_integrated", "load_separate", "sgen_integrated",
-                 "sgen_separate", "sn_load_separate", "sn_load_integrated",
-                 "sn_sgen_separate", "sn_sgen_integrated", "sn_gen_separate",
-                 "sn_gen_integrated"]
+    S.columns = ["ext_bus", "v_m", "v_cpx", "gen_integrated", "gen_separate", "load_integrated", "load_separate",
+                 "sgen_integrated", "sgen_separate", "sn_load_separate", "sn_load_integrated", "sn_sgen_separate",
+                 "sn_sgen_integrated", "sn_gen_separate", "sn_gen_integrated"]
 
     k, ind = 0, 0
-    if slack_as == "gen":
-        elements = set([("load", "res_load", "load_separate", "sn_load_separate", -1),
-                        ("sgen", "res_sgen", "sgen_separate", "sn_sgen_separate", 1),
-                        ("gen", "res_gen", "gen_separate", "sn_gen_separate", 1),
-                        ("ext_grid", "res_ext_grid", "gen_separate", "sn_gen_separate", 1)])
-
-    elif slack_as == "load":
-        elements = set([("load", "res_load", "load_separate", "sn_load_separate", -1),
-                        ("sgen", "res_sgen", "sgen_separate", "sn_sgen_separate", 1),
-                        ("gen", "res_gen", "gen_separate", "sn_gen_separate", 1),
-                        ("ext_grid", "res_ext_grid", "load_separate", "sn_load_separate", 1)])
 
     for i in all_external_buses:
-        for ele, res_ele, power, sn, sign in elements:
+        for ele in ["load", "sgen", "gen", "ext_grid"]:
             if i in net[ele].bus.values and net[ele].in_service[net[ele].bus == i].values.any():
+                res_ele = f"res_{ele}"
+                power = ele if ele != "ext_grid" else slack_as
+                sign = -1 if ele == "load" else 1
                 ind = list(net[ele].index[net[ele].bus == i].values)
                 # act. values --> ref. values:
-                S.loc[k, power] += sum(net[res_ele].p_mw[ind].values * sign) / net.sn_mva + \
-                                   1j * sum(net[res_ele].q_mvar[ind].values *
-                                            sign) / net.sn_mva
-                S.loc[k, sn] = sum(net[ele].sn_mva[ind].values) + \
-                               1j * 0 if ele != "ext_grid" else 1e6 + 1j * 0
-                S[power.replace('_separate', '_integrated')] += S[power][k]
-                S[sn.replace('_separate', '_integrated')] += S[sn][k]
+                S.loc[k, f"{power}_separate"] += (sum(net[res_ele].p_mw[ind].values * sign) / net.sn_mva +
+                                                  sum(net[res_ele].q_mvar[ind].values * sign) / net.sn_mva * 1j)
+                ele_sn_mva = float('nan') if 'sn_mva' not in net[ele].columns else sum(net[ele].loc[ind, 'sn_mva'])
+                S.loc[k, f"sn_{power}_separate"] = ele_sn_mva + 1j * 0 if ele != "ext_grid" else 1e6 + 1j * 0
+                S[f"{power}_integrated"] += S.loc[k, f"{power}_separate"]
+                S[f"sn_{power}_integrated"] += S.loc[k, f"sn_{power}_separate"]
         S.loc[k, 'ext_bus'] = all_external_buses[k]
         S.loc[k, 'v_m'] = net.res_bus.vm_pu[i]
-        S.loc[k, 'v_cpx'] = S.v_m[k] * \
-                            np.exp(1j * net.res_bus.va_degree[i] * np.pi / 180)
+        S.loc[k, 'v_cpx'] = S.v_m[k] * np.exp(1j * net.res_bus.va_degree[i] * np.pi / 180)
         k = k + 1
 
     # create dataframe to calculate the impedance of the ZPBN-network
@@ -232,25 +219,20 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
 
     for elm in ["load", "gen", "sgen"]:
         if existing_shift_degree:
-            Y[elm + "_ground"] = (S[elm + "_separate"].values / S.v_cpx.values).conjugate() / \
-                                 S.v_cpx.values
+            Y[elm + "_ground"] = (S[elm + "_separate"].values / S.v_cpx.values).conjugate() / S.v_cpx.values
         else:
-            Y[elm + "_ground"] = S[elm + "_separate"].values.conjugate() / \
-                                 np.square(S.v_m)
-        I_elm_integrated_total = sum((S[elm + "_separate"].values /
-                                      S.v_cpx.values).conjugate())
+            Y[elm + "_ground"] = S[elm + "_separate"].values.conjugate() / np.square(S.v_m)
+        I_elm_integrated_total = sum((S[elm + "_separate"].values / S.v_cpx.values).conjugate())
         if I_elm_integrated_total == 0:
             Y[elm + "_integrated_total"] = float("nan")
         else:
-            vm_elm_integrated_total = S[elm + "_integrated"][0] / \
-                                      I_elm_integrated_total.conjugate()
+            vm_elm_integrated_total = S[elm + "_integrated"][0] / I_elm_integrated_total.conjugate()
             if existing_shift_degree:
-                Y[elm + "_integrated_total"] = (-S[elm + "_integrated"][0] / \
-                                                vm_elm_integrated_total).conjugate() / \
-                                               vm_elm_integrated_total
+                Y[elm + "_integrated_total"] = ((-S[elm + "_integrated"][0] / vm_elm_integrated_total).conjugate() /
+                                                vm_elm_integrated_total)
             else:
-                Y[elm + "_integrated_total"] = -S[elm + "_integrated"][0].conjugate() / \
-                                               np.square(abs(vm_elm_integrated_total))
+                Y[elm + "_integrated_total"] = (-S[elm + "_integrated"][0].conjugate() /
+                                                np.square(abs(vm_elm_integrated_total)))
         Y[elm + "_separate_total"] = -Y[elm + "_ground"]
         if elm == "gen" and any(S.gen_separate):
             v["gen_integrated_vm_total"] = abs(vm_elm_integrated_total)

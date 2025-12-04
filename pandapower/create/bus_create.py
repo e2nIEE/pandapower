@@ -105,14 +105,10 @@ def create_bus(
     entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    if pd.notna(min_vm_pu) or pd.notna(max_vm_pu):
-        if pd.notna(min_vm_pu):
-            entries["min_vm_pu"] = min_vm_pu
-            entries["max_vm_pu"] = 2.0
-        if pd.notna(max_vm_pu):
-            entries["min_vm_pu"] = 0.0
-            entries["max_vm_pu"] = max_vm_pu
 
+    if pd.notna(min_vm_pu) or pd.notna(max_vm_pu) or "min_vm_pu" in net.bus.columns:
+        _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.0)
+        _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.0)
     _set_entries(net, "bus", index, True, entries=entries)
 
     return index
@@ -195,8 +191,9 @@ def create_bus_dc(
     _set_entries(net, "bus_dc", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.0)
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=2.0)
+    if pd.notna(min_vm_pu) or pd.notna(max_vm_pu) or "min_vm_pu" in net.bus.columns:
+        _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.0)
+        _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=2.0)
 
     return index
 
@@ -211,8 +208,8 @@ def create_buses(
     geodata: tuple[float, float] | Iterable[tuple[float, float]] | None = None,
     zone: str | Iterable[str] | None = None,
     in_service: bool | Iterable[bool] = True,
-    max_vm_pu: float | Iterable[float] = nan,
-    min_vm_pu: float | Iterable[float] = nan,
+    max_vm_pu: float | Iterable[float] = 2.0,
+    min_vm_pu: float | Iterable[float] = 0.0,
     coords: list[list[tuple[float, float]]] | None = None,  # TODO: remove
     **kwargs,
 ) -> npt.NDArray[Int]:
@@ -272,8 +269,11 @@ def create_buses(
         raise UserWarning(BUSBAR_WARNING)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
-    _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
+    min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()
+    max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()
+    if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
+        _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu, default_val=0.0)
+        _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu, default_val=2.0)
     _set_multiple_entries(net, "bus", index, entries=entries)
 
     return index
@@ -353,8 +353,11 @@ def create_buses_dc(
         raise UserWarning(BUSBAR_WARNING)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
-    _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu)
+    min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()
+    max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()
+    if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
+        _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu, default_val=0.0)
+        _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu, default_val=2.0)
     _set_multiple_entries(net, "bus_dc", index, entries=entries)
 
     return index

@@ -1542,10 +1542,10 @@ def _calculate_3w_tap_changers(t3, t2, sides):
     at_star_point = t3.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
     for side in sides:
-        tap_mask = t3.tap_side.values == side
+        tap_mask = (t3.tap_side.array == side).fillna(False)
         for var in tap_variables:
             if var in t3:
-                tap_arrays[var][side][tap_mask] = t3[var].values[tap_mask]
+                tap_arrays[var][side][tap_mask] = t3[var].array[tap_mask]
             else:
                 tap_arrays[var][side][tap_mask] = np.full(sum(tap_mask), float('nan'), dtype=float)
 
