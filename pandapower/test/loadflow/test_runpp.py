@@ -168,14 +168,13 @@ def test_runpp_init_auxiliary_buses():
                        atol=2)
 
 
-def test_result_iter():
-    for net in result_test_network_generator():
-        try:
-            runpp_with_consistency_checks(net, enforce_q_lims=True)
-        except (AssertionError):
-            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
-        except(LoadflowNotConverged):
-            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+def test_result_iter(result_test_networks):
+    try:
+        runpp_with_consistency_checks(result_test_networks, enforce_q_lims=True)
+    except (AssertionError):
+        raise UserWarning(f"Consistency Error after adding {result_test_networks.last_added_case}")
+    except(LoadflowNotConverged):
+        raise UserWarning(f"Power flow did not converge after adding {result_test_networks.last_added_case}")
 
 
 @pytest.fixture

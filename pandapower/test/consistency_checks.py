@@ -3,7 +3,6 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import pandas as pd
 from numpy import allclose, isclose
 import numpy as np
@@ -21,20 +20,24 @@ def runpp_with_consistency_checks(net, **kwargs):
     consistency_checks(net)
     return True
 
+
 def runpp_3ph_with_consistency_checks(net, **kwargs):
     runpp_3ph(net, **kwargs)
     consistency_checks_3ph(net)
     return True
+
 
 def rundcpp_with_consistency_checks(net, **kwargs):
     rundcpp(net, **kwargs)
     consistency_checks(net, test_q=False)
     return True
 
+
 def runpp_pgm_with_consistency_checks(net):
     runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=True)
     consistency_checks(net)
     return True
+
 
 def runpp_pgm_3ph_with_consistency_checks(net):
     runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=False)
