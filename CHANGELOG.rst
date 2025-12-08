@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [CHANGED] from_jao: converter now uses fuzzy matching with difflib module to find matching buses instead of  as well as table column names if they are inconsistent between files. Added mapping to jao.rst
 - [FIXED] julia implementation, now using juliacall
 - [CHANGED] diagnostics restructured for better extensibility
 - [FIXED] implausible impedance test results never showing in report
