@@ -132,9 +132,9 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     length = _initialize_branch_lookup(net)
     lookup = net._pd2ppc_lookups["branch"]
     mode = net._options["mode"]
-    ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
+    ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.float64)
     if mode == "sc":
-        branch_sc = np.zeros(shape=(length, branch_cols_sc), dtype=np.complex128)
+        branch_sc = np.zeros(shape=(length, branch_cols_sc), dtype=np.float64)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
 

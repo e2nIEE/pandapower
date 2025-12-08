@@ -240,7 +240,7 @@ def _init_ppc(net, mode="pf", sequence=None):
         "version": 2,
         "bus": np.array([], dtype=float),
         "bus_dc": np.array([], dtype=np.float64),
-        "branch": np.array([], dtype=np.complex128),
+        "branch": np.array([], dtype=float),
         "branch_dc": np.array([], dtype=np.float64),
         "tcsc": np.array([], dtype=np.complex128),
         "svc": np.array([], dtype=np.complex128),

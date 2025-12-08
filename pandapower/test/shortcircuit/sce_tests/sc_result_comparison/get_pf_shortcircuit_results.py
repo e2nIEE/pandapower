@@ -20,7 +20,8 @@ testfiles_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests')
 
 ## Function to export and save all pf short circuit results for a given project
 def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, activate_gen=None,
-                          grounding_type=None, grounding_bank=None, multiphase=False, save_to_excel=True):
+                          grounding_type=None, grounding_bank=None, multiphase=False, save_to_excel=True,
+                          complete_method=False):
     fault_types = ["LLL", "LL", "LG", "LLG"]
     cases = ["max", "min"]
     fault_impedances = [(0.0, 0.0), (5.0, 5.0)]
@@ -86,6 +87,9 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
             if multiphase:
                 out_path = os.path.join(testfiles_path, "sc_result_comparison", "wp_2.3",
                                         proj_name + f'_pf_sc_results_{fault_location}_{element}.xlsx')
+            if complete_method:
+                out_path = os.path.join(testfiles_path, "sc_result_comparison", "wp_2.3_complete",
+                                        proj_name + f'_pf_sc_results_{fault_location}_{element}.xlsx')
 
             writer = pd.ExcelWriter(out_path)
 
@@ -100,7 +104,7 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
                                 lv_tol_percent=lv_tol_percent, fault_location_index=fault_location,
                                 activate_sgens_at_bus=activate_sgen, activate_gens_at_bus=activate_gen,
                                 grounding_type=grounding_type, grounding_bank=grounding_bank,
-                                multiphase=multiphase
+                                multiphase=multiphase, complete_method=complete_method
                             )
                             if element == 'bus':
                                 df = pf_analysis.get_pf_sc_bus_results()
@@ -139,13 +143,14 @@ def get_all_pf_sc_results(proj_name, fault_location=None, activate_sgen=None, ac
 
 ##
 folder = os.path.join(testfiles_path, "test_grids", "wp_2.3")
-pfd_files = [f for f in os.listdir(folder)]
-pfd_files.pop(1)  # exclude grid with sgen for now
+pfd_files = [f for f in os.listdir(folder) if f.endswith('pfd')]
+pfd_files.pop(1)
 # proj_name = '10_eight_bus_radial_grid_2ph_dd_MP'
 
 pf_dict_all = {}
 for file in pfd_files:
     proj_name = os.path.splitext(file)[0]
+    # proj_name = proj_name + '_real'
     if 'four' in proj_name:
         fault_location = [0, 1, 3]
     elif 'five' in proj_name:
@@ -154,7 +159,8 @@ for file in pfd_files:
         fault_location = [0, 2, 4, 6]
 
     for fl in fault_location:
-        pf_dict = get_all_pf_sc_results(proj_name, fault_location=fl, multiphase=True, save_to_excel=True)
+        pf_dict = get_all_pf_sc_results(proj_name, fault_location=fl, multiphase=True, save_to_excel=True,
+                                        complete_method=False)
 
     pf_dict_all[proj_name] = pf_dict
 

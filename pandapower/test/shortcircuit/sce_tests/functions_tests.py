@@ -264,15 +264,10 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
     net = load_test_case(net_name)
 
     if wp_folder == "wp_2.3":
-        x = 1e-20
-
-        net.line.loc[net.line.name.str.contains('1ph'), "c0_nf_per_km"] = x
-        net.line.loc[net.line.name.str.contains('1ph'), "r0_ohm_per_km"] = x
-        net.line.loc[net.line.name.str.contains('1ph'), "x0_ohm_per_km"] = x
-
-        net.line.loc[net.line.name.str.contains('2ph'), "c0_nf_per_km"] = x
-        net.line.loc[net.line.name.str.contains('2ph'), "r0_ohm_per_km"] = x
-        net.line.loc[net.line.name.str.contains('2ph'), "x0_ohm_per_km"] = x
+        x = 1e-6
+        cols = ["c0_nf_per_km", "r0_ohm_per_km", "x0_ohm_per_km"]
+        net.line.loc[net.line.name.str.contains('1ph'), cols] = x
+        # net.line.loc[net.line.name.str.contains('2ph'), cols] = x
 
     xn = None
     rn = None
