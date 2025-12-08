@@ -78,6 +78,8 @@ fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=46.0", "geopandas~=
 converter = ["matpowercaseframes~=1.1", "lxml~=6.0"]
 pgm = ["power-grid-model-io~=1.2"]
 control = ["shapely~=2.1"]
+pandamodels = ["juliacall~=0.9"]
+
 typing = [
     "mypy~=1.18",
     "pandas-stubs~=2.3",
