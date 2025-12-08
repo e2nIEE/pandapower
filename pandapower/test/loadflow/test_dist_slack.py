@@ -39,12 +39,15 @@ def small_example_grid():
 
     create_load(net, 1, p_mw=100, q_mvar=100)
 
-    create_line_from_parameters(net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
-    create_line_from_parameters(net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
-    create_line_from_parameters(net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
+    create_line_from_parameters(
+        net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1
+    )
+    create_line_from_parameters(
+        net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1
+    )
+    create_line_from_parameters(
+        net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1
+    )
     return net
 
 
@@ -61,7 +64,7 @@ def _get_xward_result(net):
     else:
         p_impedance = np.array([])
 
-    for b, x_id in zip(net.xward.query("in_service").bus.values, net.xward.query("in_service").index.values):
+    for b, x_id in zip(net.xward[net.xward.in_service].bus, net.xward[net.xward.in_service].index.values):
         p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
         p_shunt = ppc['bus'][net._pd2ppc_lookups["bus"][b], VM] ** 2 * net["xward"].at[x_id, "pz_mw"]
         internal_results = np.append(internal_results, p_shunt)
@@ -96,18 +99,17 @@ def _get_injection_consumption(net):
     # active power consumption by the internal elements of xward is not adjusted by the distributed slack calculation
     # that is why we add the active power of the internal elements of the xward here
     consumed_p_mw = total_pl_mw + \
-                    net.load.query("in_service").p_mw.sum() - \
-                    net.sgen.query("in_service").p_mw.sum() + \
+                    net.load[net.load.in_service].p_mw.sum() - \
+                    net.sgen[net.load.in_service].p_mw.sum() + \
                     xward_internal.sum()
-    injected_p_mw = net.gen.query("in_service").p_mw.sum()
+    injected_p_mw = net.gen[net.gen.in_service].p_mw.sum()
     # we return the xward power separately because it is also already considered in the inputs and results
-    return injected_p_mw, consumed_p_mw, net.xward.query("in_service").ps_mw.sum()
+    return injected_p_mw, consumed_p_mw, net.xward[net.xward.in_service].ps_mw.sum()
 
 
 def _get_slack_weights(net):
-    slack_weights = np.r_[net.gen.query("in_service").slack_weight,
-    net.ext_grid.query("in_service").slack_weight,
-    net.xward.query("in_service").slack_weight]
+    slack_weights = np.r_[net.gen[net.gen.in_service].slack_weight, net.ext_grid[net.ext_grid.in_service].slack_weight,
+            net.xward[net.xward.in_service].slack_weight]
     return slack_weights / sum(slack_weights)
 
 
@@ -116,9 +118,9 @@ def _get_inputs_results(net):
     # that is why we only consider the active power consumption by the PQ load of the xward here
     xward_pq_res, _ = _get_xward_result(net)
     # xward is in the consumption reference system, but here the results are all assumed in the generation reference system
-    inputs = np.r_[net.gen.query("in_service").p_mw,
-    np.zeros(len(net.ext_grid.query("in_service"))),
-    -net.xward.query("in_service").ps_mw]
+    inputs = np.r_[net.gen[net.gen.in_service].p_mw,
+    np.zeros(len(net.ext_grid[net.ext_grid.in_service])),
+    -net.xward[net.xward.in_service].ps_mw]
     results = np.r_[net.res_gen[net.gen.in_service].p_mw,
     net.res_ext_grid[net.ext_grid.in_service].p_mw,
     -xward_pq_res]
@@ -134,8 +136,11 @@ def assert_results_correct(net, tol=1e-8):
     # assert power balance is correct
     assert abs(result_p_mw.sum() - consumed_p_mw) < tol, "power balance is wrong"
     # assert results are according to the distributed slack formula
-    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw,
-                       atol=tol, rtol=0), "distributed slack weights formula has a wrong result"
+    assert np.allclose(
+        input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw,
+        atol=tol,
+        rtol=0
+    ), "distributed slack weights formula has a wrong result"
 
 
 def check_xward_results(net, tol=1e-9):
