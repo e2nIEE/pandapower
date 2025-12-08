@@ -160,7 +160,7 @@ def run_and_assert_numba(net, **kwargs):
 
 def test_get_xward_result():
     # here we test the helper function that calculates the internal and PQ load results separately
-    # it separates the results of other node ellments at the same bus, but only works for 1 xward at a bus
+    # it separates the results of other node elements at the same bus, but only works for 1 xward at a bus
     net = small_example_grid()
     create_xward(net, 2, 100, 0, 0, 0, 0.02, 0.2, 1)
     create_load(net, 2, 50, 0, 0, 0, 0.02, 0.2, 1)
