@@ -53,7 +53,7 @@ def create_sgen(
     current_source: bool = True,
     generator_type: GeneratorType = pd.NA,
     max_ik_ka: float = pd.NA,
-    kappa: float = pd.NA,
+    kappa: float = nan,
     lrc_pu: float = pd.NA,
     **kwargs,
 ) -> Int:
@@ -188,7 +188,7 @@ def create_sgen(
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen")
 
     _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
-    _set_value_if_not_nan(net, index, kappa, "kappa", "sgen")
+    _set_value_if_not_nan(net, index, kappa, "kappa", "sgen", default_val=nan)
     _set_value_if_not_nan(
         net, index, generator_type, "generator_type", "sgen", default_val="current_source"
     )
@@ -231,7 +231,7 @@ def create_sgens(
     current_source: bool | Iterable[bool] = True,
     generator_type: GeneratorType = "current_source",
     max_ik_ka: float = pd.NA,
-    kappa: float = pd.NA,
+    kappa: float = nan,
     lrc_pu: float = pd.NA,
     **kwargs,
 ) -> npt.NDArray[Int]:
@@ -357,7 +357,7 @@ def create_sgens(
         net, "sgen", entries, index, "controllable", controllable, dtype=bool_, default_val=False
     )
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa", kappa)  # is used for Type C also as a max. current limit
+    _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa", kappa, default_val=nan)  # is used for Type C also as a max. current limit
     _add_to_entries_if_not_nan(
         net, "sgen", entries, index, "generator_type", generator_type, dtype="str", default_val="current_source"
     )
