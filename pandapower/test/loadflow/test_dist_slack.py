@@ -108,8 +108,11 @@ def _get_injection_consumption(net):
 
 
 def _get_slack_weights(net):
-    slack_weights = np.r_[net.gen[net.gen.in_service].slack_weight, net.ext_grid[net.ext_grid.in_service].slack_weight,
-            net.xward[net.xward.in_service].slack_weight]
+    slack_weights = np.r_[
+        net.gen[net.gen.in_service].slack_weight if "slack_weight" in net.gen.columns else [],
+        net.ext_grid[net.ext_grid.in_service].slack_weight if "slack_weight" in net.ext_grid.columns else [],
+        net.xward[net.xward.in_service].slack_weight if "slack_weight" in net.xward.columns else []
+    ]
     return slack_weights / sum(slack_weights)
 
 
