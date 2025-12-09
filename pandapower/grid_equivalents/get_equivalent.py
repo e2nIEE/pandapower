@@ -301,7 +301,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                 else:
                     new_idx = []
             else:
-                names = net_eq[elm].name.astype(str) if "name" in net_eq[elm].columns else pd.Series([""] * len(net_eq[elm].index))
+                names = net_eq[elm].name.astype(str) if "name" in net_eq[elm].columns else pd.Series("", index=net_eq[elm].index)
                 if elm in ["bus", "sgen", "gen", "load"]:
                     buses = net_eq.bus.index if elm == "bus" else net_eq[elm].bus
                     new_idx = net_eq[elm].index[names.str.contains("_integrated") |
