@@ -61,6 +61,7 @@ def test_voltctrl_droop():
     runpp(net, run_control=False)
     assert (abs(net.res_bus.loc[1, "vm_pu"] - 0.999648) < tol)
     runpp(net, run_control=True)
+    assert(net.controller.object[0].converged == True and net.controller.object[1].converged == True)
     assert (abs(net.res_bus.loc[1, "vm_pu"] - (1.02 + net.res_trafo.loc[0, "q_hv_mvar"] / 40)) < tol)
 
 
@@ -108,6 +109,7 @@ def test_qctrl_droop():
     runpp(net, run_control=False)
     assert (abs(net.res_line.loc[0, "q_to_mvar"] - (-1e-13)) < tol)
     runpp(net, run_control=True)
+    assert (net.controller.object[0].converged == True and net.controller.object[1].converged == True)
     assert (abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
                 net.controller.object[1].q_set_mvar_bsc + (net.res_bus.loc[1, "vm_pu"] - 0.995) * 40)) < tol)
 

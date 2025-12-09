@@ -13,7 +13,7 @@ from pandapower.create import create_transformer, create_line, create_transforme
 from pandapower.groups import group_element_index, count_group_elements
 from pandapower.networks.cigre_networks import create_cigre_network_mv, create_cigre_network_lv
 from pandapower.networks.create_examples import example_simple, example_multivoltage
-from pandapower.networks.ieee_europen_lv_asymmetric import ieee_european_lv_asymmetric
+from pandapower.networks.ieee_european_lv_asymmetric import ieee_european_lv_asymmetric
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system

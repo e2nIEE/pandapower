@@ -56,7 +56,8 @@ def from_pf(
         handle_us: Literal["Deactivate", "Drop", "Nothing"] = "Deactivate",
         max_iter=None,
         is_unbalanced=False,
-        create_sections=True
+        create_sections=True,
+        export_pf_ZoneArea=False
 ):
     global line_dict, trafo_dict, trafo3w_dict, impedance_dict, switch_dict, bus_dict, grf_map
     line_dict = {}
@@ -91,7 +92,7 @@ def from_pf(
     # ist leider notwendig
     n = 0
     for n, bus in enumerate(dict_net['ElmTerm'], 1):
-        create_pp_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced)
+        create_pp_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced, export_pf_ZoneArea=export_pf_ZoneArea)
     if n > 0: logger.info('imported %d buses' % n)
 
     logger.debug('creating external grids')
@@ -360,6 +361,14 @@ def from_pf(
                 min_q_mvar, max_q_mvar = get_min_max_q_mvar_from_characteristics_object(net, element, eid)
                 net[element].loc[eid, 'min_q_mvar'] = min_q_mvar
                 net[element].loc[eid, 'max_q_mvar'] = max_q_mvar
+                
+    if export_pf_ZoneArea:
+        if "pf_zone" not in net.bus.columns:
+            net.bus["pf_zone"] = None
+        if "pf_area" not in net.bus.columns:
+            net.bus["pf_area"] = None
+        cols = ["pf_area", "pf_zone"]
+        net.bus[cols] = net.bus[cols].where(net.bus[cols].notna(), None)
 
     logger.info('imported net')
     return net
@@ -420,7 +429,7 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
                     net[element].loc[element_id, attr_dict[attr]] = chr_name[0]
 
 
-def create_pp_bus(net, item, flag_graphics, is_unbalanced):
+def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
     # add geo data
     if flag_graphics == 'GPS':
         x = item.GetAttribute('e:GPSlon')
@@ -472,6 +481,20 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
                                   f"but f{item.loc_name} has system type {system_type}")
     # add the bus to the bus dictionary
     bus_dict[item] = bid
+
+    if export_pf_ZoneArea:
+        if "pf_zone" not in net.bus.columns:
+            net.bus["pf_zone"] = None
+        if "pf_area" not in net.bus.columns:
+            net.bus["pf_area"] = None
+        try:
+            net.bus.loc[bid, "pf_zone"] = item.cpZone.loc_name
+        except AttributeError:
+            net.bus.loc[bid, "pf_zone"] = None
+        try:
+            net.bus.loc[bid, "pf_area"] = item.cpArea.loc_name
+        except AttributeError:
+            net.bus.loc[bid, "pf_area"] = None
 
     get_pf_bus_results(net, item, bid, is_unbalanced, system_type)
 

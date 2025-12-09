@@ -281,11 +281,10 @@ class BinarySearchControl(Controller):
 
                 self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
                 self.converged = np.all(np.abs(self.diff) < self.tol)
-        if self.overwrite_covergence:
-            self.overwrite_covergence = False
-            return False
-        else:
-            return self.converged
+        if self.converged and net.controller['object'].apply(
+                lambda obj: getattr(obj, 'controller_idx', None) == self.index and not getattr(obj, 'converged', True)).any():
+            self.converged = False
+        return self.converged
 
     def control_step(self, net):
         self._binarysearchcontrol_step(net)
@@ -544,11 +543,7 @@ class DroopControl(Controller):
             input_sign = np.asarray(net.controller.at[self.controller_idx, "object"].input_sign)
             input_values = (input_sign * np.asarray(input_values)).tolist()
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point - sum(input_values))
-        if self.bus_idx is None:
-            self.converged = np.all(np.abs(self.diff) < self.tol)
-        else:
-            self.converged = net.controller.at[self.controller_idx, "object"].converged
-
+        self.converged = np.all(np.abs(self.diff) < self.tol)
         return self.converged
 
     def control_step(self, net):
