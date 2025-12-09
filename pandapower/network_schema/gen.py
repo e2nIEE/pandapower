@@ -94,8 +94,8 @@ _gen_columns = {
         metadata={"qcc": True},
     ),
     "reactive_capability_curve": pa.Column(
-        pd.BooleanDtype,
-        nullable=True,
+        bool,
+        nullable=False,
         required=False,
         description="True if generator has dependency on q characteristic",
         metadata={"qcc": True},

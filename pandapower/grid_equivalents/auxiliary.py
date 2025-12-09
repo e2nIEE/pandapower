@@ -269,8 +269,11 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
     if elms is None:
         elms = ["ext_grid", "bus", "impedance"]
     for elm in elms:
-        target_elm_idx = net[elm].index[net[elm].name.astype(str).str.contains(
-            "assist_" + elm, na=False, regex=False)]
+        if 'name' in net[elm].columns:
+            names = net[elm].name.str.contains("assist_" + elm, na=False, regex=False)
+        else:
+            names = pd.Series(False, index=net[elm].index)
+        target_elm_idx = net[elm].index[names]
         net[elm] = net[elm].drop(target_elm_idx)
         if net["res_" + elm].shape[0]:
             res_target_elm_idx = net["res_" +

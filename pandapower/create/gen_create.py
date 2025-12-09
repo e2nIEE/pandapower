@@ -46,7 +46,7 @@ def create_gen(
     type: str = pd.NA,
     slack: bool = False,
     id_q_capability_characteristic: int | None = pd.NA,
-    reactive_capability_curve: bool = pd.NA,
+    reactive_capability_curve: bool | None = None,
     curve_style: str | None = pd.NA,
     controllable: bool | Iterable[bool] = pd.NA,
     vn_kv: float = pd.NA,
@@ -66,83 +66,47 @@ def create_gen(
     is active power and a voltage set point. If you want to model a generator as PQ load with fixed
     reactive power and variable voltage, please use a static generator instead.
 
-    INPUT:
-        **net** - The net within this generator should be created
+    Parameters::
+        net: The net within this generator should be created
+        bus: The bus id to which the generator is connected
+        p_mw: The active power of the generator (positive for generation!)
+        vm_pu: The voltage set point of the generator.
+        sn_mva: Nominal power of the generator
+        name: The name for this generator
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        scaling: scaling factor applying to the active power of the generator
+        type: type variable to classify generators
+        slack: flag that sets the generator as slack if True
+        reactive_capability_curve: True if both the id_q_capability_characteristic and the curve_style are present for
+            the generator
+        id_q_capability_characteristic: references the index of the characteristic from the
+            net.q_capability_characteristic table (id_q_capability_curve column)
+        curve_style: The curve style of the generator represents the relationship between active power (P) and reactive
+            power (Q). It indicates whether the reactive power remains constant as the active power changes or varies
+            dynamically in response to it, e.g. "straightLineYValues" and "constantYValue".
+        controllable: True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF;
+            False: p_mw and vm_pu set points are enforced and *limits are ignored*.
+        slack_weight: Contribution factor for distributed slack power flow calculation (active power balancing)
+        vn_kv: Rated voltage of the generator for short-circuit calculation
+        xdss_pu: Subtransient generator reactance for short-circuit calculation
+        rdss_ohm: Subtransient generator resistance for short-circuit calculation
+        cos_phi: Rated cosine phi of the generator for short-circuit calculation
+        pg_percent: Rated pg (voltage control range) of the generator for short-circuit calculation
+        power_station_trafo: Index of the power station transformer for short-circuit calculation
+        in_service: True for in_service or False for out of service
+        max_p_mw: Maximum active power injection - necessary for OPF
+        min_p_mw: Minimum active power injection - necessary for OPF
+        max_q_mvar: Maximum reactive power injection - necessary for OPF
+        min_q_mvar: Minimum reactive power injection - necessary for OPF
+        min_vm_pu: Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.
+        max_vm_pu: Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.
 
-        **bus** (int) - The bus id to which the generator is connected
+    Returns:
+        The unique ID of the created generator
 
-        **p_mw** (float) - The active power of the generator (positive for generation!)
-
-    OPTIONAL:
-        **vm_pu** (float, default 0) - The voltage set point of the generator.
-
-        **sn_mva** (float, NaN) - Nominal power of the generator
-
-        **name** (string, None) - The name for this generator
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **scaling** (float, 1.0) - scaling factor applying to the active power of the generator
-
-        **type** (string, None) - type variable to classify generators
-
-        **slack** (bool, False) - flag that sets the generator as slack if True
-
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_characteristic and the \
-            curve style are present in the generator
-
-        **id_q_capability_characteristic** (int, None) - references the index of the characteristic from \
-            the net.q_capability_characteristic table (id_q_capability_curve column)
-
-        **curve_style** (string, None) - The curve style of the generator represents the relationship \
-            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-            constant as the active power changes or varies dynamically in response to it, \
-            e.g. "straightLineYValues" and "constantYValue".
-
-        **controllable** (bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
-                generator in OPF; False: p_mw and vm_pu set points are enforced and *limits are ignored*. \
-                Defaults to True if "controllable" column exists in DataFrame.
-
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power \
-            flow calculation (active power balancing)
-
-        **vn_kv** (float, NaN) - Rated voltage of the generator for short-circuit calculation
-
-        **xdss_pu** (float, NaN) - Subtransient generator reactance for short-circuit calculation
-
-        **rdss_ohm** (float, NaN) - Subtransient generator resistance for short-circuit calculation
-
-        **cos_phi** (float, NaN) - Rated cosine phi of the generator for short-circuit calculation
-
-        **pg_percent** (float, NaN) - Rated pg (voltage control range) of the generator for \
-            short-circuit calculation
-
-        **power_station_trafo** (int, None) - Index of the power station transformer for \
-            short-circuit calculation
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **max_p_mw** (float, default NaN) - Maximum active power injection - necessary for OPF
-
-        **min_p_mw** (float, default NaN) - Minimum active power injection - necessary for OPF
-
-        **max_q_mvar** (float, default NaN) - Maximum reactive power injection - necessary for OPF
-
-        **min_q_mvar** (float, default NaN) - Minimum reactive power injection - necessary for OPF
-
-        **min_vm_pu** (float, default NaN) - Minimum voltage magnitude. If not set, the bus voltage \
-                                             limit is taken - necessary for OPF.
-
-        **max_vm_pu** (float, default NaN) - Maximum voltage magnitude. If not set, the bus voltage \
-                                             limit is taken - necessary for OPF
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created generator
-
-    EXAMPLE:
-        create_gen(net, 1, p_mw=120, vm_pu=1.02)
-
+    Example:
+        >>> create_gen(net, 1, p_mw=120, vm_pu=1.02)
     """
     _check_element(net, bus)
 
@@ -172,7 +136,7 @@ def create_gen(
     # behaviour of reactive power capability curve
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen")
 
-    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen")
+    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen", default_val=False)
 
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
@@ -213,7 +177,7 @@ def create_gens(
     type: str | Iterable[str] = pd.NA,
     slack: bool | Iterable[bool] = False,
     id_q_capability_characteristic: Int | Iterable[Int] | None = pd.NA,
-    reactive_capability_curve: bool | Iterable[bool] = pd.NA,
+    reactive_capability_curve: bool | Iterable[bool] | None = None,
     curve_style: str | Iterable[str] | None = pd.NA,
     controllable: bool | float | Iterable[bool | float] = pd.NA,
     vn_kv: float | Iterable[float] = pd.NA,
@@ -233,94 +197,47 @@ def create_gens(
     is active power and a voltage set point. If you want to model a generator as PQ load with fixed
     reactive power and variable voltage, please use a static generator instead.
 
-    INPUT:
-        **net** - The net within this generator should be created
+    Parameters:
+        net: The net within this generator should be created
+        buses: The bus ids to which the generators are connected
+        p_mw: The active power of the generator (positive for generation!)
+        vm_pu: The voltage set point of the generator.
+        sn_mva: Nominal power of the generator
+        name: The name for this generator
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        scaling: scaling factor which for the active power of the generator
+        type: type variable to classify generators
+        reactive_capability_curve: True if both the id_q_capability_characteristic and the curve_style are present in
+            the generator.
+        id_q_capability_characteristic: references the index of the characteristic from the lookup table
+            net.q_capability_characteristic
+        curve_style: The curve style of the generator represents the relationship between active power (P) and reactive
+            power (Q). It indicates whether the reactive power remains constant as the active power changes or varies
+            dynamically in response to it.
+            e.g. "straightLineYValues" and "constantYValue"
+        controllable: True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF
+            False: p_mw and vm_pu set points are enforced and *limits are ignored*.
+        vn_kv: Rated voltage of the generator for short-circuit calculation
+        xdss_pu: Subtransient generator reactance for short-circuit calculation
+        rdss_ohm: Subtransient generator resistance for short-circuit calculation
+        cos_phi: Rated cosine phi of the generator for short-circuit calculation
+        pg_percent: Rated pg (voltage control range) of the generator for short-circuit calculation
+        power_station_trafo: Index of the power station transformer for short-circuit calculation
+        in_service: True for in_service or False for out of service
+        slack_weight: Contribution factor for distributed slack power flow calculation (active power balancing)
+        max_p_mw: Maximum active power injection - necessary for OPF
+        min_p_mw: Minimum active power injection - necessary for OPF
+        max_q_mvar: Maximum reactive power injection - necessary for OPF
+        min_q_mvar: Minimum reactive power injection - necessary for OPF
+        min_vm_pu: Minimum voltage magnitude. If not set the bus voltage limit is taken. - necessary for OPF.
+        max_vm_pu: Maximum voltage magnitude. If not set the bus voltage limit is taken. - necessary for OPF
 
-        **buses** (list of int) - The bus ids to which the generators are connected
+    Returns:
+        The unique ID of the created generators
 
-        **p_mw** (list of float) - The active power of the generator (positive for generation!)
-
-    OPTIONAL:
-        **vm_pu** (list of float, default 1) - The voltage set point of the generator.
-
-        **sn_mva** (list of float, NaN) - Nominal power of the generator
-
-        **name** (list of string, None) - The name for this generator
-
-        **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
-            one higher than the highest already existing index is selected.
-
-        **scaling** (list of float, 1.0) - scaling factor which for the active power of the\
-            generator
-
-        **type** (list of string, None) - type variable to classify generators
-
-        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_characteristic and
-        the curve style are present in the generator.
-
-        **id_q_capability_characteristic** (list of ints, None) - references the index of the characteristic from
-            the lookup table net.q_capability_characteristic e.g. 0, 1, 2, 3
-
-        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
-        between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-        constant as the active power changes or varies dynamically in response to it.
-        e.g. "straightLineYValues" and "constantYValue"
-
-        **controllable** (list of bool, NaN) - True: p_mw, q_mvar and vm_pu limits are enforced for this \
-                                       generator in OPF
-                                       False: p_mw and vm_pu set points are enforced and \
-                                       *limits are ignored*.
-                                       defaults to True if "controllable" column exists in DataFrame
-        powerflow
-
-        **vn_kv** (list of float, NaN) - Rated voltage of the generator for short-circuit \
-            calculation
-
-        **xdss_pu** (list of float, NaN) - Subtransient generator reactance for short-circuit \
-            calculation
-
-        **rdss_ohm** (list of float, NaN) - Subtransient generator resistance for short-circuit \
-            calculation
-
-        **cos_phi** (list of float, NaN) - Rated cosine phi of the generator for short-circuit \
-            calculation
-
-        **pg_percent** (list of float, NaN) - Rated pg (voltage control range) of the generator for \
-            short-circuit calculation
-
-        **power_station_trafo** (list of int, NaN) - Index of the power station transformer for \
-            short-circuit calculation
-
-        **in_service** (list of bool, True) - True for in_service or False for out of service
-
-        **slack_weight** (list of float, default 0.0) - Contribution factor for distributed slack power \
-            flow calculation (active power balancing)
-
-        **max_p_mw** (list of float, default NaN) - Maximum active power injection - necessary for\
-            OPF
-
-        **min_p_mw** (list of float, default NaN) - Minimum active power injection - necessary for \
-            OPF
-
-        **max_q_mvar** (list of float, default NaN) - Maximum reactive power injection - necessary\
-            for OPF
-
-        **min_q_mvar** (list of float, default NaN) - Minimum reactive power injection - necessary \
-            for OPF
-
-        **min_vm_pu** (list of float, default NaN) - Minimum voltage magnitude. If not set the \
-                                                     bus voltage limit is taken.
-                                                   - necessary for OPF.
-
-        **max_vm_pu** (list of float, default NaN) - Maximum voltage magnitude. If not set the bus\
-                                                      voltage limit is taken.
-                                                    - necessary for OPF
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created generator
-
-    EXAMPLE:
-        create_gens(net, [1, 2], p_mw=[120, 100], vm_pu=[1.02, 0.99])
+    Example:
+        >>> create_gens(net, [1, 2], p_mw=[120, 100], vm_pu=[1.02, 0.99])
 
     """
     _check_multiple_elements(net, buses)
@@ -339,7 +256,6 @@ def create_gens(
         "type": type,
         "slack": slack,
         "curve_style": curve_style,
-        "reactive_capability_curve": reactive_capability_curve,
         **kwargs,
     }
 
@@ -357,8 +273,11 @@ def create_gens(
     _add_to_entries_if_not_nan(
         net, "gen", entries, index, "id_q_capability_characteristic", id_q_capability_characteristic
     )
-
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "reactive_capability_curve", reactive_capability_curve)
+    
+    if "reactive_capability_curve" in net.gen or reactive_capability_curve is not None:
+        _add_to_entries_if_not_nan(
+            net, "gen", entries, index, "reactive_capability_curve", reactive_capability_curve, default_val=False
+        )
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo", power_station_trafo)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable)
