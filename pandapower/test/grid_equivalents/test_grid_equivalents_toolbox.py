@@ -49,25 +49,29 @@ def boundary_testnet(which):
         # expected_bbr
         expected_bbr = dict()
         expected_bbr["line"] = {create_line_from_parameters(
-            net, net.bus.index[net.bus.name == 9][0], net.bus.index[net.bus.name == 9][1], 1,
-            0, 65, 0, 0.41)}
-        expected_bbr["impedance"] = {create_impedance(net, net.bus.index[net.bus.name == 5][0],
-                                                      net.bus.index[net.bus.name == 5][1], 0, 0.06, 250)}
-        expected_bbr["switch"] = {create_switch(net, net.bus.index[net.bus.name == 7][0],
-                                                net.bus.index[net.bus.name == 7][1], "b")}
+            net, net.bus.index[net.bus.name == '9'][0], net.bus.index[net.bus.name == '9'][1], 1, 0, 65, 0, 0.41
+        )}
+        expected_bbr["impedance"] = {create_impedance(
+            net, net.bus.index[net.bus.name == '5'][0], net.bus.index[net.bus.name == '5'][1], 0, 0.06, 250
+        )}
+        expected_bbr["switch"] = {create_switch(
+            net, net.bus.index[net.bus.name == '7'][0], net.bus.index[net.bus.name == '7'][1], "b"
+        )}
         expected_bbr["trafo"] = {create_transformer_from_parameters(
-            net, net.bus.index[net.bus.name == 8][0], net.bus.index[net.bus.name == 8][1], 250,
-            345, 345, 0, 10, 50, 0)}
+            net, net.bus.index[net.bus.name == '8'][0], net.bus.index[net.bus.name == '8'][1], 250, 345, 345, 0, 10, 50, 0
+        )}
         expected_bbr["trafo3w"] = {create_transformer3w_from_parameters(
-            net, net.bus.index[net.bus.name == 3][0], new_bus, net.bus.index[net.bus.name == 3][1],
-            345, 345, 345, 250, 250, 250, 10, 10, 10, 0, 0, 0, 50, 0)}
+            net, net.bus.index[net.bus.name == '3'][0], new_bus, net.bus.index[net.bus.name == '3'][1], 345, 345, 345, 250, 250, 250, 10, 10, 10, 0, 0, 0, 50, 0
+        )}
 
         # expected_bb
         expected_bb = {key: dict() for key in ["a", "b"]}
-        expected_bb["a"]["internal"] = set(net.bus.index[net.bus.name.isin(
-            [9, 5, 7, 8, 3]) & (net.bus.zone == "a")])
-        expected_bb["a"]["external"] = set(net.bus.index[net.bus.name.isin(
-            [9, 5, 7, 8, 3]) & (net.bus.zone == "b")]) | {new_bus}
+        expected_bb["a"]["internal"] = set(
+            net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "a")]
+        )
+        expected_bb["a"]["external"] = set(
+            net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "b")]
+        ) | {new_bus}
         expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
         expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
 
