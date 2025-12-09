@@ -28,7 +28,7 @@ from pandapower.toolbox.grid_modification import select_subnet, replace_gen_by_s
 def create_test_net():
     net = create_empty_network()
     # buses
-    create_buses(net, 7, 20, zone=[0, 0, 1, 1, 1, 0, 0], name=["bus %i" % i for i in range(7)],
+    create_buses(net, 7, 20, zone=['0', '0', '1', '1', '1', '0', '0'], name=[f"bus {i}" for i in range(7)],
                  min_vm_pu=np.append(np.arange(.9, 0.94, .01), [np.nan, np.nan, np.nan]))
 
     # ext_grid
@@ -217,7 +217,7 @@ def test_basic_usecases():
             check_elements_amount(net1, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
                                          "line": 3, "impedance": 3}, check_all_pp_elements=True)
             check_res_bus(net, net1)
-            assert np.allclose(net1.bus.min_vm_pu.values, np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
+            assert np.allclose(net1.bus.min_vm_pu.values, np.array([0.9, 0.91, 0.0, 0.0, 0.93]), equal_nan=True)
             check_elements_amount(net2, {"bus": 3, "load": 3, "sgen": 0, "shunt": 3, "ext_grid": 0,
                                          "line": 0, "impedance": 2}, check_all_pp_elements=True)
             check_res_bus(net, net2)
@@ -225,7 +225,7 @@ def test_basic_usecases():
             check_elements_amount(net3, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
                                          "line": 3, "impedance": 3}, check_all_pp_elements=True)
             check_res_bus(net, net3)
-            assert np.allclose(net1.bus.min_vm_pu.values, np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
+            assert np.allclose(net1.bus.min_vm_pu.values, np.array([0.9, 0.91, 0.0, 0.0, 0.93]), equal_nan=True)
 
         elif "ward" in eq_type:
             check_elements_amount(net1, {"bus": 4, "load": 2, "sgen": 2, "ext_grid": 1, "line": 3,
