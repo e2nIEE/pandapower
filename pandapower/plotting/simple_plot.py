@@ -265,6 +265,9 @@ def line_info(line):
 
 def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, line_size=1,
                    bus_size=None, plot_scale=6, legend_size=10, legend_position=(1, 0)):
+    """
+
+    """
 
     if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (net.line.geo.isna().any() and net.bus.geo.isna().any()):
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
@@ -274,9 +277,9 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
     if bus_size is None:
         sizes = get_collection_sizes(net)
         bus_size = sizes["bus"]
-    if not lines:
+    if lines is None:
         lines = net.line.index
-    if not buses:
+    if buses is None:
         buses = net.bus.geo.index
     # if bus geodata is available, but no line geodata
     use_bus_geodata = len(net.line.geo.dropna()) == 0
@@ -295,6 +298,9 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
                                edgecolor="black",
                                infofunc=bus_info)
     collection_list.append(bc)
+    legend_titles.append("Buses")
+    legend_handles.append(Line2D([0], [0], markeredgecolor="black",
+                                 color="black", linestyle='', marker="o"))
 
     # open line switches
     open_lines = set(net.switch.loc[(net.switch.et == "l") &
