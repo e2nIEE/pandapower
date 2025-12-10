@@ -231,13 +231,13 @@ def hover(event, ax, net, hover_text):
                     if isinstance(info, tuple):
                         element, index = info
                         if element == "bus":
-                            hover_info = f"Bus: {net.bus.name.at[index]} | Index: {index}"
+                            hover_info = f"Name: {net.bus.name.at[index]} | Index: {index}"
                         elif element == "line":
-                            hover_info = f"Line: {net.line.name.at[index]} | Index: {index}"
+                            hover_info = f"Name: {net.line.name.at[index]} | Index: {index}"
                         elif element == "trafo":
-                            hover_info = f"Transformer: {net.trafo.name.at[index]} | Index: {index}"
+                            hover_info = f"Name: {net.trafo.name.at[index]} | Index: {index}"
                         elif element == "trafo3w":
-                            hover_info = f"Threephase-Transformer: {net.trafo3w.name.at[index]} | Index: {index}"
+                            hover_info = f"Name: {net.trafo3w.name.at[index]} | Index: {index}"
 
                         # set text and position
                         hover_text.set_text(hover_info)
@@ -264,90 +264,96 @@ def line_info(line):
 
 
 def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, line_size=1,
-                   bus_size=None, plot_scale=6, legend_size=10, legend_position=(1, 0),
-                   ):
+                   bus_size=None, plot_scale=6, legend_size=10, legend_position=(1, 0)):
+
+    if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (net.line.geo.isna().any() and net.bus.geo.isna().any()):
+        logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
+                       " This may take some time")
+        create_generic_coordinates(net)
+
     if bus_size is None:
         sizes = get_collection_sizes(net)
         bus_size = sizes["bus"]
     if not lines:
-        lines = net.line_geodata.index
+        lines = net.line.index
     if not buses:
-        buses = net.bus_geodata.index
+        buses = net.bus.geo.index
+    # if bus geodata is available, but no line geodata
+    use_bus_geodata = len(net.line.geo.dropna()) == 0
 
     collection_list = list()
     legend_titles = list()
     legend_handles = list()
 
-    bus_color = "grey"
-    bus_patch = "circle"
-
-    if hl_buses:
-        mc = create_bus_collection(net,
-                                        hl_buses,
-                                        size=0.25 * bus_size,
-                                        patch_type="circle",
-                                        zorder=10,
-                                        facecolor="red",
-                                        edgecolor="red",
-                                        infofunc=bus_info,
-                                        )
-        collection_list.append(mc)
-        legend_titles.append("Highlighted buses")
-        legend_handles.append(Line2D([0], [0], markeredgecolor="red",
-                                     color="red", linestyle='', marker="o"))
-    if hl_lines:
-        ml = create_line_collection(net,
-                                         hl_lines,
-                                         linewidth=4 * line_size,
-                                         zorder=11,
-                                         color="red",
-                                         infofunc=line_info,
-                                         )
-        collection_list.append(ml)
-        legend_titles.append("Highlighted lines")
-        legend_handles.append(Line2D([0], [0], color="red"))
-
+    # buses
     bc = create_bus_collection(net,
-                                     buses,
-                                     size=0.125 * bus_size,
-                                     patch_type=bus_patch,
-                                     zorder=2,
-                                     facecolor=bus_color,
-                                     edgecolor=bus_color,
-                                     infofunc=bus_info,
-                                     )
+                               buses,
+                               size=0.5*bus_size,
+                               patch_type="circle",
+                               zorder=1,
+                               facecolor="black",
+                               edgecolor="black",
+                               infofunc=bus_info)
     collection_list.append(bc)
 
     # open line switches
     open_lines = set(net.switch.loc[(net.switch.et == "l") &
                                 (net.switch.closed == False)].element.values.tolist())
 
+    # lines
+    lc = create_line_collection(net,
+                                lines=list(set(lines)-set(open_lines)),
+                                zorder=1,
+                                color="black",
+                                linewidths=3 * line_size,
+                                use_bus_geodata=use_bus_geodata,
+                                infofunc=line_info)
+    collection_list.append(lc)
+    legend_titles.append("Lines")
+    legend_handles.append(Line2D([0], [0], color="black"))
+
     open_lines = list(set(open_lines).intersection(lines))
     if len(open_lines):
         # open tie line
         open_lines_coll = create_line_collection(net,
-                                                lines=open_lines,
-                                                zorder=0,
-                                                color="grey",
-                                                linestyle="dashed",
-                                                linewidths=2 * line_size,
-                                                infofunc=line_info)
+                                                 lines=open_lines,
+                                                 zorder=0,
+                                                 color="grey",
+                                                 linestyle="dashed",
+                                                 linewidths=2 * line_size,
+                                                 use_bus_geodata=use_bus_geodata,
+                                                 infofunc=line_info)
         open_lines_coll.set_dashes((0, (0.8, 1.5)))
         collection_list.append(open_lines_coll)
 
         legend_titles.append("Open Tie Line")
-        legend_handles.append(Line2D([0], [0], color="grey", linestyle="dashed"))
+        legend_handles.append(Line2D([0], [0], color="black", linestyle="dashed"))
 
-    # lines
-    lc = create_line_collection(net,
-                                lines=list(set(lines)-set(open_lines)),
-                                zorder=2,
-                                color="grey",
-                                linewidths=3 * line_size,
-                                infofunc=line_info)
-    collection_list.append(lc)
-    legend_titles.append("Lines")
-    legend_handles.append(Line2D([0], [0], color="grey"))
+    # highlight
+    if hl_buses is not None:
+        hb = create_bus_collection(net,
+                                   hl_buses,
+                                   size=bus_size,
+                                   patch_type="circle",
+                                   zorder=2,
+                                   facecolor="red",
+                                   edgecolor="red",
+                                   infofunc=bus_info)
+        collection_list.append(hb)
+        legend_titles.append("Highlighted buses")
+        legend_handles.append(Line2D([0], [0], markeredgecolor="red",
+                                     color="red", linestyle='', marker="o"))
+    if hl_lines is not None:
+        hl = create_line_collection(net,
+                                    hl_lines,
+                                    linewidth=4 * line_size,
+                                    zorder=2,
+                                    color="red",
+                                    use_bus_geodata=use_bus_geodata,
+                                    infofunc=line_info)
+        collection_list.append(hl)
+        legend_titles.append("Highlighted lines")
+        legend_handles.append(Line2D([0], [0], color="red"))
 
 
     # show plot
@@ -357,7 +363,7 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
 
     hover_text = ax.text(0, 0, "", fontsize=12, fontweight="bold", color='white',
                          ha='center', va='center', zorder=99, bbox=dict(boxstyle="round",
-                         facecolor='#1c3f52', alpha=1, edgecolor='#1c3f52'))
+                         facecolor='black', alpha=1, edgecolor='black'))
 
     hover_text.set_visible(False)
     fig.canvas.mpl_connect("motion_notify_event", lambda event: hover(event, ax, net, hover_text))
@@ -370,9 +376,13 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
 if __name__ == "__main__":
     from pandapower.networks.power_system_test_cases import case145
     # from pandapower.networks.cigre_networks import create_cigre_network_mv
-    # from pandapower.networks.mv_oberrhein import mv_oberrhein
-
-    net = case145()
+    from pandapower.networks.mv_oberrhein import mv_oberrhein
+    # net = case145()
     #    net = nw.create_cigre_network_mv()
-    #    net = nw.mv_oberrhein()
-    simple_plot(net, bus_size=0.4)
+    net = mv_oberrhein()
+    # simple_plot(net, bus_size=0.4)
+    ol_lines = net.line.loc[net.line.type=="ol"].index
+    ol_buses = net.bus.index[net.bus.index.isin(net.line.from_bus.loc[ol_lines]) |
+                             net.bus.index.isin(net.line.to_bus.loc[ol_lines])]
+
+    simple_hl_plot(net, hl_lines=ol_lines, hl_buses=ol_buses)
