@@ -30,7 +30,7 @@ from pandapower.toolbox import nets_equal, dataframes_equal
 from pandapower.topology.create_graph import create_nxgraph
 
 try:
-    import cryptography.fernet
+    import cryptography.fernet # type: ignore
 
     cryptography_INSTALLED = True
 except ImportError:
@@ -653,6 +653,23 @@ def test_ignore_unknown_objects():
     net4.controller.object.at[0] = net.controller.object.at[0]
     assert_net_equal(net, net3)
     assert_net_equal(net, net4)
+
+
+def test_omitting_tables_from_json(net_in):
+    net = copy.deepcopy(net_in)
+    ConstControl(net, 'load', 'p_mw', 0)
+    json_string = to_json(net)
+    net1 = from_json(json_string, omit_tables=['controller'])
+    net2 = from_json(json_string)
+    net3 = from_json(json_string, omit_modules=['control.controller'])
+
+    assert(nets_equal(net, net2))
+    assert(not nets_equal(net, net1))
+    net.controller.drop(0, inplace=True)
+    assert(nets_equal(net, net1))
+    assert(not nets_equal(net, net3))
+    net3.controller.drop(net3.controller.index, inplace=True)
+    assert(nets_equal(net, net3))
 
 
 if __name__ == "__main__":

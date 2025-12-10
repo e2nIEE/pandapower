@@ -21,6 +21,7 @@ def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
         'ElmSvs',
         'ElmVsc',
         'ElmVscmono',
+        'ElmSvs',
 
 
         # branch elements:
@@ -45,29 +46,6 @@ def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
         'ElmStactrl'
     }
 
-    # here define all element types that have to be configured to have MW as power values
-    elm_units = {
-        'ElmLod': ['W', 'var', 'VA'],
-        'ElmLodlv': ['W', 'var', 'VA'],
-        'ElmLodlvp': ['W', 'var', 'VA'],
-        'ElmLodmv': ['W', 'var', 'VA'],
-        'ElmGenstat': ['W', 'var', 'VA'],
-        'ElmPvsys': ['W', 'var', 'VA'],
-        'ElmXnet': ['W', 'var', 'VA'],
-        'ElmSym': ['W', 'var', 'VA'],
-        'ElmSvs': ['W', 'var', 'VA'],
-        'ElmAsm': ['W', 'var', 'VA'],
-        'ElmShnt': ['W', 'var', 'VA'],
-        'ElmZpu': ['W', 'var', 'VA'],
-        'ElmSind': ['W', 'var', 'VA', 'V'],
-        'ElmScap': ['W', 'var', 'VA', 'V'],
-        'ElmVac': ['W', 'var', 'VA'],
-        'ElmTr2': ['W', 'var'],
-        'ElmTr3': ['W', 'var'],
-        'TypTr2': ['W', 'var', 'VA'],
-        'TypTr3': ['W', 'var', 'VA'],
-        'TypLne': ['A', 'm']
-    }
 
     # make all values in MW
     logger.info('applying unit settings')
@@ -197,8 +175,10 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     # com_ldf.erreq = 0.01
 
     if com_ldf.iopt_sim == 1:
-        logger.warning(f'Calculation method probabilistic loadflow of lv-loads is activated!'
-                       f' The validation will not succeed.')
+        logger.warning('Calculation method probabilistic loadflow of lv-loads is activated!'
+                       ' The validation will not succeed.')
+    if com_ldf.iopt_igntow == 1:
+        logger.warning('Line coupling model will be neglected.')
     if load_scaling is not None:
         logger.debug('scaling loads at %.2f' % load_scaling)
         com_ldf.scLoadFac = load_scaling

@@ -36,13 +36,13 @@ def test_add_column_from_node_to_elements():
         for elm in elements:
             if "bus" in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values,
-                                          np.array(["subnet_%i" % bus for bus in ntw[elm].bus])))
+                                          np.array([f"subnet_{bus}" for bus in ntw[elm].bus]).astype(object)))
             elif branch_bus_el[0] in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values, np.array([
-                    "subnet_%i" % bus for bus in ntw[elm][branch_bus_el[0]]])))
+                    f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[0]]]).astype(object)))
             elif branch_bus_el[1] in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values, np.array([
-                    "subnet_%i" % bus for bus in ntw[elm][branch_bus_el[1]]])))
+                    f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[1]]]).astype(object)))
 
     check_subnet_correctness(net, pp_elements(bus=False) - {"sgen"}, branch_bus)
 

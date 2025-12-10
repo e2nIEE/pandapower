@@ -6,6 +6,7 @@
 from math import pi
 import numpy as np
 import pandas as pd
+from pandapower.auxiliary import pandapowerNet
 from pandapower.pypower.idx_bus import \
     BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, VA, BASE_KV, ZONE, VMAX, VMIN
 from pandapower.pypower.idx_gen import \
@@ -24,34 +25,29 @@ logger = logging.getLogger(__name__)
 ppc_elms = ["bus", "branch", "gen"]
 
 
-def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
+def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet:
     """
     This function converts pypower case files to pandapower net structure.
 
-    INPUT:
-        **ppc** (dict) -  The pypower case file.
+    Parameters:
+        ppc (dict): The pypower case file.
+        f_hz (int): The frequency of the network, by default 50
+        validate_conversion (bool): If True, validate_from_ppc is run after conversion. For running the validation, the ppc must already contain the pypower powerflow results or pypower must be installed, by default False
+        kwargs (dict): keyword arguments for:
+            - validate_from_ppc if validate_conversion is True
+            - tap_side
+            - check_costs is passed as "check" to create_pwl_costs() and create_poly_costs()
+            - branch_g_name: name of branch_g column if it exists in ppc. if not given, branch G is set to 0
 
-        **f_hz** (int) - The frequency of the network, by default 50
+    Returns:
+        ppc converted to pandapower net structure
 
-        **validate_conversion** (bool) - If True, validate_from_ppc is run after conversion. For running the validation, the ppc must already contain the pypower powerflow results or pypower must be installed, by default False
-
-        **kwargs** (dict) - keyword arguments for:
-                            - validate_from_ppc if validate_conversion is True
-
-                            - tap_side
-
-                            - check_costs is passed as "check" to create_pwl_costs() and create_poly_costs()
-                            
-                            - branch_g_name: name of branch_g column if it exists in ppc. if not given, branch G is set to 0
-
-    OUTPUT:
-        **net** - ppc converted to pandapower net structure
-
-    EXAMPLES:
-        >>> import pandapower
+    Example:
+        >>> from pandapower.converter.pypower.from_ppc import from_ppc
         >>> from pandapower.test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
-        >>> net = pandapower.converter.pypower.from_ppc(ppc, f_hz=60)
+        >>> net = from_ppc(ppc, f_hz=60)
+
     """
     # --- catch common failures
     if np.any(ppc['bus'][:, BASE_KV] <= 0):

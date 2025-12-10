@@ -87,7 +87,7 @@ def create_switch(
 
     """
     _check_element(net, bus)
-    match(et):
+    match et:
         case "l":
             elm_tab = "line"
             if element not in net[elm_tab].index:
