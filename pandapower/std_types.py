@@ -207,16 +207,11 @@ def delete_std_type(net, name, element="line"):
 def rename_std_type(net, old_name, new_name, element="line"):
     """Renames an existing standard type in the standard type library and the element table.
 
-    Parameters
-    ----------
-    net : pp.pandapowerNet
-        pandapower net
-    old_name : str
-        old name to be replaced
-    new_name : str
-        new name of the standard type
-    element : str, optional
-        type of element, by default "line"
+    Parameter:
+        net: pandapower net
+        old_name: old name to be replaced
+        new_name: new name of the standard type
+        element: type of element, by default "line"
     """
     library = net.std_types[element]
     if old_name not in library:
@@ -256,19 +251,14 @@ def parameter_from_std_type(net, parameter, element="line", fill=None):
     that is not included in the original pandapower datastructure but is available in the standard
     type database.
 
-    INPUT:
-        **net** - pandapower network
+    Parametrs:
+        net: pandapower network
+        parameter: name of parameter as string
+        element: type of element ("line" or "trafo")
+        fill: fill-value that is assigned to all lines/trafos without a value for the parameter, either because the
+            line/trafo has no type or because the type does not have a value for the parameter
 
-        **parameter** - name of parameter as string
-
-        **element** - type of element ("line" or "trafo")
-
-        **fill** - fill-value that is assigned to all lines/trafos without
-            a value for the parameter, either because the line/trafo has no type or because the
-            type does not have a value for the parameter
-
-    EXAMPLE:
-
+    Example:
         >>> from pandapower import parameter_from_std_type
         >>> from pandapower.networks import simple_mv_open_ring_net
         >>>
@@ -294,21 +284,20 @@ def change_std_type(net, eid, name, element="line"):
     Changes the type of a given element in pandapower. Changes only parameter that are given
     for the type.
 
-    INPUT:
-        **net** - pandapower network
-
-        **eid** - element index (either line or transformer index)
-
-        **element** - type of element ("line" or "trafo")
-
-        **name** - name of the new standard type
-
+    Parameters:
+        net: pandapower network
+        eid: element index (either line or transformer index)
+        name: name of the new standard type
+        element: type of element ("line" or "trafo")
     """
     type_param = load_std_type(net, name, element)
     table = net[element]
     for column in table.columns:
         if column in type_param:
             table.at[eid, column] = type_param[column]
+    # add column if not present and init it to pd.NA
+    if "std_type" not in table.columns:
+        table["std_type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype())
     table.at[eid, "std_type"] = name
 
 

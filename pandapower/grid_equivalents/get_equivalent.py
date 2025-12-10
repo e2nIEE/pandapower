@@ -267,9 +267,9 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
     if return_internal:
         logger.debug("Merging of internal and equivalent network begins.")
         if len(kwargs.get("central_controller_types", [])):
-            net_internal.controller.drop([idx for idx in net_internal.controller.index if any([
+            net_internal.controller.drop([idx for idx in net_internal.controller.index if any(
                 isinstance(net_internal.controller.object.at[idx], central_controller_type) for
-                central_controller_type in kwargs["central_controller_types"]])], inplace=True)
+                central_controller_type in kwargs["central_controller_types"])], inplace=True)
         net_eq = merge_internal_net_and_equivalent_external_net(
             net_eq, net_internal, show_computing_time=show_computing_time,
             calc_volt_angles=calculate_voltage_angles)
@@ -301,7 +301,7 @@ def get_equivalent(net, eq_type, boundary_buses, internal_buses,
                 else:
                     new_idx = []
             else:
-                names = net_eq[elm].name.astype(str) if "name" in net_eq[elm].columns else pd.Series([""] * len(net_eq[elm].index))
+                names = net_eq[elm].name.astype(str) if "name" in net_eq[elm].columns else pd.Series("", index=net_eq[elm].index)
                 if elm in ["bus", "sgen", "gen", "load"]:
                     buses = net_eq.bus.index if elm == "bus" else net_eq[elm].bus
                     new_idx = net_eq[elm].index[names.str.contains("_integrated") |
@@ -395,9 +395,9 @@ def merge_internal_net_and_equivalent_external_net(
         try:
             name = merged_net.bus[fuse_bus_column].loc[bus]
         except:
-            print(fuse_bus_column)
-            print(merged_net.bus.columns)
-            print()
+            logger.info("fuse_bus_column")
+            logger.info("merged_net.bus.columns")
+            logger.info("")
         target_buses = merged_net.bus.index[merged_net.bus[fuse_bus_column] == name]
         if len(target_buses) != 2:
             raise ValueError(
@@ -576,39 +576,3 @@ def _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal):
         be_buses_after_merge = bus_lookups["bus_lookup_pd"]["b_area_buses"] + \
                                bus_lookups["bus_lookup_pd"]["e_area_buses"]
     return ib_buses_after_merge, be_buses_after_merge
-
-
-if __name__ == "__main__":
-    """ --- quick test --- """
-    # pp.logger.setLevel(logging.ERROR)
-    # logger.setLevel(logging.DEBUG)
-    from pandapower.networks import case9
-
-    net = case9()
-    net.ext_grid.vm_pu = 1.04
-    net.gen.vm_pu[0] = 1.025
-    net.gen.vm_pu[1] = 1.025
-
-    net.poly_cost = net.poly_cost.drop(net.poly_cost.index)
-    net.pwl_cost = net.pwl_cost.drop(net.pwl_cost.index)
-    # pp.replace_gen_by_sgen(net)
-    # net.sn_mva = 109.00
-    boundary_buses = [4, 8]
-    internal_buses = [0]
-    return_internal = True
-    show_computing_time = False
-    runpp(net, calculate_voltage_angles=True)
-    net_org = deepcopy(net)
-    eq_type = "rei"
-    net_eq = get_equivalent(net, eq_type, boundary_buses,
-                            internal_buses,
-                            return_internal=return_internal,
-                            show_computing_time=False,
-                            calculate_voltage_angles=True)
-    print(net.res_bus)
-    # print(net_eq.res_bus.loc[[0,3]])
-    # print(net_eq.ward.loc[0])
-
-    # net_eq.sn_mva = 10
-    # pp.runpp(net_eq, calculate_voltage_angles=True)
-    # print(net_eq.res_bus.loc[[0,3]])
