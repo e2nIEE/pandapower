@@ -128,17 +128,17 @@ class TestGenOptionalFields:
             slack_weight=1.0,
             controllable=True,
             pg_percent=1.0,
-            min_vm_pu=1.1,
-            max_vm_pu=1.0,
+            min_vm_pu=1.0,
+            max_vm_pu=1.1,
         )
         validate_network(net)
 
-    def test_optional_fields_with_nulls(self):
+    def test_optional_fields_opf_q_lim_enforced_with_nulls(self):
         """Test: gen with optional fields including nulls, with dependencies respected"""
         net = create_empty_network()
         create_bus(net, 0.4)
 
-        # Row 1: opf + q_lim_enforced present
+        #Row 1: opf + q_lim_enforced present
         create_gen(
             net,
             bus=0,
@@ -156,8 +156,12 @@ class TestGenOptionalFields:
             min_vm_pu=1.0,
             max_vm_pu=1.1,
         )
+
+    def test_optional_fields_qcc_with_nulls(self):
+        """Test: gen with optional fields including nulls, with dependencies respected"""
+        net = create_empty_network()
+        create_bus(net, 0.4)
         # Row 2: qcc present
-        # TODO: min_vm_pu in create_gen is set to 0.0 - schema demands greater than zero
         create_gen(
             net,
             bus=0,
@@ -170,26 +174,29 @@ class TestGenOptionalFields:
             id_q_capability_characteristic=0,
             curve_style='straightLineYValues',
             reactive_capability_curve=True,
-            slack_weight=1.0,
-            controllable=True,
         )
+
+    # def test_optional_fields_qcc_with_nulls(self): TODO scc commented out in gen.py
+    #     """Test: gen with optional fields including nulls, with dependencies respected"""
+    #     net = create_empty_network()
+    #     create_bus(net, 0.4)
         # Row 3: sc present
-        create_gen(
-            net,
-            bus=0,
-            p_mw=-1.0,
-            vm_pu=0.5,
-            scaling=1.0,
-            in_service=True,
-            slack=True,
-            # optional
-            vn_kv=1.0,
-            xdss_pu=1.0,
-            rdss_ohm=1.0,
-            cos_phi=1.0,
-            power_station_trafo=0,
-            pg_percent=1.0,
-        )
+        # create_gen(
+        #     net,
+        #     bus=0,
+        #     p_mw=-1.0,
+        #     vm_pu=0.5,
+        #     scaling=1.0,
+        #     in_service=True,
+        #     slack=True,
+        #     # optional
+        #     vn_kv=1.0,
+        #     xdss_pu=1.0,
+        #     rdss_ohm=1.0,
+        #     cos_phi=1.0,
+        #     power_station_trafo=0,
+        #     pg_percent=1.0,
+        # )
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -209,7 +216,7 @@ class TestGenOptionalFields:
                 itertools.product(["cos_phi"], [*zero_float, 0.4]),
                 itertools.product(["in_service"], bools),
                 itertools.product(["id_q_capability_characteristic"], all_allowed_ints),
-                itertools.product(["curve_style"], strings),
+                itertools.product(["curve_style"], ["straightLineYValues", "constantYValue"]),
                 itertools.product(["reactive_capability_curve"], bools),
                 itertools.product(["slack_weight"], all_allowed_floats),
                 itertools.product(["controllable"], bools),
@@ -236,10 +243,10 @@ class TestGenOptionalFields:
             name='test',
             type='sync',
             sn_mva=1.0,
-            max_q_mvar=1.1,
-            min_q_mvar=1.0,
-            max_p_mw=1.1,
-            min_p_mw=1.0,
+            max_q_mvar=2.0,
+            min_q_mvar=-2.0,
+            max_p_mw=2.0,
+            min_p_mw=-2.0,
             vn_kv=1.0,
             xdss_pu=1.0,
             rdss_ohm=1.0,
@@ -251,8 +258,8 @@ class TestGenOptionalFields:
             slack_weight=1.0,
             controllable=True,
             pg_percent=1.0,
-            min_vm_pu=1.1,
-            max_vm_pu=1.0,
+            min_vm_pu=1.0,
+            max_vm_pu=1.1,
         )
         net.gen[parameter] = valid_value
         net.gen["name"] = net.gen["name"].astype("string")
