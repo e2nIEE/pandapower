@@ -252,7 +252,7 @@ class UCTEParser:
         df["r"] = df[0].str[22:28].str.strip()
         df["x"] = df[0].str[29:35].str.strip()
         df["b"] = df[0].str[36:44].str.strip().fillna(0.0)
-        df["i"] = df[0].str[45:51].str.strip()
+        df["i"] = df[0].str[45:51].str.strip().fillna(1.0)
         df["name"] = df[0].str[52:64].str.strip()
 
     def _split_trafos_from_raw(self):
@@ -275,7 +275,7 @@ class UCTEParser:
         df["x"] = df[0].str[47:53].str.strip()
         df["b"] = df[0].str[54:62].str.strip().fillna(0.0)
         df["g"] = df[0].str[63:69].str.strip().fillna(0.0)
-        df["i"] = df[0].str[70:76].str.strip()
+        df["i"] = df[0].str[70:76].str.strip().fillna(1.0)
         df["name"] = df[0].str[77:89].str.strip()
 
     def _split_trafos_regulation_from_raw(self):
