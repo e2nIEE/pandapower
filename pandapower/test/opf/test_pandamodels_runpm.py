@@ -13,7 +13,7 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.control import ConstControl
-from pandapower.converter import convert_pp_to_pm
+from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import create_storage, create_shunt, create_pwl_cost, create_poly_cost, create_empty_network, \
     create_bus, create_line, create_gen, create_load, create_transformer3w_from_parameters, create_sgen, \
@@ -32,15 +32,12 @@ from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.timeseries import DFData, run_timeseries
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
+
 try:
-    from julia.api import Julia
-
-    Julia(compiled_modules=False)
-    from julia import Main
-
+    from juliacall import Main
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
@@ -253,7 +250,6 @@ def test_pwl():
     # create generators
     g1 = create_gen(net, bus1, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01, slack=True)
     g2 = create_gen(net, bus3, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
-    #    net.gen["controllable"] = False
 
     create_pwl_cost(net, g1, 'gen', [[0, 2, 2], [2, 80, 5]])
     create_pwl_cost(net, g2, 'gen', [[0, 2, 2], [2, 80, 5]])
@@ -382,7 +378,6 @@ def test_multiple_ext_grids():
     net["ext_grid"].loc[1, "vm_pu"] = 1.0
     net["ext_grid"].loc[2, "vm_pu"] = 1.01
     for idx in ext_grids:
-        # eg = net["ext_grid"].loc[idx]
         create_poly_cost(net, idx, 'ext_grid', cp1_eur_per_mw=10.)
 
     runpm_ac_opf(net)
@@ -593,10 +588,10 @@ def test_storage_opt():
     assert len(
         pm["time_series"]["gen"].keys()) == 0  # because all sgen are not controllable, they are treated as loads.
     assert len(pm["time_series"]["load"].keys()) == len(net.load) + len(net.sgen)
-    assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)])
+    assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == {str(i) for i in range(5, 26)}
 
     net = create_cigre_grid_with_time_series(json_path)
-    runpm_storage_opf(net, from_time_step=0, to_time_step=5)
+    runpm_storage_opf(net, from_time_step=0, to_time_step=5, pm_mip_solver='cbc')
     storage_results_1 = read_pm_storage_results(net)
     assert net._pm_org_result["multinetwork"]
     assert net._pm["pm_solver"] == "juniper"
@@ -605,7 +600,7 @@ def test_storage_opt():
 
     net2 = create_cigre_grid_with_time_series(json_path)
     net2.sn_mva = 100.0
-    runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
+    runpm_storage_opf(net2, from_time_step=0, to_time_step=5, pm_mip_solver='cbc')
     storage_results_100 = read_pm_storage_results(net2)
 
     assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6

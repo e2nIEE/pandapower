@@ -35,7 +35,7 @@ def _get_pf_variables_from_ppci(ppci):
     """
     # default arguments
     if ppci is None:
-        ValueError('ppci is empty')
+        raise ValueError('ppci is empty')
     # get data for calc
     base_mva, bus, gen, branch = \
         ppci["baseMVA"], ppci["bus"], ppci["gen"], ppci["branch"]
@@ -97,7 +97,7 @@ def _load_mapping(net, ppci1):
     maps them in ppc bus order and forms s_abc matrix
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-    params = dict()
+    params = {}
     phases = ['a', 'b', 'c']
     load_types = ['wye', 'delta']
     load_elements = ['load', 'asymmetric_load', 'sgen', 'asymmetric_sgen']
@@ -134,11 +134,22 @@ def _load_mapping(net, ppci1):
 # =============================================================================
 # 3 phase algorithm function
 # =============================================================================
-def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
-              max_iteration="auto", tolerance_mva=1e-8, trafo_model='t',
-              trafo_loading="current", enforce_q_lims=False, numba=True,
-              recycle=None, check_connectivity=True, switch_rx_ratio=2.0,
-              delta_q=0, v_debug=False, **kwargs):
+def runpp_3ph(
+    net,
+    calculate_voltage_angles=True,
+    init="auto",
+    max_iteration="auto",
+    tolerance_mva=1e-8,
+    trafo_model="t",
+    trafo_loading="current",
+    enforce_q_lims=False,
+    numba=True,
+    recycle=None,
+    check_connectivity=True,
+    switch_rx_ratio=2.0,
+    v_debug=False,
+    **kwargs,
+):
     """
  runpp_3ph: Performs Unbalanced/Asymmetric/Three Phase Load flow
 
@@ -235,7 +246,8 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         **voltage_depend_loads** (bool, True)
         (Not tested with 3 Phase load flow) - consideration of voltage-dependent loads.
 
-            If False, ``net.load.const_z_percent`` and ``net.load.const_i_percent``
+            If False, ``net.load.const_z_p_percent``, ``net.load.const_i_p_percent``,
+            ``net.load.const_z_q_percent`` and ``net.load.const_i_q_percent``
             are not considered, i.e. ``net.load.p_mw`` and ``net.load.q_mvar``
             are considered as constant-power loads.
 
@@ -260,11 +272,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
         model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
         as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
-
-        **delta_q**
-
-        (Not tested with 3 Phase load flow) - Reactive power tolerance for option "enforce_q_lims"
-        in kvar - helps convergence in some cases.
 
         **trafo3w_losses**
 
@@ -353,7 +360,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 
     ac = True
     mode = "pf_3ph"  # TODO: Make valid modes (pf, pf_3ph, se, etc.) available in seperate file (similar to idx_bus.py)
-#    v_debug = kwargs.get("v_debug", False)
     copy_constraints_to_ppc = False
     if trafo_model == 'pi':
         raise NotImplementedError("Three phase Power Flow doesnot support pi model because of lack of accuracy")
@@ -366,7 +372,6 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     # scipy spsolve options in NR power flow
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
-    calculate_voltage_angles = True
     if init == "results" and net.res_bus_3ph.empty:
         init = "auto"
     if init == "auto":
@@ -379,18 +384,34 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     neglect_open_switch_branches = kwargs.get("neglect_open_switch_branches", False)
     only_v_results = kwargs.get("only_v_results", False)
     net._options = {}
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode=mode, switch_rx_ratio=switch_rx_ratio,
-                     init_vm_pu=init, init_va_degree=init,
-                     enforce_q_lims=enforce_q_lims, recycle=None,
-                     voltage_depend_loads=False, delta=delta_q,
-                     neglect_open_switch_branches=neglect_open_switch_branches
-                     )
-    _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
-                    numba=numba, ac=ac, algorithm="nr", max_iteration=max_iteration,
-                    only_v_results=only_v_results, v_debug=v_debug, use_umfpack=use_umfpack,
-                    permc_spec=permc_spec, lightsim2grid=False)
+    _add_ppc_options(
+        net,
+        calculate_voltage_angles=calculate_voltage_angles,
+        trafo_model=trafo_model,
+        check_connectivity=check_connectivity,
+        mode=mode,
+        switch_rx_ratio=switch_rx_ratio,
+        init_vm_pu=init,
+        init_va_degree=init,
+        enforce_q_lims=enforce_q_lims,
+        recycle=None,
+        voltage_depend_loads=False,
+        neglect_open_switch_branches=neglect_open_switch_branches,
+    )
+    _add_pf_options(
+        net,
+        tolerance_mva=tolerance_mva,
+        trafo_loading=trafo_loading,
+        numba=numba,
+        ac=ac,
+        algorithm="nr",
+        max_iteration=max_iteration,
+        only_v_results=only_v_results,
+        use_umfpack=use_umfpack,
+        permc_spec=permc_spec,
+        lightsim2grid=False,
+        v_debug=v_debug
+    )
     net._options.update(overrule_options)
     _check_bus_index_and_print_warning_if_high(net)
     _check_gen_index_and_print_warning_if_high(net)
@@ -404,24 +425,25 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
 
     _, ppci0 = _pd2ppc_recycle(net, 0, recycle=recycle)
 
-    _,        bus0, gen0, branch0,      _,      _,      _ = _get_pf_variables_from_ppci(ppci0)
-    base_mva, bus1, gen1, branch1, sl_bus,      _, pq_bus = _get_pf_variables_from_ppci(ppci1)
-    _,        bus2, gen2, branch2,      _,      _,      _ = _get_pf_variables_from_ppci(ppci2)
+    _, bus0, gen0, branch0, _, _, _ = _get_pf_variables_from_ppci(ppci0)
+    base_mva, bus1, gen1, branch1, sl_bus, _, pq_bus = _get_pf_variables_from_ppci(ppci1)
+    _, bus2, gen2, branch2, _, _, _ = _get_pf_variables_from_ppci(ppci2)
 
     # initialize the results after the conversion to ppc is done, otherwise init=results does not work
     init_results(net, "pf_3ph")
 
-# =============================================================================
-#     P Q values aggragated and summed up for each bus to make s_abc matrix
-#     s_abc for wye connections ; s_abc_delta for delta connection
-# =============================================================================
+    # =============================================================================
+    #     P Q values aggragated and summed up for each bus to make s_abc matrix
+    #     s_abc for wye connections ; s_abc_delta for delta connection
+    # =============================================================================
     s_abc_delta, s_abc = _load_mapping(net, ppci1)
     # =========================================================================
     # Construct Sequence Frame Bus admittance matrices Ybus
     # =========================================================================
 
-    ppci0, ppci1, ppci2, y_0_pu, y_1_pu, y_2_pu, y_0_f, y_1_f, _,\
-        y_0_t, y_1_t, _ = _get_y_bus(ppci0, ppci1, ppci2, recycle)
+    ppci0, ppci1, ppci2, y_0_pu, y_1_pu, y_2_pu, y_0_f, y_1_f, y_2_f, y_0_t, y_1_t, y_2_t = _get_y_bus(
+        ppci0, ppci1, ppci2, recycle
+    )
     # =========================================================================
     # Initial voltage values
     # =========================================================================
@@ -433,20 +455,23 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         v_012_it[1, :] = 1.0
     else:
         v_012_it = np.concatenate(
-            [np.array(ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))).reshape((1, nb))
-             for ppc in (ppci0, ppci1, ppci2)], axis=0).astype(np.complex128)
+            [
+                np.array(ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))).reshape((1, nb))
+                for ppc in (ppci0, ppci1, ppci2)
+            ],
+            axis=0,
+        ).astype(np.complex128)
 
     # For Delta transformation:
     # Voltage changed from line-earth to line-line using V_T
     # s_abc/v_abc will now give line-line currents. This is converted to line-earth
     # current using I-T
-    v_del_xfmn = np.array([[1, -1, 0],
-                           [0, 1, -1],
-                           [-1, 0, 1]])
-    i_del_xfmn = np.array([[1, 0, -1],
-                           [-1, 1, 0],
-                           [0, -1, 1]])
+    v_del_xfmn = np.array([[1, -1, 0], [0, 1, -1], [-1, 0, 1]])
+    i_del_xfmn = np.array([[1, 0, -1], [-1, 1, 0], [0, -1, 1]])
     v_abc_it = sequence_to_phase(v_012_it)
+
+    s_abc_pu = -np.divide(s_abc, ppci1["baseMVA"])
+    s_abc_delta_pu = -np.divide(s_abc_delta, ppci1["baseMVA"])
 
     # =========================================================================
     #             Iteration using Power mismatch criterion
@@ -459,12 +484,8 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         # =====================================================================
         #     Voltages and Current transformation for PQ and Slack bus
         # =====================================================================
-        s_abc_pu = -np.divide(s_abc, ppci1["baseMVA"])
-        s_abc_delta_pu = -np.divide(s_abc_delta, ppci1["baseMVA"])
-
         i_abc_it_wye = (np.divide(s_abc_pu, v_abc_it)).conjugate()
-        i_abc_it_delta = np.matmul(i_del_xfmn, (np.divide(s_abc_delta_pu, np.matmul
-                                                          (v_del_xfmn, v_abc_it))).conjugate())
+        i_abc_it_delta = np.matmul(i_del_xfmn, (np.divide(s_abc_delta_pu, np.matmul(v_del_xfmn, v_abc_it))).conjugate())
 
         # For buses with both delta and wye loads we need to sum of their currents
         # to sum up the currents
@@ -472,17 +493,27 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         i012_it = phase_to_sequence(i_abc_it)
         v1_for_s1 = v_012_it[1, :]
         i1_for_s1 = -i012_it[1, :]
+        v2_for_s2 = v_012_it[2, :]
+        i2_for_s2 = -i012_it[2, :]
+        v0_for_s0 = v_012_it[0, :]
+        i0_for_s0 = -i012_it[0, :]
         v0_pu_it = X012_to_X0(v_012_it)
         v2_pu_it = X012_to_X2(v_012_it)
         i0_pu_it = X012_to_X0(i012_it)
         i2_pu_it = X012_to_X2(i012_it)
         s1 = np.multiply(v1_for_s1, i1_for_s1.conjugate())
+        s2 = np.multiply(v2_for_s2, i2_for_s2.conjugate())
+        s0 = np.multiply(v0_for_s0, i0_for_s0.conjugate())
         # =============================================================================
         # Current used to find S1 Positive sequence power
         # =============================================================================
 
         ppci1["bus"][pq_bus, PD] = np.real(s1[pq_bus]) * ppci1["baseMVA"]
         ppci1["bus"][pq_bus, QD] = np.imag(s1[pq_bus]) * ppci1["baseMVA"]
+        ppci2["bus"][pq_bus, PD] = np.real(s2[pq_bus]) * ppci2["baseMVA"]
+        ppci2["bus"][pq_bus, QD] = np.imag(s2[pq_bus]) * ppci2["baseMVA"]
+        ppci0["bus"][pq_bus, PD] = np.real(s0[pq_bus]) * ppci0["baseMVA"]
+        ppci0["bus"][pq_bus, QD] = np.imag(s0[pq_bus]) * ppci0["baseMVA"]
         # =============================================================================
         # Conduct Positive sequence power flow
         # =============================================================================
@@ -499,14 +530,12 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
         s_from_voltage = S_from_VI_elementwise(v1_for_s1, i1_from_v_it)
         v1_pu_it = V1_from_ppc(ppci1)
 
-        v_012_new = combine_X012(v0_pu_it, v1_pu_it, v2_pu_it)
-
         s_mismatch = np.abs(np.abs(s1[pq_bus]) - np.abs(s_from_voltage[pq_bus]))
-        v_012_it = v_012_new
+        v_012_it = combine_X012(v0_pu_it, v1_pu_it, v2_pu_it)
         v_abc_it = sequence_to_phase(v_012_it)
         count += 1
     et = perf_counter() - t0
-    success = (count < max_iteration)
+    success = count < max_iteration
     for ppc in [ppci0, ppci1, ppci2]:
         ppc["et"] = et
         ppc["success"] = success
@@ -517,27 +546,74 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     ref_gens = ppci0["internal"]["ref_gens"]
     ppci0["bus"][ref, GS] -= gs_eg
     ppci0["bus"][ref, BS] -= bs_eg
+    ppci2["bus"][ref, GS] -= gs_eg
+    ppci2["bus"][ref, BS] -= bs_eg
     y_0_pu, y_0_f, y_0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
+    y_2_pu, y_2_f, y_2_t = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
     # revert the change, otherwise repeated calculation with recycled elements will fail
     ppci0["bus"][ref, GS] += gs_eg
     ppci0["bus"][ref, BS] += bs_eg
+    ppci2["bus"][ref, GS] += gs_eg
+    ppci2["bus"][ref, BS] += bs_eg
     # Bus, Branch, and Gen  power values
     svc = ppci0["svc"]  # placeholder
     tcsc = ppci0["tcsc"]  # placeholder
     ssc = ppci0["ssc"]  # placeholder
     vsc = ppci0["vsc"]  # placeholder
-    bus0, gen0, branch0 = pfsoln(base_mva, bus0, gen0, branch0, svc, tcsc, ssc, vsc, y_0_pu, y_0_f, y_0_t,
-                                 v_012_it[0, :].flatten(), sl_bus, ref_gens)
-    bus1, gen1, branch1 = pfsoln(base_mva, bus1, gen1, branch1, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,
-                                 v_012_it[1, :].flatten(), sl_bus, ref_gens)
-    bus2, gen2, branch2 = pfsoln(base_mva, bus2, gen2, branch2, svc, tcsc, ssc, vsc, y_1_pu, y_1_f, y_1_t,
-                                 v_012_it[2, :].flatten(), sl_bus, ref_gens)
+    bus0, gen0, branch0 = pfsoln(
+        base_mva,
+        bus0,
+        gen0,
+        branch0,
+        svc,
+        tcsc,
+        ssc,
+        vsc,
+        y_0_pu,
+        y_0_f,
+        y_0_t,
+        v_012_it[0, :].flatten(),
+        sl_bus,
+        ref_gens,
+    )
+    bus1, gen1, branch1 = pfsoln(
+        base_mva,
+        bus1,
+        gen1,
+        branch1,
+        svc,
+        tcsc,
+        ssc,
+        vsc,
+        y_1_pu,
+        y_1_f,
+        y_1_t,
+        v_012_it[1, :].flatten(),
+        sl_bus,
+        ref_gens,
+    )
+    bus2, gen2, branch2 = pfsoln(
+        base_mva,
+        bus2,
+        gen2,
+        branch2,
+        svc,
+        tcsc,
+        ssc,
+        vsc,
+        y_2_pu,
+        y_2_f,
+        y_2_t,
+        v_012_it[2, :].flatten(),
+        sl_bus,
+        ref_gens,
+    )
     ppci0 = _store_results_from_pf_in_ppci(ppci0, bus0, gen0, branch0)
     ppci1 = _store_results_from_pf_in_ppci(ppci1, bus1, gen1, branch1)
     ppci2 = _store_results_from_pf_in_ppci(ppci2, bus2, gen2, branch2)
-    i_012_res = _current_from_voltage_results(y_0_pu, y_1_pu, v_012_it)
+    i_012_res = _current_from_voltage_results(y_0_pu, y_1_pu, y_2_pu, v_012_it)
     s_012_res = S_from_VI_elementwise(v_012_it, i_012_res) * ppci1["baseMVA"]
-    eg_is_mask = net["_is_elements"]['ext_grid']
+    eg_is_mask = net["_is_elements"]["ext_grid"]
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
     eg_is_idx = net["ext_grid"].index.values[eg_is_mask]
     eg_idx_ppc = ext_grid_lookup[eg_is_idx]
@@ -574,28 +650,31 @@ def runpp_3ph(net, calculate_voltage_angles=True, init="auto",
     _clean_up(net)
 
 
-def _current_from_voltage_results(y_0_pu, y_1_pu, v_012_pu):
-    I012_pu = combine_X012(I0_from_V012(v_012_pu, y_0_pu),
-                           I1_from_V012(v_012_pu, y_1_pu),
-                           I2_from_V012(v_012_pu, y_1_pu))
-    return I012_pu
+def _current_from_voltage_results(y_0_pu, y_1_pu, y_2_pu, v_012_pu):
+    return combine_X012(
+        I0_from_V012(v_012_pu, y_0_pu), I1_from_V012(v_012_pu, y_1_pu), I2_from_V012(v_012_pu, y_2_pu)
+    )
 
 
 def _get_y_bus(ppci0, ppci1, ppci2, recycle):
-    if recycle and recycle["Ybus"] and ppci0["internal"]["Ybus"].size and \
-            ppci1["internal"]["Ybus"].size and ppci2["internal"]["Ybus"].size:
-        y_0_bus, y_0_f, y_0_t = ppci0["internal"]['Ybus'], ppci0["internal"]['Yf'], ppci0["internal"]['Yt']
-        y_1_bus, y_1_f, y_1_t = ppci1["internal"]['Ybus'], ppci1["internal"]['Yf'], ppci1["internal"]['Yt']
-        y_2_bus, y_2_f, y_2_t = ppci2["internal"]['Ybus'], ppci2["internal"]['Yf'], ppci2["internal"]['Yt']
+    if (
+        recycle
+        and recycle["Ybus"]
+        and ppci0["internal"]["Ybus"].size
+        and ppci1["internal"]["Ybus"].size
+        and ppci2["internal"]["Ybus"].size
+    ):
+        y_0_bus, y_0_f, y_0_t = ppci0["internal"]["Ybus"], ppci0["internal"]["Yf"], ppci0["internal"]["Yt"]
+        y_1_bus, y_1_f, y_1_t = ppci1["internal"]["Ybus"], ppci1["internal"]["Yf"], ppci1["internal"]["Yt"]
+        y_2_bus, y_2_f, y_2_t = ppci2["internal"]["Ybus"], ppci2["internal"]["Yf"], ppci2["internal"]["Yt"]
     else:
         # build admittance matrices
         y_0_bus, y_0_f, y_0_t = makeYbus(ppci0["baseMVA"], ppci0["bus"], ppci0["branch"])
         y_1_bus, y_1_f, y_1_t = makeYbus(ppci1["baseMVA"], ppci1["bus"], ppci1["branch"])
         y_2_bus, y_2_f, y_2_t = makeYbus(ppci2["baseMVA"], ppci2["bus"], ppci2["branch"])
         if recycle and recycle["Ybus"]:
-            ppci0["internal"]['Ybus'], ppci0["internal"]['Yf'], ppci0["internal"]['Yt'] = y_0_bus, y_0_f, y_0_t
-            ppci1["internal"]['Ybus'], ppci1["internal"]['Yf'], ppci1["internal"]['Yt'] = y_1_bus, y_1_f, y_1_t
-            ppci2["internal"]['Ybus'], ppci2["internal"]['Yf'], ppci2["internal"]['Yt'] = y_2_bus, y_2_f, y_2_t
+            ppci0["internal"]["Ybus"], ppci0["internal"]["Yf"], ppci0["internal"]["Yt"] = y_0_bus, y_0_f, y_0_t
+            ppci1["internal"]["Ybus"], ppci1["internal"]["Yf"], ppci1["internal"]["Yt"] = y_1_bus, y_1_f, y_1_t
+            ppci2["internal"]["Ybus"], ppci2["internal"]["Yf"], ppci2["internal"]["Yt"] = y_2_bus, y_2_f, y_2_t
 
     return ppci0, ppci1, ppci2, y_0_bus, y_1_bus, y_2_bus, y_0_f, y_1_f, y_2_f, y_0_t, y_1_t, y_2_t
-

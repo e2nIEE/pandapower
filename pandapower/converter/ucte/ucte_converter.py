@@ -9,9 +9,10 @@ import time
 from typing import Dict, Union
 
 import numpy as np
-import pandapower as pp
-import pandapower.auxiliary
 import pandas as pd
+
+from pandapower.auxiliary import pandapowerNet
+from pandapower.create import create_empty_network
 
 
 class UCTE2pandapower:
@@ -20,15 +21,15 @@ class UCTE2pandapower:
         Convert UCTE data to pandapower.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.u_d = dict()
+        self.u_d: dict = {}
         self.net = self._create_empty_network()
         self.net.bus["node_name"] = ""
         self.slack_as_gen = slack_as_gen
 
     @staticmethod
-    def _create_empty_network():
-        net: pandapower.auxiliary.pandapowerNet = pp.create_empty_network()
-        new_columns = {
+    def _create_empty_network() -> pandapowerNet:
+        net: pandapowerNet = create_empty_network()
+        new_columns: dict[str, dict] = {
             "trafo": {
                 "tap2_min": int,
                 "tap2_max": int,
@@ -48,7 +49,7 @@ class UCTE2pandapower:
                 net[pp_element][col] = pd.Series(dtype=dtype)
         return net
 
-    def convert(self, ucte_dict: Dict) -> pandapower.auxiliary.pandapowerNet:
+    def convert(self, ucte_dict: Dict) -> pandapowerNet:
         self.logger.info("Converting UCTE data to a pandapower network.")
         time_start = time.time()
         # create a temporary copy from the origin input data
@@ -210,8 +211,10 @@ class UCTE2pandapower:
         loads = loads.reset_index(level=0, drop=True)
         loads["scaling"] = 1
         loads["in_service"] = True
-        loads["const_z_percent"] = 0
-        loads["const_i_percent"] = 0
+        loads["const_z_p_percent"] = 0
+        loads["const_z_q_percent"] = 0
+        loads["const_i_p_percent"] = 0
+        loads["const_i_q_percent"] = 0
         self._copy_to_pp("load", loads)
         self.logger.info("Finished converting the loads.")
 
@@ -670,9 +673,9 @@ class UCTE2pandapower:
 
     def set_pp_col_types(
         self,
-        net: Union[pandapower.auxiliary.pandapowerNet, Dict],
+        net: pandapowerNet,
         ignore_errors: bool = False,
-    ) -> pandapower.auxiliary.pandapowerNet:
+    ) -> pandapowerNet:
         """
         Set the data types for some columns from pandapower assets. This mainly effects bus columns (to int, e.g.
         sgen.bus or line.from_bus) and in_service and other boolean columns (to bool, e.g. line.in_service or gen.slack).

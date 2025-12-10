@@ -224,7 +224,7 @@ def _control_step(levelorder, run_count):
     logger.debug("Controller Iteration #%i" % run_count)
     # run each controller until all are converged
     for ctrl, net in levelorder:
-        # call control step while controller ist not converged yet
+        # call control step while controller is not converged yet
         if not ctrl.is_converged(net):
             ctrl.control_step(net)
             converged = False
@@ -278,7 +278,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     4. Call finalize_control() on each controller
 
     """
-    ctrl_variables = prepare_run_ctrl(net, ctrl_variables)
+    ctrl_variables = prepare_run_ctrl(net, ctrl_variables, **kwargs)
     kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)
 
     controller_order = ctrl_variables["controller_order"]

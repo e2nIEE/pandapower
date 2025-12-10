@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandas as pd
+import numpy as np
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
@@ -21,9 +22,9 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
         # load_str, sgen_str, vsc_str = [], [], []
         load_str, sgen_str = [], []
         for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            load_str.append("Load: {:.3f} MW<br />".format(ln) if ln != 0. else "")
+            load_str.append("Load: {:.3f} MW<br />".format(ln) if not np.isclose(ln, 0.0) else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if s != 0. else "")
+            sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if not np.isclose(s, 0.0) else "")
         # we do not really need vsc result for every bus:
         #for vn in [net.res_vsc.loc[net.vsc.bus == b, "p_mw"].fillna(0).sum() for b in net.bus.index]:
         #    vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
@@ -34,7 +35,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     elif element == "bus_dc":
         vsc_str = []
         for vn in [net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum() for b in net.bus_dc.index]:
-            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
+            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if not np.isclose(vn, 0.0) else "")
         hoverinfo = (
                 "Index: " + net.bus_dc.index.astype(str) + '<br />' +
                 "Name: " + net.bus_dc['name'].astype(str) + '<br />' +
@@ -114,19 +115,28 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         **use_line_geo** (bool, True) - defines if lines patches are based on
         net.line.geo of the lines (True) or on net.bus.geo of the connected buses (False)
 
-        **on_map** (bool, False) - enables using mapbox plot in plotly.
+        **on_map** (bool, False) - enables using mapLibre plot in plotly.
         If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
 
         **projection** (String, None) - defines a projection from which network geo-data will be transformed to
         lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
 
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
+        **map_style** (str, 'basic') - enables using mapLibre plot in plotly
 
-            - 'streets'
-            - 'bright'
-            - 'light'
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
             - 'dark'
-            - 'satellite'
+            - 'light'
+            - 'open-street-map'
+            - 'outdoors'           
+            - 'satellite''
+            - 'satellite-streets'
+            - 'streets'
 
         **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
 
@@ -158,7 +168,7 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         **additional_traces** (list, None) - List with additional, user-created traces that will
         be appended to the simple_plotly traces before drawing all traces
 
-        **zoomlevel** (int, 11) - initial mapbox-zoomlevel on a map if `on_map=True`. Small
+        **zoomlevel** (int, 11) - initial mapLibre-zoomlevel on a map if `on_map=True`. Small
         values = less zoom / larger area shown
 
         **auto_draw_traces** (bool, True) - if True, a figure with the drawn traces is returned.
@@ -211,9 +221,9 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         for weighted_trace in additional_traces:
             # for weighted_marker_traces "meta" should include information for the "scale legend"
             if ("meta" in weighted_trace) and (weighted_trace["meta"]["show_scale_legend"]):
-                sc_trace = create_scale_trace(net, weighted_trace, down_shift=shift)
+                sc_trace, next_shift = create_scale_trace(net, weighted_trace, down_shift=shift)
                 traces.extend(sc_trace)
-                shift += len(weighted_trace["meta"]["scale_marker_size"])
+                shift += next_shift
 
         traces.extend(additional_traces)
     if auto_draw_traces:
@@ -306,7 +316,9 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):
-        marker_type = 'circle' if settings['on_map'] else 'square'  # workaround because doesn't appear on mapbox if square
+        marker_type = 'circle' if settings['on_map'] else 'square'  # better would be square-x
+        # FIXME: if on_map only maki 2.1 Icons are supported as patch_type due to plotly using them.
+        #  Only the circle can be colored and scaled. https://github.com/plotly/plotly.js/issues/6599
         hoverinfo = hoverinfo_func(net, element="ext_grid")
         ext_grid_trace = _create_node_trace(
             net,
