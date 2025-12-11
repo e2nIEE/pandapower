@@ -477,8 +477,8 @@ if __name__ == "__main__":
     from pandapower.networks.mv_oberrhein import mv_oberrhein
     # net = case145()
     #    net = nw.create_cigre_network_mv()
-    net = mv_oberrhein()
     # simple_plot(net, bus_size=0.4)
+    net = mv_oberrhein()
     ol_lines = net.line.loc[net.line.type=="ol"].index
     ol_buses = net.bus.index[net.bus.index.isin(net.line.from_bus.loc[ol_lines]) |
                              net.bus.index.isin(net.line.to_bus.loc[ol_lines])]
