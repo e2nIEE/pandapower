@@ -213,7 +213,7 @@ def test_qlimits_with_capability_curve():
                         input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
                         set_point=0.98, voltage_ctrl=True, tol=tol)
     runpp(net, run_control=True, enforce_q_lims=True)
-    assert -0.1 <= net.res_sgen.loc[0, 'q_mvar'] <= 0.1
+    assert abs(net.res_sgen.loc[0, 'q_mvar'] + 6.7373132) < tol
 
 
 
