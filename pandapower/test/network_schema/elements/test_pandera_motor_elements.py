@@ -20,6 +20,7 @@ from pandapower.test.network_schema.elements.helper import (
     not_ints_list,
     positiv_floats_plus_zero,
     negativ_floats,
+    zero_float
 )
 
 # Ranges from schema
@@ -39,11 +40,11 @@ class TestMotorRequiredFields:
             itertools.chain(
                 itertools.product(["bus"], positiv_ints_plus_zero),
                 itertools.product(["pn_mech_mw"], positiv_floats_plus_zero),
-                itertools.product(["cos_phi"], ratio_valid),
-                itertools.product(["cos_phi_n"], ratio_valid),
-                itertools.product(["efficiency_percent"], percent_valid),
-                itertools.product(["efficiency_n_percent"], percent_valid),
-                itertools.product(["loading_percent"], percent_valid),
+                itertools.product(["cos_phi"], [*ratio_valid, *zero_float]),
+                itertools.product(["cos_phi_n"], [*ratio_valid, *zero_float]),
+                itertools.product(["efficiency_percent"], [*percent_valid, *positiv_floats_plus_zero]),
+                itertools.product(["efficiency_n_percent"], [*percent_valid, *positiv_floats_plus_zero]),
+                itertools.product(["loading_percent"], [*percent_valid, *positiv_floats_plus_zero]),
                 itertools.product(["scaling"], positiv_floats_plus_zero),
                 itertools.product(["lrc_pu"], positiv_floats_plus_zero),
                 itertools.product(["rx"], positiv_floats_plus_zero),

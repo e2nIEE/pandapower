@@ -61,3 +61,10 @@ not_boolean_list = [*others, *strings, *all_ints, *all_floats]
 not_floats_list = [*others, *strings, *all_ints, *bools]
 not_strings_list = [*others, *all_ints, *bools, *all_floats]
 not_ints_list = [*others, *strings, *all_floats, *bools]
+
+#percentages and ratios
+ratio_valid = [0.0, 0.5, 1.0]
+ratio_invalid = [-0.1, 1.1]
+percent_valid = [0.0, 50.0, 100.0]
+percent_invalid = [-0.1, 100.1]
+
