@@ -13,84 +13,79 @@ logger = logging.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
-    The Binary search control is a controller which is used to reach a given set point . It can be used for
-    reactive power control or voltage control. in case of voltage control, the input parameter voltage_ctrl must be
-    set to true. Input and output elements and indexes can be lists. Input elements can be transformers, switches,
-    lines or busses (only in case of voltage control). in case of voltage control, a bus_index must be present,
-    where the voltage will be controlled. Output elements are sgens, where active and reactive power can be set. The
-    output value distribution describes the distribution of reactive power provision between multiple
-    output_elements and must sum up to 1.
+    The Binary search control is a controller that adjusts output values in order to
+    reach a given set point. It can be used for reactive power control or voltage
+    control. For voltage control, the parameter ``voltage_ctrl`` must be set to
+    ``True``. Input and output elements and indexes can be lists. Input elements can
+    be transformers, switches, lines or buses (only in voltage control). For voltage
+    control, ``bus_idx`` must be present as the measurement location. Output
+    elements are sgens, where active and reactive power can be set. The
+    ``output_values_distribution`` describes the distribution of reactive power
+    provision between multiple ``output_elements`` and must sum to 1.
 
-    INPUT:
-        **self**
+    Parameters
+    ----------
+    self : BinarySearchControl
+    net : pandapowerNet
+        A pandapower grid.
+    ctrl_in_service : bool
+        Whether the controller is in service.
+    output_element : str
+        Output element type: ``"gen"`` or ``"sgen"``.  
+        For reactive power control, currently only ``"sgen"`` is supported.
+    output_variable : str
+        Output variable of the element (e.g., ``"q_mvar"``).
+    output_element_index : int or list of int
+        Index or list of indices of the output elements.
+    output_element_in_service : list of bool
+        Indicates whether each output element is in service.
+    output_values_distribution : list of float
+        Distribution of reactive power provision among output elements (must sum to 1).
 
-        **net** - A pandapower grid
+    input_element : str
+        Measurement location: ``"res_trafo"``, ``"res_switch"``, ``"res_line"``, or
+        ``"res_bus"``. For ``"res_switch"``, an additional small impedance is introduced.
+    input_variable : str
+        Variable used for the measurement (string).
+    input_inverted : list of bool
+        Indicates whether the measurement of each input element must be inverted.
+        Required when importing from PowerFactory.
+    input_element_index : int or list of int
+        Index or list of indices of the input elements.
+    set_point : float
+        Set point of the controller. For voltage control, ``voltage_ctrl`` must be
+        ``True``, ``bus_idx`` must be the measurement bus, and ``input_element`` must
+        be ``"res_bus"``. Can be overwritten by a chained droop controller.
 
-        **ctrl_in_service** - Whether the controller is in service or not.
-
-        **output_element** - Output element of the controller. Takes a string value "gen" or "sgen", with
-        reactive power control, currently only "sgen" is possible.
-
-        **output_variable** - Output variable of that element, normally "q_mvar".
-
-        **output_element_index** - Index or list of indices of the output element(s) in net.
-
-        **output_element_in_service** - List indicating whether each output element is in service.
-
-        **output_values_distribution** - Distribution of reactive power provision among output elements.
-
-
-        **input_element** - Measurement location, can be a transformers, switches, lines or busses (only with
-        voltage_ctrl), indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
-        "res_switch", an additional small impedance is introduced in the switch.
-
-        **input_variable** - Variable which is used to take the measurement from. Indicated by string value.
-
-        **input_element** - Measurement location, can be "res_trafo", "res_switch", "res_line", or "res_bus".
-
-        **input_inverted** - List of Booleans that indicates if the measurement of the input elements must be inverted. Required
-        when importing from PowerFactory.
-
-        **input_element_index** - Element of input element in net.
-
-
-        **input_element_index** - Index or list of indices of the input element(s) in net.
-
-        **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
-        case of voltage set point, voltage control must be set to true, bus_idx must be set to measurement bus and
-        input_element must be "res_bus". Can be overwritten by a droop controller chained with the binary search
-        control.
-
-        **gen_Q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
-        order to invert the droop value of the controller.
-
-        **voltage_ctrl** - Whether the controller is used for voltage control.
-
-        **output_min_q_mvar** - List of minimum reactive power limits for each output element. Comes into action if runpp
-        is executed with enforce_q_lims=True. If the output element is an sgen and has a q_characteristic_curve,
-        then this will be considered as the output_min_q_mvar
-
-        **output_max_q_mvar** - List of maximum reactive power limits for each output element. Comes into action if runpp
-        is executed with enforce_q_lims=True. If the output element is an sgen and has a q_characteristic_curve,
-        then this will be considered as the output_min_q_mvar
-
-        **bus_idx=None** - Bus index used for voltage control.
-
-        **tol=0.001** - Tolerance for controller convergence.
-
-        **in_service=True** - Whether the controller itself is in service.
-
-        **order=0** - Execution order of the controller.
-
-        **level=0** - Execution level of the controller.
-
-        **drop_same_existing_ctrl=False** - Whether to drop existing controllers with the same parameters.
-
-        **matching_params=None** - Parameters for matching controllers.
-
-        **name=""** - Name of the controller.
-
-        **kwargs** - Additional keyword arguments.
+    gen_Q_response : list of int
+        List of ``+1`` or ``-1`` indicating the Q-response direction of the
+        measurement location.
+    voltage_ctrl : bool
+        Whether voltage control mode is activated.
+    output_min_q_mvar : list of float
+        Minimum Q limits for each output element. Considered when ``runpp`` is
+        executed with ``enforce_q_lims=True``.
+    output_max_q_mvar : list of float
+        Maximum Q limits for each output element. Considered when ``runpp`` is
+        executed with ``enforce_q_lims=True``.
+    bus_idx : int, optional
+        Bus index used for voltage control.
+    tol : float, optional
+        Tolerance for controller convergence. Default is ``0.001``.
+    in_service : bool, optional
+        Whether the controller is in service. Default is ``True``.
+    order : int, optional
+        Execution order of the controller.
+    level : int, optional
+        Execution level of the controller.
+    drop_same_existing_ctrl : bool, optional
+        Whether to drop existing controllers with the same parameters.
+    matching_params : dict, optional
+        Parameters used to match controllers.
+    name : str, optional
+        Name of the controller.
+    kwargs : dict, optional
+        Additional keyword arguments.
     """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
