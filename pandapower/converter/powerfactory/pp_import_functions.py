@@ -264,13 +264,13 @@ def from_pf(
         create_vsc(net=net, item=vsc)
     if n > 0: logger.info('imported %d VSC' % n)
 
-    # logger.debug('creating switches')
-    # # create switches (StaSwitch):
-    # n = 0
-    # for switch in dict_net['StaSwitch']:
-    #     create_switch(net=net, item=switch)
-    #     n += 1
-    # logger.info('imported %d switches' % n)
+    logger.debug('creating switches')
+    # create switches (StaSwitch):
+    n = 0
+    for switch in dict_net['StaSwitch']:
+        create_switch(net=net, item=switch)
+        n += 1
+    logger.info('imported %d switches' % n)
 
     for idx, row in net.trafo.iterrows():
         propagate_bus_coords(net, row.lv_bus, row.hv_bus)
@@ -350,7 +350,7 @@ def from_pf(
 
     # --------- create reactive power capability characteristics ---------
     if 'q_capability_curve_table' in net and not net['q_capability_curve_table'].empty:
-        logger.info('Create q_capability_characteristics_object')
+        logger.debug('Create q_capability_characteristics_object')
         create_q_capability_characteristics_object(net)
 
         for element in ("sgen", "gen", "ext_grid"):
