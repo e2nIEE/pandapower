@@ -4,16 +4,15 @@ Simple Plotting
 
 Simple Network Plot
 ==============================
-
-The function ``simple_plot()`` can be used for simple plotting. For advanced possibilities see the `tutorial <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotting_basic.ipynb>`_.
-
 .. _simple_plot:
+The function ``simple_plot()`` can be used for simple plotting. For advanced possibilities see the `tutorial <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotting_basic.ipynb>`_.
 
 .. autofunction:: pandapower.plotting.simple_plot
 
 
 Simple Highlighting Plot
 ==============================
+.. _simple_hl_plot:
 
 The function ``simple_hl_plot()`` highlights lines or buses in a simple network plot. The highlighted
 elements are displayed in red and enlarged. Additionally, buses and lines can be located directly
@@ -28,9 +27,9 @@ a small box: ::
     simple_hl_plot(net, hl_lines=ol_lines, hl_buses=ol_buses)
 
 .. image:: /pics/plotting/simple_hl_plot_mv_obi.png
-	:width: 80em
-	:align: left
+    :width: 80em
+    :align: left
 
-.. _simple_hl_plot:
 
 .. autofunction:: pandapower.plotting.simple_hl_plot
+
