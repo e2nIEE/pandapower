@@ -507,11 +507,9 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
         logger.warning(f"No. of {element} elements is zero.")
         return
 
-    # Filter rows with True 'reactive_capability_curve'
-    element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
+    if 'reactive_capability_curve' in net[element].columns:
+        element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
 
-    if len(element_data) > 0:
-        # Extract the relevant data
         q_table_ids = element_data['id_q_capability_characteristic']
         p_mw_values = element_data['p_mw']
 
@@ -531,4 +529,8 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
         curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
         qmin = curve_q.loc[element_index, "min_q_mvar"]
         qmax = curve_q.loc[element_index, "max_q_mvar"]
-        return qmin, qmax
+    else:
+        qmin = [-np.inf]*len(element_index)
+        qmax = [np.inf]*len(element_index)
+
+    return qmin, qmax

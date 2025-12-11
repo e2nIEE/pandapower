@@ -435,8 +435,10 @@ class BinarySearchControl(Controller):
                 net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
             else:
                 self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
+                net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
         else:
             self.output_min_q_mvar = np.array([-np.inf]*len(self.output_element_index), dtype=np.float64)
+
         if 'max_q_mvar' in net[self.output_element].columns:
             if not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values)):
                 _, qmax = get_min_max_q_mvar_from_characteristics_object(net, self.output_element, self.output_element_index)
@@ -444,6 +446,7 @@ class BinarySearchControl(Controller):
                 net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar
             else:
                 self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
+                net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar
         else:
             self.output_max_q_mvar = np.array([np.inf]*len(self.output_element_index), dtype=np.float64)
 
