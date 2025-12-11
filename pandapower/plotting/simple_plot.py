@@ -217,8 +217,37 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         plt.show()
     return ax
 
-
+#TODO Hovering could have more tolerance
 def hover(event, ax, net, hover_text):
+    """
+    Update the hover text in an interactive pandapower plot based on the mouse position.
+
+    This function is intended to be connected to Matplotlib's ``"motion_notify_event"``. When the
+    mouse moves over a plotted element (bus, line, trafo, trafo3w) whose collection has an ``info``
+    attribute, the corresponding element name and index are displayed in a small text box at the
+    cursor location. If the mouse leaves such an element or the plotting area, the text box is
+    hidden.
+
+    Parameters
+    ----------
+    event : matplotlib.backend_bases.MouseEvent
+        The mouse motion event provided by Matplotlib. Used to determine the
+        cursor position and the Axes over which the cursor is currently located.
+    ax : matplotlib.axes.Axes
+        Axes object containing the pandapower plot and its collections.
+    net : pp.pandapowerNet
+        The pandapower network containing the element data. The function
+        accesses the ``name`` and ``index`` information from ``net.bus``,
+        ``net.line``, ``net.trafo`` and ``net.trafo3w``.
+    hover_text : matplotlib.text.Text
+        Text artist used to display the hover information (name and index).
+        Its position and visibility are updated by this function.
+
+    Returns
+    -------
+    None
+        The function updates the plot in-place and does not return anything.
+    """
     vis = hover_text.get_visible()
     fig = plt.gcf()
     if event.inaxes == ax:
@@ -238,7 +267,6 @@ def hover(event, ax, net, hover_text):
                             hover_info = f"Name: {net.trafo.name.at[index]} | Index: {index}"
                         elif element == "trafo3w":
                             hover_info = f"Name: {net.trafo3w.name.at[index]} | Index: {index}"
-
                         # set text and position
                         hover_text.set_text(hover_info)
                         hover_text.set_position((event.xdata, event.ydata))
@@ -264,18 +292,58 @@ def line_info(line):
 
 
 def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, line_size=1,
-                   bus_size=None, plot_scale=6, legend_size=10, legend_position=(1, 0)):
+                   bus_size=None, plot_scale=1, legend_size=10, legend_position=(1, 0)):
     """
+    Plot a pandapower network and optionally highlight selected lines or buses.
 
+    Highlighted elements are displayed in red and with increased size. Additionally, buses and
+    lines can be identified directly in the plot by hovering the mouse over them; the element
+    name and index are then shown in a small box.
+
+    Parameters
+    ----------
+    net : pp.pandapowerNet
+        The pandapower network to be plotted. Bus and line geodata are taken from
+        ``net.bus.geo`` and ``net.line.geo``. If no or insufficient geodata is available,
+        artificial coordinates are generated.
+    lines : iterable of int, pandas.Index, or None, optional
+        Lines to be plotted. If None, all lines in ``net.line.index`` are plotted.
+        Open line switches are drawn as dashed grey lines.
+    buses : iterable of int, pandas.Index, or None, optional
+        Buses to be plotted. If None, all buses in ``net.bus.geo.index`` are plotted.
+    hl_buses : iterable of int or pandas.Index, optional
+        Subset of buses to highlight in the plot. These buses are drawn in red with
+        increased marker size.
+    hl_lines : iterable of int or pandas.Index, optional
+        Subset of lines to highlight in the plot. These lines are drawn in red with
+        increased line width.
+    line_size : float, optional
+        Base line width scaling factor for non-highlighted lines. Default is 1.
+        The actual line width is ``3 * line_size``.
+    bus_size : float or None, optional
+        Base marker size for buses. If None, a default size is obtained from
+        :func:`get_collection_sizes`.
+    plot_scale : float, optional
+        Global scaling factor for the figure size. The figure size is
+        ``(12 * plot_scale, 7 * plot_scale)``. Default is 6.
+    legend_size : float, optional
+        Font size of the legend text. Default is 10.
+    legend_position : tuple of float, optional
+        Coordinates of the legend anchor box passed to ``bbox_to_anchor`` in
+        :func:`matplotlib.pyplot.legend`. Default is ``(1, 0)`` (outside the plot area
+        on the lower right).
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        Matplotlib Axes object with the drawn network plot.
     """
-
+    sizes = get_collection_sizes(net)
     if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (net.line.geo.isna().any() and net.bus.geo.isna().any()):
         logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
                        " This may take some time")
         create_generic_coordinates(net)
-
     if bus_size is None:
-        sizes = get_collection_sizes(net)
         bus_size = sizes["bus"]
     if lines is None:
         lines = net.line.index
@@ -288,6 +356,21 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
     legend_titles = list()
     legend_handles = list()
 
+    # external grid
+    ex = net.ext_grid.bus.values
+    if len(ex):
+        ex_c = create_bus_collection(net,
+                                     ex,
+                                     size=sizes["ext_grid"],
+                                     patch_type="rect",
+                                     zorder=2,
+                                     facecolor="black",
+                                     edgecolor="white",
+                                    )
+        collection_list.append(ex_c)
+        legend_titles.append(f"External grid")
+        legend_handles.append(Line2D([0], [0], markeredgecolor="white", color="black",
+                                     linestyle='', marker="s"))
     # buses
     bc = create_bus_collection(net,
                                buses,
@@ -301,11 +384,9 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
     legend_titles.append("Buses")
     legend_handles.append(Line2D([0], [0], markeredgecolor="black",
                                  color="black", linestyle='', marker="o"))
-
     # open line switches
     open_lines = set(net.switch.loc[(net.switch.et == "l") &
                                 (net.switch.closed == False)].element.values.tolist())
-
     # lines
     lc = create_line_collection(net,
                                 lines=list(set(lines)-set(open_lines)),
@@ -317,10 +398,10 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
     collection_list.append(lc)
     legend_titles.append("Lines")
     legend_handles.append(Line2D([0], [0], color="black"))
-
+    # open tie line
     open_lines = list(set(open_lines).intersection(lines))
     if len(open_lines):
-        # open tie line
+
         open_lines_coll = create_line_collection(net,
                                                  lines=open_lines,
                                                  zorder=0,
@@ -332,16 +413,28 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
         open_lines_coll.set_dashes((0, (0.8, 1.5)))
         collection_list.append(open_lines_coll)
 
-        legend_titles.append("Open Tie Line")
+        legend_titles.append("Open Tie Line (Lines)")
         legend_handles.append(Line2D([0], [0], color="black", linestyle="dashed"))
-
+    # open switches
+    sw = list(net.switch.loc[(net.switch.et == "l") & ~net.switch.closed].index)
+    if len(sw):
+        sc = create_line_switch_collection(net,
+                                           switches=sw,
+                                           size=0.75 * bus_size,
+                                           distance_to_bus=0.5 * bus_size,
+                                           zorder=3,
+                                           color="red")
+        collection_list.append(sc)
+        legend_titles.append("Open Tie Line (Switches)")
+        legend_handles.append(Line2D([0], [0], markeredgecolor="red",
+                                     color="white", linestyle='', marker="s"))
     # highlight
     if hl_buses is not None:
         hb = create_bus_collection(net,
                                    hl_buses,
                                    size=bus_size,
                                    patch_type="circle",
-                                   zorder=2,
+                                   zorder=5,
                                    facecolor="red",
                                    edgecolor="red",
                                    infofunc=bus_info)
@@ -353,14 +446,13 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
         hl = create_line_collection(net,
                                     hl_lines,
                                     linewidth=4 * line_size,
-                                    zorder=2,
+                                    zorder=5,
                                     color="red",
                                     use_bus_geodata=use_bus_geodata,
                                     infofunc=line_info)
         collection_list.append(hl)
         legend_titles.append("Highlighted lines")
         legend_handles.append(Line2D([0], [0], color="red"))
-
 
     # show plot
     fig = plt.figure(figsize=(12 * plot_scale, 7 * plot_scale))
