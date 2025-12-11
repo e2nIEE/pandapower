@@ -449,7 +449,7 @@ def create_q_capability_characteristics_object(net):
             element_ids.append(element_id)
             q_min_indices.append(q_min_index)
             q_max_indices.append(q_max_index)
-            logger.info("Adding characteristic objects for id_q_capability_curve %d" % element_id)
+            logger.debug("Adding characteristic objects for id_q_capability_curve %d" % element_id)
 
         characteristic_df = pd.DataFrame({
             "id_q_capability_curve": element_ids,
@@ -470,12 +470,12 @@ def create_q_capability_characteristics_object(net):
                 "q_capability_characteristic"]["q_min_characteristic"].map(object_map)
             net["q_capability_characteristic"]["q_max_characteristic"] = net[
                 "q_capability_characteristic"]["q_max_characteristic"].map(object_map)
-        logger.info(f"Finished creating p dependent q characteristic objects for capability curve in "
+        logger.debug(f"Finished creating p dependent q characteristic objects for capability curve in "
                     f"{time.time() - time_start}.")
         del net["q_capability_characteristic_temp"]
 
     else:
-        logger.info("q_capability_curve_table is empty - no characteristic objects created.")
+        logger.debug("q_capability_curve_table is empty - no characteristic objects created.")
 
 def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
     """
@@ -505,7 +505,7 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
 
     if len(net[element]) == 0:
         logger.warning(f"No. of {element} elements is zero.")
-        return
+        return [], []
 
     if 'reactive_capability_curve' in net[element].columns:
         element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
@@ -530,6 +530,7 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
         qmin = curve_q.loc[element_index, "min_q_mvar"]
         qmax = curve_q.loc[element_index, "max_q_mvar"]
     else:
+        logger.info(f"reactive_capability_curve is missing in {element} table, assuming +- np.inf as limits")
         qmin = [-np.inf]*len(element_index)
         qmax = [np.inf]*len(element_index)
 
