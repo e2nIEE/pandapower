@@ -111,13 +111,13 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None, lv_to
 def get_result_dfs(net_name, fault_location, lv_tol_percent):
     if 'four_bus' in net_name and fault_location not in [0, 1, 3]:
         print(f"For {net_name} only fault locations 0, 1, 3 are supported. Skipping fault location {fault_location}.")
-        return None, None
+        return None, None, None
     elif 'five_bus' in net_name and fault_location not in [0, 2, 4]:
         print(f"For {net_name} only fault locations 0, 2, 4 are supported. Skipping fault location {fault_location}.")
-        return None, None
+        return None, None, None
     elif 'eight_bus' in net_name and fault_location not in [0, 2, 4, 6]:
         print(f"For {net_name} only fault locations 0, 2, 4, 6 are supported. Skipping fault location {fault_location}.")
-        return None, None
+        return None, None, None
 
     result_files_path = os.path.join(pp_dir, 'test', 'shortcircuit', 'sce_tests', 'sc_result_comparison')
     net = load_test_case(net_name)
@@ -126,12 +126,12 @@ def get_result_dfs(net_name, fault_location, lv_tol_percent):
     x = 1e-20
 
     net.line.loc[net.line.name.str.contains('1ph'), "c0_nf_per_km"] = x
-    net.line.loc[net.line.name.str.contains('1ph'), "r0_ohm_per_km"] = x
-    net.line.loc[net.line.name.str.contains('1ph'), "x0_ohm_per_km"] = x
+    # net.line.loc[net.line.name.str.contains('1ph'), "r0_ohm_per_km"] = x
+    # net.line.loc[net.line.name.str.contains('1ph'), "x0_ohm_per_km"] = x
 
-    net.line.loc[net.line.name.str.contains('2ph'), "c0_nf_per_km"] = x
-    net.line.loc[net.line.name.str.contains('2ph'), "r0_ohm_per_km"] = x
-    net.line.loc[net.line.name.str.contains('2ph'), "x0_ohm_per_km"] = x
+    # net.line.loc[net.line.name.str.contains('2ph'), "c0_nf_per_km"] = x
+    # net.line.loc[net.line.name.str.contains('2ph'), "r0_ohm_per_km"] = x
+    # net.line.loc[net.line.name.str.contains('2ph'), "x0_ohm_per_km"] = x
 
     wp_folder = 'wp_2.3'
 
@@ -145,6 +145,7 @@ def get_result_dfs(net_name, fault_location, lv_tol_percent):
     diff_df_branch = compare_sc_results(net, os.path.join(result_files_path, excel_file), branch=True,
                                         fault_location=fault_location, lv_tol_percent=lv_tol_percent)
 
+    return diff_df, diff_df_branch, net
     return diff_df, diff_df_branch, net
 
 
