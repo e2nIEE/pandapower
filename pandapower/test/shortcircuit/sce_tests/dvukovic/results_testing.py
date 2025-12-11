@@ -326,7 +326,7 @@ def _get_sgen_results(net, ppci_0, ppci_1, ppci_2, bus):
 
     # STEP 0: Early Exit if No Static Generators Exist
 
-    if "sgen" not in net or len(net.sgen) == 0:
+    if "sgen" not in net or len(net.sgen) == 0 or net.sgen.in_service.sum() == 0:
         return
 
     sgen_df = net.sgen
@@ -642,7 +642,7 @@ def _get_ext_grid_results(net, ppci_0, ppci_1, ppci_2, bus):
             Z0 = np.where(same_bus, z_exgk0, Zb_exg0)
         else:
             # Fault on HV side → transformer not in path
-            Z1 = Z2 = Z0 = ZQ_complex
+            Z1 = Z2 = Z0 = ZQ_complex  # ToDo: define ZQ_complex
     else:
         #  Direct connection to external grid
 
