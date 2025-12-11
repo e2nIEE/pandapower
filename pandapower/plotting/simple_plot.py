@@ -253,7 +253,7 @@ def hover(event, ax, net, hover_text):
     if event.inaxes == ax:
         for collection in ax.collections:
             if hasattr(collection, "info"):
-                hit, props = collection.contains(event)
+                _, props = collection.contains(event)
                 hovering_over = list(props["ind"])
                 if len(hovering_over) > 0 and len(collection.info) > 0:
                     info = collection.info[hovering_over[0]]
@@ -368,7 +368,7 @@ def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, li
                                      edgecolor="white",
                                     )
         collection_list.append(ex_c)
-        legend_titles.append(f"External grid")
+        legend_titles.append("External grid")
         legend_handles.append(Line2D([0], [0], markeredgecolor="white", color="black",
                                      linestyle='', marker="s"))
     # buses
