@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+
+[3.3.0] - 2025-12-15
+-------------------------------
 - [FIXED] julia implementation, now using juliacall
 - [CHANGED] diagnostics restructured for better extensibility
 - [FIXED] implausible impedance test results never showing in report
