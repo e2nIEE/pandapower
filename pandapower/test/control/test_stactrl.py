@@ -13,6 +13,11 @@ from pandapower.create import create_empty_network, create_bus, create_buses, cr
 from pandapower.run import runpp
 from pandapower.file_io import from_json
 from pandapower import pp_dir
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
+
+from numpy import linspace, float64
+
+from pandas import DataFrame
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +111,7 @@ def test_qctrl_droop():
     runpp(net, run_control=True)
     assert (net.controller.object[0].converged == True and net.controller.object[1].converged == True)
     assert (abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
-                net.controller.object[1].q_set_mvar_bsc + (0.995 - net.res_bus.loc[1, "vm_pu"]) * 40)) < tol)
+                net.controller.object[1].q_set_mvar_bsc + (net.res_bus.loc[1, "vm_pu"] - 0.995) * 40)) < tol)
 
 def test_qlimits_qctrl():
     net = simple_test_net()
@@ -165,6 +170,53 @@ def test_qlimits_voltctrl():
     runpp(net, run_control=True, enforce_q_lims=True)
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.8) < tol)
 
+def test_qlimits_with_capability_curve():
+    for v in linspace(start=0.98, stop=1.02, num=5, dtype=float64):
+        for p in linspace(start=-2.5, stop=2.5, num=10, dtype=float64):
+            net = simple_test_net()
+            create_sgen(net, 2, p_mw=0., sn_mva=0, name="sgen2")
+            tol = 1e-6
+            # create q characteristics table
+            net["q_capability_curve_table"] = DataFrame(
+                {'id_q_capability_curve': [0, 0, 0, 0, 0],
+                'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
+                'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
+                'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
+
+            net.sgen.id_q_capability_characteristic.at[0] = 0
+            net.sgen['curve_style'] = "straightLineYValues"
+            create_q_capability_characteristics_object(net)
+
+            BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
+                                output_element="sgen", output_variable="q_mvar", output_element_index=[0],
+                                output_element_in_service=[True], output_values_distribution=[1],
+                                input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
+                                set_point=v, voltage_ctrl=True, tol=tol)
+            net.sgen.loc[0, 'p_mw'] = p
+            runpp(net, run_control=True, enforce_q_lims=True)
+            assert -0.1 <= net.res_sgen.loc[0, 'q_mvar'] <= 0.1
+
+    net = simple_test_net() # test once more when there is no reactive power capability curve
+    net["q_capability_curve_table"] = DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0],
+        'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
+        'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
+        'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
+
+    net.sgen.id_q_capability_characteristic.at[0] = 0
+    net.sgen['curve_style'] = "straightLineYValues"
+    create_q_capability_characteristics_object(net)
+    net.sgen.drop(columns=['reactive_capability_curve'], inplace=True)
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
+                        output_element="sgen", output_variable="q_mvar", output_element_index=[0],
+                        output_element_in_service=[True], output_values_distribution=[1],
+                        input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
+                        set_point=0.98, voltage_ctrl=True, tol=tol)
+    runpp(net, run_control=True, enforce_q_lims=True)
+    assert abs(net.res_sgen.loc[0, 'q_mvar'] + 6.7373132) < tol
+
+
+
 def test_stactrl_pf_import():
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'stactrl_test.json')
     net = from_json(path)
@@ -175,44 +227,33 @@ def test_stactrl_pf_import():
     net.controller.object[2].tol = 0.00001
 
     runpp(net, run_control=True)
-    print("\n")
-    print("--------------------------------------")
-    print("Scenario 1 - Constant Q")
-    print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
+    logger.info("Scenario 1 - Constant Q")
+    logger.info("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
           net.res_line.loc[0, "q_to_mvar"], "\t", net.res_line.loc[0, "q_from_mvar"])
-    print("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
+    logger.info("Controlled line, constQ = 0.5 MVar - q_from_mvar and q_to_mvar: \n",
           net.res_line.loc[2, "q_to_mvar"], "\t", net.res_line.loc[1, "q_from_mvar"])
     assert (net.res_line.loc[0, "q_to_mvar"] - 0.5 < tol)
     assert (net.res_line.loc[2, "q_to_mvar"] - 0.5 < tol)
-    print("--------------------------------------")
-    print("Scenario 2 - Constant U, droop 40 MVar/pu")
-    print("Input Measurement q_from_mvar and q_to_mvar, expected: \n 0.2442 MVar, -0.6215 MVar: \n",
+    logger.info("Scenario 2 - Constant U, droop 40 MVar/pu")
+    logger.info("Input Measurement q_from_mvar and q_to_mvar, expected: \n 0.2442 MVar, -0.6215 MVar: \n",
           net.res_line.loc[4, "q_to_mvar"], "\t", net.res_line.loc[4, "q_from_mvar"])
-    print("Input Measurement q_from_mvar and q_to_mvar, expected:\n 0.2442 MVar, -0.6215 MVar: \n",
+    logger.info("Input Measurement q_from_mvar and q_to_mvar, expected:\n 0.2442 MVar, -0.6215 MVar: \n",
           net.res_line.loc[5, "q_to_mvar"], "\t", net.res_line.loc[5, "q_from_mvar"])
-    print("Controlled bus, initial set point 1.01 pu and 40 MVar/pu, vm_pu, \n expected: "
+    logger.info("Controlled bus, initial set point 1.01 pu and 40 MVar/pu, vm_pu, \n expected: "
         "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[62, "vm_pu"])
     assert (net.res_bus.loc[62, "vm_pu"] - (1.01 + (net.res_line.loc[4, "q_to_mvar"] + net.res_line.loc[5, "q_to_mvar"])
                                             / net.controller.object[4].q_droop_mvar) < tol)
-    print("--------------------------------------")
-    print("Scenario 3 - Constant U")
-    print("Controlled bus, set point = 1.03 pu, vm_pu: \n", net.res_bus.loc[84, "vm_pu"])
+    logger.info("Scenario 3 - Constant U")
+    logger.info("Controlled bus, set point = 1.03 pu, vm_pu: \n", net.res_bus.loc[84, "vm_pu"])
     assert (net.res_bus.loc[84, "vm_pu"] - 1.03 < tol)
-    print("--------------------------------------")
-    print("Scenario 4 - Q(U) - droop 40 MVar/pu")
-    print("Input Measurement vm_pu: \n", net.res_bus.loc[103, "vm_pu"])
-    #if Version(str(pf.__version__)) > Version("25.0.0"):
-    print(
+    logger.info("Scenario 4 - Q(U) - droop 40 MVar/pu")
+    logger.info("Input Measurement vm_pu: \n", net.res_bus.loc[103, "vm_pu"])
+    logger.info(
         "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
-        "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995778 pu) * -40 MVar/pu) = -0.87112 MVar: \n",
+        "q_hv_mvar, expected: \n 1 MVar + (0.995778 - 0.999 pu) * 40 MVar/pu) = 0.87112 MVar: \n",
         net.res_trafo.loc[3, "q_hv_mvar"])
-    #else:
-    #    print(
-    #        "Controlled Transformer Q, lower voltage band 0.999 pu, initial set point 1 MVar and 40 MVar/pu, "
-    #        "q_hv_mvar, expected: \n -(1 MVar + (0.999 pu  - 0.995846 pu) * 40 MVar/pu) = -1.126176 MV1ar: \n",
-    #        net.res_trafo.loc[3, "q_hv_mvar"])
-    assert (net.res_trafo.loc[3, "q_hv_mvar"] - (-(1 + (0.999 - net.res_bus.loc[91, "vm_pu"])
-                                                   * net.controller.object[2].q_droop_mvar)) < tol)
+    assert (net.res_trafo.loc[3, "q_hv_mvar"] - (1 + (net.res_bus.loc[91, "vm_pu"] - 0.999)
+                                                   * net.controller.object[2].q_droop_mvar) < tol)
 
 
 if __name__ == '__main__':
