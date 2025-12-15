@@ -64,8 +64,8 @@ def from_pf(net_name,
     log_file_path = r'C:\Users\mfischer\spyder_projects\nap26_edis\nap26_edis\convertpf2pp\validate_pf2pp\converter_logger\log'
     # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings_specialUW.log', level=logging.WARNING, 
     #                 format='%(asctime)s - %(levelname)s - %(message)s')
-    logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings.log', level=logging.WARNING, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+    # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings.log', level=logging.WARNING, 
+    #                 format='%(asctime)s - %(levelname)s - %(message)s')
 
     logger = logging.getLogger(__name__)
     
@@ -499,7 +499,7 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
                 if flag_graphics == 'GPS':
                     x = substat.GetAttribute('e:GPSlon')
                     y = substat.GetAttribute('e:GPSlat')
-                    logger.warning('bus %s has no geo data, geodata of substation %s is used.' % (item, substat))
+                    logger.warning('bus %s has no geodata, geodata of substation %s is used.' % (item, substat))
                     if x == 0 and y == 0:
                         pass
                 elif flag_graphics == 'graphic objects':
