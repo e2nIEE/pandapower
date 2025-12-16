@@ -152,7 +152,7 @@ def create_consecutive_bus_lookup(bus_index: np.ndarray):
     """
     if len(bus_index) == 0:
         return np.array([], dtype=np.int64)
-    consec_buses = np.arange(len(bus_index), dtype=np.int64)
+    consec_buses: np.ndarray = np.arange(len(bus_index), dtype=np.int64)
     # bus_lookup as dict:
     # bus_lookup = dict(zip(bus_index, consec_buses))
     # bus lookup as mask from pandapower -> pypower
@@ -728,6 +728,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
 
         if "step_dependency_table" in s:
+            # TODO: remove step_dependency_table and infer from id_characterists_table if it exsists
             if np.any(vl & (s.step_dependency_table == True) & (pd.isna(s.id_characteristic_table))):
                 raise UserWarning("Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
                                   "Please set an id_characteristic_table or set step_dependency_table to False.")

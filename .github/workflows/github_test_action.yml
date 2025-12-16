@@ -4,27 +4,31 @@
 name: pandapower
 on:
   push:
-    branches: '*'
     paths-ignore:
       - 'CHANGELOG.rst'
+      - '**/CHANGELOG.rst'
   pull_request:
-    branches: '*'
     paths-ignore:
       - 'CHANGELOG.rst'
+      - '**/CHANGELOG.rst'
+
+# https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
         # Reminder: when removing the support of an old python version here, then don't forget to
-        # remove it also in pyproject.toml 'requires-python'
+        # remove it also in pyproject.toml 'requires-python' and the release pipelines
         group: [ 1, 2 ]
     steps:
-#      - uses: actions/checkout@v4
-#      - uses: julia-actions/setup-julia@v1.5
+#      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
@@ -33,32 +37,34 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --all-extras          
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+          # if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
           uv pip install pytest-split
-          if ${{ matrix.python-version == '3.9' }}; then uv pip install pypower; fi
-          if ${{ matrix.python-version != '3.9' }}; then uv pip install numba; fi
-          if ${{ matrix.python-version == '3.13' }}; then uv pip install lightsim2grid; fi
+          uv pip uninstall juliacall
+          # if ${{ matrix.python-version == '3.10' }}; then uv pip install pypower; fi
+          # if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
+          # if ${{ matrix.python-version == '3.13' }}; then uv pip install lightsim2grid; fi
       - name: List of installed packages
         run: |
           uv pip list
       - name: Test with pytest
-        if: ${{ matrix.python-version != '3.9' }}
+        if: ${{ matrix.python-version != '3.10' }}
         run: |
-          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }}
+          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
       - name: Test with pytest, Codecov and Coverage
-        if: ${{ matrix.python-version == '3.9' }}
+        if: ${{ matrix.python-version == '3.10' }}
         run: |
           uv pip install pytest-cov
-          uv run pytest -n=auto --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }}
+          uv run pytest -n=auto --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
-        if: ${{ matrix.python-version == '3.9' }}
+        if: ${{ matrix.python-version == '3.10' }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.group }}
           path: ./coverage-${{ matrix.group }}.xml
 
-  julia:
+
+  opf:
     # needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -72,19 +78,20 @@ jobs:
         group: [ 1 ]
     steps:
       - uses: actions/checkout@v5
-      - uses: julia-actions/setup-julia@v2
+      - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
-      - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
+      #- name: Install uv
+      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      #  with:
+      #    python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          uv sync --all-extras
-          uv pip install pypower pytest-split pytest-cov julia
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+          # uv sync --all-extras
+          python -m pip install pypower pytest-split pytest-cov juliacall julia
+          python -m pip install .[pandamodels]
+          # if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       #- name: Install Julia
       #  run: |
       #    ./.install_julia.sh 1.10.4
@@ -94,16 +101,15 @@ jobs:
         run: |
           julia -e 'using Pkg; Pkg.add("PandaModels")'
           julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
-          uv run python -c "import julia; julia.install(color=True)"
+          python -c "import julia; julia.install(color=True)"
       - name: List of installed packages
         run: |
-          uv python find
-          uv pip list
+          pip list
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          # uv run pytest -n=auto --cov=./ --cov-report=xml
-          uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
+          pytest --cov=./ --cov-report=xml pandapower/test/opf
+          # uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
   upload-coverage:
@@ -125,13 +131,13 @@ jobs:
           cp coverage-2.xml codacy-coverage-2.xml
       - name: Upload coverage to Codacy
         continue-on-error: true
-        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+        uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 #v1.3
         with:
           coverage-reports: codacy-coverage-1.xml,codacy-coverage-2.xml
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 #v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage-1.xml,./coverage-2.xml
@@ -169,7 +175,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
     steps:
     - uses: actions/checkout@v4
     - name: Install uv
@@ -182,7 +188,8 @@ jobs:
         uv pip install setuptools
         if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi        
         uv pip install matplotlib
-        if ${{ matrix.python-version != '3.9' }}; then uv pip install numba; fi
+        uv pip install lxml
+        if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
     - name: Install pandapipes and simbench
       run: |
         uv pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
@@ -301,46 +308,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-        with:
-          python-version: '3.11'
+      #- name: Install uv
+      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      #  with:
+      #    python-version: '3.11'
       - name: Install dependencies
         run: |
-          uv sync --all-extras
-          uv pip install seaborn
-          ./.install_julia.sh 1.10.4
-          uv pip install julia seaborn jupyter
-          uv run python ./.install_pycall.py
+          # uv sync --all-extras
+          python -m pip install -e .[all]
+          # ./.install_julia.sh 1.10.4
+          python -m pip install julia seaborn jupyter juliacall
+          # uv run python ./.install_pycall.py
       - name: List all installed packages
         run: |
-          uv pip list
+          python -m pip list
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          uv run pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-        with:
-          python-version: '3.11'
+      #- name: Install uv
+      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      #  with:
+      #    python-version: '3.11'
       - name: Install dependencies
         run: |
-          uv sync --all-extras          
-          ./.install_julia.sh 1.10.4
-          uv pip install julia seaborn
-          uv run python ./.install_pycall.py
+          # uv sync --all-extras
+          # ./.install_julia.sh 1.10.4
+          python -m pip install -e .[all]
+          python -m pip install julia seaborn juliacall jupyter
+          # uv run python ./.install_pycall.py
       - name: List all installed packages
         run: |
-          uv pip list
+          python -m pip list
       - name: Test with pytest
         run: |
-          uv run pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   docs_check:
     needs: build
@@ -349,7 +357,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check sphinx build
-        uses: ammaraskar/sphinx-action@7.4.7
+        uses: ammaraskar/sphinx-action@54e52bfb642e9b60ea5b6bcb05fe3f74b40d290a #8.2.3
         with:
           pre-build-command: "python -m pip install uv && uv pip install .[docs] --system --link-mode=copy"
           build-command: "sphinx-build -b html . _build -W"

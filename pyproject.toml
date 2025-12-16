@@ -16,7 +16,7 @@ maintainers = [
 description = "An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation."
 readme = "README.rst"
 license-files = ["LICENSE", "AUTHORS"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -29,23 +29,24 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     # Add the specific Python versions supported here, e.g.:
-    "Programming Language :: Python :: 3.9",
+    #  REMINDER: When removeing or adding support for a Version here, please remember to update ALL github pipelines.
+    #  REMINDER: The mypy config also contains the lowest supported python version
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13"
 ]
 dependencies = [
-    "pandas~=2.2",
-    "networkx~=3.2",
-    "scipy~=1.13",
-    "numpy~=2.0",
+    "pandas~=2.3",
+    "networkx~=3.4",
+    "scipy~=1.15",
+    "numpy~=2.2",
     "packaging~=25.0",
     "tqdm~=4.67",
     "deepdiff~=8.6",
     "geojson~=3.2",
     "typing_extensions~=4.9",
-    "lxml~=6.0"
+    "pandera~=0.26.1"
 ]
 keywords = [
     "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
@@ -61,15 +62,35 @@ Download = "https://pypi.org/project/pandapower/#files"
 Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 
 [project.optional-dependencies]
-docs = ["numpydoc~=1.9", "matplotlib~=3.9", "sphinx~=7.4", "sphinx_rtd_theme~=3.0", "sphinx-pyproject~=0.3", "sphinxcontrib-imagesvg~=0.1"]
-plotting = ["plotly~=6.3", "matplotlib~=3.9", "igraph", "geopandas~=1.0"]
+docs = [
+    "numpydoc~=1.9",
+    "matplotlib~=3.10",
+    "sphinx~=8.1",
+    "sphinx_rtd_theme~=3.0",
+    "sphinx-pyproject~=0.3",
+    "sphinxcontrib-imagesvg~=0.1",
+    "pandapower[converter]"
+]
+plotting = ["plotly~=6.3", "matplotlib~=3.10", "igraph", "geopandas~=1.1"]
 test = ["pytest~=8.4", "pytest-xdist~=3.8", "nbmake~=1.5"]
-performance = ["ortools~=9.14", "numba~=0.60", "lightsim2grid~=0.10.3"]
-fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=46.0", "geopandas~=1.0", "psycopg~=3.2", "lxml~=6.0"]
+performance = ["ortools~=9.14", "numba~=0.61", "lightsim2grid~=0.10.3"]
+fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=46.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.0"]
 converter = ["matpowercaseframes~=1.1", "lxml~=6.0"]
 pgm = ["power-grid-model-io~=1.2"]
-control = ["shapely~=2.0"]
-typing = ["mypy~=1.18", "pandas-stubs~=2.2", "types-shapely~=2.0", "types-psycopg2~=2.9", "types-openpyxl~=3.1", "types-networkx~=3.2", "types-tqdm~=4.67"]
+control = ["shapely~=2.1"]
+pandamodels = ["juliacall~=0.9"]
+
+typing = [
+    "mypy~=1.18",
+    "pandas-stubs~=2.3",
+    "types-shapely~=2.1",
+    "types-psycopg2~=2.9",
+    "types-openpyxl~=3.1",
+    "types-networkx~=3.4",
+    "types-tqdm~=4.67",
+    "scipy-stubs~=1.15",
+    "pandera[mypy]~=0.26.1"
+]
 
 all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,typing]"]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
@@ -115,6 +136,6 @@ exclude_lines = [
     "if __name__ == .__main__.:"
 ]
 
-# styeling information for black formatter
-[tool.black]
+# styling information for ruff formatter
+[tool.ruff]
 line-length = 120

@@ -23,13 +23,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=False, **kwargs):
+def from_mpc(
+    mpc_file,
+    f_hz=50,
+    casename_mpc_file='mpc',
+    validate_conversion=False,
+    load_case_engine=None,
+    **kwargs,
+):
     """
     This function converts a matpower case file version 2 to a pandapower net.
 
     Note: If 'mpc_file' ends with '.m' the python package 'matpowercaseframes' is used. If
     'mpc_file' ends with '.mat' 'scipy.io.loadmat' is used. Other file endings are not supported.
     In that other cases, please, rename the file ending or use the internal subfunctions.
+    To run actual MATPOWER to load the `.m` file, use matpower-pip and pass `load_case_engine`.
 
     Note: python is 0-based while Matlab is 1-based.
 
@@ -44,14 +52,18 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
         **casename_mpc_file** (str, 'mpc') - The name of the variable in .mat file which contain
         the matpower case structure, i.e. the arrays "gen", "branch" and "bus".
 
-        ****kwargs** - key word arguments for from_ppc()
+        **load_case_engine** (object, None) - External engine used to call MATPOWER `loadcase`
+        (e.g. Oct2Py() object from matpower.start_instance()). Defaults to None. If None, parse
+        data using matpowercaseframes.reader.parse_file.
+
+        ****kwargs** - key word arguments for from_ppc().
 
     OUTPUT:
 
         **net** - The pandapower network
 
     EXAMPLE:
-        >>> from pandapower.converter import from_mpc
+        >>> from pandapower.converter.matpower import from_mpc
         >>>
         >>> pp_net1 = from_mpc('case9.mat', f_hz=60)
         >>> pp_net2 = from_mpc('case9.m', f_hz=60)
@@ -60,11 +72,11 @@ def from_mpc(mpc_file, f_hz=50, casename_mpc_file='mpc', validate_conversion=Fal
     if ending == ".mat":
         ppc = _mat2ppc(mpc_file, casename_mpc_file)
     elif ending == ".m":
-        ppc = _m2ppc(mpc_file, casename_mpc_file)
+        ppc = _m2ppc(mpc_file, load_case_engine=load_case_engine)
     net = from_ppc(ppc, f_hz=f_hz, validate_conversion=validate_conversion, **kwargs)
     if "mpc_additional_data" in ppc:
         if "_options" not in net:
-            net["_options"] = dict()
+            net["_options"] = {}
         net._options.update(ppc["mpc_additional_data"])
         logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
 
@@ -80,7 +92,7 @@ def _mat2ppc(mpc_file, casename_mpc_file):
     mpc = scipy.io.loadmat(mpc_file, squeeze_me=True, struct_as_record=False)
 
     # init empty ppc
-    ppc = dict()
+    ppc = {}
 
     _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file)
     _adjust_ppc_indices(ppc)
@@ -89,16 +101,20 @@ def _mat2ppc(mpc_file, casename_mpc_file):
     return ppc
 
 
-def _m2ppc(mpc_file, casename_mpc_file):
+def _m2ppc(mpc_file, load_case_engine=None):
     if not matpowercaseframes_imported:
         raise NotImplementedError(
             "matpowercaseframes is used to convert .m file. Please install that python "
             "package, e.g. via 'pip install matpowercaseframes'.")
-    mpc_frames = CaseFrames(mpc_file)
-    ppc = {key: mpc_frames.__getattribute__(key) if not isinstance(
-        mpc_frames.__getattribute__(key), pd.DataFrame) else mpc_frames.__getattribute__(
-        key).values for key in mpc_frames._attributes}
+    mpc_frames = CaseFrames(mpc_file, load_case_engine=load_case_engine)
+    ppc = {
+        key: mpc_frames.__getattribute__(key)  # directly get python value
+        if not isinstance(mpc_frames.__getattribute__(key), pd.DataFrame)
+        else mpc_frames.__getattribute__(key).values  # get value from pandas
+        for key in mpc_frames._attributes
+    }
     _adjust_ppc_indices(ppc)
+    _change_ppc_TAP_value(ppc)
     return ppc
 
 
@@ -129,7 +145,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 
         for k in mpc[casename_mpc_file]._fieldnames:
             if k not in ppc:
-                ppc.setdefault("mpc_additional_data", dict())[k] = getattr(mpc[casename_mpc_file], k)
+                ppc.setdefault("mpc_additional_data", {})[k] = getattr(mpc[casename_mpc_file], k)
 
     else:
         logger.error('Matfile does not contain a valid mpc structure.')
@@ -138,7 +154,3 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 def _change_ppc_TAP_value(ppc):
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
     ppc["branch"][np.where(ppc["branch"][:, 8] == 0), 8] = 1
-
-
-if "__main__" == __name__:
-    pass
