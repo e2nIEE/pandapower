@@ -5,6 +5,7 @@
 
 import os
 import pytest
+import numpy as np
 from pandapower import pp_dir
 from pandapower.test.shortcircuit.sce_tests.functions_tests import (compare_results, run_test_cases,
                                                                     load_test_case_data, create_parameter_list)
@@ -193,7 +194,25 @@ def test_wp25_grounding_bank(net_name, fault, case, fault_values, lv_tol_percent
 @pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch",
                          param_wp23, ids=lambda val: str(val))
 def test_wp23(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
+
     net, dataframes = load_test_case_data(net_name, fault_location_bus)
+
+    # skip tests when the fault type does not match the phase type
+    buses_1ph = np.unique(np.concatenate([
+        net.line.loc[net.line.name.str.contains('1ph', na=False), 'to_bus'].values,
+        net.trafo.loc[net.trafo.name.str.contains('1ph', na=False), 'lv_bus'].values
+    ]))
+    buses_2ph = np.unique(np.concatenate([
+        net.line.loc[net.line.name.str.contains('2ph', na=False), 'to_bus'].values,
+        net.trafo.loc[net.trafo.name.str.contains('2ph', na=False), 'lv_bus'].values
+    ]))
+
+    if fault_location_bus in buses_1ph and fault in ['LLL', 'LL', 'LLG']:
+        pytest.skip(f"{fault} fault on 1ph line is not applicable")
+
+    if fault_location_bus in buses_2ph and fault in ['LLL']:
+        pytest.skip(f"{fault} fault on 2ph line is not applicable")
+
     results = run_test_cases(
         net,
         dataframes["branch" if is_branch else "bus"],
