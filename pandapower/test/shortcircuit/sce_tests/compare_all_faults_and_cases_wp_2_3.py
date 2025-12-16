@@ -21,7 +21,7 @@ def compare_sc_results(net, excel_file, branch=False, fault_location=None, lv_to
     tolerances = {"ikss_ka": 1e-4, "skss_mw": 1e-4, "rk_ohm": 1e-5, "xk_ohm": 1e-5,
                   "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-3}
 
-    faults = ["LLL"] #,"LL", "LG", "LLG"]
+    faults = ["LLL", "LL", "LG", "LLG"]
     cases = ["min", "max"]
     fault_ohm_values = [(0.0, 0.0), (5.0, 5.0)]
 
@@ -123,15 +123,12 @@ def get_result_dfs(net_name, fault_location, lv_tol_percent):
     net = load_test_case(net_name)
 
     # set zero values to very small values avoid division by zero in short circuit calculation #TODO: only temporary!
-    x = 1e-20
+    x = 1e-6
 
     net.line.loc[net.line.name.str.contains('1ph'), "c0_nf_per_km"] = x
-    # net.line.loc[net.line.name.str.contains('1ph'), "r0_ohm_per_km"] = x
-    # net.line.loc[net.line.name.str.contains('1ph'), "x0_ohm_per_km"] = x
+    net.line.loc[net.line.name.str.contains('1ph'), "r0_ohm_per_km"] = x
+    net.line.loc[net.line.name.str.contains('1ph'), "x0_ohm_per_km"] = x
 
-    # net.line.loc[net.line.name.str.contains('2ph'), "c0_nf_per_km"] = x
-    # net.line.loc[net.line.name.str.contains('2ph'), "r0_ohm_per_km"] = x
-    # net.line.loc[net.line.name.str.contains('2ph'), "x0_ohm_per_km"] = x
 
     wp_folder = 'wp_2.3'
 
@@ -253,47 +250,47 @@ if __name__ == "__main__":
     net_names.append(net_names.pop(0))
     print(net_names)
 
-    # ## show panadpower and powerfactory results for specified grid and location
-    # net_name = '3_five_bus_radial_grid_1ph_dyn_MP'  # possible net_name in net_names
-    # fault_location = 4  # 0, 1, 3 for four-bus grids; 0, 2, 4 for five-bus grids, 0, 2, 4, 6 for eight-bus grids
-    # lv_tol_percent = 10
-    #
-    # diff_df, diff_df_branch, net = get_result_dfs(net_name, fault_location, lv_tol_percent)
-    #
-    # ## detailed overview for all grids
-    # names = [name for name in net_names]
-    # fault_location = [4]
-    # lv_tol_percent = 10
-    # df_bus, df_branch = generate_summary_tables(names, fault_location,
-    #                                             detailed=True, lv_tol_percent=lv_tol_percent)
-    #
-    # ## simple overview for all grids
-    # names = [name for name in net_names]
-    # fault_location = [4]
-    # lv_tol_percent = 6
-    # df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location,
-    #                                                           detailed=False, lv_tol_percent=lv_tol_percent)
+    ## show panadpower and powerfactory results for specified grid and location
+    net_name = '3_five_bus_radial_grid_1ph_dyn_MP'  # possible net_name in net_names
+    fault_location = 4  # 0, 1, 3 for four-bus grids; 0, 2, 4 for five-bus grids, 0, 2, 4, 6 for eight-bus grids
+    lv_tol_percent = 10
+
+    diff_df, diff_df_branch, net = get_result_dfs(net_name, fault_location, lv_tol_percent)
+
+    ## detailed overview for all grids
+    names = [name for name in net_names]
+    fault_location = [4]
+    lv_tol_percent = 10
+    df_bus, df_branch = generate_summary_tables(names, fault_location,
+                                                detailed=True, lv_tol_percent=lv_tol_percent)
+
+    ## simple overview for all grids
+    names = [name for name in net_names]
+    fault_location = [4]
+    lv_tol_percent = 6
+    df_bus_simple, df_branch_simple = generate_summary_tables(names, fault_location,
+                                                              detailed=False, lv_tol_percent=lv_tol_percent)
 
 
 ##
-import pandapower as pp
-from pandapower.shortcircuit.calc_sc import calc_sc
-net = pp.from_json(r"C:\Users\lriedl\PycharmProjects\sce\pandapower\test\shortcircuit\sce_tests\test_grids\wp_2.3\1_four_bus_radial_1ph_grid_MP.json")
-x = 0.001
-
-net.line.loc[net.line.name.str.contains('1ph'), "c0_nf_per_km"] = x
-net.line.loc[net.line.name.str.contains('1ph'), "r0_ohm_per_km"] = x
-net.line.loc[net.line.name.str.contains('1ph'), "x0_ohm_per_km"] = x
-
-net.line.loc[net.line.name.str.contains('2ph'), "c0_nf_per_km"] = x
-net.line.loc[net.line.name.str.contains('2ph'), "r0_ohm_per_km"] = x
-net.line.loc[net.line.name.str.contains('2ph'), "x0_ohm_per_km"] = x
-
-# net.line.loc[0, "in_service"] = False
-# net.line.loc[1, "in_service"] = False
-net.line.loc[2, "in_service"] = False
-
-calc_sc(net, fault="LLG", case="max", branch_results=False, ip=False, lv_tol_percent=10, bus=2)
+# import pandapower as pp
+# from pandapower.shortcircuit.calc_sc import calc_sc
+# net = pp.from_json(r"C:\Users\lriedl\PycharmProjects\sce\pandapower\test\shortcircuit\sce_tests\test_grids\wp_2.3\1_four_bus_radial_1ph_grid_MP.json")
+# x = 0.001
+#
+# net.line.loc[net.line.name.str.contains('1ph'), "c0_nf_per_km"] = x
+# net.line.loc[net.line.name.str.contains('1ph'), "r0_ohm_per_km"] = x
+# net.line.loc[net.line.name.str.contains('1ph'), "x0_ohm_per_km"] = x
+#
+# net.line.loc[net.line.name.str.contains('2ph'), "c0_nf_per_km"] = x
+# net.line.loc[net.line.name.str.contains('2ph'), "r0_ohm_per_km"] = x
+# net.line.loc[net.line.name.str.contains('2ph'), "x0_ohm_per_km"] = x
+#
+# # net.line.loc[0, "in_service"] = False
+# # net.line.loc[1, "in_service"] = False
+# net.line.loc[2, "in_service"] = False
+#
+# calc_sc(net, fault="LLG", case="max", branch_results=False, ip=False, lv_tol_percent=10, bus=2)
 
 ##
 
