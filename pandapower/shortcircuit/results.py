@@ -274,9 +274,9 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
     if net["_options"]["fault"] == "LLG":
        _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net)
     _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
-    _get_gen_results(net, ppc_0, ppc_1, ppc_2, bus) #todo  - do the thing from line 277 for generators
-    _get_sgen_results(net, ppc_0, ppc_1, ppc_2, bus)
-    _get_ext_grid_results(net, ppc_0, ppc_1, ppc_2, bus)
+    # _get_gen_results(net, ppc_0, ppc_1, ppc_2, bus) #todo  - do the thing from line 277 for generators
+    # _get_sgen_results(net, ppc_0, ppc_1, ppc_2, bus)
+    # _get_ext_grid_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
         # TODO check option return all current here
         if (~net["_options"]['return_all_currents']):
