@@ -208,10 +208,9 @@ def test_wp23(net_name, fault, case, fault_values, lv_tol_percent, fault_locatio
     ]))
 
     if fault_location_bus in buses_1ph and fault in ['LLL', 'LL', 'LLG']:
-        pytest.skip(f"{fault} fault on 1ph line is not applicable")
-
+        pytest.skip(f"{fault} fault on 1ph bus is not applicable")
     if fault_location_bus in buses_2ph and fault in ['LLL']:
-        pytest.skip(f"{fault} fault on 2ph line is not applicable")
+        pytest.skip(f"{fault} fault on 2ph bus is not applicable")
 
     results = run_test_cases(
         net,
