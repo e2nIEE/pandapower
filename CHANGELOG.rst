@@ -5,6 +5,9 @@ Change Log
 -------------------------------
 - [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
 - [CHANGED] runpp: expanded enforce_q_lims functionality to consider max & min q limits for sgen elements (from either net.sgen.min/max_q_mvar parameters or reactive power capability curves)
+
+[3.3.0] - 2025-12-15
+-------------------------------
 - [FIXED] julia implementation, now using juliacall
 - [CHANGED] diagnostics restructured for better extensibility
 - [FIXED] implausible impedance test results never showing in report
