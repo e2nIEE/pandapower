@@ -27,9 +27,9 @@ def ieee_european_lv_asymmetric(scenario="on_peak_566", **kwargs):
     OPTIONAL:
         **scenario** - (str, "on_peak_566"): defines the scaling for load and generation
 
-                - "on_peak_566": high load scenario (peak load at 5:66 PM)
-                - "off_peak_1": low load scenario at 12:01 AM
-                - "off_peak_1440": low load scenario at midnight
+                - "on_peak_566": 09:26 AM: On Peak (566 min)
+                - "off_peak_1": 12:01 AM: Off Peak (1 min)
+                - "off_peak_1440": 12:00 AM: Off Peak (1440 min)
 
     OUTPUT:
          **net** - pandapower network
