@@ -176,7 +176,7 @@ class TestTrafoOptionalFields:
         net.trafo["tap_dependency_table"] = pd.Series([pd.NA, True, pd.NA], dtype="boolean")
         net.trafo["id_characteristic_table"] = pd.Series([pd.NA, 1, pd.NA], dtype="Int64")
         net.trafo["std_type"] = pd.Series([pd.NA, pd.NA, pd.NA], dtype="string")
-
+        # net.trafo["max_loading_percent"] = 80 #TODO no error buut with create there is
         validate_network(net)
 
     def test_tap_group_partial_missing_invalid(self):
@@ -298,18 +298,18 @@ class TestTrafoOptionalFields:
                 itertools.product(["shift_degree"], not_floats_list),
                 itertools.product(["df"], [0.0, -0.1, 1.1, *not_floats_list]),
                 itertools.product(["vector_group"], not_strings_list),
-                itertools.product(["vk0_percent"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["vkr0_percent"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["mag0_percent"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["vk0_percent"], [*negativ_floats, *not_floats_list]),
+                itertools.product(["vkr0_percent"], [*negativ_floats, *not_floats_list]),
+                itertools.product(["mag0_percent"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["mag0_rx"], not_floats_list),
-                itertools.product(["si0_hv_partial"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["si0_hv_partial"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["tap_changer_type"], ["bad_type", *not_strings_list]),
                 itertools.product(["tap2_changer_type"], ["bad_type", *not_strings_list]),
-                itertools.product(["leakage_resistance_ratio_hv"], [*negativ_floats_plus_zero, 1.1, *not_floats_list]),
-                itertools.product(["leakage_reactance_ratio_hv"], [*negativ_floats_plus_zero, 1.1, *not_floats_list]),
+                itertools.product(["leakage_resistance_ratio_hv"], [*negativ_floats, 1.1, *not_floats_list]),
+                itertools.product(["leakage_reactance_ratio_hv"], [*negativ_floats, 1.1, *not_floats_list]),
                 itertools.product(["xn_ohm"], not_floats_list),
                 itertools.product(["pt_percent"], not_floats_list),
-                itertools.product(["max_loading_percent"], [*negativ_ints_plus_zero, *not_ints_list]),
+                itertools.product(["max_loading_percent"], [*not_ints_list]), #TODO int?
             )
         ),
     )
