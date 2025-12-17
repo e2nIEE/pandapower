@@ -81,10 +81,10 @@ _sgen_columns = {
         pd.BooleanDtype,
         nullable=True,
         required=False,
-        description=" Model this sgen as a current source during short- circuit calculations; useful in some cases, for example the simulation of full- size converters per IEC 60909-0:2016.",
+        description="Model this sgen as a current source during short- circuit calculations; useful in some cases, for example the simulation of full- size converters per IEC 60909-0:2016.",
         metadata={"sc": True},
     ),
-    "generator_type": pa.Column(  # TODO: is this not an sgen, did someone model moter as an sgen?
+    "generator_type": pa.Column(  # TODO: is this not an sgen, did someone model motor as an sgen?
         pd.StringDtype,
         nullable=True,
         required=False,
@@ -116,13 +116,22 @@ _sgen_columns = {
 sgen_schema = pa.DataFrameSchema(
     _sgen_columns,
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "qcc"], _sgen_columns),
+    checks=create_column_dependency_checks_from_metadata(
+        [
+            "opf",
+            # "sc",
+            "qcc",
+        ],
+        _sgen_columns,
+    ),
 )
 
 res_sgen_schema = pa.DataFrameSchema(
     {
-        "p_mw": pa.Column(float, nullable=True, description="resulting active power demand after scaling [MW]"),
-        "q_mvar": pa.Column(float, nullable=True, description="resulting reactive power demand after scaling [MVAr]"),
+        "p_mw": pa.Column(float, nullable=True, description="resulting active power production after scaling [MW]"),
+        "q_mvar": pa.Column(
+            float, nullable=True, description="resulting reactive power production after scaling [MVar]"
+        ),
     },
     strict=False,
 )

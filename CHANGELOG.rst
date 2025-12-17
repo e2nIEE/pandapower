@@ -3,6 +3,21 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+
+[3.3.0] - 2025-12-15
+-------------------------------
+- [FIXED] julia implementation, now using juliacall
+- [CHANGED] diagnostics restructured for better extensibility
+- [FIXED] implausible impedance test results never showing in report
+- [ADDED] load_case_engine for matpower converter
+- [FIXED] added a check for droop controller that ensure the correct convergence for VDroop controller and Q(U) controller
+- [FIXED] typo in ieee_european_lv_asymmetric
+- [ADDED] pf2pp: added possibility to export pf_area and pf_zone to busses
+- [FIXED] remove not used method in test_rundcpp
+- [FIXED] add missing tests for runpp_3ph parameters
+- [FIXED] remove never used parameter from runpp_3ph method signature
+- [CHANGED] Documentation configuration to support custom keywords
+- [CHANGED] Offset for weighted marker legend
 - [ADDED] pf2pp: possibility to convert a specific variant and scenario
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [ADDED] Static Var Compensator with Voltage Control
@@ -82,6 +97,10 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [ADDED] pf2pp: possibility to convert a specific varaint and scenario
+- [ADDED] Static Var Compensator with Voltage Control
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
+- [ADDED] Static Var Compensator with Voltage Control
 - [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
 - [FIXED] cim2pp: add more dtype parameters, fix some tests
 - [FIXED] convert_format fix check when net version is below format version

@@ -7,5 +7,5 @@ from pandapower.networks.kerber_networks import *
 from pandapower.networks.mv_oberrhein import *
 from pandapower.networks.power_system_test_cases import *
 from pandapower.networks.simple_pandapower_test_networks import *
-from pandapower.networks.ieee_europen_lv_asymmetric import *
+from pandapower.networks.ieee_european_lv_asymmetric import *
 from pandapower.networks.lv_schutterwald import *

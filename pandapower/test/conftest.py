@@ -35,11 +35,11 @@ def simple_network():
     return net
 
 
-
 @pytest.fixture(scope="session")
 def result_test_network():
     from pandapower import runpp
 
+    # gets the last element of the generator
     for net in result_test_network_generator():
         pass
     runpp(net, trafo_model="t", trafo_loading="current")
