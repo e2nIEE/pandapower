@@ -466,7 +466,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #     trafo_df["_ppc_idx"] = range(f, t)
 #     trafo_df['k_st'] = k_st[trafo_df["_ppc_idx"].values].real
 #     bus_lookup = net["_pd2ppc_lookups"]["bus"]
-
+#
 #     hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
 #     lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
 #     in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
@@ -485,18 +485,18 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #         ppc["branch"][f:t, BR_STATUS] = in_service
 #     else:
 #         ppc["branch"][f:t, BR_STATUS] = 0
-
+#
 #     if "vector_group" not in trafo_df:
 #         raise ValueError("Vector Group of transformer needs to be specified for zero "
 #                          "sequence modelling \n Try : net.trafo[\"vector_group\"] = 'Dyn'")
-
+#
 #     for vector_group, trafos in trafo_df.groupby("vector_group"):
 #         # TODO Roman: check this/expand this
 #         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
 #         # vector groups without "N" have no impact on the LG
 #         if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
 #             continue
-
+#
 #         vk_percent = trafos["vk_percent"].values.astype(float)
 #         vkr_percent = trafos["vkr_percent"].values.astype(float)
 #         sn_trafo_mva = trafos["sn_mva"].values.astype(float)
@@ -540,10 +540,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #         else:
 #             power_station_unit = np.zeros(len(trafos), dtype=bool)
 #         in_service = trafos["in_service"].astype(np.int64)
-
+#
 #         ppc["branch"][ppc_idx, F_BUS] = hv_buses_ppc
 #         ppc["branch"][ppc_idx, T_BUS] = lv_buses_ppc
-
+#
 #         vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafos)
 #         vn_bus_lv = ppc["bus"][lv_buses_ppc, BASE_KV]
 #         vn_bus_hv = ppc["bus"][hv_buses_ppc, BASE_KV]
@@ -551,7 +551,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #                                                    vn_trafo_lv, bus_lookup)
 #         ppc["branch"][ppc_idx, TAP] = ratio
 #         ppc["branch"][ppc_idx, SHIFT] = shift
-
+#
 #         # zero seq. transformer impedance
 #         tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * net.sn_mva
 #         tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * net.sn_mva
@@ -569,7 +569,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #             # =============================================================================
 #             tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * (3 * net.sn_mva)
 #             tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * (3 * net.sn_mva)
-
+#
 #         tap_corr = tap_hv if vector_group.lower() in ("ynd", "yny", "dyn", "yyn") else tap_lv
 #         # tap_corr = tap_lv
 #         z_sc = vk0_percent / 100. / sn_trafo_mva * tap_corr
@@ -588,7 +588,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #         k_st_tr = trafos["k_st"].fillna(1).values
 #         # if no grounding type is specified solid grounding with 0 ohm on both sides of the transformer is assumed
 #         z0_k_hv = z0_k
-
+#
 #         if mode == "sc":  # or trafo_model == "pi":
 #             case = net._options["case"]
 #             trafo_df = net["trafo"]
@@ -600,7 +600,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #                 if isinstance(kt, np.ndarray) and np.all(kt == kt[0]):
 #                     kt = float(kt [0])
 #                 z0_k *= kt
-
+#
 #             # different formula must be applied for power station unit transformers:
 #             # z_0THV is for power station block unit transformer -> page 20 of IEC60909-4:2021 (example 4.4.2):
 #             # todo: check if sn_mva must be included here?
@@ -625,10 +625,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #             # z0_k_psu = (z_0THV * k_st_tr + 3 * z_n_ohm) / ((vn_trafo_hv ** 2) / net.sn_mva)
 #             z0_k_psu = (z_0THV * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv ** 2) / net.sn_mva)
 #             z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
-
+#
 #         y0_k = 1 / z0_k  # adding admittance for "pi" model
 #         # y0_k = 1 / (z0_k * k_st_tr + 3 * z_n_ohm)  # adding admittance for "pi" model
-
+#
 #         # =============================================================================
 #         #       Transformer magnetising impedance for zero sequence
 #         # =============================================================================
@@ -658,13 +658,13 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #         YAB = 1 / zc.astype(complex)
 #         YAN = 1 / za.astype(complex)
 #         YBN = 1 / zb.astype(complex)
-
+#
 # #        YAB_AN = (zc + za) /(zc * za).astype(complex)  # Series conn YAB and YAN
 # #        YAB_BN = (zc + zb) / (zc * zb).astype(complex)  # Series conn YAB and YBN
-
+#
 #         YAB_AN = 1 / (zc + za).astype(complex)  # Series conn YAB and YAN
 #         YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN
-
+#
 #         # y0_k = 1 / z0_k #adding admittance for "pi" model
 #         if vector_group.lower() == "dyn":
 #             buses_all = np.hstack([buses_all, lv_buses_ppc])
@@ -674,14 +674,14 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #                 y = (YAB + YBN).astype(complex) * ppc["baseMVA"]  # T model
 #             gs_all = np.hstack([gs_all, y.real * in_service])
 #             bs_all = np.hstack([bs_all, y.imag * in_service])
-
+#
 #         elif vector_group.lower() == "ynd":
 #             buses_all = np.hstack([buses_all, hv_buses_ppc])
 #             if trafo_model == "pi":
 #                 y = y0_k * ppc["baseMVA"]  # pi model
 #                 # y = 1/0.99598 * 1 / (1/(y0_k * ppc["baseMVA"]) + 1/0.99598 * (1j * 3 * 22 /( (110 ** 2) / 1))) # pi
 #                 # y = 1/0.99598 * 1 / (1/(y0_k * ppc["baseMVA"]) + 1/0.99598 * (1j * 3 * 22 /( (110 ** 2) / 1))) # pi
-
+#
 #                 # z0_k_k = z0_k * 0.99598 + 1j * 3 * 22 /( (110 ** 2) / 1)
 #                 # print(z0_k_k)
 #                 # y = 1 / z0_k_k # pi model
@@ -689,7 +689,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #                 y = (YAB_BN + YAN).astype(complex) * ppc["baseMVA"]  # T model
 #             gs_all = np.hstack([gs_all, y.real * in_service])
 #             bs_all = np.hstack([bs_all, y.imag * in_service])
-
+#
 #         elif vector_group.lower() == "yyn":
 #             buses_all = np.hstack([buses_all, lv_buses_ppc])
 #             if trafo_model == "pi":
@@ -697,24 +697,24 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #             else:
 #                 # y = (YAB_AN + YBN).astype(complex)  # T model
 #                 y = (YAB + YAB_BN + YBN).astype(complex) * ppc["baseMVA"]  # T model
-
+#
 #             gs_all = np.hstack([gs_all, y.real * in_service])
 #             bs_all = np.hstack([bs_all, y.imag * in_service])
-
+#
 #         elif vector_group.lower() == "ynyn":
 #             ppc["branch"][ppc_idx, BR_STATUS] = in_service
 #             # zc = ZAB
 #             ppc["branch"][ppc_idx, BR_R] = zc.real
 #             ppc["branch"][ppc_idx, BR_X] = zc.imag
-
+#
 #             buses_all = np.hstack([buses_all, hv_buses_ppc])
 #             gs_all = np.hstack([gs_all, YAN.real * in_service * ppc["baseMVA"] * tap_lv / tap_hv])
 #             bs_all = np.hstack([bs_all, YAN.imag * in_service * ppc["baseMVA"] * tap_lv / tap_hv])
-
+#
 #             buses_all = np.hstack([buses_all, lv_buses_ppc])
 #             gs_all = np.hstack([gs_all, YBN.real * in_service * ppc["baseMVA"]])
 #             bs_all = np.hstack([bs_all, YBN.imag * in_service * ppc["baseMVA"]])
-
+#
 #         elif vector_group.lower() == "yny":
 #             buses_all = np.hstack([buses_all, hv_buses_ppc])
 #             if trafo_model == "pi":
@@ -723,7 +723,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #                 y = (YAB_BN + YAN).astype(complex) * ppc["baseMVA"]  # T model
 #             gs_all = np.hstack([gs_all, y.real * in_service])
 #             bs_all = np.hstack([bs_all, y.imag * in_service])
-
+#
 #         elif vector_group.lower() == "yzn":
 #             buses_all = np.hstack([buses_all, lv_buses_ppc])
 #             #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
@@ -731,7 +731,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #             y = (YAB_AN + YBN).astype(complex) * ppc["baseMVA"] ** 2  # T model # why sn_mva squared here?
 #             gs_all = np.hstack([gs_all, (1.1547) * y.real * in_service])  # what's the 1.1547 value?
 #             bs_all = np.hstack([bs_all, (1.1547) * y.imag * in_service])
-
+#
 #         elif vector_group[-1].isdigit():
 #             raise ValueError("Unknown transformer vector group %s - "
 #                              "please specify vector group without "
@@ -740,7 +740,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 #         else:
 #             raise ValueError("Transformer vector group %s is unknown "
 #                              "/ not implemented for three phase load flow" % vector_group)
-
+#
 #     buses, gs, bs = _sum_by_group(buses_all, gs_all, bs_all)
 #     ppc["bus"][buses, GS] += gs
 #     ppc["bus"][buses, BS] += bs

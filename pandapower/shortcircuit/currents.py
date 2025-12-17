@@ -255,7 +255,7 @@ def _calc_ikss_to_g(net, ppci_0, ppci_1, ppci_2, bus_idx):
         ppci_2["bus"][bus_idx, IKSSC] = factor * ikssc_1
     elif fault == "LLG":
         ppci_0["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_1*z_equiv_2) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
-        ppci_1["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_1*(z_equiv_0+z_equiv_2)) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
+        ppci_1["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_1*(z_equiv_0+z_equiv_1)) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
         ppci_2["bus"][bus_idx, IKSSC] = abs(ikssc_1 * ((z_equiv_0*z_equiv_1) / (z_equiv_2*z_equiv_0 + z_equiv_1*z_equiv_0 + z_equiv_1*z_equiv_2)))
 
     # calculate skss
@@ -370,7 +370,7 @@ def _current_source_current(net, ppci, bus_idx, sequence=1):
         Zbus = ppci["internal"]["Zbus"]
         diagZ = np.diag(Zbus).copy()  # here diagZ is not writeable
         if sgen_angle is None:  # check logic here of type_c
-            ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(Zbus[buses, buses], deg=True) + extra_angle
+            ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(Zbus[buses, bus_idx], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
         i_kss_2 = 1 / diagZ * np.dot(Zbus,ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
     else:
