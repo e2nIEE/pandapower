@@ -238,6 +238,17 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         max_p = el_data["max_p_mw"] if "max_p_mw" in el_data.columns else pd.Series(index=el_data.index, data=np.nan,
                                                                                     dtype=float)
         p_src = el_data[p_mw].clip(lower=min_p, upper=max_p).values
+
+        # detect clipping
+        orig_p = el_data[p_mw].values
+        clipped_mask = ~np.isclose(orig_p, p_src, equal_nan=True)
+        if np.any(clipped_mask):
+            # debug log message notifying user of p clipping
+            logger.debug(
+                "Active power limits enforced for %s elements at indices %s",
+                element,
+                el_data.index[clipped_mask].tolist(),
+            )
     else:
         p_src = el_data[p_mw].values
 
@@ -262,6 +273,17 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
             else:
                 max_q = pd.Series(index=el_data.index, data=np.nan, dtype=float)
             q_src = el_data[q_mvar].clip(lower=min_q, upper=max_q).values
+
+            # detect clipping
+            orig_q = el_data[q_mvar].values
+            clipped_mask = ~np.isclose(orig_q, q_src, equal_nan=True)
+            if np.any(clipped_mask):
+                # debug log message notifying user of q clipping
+                logger.debug(
+                    "Reactive power limits enforced for %s elements at indices %s",
+                    element,
+                    el_data.index[clipped_mask].tolist(),
+                )
         else:
             q_src = el_data[q_mvar].values
 

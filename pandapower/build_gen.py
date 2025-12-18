@@ -221,6 +221,16 @@ def _build_pp_gen(net, ppc, f, t):
 
         p_used_full = net["gen"]["p_mw"].clip(lower=min_p, upper=max_p)
         p_mw = p_used_full.values[gen_is]
+
+        # detect clipping
+        orig_p = net["gen"]["p_mw"].values[gen_is]
+        clipped_mask = ~np.isclose(orig_p, p_mw, equal_nan=True)
+        if np.any(clipped_mask):
+            # emit debug-level log message notifying user of clipping
+            logger.debug(
+                "Active power limits enforced for gen elements at indices %s",
+                net["gen"].index[gen_is][clipped_mask].tolist(),
+            )
     else:
         p_mw = net["gen"]["p_mw"].values[gen_is]
 

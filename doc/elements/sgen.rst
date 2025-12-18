@@ -34,6 +34,7 @@ Input Parameters
    <br />
    
 \*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
+|br| \^relevant for power flow calculation when `enforce_p_lims` optional parameter is set to True |br| \^\^relevant for power flow calculation when `enforce_q_lims` optional parameter is set to True
 
 Static Generator Reactive Power Capability Curve Characteristics
 =================================================================
