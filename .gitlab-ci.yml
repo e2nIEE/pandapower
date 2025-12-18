@@ -14,9 +14,7 @@ variables:
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
 
 default:
-  tags:
-    - intranet
-    - kassel
+  tags: [intranet, kassel]
   before_script:
     - python -V
     - pip install --no-cache-dir uv
@@ -28,9 +26,6 @@ default:
       - .venv/
       - .uv-cache/
 
-# -----------------------------
-# 1) pytest (matrix + split groups)
-# -----------------------------
 pytest:
   stage: test
   timeout: 60m
@@ -40,22 +35,18 @@ pytest:
         GROUP: [1, 2]
   image: python:${PYTHON_VERSION}-slim
   script:
-    - uv sync --all-extras
+    - uv sync --extra test
     - |
       if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       uv pip install pytest-split numba
       if [ "$PYTHON_VERSION" = "3.13" ]; then uv pip install lightsim2grid; fi
-    - uv pip list
     - uv run pytest -n=auto --splits 2 --group ${GROUP}
 
-# -----------------------------
-# 2) docs check (Sphinx -W)
-# -----------------------------
 docs_check:
   stage: docs
   image: python:3.11-slim
   script:
-    - uv pip install .[docs]
+    - uv sync --extra docs
     - uv run sphinx-build -b html doc/ doc/_build -W
   artifacts:
     when: always
@@ -63,15 +54,11 @@ docs_check:
     paths:
       - doc/_build
 
-# -----------------------------
-# 3) tutorials (pytest --nbmake)
-# -----------------------------
 tutorial_tests:
   stage: tutorials
   timeout: 60m
   image: python:3.11-slim
   script:
-    - uv sync --all-extras
-    - uv pip install seaborn jupyter nbmake
-    - uv pip list
+    - uv sync --extra test
+    - uv pip install seaborn jupyter
     - uv run pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
