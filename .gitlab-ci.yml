@@ -5,11 +5,13 @@ stages:
 
 workflow:
   rules:
-    # Skip pipeline when only CHANGELOG.rst changed
     - changes:
         - CHANGELOG.rst
       when: never
     - when: always
+
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
 
 default:
   before_script:
@@ -22,8 +24,6 @@ default:
     paths:
       - .venv/
       - .uv-cache/
-  variables:
-    UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
 
 # -----------------------------
 # 1) pytest (matrix + split groups)
@@ -54,7 +54,6 @@ docs_check:
   stage: docs
   image: python:3.11-slim
   script:
-    - pip install --no-cache-dir uv
     - uv venv
     - . .venv/bin/activate
     - uv pip install .[docs]
