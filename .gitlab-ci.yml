@@ -34,7 +34,7 @@ pytest:
   timeout: 60m
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.10", "3.11", "3.12", "3.13"]
+      - PYTHON_VERSION: ["3.11", "3.12", "3.13"]
         GROUP: [1, 2]
   image: python:${PYTHON_VERSION}-slim
   script:
