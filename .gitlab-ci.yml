@@ -1,0 +1,79 @@
+stages:
+  - test
+  - docs
+  - tutorials
+
+workflow:
+  rules:
+    # Skip pipeline when only CHANGELOG.rst changed
+    - changes:
+        - CHANGELOG.rst
+      when: never
+    - when: always
+
+default:
+  before_script:
+    - python -V
+    - pip install --no-cache-dir uv
+    - uv venv
+    - . .venv/bin/activate
+  cache:
+    key: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .venv/
+      - .uv-cache/
+  variables:
+    UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+
+# -----------------------------
+# 1) pytest (matrix + split groups)
+# -----------------------------
+pytest:
+  stage: test
+  timeout: 60m
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        GROUP: [1, 2]
+  image: python:${PYTHON_VERSION}-slim
+  script:
+    - uv sync --all-extras
+    - |
+      if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+      uv pip install pytest-split
+      if [ "$PYTHON_VERSION" = "3.9" ]; then uv pip install pypower; fi
+      if [ "$PYTHON_VERSION" != "3.9" ]; then uv pip install numba; fi
+      if [ "$PYTHON_VERSION" = "3.13" ]; then uv pip install lightsim2grid; fi
+    - uv pip list
+    - uv run pytest -n=auto --splits 2 --group ${GROUP}
+
+# -----------------------------
+# 2) docs check (Sphinx -W)
+# -----------------------------
+docs_check:
+  stage: docs
+  image: python:3.11-slim
+  script:
+    - pip install --no-cache-dir uv
+    - uv venv
+    - . .venv/bin/activate
+    - uv pip install .[docs]
+    - uv run sphinx-build -b html doc/ doc/_build -W
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - doc/_build
+
+# -----------------------------
+# 3) tutorials (pytest --nbmake)
+# -----------------------------
+tutorial_tests:
+  stage: tutorials
+  timeout: 60m
+  image: python:3.11-slim
+  script:
+    - uv sync --all-extras
+    - uv pip install seaborn jupyter nbmake
+    - uv pip list
+    - uv run pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
