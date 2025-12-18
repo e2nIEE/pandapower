@@ -24,6 +24,9 @@ default:
     paths:
       - .venv/
       - .uv-cache/
+  tags:
+    - intranet
+    - kassel
 
 # -----------------------------
 # 1) pytest (matrix + split groups)
