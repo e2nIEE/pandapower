@@ -2,6 +2,9 @@ stages:
   - test
   - docs
 
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+
 default:
   image: python:3.11-slim
   before_script:
@@ -14,8 +17,6 @@ default:
     paths:
       - .venv/
       - .uv-cache/
-  variables:
-    UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
 
 workflow:
   rules:
@@ -39,25 +40,14 @@ pytest:
     - uv sync --all-extras
     - |
       if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-      uv pip install pytest-split pytest-cov numba
+      uv pip install pytest-split numba
     - uv pip list
     - |
       uv run pytest \
         -n=auto \
         -m "not postgresql" \
-        --cov=./ \
-        --cov-report=xml \
         --splits 2 \
         --group ${GROUP}
-      cp ./coverage.xml ./coverage-${GROUP}.xml
-  artifacts:
-    when: always
-    expire_in: 1 week
-    paths:
-      - coverage-1.xml
-      - coverage-2.xml
-    reports:
-      cobertura: coverage-*.xml
 
 # -----------------------------
 # docs check
