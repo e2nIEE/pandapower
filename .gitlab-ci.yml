@@ -28,9 +28,6 @@ workflow:
       when: never
     - when: always
 
-# -----------------------------
-# pytest (all tests except PostgreSQL)
-# -----------------------------
 pytest:
   stage: test
   timeout: 60m
@@ -40,7 +37,7 @@ pytest:
         GROUP: [1, 2]
   image: python:${PYTHON_VERSION}-slim
   script:
-    - uv sync --all-extras
+    - uv sync --extra test
     - |
       if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       uv pip install pytest-split numba
@@ -52,14 +49,11 @@ pytest:
         --splits 2 \
         --group ${GROUP}
 
-# -----------------------------
-# docs check
-# -----------------------------
 docs_check:
   stage: docs
   image: python:3.11-slim
   script:
-    - uv sync --all-extras
+    - uv sync --extra docs
     - uv run sphinx-build -b html doc/ doc/_build -W
   artifacts:
     when: always
