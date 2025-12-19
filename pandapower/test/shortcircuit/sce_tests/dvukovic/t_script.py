@@ -37,34 +37,34 @@ net.line["c_nf_per_km"] = 0
 #net.ext_grid['in_service'] = False
 
 net.gen.loc[net.gen.bus == 1, 'in_service'] = True
-#net.gen.loc[net.gen.bus == 2, 'in_service'] = True
-#net.gen.loc[net.gen.bus == 3, 'in_service'] = True
+net.gen.loc[net.gen.bus == 2, 'in_service'] = True
+net.gen.loc[net.gen.bus == 3, 'in_service'] = True
+#net.gen.loc[net.gen.bus == 4, 'in_service'] = True
 
-net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
+
+#net.sgen.loc[net.sgen.bus == 1, 'in_service'] = True
 #net.sgen.loc[net.sgen.bus == 2, 'in_service'] = True
 #net.sgen.loc[net.sgen.bus == 3, 'in_service'] = True
+#net.sgen.loc[net.sgen.bus == 4, 'in_service'] = True
 
 
-calc_sc(net,fault="LLG",case="max",bus=2,return_all_currents=False,branch_results=True,ip=False,
+calc_sc(net,fault="LLL",case="max",bus=2,return_all_currents=False,branch_results=True,ip=False,
         r_fault_ohm=0,x_fault_ohm=0, lv_tol_percent=6)
 
 print("This is is table of results for buses in case of %s fault" % net["_options"]["fault"])
 print(net.res_bus_sc)
 
-#print("This is is table of results for lines in case of %s fault" % net["_options"]["fault"])
-#print(net.res_line_sc)
+print("This is is table of results for lines in case of %s fault" % net["_options"]["fault"])
+print(net.res_line_sc)
 
-#print("This is is table of results for synchronous generators in case of %s fault" % net["_options"]["fault"])
-#print(net.res_gen_sc)
+print("This is is table of results for synchronous generators in case of %s fault" % net["_options"]["fault"])
+print(net.res_gen_sc)
 
-#print("This is is table of results for static generators in case of %s fault" % net["_options"]["fault"])
-#print(net.res_sgen_sc)
+print("This is is table of results for static generators in case of %s fault" % net["_options"]["fault"])
+print(net.res_sgen_sc)
 
-#print("This is is table of results for external grids in case of %s fault" % net["_options"]["fault"])
-#print(net.res_ext_grid_sc)
-
-#print("This is is table of results for transformers in case of %s fault" % net["_options"]["fault"])
-#print(net.res_trafo_sc)
+print("This is is table of results for external grids in case of %s fault" % net["_options"]["fault"])
+print(net.res_ext_grid_sc)
 
 import pandapower.plotting as plot
 from pandapower.plotting import simple_plot, create_generic_coordinates, set_line_geodata_from_bus_geodata

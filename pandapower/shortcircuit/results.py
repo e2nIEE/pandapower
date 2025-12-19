@@ -16,9 +16,6 @@ from pandapower.pypower.idx_bus_sc import IKSSV, IP, ITH, IKSSC, R_EQUIV_OHM, X_
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
 from pandapower.results import BRANCH_RESULTS_KEYS
-from pandapower.test.shortcircuit.sce_tests.dvukovic.results_testing import _get_gen_results
-from pandapower.test.shortcircuit.sce_tests.dvukovic.results_testing import _get_sgen_results
-from pandapower.test.shortcircuit.sce_tests.dvukovic.results_testing import _get_ext_grid_results
 import logging
 logger = logging.getLogger(__name__)
 
@@ -274,9 +271,6 @@ def _extract_results(net, ppc_0, ppc_1, ppc_2, bus):
     if net["_options"]["fault"] == "LLG":
        _calculate_bus_results_llg(ppc_0, ppc_1, ppc_2, bus, net)
     _get_bus_results(net, ppc_0, ppc_1, ppc_2, bus)
-    _get_gen_results(net, ppc_0, ppc_1, ppc_2, bus) #todo  - do the thing from line 277 for generators
-    _get_sgen_results(net, ppc_0, ppc_1, ppc_2, bus)
-    _get_ext_grid_results(net, ppc_0, ppc_1, ppc_2, bus)
     if net._options["branch_results"]:
         # TODO check option return all current here
         if (~net["_options"]['return_all_currents']):
