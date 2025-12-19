@@ -1,23 +1,9 @@
 stages:
   - test
   - docs
-  - tutorials
-
-workflow:
-  rules:
-    - changes:
-        - CHANGELOG.rst
-      when: never
-    - when: always
-
-variables:
-  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
-  PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  PIP_NO_PYTHON_VERSION_WARNING: "1"
-  PIP_PROGRESS_BAR: "off"
 
 default:
-  tags: [intranet, kassel]
+  image: python:3.11-slim
   before_script:
     - python -V
     - pip install --no-cache-dir uv
@@ -28,50 +14,62 @@ default:
     paths:
       - .venv/
       - .uv-cache/
+  variables:
+    UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
 
+workflow:
+  rules:
+    - changes:
+        - CHANGELOG.rst
+      when: never
+    - when: always
+
+# -----------------------------
+# pytest (all tests except PostgreSQL)
+# -----------------------------
 pytest:
   stage: test
   timeout: 60m
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.11", "3.12", "3.13"]
+      - PYTHON_VERSION: ["3.10", "3.11", "3.12"]
         GROUP: [1, 2]
   image: python:${PYTHON_VERSION}-slim
   script:
-    - uv sync --extra test
+    - uv sync --all-extras
     - |
       if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-      uv pip install pytest-split numba openpyxl
-      if [ "$PYTHON_VERSION" = "3.13" ]; then uv pip install lightsim2grid; fi
-    - uv run pytest -q -n=auto --splits 2 --group ${GROUP} | tee pytest-${PYTHON_VERSION}-group${GROUP}.log
+      uv pip install pytest-split pytest-cov numba
+    - uv pip list
+    - |
+      uv run pytest \
+        -n=auto \
+        -m "not postgresql" \
+        --cov=./ \
+        --cov-report=xml \
+        --splits 2 \
+        --group ${GROUP}
+      cp ./coverage.xml ./coverage-${GROUP}.xml
   artifacts:
     when: always
     expire_in: 1 week
     paths:
-      - pytest-*.log
+      - coverage-1.xml
+      - coverage-2.xml
+    reports:
+      cobertura: coverage-*.xml
 
+# -----------------------------
+# docs check
+# -----------------------------
 docs_check:
   stage: docs
   image: python:3.11-slim
   script:
-    - uv sync --extra docs
+    - uv sync --all-extras
     - uv run sphinx-build -b html doc/ doc/_build -W
   artifacts:
     when: always
     expire_in: 1 week
     paths:
       - doc/_build
-
-tutorial_tests:
-  stage: tutorials
-  timeout: 60m
-  image: python:3.11-slim
-  script:
-    - uv sync --extra test
-    - uv pip install seaborn jupyter
-    - uv run pytest -q --nbmake -n=auto --nbmake-timeout=900 "./tutorials" | tee tutorial.log
-  artifacts:
-    when: always
-    expire_in: 1 week
-    paths:
-      - tutorial.log
