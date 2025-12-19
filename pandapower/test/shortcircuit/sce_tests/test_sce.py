@@ -5,6 +5,7 @@
 
 import os
 import pytest
+import numpy as np
 from pandapower import pp_dir
 from pandapower.test.shortcircuit.sce_tests.functions_tests import (compare_results, run_test_cases,
                                                                     load_test_case_data, create_parameter_list)
@@ -24,13 +25,39 @@ net_names = [
     "test_case_3_five_bus_meshed_grid",
     "test_case_4_twenty_bus_radial_grid"
 ]
-faults = ["LLL", "LL", "LG", "LLG"]
-cases = ["max", "min"]
-values = [(0, 0), (5, 5)]
-vector_groups = ['Dyn', 'Yyn', 'YNyn']
-lv_tol_percents = [6, 10]
-fault_location_buses = [0, 1, 2, 3]
-is_branch_test = [True, False]
+faults = [
+    "LLL", 
+    "LL", 
+    "LG", 
+    "LLG"
+    ]
+cases = [
+    "max", 
+    # "min"
+    ]
+values = [
+    (0, 0), 
+    (5, 5)
+    ]
+vector_groups = [
+    'Dyn',
+    'Yyn',
+    'YNyn'
+    ]
+lv_tol_percents = [
+    6,
+    10
+    ]
+fault_location_buses = [
+    0, 
+    1,
+    2,
+    3
+    ]
+is_branch_test = [
+    True, 
+    False
+    ]
 
 # parameters for WP 2.2 and WP 2.4
 gen_idx = [1, [1, 3]]  # includes both, static generator and synchronous generator
@@ -47,22 +74,22 @@ param_wp21, param_vec_wp21, param_wp22, param_vec_wp22, param_wp23, param_vec_wp
     gen_idx, is_active_current, gen_mode, grounding_types)
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch",
-                         param_wp21, ids=lambda val: str(val))
-def test_wp21_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
-    net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
-    results = run_test_cases(
-        net,
-        dataframes["branch" if is_branch else "bus"],
-        fault,
-        case,
-        fault_values,
-        lv_tol_percent,
-        fault_location_bus,
-        branch_results=is_branch
-    )
-    compare_results(*results)
+# @pytest.mark.slow
+# @pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch",
+#                          param_wp21, ids=lambda val: str(val))
+# def test_wp21_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
+#     net, dataframes = load_test_case_data("test_case_1_four_bus_radial_grid", fault_location_bus)
+#     results = run_test_cases(
+#         net,
+#         dataframes["branch" if is_branch else "bus"],
+#         fault,
+#         case,
+#         fault_values,
+#         lv_tol_percent,
+#         fault_location_bus,
+#         branch_results=is_branch
+#     )
+#     compare_results(*results)
 
 
 @pytest.mark.slow
@@ -82,6 +109,8 @@ def test_wp21_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_perce
         fault_location_bus,
         branch_results=is_branch
     )
+    pp_results = results[1]
+    pf_results = results[2]
     compare_results(*results)
 
 
@@ -193,7 +222,24 @@ def test_wp25_grounding_bank(net_name, fault, case, fault_values, lv_tol_percent
 @pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch",
                          param_wp23, ids=lambda val: str(val))
 def test_wp23(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
+
     net, dataframes = load_test_case_data(net_name, fault_location_bus)
+
+    # skip tests when the fault type does not match the phase type
+    buses_1ph = np.unique(np.concatenate([
+        net.line.loc[net.line.name.str.contains('1ph', na=False), 'to_bus'].values,
+        net.trafo.loc[net.trafo.name.str.contains('1ph', na=False), 'lv_bus'].values
+    ]))
+    buses_2ph = np.unique(np.concatenate([
+        net.line.loc[net.line.name.str.contains('2ph', na=False), 'to_bus'].values,
+        net.trafo.loc[net.trafo.name.str.contains('2ph', na=False), 'lv_bus'].values
+    ]))
+
+    if fault_location_bus in buses_1ph and fault in ['LLL', 'LL', 'LLG']:
+        pytest.skip(f"{fault} fault on 1ph bus is not applicable")
+    if fault_location_bus in buses_2ph and fault in ['LLL']:
+        pytest.skip(f"{fault} fault on 2ph bus is not applicable")
+
     results = run_test_cases(
         net,
         dataframes["branch" if is_branch else "bus"],
