@@ -40,7 +40,7 @@ pytest:
     - uv sync --extra test
     - |
       if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-      uv pip install pytest-split numba
+      uv pip install pytest-split numba openpyxl
     - uv pip list
     - |
       uv run pytest \
