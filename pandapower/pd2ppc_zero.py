@@ -417,6 +417,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             y_sym = YAN.astype(complex) * in_service.values * 2
             y_asym = YBN.astype(complex) * in_service.values * 2 - y_sym
 
+        elif vector_group.lower() == "dd":
+            y_sym = np.zeros(len(trafos), dtype=np.complex128)
+            y_asym = np.zeros(len(trafos), dtype=np.complex128)
+
         # elif vector_group.lower() == "yzn":
         #     #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
         #     #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
