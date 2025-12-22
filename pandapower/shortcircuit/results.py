@@ -16,9 +16,6 @@ from pandapower.pypower.idx_bus_sc import IKSSV, IP, ITH, IKSSC, R_EQUIV_OHM, X_
 from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
 from pandapower.results_branch import _copy_switch_results_from_branches
 from pandapower.results import BRANCH_RESULTS_KEYS
-from pandapower.test.shortcircuit.sce_tests.dvukovic.results_testing import _get_gen_results
-from pandapower.test.shortcircuit.sce_tests.dvukovic.results_testing import _get_sgen_results
-from pandapower.test.shortcircuit.sce_tests.dvukovic.results_testing import _get_ext_grid_results
 import logging
 logger = logging.getLogger(__name__)
 
