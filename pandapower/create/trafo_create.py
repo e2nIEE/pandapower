@@ -71,9 +71,9 @@ def create_transformer(
 
         **vkr0_percent** (float) - real part of zero sequence relative short-circuit voltage
 
-        **mag0_percent** (float) - ratio between magnetizing and short circuit impedance (zero sequence)
+        **mag0_percent** (float) - ratio between magnetizing and short circuit impedance (zero sequence) as a percent
 
-                                   z_mag0 / z0
+                                   (z_mag0 / z0) * 100 %
 
         **mag0_rx** (float) - zero sequence magnetizing r/x ratio
 
@@ -371,7 +371,9 @@ def create_transformer_from_parameters(
 
         **vkr0_percent** (float) - real part of zero sequence relative short-circuit voltage
 
-        **mag0_percent** (float) - zero sequence magnetizing impedance/ vk0
+        **mag0_percent** (float) - ratio between magnetizing and short circuit impedance (zero sequence) as a percent
+
+                                   (z_mag0 / z0) * 100 %
 
         **mag0_rx** (float) - zero sequence magnetizing R/X ratio
 
@@ -653,7 +655,9 @@ def create_transformers_from_parameters(  # index missing ?
 
         **vkr0_percent** (list of float) - real part of zero sequence relative short-circuit voltage
 
-        **mag0_percent** (list of float) - zero sequence magnetizing impedance/ vk0
+        **mag0_percent** (list of float) - ratio between magnetizing and short circuit impedance (zero sequence) as a percent
+
+                                   (z_mag0 / z0) * 100 %
 
         **mag0_rx** (list of float) - zero sequence magnetizing R/X ratio
 

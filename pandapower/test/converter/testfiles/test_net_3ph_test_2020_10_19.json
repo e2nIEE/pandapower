@@ -377,7 +377,7 @@
     "trafo": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"parallel\",\"df\",\"in_service\",\"vk0_percent\",\"vkr0_percent\",\"mag0_percent\",\"mag0_rx\",\"si0_hv_partial\",\"vector_group\",\"tap_set_vm_pu\",\"description\",\"equipment\",\"tap_changer_type\"],\"index\":[0],\"data\":[[\"2-Winding Transformer\",null,0,1,0.629999995231628,20.0,0.400000005960464,6.0,1.095238089561462,1.649999976158142,0.261914998292923,0.0,null,null,null,null,null,null,0,1,1.0,true,6.0,1.095237970352173,100.0,0.0,0.899999976158142,\"Dyn\",1.0,\"\",\"\",null]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"parallel\",\"df\",\"in_service\",\"vk0_percent\",\"vkr0_percent\",\"mag0_percent\",\"mag0_rx\",\"si0_hv_partial\",\"vector_group\",\"tap_set_vm_pu\",\"description\",\"equipment\",\"tap_changer_type\"],\"index\":[0],\"data\":[[\"2-Winding Transformer\",null,0,1,0.629999995231628,20.0,0.400000005960464,6.0,1.095238089561462,1.649999976158142,0.261914998292923,0.0,null,null,null,null,null,null,0,1,1.0,true,6.0,1.095237970352173,10000.0,0.0,0.899999976158142,\"Dyn\",1.0,\"\",\"\",null]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -1314,7 +1314,7 @@
           "vector_group": "Dyn0",
           "vk0_percent": 6.0,
           "vkr0_percent": 1.0952379703521729,
-          "mag0_percent": 100.0,
+          "mag0_percent": 10000.0,
           "mag0_rx": 0.0,
           "si0_hv_partial": 0.8999999761581421,
           "tap_side": "hv",
