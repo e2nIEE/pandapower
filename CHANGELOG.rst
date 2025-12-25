@@ -6,6 +6,7 @@ Change Log
 
 [3.3.0] - 2025-12-15
 -------------------------------
+- [FIXED] `mag0_percent` is treated as a percent instead of ratio, consistent with its name.
 - [FIXED] julia implementation, now using juliacall
 - [CHANGED] diagnostics restructured for better extensibility
 - [FIXED] implausible impedance test results never showing in report
