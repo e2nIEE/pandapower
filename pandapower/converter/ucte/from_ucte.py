@@ -72,8 +72,6 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
 
 def average_voltage_setpoints(net: pandapowerNet) -> None:
     net.gen["prefix"] = net.gen["name"].str[:7]
-    net.gen.loc[net.gen["prefix"].duplicated(keep=False)]
-
     name_sets = (
         net.gen
         .groupby("prefix")["name"]
