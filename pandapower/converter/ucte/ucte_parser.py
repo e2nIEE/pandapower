@@ -94,7 +94,7 @@ class UCTEParser:
     def _parse_date_str(self, date_str: str):
         try:
             self.date = datetime.datetime.strptime(date_str, "%Y%m%d_%H%M")
-        except Exception as e:
+        except Exception:
             self.logger.info(
                 f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
             self.date = datetime.datetime.utcnow()

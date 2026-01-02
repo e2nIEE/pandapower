@@ -297,7 +297,7 @@ class UCTE2pandapower:
         lines["length_km"] = 1
         self._fill_empty_names(lines)
         self._fill_amica_names(lines, ":line")
-        lines.loc[lines.x == 0, "x"] = 0.01
+        lines.loc[lines.x < 0.05, "x"] = 0.05 # apply rule of min. X of 0.05 Ohm from UCTE-DEF
         # rename the columns to the pandapower schema
         lines = lines.rename(
             columns={"r": "r_ohm_per_km", "x": "x_ohm_per_km", "name": "name"}
@@ -325,6 +325,8 @@ class UCTE2pandapower:
         trafos_to_impedances = self._get_trafos_modelled_as_impedances()
         impedances = pd.concat([impedances, trafos_to_impedances])
 
+        impedances.loc[impedances.x < 0.05, "x"] = 0.05 # apply rule of min. X of 0.05 Ohm from UCTE-DEF
+
         # create the in_service column from the UCTE status
         in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
         impedances["in_service"] = impedances["status"].map(in_service_map)
@@ -339,6 +341,7 @@ class UCTE2pandapower:
         impedances["gt_pu"] = impedances["g"] / impedances["z_ohm"]
         impedances["bf_pu"] = impedances["b"] / impedances["z_ohm"]
         impedances["bt_pu"] = impedances["b"] / impedances["z_ohm"]
+        impedances.fillna({'gf_pu': 0.0, 'gt_pu': 0.0, 'bf_pu': 0.0, 'bt_pu': 0.0}, inplace=True)
         self._fill_empty_names(impedances)
         self._copy_to_pp("impedance", impedances)
         self.logger.info("Finished converting the impedances.")
@@ -434,6 +437,9 @@ class UCTE2pandapower:
         if not len(trafos):
             self.logger.info("Finished converting the transformers (no transformers existing).")
             return
+
+        trafos.loc[trafos.x < 0.05, "x"] = 0.05 # apply rule of min. X of 0.05 Ohm from UCTE-DEF
+
         # create the in_service column from the UCTE status
         status_map = dict({0: True, 1: True, 8: False, 9: False})
         trafos["in_service"] = trafos["status"].map(status_map)
@@ -464,7 +470,7 @@ class UCTE2pandapower:
             * 100
             / trafos.s
         )
-
+        trafos.fillna({'i0_percent': 0.0, 'pfe_kw': 0.0}, inplace=True)
         # phase and angle regulation have to be split up into 5 cases:
         # only phase regulated -> pr
         # only angle regulated symmetrical model -> ars
@@ -512,7 +518,7 @@ class UCTE2pandapower:
         trafos.loc[ars, "tap_pos"] = trafos.loc[ar, "angle_reg_n2"]
         trafos.loc[ars, "tap_step_percent"] = np.nan
         # trafos.loc[ars, 'phase_reg_n'] = trafos.loc[ar, 'angle_reg_n']
-        trafos.loc[ars, "tap_changer_type"] = "Ideal"
+        trafos.loc[ars, "tap_changer_type"] = "Symmetrical"
         trafos.loc[
             ars, "tap_step_degree"
         ] = self._calculate_tap_step_degree_symmetrical(trafos.loc[ars])
