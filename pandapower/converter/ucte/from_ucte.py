@@ -8,6 +8,7 @@ import time
 from pandapower.converter.ucte.ucte_converter import UCTE2pandapower
 from pandapower.converter.ucte.ucte_parser import UCTEParser
 from pandapower.auxiliary import pandapowerNet
+from pandapower.toolbox import get_connected_buses
 
 logger = logging.getLogger('ucte.from_ucte')
 
@@ -59,6 +60,8 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
 
     pp_net = from_ucte_dict(ucte_parser, slack_as_gen=slack_as_gen)
 
+    average_voltage_setpoints(pp_net)
+
     time_end_converting = time.time()
 
     logger.info("Needed time for parsing from ucte: %s" % (time_start_converting - time_start_parsing))
@@ -66,3 +69,32 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
     logger.info("Total Time (from_ucte()): %s" % (time_end_converting - time_start_parsing))
 
     return pp_net
+
+def average_voltage_setpoints(net: pandapowerNet) -> None:
+    net.gen["prefix"] = net.gen["name"].str[:7]
+    net.gen.loc[net.gen["prefix"].duplicated(keep=False)]
+
+    name_sets = (
+        net.gen
+        .groupby("prefix")["name"]
+        .apply(lambda x: set(x) if len(x) > 1 else None)
+        .dropna()
+        .tolist()
+    )
+    for name_set in name_sets:
+        list_names = list(name_set)
+        connected_buses = list(net.gen.loc[net.gen.name.isin(list_names), 'bus'].values)
+        aux_buses = connected_buses[0:1]
+        len_aux_buses = len(aux_buses)
+        len_changed = True
+        while len_changed:
+            aux_buses += get_connected_buses(net, aux_buses, consider=('s'), respect_switches=False)
+            if len(aux_buses) > len_aux_buses:
+                len_aux_buses = len(aux_buses)
+            else:
+                len_changed = False
+        matches = list(set(aux_buses) & set(connected_buses[1:]))
+        if len(matches):
+            critical_buses = matches+connected_buses[0:1]
+            net.gen.loc[net.gen.bus.isin(critical_buses), 'vm_pu'] = net.gen.loc[net.gen.bus.isin(critical_buses), 'vm_pu'].mean()
+    net.gen = net.gen.drop(columns="prefix")

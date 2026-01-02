@@ -251,12 +251,6 @@ class UCTE2pandapower:
             }
         )
 
-        # averaging voltage setpoints of gen elements connected to the same voltage level in the same substation
-        gens["prefix"] = gens["name"].str[:7]
-        mean_vm_pu = gens.groupby("prefix")["vm_pu"].transform("mean")
-        gens.loc[gens["prefix"].duplicated(keep=False), "vm_pu"] = mean_vm_pu
-        gens = gens.drop(columns="prefix")
-
         # get a new index
         gens = gens.reset_index(level=0, drop=True)
         gens["scaling"] = 1
