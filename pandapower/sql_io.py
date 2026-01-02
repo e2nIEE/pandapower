@@ -469,7 +469,7 @@ def from_postgresql(
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 
-    with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
+    with psycopg2.connect(host=host, user=user, password=password, database=database, port=port) as conn:
         net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name, empty_dict_like_object, grid_tables)
 
     return net
