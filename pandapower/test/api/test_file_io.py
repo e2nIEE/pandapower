@@ -30,7 +30,7 @@ from pandapower.toolbox import nets_equal, dataframes_equal
 from pandapower.topology.create_graph import create_nxgraph
 
 try:
-    import cryptography.fernet
+    import cryptography.fernet # type: ignore
 
     cryptography_INSTALLED = True
 except ImportError:
