@@ -261,7 +261,7 @@ def from_pf(
     # create vac (ElmVsc):
     n = 0
     for n, vsc in enumerate(dict_net['ElmVsc'], 1):
-        create_vsc(net=net, item=vsc)
+        create_pp_vsc(net=net, item=vsc)
     if n > 0: logger.info('imported %d VSC' % n)
 
     for idx, row in net.trafo.iterrows():
@@ -3877,7 +3877,7 @@ def create_vscmono(net, item):
         net.res_vsc.at[vid, res_var_pp] = -res
 
 
-def create_vsc(net, item):
+def create_pp_vsc(net, item):
     (bus, bus_dc_p, bus_dc_n), _ = get_connection_nodes(net, item, 3)
 
     sn_mva = item.Snom / 2
