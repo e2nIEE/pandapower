@@ -7,6 +7,7 @@ Change Log
 [3.3.0] - 2025-12-15
 -------------------------------
 - [FIXED] `mag0_percent` is treated as a percent instead of ratio, consistent with its name.
+- [ADDED] network_structure, load_create, sgen_create: seperate nominal mva attributes for each phase `sn_a_mva`, `sn_b_mva`, `sn_c_mva`. While existing total nominal mva `sn_mva` is also retained.
 - [FIXED] julia implementation, now using juliacall
 - [CHANGED] diagnostics restructured for better extensibility
 - [FIXED] implausible impedance test results never showing in report
