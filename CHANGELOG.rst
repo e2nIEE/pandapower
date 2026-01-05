@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
 
 [3.3.0] - 2025-12-15
 -------------------------------
