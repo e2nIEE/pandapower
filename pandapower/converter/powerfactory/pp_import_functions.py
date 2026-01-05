@@ -264,14 +264,6 @@ def from_pf(
         create_vsc(net=net, item=vsc)
     if n > 0: logger.info('imported %d VSC' % n)
 
-    logger.debug('creating switches')
-    # create switches (StaSwitch):
-    n = 0
-    for switch in dict_net['StaSwitch']:
-        create_switch(net=net, item=switch)
-        n += 1
-    logger.info('imported %d switches' % n)
-
     for idx, row in net.trafo.iterrows():
         propagate_bus_coords(net, row.lv_bus, row.hv_bus)
 
@@ -3353,33 +3345,6 @@ def create_coup(net, item, is_fuse=False):
 
     net.res_switch.loc[cd, ['pf_closed', 'pf_in_service']] = bool(item.on_off) and (
         bool(item.isclosed) if item.HasAttribute('isclosed') else True), in_service
-
-
-# # false approach, completely irrelevant
-# def create_switch(net, item):
-#     switch_types = {"cbk": "CB", "sdc": "LBS", "swt": "LS", "dct": "DS"}
-#     name = item.GetAttribute('loc_name')
-#     logger.debug('>> creating switch <%s>' % name)
-#
-#     pf_bus1 = item.GetNode(0)
-#     pf_bus2 = item.GetNode(1)
-#
-#     # here: implement situation if line not connected
-#     if pf_bus1 is None or pf_bus2 is None:
-#         logger.error("Cannot add Switch '%s': not connected" % name)
-#         return
-#
-#     bus1 = find_bus_index_in_net(pf_bus1, net)
-#     bus2 = find_bus_index_in_net(pf_bus2, net)
-#     logger.debug('switch %s connects buses <%d> and <%d>' % (name, bus1, bus2))
-#
-#     switch_is_closed = bool(item.GetAttribute('on_off'))
-#     switch_usage = switch_types[item.GetAttribute('aUsage')]
-#
-#     cd = create_switch(net, name=name, bus=bus1, element=bus2, et='b',
-# closed=switch_is_closed, type=switch_usage)
-#     logger.debug('created switch at index <%d>, closed = %s, usage = %s' % (cd,
-# switch_is_closed, switch_usage))
 
 
 def create_pp_shunt(net, item):
