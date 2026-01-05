@@ -387,9 +387,8 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
 
 def _set_reactive_capability_curve_flag(net, element):
     if element not in ["gen", "sgen"]:
-        UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
-                    f"Please give gen or sgen as an argument of the function")
-        return
+        raise UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
+                          f"Please give gen or sgen as an argument of the function")
     # Quick checks for element table and required columns
     if (len(net[element]) == 0 or
             not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
@@ -450,7 +449,7 @@ def create_q_capability_characteristics_object(net):
             element_ids.append(element_id)
             q_min_indices.append(q_min_index)
             q_max_indices.append(q_max_index)
-            logger.info("Adding characteristic objects for id_q_capability_curve %d" % element_id)
+            logger.debug("Adding characteristic objects for id_q_capability_curve %d" % element_id)
 
         characteristic_df = pd.DataFrame({
             "id_q_capability_curve": element_ids,
@@ -471,9 +470,68 @@ def create_q_capability_characteristics_object(net):
                 "q_capability_characteristic"]["q_min_characteristic"].map(object_map)
             net["q_capability_characteristic"]["q_max_characteristic"] = net[
                 "q_capability_characteristic"]["q_max_characteristic"].map(object_map)
-        logger.info(f"Finished creating p dependent q characteristic objects for capability curve in "
+        logger.debug(f"Finished creating p dependent q characteristic objects for capability curve in "
                     f"{time.time() - time_start}.")
         del net["q_capability_characteristic_temp"]
 
     else:
-        logger.info("q_capability_curve_table is empty - no characteristic objects created.")
+        logger.debug("q_capability_curve_table is empty - no characteristic objects created.")
+
+def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
+    """
+    Calculates the minimum and maximum reactive power (q_mvar) for a given element ('gen' or 'sgen') 
+    using its Q capability characteristic curve.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower network containing the element and characteristic tables.
+    element : str
+        The type of element, either 'gen' or 'sgen'.
+    element_index : int or iterable
+        The index or indices of the element(s) for which to calculate min and max q_mvar.
+
+    Returns
+    -------
+    qmin : numpy.ndarray
+        Array of minimum reactive power values for the specified element(s).
+    qmax : numpy.ndarray
+        Array of maximum reactive power values for the specified element(s).
+    """
+    if element not in ["gen", "sgen", "ext_grid"]:
+        logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
+                       f"of the {element}. Please give gen or sgen as an argument of the function")
+        return
+
+    if len(net[element]) == 0:
+        logger.warning(f"No. of {element} elements is zero.")
+        return [], []
+
+    if 'reactive_capability_curve' in net[element].columns:
+        element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
+
+        q_table_ids = element_data['id_q_capability_characteristic']
+        p_mw_values = element_data['p_mw']
+
+        # Retrieve the q_max and q_min characteristic functions as vectorized callables
+        q_max_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_max_characteristic']
+        q_min_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_min_characteristic']
+
+        # Vectorized function application using NumPy
+        calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
+        calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
+
+        if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
+            logger.warning(f"The reactive_capability_curve of {element} is True, but the relevant "
+                           f"characteristic value is None. So default Q limit value has been used in the load flow.")
+
+        curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
+        curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
+        qmin = curve_q.loc[element_index, "min_q_mvar"]
+        qmax = curve_q.loc[element_index, "max_q_mvar"]
+    else:
+        logger.info(f"reactive_capability_curve is missing in {element} table, assuming +- np.inf as limits")
+        qmin = [-np.inf]*len(element_index)
+        qmax = [np.inf]*len(element_index)
+
+    return qmin, qmax

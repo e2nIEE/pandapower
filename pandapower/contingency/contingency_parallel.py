@@ -58,7 +58,7 @@ def run_contingency_parallel(net: pandapowerNet,
     :param dict pf_options: options for power flow calculation in N-0 case
     :param dict pf_options_nminus1: options for power flow calculation in N-1 cases
     :param bool write_to_net: whether to write the results of contingency analysis to net (in `res_` tables).
-    :param callable contingency_evaluation_function: function to use for power flow calculation, default pp.runpp
+    :param callable contingency_evaluation_function: function to use for power flow calculation, default runpp
     :param int n_procs: Number of processors to use. If None, all available cores are used. If 1, runs sequentially.
     :return: contingency results dict of arrays per element for index, min/max result
     :rtype: dict
@@ -200,13 +200,17 @@ def _update_contingency_results_parallel(net, contingency_results, result_variab
 
 if __name__ == '__main__':
     import time
-    import pandapower as pp
-    from pandapower.contingency import get_element_limits, check_elements_within_limits, report_contingency_results
+    from pandapower.networks.power_system_test_cases import case2869pegase
+    from pandapower.contingency import (
+        get_element_limits,
+        check_elements_within_limits,
+        report_contingency_results,
+        run_contingency
+    )
 
-    net = pp.networks.case2869pegase()
+    net = case2869pegase()
     nminus1_cases = {"line": {"index": net.line.index.values}}
 
-    # res = pp.contingency.run_contingency(net, nminus1_cases)
     start = time.time()
     res = run_contingency_parallel(net, nminus1_cases, n_procs=8)
     parallel_time = time.time() - start

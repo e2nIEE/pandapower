@@ -3,14 +3,10 @@
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import os
-
 from typing_extensions import deprecated
-
-from pandapower.plotting.geo import convert_crs
-
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +37,7 @@ def _on_map_test(x, y):
     return True
 
 
+@deprecated("A token is not required for maplibre. Call to set_mapbox_token can be removed.")
 def set_mapbox_token(token):
     from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
@@ -49,9 +46,14 @@ def set_mapbox_token(token):
         mapbox_file.write(token)
 
 
+@deprecated("A token is not required for maplibre. Call to _get_mapbox_token can be removed.")
 def _get_mapbox_token():
     from pandapower.__init__ import pp_dir
     path = os.path.join(pp_dir, "plotting", "plotly")
     filename = os.path.join(path, 'mapbox_token.txt')
-    with open(filename, "r") as mapbox_file:
-        return mapbox_file.read()
+    try:
+        with open(filename, "r") as mapbox_file:
+            token = mapbox_file.read()
+    except FileNotFoundError:
+        token = "no_token"
+    return token

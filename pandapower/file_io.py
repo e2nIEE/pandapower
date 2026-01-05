@@ -4,9 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import pickle
-
 import os
+import pickle
 import sys
 import json
 from typing import Union, TextIO, overload as function_overload
@@ -232,19 +231,22 @@ def _from_excel_old(xls):
     return net
 
 
-def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
-              keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None, ignore_unknown_objects=False):
+def from_json(
+        filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
+        keep_serialized_elements=True, add_basic_std_types=False,
+        replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False,
+        omit_tables=None, omit_modules=None
+):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
     Index columns of all pandas DataFrames are sorted in ascending order.
 
-    :param filename: The absolute or relative path to the input file or file-like object
-    :type filename: str or file
+    :param filename_or_str: The absolute or relative path to the input file or file-like object
+    :type filename_or_str: str or file
     :param bool convert: If True, converts the format of the net loaded from json
         from the older version of pandapower to the newer version format, default True
-    :param encrytion_key: If given, key to decrypt an encrypted pandapower network, default None
+    :param encryption_key: If given, key to decrypt an encrypted pandapower network, default None
     :type encryption_key: str or None
     :param elements_to_deserialize: Deserialize only certain pandapower elements. If None all elements are deserialized,
         default None
@@ -267,7 +269,7 @@ def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_de
 
     :example:
         >>> from pandapower.file_io import from_json
-        >>> net = pp.from_json("example.json")
+        >>> net = from_json("example.json")
     """
     if hasattr(filename_or_str, 'read'):
         json_string = filename_or_str.read()
@@ -286,7 +288,10 @@ def from_json(filename_or_str, convert=True, encryption_key=None, elements_to_de
             add_basic_std_types=add_basic_std_types,
             replace_elements=replace_elements,
             empty_dict_like_object=empty_dict_like_object,
-            ignore_unknown_objects=ignore_unknown_objects
+            ignore_unknown_objects=ignore_unknown_objects,
+            drop_invalid_geodata=drop_invalid_geodata,
+            omit_tables=omit_tables,
+            omit_modules=omit_modules,
         )
     except ValueError as e:
         raise UserWarning(f"Failed to load as json or file: {e}")
@@ -301,7 +306,10 @@ def from_json_string(
         add_basic_std_types=False,
         replace_elements=None,
         empty_dict_like_object=None,
-        ignore_unknown_objects=False
+        ignore_unknown_objects=False,
+        drop_invalid_geodata=False,
+        omit_tables=None,
+        omit_modules=None
 ):
     """
     Load a pandapower network from a JSON string.
@@ -344,13 +352,24 @@ def from_json_string(
         json_string = decrypt_string(json_string, encryption_key)
 
     if elements_to_deserialize is None:
-        net = json.loads(json_string, cls=PPJSONDecoder,
-                         empty_dict_like_object=empty_dict_like_object,
-                         ignore_unknown_objects=ignore_unknown_objects)
+        net = json.loads(
+            json_string,
+            cls=PPJSONDecoder,
+            empty_dict_like_object=empty_dict_like_object,
+            ignore_unknown_objects=ignore_unknown_objects,
+            omit_tables=omit_tables,
+            omit_modules=omit_modules
+        )
     else:
-        net = json.loads(json_string, cls=PPJSONDecoder, deserialize_pandas=False,
-                         empty_dict_like_object=empty_dict_like_object,
-                         ignore_unknown_objects=ignore_unknown_objects)
+        net = json.loads(
+            json_string,
+            cls=PPJSONDecoder,
+            deserialize_pandas=False,
+            empty_dict_like_object=empty_dict_like_object,
+            ignore_unknown_objects=ignore_unknown_objects,
+            omit_tables=omit_tables,
+            omit_modules=omit_modules
+        )
         net_dummy = create_empty_network()
         if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '
@@ -385,7 +404,7 @@ def from_json_string(
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net, elements_to_deserialize=elements_to_deserialize)
+        convert_format(net, elements_to_deserialize=elements_to_deserialize, drop_invalid_geodata=drop_invalid_geodata)
 
         # compare pandapowerNet-format_version and package-version
         # check if installed pandapower version is older than imported network file

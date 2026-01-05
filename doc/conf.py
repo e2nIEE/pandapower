@@ -30,8 +30,20 @@ sys.path.append(os.path.abspath("..\\tests"))
 sys.path.append(os.path.abspath("..\\network_generator"))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.intersphinx', 'sphinx.ext.mathjax', 'sphinx.ext.autodoc', 'numpydoc',
-              'sphinx.ext.autosummary', 'sphinxcontrib.imagesvg'] #sphinx.ext.mathjax and sphinx.ext.imgmath don't comply with each other anymore., pngmath will be replaced by imgmath in new sphinx version
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
+    'sphinxcontrib.imagesvg',
+    'numpydoc',
+]
+# sphinx.ext.mathjax and sphinx.ext.imgmath don't comply with each other any more.
+
+# Show type hints *inside* the description
+autodoc_typehints = 'description'
+autodoc_preserve_defaults = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -93,6 +105,15 @@ pygments_style = 'sphinx'
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
 
+# -- Napoleon config ---
+napoleon_custom_sections = [
+    ("Input",    "Parameters"),  # -> behaves like a normal parameter block
+    ("Optional", "Parameters"),
+    ("Output",   "Returns")
+]
+napoleon_google_docstring = True  # Allow google style docstrings
+napoleon_numpy_docstring = True  # Allow numpy style docstrings
+napoleon_use_param = True  # -> Google style docstring to :param (type) name: style
 
 # -- Options for HTML output ---------------------------------------------------
 
@@ -128,7 +149,7 @@ html_theme_path = ["_themes"]
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['']
+#html_static_path = ['']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

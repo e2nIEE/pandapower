@@ -17,14 +17,12 @@ from pandapower.run import runpp, runopp
 from pandapower.runpm import runpm_ac_opf
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
-try:
-    from julia.api import Julia
 
-    Julia(compiled_modules=False)
-    from julia import Main
+try:
+    from juliacall import Main
 
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
@@ -159,7 +157,7 @@ def test_opf_ext_grid_controllable_pm():
 
     eg_bus = net.ext_grid.bus.at[0]
     assert np.isclose(net_old.res_bus.vm_pu[eg_bus], 1.06414000007302)
-    assert np.abs(net_new.res_bus.vm_pu[eg_bus] - net_new.res_bus.vm_pu[eg_bus]) < 0.0058
+    assert np.abs(net_new.res_bus.vm_pu[eg_bus] - net_old.res_bus.vm_pu[eg_bus]) < 0.0058
     assert np.abs(net_new.res_cost - net_old.res_cost) / net_old.res_cost < 1e-2
 
 
