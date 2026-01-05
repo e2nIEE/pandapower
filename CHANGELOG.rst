@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] handling of switch results in :code:`pp.toolbox.select_subnet`
 
 [3.3.0] - 2025-12-15
 -------------------------------
@@ -97,10 +98,6 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
-- [ADDED] pf2pp: possibility to convert a specific varaint and scenario
-- [ADDED] Static Var Compensator with Voltage Control
-- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
-- [ADDED] Static Var Compensator with Voltage Control
 - [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
 - [FIXED] cim2pp: add more dtype parameters, fix some tests
 - [FIXED] convert_format fix check when net version is below format version
@@ -307,7 +304,6 @@ Change Log
 - [ADDED] support for unequal leakage resistance and reactance for HV and LV sides of a 2W-transformer
 - [ADDED] Add VSC element, dc buses, dc lines, and hybrid AC/DC power flow calculation
 - [CHANGED] accelerate _integrate_power_elements_connected_with_switch_buses() in get_equivalent()
-- [ADDED] Added vectorgroup Dynyn and corrected vectorgroup Ynyy
 - [FIXED] index error during unbalanced powerflow if multiple external grids are present
 - [CHANGED] accelerate distributed slack power flow calculation by using sparse-aware operations in _subnetworks()
 - [CHANGED] Trafo Controllers can now be added to elements that are out of service, changed self.nothing_to_do()
@@ -332,7 +328,6 @@ Change Log
 [2.14.9] - 2024-06-25
 -------------------------------
 - [FIXED] scipy version
-
 
 [2.14.7] - 2024-06-14
 -------------------------------
