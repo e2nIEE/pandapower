@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from pandapower.pypower.idx_brch import branch_cols
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.pypower.idx_bus import VM, VA
