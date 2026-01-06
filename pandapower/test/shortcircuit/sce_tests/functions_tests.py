@@ -208,24 +208,29 @@ def compare_results(columns_to_check, net_df, pf_results):
             continue
         column_ar = check_pattern(column)
 
+        pp_result = net_df.loc[:, column]
+        pf_result = pf_results.loc[:, column]
+
         # Part to handle mismatch due to possibility to write same angle as 180° or -180°
         if column_ar.endswith("degree"):
-            if (net_df.loc[:, column] < 0).any():
-                neg_values_mask = net_df.loc[:, column] < -0.2
+            if (pp_result < 0).any():
+                neg_values_mask = pp_result < -0.2
                 net_df.loc[neg_values_mask, column] += 360
-            if (pf_results.loc[:, column] < 0).any():
-                neg_values_mask = pf_results.loc[:, column] < -0.2
+            if (pf_result < 0).any():
+                neg_values_mask = pf_result < -0.2
                 pf_results.loc[neg_values_mask, column] += 360
 
         mismatch = np.isclose(
-            net_df.loc[:, column],
-            pf_results.loc[:, column],
+            pp_result,
+            pf_result,
             rtol=rtol[column_ar], atol=atol[column_ar]
         )
         assert mismatch.all(), (
-            f"{column} mismatch for {net_df.loc[~mismatch, 'name']}: {net_df.loc[~mismatch, column]}"
-            f"vs {pf_results.loc[~mismatch, column]}"
+            f"{column} mismatch for {net_df.loc[~mismatch, 'name']}:\n"
+            f"pp : {pp_result[~mismatch]}\n"
+            f"pf : {pf_result[~mismatch]}"
         )
+
 
 def load_test_case(net_name: str) -> pandapowerNet:
     if net_name.endswith("_sgen") or net_name.endswith("_sgen_act") or net_name.endswith("_gen"):
@@ -267,7 +272,7 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
         x = 1e-6
         cols = ["c0_nf_per_km", "r0_ohm_per_km", "x0_ohm_per_km"]
         net.line.loc[net.line.name.str.contains('1ph'), cols] = x
-        # net.line.loc[net.line.name.str.contains('2ph'), cols] = x
+
 
     xn = None
     rn = None
