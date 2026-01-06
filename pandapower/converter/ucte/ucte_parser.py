@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
-import datetime
+from datetime import datetime, timezone
 import os
 import tempfile
 import time
@@ -26,7 +26,7 @@ class UCTEParser:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.ucte_elements = ["##C", "##N", "##L", "##T", "##R", "##TT", "##E"]
         self.data: Dict[str, pd.DataFrame] = dict()
-        self.date: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)
+        self.date: datetime = datetime.now(timezone.utc)
         self.bus_ucte_countries : list = list()
 
     def parse_file(self, path_ucte_file: str = None) -> bool:
@@ -97,7 +97,7 @@ class UCTEParser:
         except Exception:
             self.logger.info(
                 f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
-            self.date = datetime.datetime.utcnow()
+            self.date = datetime.now(timezone.utc)
 
     def _create_df_from_raw(self, raw_input_dict):
         # create DataFrames from the raw_input_dict
@@ -382,5 +382,5 @@ class UCTEParser:
     def get_data(self) -> Dict[str, pd.DataFrame]:
         return self.data
 
-    def get_date(self) -> datetime.datetime:
+    def get_date(self) -> datetime:
         return self.date
