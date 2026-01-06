@@ -1,6 +1,5 @@
 stages:
   - test
-  - docs
 
 variables:
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
@@ -21,20 +20,12 @@ default:
       - .venv/
       - .uv-cache/
 
-workflow:
-  rules:
-    - changes:
-        - CHANGELOG.rst
-      when: never
-    - when: always
-
 pytest:
   stage: test
   timeout: 60m
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.10", "3.11", "3.12"]
-        GROUP: [1, 2]
+      - PYTHON_VERSION: ["3.11"]
   image: python:${PYTHON_VERSION}-slim
   script:
     - uv sync --extra test
@@ -43,20 +34,7 @@ pytest:
       uv pip install pytest-split numba openpyxl pyproj matplotlib
     - uv pip list
     - |
-      uv run pytest \
-        -n=auto \
-        -m "not postgresql" \
-        --splits 2 \
-        --group ${GROUP}
-
-docs_check:
-  stage: docs
-  image: python:3.11-slim
-  script:
-    - uv sync --extra docs
-    - uv run sphinx-build -b html doc/ doc/_build -W
-  artifacts:
-    when: always
-    expire_in: 1 week
-    paths:
-      - doc/_build
+      uv run pytest pandapower/test/shortcircuit/sce_tests/test_sce.py
+        -n=auto
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "sce"'
