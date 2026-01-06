@@ -373,9 +373,9 @@ def ppc_to_pm(net, ppci):
     cost = [[0, 0, 0] for i in gen_idxs_pm]
     ncost[model_type==1] = ppci["gencost"][:, NCOST][model_type==1]
     ncost[model_type==2] = 3
-    for i in np.where(model_type==1)[0]:
+    for i in np.nonzero(model_type == 1)[0]:
         cost[i] = ppci["gencost"][i, COST:COST + ncost[i] * 2].tolist()
-    for i in np.where(model_type==2)[0]:
+    for i in np.nonzero(model_type == 2)[0]:
         cost_value = ppci["gencost"][i, COST:].tolist()
         if len(cost_value) > 3:
             raise ValueError("Maximum quadratic cost function allowed")

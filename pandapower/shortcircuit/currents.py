@@ -225,7 +225,7 @@ def _calc_ith(net, ppci):
     f = 50
     n = 1
     m = (np.exp(4 * f * tk_s * np.log(kappa - 1)) - 1) / (2 * f * tk_s * np.log(kappa - 1))
-    m[np.where(kappa > 1.99)] = 0
+    m[np.nonzero(kappa > 1.99)] = 0
     ppci["bus"][:, M] = m
     ith = (ppci["bus"][:, IKSS1] + ppci["bus"][:, IKSS2]) * np.sqrt(m + n)
     ppci["bus"][:, ITH] = ith

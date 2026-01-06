@@ -153,4 +153,4 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 
 def _change_ppc_TAP_value(ppc):
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
-    ppc["branch"][np.where(ppc["branch"][:, 8] == 0), 8] = 1
+    ppc["branch"][ppc["branch"][:, 8] == 0, 8] = 1
