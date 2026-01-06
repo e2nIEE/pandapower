@@ -522,7 +522,7 @@ class UCTE2pandapower:
         trafos.loc[ars, "tap_changer_type"] = "Symmetrical"
         trafos.loc[
             ars, "tap_step_degree"
-        ] = self._calculate_tap_step_degree_symmetrical(trafos.loc[ars])
+        ] = 90
 
         asym = (trafos.angle_reg_type == "ASYM") | (trafos.angle_reg_type == "")
         ara = trafos.loc[has_missing_phase_values & has_angle_values & asym].index
