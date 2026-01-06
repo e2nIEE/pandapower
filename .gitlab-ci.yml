@@ -9,12 +9,14 @@ default:
 
 test:
   before_script:
-    - pip install -r requirements.txt
-    - python3 --version
-    - pip list
+    - python -m pip install --upgrade pip
+    - curl -sSL https://install.python-poetry.org | python -
+    - export PATH="$PATH:$HOME/.local/bin"
+    - poetry config virtualenvs.in-project true
+    - poetry install --no-interaction --no-ansi
 
   stage: test
   rules:
     - if: '$CI_COMMIT_BRANCH == "sce"'
   script:
-    - pytest pandapower/test/shortcircuit/sce_tests/sample_tests
+    - pytest pandapower/test/shortcircuit/sce_tests/test_sce.py
