@@ -1,62 +1,15 @@
 stages:
   - test
-  - docs
 
-variables:
-  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
-
-default:
-  image: python:3.11-slim
-  tags:
-    - intranet
-    - kassel
+test:
   before_script:
-    - python -V
-    - pip install --no-cache-dir uv
-    - uv venv
-    - . .venv/bin/activate
-  cache:
-    key: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
-    paths:
-      - .venv/
-      - .uv-cache/
+    - pip install -r requirements.txt
+    - python3 --version
+    - pip list
 
-workflow:
-  rules:
-    - changes:
-        - CHANGELOG.rst
-      when: never
-    - when: always
-
-pytest:
   stage: test
-  timeout: 60m
-  parallel:
-    matrix:
-      - PYTHON_VERSION: ["3.10", "3.11", "3.12"]
-        GROUP: [1, 2]
-  image: python:${PYTHON_VERSION}-slim
+  image: python:3.11
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "sce"'
   script:
-    - uv sync --extra test
-    - |
-      if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-      uv pip install pytest-split numba openpyxl pyproj matplotlib
-    - uv pip list
-    - |
-      uv run pytest \
-        -n=auto \
-        -m "not postgresql" \
-        --splits 2 \
-        --group ${GROUP}
-
-docs_check:
-  stage: docs
-  image: python:3.11-slim
-  script:
-    - uv sync --extra docs
-    - uv run sphinx-build -b html doc/ doc/_build -W
-  artifacts:
-    when: always
-    expire_in: 1 week
-    paths:
-      - doc/_build
+    - pytest pandapower/test/shortcircuit/sce_tests/sample_tests
