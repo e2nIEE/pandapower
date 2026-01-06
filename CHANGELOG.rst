@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2025-..-..
 -------------------------------
+- [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
 - [FIXED] ucte2pp: voltage setpoints from gens connected to the same busbar are now averaged
 - [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
 - [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
