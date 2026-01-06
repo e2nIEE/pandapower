@@ -1,4 +1,5 @@
 import os
+from typing_extensions import deprecated
 import tkinter as tk
 from pandapower.auxiliary import ADict
 from pandapower.converter.powerfactory.main_pf import exit_gracefully
@@ -10,16 +11,15 @@ logger = logging.getLogger(__name__)
 
 def cancel(app, input_panel):
     logger.debug('received a cancel request from the user')
-    input_panel.destroy()
-    logger.debug('destroyed input panel, will attempt exit()')
     for h in logger.handlers:
         logger.removeHandler(h)
-    exit_gracefully(app, 'exiting script', False)
+    exit_gracefully(app, input_panel, 'exiting script', False)
 
 
+@deprecated("Function unused, will be removed in future.")
 def calc_test(app, **kwargs):
     logger.info('TESTING')
-    exit_gracefully(app, 'test complete', False)
+    exit_gracefully(app, None, 'test complete', False)
 
 
 def browse_dst_test(input_panel, entry_path_dst):
