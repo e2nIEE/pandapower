@@ -251,7 +251,7 @@ if __name__ == "__main__":
     print(net_names)
 
     ## show panadpower and powerfactory results for specified grid and location
-    net_name = '3_five_bus_radial_grid_1ph_dyn_MP'  # possible net_name in net_names
+    net_name = '10_eight_bus_radial_grid_2ph_dd_MP'  # possible net_name in net_names
     fault_location = 4  # 0, 1, 3 for four-bus grids; 0, 2, 4 for five-bus grids, 0, 2, 4, 6 for eight-bus grids
     lv_tol_percent = 10
 
@@ -273,24 +273,11 @@ if __name__ == "__main__":
 
 
 ##
-# import pandapower as pp
-# from pandapower.shortcircuit.calc_sc import calc_sc
-# net = pp.from_json(r"C:\Users\lriedl\PycharmProjects\sce\pandapower\test\shortcircuit\sce_tests\test_grids\wp_2.3\1_four_bus_radial_1ph_grid_MP.json")
-# x = 0.001
-#
-# net.line.loc[net.line.name.str.contains('1ph'), "c0_nf_per_km"] = x
-# net.line.loc[net.line.name.str.contains('1ph'), "r0_ohm_per_km"] = x
-# net.line.loc[net.line.name.str.contains('1ph'), "x0_ohm_per_km"] = x
-#
-# net.line.loc[net.line.name.str.contains('2ph'), "c0_nf_per_km"] = x
-# net.line.loc[net.line.name.str.contains('2ph'), "r0_ohm_per_km"] = x
-# net.line.loc[net.line.name.str.contains('2ph'), "x0_ohm_per_km"] = x
-#
-# # net.line.loc[0, "in_service"] = False
-# # net.line.loc[1, "in_service"] = False
-# net.line.loc[2, "in_service"] = False
-#
-# calc_sc(net, fault="LLG", case="max", branch_results=False, ip=False, lv_tol_percent=10, bus=2)
+import pandapower as pp
+from pandapower.shortcircuit.calc_sc import calc_sc
+net = pp.from_json(r"C:\Users\e2n037\git\sce\pandapower\test\shortcircuit\sce_tests\test_grids\wp_2.3\10_eight_bus_radial_grid_2ph_dd_MP.json")
 
-##
 
+calc_sc(net, fault="LG", case="max", branch_results=False, ip=False, lv_tol_percent=10, bus=6)
+
+print(net.res_bus_sc)
