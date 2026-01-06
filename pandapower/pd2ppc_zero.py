@@ -187,6 +187,10 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # and the imaginary part must be 0 - otherwise the result will be np.nan rather than 0:
         ppc["branch"][f:t, BR_R] = BIG_NUMBER * ppc["baseMVA"]
         ppc["branch"][f:t, BR_X] = BIG_NUMBER * ppc["baseMVA"]
+        ppc["branch"][f:t, BR_G] = 0.0
+        ppc["branch"][f:t, BR_B] = 0.0
+        ppc["branch"][f:t, BR_G_ASYM] = 0.0
+        ppc["branch"][f:t, BR_B_ASYM] = 0.0
         ppc["branch"][f:t, BR_STATUS] = in_service
     else:
         ppc["branch"][f:t, BR_STATUS] = 0
