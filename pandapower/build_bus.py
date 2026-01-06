@@ -1061,7 +1061,7 @@ def _add_load_sc_impedances_ppc(net, ppc):
 def _add_c_to_ppc(net, ppc):
     ppc["bus"][:, C_MAX] = 1.1
     ppc["bus"][:, C_MIN] = 1.
-    lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)
+    lv_buses = np.nonzero(ppc["bus"][:, BASE_KV] < 1.)
     if len(lv_buses) > 0:
         lv_tol_percent = net["_options"]["lv_tol_percent"]
         if lv_tol_percent == 10:
