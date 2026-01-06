@@ -232,7 +232,7 @@ def create_pm_lookups(net, pm_lookup):
     for key, val in net._pd2ppc_lookups.items():
         if isinstance(val, dict):
             # lookup is something like "branch" with dict as val -> iterate over the subdicts
-            pm_val = dict()
+            pm_val = {}
             for subkey, subval in val.items():
                 pm_val[subkey] = tuple((v + 1 for v in subval))
         elif isinstance(val, int) or isinstance(val, np.ndarray):
@@ -253,10 +253,10 @@ def ppc_to_pm(net, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     # "per_unit == True" means that the grid data in PowerModels are per-unit values. In this
     # ppc-to-pm process, the grid data schould be transformed according to baseMVA = 1.
-    pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(),
-          "storage": dict(),
-          "ne_branch": dict(), "switch": dict(),
-          "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
+    pm = {"gen": {}, "branch": {}, "bus": {}, "dcline": {}, "load": {},
+          "storage": {},
+          "ne_branch": {}, "switch": {},
+          "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": {},
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
     baseMVA = ppci["baseMVA"]
     load_idx = 1
@@ -264,8 +264,8 @@ def ppc_to_pm(net, ppci):
     # PowerModels has a load model -> add loads and sgens to pm["load"]
 
     # temp dicts which hold the sum of p, q of loads + sgens
-    pd_bus = dict()
-    qd_bus = dict()
+    pd_bus = {}
+    qd_bus = {}
     load_idx, load_lookup = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
     load_idx, sgen_lookup = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
     load_idx, storage_lookup = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
@@ -275,7 +275,7 @@ def ppc_to_pm(net, ppci):
     correct_pm_network_data = net._options["correct_pm_network_data"]
 
     for row in ppci["bus"]:
-        bus = dict()
+        bus = {}
         idx = int(row[BUS_I]) + 1
         bus["index"] = idx
         bus["bus_i"] = idx
@@ -314,7 +314,7 @@ def ppc_to_pm(net, ppci):
 
     n_lines = net.line.in_service.sum()
     for idx, row in enumerate(ppci["branch"], start=1):
-        branch = dict()
+        branch = {}
         branch["index"] = idx
         branch["transformer"] = bool(idx > n_lines)
         branch["br_r"] = row[BR_R].real / baseMVA
@@ -386,7 +386,7 @@ def ppc_to_pm(net, ppci):
 
     if "ne_branch" in ppci:
         for idx, row in enumerate(ppci["ne_branch"], start=1):
-            branch = dict()
+            branch = {}
             branch["index"] = idx
             branch["transformer"] = False
             branch["br_r"] = row[BR_R].real / baseMVA
@@ -450,7 +450,7 @@ def build_ne_branch(net, ppc):
         ppc["ne_branch"] = np.zeros(shape=(length, branch_cols + 1), dtype=np.complex128)
         ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -60, 60])
         # create branch array ne_branch like the common branch array in the ppc
-        net._pd2ppc_lookups["ne_branch"] = dict()
+        net._pd2ppc_lookups["ne_branch"] = {}
         net._pd2ppc_lookups["ne_branch"]["ne_line"] = (0, length)
         _calc_line_parameter(net, ppc, "ne_line", "ne_branch")
         ppc["ne_branch"][:, CONSTRUCTION_COST] = net["ne_line"].loc[:, "construction_cost"].values
@@ -485,7 +485,7 @@ def add_params_to_pm(net, pm):
     pd_idxs_br = []
     pm_idxs_br = []
     br_elms = ["line", "trafo"]
-    pm["user_defined_params"] = dict()
+    pm["user_defined_params"] = {}
     for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
         param_cols = [col for col in net[elm].columns if 'pm_param' in col]
         if not param_cols:
