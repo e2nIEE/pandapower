@@ -1,22 +1,43 @@
 stages:
   - test
 
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+
 default:
   image: python:3.11-slim
   tags:
     - intranet
     - kassel
-
-test:
   before_script:
-    - python -m pip install --upgrade pip
-    - curl -sSL https://install.python-poetry.org | python -
-    - export PATH="$PATH:$HOME/.local/bin"
-    - poetry config virtualenvs.in-project true
-    - poetry install --no-interaction --no-ansi
+    - python -V
+    - pip install --no-cache-dir uv
+    - uv venv
+    - . .venv/bin/activate
+  cache:
+    key: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .venv/
+      - .uv-cache/
 
+pytest:
   stage: test
+  timeout: 60m
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ["3.10", "3.11", "3.12"]
+        GROUP: [1, 2]
+  image: python:${PYTHON_VERSION}-slim
+  script:
+    - uv sync --extra test
+    - |
+      if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+      uv pip install pytest-split numba openpyxl pyproj matplotlib
+    - uv pip list
+    - |
+      uv run pytest pandapower/test/shortcircuit/sce_tests/test_sce.py
+        -n=auto \
+        --splits 2 \
+        --group ${GROUP}
   rules:
     - if: '$CI_COMMIT_BRANCH == "sce"'
-  script:
-    - pytest pandapower/test/shortcircuit/sce_tests/test_sce.py
