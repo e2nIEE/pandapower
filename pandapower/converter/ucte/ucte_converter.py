@@ -517,7 +517,7 @@ class UCTE2pandapower:
         trafos.loc[ars, "tap_min"] = -trafos.loc[ar, "angle_reg_n"]
         trafos.loc[ars, "tap_max"] = trafos.loc[ar, "angle_reg_n"]
         trafos.loc[ars, "tap_pos"] = trafos.loc[ar, "angle_reg_n2"]
-        trafos.loc[ars, "tap_step_percent"] = np.nan
+        trafos.loc[ars, "tap_step_percent"] = trafos.loc[ar, "phase_reg_delta_u"].abs()
         # trafos.loc[ars, 'phase_reg_n'] = trafos.loc[ar, 'angle_reg_n']
         trafos.loc[ars, "tap_changer_type"] = "Symmetrical"
         trafos.loc[
