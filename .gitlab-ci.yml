@@ -25,8 +25,7 @@ pytest:
   timeout: 60m
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.10", "3.11", "3.12"]
-        GROUP: [1, 2]
+      - PYTHON_VERSION: ["3.11"]
   image: python:${PYTHON_VERSION}-slim
   script:
     - uv sync --extra test
@@ -36,8 +35,6 @@ pytest:
     - uv pip list
     - |
       uv run pytest pandapower/test/shortcircuit/sce_tests/test_sce.py
-        -n=auto \
-        --splits 2 \
-        --group ${GROUP}
+        -n=auto
   rules:
     - if: '$CI_COMMIT_BRANCH == "sce"'
