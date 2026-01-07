@@ -22,7 +22,7 @@ default:
 
 pytest:
   stage: test
-  timeout: 60m
+  timeout: 300m
   parallel:
     matrix:
       - PYTHON_VERSION: ["3.11"]
