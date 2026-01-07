@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -42,7 +42,7 @@ try:
 except ImportError:
     from pandas.util.testing import assert_series_equal, assert_frame_equal  # type: ignore[no-redef,import-not-found]
 try:
-    from cryptography.fernet import Fernet
+    from cryptography.fernet import Fernet # type: ignore
 
     cryptography_INSTALLED = True
 except ImportError:
@@ -508,12 +508,14 @@ class FromSerializableRegistry():
     from_serializable = FromSerializable()
     class_name = ''
     module_name = ''
+    omit_modules = ''
 
-    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False):
+    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False, omit_modules=None):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
         self.ignore_unknown_objects = ignore_unknown_objects
+        self.omit_modules = omit_modules
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     def Series(self):
@@ -601,7 +603,7 @@ class FromSerializableRegistry():
         df_obj = df.select_dtypes(include=['object'])
         for col in df_obj:
             df[col] = df[col].apply(partial(
-                self.pp_hook, ignore_unknown_objects=self.ignore_unknown_objects
+                self.pp_hook, ignore_unknown_objects=self.ignore_unknown_objects, omit_modules=self.omit_modules
             ))
             df[col] = df[col].astype(dtype='object')
             df.loc[pd.isnull(df[col]), col] = None
@@ -668,10 +670,13 @@ class FromSerializableRegistry():
                 raise e
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
-                self.obj = json.loads(self.obj, cls=PPJSONDecoder,
-                                      object_hook=partial(
-                                          pp_hook, ignore_unknown_objects=self.ignore_unknown_objects
-                                      ))
+                self.obj = json.loads(
+                    self.obj,
+                    cls=PPJSONDecoder,
+                    object_hook=partial(
+                        pp_hook, ignore_unknown_objects=self.ignore_unknown_objects, omit_modules=self.omit_modules
+                    )
+                )
                 # backwards compatibility
             if "net" in self.obj:
                 del self.obj["net"]
@@ -727,19 +732,40 @@ class PPJSONDecoder(json.JSONDecoder):
         empty_dict_like_object = kwargs.pop('empty_dict_like_object', None)
         registry_class = kwargs.pop("registry_class", FromSerializableRegistry)
         ignore_unknown_objects = kwargs.pop("ignore_unknown_objects", False)
-        super_kwargs = {"object_hook": partial(pp_hook,
-                                               deserialize_pandas=deserialize_pandas,
-                                               empty_dict_like_object=empty_dict_like_object,
-                                               registry_class=registry_class,
-                                               ignore_unknown_objects=ignore_unknown_objects)}
+        omit_tables = kwargs.pop('omit_tables', None)
+        omit_modules =kwargs.pop('omit_modules', None)
+        super_kwargs = {"object_hook": partial(
+            pp_hook,
+            deserialize_pandas=deserialize_pandas,
+            empty_dict_like_object=empty_dict_like_object,
+            registry_class=registry_class,
+            ignore_unknown_objects=ignore_unknown_objects,
+            omit_tables=omit_tables,
+            omit_modules=omit_modules,
+        )}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
 
 
-def pp_hook(d, deserialize_pandas=True, empty_dict_like_object=None,
-            registry_class=FromSerializableRegistry, ignore_unknown_objects=False):
+def pp_hook(
+        d,
+        deserialize_pandas=True,
+        empty_dict_like_object=None,
+        registry_class=FromSerializableRegistry,
+        ignore_unknown_objects=False,
+        omit_tables=None,
+        omit_modules=None
+):
     try:
+        if not omit_tables is None:
+            for ot in omit_tables:
+                if ot in d:
+                    d[ot].drop(d[ot].index, inplace=True)
         if '_module' in d and '_class' in d:
+            if not omit_modules is None:
+                for om in omit_modules:
+                    if om in d['_module']:
+                        return
             if 'pandas' in d['_module'] and not deserialize_pandas:
                 return json.dumps(d)
             elif "_object" in d:
@@ -751,7 +777,7 @@ def pp_hook(d, deserialize_pandas=True, empty_dict_like_object=None,
                 return obj  # backwards compatibility
             else:
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, pp_hook, ignore_unknown_objects)
+            fs = registry_class(obj, d, pp_hook, ignore_unknown_objects, omit_modules=omit_modules)
 
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')

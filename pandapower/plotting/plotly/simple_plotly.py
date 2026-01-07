@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandas as pd
@@ -221,9 +221,9 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         for weighted_trace in additional_traces:
             # for weighted_marker_traces "meta" should include information for the "scale legend"
             if ("meta" in weighted_trace) and (weighted_trace["meta"]["show_scale_legend"]):
-                sc_trace = create_scale_trace(net, weighted_trace, down_shift=shift)
+                sc_trace, next_shift = create_scale_trace(net, weighted_trace, down_shift=shift)
                 traces.extend(sc_trace)
-                shift += len(weighted_trace["meta"]["scale_marker_size"])
+                shift += next_shift
 
         traces.extend(additional_traces)
     if auto_draw_traces:

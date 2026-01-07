@@ -6,12 +6,14 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the static generator"),
         "type": pa.Column(
             pd.StringDtype,
-            pa.Check.isin(["PV", "WP", "CHP"]),
+            # pa.Check.isin(["PV", "WP", "CHP"]),
             nullable=True,
             required=False,
             description="type of generator",
         ),
-        "bus": pa.Column(int, description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+        "bus": pa.Column(
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
+        ),
         "p_a_mw": pa.Column(float, pa.Check.le(0), description="active power of the static generator : Phase A[MW]"),
         "q_a_mvar": pa.Column(float, description="reactive power of the static generator : Phase A [MVar]"),
         "p_b_mw": pa.Column(float, pa.Check.le(0), description="active power of the static generator : Phase B [MW]"),

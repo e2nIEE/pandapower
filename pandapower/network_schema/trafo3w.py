@@ -8,7 +8,7 @@ from pandapower.network_schema.tools.validation.group_dependency import (
 
 _trafo3w_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
-    "std_type": pa.Column(str, nullable=True, required=False, description="transformer standard type name"),
+    "std_type": pa.Column(pd.StringDtype, nullable=True, required=False, description="transformer standard type name"),
     "hv_bus": pa.Column(
         int,
         pa.Check.ge(0),
@@ -66,27 +66,23 @@ _trafo3w_columns = {
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
     "i0_percent": pa.Column(float, description="open loop losses [%]"),
     "shift_mv_degree": pa.Column(
-        float, nullable=True, required=False, description="transformer phase shift angle at the MV side"
+        float, description="transformer phase shift angle at the MV side"
     ),
     "shift_lv_degree": pa.Column(
-        float, nullable=True, required=False, description="transformer phase shift angle at the LV side"
+        float, description="transformer phase shift angle at the LV side"
     ),
     "tap_side": pa.Column(
         pd.StringDtype,
-        pa.Check.isin(["hv", "mv", "lv"]),
-        nullable=True,
-        required=False,
+        pa.Check.isin(["hv", "mv", "lv"]), nullable=True, required=False,
         description="defines if tap changer is positioned on high- medium- or low voltage side",
     ),
     "tap_neutral": pa.Column(float, nullable=True, required=False, description=""),
     "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
-    "tap_step_percent": pa.Column(
-        float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"
-    ),
+    "tap_step_percent": pa.Column(float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"),
     "tap_step_degree": pa.Column(float, nullable=True, required=False, description="tap step size for voltage angle"),
     "tap_at_star_point": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the tap changer is modelled at terminal or at star point",
@@ -100,10 +96,11 @@ _trafo3w_columns = {
         description="specifies the tap changer type",
     ),
     "tap_dependency_table": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
+        metadata={"tdt": True},
     ),
     "id_characteristic_table": pa.Column(
         pd.Int64Dtype,
@@ -111,18 +108,20 @@ _trafo3w_columns = {
         nullable=True,
         required=False,
         description="references the id_characteristic index from the trafo_characteristic_table",
+        metadata={"tdt": True},
     ),
     "max_loading_percent": pa.Column(
         float,
         nullable=True,
         required=False,
-        description="",
+        description="maximum current loading (only needed for OPF)",
+        metadata={"opf": True},
     ),
     "vector_group": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
-        description="",
+        description="vector group of the 3w-transformer",
         metadata={"sc": True},
     ),
     "vkr0_x": pa.Column(
@@ -143,10 +142,17 @@ tap_columns = ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_st
 trafo3w_checks = [
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
-        error=f"Tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
+        error=f"trafo3w tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
     ),
 ]
-trafo3w_checks += create_column_dependency_checks_from_metadata(["sc"], _trafo3w_columns)
+trafo3w_checks += create_column_dependency_checks_from_metadata(
+    [
+        # "sc",
+        "tdt",
+        "opf",
+    ],
+    _trafo3w_columns,
+)
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,
@@ -185,13 +191,15 @@ res_trafo3w_schema = pa.DataFrameSchema(
             float, nullable=True, description="current at the low voltage side of the transformer [kA]"
         ),
         "vm_hv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the high voltage bus [pu]"),
-        "va_hv_degree": pa.Column(float, nullable=True, description="voltage magnitude at the medium voltage bus [pu]"),
-        "vm_mv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the low voltage bus [pu]"),
-        "va_mv_degree": pa.Column(float, nullable=True, description="voltage angle at the high voltage bus [degrees]"),
-        "vm_lv_pu": pa.Column(float, nullable=True, description="voltage angle at the medium voltage bus [degrees]"),
+        "va_hv_degree": pa.Column(float, nullable=True, description="voltage angle at the high voltage bus [degrees]"),
+        "vm_mv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the medium voltage bus [pu]"),
+        "va_mv_degree": pa.Column(
+            float, nullable=True, description="voltage angle at the medium voltage bus [degrees]"
+        ),
+        "vm_lv_pu": pa.Column(float, nullable=True, description="voltage magnitude at the low voltage bus [pu]"),
         "va_lv_degree": pa.Column(float, nullable=True, description="voltage angle at the low voltage bus [degrees]"),
-        "va_internal_degree": pa.Column(float, nullable=True, description=""),
-        "vm_internal_pu": pa.Column(float, nullable=True, description=""),
+        "va_internal_degree": pa.Column(float, nullable=True, description="voltage angle at internal bus"),
+        "vm_internal_pu": pa.Column(float, nullable=True, description="voltage magnitude at internal bus"),
         "loading_percent": pa.Column(float, nullable=True, description="transformer utilization [%]"),
     },
     strict=False,

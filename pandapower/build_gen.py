@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -188,9 +188,9 @@ def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
 
     # if there are some non-controllable gens -> set vm_pu and p_mw fixed
     if np.any(not_controllable):
-        bus = net["gen"]["bus"].values[not_controllable]
-        vm_pu = net["gen"]["vm_pu"].values[not_controllable]
-        p_mw = net["gen"]["p_mw"].values[not_controllable]
+        bus = net["gen"]["bus"][gen_is].values[not_controllable]
+        vm_pu = net["gen"]["vm_pu"][gen_is].values[not_controllable]
+        p_mw = net["gen"]["p_mw"][gen_is].values[not_controllable]
 
         not_controllable_buses = bus_lookup[bus]
         ppc["bus"][not_controllable_buses, VMAX] = vm_pu + delta

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -25,18 +25,18 @@ def ieee_european_lv_asymmetric(scenario="on_peak_566", **kwargs):
     The network also includes geographical information of lines and buses for plotting.
 
     OPTIONAL:
-        **scenario** - (str, "on_mid"): defines the scaling for load and generation
+        **scenario** - (str, "on_peak_566"): defines the scaling for load and generation
 
-                - "on_mid": high load scenario
-                - "off_start": low load scenario at 12:01 AM
-                - "off_end": low load scenario at mignight
+                - "on_peak_566": 09:26 AM: On Peak (566 min)
+                - "off_peak_1": 12:01 AM: Off Peak (1 min)
+                - "off_peak_1440": 12:00 AM: Off Peak (1440 min)
 
     OUTPUT:
          **net** - pandapower network
 
     EXAMPLE:
         >>> from pandapower.networks import ieee_european_lv_asymmetric
-        >>> net = ieee_european_lv_asymmetric("off_start")
+        >>> net = ieee_european_lv_asymmetric("off_peak_1")
     """
     if scenario == "off_peak_1":
         net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1.json"),

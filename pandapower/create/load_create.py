@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -295,6 +295,9 @@ def create_asymmetric_load(
     q_a_mvar: float = 0,
     q_b_mvar: float = 0,
     q_c_mvar: float = 0,
+    sn_a_mva: float=nan,
+    sn_b_mva: float=nan,
+    sn_c_mva: float=nan,
     sn_mva: float = nan,
     name: str | None = None,
     scaling: float = 1.0,
@@ -327,6 +330,12 @@ def create_asymmetric_load(
         **q_b_mvar** float, default 0) - The reactive power for Phase B load
 
         **q_c_mvar** (float, default 0) - The reactive power for Phase C load
+
+        **sn_a_mva** (float, default NaN) - Nominal power for Phase A load
+
+        **sn_b_mva** (float, default NaN) - Nominal power for Phase B load
+
+        **sn_c_mva** (float, default NaN) - Nominal power for Phase C load
 
         **sn_mva** (float, default: NaN) - Nominal power of the load
 
@@ -363,6 +372,9 @@ def create_asymmetric_load(
         "q_a_mvar": q_a_mvar,
         "q_b_mvar": q_b_mvar,
         "q_c_mvar": q_c_mvar,
+        "sn_a_mva": sn_a_mva,
+        "sn_b_mva": sn_b_mva,
+        "sn_c_mva": sn_c_mva,
         "sn_mva": sn_mva,
         "in_service": in_service,
         "type": type,

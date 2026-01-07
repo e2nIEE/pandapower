@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -224,7 +224,7 @@ def _control_step(levelorder, run_count):
     logger.debug("Controller Iteration #%i" % run_count)
     # run each controller until all are converged
     for ctrl, net in levelorder:
-        # call control step while controller ist not converged yet
+        # call control step while controller is not converged yet
         if not ctrl.is_converged(net):
             ctrl.control_step(net)
             converged = False

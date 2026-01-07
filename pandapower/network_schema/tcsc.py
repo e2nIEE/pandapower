@@ -1,5 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 
 tcsc_schema = pa.DataFrameSchema(
     {
@@ -48,14 +49,7 @@ tcsc_schema = pa.DataFrameSchema(
         ),
     },
     checks=[
-        pa.Check(
-            lambda df: (
-                df["min_angle_degree"] <= df["max_angle_degree"]
-                if all(col in df.columns for col in ["min_angle_degree", "max_angle_degree"])
-                else True
-            ),
-            error="Column 'min_angle_degree' must be <= column 'max_angle_degree'",
-        )
+        create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     ],
     strict=False,
 )

@@ -33,7 +33,6 @@ switch_schema = pa.DataFrameSchema(
         "z_ohm": pa.Column(
             float,
             nullable=True,
-            required=False,
             description="indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0, the buses will be fused like before, if larger than 0 a branch will be created for the switch which has also effects on the bus mapping",
         ),
     },
@@ -42,12 +41,14 @@ switch_schema = pa.DataFrameSchema(
 
 res_switch_schema = pa.DataFrameSchema(
     {
-        "i_ka": pa.Column(float, nullable=True, description="active power from bus [MW]"),
-        "loading_percent": pa.Column(float, nullable=True, description="reactive power from bus [MVAr]"),
-        "p_from_mw": pa.Column(float, nullable=True, description="active power to element [MW]"),
-        "q_from_mvar": pa.Column(float, nullable=True, description="reactive power to element [MVAr]"),
-        "p_to_mw": pa.Column(float, nullable=True, description="current on switch [kA]"),
-        "q_to_mvar": pa.Column(float, nullable=True, description="loading of switch in percent of maximum current [%]"),
+        "p_from_mw": pa.Column(float, nullable=True, description="active power from bus [MW]"),
+        "q_from_mvar": pa.Column(float, nullable=True, description="reactive power from bus [MVAr]"),
+        "p_to_mw": pa.Column(float, nullable=True, description="active power to element [MW]"),
+        "q_to_mvar": pa.Column(float, nullable=True, description="reactive power to element [MVAr]"),
+        "i_ka": pa.Column(float, nullable=True, description="current on switch [kA]"),
+        "loading_percent": pa.Column(
+            float, nullable=True, description="loading of switch in percent of maximum current [%]"
+        ),
     },
     strict=False,
 )

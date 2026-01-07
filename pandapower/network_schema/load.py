@@ -6,8 +6,11 @@ from pandapower.network_schema.tools.validation.group_dependency import create_c
 _load_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load"),
     "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
-    "p_mw": pa.Column(float, description="active power of the load [MW], normally positiv value is power consumption"),
-    "q_mvar": pa.Column(float, description="reactive power of the load [MVar]"),
+    "p_mw": pa.Column(float, description="active power of the load [MW], a positiv value means power consumption"),
+    "q_mvar": pa.Column(
+        float,
+        description=" reactive power of the load [MVar], positive for inductive consumers, negative for capacitive consumers",
+    ),
     "const_z_p_percent": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=100),
