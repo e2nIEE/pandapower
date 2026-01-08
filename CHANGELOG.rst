@@ -5,9 +5,11 @@ Change Log
 -------------------------------
 - [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
 - [CHANGED] runpp: expanded enforce_q_lims functionality to consider max & min q limits for sgen elements (from either net.sgen.min/max_q_mvar parameters or reactive power capability curves)
+- [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
 
 [3.3.0] - 2025-12-15
 -------------------------------
+- [ADDED] network_structure, load_create, sgen_create: seperate nominal mva attributes for each phase `sn_a_mva`, `sn_b_mva`, `sn_c_mva`. While existing total nominal mva `sn_mva` is also retained.
 - [FIXED] julia implementation, now using juliacall
 - [CHANGED] diagnostics restructured for better extensibility
 - [FIXED] implausible impedance test results never showing in report

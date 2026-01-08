@@ -1,8 +1,20 @@
 import logging
+from typing import overload
+from typing_extensions import deprecated
 
 logger = logging.getLogger(__name__)
 
-def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'):
+
+@deprecated('Argument include_hidden_bus is unused and will be removed in future versions.')
+@overload
+def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'): ...
+
+
+@overload
+def create_network_dict(app, flag_graphics='GPS'): ...
+
+
+def create_network_dict(app, include_hidden_bus=None, flag_graphics='GPS'):
     # elements to be exported from PowerFactory
     set_object_extentions = {
         # node elements:
