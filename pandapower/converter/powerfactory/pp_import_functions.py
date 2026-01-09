@@ -4180,10 +4180,10 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                         f"{item}: Station Controller with switch measurement that cannot be relocated, adding switch with "
                         f"small impedance")
 
-                        res_element_index.append(switch_dict[element])
-                        net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
-                        variable.append("q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar")
-                        res_element_table = "res_switch"
+                    res_element_index.append(switch_dict[element])
+                    net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
+                    variable.append("q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar")
+                    res_element_table = "res_switch"
             else:
                 logger.error(
                     f"{item}: only line, impedance, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")

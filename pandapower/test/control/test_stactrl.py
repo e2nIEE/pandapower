@@ -180,11 +180,11 @@ def test_qlimits_voltctrl():
 
 
 def test_qlimits_with_capability_curve():
+    tol = 1e-6
     for v in linspace(start=0.98, stop=1.02, num=5, dtype=float64):
         for p in linspace(start=-2.5, stop=2.5, num=10, dtype=float64):
             net = simple_test_net()
             create_sgen(net, 2, p_mw=0., sn_mva=0, name="sgen2")
-            tol = 1e-6
             # create q characteristics table
             net["q_capability_curve_table"] = DataFrame(
                 {'id_q_capability_curve': [0, 0, 0, 0, 0],
