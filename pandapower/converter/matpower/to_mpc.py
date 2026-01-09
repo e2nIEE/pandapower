@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -61,12 +61,12 @@ def _ppc2mpc(ppc):
     # convert to matpower
     # Matlab is one-based, so all entries (buses, lines, gens) have to start with 1 instead of 0
     mpc = copy.deepcopy(ppc)
-    if len(np.where(mpc["bus"][:, 0] == 0)[0]):
+    if np.any(mpc["bus"][:, 0] == 0):
         mpc["bus"][:, 0] = mpc["bus"][:, 0] + 1
         mpc["gen"][:, 0] = mpc["gen"][:, 0] + 1
         mpc["branch"][:, 0:2] = mpc["branch"][:, 0:2] + 1
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
-    mpc["branch"][np.where(mpc["branch"][:, 8] == 1), 8] = 0
+    mpc["branch"][mpc["branch"][:, 8] == 1, 8] = 0
     # version is a string
     mpc["version"] = str(mpc["version"])
     # baseMVA has to be a float instead of int

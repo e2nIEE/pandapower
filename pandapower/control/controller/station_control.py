@@ -4,6 +4,7 @@ import logging
 
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
+from pandapower.control.util.auxiliary import get_min_max_q_mvar_from_characteristics_object
 
 try:
     import pandaplan.core.pplog as logging
@@ -15,86 +16,79 @@ logger = logging.getLogger(__name__)
 
 class BinarySearchControl(Controller):
     """
-        The Binary search control is a controller which is used to reach a given set point. It can be used for
-        reactive power control, voltage control, cosines(phi) or tangens(phi) control. The control modus can be set via
-        the control_modus parameter. Input and output elements and indexes can be lists. Input elements can be transformers,
-        switches, lines or buses (only in case of voltage control). in case of voltage control, the controlled bus must be
-        given to input_element_index. Output elements are sgens, where active and reactive power can be set. The
-        output value distribution describes the distribution of reactive power provision between multiple
-        output_elements and must sum up to 1.
+    The Binary search control is a controller that adjusts output values in order to
+    reach a given set point. It can be used for
+    reactive power control, voltage control, cosines(phi) or tangens(phi) control. The control modus can be set via
+    the control_modus parameter. Input and output elements and indexes can be lists. Input elements can
+    be transformers, switches, lines or buses (only in voltage control). the controlled bus must be
+    given to input_element_index. Output
+    elements are sgens, where active and reactive power can be set. The
+    ``output_values_distribution`` describes the distribution of reactive power
+    provision between multiple ``output_elements`` and must sum to 1.
 
-        INPUT:
-            **self**
 
-            **net** - A pandapower grid
+    Parameters
+    ----------
+    self : BinarySearchControl
+    net : pandapowerNet
+        A pandapower grid.
+    ctrl_in_service : bool
+        Whether the controller is in service.
+    output_element : str
+        Output element type: ``"gen"`` or ``"sgen"``.
+        For reactive power control, currently only ``"sgen"`` is supported.
+    output_variable : str
+        Output variable of the element (e.g., ``"q_mvar"``).
+    output_element_index : int or list of int
+        Index or list of indices of the output elements.
+    output_element_in_service : list of bool
+        Indicates whether each output element is in service.
+    output_values_distribution : list of float
+        Distribution of reactive power provision among output elements (must sum to 1).
+    input_element : str
+        Measurement location: ``"res_trafo"``, ``"res_switch"``, ``"res_line"``, or
+        ``"res_bus"``. For ``"res_switch"``, an additional small impedance is introduced.
+    input_variable : str
+        Variable used for the measurement (string).
+    input_inverted : list of bool
+        Indicates whether the measurement of each input element must be inverted.
+        Required when importing from PowerFactory.
+    input_element_index : int or list of int
+        Index or list of indices of the input elements.
+    set_point : float
+        Set point of the controller. For voltage control, ``voltage_ctrl`` must be
+        ``True``, ``bus_idx`` must be the measurement bus, and ``input_element`` must
+        be ``"res_bus"``. Can be overwritten by a chained droop controller.
+    output_min_q_mvar : list of float
+        Minimum Q limits for each output element. Considered when ``runpp`` is
+        executed with ``enforce_q_lims=True``.
+    output_max_q_mvar : list of float
+        Maximum Q limits for each output element. Considered when ``runpp`` is
+        executed with ``enforce_q_lims=True``.
+    tol : float, optional
+        Tolerance for controller convergence. Default is ``0.001``.
+    in_service : bool, optional
+        Whether the controller is in service. Default is ``True``.
+    order : int, optional
+        Execution order of the controller.
+    level : int, optional
+        Execution level of the controller.
+    drop_same_existing_ctrl : bool, optional
+        Whether to drop existing controllers with the same parameters.
+    matching_params : dict, optional
+        Parameters used to match controllers.
+    name : str, optional
+        Name of the controller.
+    kwargs : dict, optional
+        Additional keyword arguments.
 
-            **ctrl_in_service** - Whether the controller is in service or not.
-
-            **output_element** - Output element of the controller. Takes a string value "gen" or "sgen", with
-            reactive power control, currently only "sgen" is possible.
-
-            **output_variable** - Output variable of that element, normally "q_mvar".
-
-            **output_element_index** - Index or list of indices of the output element(s) in net.
-
-            **output_element_in_service** - List indicating whether each output element is in service.
-
-            **output_values_distribution** - Distribution of reactive power provision among output elements.
-
-            **input_element** - Measurement location, can be a transformer, switches or lines. Must be a bus for
-            V_ctrl. Indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
-            "res_switch": an additional small impedance is introduced in the switch.
-
-            **input_variable** - Variable which is used to take the measurement from. Indicated by string value. Must
-            be 'vm_pu' for 'V_ctrl'.
-
-            **input_inverted** - List of Booleans that indicates if the measurement of the input elements must be inverted. Required
-            when importing from PowerFactory.
-
-            **gen_q_response** - List of +/- 1 that indicates the Q gen response of the measurement location. Used in
-            order to invert the droop value of the controller.
-
-            **input_element_index** - Index or list of indices of the input element(s) in net.
-
-            **set_point** - Set point of the controller, can be a reactive power provision or a voltage set point. In
-            case of voltage set point, control_modus must be V_ctrl, input_element_index must be a bus (input_variable must be
-            'vm_pu' input_element must be 'res_bus'). Can be overwritten by a droop controller chained with the binary
-            search control. If 'V_ctrl' and automated bus selection (input_element_index == 'auto'), set_point will be
-            the search criteria in kV for the controlled bus (V_bus >= V_set_point).
-
-            **output_values_distribution** - Distribution of reactive power provision.
-
-            **control_modus=None** - Enables the selection of the available control modi by taking one of the strings: Q_ctrl, V_ctrl,
-            PF_ctrl (PF_ctrl_ind or PF_ctrl_cap for reactance of PF_ctrl) or tan(phi)_ctrl. Formerly called Voltage_ctrl
-
-            **output_min_q_mvar** - Minimum reactive power limits for each output element.
-
-            **output_max_q_mvar** - Maximum reactive power limits for each output element.
-
-            **tol=0.001** - Tolerance for controller convergence.
-
-            **in_service=True** - Whether the controller itself is in service.
-
-            **order=0** - Execution order of the controller.
-
-            **level=0** - Execution level of the controller.
-
-            **drop_same_existing_ctrl=False** - Whether to drop existing controllers with the same parameters.
-
-            **matching_params=None** - Parameters for matching controllers.
-
-            **name=""** - Name of the controller.
-
-            **kwargs** - Additional keyword arguments.
-
-   """
-
-    def __init__(self, net, ctrl_in_service:bool, output_element, output_variable, output_element_index,
-                 output_element_in_service, input_element, input_variable,
-                 input_element_index, set_point:float, output_values_distribution,
-                 control_modus:str = None, name = "", input_inverted=None, gen_q_response:list=None, tol=0.001, order=0, level=0,
-                 drop_same_existing_ctrl=False, matching_params=None, **kwargs):
-        super().__init__(net, in_service=ctrl_in_service, order=order, level=level,
+    """
+    def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
+                 output_element_in_service, output_values_distribution, input_element, input_variable,
+                 input_element_index, set_point, voltage_ctrl, name="", input_inverted=[], gen_Q_response=[],
+                 bus_idx=None, tol=0.001, in_service=True, order=0, level=0, drop_same_existing_ctrl=False,
+                 matching_params=None, **kwargs):
+        super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
         # write kwargs in self
@@ -165,20 +159,11 @@ class BinarySearchControl(Controller):
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
 
-        self._update_min_max_q_mvar(net)
-
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(np.atleast_1d(self.output_values_distribution),
                                                 np.atleast_1d(self.output_element_in_service))], dtype=np.bool)
 
         n = len(np.atleast_1d(self.output_element_index))
-        if gen_q_response is None or (isinstance(gen_q_response, Sequence) and len(gen_q_response) == 0):
-            # empty, then set all entries to 1
-            self.gen_q_response = [1] * n
-        else:
-            if len(gen_q_response) < n:
-                gen_q_response += [1] * (n - len(gen_q_response))  # missing entries with +1
-            self.gen_q_response = gen_q_response
         ###finding correct control_modus, catching deprecated voltage_ctrl argument###todo unambiguous control_modus also with droop
         if control_modus is None: #catching old attribute voltage_ctrl
             if hasattr(self, 'voltage_ctrl'):
@@ -680,11 +665,24 @@ class BinarySearchControl(Controller):
 
     def _update_min_max_q_mvar(self, net):
         if 'min_q_mvar' in net[self.output_element].columns:
-            self.output_min_q_mvar = np.nan_to_num(np.atleast_1d(net[self.output_element].loc[self.output_element_index, 'min_q_mvar']), nan=-np.inf)
+            if not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values)):
+                qmin, _ = get_min_max_q_mvar_from_characteristics_object(net, self.output_element, self.output_element_index)
+                self.output_min_q_mvar = np.nan_to_num(qmin, nan=-np.inf)
+                net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
+            else:
+                self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
+                net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
         else:
             self.output_min_q_mvar = np.array([-np.inf]*len(self.output_element_index), dtype=np.float64)
+
         if 'max_q_mvar' in net[self.output_element].columns:
-            self.output_max_q_mvar = np.nan_to_num(np.atleast_1d(net[self.output_element].loc[self.output_element_index, 'max_q_mvar']), nan=np.inf)
+            if not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values)):
+                _, qmax = get_min_max_q_mvar_from_characteristics_object(net, self.output_element, self.output_element_index)
+                self.output_max_q_mvar = np.nan_to_num(qmax, nan=np.inf)
+                net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar
+            else:
+                self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
+                net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar
         else:
             self.output_max_q_mvar = np.array([np.inf]*len(self.output_element_index), dtype=np.float64)
 
@@ -796,16 +794,16 @@ class DroopControl(Controller):
             if gen_q_response is None: gen_q_response = 1 #legacy and robustness
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
-                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            gen_q_response * (self.ub_voltage - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc + (
+                            self.vm_pu - self.ub_voltage) * self.q_droop_mvar)
                 elif self.vm_pu < self.lb_voltage:
-                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc +
-                                                            gen_q_response * (self.lb_voltage - self.vm_pu) * self.q_droop_mvar)
+                    self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc + (
+                            self.vm_pu - self.lb_voltage) * self.q_droop_mvar)
                 else:
                     self.q_set_old_mvar, self.q_set_mvar = (self.q_set_mvar, self.q_set_mvar_bsc)
             else:
                 self.q_set_old_mvar, self.q_set_mvar = (
-                    self.q_set_mvar, self.q_set_mvar + net.controller.object[self.controller_idx].gen_q_response[0] * (
+                    self.q_set_mvar, self.q_set_mvar + (
                                 self.q_set_mvar_bsc - self.vm_pu) * self.q_droop_mvar)
 
             if self.q_set_old_mvar is not None:
@@ -826,7 +824,7 @@ class DroopControl(Controller):
             input_values = (
                         net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
             self.vm_set_pu_new = self.vm_set_pu_bsc + sum(
-                input_values) / self.q_droop_mvar  # net.controller.at[self.controller_idx, "object"].gen_Q_response[0] *
+                input_values) / self.q_droop_mvar
             net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
 
 
