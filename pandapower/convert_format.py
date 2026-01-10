@@ -38,10 +38,10 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    _update_station_controller(net)
     if Version(str(net.format_version)) < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
     if Version("3.0.0") <= Version(str(net.format_version)) < Version("3.1.3"):
+        _update_station_controller(net)
         _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata)
     if Version(str(net.format_version)) < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize, drop_invalid_geodata)

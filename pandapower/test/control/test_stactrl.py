@@ -268,13 +268,13 @@ def test_stactrl_pf_import():
                                              net.res_line.loc[5, "q_to_mvar"]) /
                                             net.controller.object[4].q_droop_mvar))) < tol)
     assert(net.controller.at[4, 'object'].voltage_ctrl is True)  # test correct droop control_modus
-    assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')   # test correct control_modus
+    assert(getattr(net.controller.at[3, 'object'].control_modus, 'value', None) == 'V_ctrl')   # test correct control_modus
     assert(net.controller.at[4, 'object'].controller_idx == 3)  # test droop controller linkage
     print("--------------------------------------")
     print("Scenario 3 - Constant V")
     print("Controlled bus, set point = 1.03 pu, vm_pu: ", net.res_bus.loc[84, "vm_pu"])
     assert(abs(net.res_bus.loc[84, "vm_pu"] - 1.03) < tol)
-    assert(net.controller.at[5, 'object'].control_modus == 'V_ctrl')  # test correct control_modus
+    assert(getattr(net.controller.at[5, 'object'].control_modus, 'value', None) == 'V_ctrl')   # test correct control_modus
     print("--------------------------------------")
     print("Scenario 4 - Q(U) - droop 40 MVar/pu")
     print("Input Measurement vm_pu: ", net.res_bus.loc[91, "vm_pu"])
@@ -284,7 +284,7 @@ def test_stactrl_pf_import():
     assert(abs(net.res_trafo.loc[3, "q_hv_mvar"] - -(1 + (0.999 - net.res_bus.loc[91, "vm_pu"])
                                                     * net.controller.object[2].q_droop_mvar)) < tol)
     assert(net.controller.at[2, 'object'].voltage_ctrl is False)  # test correct droop control_modus
-    assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl')# test correct control_modus
+    assert(getattr(net.controller.at[1, 'object'].control_modus, 'value', None) == 'Q_ctrl')# test correct control_modus
     assert(net.controller.at[2, 'object'].controller_idx == 1) #test droop controller linkage
 
 ### Testing after rework of station controller###
