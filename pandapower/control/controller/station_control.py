@@ -5,6 +5,7 @@ import logging
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 from pandapower.control.util.auxiliary import get_min_max_q_mvar_from_characteristics_object
+from enum import Enum
 logger = logging.getLogger(__name__)
 
 
@@ -31,46 +32,47 @@ class BinarySearchControl(Controller):
     output_variable : str or list of str
         Output variable of the element (e.g., ``"q_mvar"``).
     output_element_index : int or list of int
-        Index or list of indices of the output element(s) in net (e.g. "net.sgen").
+        Index or list of indices of the output element(s) in net (e.g. ``"net.sgen"``).
     output_element_in_service : bool or list of bool
         Indicates whether each output element is in service.
     output_values_distribution : int, float or list of float
         Distribution of reactive power provision among output elements (must sum to 1).
     input_element : str
         Measurement location, can be a transformer, switches or lines. Must be a bus for
-        ''"V_ctrl"''. Indicated by string value "res_trafo", "res_switch", "res_line" or "res_bus". In case of
-        "res_switch", an additional small impedance is introduced in the switch.
+        ``"V_ctrl"``. Indicated by string value ``"res_trafo"``, ``"res_switch"``, ``"res_line"`` or ``"res_bus"``.
+        In case of ``"res_switch"``, an additional small impedance is introduced in the switch.
     input_variable : str or list of string
         Variable which is used to take the measurement from. Indicated by string value. Must
-        be "vm_pu" for "V_ctrl".
+        be ``"vm_pu"`` for ``"V_ctrl"``.
     input_inverted : bool or list of bool
         Indicates whether the measurement of each input element must be inverted.
         Required when importing from PowerFactory.
     input_element_index : int or list of int
         Element of input element in net. Controlled bus in case of Voltage control. Can be
-        given the string 'auto' in control_modus "V_ctrl" to automatically select a bus whose nominal voltage is >= X kV.
+        given the string ``"auto"`` in control_modus ``"V_ctrl"`` to automatically select a bus whose nominal voltage is >= X kV.
         The X must be given to set_point. Will take target voltage of the encountered bus. If no bus is found,
         uses the bus next to the controlled generator group. Not completely implemented, generators on multiple buses
         are not correctly handled.
-    control_modus : str
-        Enables the selection of the available control modi by taking one of the strings: "Q_ctrl", "V_ctrl",
-        "PF_ctrl" ("PF_ctrl_ind" or "PF_ctrl_cap" for reactance of PF_ctrl) or "tan_phi_ctrl". Formerly called "Voltage_ctrl"
+    control_modus : str -> ControlModusEnum:
+        Enables the selection of the available control modi by taking one of the strings: ``"Q_ctrl"``, ``"V_ctrl"``,
+        ``"PF_ctrl_ind"`` or ``"PF_ctrl_cap"`` for power factor control with reactance or ``"tan_phi_ctrl"``.
+        Formerly called Voltage_ctrl.
     set_point : float
-        Set point of the controller, can be a reactive power provision or a voltage set point. In
-        case of voltage set point, control_modus must be V_ctrl, input_element_index must be a bus (``"input_variable"`` must be
-        "vm_pu" input_element must be "res_bus"). Can be overwritten by a droop controller chained with the binary
-        search control. If "V_ctrl" and automated bus selection (``"input_element_index"`` == "auto"), ``"set_point"`` will be
+        Set point of the controller, can be a reactive power provision, a power factor or a voltage set point. In
+        case of voltage set point, control_modus must be "V_ctrl", input_element_index must be a bus (input_variable must
+        be "vm_pu" input_element must be "res_bus"). Can be overwritten by a droop controller chained with the binary
+        search control. If "V_ctrl" and automated bus selection (input_element_index = "auto"), set_point will be
         the search criteria in kV for the controlled bus (V_bus >= V_set_point).
     output_min_q_mvar : float or list of float
-        Minimum Q limits for each output element. Considered when "runpp" is
-        executed with "enforce_q_lims=True".
+        Minimum Q limits for each output element. Considered when runpp is
+        executed with enforce_q_lims=True.
     output_max_q_mvar : float or list of float
-        Maximum Q limits for each output element. Considered when "runpp" is
-        executed with "enforce_q_lims=True".
+        Maximum Q limits for each output element. Considered when runpp is
+        executed with enforce_q_lims=True.
     tol : float, optional
-        Tolerance for controller convergence. Default is "0.001".
+        Tolerance for controller convergence. Default is 0.001.
     in_service : bool, optional
-        Whether the controller is in service. Default is "True".
+        Whether the controller is in service. Default is True.
     order : int, optional
         Execution order of the controller.
     level : int, optional
@@ -87,7 +89,7 @@ class BinarySearchControl(Controller):
     """
     def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
                  output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, control_modus:str=None, name="", input_inverted=None, gen_q_response=None,
+                 input_element_index, set_point, control_modus:str=None, name="", input_inverted=None,
                  tol=0.001, in_service=True, order=0, level=0, drop_same_existing_ctrl=False,
                  matching_params=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
@@ -122,7 +124,6 @@ class BinarySearchControl(Controller):
                                                                         output_variable)
         ###catching errors in variables, allocating
         if input_inverted is None: input_inverted = []#for robustness
-        if gen_q_response is None: gen_q_response = []#robustness and legacy
         if isinstance(output_element_index, list) or isinstance(output_element_index, np.ndarray):
             self.output_element_index = [int(item) for item in output_element_index]
         else:
@@ -164,9 +165,7 @@ class BinarySearchControl(Controller):
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(np.atleast_1d(self.output_values_distribution),
                                                 np.atleast_1d(self.output_element_in_service))], dtype=np.bool)
-
-        n = len(np.atleast_1d(self.output_element_index))
-        ###finding correct control_modus, catching deprecated voltage_ctrl argument###todo unambiguous control_modus also with droop
+        ###finding correct control_modus, catching deprecated voltage_ctrl argument###
         if control_modus is None: #catching old attribute voltage_ctrl
             if hasattr(self, 'voltage_ctrl'):
                 control_modus = self.voltage_ctrl
@@ -176,33 +175,30 @@ class BinarySearchControl(Controller):
                         "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead.")
                     self._deprecation_warned = True
         if type(control_modus) == bool and control_modus == True: #Only functions written out!?!
-            self.control_modus = "V_ctrl"
+            self.control_modus = ControlModusEnum.v_ctrl
             logger.warning(f"Deprecated Controller control_modus for Controller {self.index}, using 'V_ctrl' from available"
                          f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
         elif type(control_modus) == bool and control_modus == False: #Only functions written out!?!
-            self.control_modus = "Q_ctrl"
+            self.control_modus = ControlModusEnum.q_ctrl
             logger.warning(f"Deprecated Controller control_modus for Controller {self.index}, using Q_ctrl from available"
                          f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
-        elif control_modus == "PF_ctrl_cap": # -1 for capacitive, 1 for inductive systems
-            self.control_modus = "PF_ctrl"
-            self.reactance = -1
-        elif control_modus == "PF_ctrl_ind":
-            self.control_modus = "PF_ctrl"
-            self.reactance = 1
-        elif control_modus == "PF_ctrl":
-            logger.warning(f"Ambivalent reactive power flow direction for Controller {self.index}, using capacitive direction.\n")
-            self.control_modus = control_modus
-            self.reactance = -1
         else:
-            if control_modus == "tan(phi)_ctrl" or control_modus == "V_ctrl":
-                self.control_modus = control_modus
-            else:
-                if control_modus != 'Q_ctrl':
-                    logger.warning(f"Control_modus {control_modus} not recognized, using 'Q_ctrl' from available"
-                             f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
-                self.control_modus = 'Q_ctrl'
+            try:
+                self.control_modus = ControlModusEnum(control_modus)
+            except ValueError:
+                logger.warning(f"Control_modus {control_modus} not recognized, using 'Q_ctrl' from available"
+                               f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan_phi_ctrl'\n")
+                self.control_modus = ControlModusEnum.q_ctrl
+        if self.control_modus == ControlModusEnum.PF_ctrl_cap: #-1 for capacitive, 1 for inductive systems
+            self.reactance= -1
+        else:
+            if control_modus == ControlModusEnum.PF_ctrl:
+                logger.warning(
+                    f"Ambivalent reactive power flow direction for Controller {self.index}, using inductive direction.\n")
+                self.control_modus = ControlModusEnum.PF_ctrl_ind
+            self.reactance = 1
 
-        if self.control_modus == 'PF_ctrl': #checking cos(phi) limits
+        if self.control_modus in ControlModusEnum.pf_modes(): #checking cos(phi) limits
             if abs(self.set_point) > 1:
                 raise UserWarning(f'Power Factor Controller {self.index}: Set point out of range ([-1,1]')
         ###adding input elements###
@@ -230,7 +226,7 @@ class BinarySearchControl(Controller):
                                                                               input_index,
                                                                               input_variable)
             ###get p variables for input elements for Phi controller
-            if self.control_modus == "PF_ctrl" or self.control_modus== 'tan(phi)_ctrl':
+            if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus== ControlModusEnum.tan_phi_ctrl:
                 if isinstance(input_variable, list):
                     input_variable_p = input_variable[counter].replace('q', 'p').replace('var','w')
                     read_flag_temp_p, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,input_index,
@@ -291,8 +287,6 @@ class BinarySearchControl(Controller):
             self.converged = True
             return self.converged
         ###updating input & output elements in service lists
-        self.input_element_in_service = list(np.atleast_1d(self.input_element_in_service)).clear()
-        self.output_element_in_service = list(np.atleast_1d(self.output_element_in_service)).clear()
         self.input_element_in_service = []
         self.output_element_in_service = []
         for input_index in np.atleast_1d(self.input_element_index):
@@ -350,18 +344,19 @@ class BinarySearchControl(Controller):
                 if self.input_element_in_service[counter]: # input element not in service
                     input_values.append(read_from_net(net, self.input_element, input_index,
                                                       self.input_variable[counter], self.read_flag[counter]))
-                    if self.control_modus == "PF_ctrl" or self.control_modus == 'tan(phi)_ctrl':
+                    if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus == ControlModusEnum.tan_phi_ctrl:
                         p_input_values.append(read_from_net(net,self.input_element, input_index,
                                                         self.input_variable_p[counter], self.read_flag[counter]))
                 counter += 1
             input_values = (self.input_sign * np.asarray(input_values)).tolist()
-            if self.control_modus == "PF_ctrl" or self.control_modus == 'tan(phi)_ctrl':
+            if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus == ControlModusEnum.tan_phi_ctrl:
                 p_input_values = (self.input_sign * np.asarray(p_input_values)).tolist()
         # compare old and new set values
-        if self.control_modus == "Q_ctrl" or (self.control_modus == 'V_ctrl' and self.input_element_index is None):
-            if self.control_modus == 'V_ctrl':
+        if self.control_modus in ControlModusEnum.q_modes() or (self.control_modus in ControlModusEnum.v_modes()
+                                                                and self.input_element_index is None):
+            if self.control_modus in ControlModusEnum.v_modes():
                 logger.warning('Missing attribute self.input_element_index, defaulting to Q_ctrl\n')
-                self.control_modus = 'Q_ctrl'
+                self.control_modus = ControlModusEnum.q_ctrl
             self.diff_old = self.diff
             if not any(self.output_adjustable):
                 logging.info('All stations controlled by %s reached reactive power limits.' %self.name)
@@ -378,12 +373,11 @@ class BinarySearchControl(Controller):
             self.diff = self.set_point - sum(input_values)
             self.converged = np.all(np.abs(self.diff) < self.tol)
 
-        elif str(self.control_modus).startswith("PF_ctrl"):#capacitive => reactance = -1, inductive => reactance = 1
-            if self.control_modus == 'PF_ctrl_ind':
-                self.control_modus = 'PF_ctrl'
+        elif self.control_modus in ControlModusEnum.pf_modes():#capacitive => reactance = -1, inductive => reactance = 1
+            if self.control_modus == ControlModusEnum.PF_ctrl_ind:
                 self.reactance = 1
-            elif self.control_modus == 'PF_ctrl_cap':
-                self.control_modus = 'PF_ctrl'
+            else:
+                self.control_modus = ControlModusEnum.PF_ctrl_cap
                 self.reactance = -1
 
             self.diff_old = self.diff
@@ -403,7 +397,7 @@ class BinarySearchControl(Controller):
             self.diff = q_set - sum(input_values)/len(input_values)
             self.converged = np.all(np.abs(self.diff)<self.tol)
 
-        elif self.control_modus == "tan(phi)_ctrl":
+        elif self.control_modus == ControlModusEnum.tan_phi_ctrl:
             self.diff_old = self.diff
             if not any(self.output_adjustable):
                 logging.info('tan(phi)_ctrl: All stations controlled by %s reached reactive power limits.' %self.name)
@@ -423,7 +417,7 @@ class BinarySearchControl(Controller):
         else:
             ###catching deprecated modi from old imports
             if type(self.control_modus) == bool and self.control_modus == True and self.input_element_index is not None:
-                self.control_modus = "V_ctrl"  # catching old implementation
+                self.control_modus = ControlModusEnum.v_ctrl  # catching old implementation
                 logger.warning(
                     f"Deprecated Control Modus in Controller {self.index}, using V_ctrl from available types\n")
             elif (type(self.control_modus) == bool and self.control_modus == False) or (type(self.control_modus) == bool and self.control_modus == True
@@ -434,9 +428,9 @@ class BinarySearchControl(Controller):
                 else:
                     logger.warning(
                         f"Deprecated Control Modus in Controller {self.index}, using Q_ctrl from available types\n")
-                self.control_modus = "Q_ctrl"
+                self.control_modus = ControlModusEnum.q_ctrl
 
-            if self.control_modus == "V_ctrl":
+            if self.control_modus in ControlModusEnum.v_modes():
                 if self.input_element != 'res_bus':# and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
                             #self.index for x in net.controller.index):#no droop, disable for legacy, see below
                     if hasattr(self, 'bus_idx') and getattr(self, 'bus_idx') is not None:  # legacy
@@ -496,10 +490,10 @@ class BinarySearchControl(Controller):
                     self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.input_element_index)[0]]
                     self.converged = np.all(np.abs(self.diff) < self.tol)
             else:
-                if self.control_modus != 'Q_ctrl':
+                if self.control_modus not in ControlModusEnum.q_modes():
                     logger.warning(f"No Controller Modus specified for Controller {self.index}, using Q_ctrl.\n"
                                    "Please specify 'control_modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl')\n")
-                    self.control_modus = 'Q_ctrl'
+                    self.control_modus = ControlModusEnum.q_ctrl
                 self.diff_old = self.diff  # Q_ctrl
                 if not any(self.output_adjustable):
                     logging.info('Q_ctrl: All stations controlled by %s reached reactive power limits.' % self.name)
@@ -551,11 +545,11 @@ class BinarySearchControl(Controller):
 
             x = self.output_values + delta
 
-            if not all(self.output_adjustable) and net._options['enforce_q_lims']:
+            if not all(self.output_adjustable) and net._options.get('enforce_q_lims', False):
                 positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val]  # gives which is/are adjustable
                 positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val]  # can be one or multiple ## gives which is/are not adjustable anymore
 
-                sum_adjustable = sum(x) - sum(self.output_values[positions_not_adjustable])  # stations that are still adjustablke, rest of the power must be achieved
+                sum_adjustable = sum(x) - sum(self.output_values[positions_not_adjustable])  # stations that are still adjustable, rest of the power must be achieved
                 x[positions_adjustable] = sum_adjustable * self.output_values_distribution[positions_adjustable]
 
                 for i in positions_not_adjustable:
@@ -567,7 +561,7 @@ class BinarySearchControl(Controller):
             else:
                 x = sum(x) * self.output_values_distribution
 
-            if self.output_adjustable is not None and net._options['enforce_q_lims']:  # none if output element is a shunt
+            if self.output_adjustable is not None and net._options.get('enforce_q_lims', False):  # none if output element is a shunt
                 if isinstance(x, np.ndarray) and len(x)>1:
                     self._update_min_max_q_mvar(net)
 
@@ -588,7 +582,7 @@ class BinarySearchControl(Controller):
                               % (self.name, ', '.join(net[self.output_element].loc[reached_index].name.tolist())))
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
-                        max_q_mvar_limit = self.output_max_q_mvar[positions]
+                        max_q_mvar_limit = self.output_max_q_mvar[np.atleast_1d(positions)]
 
                         # adapt distribution and x
                         self.output_values_distribution[positions] = 0
@@ -597,7 +591,7 @@ class BinarySearchControl(Controller):
                             pass
                         else:
                             self.output_values_distribution /= sum(self.output_values_distribution)
-                        x = (sum_old-sum(max_q_mvar_limit))*self.output_values_distribution
+                        x = (sum_old-sum(np.atleast_1d(max_q_mvar_limit)))*self.output_values_distribution
                         x[positions] = max_q_mvar_limit # reset to limit
 
                     elif any(reached_min_qmvar):
@@ -607,7 +601,7 @@ class BinarySearchControl(Controller):
                               % (self.name, ', '.join(net[self.output_element].loc[reached_index].name.tolist())))
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
-                        min_q_mvar_limit = self.output_min_q_mvar[positions]
+                        min_q_mvar_limit = self.output_min_q_mvar[np.atleast_1d(positions)]
 
                         # adapt distribution and x
                         self.output_values_distribution[positions] = 0
@@ -617,7 +611,7 @@ class BinarySearchControl(Controller):
                         else:
                             self.output_values_distribution /= sum(self.output_values_distribution)
 
-                        x = (sum_old-sum(min_q_mvar_limit))*self.output_values_distribution
+                        x = (sum_old-sum(np.atleast_1d(min_q_mvar_limit)))*self.output_values_distribution
                         x[positions] = min_q_mvar_limit # reset to limit
 
                     self.output_values_old, self.output_values = self.output_values, x
@@ -640,8 +634,7 @@ class BinarySearchControl(Controller):
                         self.output_values_old, self.output_values = self.output_values, x
             else:
                 self.output_values_old, self.output_values = self.output_values, x
-
-            ### write new set of Q values to output elements###
+        ### write new set of Q values to output elements###
         output_element_index = (list(np.atleast_1d(self.output_element_index)[self.output_element_in_service])[0] if self.write_flag
             == 'single_index' else list(np.array(self.output_element_index)[self.output_element_in_service])) #ruggedizing code
         output_values = (list(self.output_values)[0] if self.write_flag
@@ -675,7 +668,7 @@ class BinarySearchControl(Controller):
                 self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
                 net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
         else:
-            self.output_min_q_mvar = np.array([-np.inf]*len(self.output_element_index), dtype=np.float64)
+            self.output_min_q_mvar = list(np.array([-np.inf]*len(self.output_element_index), dtype=np.float64))
 
         if 'max_q_mvar' in net[self.output_element].columns:
             if not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values)):
@@ -686,7 +679,7 @@ class BinarySearchControl(Controller):
                 self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
                 net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar
         else:
-            self.output_max_q_mvar = np.array([np.inf]*len(self.output_element_index), dtype=np.float64)
+            self.output_max_q_mvar = list(np.array([np.inf]*len(self.output_element_index), dtype=np.float64))
 
     def finalize_control(self, net):
         pass
@@ -694,41 +687,57 @@ class DroopControl(Controller):
     """
     The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller or
     as a U(Q) controller and is used in addition to a binary search controller (bsc). The linked binary search
-    controller is specified using the controller index, which refers to the linked bsc. The droop controller
+    controller is specified using the controller_index, which refers to the linked bsc. The droop controller
     behaves in a similar way to the station controllers presented in the Power Factory Tech Ref, although not
     all possible settings from Power Factory are yet available.
 
-    INPUT:
-        **self**
-
-        **net** - A pandapower grid.
-
-        **q_droop_var** - Droop Value in Mvar/p.u.
-
-        **vm_set_pu_bsc** - Initial voltage set point in case of voltage control.
-
-        **controller_idx** - Index of linked Binary< search control (if present).
-
-        **voltage_ctrl** - Whether the controller is used for voltage control or not.
-
-        **bus_idx=None** - Bus index which is used for voltage control.
-
-        **q_set_mvar_bsc** - Initial voltage set point in case of no voltage control.
-
-        **tol=1e-6** - Tolerance criteria of controller convergence.
-
-        **vm_set_lb=None** - Lower band border of dead band
-
-        **vm_set_ub=None** - Upper band border of dead band
-       """
-
+    Parameters
+    ----------
+    self : DroopControl
+    net : pandapowerNet
+        A pandapower grid.
+    controller_idx : int
+        Index of linked Binary search control (bsc.index).
+    in_service : bool
+        Whether the droop controller is in service or not. Default is True
+    voltage_ctrl : bool
+        True for U(Q) control, False for Q(U) control
+    q_droop_var : float
+        Droop Value in Mvar/p.u.
+    vm_set_pu_bsc : float
+        Initial voltage set point in case of voltage control. If None will take linked bsc setpoint
+    bus_idx : int
+        Bus index which is used for Q control.
+    q_set_mvar_bsc : float
+        Initial voltage set point in case of no voltage control.
+    vm_set_lb : float
+        Lower band border of dead band
+    vm_set_ub : float
+        Upper band border of dead band
+    tol : float, optional
+        Tolerance for controller convergence. Default is 0.001.
+    ctrl_in_service : bool, optional
+        Whether the controller is in service. Default is True.
+    order : int, optional
+        Execution order of the controller.
+    level : int, optional
+        Execution level of the controller.
+    drop_same_existing_ctrl : bool, optional
+        Whether to drop existing controllers with the same parameters. Default is False
+    matching_params : dict, optional
+        Parameters used to match controllers. Default is None
+    name : str, optional
+        Name of the controller.
+    kwargs : dict, optional
+        Additional keyword arguments.
+    """
     def __init__(self, net, q_droop_mvar, controller_idx, voltage_ctrl, bus_idx=None, tol=1e-6,
                  q_set_mvar_bsc=None, in_service=True, order=-1, level=0, name="", drop_same_existing_ctrl=False,
                  matching_params=None, vm_set_pu_bsc=None, vm_set_lb=None, vm_set_ub=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
-        # TODO: implement maximum and minimum of droop control
+        #TODO: implement maximum and minimum of droop control
         self.name = name
         # write kwargs in self
         for key, value in kwargs.items():
@@ -791,10 +800,6 @@ class DroopControl(Controller):
         if not self.voltage_ctrl:
             if self.q_set_mvar_bsc is None:
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
-            if hasattr(net.controller.object[self.controller_idx], 'gen_q_response'):
-                gen_q_response = net.controller.object[self.controller_idx].gen_q_response[0]
-            else: gen_q_response = None
-            if gen_q_response is None: gen_q_response = 1 #legacy and robustness
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
@@ -845,7 +850,7 @@ class VDroopControl_local(Controller):
 
         **q_droop_var** - Droop Value in Mvar/p.u.
 
-        **vm_set_pu_bsc** - Inital voltage set point.
+        **vm_set_pu_bsc** - Initial voltage set point.
 
         **controller_idx** - Index of linked Binary< search control (if present).
 
@@ -916,3 +921,31 @@ class VDroopControl_local(Controller):
         self.vm_set_pu_new = self.vm_set_pu_bsc - (sum(
             input_values) - self.q_set_mvar) / self.q_droop_mvar
         net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
+
+class ControlModusEnum(Enum):
+    v_ctrl = "V_ctrl"
+    q_ctrl = "Q_ctrl"
+    PF_ctrl = "PF_ctrl"
+    PF_ctrl_ind = "PF_ctrl_ind"
+    PF_ctrl_cap = "PF_ctrl_cap"
+    tan_phi_ctrl = "tan_phi_ctrl"
+
+    @classmethod
+    def pf_modes(cls):
+        return {
+            cls.PF_ctrl,
+            cls.PF_ctrl_cap,
+            cls.PF_ctrl_ind,
+        }
+
+    @classmethod
+    def v_modes(cls):
+        return {
+            cls.v_ctrl,
+        }
+
+    @classmethod
+    def q_modes(cls):
+        return {
+            cls.q_ctrl,
+        }
