@@ -401,7 +401,7 @@ def test_tan_phi_control():
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service= True, output_element='sgen', output_variable='q_mvar',
                          output_element_index= 0, output_element_in_service= True, output_values_distribution=1,
-                         input_element='res_trafo', input_variable='q_lv_mvar', input_element_index=0, control_modus='tan(phi)_ctrl',
+                         input_element='res_trafo', input_variable='q_lv_mvar', input_element_index=0, control_modus='tan_phi_ctrl',
                                          tol = 1e-6, set_point=2)
     runpp(net, run_control=False)
     assert(abs(net.res_trafo.loc[0, "q_lv_mvar"] / net.res_trafo.loc[0, 'p_lv_mw'] - 0.097382) < tol)
