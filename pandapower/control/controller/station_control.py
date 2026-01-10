@@ -1,4 +1,5 @@
 import numpy as np
+import numbers
 from collections.abc import Sequence
 import logging
 
@@ -700,8 +701,8 @@ class DroopControl(Controller):
         Index of linked Binary search control (bsc.index).
     in_service : bool
         Whether the droop controller is in service or not. Default is True
-    voltage_ctrl : bool
-        True for U(Q) control, False for Q(U) control
+    control_modus : str -> ControlModusEnum:
+        takes string: Q_ctrl_V_droop, V_ctrl_Q_droop. Formerly called voltage_ctrl.
     q_droop_var : float
         Droop Value in Mvar/p.u.
     vm_set_pu_bsc : float
@@ -731,7 +732,7 @@ class DroopControl(Controller):
     kwargs : dict, optional
         Additional keyword arguments.
     """
-    def __init__(self, net, q_droop_mvar, controller_idx, voltage_ctrl, bus_idx=None, tol=1e-6,
+    def __init__(self, net, q_droop_mvar, controller_idx, control_modus = None, bus_idx=None, tol=1e-6,
                  q_set_mvar_bsc=None, in_service=True, order=-1, level=0, name="", drop_same_existing_ctrl=False,
                  matching_params=None, vm_set_pu_bsc=None, vm_set_lb=None, vm_set_ub=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
@@ -748,7 +749,7 @@ class DroopControl(Controller):
         self.vm_pu = None
         self.vm_pu_old = self.vm_pu
         value = vm_set_pu_bsc if vm_set_pu_bsc is not None else kwargs.get('vm_set_pu')
-        if voltage_ctrl and value is None:
+        if control_modus and value is None:
             self.vm_set_pu_bsc = net.controller.at[controller_idx, "object"].set_point
         else:
             self.vm_set_pu_bsc = value
@@ -757,7 +758,7 @@ class DroopControl(Controller):
         self.lb_voltage = vm_set_lb
         self.ub_voltage = vm_set_ub
         self.controller_idx = controller_idx
-        self.voltage_ctrl = voltage_ctrl
+        self.control_modus = control_modus
         self.tol = tol
         self.applied = False
         self.read_flag, self.input_variable = _detect_read_write_flag(net, "res_bus", bus_idx, "vm_pu")
@@ -766,14 +767,72 @@ class DroopControl(Controller):
         self.q_set_old_mvar = None
         self.diff = None
         self.converged = False
+        self._deprecation_warned = False
+        self.check_control_modus_and_values(net)
 
+
+    def check_control_modus_and_values(self, net):
+        if getattr(self, 'control_modus', None) is None:#catching old attribute voltage_ctrl
+            if hasattr(self, 'voltage_ctrl'):
+                self.control_modus = self.voltage_ctrl
+                if getattr(self, '_deprecation_warned', False) is False:#only one message that voltage ctrl is deprecated
+                    logger.warning(
+                        f"'voltage_ctrl' in Controller {self.index} is deprecated. "
+                        "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead.")
+                    self._deprecation_warned = True
+        ###atching old implementation
+        if type(self.control_modus) == bool and self.control_modus == True:
+            self.control_modus = ControlModusEnum.v_ctrl_q_droop
+            logger.warning(f"Deprecated Control Modus in Controller {self.index}, using V_ctrl with Q droop from available types"
+                         f" 'Q_ctrl' or 'V_ctrl'\n")
+        elif type(self.control_modus) == bool and self.control_modus == False:
+            self.control_modus = ControlModusEnum.q_ctrl_v_droop
+            logger.warning(f"Deprecated Control Modus in Controller {self.index}, using Q_ctrl with V droop from available types"
+                         f" 'Q_ctrl' or 'V_ctrl'\n")
+        else:
+            try:
+                self.control_modus = ControlModusEnum(self.control_modus)
+            except ValueError:
+                logger.warning(f"Control_modus {self.control_modus} not recognized, using 'Q_ctrl_V_droop' from available"
+                               f" types 'Q_ctrl' and 'V_ctrl'\n")
+                self.control_modus = ControlModusEnum.q_ctrl_v_droop
+        if self.control_modus in ControlModusEnum.pf_modes():#legacy ambiguous
+                raise UserWarning(f"Power Factor Droop Control not implemented (in Controller {self.index}).'\n")
+        elif self.control_modus in ControlModusEnum.v_modes() and not self.control_modus in ControlModusEnum.droop_modes():
+            logger.warning(f"Power Factor Droop Control in Controller {self.index}: Control modus is ambivalent, using"
+                           f" 'V_ctrl with Q droop' from available modi.\n")
+            self.control_modus = ControlModusEnum.v_ctrl_q_droop
+        elif self.control_modus in ControlModusEnum.q_modes() and not self.control_modus in ControlModusEnum.droop_modes():
+            logger.warning(f"Power Factor Droop Control in Controller {self.index}: Control modus is ambivalent, using"
+                           f" 'Q_ctrl with V droop' from available modi.\n")
+            self.control_modus = ControlModusEnum.q_ctrl_v_droop
+        if (self.control_modus in ControlModusEnum.v_modes() and not
+                    isinstance(getattr(self, 'vm_set_pu', None), numbers.Number)):#catching missing voltage set point
+            logger.warning(f"vm_set_pu must be a number, not "
+                   f"{type(isinstance(getattr(self, 'vm_set_pu', None), numbers.Number))} in Controller {self.index}, "
+                   f"using 1 as new setpoint")
+            self.vm_set_pu = getattr(net.controller.object[self.controller_idx], "set_point", 1)
+        #checking if Droop and BS Controller have the same control_modus
+        if self.control_modus != net.controller.at[self.controller_idx, 'object'].control_modus:
+            if self.control_modus in ControlModusEnum.droop_modes():
+                logger.warning(
+                    f"Discrepancy between BinarySearchController Modus and Droop Controller Modus in {self.index}."
+                    f"Using Droop Controller Modus {self.control_modus} from droop-controller")
+                net.controller.at[self.controller_idx, 'object'].control_modus = self.control_modus
+            else:
+                logger.warning(
+                    f"Discrepancy between BinarySearchController Modus and Droop Controller Modus in {self.index}."
+                    f"Using Q_ctrl_P_droop from available types 'Q_ctrl', 'V_ctrl' or 'PF_ctrl'\n")
+                self.control_modus = net.controller.at[self.controller_idx, 'object'].control_modus
 
     def is_converged(self, net):
         if (not net.controller.at[self.controller_idx, "object"].in_service or
                 net.controller.at[self.controller_idx, "object"].converged):
             self.converged = True
             return self.converged
-        if self.voltage_ctrl:
+        ###check control_modus###
+        self.check_control_modus_and_values(net)
+        if self.control_modus in ControlModusEnum.v_modes():
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
                          read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
         else:
@@ -797,7 +856,7 @@ class DroopControl(Controller):
     def _droop_control_step(self, net):
         self.vm_pu_old = self.vm_pu
         self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
-        if not self.voltage_ctrl:
+        if self.control_modus not in ControlModusEnum.v_modes():
             if self.q_set_mvar_bsc is None:
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
             if self.lb_voltage is not None and self.ub_voltage is not None:
@@ -924,7 +983,9 @@ class VDroopControl_local(Controller):
 
 class ControlModusEnum(Enum):
     v_ctrl = "V_ctrl"
+    v_ctrl_q_droop = "V_ctrl_Q_droop"
     q_ctrl = "Q_ctrl"
+    q_ctrl_v_droop = "Q_ctrl_V_droop"
     PF_ctrl = "PF_ctrl"
     PF_ctrl_ind = "PF_ctrl_ind"
     PF_ctrl_cap = "PF_ctrl_cap"
@@ -942,10 +1003,18 @@ class ControlModusEnum(Enum):
     def v_modes(cls):
         return {
             cls.v_ctrl,
+            cls.v_ctrl_q_droop,
         }
 
     @classmethod
     def q_modes(cls):
         return {
             cls.q_ctrl,
+            cls.q_ctrl_v_droop
+        }
+    @classmethod
+    def droop_modes(cls):
+        return {
+            cls.v_ctrl_q_droop,
+            cls.q_ctrl_v_droop,
         }
