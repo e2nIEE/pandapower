@@ -2800,8 +2800,12 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             else:
                 logger.debug('created discrete tap controller at trafo <%s>' % name)
         else:
-            vm_lower_pu = item.usp_low
-            vm_upper_pu = item.usp_up
+            if item.uset_mode == 0:  # local
+                vm_lower_pu = item.usp_low
+                vm_upper_pu = item.usp_up
+            elif item.uset_mode == 1:  # bus voltage setpoint
+                vm_lower_pu = item.cpCtrlNode.vtarget * (1 + item.cpCtrlNode.dvmin / 100)
+                vm_upper_pu = item.cpCtrlNode.vtarget * (1 + item.cpCtrlNode.dvmax / 100)
             logger.debug('trafo <%s> has discrete tap controller with '
                          'u_low = %.3f, u_up = %.3f, side = %s' % (name, vm_lower_pu, vm_upper_pu, side))
             try:
