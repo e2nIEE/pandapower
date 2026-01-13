@@ -7,9 +7,12 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_sgen, \
-    create_transformer_from_parameters, create_transformers_from_parameters, create_line_from_parameters, create_buses, \
-    create_lines_from_parameters, create_switch, create_load, create_shunt, create_ward, create_xward
+from pandapower.create import (
+    create_bus, create_ext_grid, create_line, create_sgen, create_switch, create_transformer_from_parameters,
+    create_transformers_from_parameters, create_line_from_parameters, create_buses, create_lines_from_parameters,
+    create_load, create_shunt, create_ward, create_xward
+)
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
 from pandapower.pypower.idx_bus_sc import IKSS1, PHI_IKSS1_DEGREE
 from pandapower.run import runpp
@@ -17,7 +20,7 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 def three_bus_example():
-    net = create_empty_network(sn_mva=56)
+    net = pandapowerNet(name="three_bus_example",sn_mva=56)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
@@ -42,7 +45,7 @@ def three_bus_example():
 
 
 def three_bus_permuted_index():
-    net = create_empty_network(sn_mva=67)
+    net = pandapowerNet(name="three_bus_permuted_index",sn_mva=67)
     b1 = create_bus(net, 110, index=4)
     b2 = create_bus(net, 110, index=3)
     b3 = create_bus(net, 110, index=0)
@@ -57,7 +60,7 @@ def three_bus_permuted_index():
 
 
 # def gen_three_bus_example():
-#     net = create_empty_network(sn_mva=2)
+#     net = pandapowerNet(name="gen_three_bus_example",sn_mva=2)
 #     b1 = create_bus(net, vn_kv=10.)
 #     b2 = create_bus(net, vn_kv=10.)
 #     b3 = create_bus(net, vn_kv=10.)
@@ -74,7 +77,7 @@ def three_bus_permuted_index():
 
 
 def net_transformer_simple():
-    net = create_empty_network(sn_mva=2)
+    net = pandapowerNet(name="net_transformer_simple",sn_mva=2)
     b1 = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=.4)
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
@@ -85,7 +88,7 @@ def net_transformer_simple():
 
 
 def net_transformer_simple_2():
-    net = create_empty_network(sn_mva=2)
+    net = pandapowerNet(name="net_transformer_simple_2",sn_mva=2)
     b1 = create_bus(net, vn_kv=10.)
     b1a = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=.4)
@@ -102,7 +105,7 @@ def net_transformer_simple_2():
 
 
 def net_transformer_simple_3():
-    net = create_empty_network(sn_mva=100)
+    net = pandapowerNet(name="net_transformer_simple_3",sn_mva=100)
     create_buses(net, 2, 30)
     create_buses(net, 3, 10)
     create_buses(net, 2, 0.4)
@@ -139,7 +142,7 @@ def net_transformer_simple_4():
 
 
 def net_transformer():
-    net = create_empty_network(sn_mva=2)
+    net = pandapowerNet(name="net_transformer",sn_mva=2)
     b1a = create_bus(net, vn_kv=10.)
     b1b = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=.4)
@@ -520,7 +523,7 @@ def test_type_c_trafo_simple_other_voltage4_sgen(inverse_y):
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
 def test_type_c_sgen_trafo4(inverse_y):
-    net = create_empty_network(sn_mva=100)
+    net = pandapowerNet(name="test_type_c_sgen_trafo4", sn_mva=100)
     create_buses(net, 2, 110)
     create_ext_grid(net, 0, s_sc_max_mva=100, s_sc_min_mva=80, rx_max=0.4, rx_min=0.4)
     create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
@@ -546,7 +549,7 @@ def test_type_c_sgen_trafo4(inverse_y):
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
 def test_load_type_c(inverse_y):
-    net = create_empty_network(sn_mva=100)
+    net = pandapowerNet(name="test_load_type_c", sn_mva=100)
     create_buses(net, 3, 110)
     create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
     create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
@@ -622,7 +625,7 @@ def test_load_type_c(inverse_y):
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
 def test_sgen_type_c(inverse_y):
-    net = create_empty_network(sn_mva=100)
+    net = pandapowerNet(name="test_sgen_type_c", sn_mva=100)
     create_buses(net, 3, 110)
     create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1, s_sc_min_mva=80, rx_min=0.4)
     create_line_from_parameters(net, 0, 1, 20, 0.0949, 0.38, 9.2, 0.74)
@@ -708,7 +711,7 @@ def test_trafo_3w():
 
 
 def test_trafo_impedance():
-    net = create_empty_network(sn_mva=0.16)
+    net = pandapowerNet(name="test_trafo_impedance",sn_mva=0.16)
     create_bus(net, 20)
     create_buses(net, 2, 0.4)
     create_ext_grid(net, 0, s_sc_max_mva=346.4102, rx_max=0.1)
@@ -766,7 +769,7 @@ def test_trafo_impedance():
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
 def test_one_line(inverse_y):
-    net = create_empty_network(sn_mva=1)
+    net = pandapowerNet(name="test_one_line", sn_mva=1)
     b1 = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=10.)
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
@@ -787,7 +790,7 @@ def test_one_line(inverse_y):
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
 def test_return_all_currents(inverse_y):
-    net = create_empty_network(sn_mva=1)
+    net = pandapowerNet(name="test_return_all_currents", sn_mva=1)
     b1 = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=10.)
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
@@ -864,7 +867,7 @@ def test_against_single_sc_results_trafo():
 
 
 def test_ward():
-    net = create_empty_network(sn_mva=9)
+    net = pandapowerNet(name="test_ward",sn_mva=9)
     create_buses(net, 2, 110)
     create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
     create_line_from_parameters(net, 0, 1, 1, 0.5, 0.5, 0, 1000)
@@ -879,7 +882,7 @@ def test_ward():
 
 
 def test_xward():
-    net = create_empty_network(sn_mva=4)
+    net = pandapowerNet(name="test_xward",sn_mva=4)
     create_buses(net, 2, 110)
     create_ext_grid(net, 0, s_sc_max_mva=100, rx_max=0.1)
     create_line_from_parameters(net, 0, 1, 1, 0.5, 0.5, 0, 1000)

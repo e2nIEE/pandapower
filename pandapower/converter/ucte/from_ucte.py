@@ -7,7 +7,7 @@ import logging
 import time
 from pandapower.converter.ucte.ucte_converter import UCTE2pandapower
 from pandapower.converter.ucte.ucte_parser import UCTEParser
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 
 logger = logging.getLogger('ucte.from_ucte')
 

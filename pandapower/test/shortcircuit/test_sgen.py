@@ -6,15 +6,17 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_transformer, create_sgen, \
-    create_buses, create_transformer_from_parameters, create_line_from_parameters, create_lines_from_parameters, \
-    create_sgens, create_line
+from pandapower.create import (
+    create_bus, create_ext_grid, create_transformer, create_sgen, create_buses, create_transformer_from_parameters,
+    create_line_from_parameters, create_lines_from_parameters, create_sgens, create_line
+)
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 def simplest_test_grid(generator_type, step_up_trafo=False):
-    net = create_empty_network(sn_mva=6)
+    net = pandapowerNet(name="simplest_test_grid", sn_mva=6)
     if step_up_trafo:
         b0 = create_bus(net, 20)
         b1 = create_bus(net, 0.4)
@@ -37,7 +39,7 @@ def simplest_test_grid(generator_type, step_up_trafo=False):
 
 
 def wind_park_grid(case):
-    net = create_empty_network(sn_mva=7)
+    net = pandapowerNet(name="wind_park_grid", sn_mva=7)
     create_bus(net, 110, index=1)
     create_buses(net, 13, 20)
 
@@ -74,7 +76,7 @@ def wind_park_grid(case):
 
 
 def wind_park_example():
-    net = create_empty_network(sn_mva=8)
+    net = pandapowerNet(name="wind_park_example", sn_mva=8)
     b1 = create_bus(net, vn_kv=110., index=1)
     b2 = create_bus(net, vn_kv=110., index=2)
     b3 = create_bus(net, vn_kv=110., index=3)
@@ -98,7 +100,7 @@ def wind_park_example():
 
 
 def three_bus_example():
-    net = create_empty_network(sn_mva=9)
+    net = pandapowerNet(name="three_bus_example", sn_mva=9)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
@@ -122,7 +124,7 @@ def big_sgen_three_bus_example():
     # ext_grid-bus1--line0--bus2--line1--bus3
     #                        |
     #                       sgen0
-    net = create_empty_network(sn_mva=2)
+    net = pandapowerNet(name="big_sgen_three_bus_example", sn_mva=2)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)

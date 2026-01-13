@@ -10,11 +10,12 @@ import geojson
 from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
-from pandapower.create import create_empty_network, create_poly_cost
-from pandapower.results import reset_results
+from pandapower import pandapowerNet
 from pandapower.control import TrafoController, BinarySearchControl, DroopControl
+from pandapower.create import create_poly_cost
+from pandapower.results import reset_results
+from pandapower.network_structure import get_structure_dict
 from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
-from pandapower.auxiliary import pandapowerNet
 
 import logging
 
@@ -142,7 +143,7 @@ def correct_dtypes(net, error):
     Corrects all dtypes of pp element tables if possible. If not and error is True, an Error is
     raised.
     """
-    empty_net = create_empty_network()
+    empty_net = pandapowerNet(name='')
     not_corrected = []
     failed = {}
     for key, table in empty_net.items():
@@ -203,8 +204,7 @@ def _convert_trafo_controller_parameter_names(net):
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
-        bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & \
-                           (net.measurement.element_type == "bus")
+        bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & (net.measurement.element_type == "bus")
         net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
@@ -265,7 +265,7 @@ def _add_nominal_power(net):
 
 
 def _add_missing_tables(net):
-    net_new = create_empty_network()
+    net_new = pandapowerNet(name='')
     for key in net_new.keys():
         if key.startswith("_empty_res"):
             net[key] = net_new[key]
@@ -283,13 +283,13 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
             "cost_per_kw" in net.sgen:
         for index, cost in net.sgen.cost_per_kw.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
+                create_poly_cost(net, index, "sgen", cp1_eur_per_mw=cost*1000)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kw" in net.ext_grid:
         for index, cost in net.ext_grid.cost_per_kw.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
+                create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=cost*1000)
 
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "cost_per_kvar" in net.gen:
@@ -332,7 +332,9 @@ def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
         if "measurement" in net and "type" in net.measurement and "measurement":
             if net.measurement.empty:
-                net["measurement"] = create_empty_network()["measurement"]
+                ms = "measurement"
+                net[ms] = pandapowerNet.create_dataframes({ms: get_structure_dict()[ms]})[ms]
+                # TODO: improve this code to avoid this complex structure just so create_dataframes only creates one df
             else:
                 net.measurement["side"] = None
                 bus_measurements = net.measurement.element_type == "bus"
@@ -577,7 +579,7 @@ def _update_column(column):
 
 
 def _set_data_type_of_columns(net):
-    new_net = create_empty_network()
+    new_net = pandapowerNet(name='')
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
             for col in item.columns:

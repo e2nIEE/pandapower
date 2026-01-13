@@ -5,12 +5,13 @@
 
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_ext_grid, create_sgen
+from pandapower.create import create_bus, create_line, create_ext_grid, create_sgen
+from pandapower.network import pandapowerNet
 
 
 @pytest.fixture
 def feeder_network():
-    net = create_empty_network(sn_mva=11)
+    net = pandapowerNet(name="feeder_network",sn_mva=11)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)

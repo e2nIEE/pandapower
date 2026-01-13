@@ -4,10 +4,11 @@ import numpy as np
 import pytest
 
 from pandapower import create_line_dc_from_parameters
-from pandapower.create import create_buses, create_bus, create_empty_network, create_line_from_parameters, \
-    create_load, create_ext_grid, create_bus_dc, create_b2b_vsc, create_line_dc, create_vsc, create_source_dc, \
-    create_load_dc
-
+from pandapower.create import (
+    create_buses, create_bus, create_line_from_parameters, create_load, create_ext_grid, create_bus_dc, create_b2b_vsc,
+    create_line_dc, create_source_dc, create_load_dc
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 import pandapower.control as control
@@ -30,7 +31,7 @@ def test_hvdc_interconnect_with_dmr():
 
     The solution is to add a dmr control, which will calculate the current in the dmr line.
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="test_hvdc_interconnect_with_dmr")
 
     create_buses(net, 8, 380)#, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
 
@@ -81,7 +82,7 @@ def test_hvdc_interconnect_with_dmr():
 
 
 def test_source_dc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_source_dc")
     create_bus(net, 380)
     create_bus(net, 380)
     create_ext_grid(net, bus=0, vm_pu=1.0)
@@ -112,7 +113,7 @@ def test_b2b_vsc_shorted():
 
     For reasons I do not understand, this test fails on the github server, but runs locally.
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_shorted")
 
     # AC part
     ext_bus = 10
@@ -162,7 +163,7 @@ def test_b2b_vsc_with_long_lines():
                |       |--------|       |
                +-------+        +-------+
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_with_long_lines")
 
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
@@ -203,7 +204,7 @@ def test_grounded_b2b_vsc():
        |       |--------|       |
        +-------+        +-------+
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="test_grounded_b2b_vsc")
 
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])

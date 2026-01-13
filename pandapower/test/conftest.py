@@ -7,14 +7,16 @@
 import numpy as np
 import pytest
 
-from pandapower import create_empty_network, create_bus, create_ext_grid, create_transformer, create_line, create_load, \
-    create_gen, create_sgen
+from pandapower import pandapowerNet
+from pandapower.create import (
+    create_bus, create_ext_grid, create_transformer, create_line, create_load, create_gen, create_sgen
+)
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 
 
 @pytest.fixture(scope="session")
 def simple_network():
-    net = create_empty_network()
+    net = pandapowerNet(name='')
     b1 = create_bus(net, name="bus1", vn_kv=10.)
     create_ext_grid(net, b1)
     b2 = create_bus(net, name="bus2", geodata=(1, 2))

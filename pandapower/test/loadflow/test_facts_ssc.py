@@ -3,16 +3,17 @@ import copy
 import numpy as np
 import pytest
 
-from pandapower.create import create_buses, create_bus, create_empty_network, create_line_from_parameters, \
-    create_load, create_ext_grid, create_ssc
-
+from pandapower.create import (
+    create_buses, create_bus, create_line_from_parameters, create_load, create_ext_grid, create_ssc
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_ssc_impedance_gen
 
 
 def test_ssc_minimal():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_ssc_minimal")
     create_bus(net, 110)
     create_ext_grid(net, 0)
     create_ssc(net, 0, 0, 5, 1)
@@ -36,7 +37,7 @@ def test_ssc_minimal():
 
 
 def test_ssc_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_ssc_controllable")
     create_buses(net, 3, 110)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -69,7 +70,7 @@ def test_ssc_case_study():
 
 
 def test_2_sscs():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_2_sscs")
     create_buses(net, 3, 110)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -121,7 +122,7 @@ def test_2_sscs():
 
 
 def test_ssc_simple():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_ssc_simple")
     create_buses(net, 2, 110)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)

@@ -7,7 +7,8 @@ import pandas as pd
 from geojson import Point, dumps
 from numpy import nan, append
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_transformer, create_buses, \
+from pandapower import pandapowerNet
+from pandapower.create import create_bus, create_ext_grid, create_transformer, create_buses, \
     create_line, create_load, create_sgen
 from pandapower.std_types import create_std_type
 
@@ -70,7 +71,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
                              'suburb_1': 'NAYY 4x35'}
 
     # create network
-    net = create_empty_network(name='synthetic_voltage_control_lv_network: ' + network_class)
+    net = pandapowerNet(name=f'synthetic_voltage_control_lv_network: {network_class}')
 
     # create std_types
     # cable data (r, x, i_max) from www.faberkabel.de

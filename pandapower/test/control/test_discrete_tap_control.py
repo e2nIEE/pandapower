@@ -10,8 +10,11 @@ import pytest
 import logging as log
 
 from pandapower.run import runpp, set_user_pf_options
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines, create_transformer, \
-    create_load, create_bus, create_line, create_transformer3w
+from pandapower.create import (
+    create_buses, create_ext_grid, create_lines, create_transformer, create_load, create_bus, create_line,
+    create_transformer3w
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
 
@@ -290,7 +293,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
 
 def test_discrete_tap_control_vectorized_lv():
     # --- load system and run power flow
-    net = create_empty_network()
+    net = pandapowerNet(name="test_discrete_tap_control_vectorized_lv")
     create_buses(net, 6, 110)
     create_buses(net, 5, 20)
     create_ext_grid(net, 0)
@@ -328,7 +331,7 @@ def test_discrete_tap_control_vectorized_lv():
 
 def test_discrete_tap_control_vectorized_hv():
     # --- load system and run power flow
-    net = create_empty_network()
+    net = pandapowerNet(name="test_discrete_tap_control_vectorized_hv")
     create_buses(net, 6, 20)
     create_buses(net, 5, 110)
     create_ext_grid(net, 0)
@@ -366,7 +369,7 @@ def test_discrete_tap_control_vectorized_hv():
 
 def test_continuous_tap_control_side_mv():
     # --- load system and run power flow
-    net = create_empty_network()
+    net = pandapowerNet(name="test_continuous_tap_control_side_mv")
     create_buses(net, 2, 110)
     create_buses(net, 1, 20)
     create_bus(net, 10)

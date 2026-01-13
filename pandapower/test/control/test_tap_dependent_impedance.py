@@ -6,16 +6,20 @@ import pandas as pd
 import pytest
 import numpy as np
 
-from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance, \
-    trafo_characteristic_table_diagnostic
+from pandapower.control import (
+    Characteristic, SplineCharacteristic, TapDependentImpedance, trafo_characteristic_table_diagnostic
+)
 from pandapower.control.util.diagnostic import shunt_characteristic_table_diagnostic
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_transformer_from_parameters, \
-    create_load, create_line_from_parameters, create_transformer, create_shunt
+from pandapower.create import (
+    create_bus, create_ext_grid, create_transformer_from_parameters, create_load, create_line_from_parameters,
+    create_transformer, create_shunt
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 
 
 def test_tap_dependent_impedance_control():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tap_dependent_impedance_control")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     create_ext_grid(net, b1)
@@ -43,7 +47,7 @@ def test_tap_dependent_impedance_control():
 
 
 def test_tap_dependent_impedance_restore():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tap_dependent_impedance_restore")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     create_ext_grid(net, b1)
@@ -80,7 +84,7 @@ def test_tap_dependent_impedance_restore():
 
 
 def test_characteristic():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_characteristic")
     x_points = [0, 1, 2]
     y_points = [3, 4, 5]
     c = Characteristic(net, x_points, y_points)
@@ -115,7 +119,7 @@ def test_characteristic():
 
 
 def test_trafo_characteristic_table_diagnostic():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo_characteristic_table_diagnostic")
     vn_kv = 20
     b1 = create_bus(net, vn_kv=vn_kv)
     create_ext_grid(net, b1, vm_pu=1.01)
@@ -164,7 +168,7 @@ def test_trafo_characteristic_table_diagnostic():
 
 
 def test_shunt_characteristic_table_diagnostic():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_shunt_characteristic_table_diagnostic")
     vn_kv = 20
     b1 = create_bus(net, vn_kv=vn_kv)
     create_shunt(net, bus=b1, q_mvar=-50, p_mw=0, step=1, max_step=5)

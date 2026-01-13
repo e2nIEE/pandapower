@@ -12,7 +12,8 @@ import math
 import pandas as pd
 from numpy import array
 
-from pandapower.auxiliary import soft_dependency_error, pandapowerNet, ADict
+from pandapower.auxiliary import soft_dependency_error
+from pandapower.network import ADict, pandapowerNet
 # ADict is used as a type to ensure compatibility with pandapipes
 
 

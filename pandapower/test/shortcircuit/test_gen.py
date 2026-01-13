@@ -9,14 +9,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_gen, create_line_from_parameters, create_switch, \
-    create_ext_grid
+from pandapower.create import create_bus, create_gen, create_line_from_parameters, create_switch, create_ext_grid
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 @pytest.fixture
 def one_line_one_generator():
-    net = create_empty_network(sn_mva=23)
+    net = pandapowerNet(name="one_line_one_generator",sn_mva=23)
     b1 = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=10.)
     b3 = create_bus(net, vn_kv=10.)
@@ -32,7 +32,7 @@ def one_line_one_generator():
 
 @pytest.fixture
 def gen_three_bus_example():
-    net = create_empty_network(sn_mva=12)
+    net = pandapowerNet(name="gen_three_bus_example",sn_mva=12)
     b1 = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=10.)
     b3 = create_bus(net, vn_kv=10.)
@@ -91,7 +91,7 @@ def test_max_gen_fault_impedance(one_line_one_generator):
 
 
 def test_gen_ext_grid_same_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_gen_ext_grid_same_bus")
     b = create_bus(net, 110)
 
     net1 = copy.deepcopy(net)
@@ -146,7 +146,7 @@ def test_gen_ext_grid_same_bus():
 #     # globals().update(vars)
 #     # del vars, calc_sc
 #     # WIP
-#     net = create_empty_network()
+#     net = pandapowerNet(name="test_close_to_gen_simple",)
 #     b1, b2, b3, b4, b5 = create_buses(net, 5, 20)
 #     # skss = np.sqrt(3) * 400 * 40  # we assume 40 kA sc current in the 400-kV EHV grid
 #     # create_ext_grid(net, b1, s_sc_max_mva=skss, s_sc_min_mva=0.8 * skss, rx_min=0.2, rx_max=0.4)
@@ -163,7 +163,7 @@ def test_gen_ext_grid_same_bus():
 
 # def test_close_to_gen_simple2():
 #     # WIP
-#     net = create_empty_network()
+#     net = pandapowerNet(name="test_close_to_gen_simple2")
 #     # b1, b2 = create_buses(net, 2, 110)
 #     b1 = create_bus(net, 70)
 #     # skss = np.sqrt(3) * 400 * 40  # we assume 40 kA sc current in the 400-kV EHV grid
@@ -199,7 +199,7 @@ def test_gen_ext_grid_same_bus():
 #     calc_sc(net, tk_s=2.5e-2)
 
 # def test_power_station_unit():
-#     net = create_empty_network()
+#     net = pandapowerNet(name="test_power_station_unit")
 #     b1, b2, b3, b4 = create_buses(net, 4, 20)
 #     b5 = create_bus(net, 10)
 

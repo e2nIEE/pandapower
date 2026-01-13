@@ -11,7 +11,7 @@ from typing import Final, Iterable
 from numpy import nan
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import BusType, Int
 from pandapower.create._utils import (

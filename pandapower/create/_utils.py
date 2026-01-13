@@ -16,12 +16,12 @@ from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
-    pandapowerNet,
     get_free_id,
     _preserve_dtypes,
     ensure_iterability,
     empty_defaults_per_dtype,
 )
+from pandapower.network import pandapowerNet
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import Int
 

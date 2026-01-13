@@ -14,11 +14,14 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
-from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
-    create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
-    create_line_from_parameters, create_line, create_impedance, create_storage, create_buses, \
-    create_transformer_from_parameters, create_transformer3w_from_parameters, create_poly_cost
+from pandapower.create import (
+    create_bus, create_ext_grid, create_dcline, create_load, create_sgen, create_switch, create_transformer,
+    create_xward, create_transformer3w, create_gen, create_shunt, create_line_from_parameters, create_line,
+    create_impedance, create_storage, create_buses, create_transformer_from_parameters,
+    create_transformer3w_from_parameters, create_poly_cost
+)
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
     example_simple, simple_four_bus_system, example_multivoltage, case118
 from pandapower.pd2ppc import _pd2ppc
@@ -51,7 +54,7 @@ except ImportError:
 
 def test_minimal_net(**kwargs):
     # tests corner-case when the grid only has 1 bus and an ext-grid
-    net = create_empty_network()
+    net = pandapowerNet(name="test_minimal_net")
     b = create_bus(net, 110)
     create_ext_grid(net, b)
     runpp_with_consistency_checks(net, **kwargs)
@@ -133,7 +136,7 @@ def test_overwrite_default_args_with_user_options():
 
 
 def test_runpp_init():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_runpp_init")
     b1, b2, l1 = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     tidx = create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
@@ -147,7 +150,7 @@ def test_runpp_init():
 
 
 def test_runpp_init_auxiliary_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_runpp_init_auxiliary_buses")
     b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
@@ -184,7 +187,7 @@ def test_result_iter():
 
 @pytest.fixture
 def bus_bus_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="bus_bus_net")
     add_grid_connection(net)
     for _u in range(4):
         create_bus(net, vn_kv=.4)
@@ -235,7 +238,7 @@ def test_bus_bus_switches_throws_exception_for_two_gen_with_diff_vm(bus_bus_net)
 
 @pytest.fixture
 def z_switch_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="z_switch_net")
     for i in range(3):
         create_bus(net, vn_kv=.4)
         create_load(net, i, p_mw=0.1)
@@ -261,7 +264,7 @@ def test_z_switch(z_switch_net, numba):
 
 @pytest.fixture
 def z_switch_net_4bus_parallel():
-    net = create_empty_network()
+    net = pandapowerNet(name="z_switch_net_4bus_parallel")
     for i in range(4):
         create_bus(net, vn_kv=.4)
         create_load(net, i, p_mw=0.1)
@@ -279,7 +282,7 @@ def z_switch_net_4bus_parallel():
 
 @pytest.fixture
 def z_switch_net_4bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="z_switch_net_4bus")
     for i in range(4):
         create_bus(net, vn_kv=.4)
         create_load(net, i, p_mw=0.01)
@@ -321,7 +324,7 @@ def test_switch_z_ohm_different(z_switch_net_4bus_parallel, z_switch_net_4bus, n
 
 
 def test_two_open_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_two_open_switches")
     b1, b2, l1 = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=20.)
     l2 = create_test_line(net, b2, b3)
@@ -333,7 +336,7 @@ def test_two_open_switches():
 
 
 def test_oos_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_oos_bus")
     add_test_oos_bus_with_is_element(net)
     assert runpp_with_consistency_checks(net)
 
@@ -453,7 +456,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
 
 
 def test_isolated_in_service_bus_at_oos_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_isolated_in_service_bus_at_oos_line")
     b1, b2, l1 = add_grid_connection(net)
     b = create_bus(net, vn_kv=135)
     l = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
@@ -463,7 +466,7 @@ def test_isolated_in_service_bus_at_oos_line():
 
 def test_isolated_in_service_line():
     # ToDo: Fix this
-    net = create_empty_network()
+    net = pandapowerNet(name="test_isolated_in_service_line")
     _, b2, l1 = add_grid_connection(net)
     b = create_bus(net, vn_kv=20.)
     create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
@@ -473,7 +476,7 @@ def test_isolated_in_service_line():
 
 def test_makeYbus():
     # tests if makeYbus fails for nets where every bus is connected to each other
-    net = create_empty_network()
+    net = pandapowerNet(name="test_makeYbus")
     b1, b2, l1 = add_grid_connection(net)
 
     # number of buses to create
@@ -749,7 +752,7 @@ def test_zip_loads_pf_algorithms():
 
 
 def test_zip_loads_with_voltage_angles():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_zip_loads_with_voltage_angles")
     b1 = create_bus(net, vn_kv=1.)
     b2 = create_bus(net, vn_kv=1.)
     create_ext_grid(net, b1)
@@ -774,7 +777,7 @@ def test_zip_loads_out_of_service():
     # example from https://github.com/e2nIEE/pandapower/issues/1504
 
     # test net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_zip_loads_out_of_service")
     bus1 = create_bus(net, vn_kv=20., name="Bus 1")
     bus2 = create_bus(net, vn_kv=0.4, name="Bus 2")
     bus3 = create_bus(net, vn_kv=0.4, name="Bus 3")
@@ -802,7 +805,7 @@ def test_zip_loads_out_of_service():
     assert nets_equal(net, net1, check_only_results=True)
 
 def test_zip_loads_mixed_voltage_dependencies():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_zip_loads_mixed_voltage_dependencies")
 
     bus1 = create_bus(net, vn_kv=110., name="Bus 1")
     bus2 = create_bus(net, vn_kv=110., name="Bus 2")
@@ -840,7 +843,7 @@ def test_zip_loads_mixed_voltage_dependencies():
         assert np.allclose(net.res_bus.vm_pu.at[1], res_bus_v)
 
 def test_invalid_zip_percentage_sum():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_invalid_zip_percentage_sum")
     create_bus(net, 20.0)
     create_ext_grid(net, 0)
     create_load(net, 0, p_mw=1.0, q_mvar=0.5)
@@ -870,7 +873,7 @@ def test_xward_buses():
     However, if the load flow does not converge, those buses end up staying in the net and don't get
     removed. This can potentially lead to thousands of dummy buses in net.
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="test_xward_buses")
     bus_sl = create_bus(net, 110, name='ExtGrid')
     create_ext_grid(net, bus_sl, vm_pu=1)
     bus_x = create_bus(net, 110, name='XWARD')
@@ -897,7 +900,7 @@ def test_xward_buses():
 
 
 def test_pvpq_lookup():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_pvpq_lookup")
 
     b1 = create_bus(net, vn_kv=0.4, index=4)
     b2 = create_bus(net, vn_kv=0.4, index=2)
@@ -962,7 +965,7 @@ def test_Ybus_format():
 
 
 def test_storage_pf():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_storage_pf")
 
     b1 = create_bus(net, vn_kv=0.4)
     b2 = create_bus(net, vn_kv=0.4)
@@ -1022,7 +1025,7 @@ def test_add_element_and_init_results():
 
 
 def test_pp_initialization():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_pp_initialization")
 
     b1 = create_bus(net, vn_kv=0.4)
     b2 = create_bus(net, vn_kv=0.4)
@@ -1053,7 +1056,7 @@ def test_pp_initialization():
 def test_equal_indices_res():
     # tests if res_bus indices of are the same as the ones in bus.
     # If this is not the case and you init from results, the PF will fail
-    net = create_empty_network()
+    net = pandapowerNet(name="test_equal_indices_res")
 
     b1 = create_bus(net, vn_kv=10., index=3)
     b2 = create_bus(net, vn_kv=0.4, index=1)
@@ -1074,7 +1077,7 @@ def test_equal_indices_res():
 
 
 def test_ext_grid_and_gen_at_one_bus(**kwargs):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_ext_grid_and_gen_at_one_bus")
     b1 = create_bus(net, vn_kv=110)
     b2 = create_bus(net, vn_kv=110)
     create_ext_grid(net, b1, vm_pu=1.01)
@@ -1129,7 +1132,7 @@ def test_ext_grid_and_gen_at_one_bus(**kwargs):
 
 
 def two_ext_grids_at_one_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="two_ext_grids_at_one_bus")
     b1 = create_bus(net, vn_kv=110, index=3)
     b2 = create_bus(net, vn_kv=110, index=5)
     create_ext_grid(net, b1, vm_pu=1.01, index=2)
@@ -1168,7 +1171,7 @@ def two_ext_grids_at_one_bus():
 
 
 def test_dc_with_ext_grid_at_one_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_dc_with_ext_grid_at_one_bus")
     b1 = create_bus(net, vn_kv=110)
     b2 = create_bus(net, vn_kv=110)
 
@@ -1186,7 +1189,7 @@ def test_dc_with_ext_grid_at_one_bus():
 
 
 def test_no_branches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_no_branches")
     create_buses(net, 3, 110)
     create_ext_grid(net, 0)
     create_sgen(net, 1, 10)
@@ -1200,7 +1203,7 @@ def test_no_branches():
 
 
 def test_only_ref_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_only_ref_buses")
     create_buses(net, nr_buses=2, vn_kv=1)
     create_line_from_parameters(net, from_bus=0, to_bus=1, length_km=1,
                                 r_ohm_per_km=1, x_ohm_per_km=1,
@@ -1243,7 +1246,7 @@ def test_init_results_without_results():
 
 
 def test_init_results():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_init_results")
     add_test_line(net)  # line network with switch at to bus
     assert_init_results(net)
     net.switch.at[0, "bus"] = 0  # switch at from bus
@@ -1276,7 +1279,7 @@ def assert_init_results(net):
 
 
 def test_wye_delta():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_wye_delta")
     create_bus(net, vn_kv=110)
     create_buses(net, nr_buses=4, vn_kv=20)
     trafo = create_transformer(net, hv_bus=0, lv_bus=1, std_type='25 MVA 110/20 kV')
@@ -1354,7 +1357,7 @@ def test_line_temperature():
 
 
 def test_results_for_line_temperature():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_results_for_line_temperature")
     create_bus(net, 0.4)
     create_buses(net, 2, 0.4)
 
@@ -1384,7 +1387,7 @@ def test_results_for_line_temperature():
 
 
 def test_tap_dependent_impedance():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tap_dependent_impedance")
     b1, b2, l1 = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
@@ -1443,7 +1446,7 @@ def test_tap_dependent_impedance():
     assert_res_equal(net, net_backup)
 
 def test_tap_table_order():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tap_table_order")
     b1, b2, l1 = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     b4 = create_bus(net, vn_kv=0.4)
@@ -1611,7 +1614,7 @@ def test_lightsim2grid_option():
 
 
 def test_at_isolated_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_at_isolated_bus")
     create_buses(net, 4, 110)
     create_ext_grid(net, 0)
 
@@ -1624,7 +1627,7 @@ def test_at_isolated_bus():
 
 
 def test_shunt_with_missing_vn_kv():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_shunt_with_missing_vn_kv")
     create_buses(net, 2, 110)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1636,7 +1639,7 @@ def test_shunt_with_missing_vn_kv():
 
 
 def _test_net_for_q_capability_curve():
-    net = create_empty_network()
+    net = pandapowerNet(name="_test_net_for_q_capability_curve")
 
     bus1 = create_bus(net, name="bus1", vn_kv=20., type="b", min_vm_pu=0.96, max_vm_pu=1.02)
     bus2 = create_bus(net, name="bus2", vn_kv=110., type="b", min_vm_pu=0.96, max_vm_pu=1.02)

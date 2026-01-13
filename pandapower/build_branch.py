@@ -12,7 +12,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_values, pandapowerNet
+from pandapower.auxiliary import get_values
+from pandapower import pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, BR_G_ASYM, BR_B_ASYM, branch_cols
 from pandapower.pypower.idx_brch_dc import branch_dc_cols, DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS, DC_F_BUS, \

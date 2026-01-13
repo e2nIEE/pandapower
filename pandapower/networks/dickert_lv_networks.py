@@ -2,8 +2,8 @@ from copy import deepcopy
 
 from numpy import append, ceil
 
-from pandapower.create import create_load, create_buses, create_line, create_empty_network, create_bus, \
-    create_ext_grid, create_transformer
+from pandapower import pandapowerNet
+from pandapower.create import create_load, create_buses, create_line, create_bus, create_ext_grid, create_transformer
 from pandapower.std_types import change_std_type, create_std_type
 from pandapower.toolbox.element_selection import get_connected_elements
 from pandapower.toolbox.power_factor import pq_from_cosphi
@@ -157,7 +157,7 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
         **case** (str, 'good') - case of supply mission, which can be ('good', 'average', 'worse')
 
     EXAMPLE:
-        >>> from pandapower.networks.dickert_lv_networks import create_dickert_lv_feeders, create_dickert_lv_networks
+        >>> from pandapower.networks.dickert_lv_networks import create_dickert_lv_feeders, create_dickert_lv_network
         >>> net = create_dickert_lv_network()
         >>> create_dickert_lv_feeders(net, busbar_index=1, customer='multiple')
     """
@@ -259,9 +259,9 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
         >>> net = create_dickert_lv_network()
     """
     # --- create network
-    net = create_empty_network(name='dickert_lv_network with' + feeders_range +
-                                    '-range feeders, ' + linetype + 'and ' + customer +
-                                    'customers in ' + case + 'case')
+    net = pandapowerNet(
+        name=f'dickert_lv_network with {feeders_range}-range feeders, {linetype} and {customer}customers in {case} case'
+    )
     # assumptions
     mv_vn_kv = 20
     lv_vn_kv = 0.4

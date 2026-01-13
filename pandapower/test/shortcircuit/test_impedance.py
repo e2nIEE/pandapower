@@ -6,13 +6,14 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_impedance
+from pandapower.create import create_bus, create_ext_grid, create_impedance
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 @pytest.fixture
 def impedance_net():
-    net = create_empty_network(sn_mva=78)
+    net = pandapowerNet(name="impedance_net",sn_mva=78)
     b1 = create_bus(net, 220)
     b2 = create_bus(net, 30)
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)

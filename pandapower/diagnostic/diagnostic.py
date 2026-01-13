@@ -7,7 +7,7 @@ import logging
 from typing import Literal, Any
 from collections.abc import Callable
 
-from pandapower.auxiliary import ADict
+from pandapower.network import ADict
 from pandapower.diagnostic.diagnostic_functions import default_diagnostic_functions, default_argument_values
 from pandapower.diagnostic.diagnostic_helpers import logger, DiagnosticFunction, NotCompactFilter, NotDetailedFilter, LogCount
 

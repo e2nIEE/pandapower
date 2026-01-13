@@ -6,8 +6,6 @@
 
 import pytest
 
-from pandapower.networks import simple_mv_open_ring_net
-from pandapower import create_empty_network, add_temperature_coefficient
 from pandapower.create import (
     create_bus,
     create_buses,
@@ -15,23 +13,26 @@ from pandapower.create import (
     create_line,
     create_line_from_parameters
 )
+from pandapower.network import pandapowerNet
+from pandapower.networks import simple_mv_open_ring_net
 from pandapower.std_types import (
+    add_temperature_coefficient,
+    change_std_type,
+    copy_std_types,
     create_std_type,
     create_std_types,
-    load_std_type,
-    change_std_type,
+    delete_std_type,
     find_std_type_alternative,
     find_std_type_by_parameter,
-    delete_std_type,
+    load_std_type,
+    parameter_from_std_type,
     rename_std_type,
-    copy_std_types,
     std_type_exists,
-    parameter_from_std_type
 )
 
 
 def test_create_and_load_std_type_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_and_load_std_type_line")
     c = 40
     r = 0.01
     x = 0.02
@@ -63,7 +64,7 @@ def test_create_and_load_std_type_line():
 
 
 def test_create_std_types_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_std_types_line")
     c = 40
     r = 0.01
     x = 0.02
@@ -78,8 +79,8 @@ def test_create_std_types_line():
 
 
 def test_create_std_types_from_net_line():
-    net1 = create_empty_network()
-    net2 = create_empty_network()
+    net1 = pandapowerNet(name="test_create_std_types_from_net_line 0")
+    net2 = pandapowerNet(name="test_create_std_types_from_net_line 1")
 
     c = 40
     r = 0.01
@@ -94,7 +95,7 @@ def test_create_std_types_from_net_line():
 
 
 def test_create_and_load_std_type_trafo():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_and_load_std_type_trafo")
     sn_mva = 40
     vn_hv_kv = 110
     vn_lv_kv =  20
@@ -146,7 +147,7 @@ def test_create_and_load_std_type_trafo():
 
 
 def test_create_and_load_std_type_trafo3w():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_and_load_std_type_trafo3w")
     sn_hv_mva = 40; sn_mv_mva = 20; sn_lv_mva = 20
     vn_hv_kv = 110; vn_mv_kv = 50; vn_lv_kv = 20
     vk_hv_percent = 5.; vk_mv_percent = 5.; vk_lv_percent = 5.
@@ -204,7 +205,7 @@ def test_create_and_load_std_type_trafo3w():
 
 
 def test_create_std_types_trafo():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_std_types_trafo")
     sn_mva = 40
     vn_hv_kv = 110
     vn_lv_kv =  20
@@ -224,7 +225,7 @@ def test_create_std_types_trafo():
 
 
 def test_create_std_types_trafo3w():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_std_types_trafo3w")
     sn_hv_mva = 40; sn_mv_mva = 20; sn_lv_mva = 20
     vn_hv_kv = 110; vn_mv_kv = 50; vn_lv_kv = 20
     vk_hv_percent = 5.; vk_mv_percent = 5.; vk_lv_percent = 5.
@@ -246,7 +247,7 @@ def test_create_std_types_trafo3w():
 
 
 def test_find_line_type():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_find_line_type")
     c = 40000
     r = 1.5
     x = 2.0
@@ -281,7 +282,7 @@ def test_find_std_alternative():
 
 
 def test_change_type_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_change_type_line")
     r1 = 0.01
     x1 = 0.02
     c1 = 40
@@ -317,7 +318,7 @@ def test_change_type_line():
 
 
 def test_parameter_from_std_type_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_parameter_from_std_type_line")
     r1 = 0.01
     x1 = 0.02
     c1 = 40
@@ -364,7 +365,7 @@ def test_add_temperature_coefficient():
 
 
 def test_delete_std_type():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_delete_std_type")
     trafo3w_types = set(net.std_types["trafo3w"].keys())
     existing_trafo3w_std_type = sorted(trafo3w_types)[0]
     delete_std_type(net, existing_trafo3w_std_type, "trafo3w")
@@ -372,7 +373,7 @@ def test_delete_std_type():
 
 
 def test_rename_std_type():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_rename_std_type")
     existing_line_std_type = sorted(net.std_types["line"].keys())[0]
     existing_line_std_type2 = sorted(net.std_types["line"].keys())[1]
     existing_trafo3w_std_type = sorted(net.std_types["trafo3w"].keys())[0]

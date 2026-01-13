@@ -8,8 +8,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from pandapower import pp_dir
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pp_dir, pandapowerNet
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import count_elements
 import pandapower.converter.ucte as ucte_converter

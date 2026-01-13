@@ -1,7 +1,7 @@
 import numpy as np
 
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines, create_switches, \
-    create_loads
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_switches, create_loads
+from pandapower.network import pandapowerNet
 from pandapower.protection.protection_devices.ocrelay import OCRelay
 from pandapower.protection.run_protection import calculate_protection_times
 from pandapower.protection.utility_functions import create_sc_bus
@@ -117,7 +117,7 @@ def test_plot_tripped_grid_protection_device():
 
 def oc_relay_net():
     # create an empty network
-    net = create_empty_network()
+    net = pandapowerNet(name="oc_relay_net")
 
     # create buses
     create_buses(net, nr_buses=7, vn_kv=20, index=[0, 1, 2, 3, 4, 5, 6], name=None, type="n",

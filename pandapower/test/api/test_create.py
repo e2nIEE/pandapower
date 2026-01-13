@@ -11,8 +11,9 @@ from numpy import nan
 import pandas as pd
 import pytest
 
+from pandapower.network import pandapowerNet
 from pandapower.create import (
-    create_empty_network, create_bus, create_ext_grid, create_line_from_parameters,
+    create_bus, create_ext_grid, create_line_from_parameters,
     create_load_from_cosphi, create_shunt_as_capacitor, create_sgen_from_cosphi,
     create_series_reactor_as_impedance, create_transformer_from_parameters, create_load, create_sgen, create_dcline,
     create_gen, create_ward, create_xward, create_shunt, create_line, create_transformer, create_transformer3w,
@@ -31,7 +32,7 @@ pd.set_option("display.width", 1000)
 
 
 def test_convenience_create_functions():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_convenience_create_functions")
     b1 = create_bus(net, 110.0)
     b2 = create_bus(net, 110.0)
     b3 = create_bus(net, 20)
@@ -119,7 +120,7 @@ def test_convenience_create_functions():
 def test_nonexistent_bus():
     from functools import partial
 
-    net = create_empty_network()
+    net = pandapowerNet(name="test_nonexistent_bus")
     create_functions = [
         partial(create_load, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
         partial(create_sgen, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
@@ -244,7 +245,7 @@ def test_nonexistent_bus():
 
 def test_tap_changer_type_default():
     expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tap_changer_type_default")
     create_bus(net, 110)
     create_bus(net, 20)
     data = load_std_type(net, "25 MVA 110/20 kV", "trafo")
@@ -258,7 +259,7 @@ def test_tap_changer_type_default():
 
 
 def test_create_line_conductance():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_line_conductance")
     create_bus(net, 20)
     create_bus(net, 20)
     create_std_type(
@@ -281,7 +282,7 @@ def test_create_line_conductance():
 
 
 def test_create_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_buses")
     # standard
     b1 = create_buses(net, 3, 110, test_kwargs="dummy_string")
     # with geodata
@@ -300,8 +301,7 @@ def test_create_buses():
 
 
 def test_create_lines():
-    # standard
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines 0")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines(
@@ -317,7 +317,7 @@ def test_create_lines():
     assert len(set(net.line.r_ohm_per_km)) == 1
     assert all(net.line.test_kwargs == "dummy_string")
 
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines 1")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines(
@@ -332,7 +332,7 @@ def test_create_lines():
     assert sum(net.line.std_type == "NA2XS2Y 1x240 RM/25 6/10 kV") == 1
 
     # with geodata
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines 2")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines(
@@ -349,7 +349,7 @@ def test_create_lines():
     assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines 3")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines(
@@ -382,7 +382,7 @@ def test_create_lines():
     assert net.line.at[l[1], "parallel"] == 1
 
     # setting params as array
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines 4")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines(
@@ -417,7 +417,7 @@ def test_create_lines():
 
 def test_create_lines_from_parameters():
     # standard
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines_from_parameters 0")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines_from_parameters(
@@ -440,7 +440,7 @@ def test_create_lines_from_parameters():
     assert net.line.test_kwargs.at[l[0]] == "dummy_string"
 
     # with geodata
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines_from_parameters 1")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines_from_parameters(
@@ -460,7 +460,7 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines_from_parameters 2")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines_from_parameters(
@@ -506,7 +506,7 @@ def test_create_lines_from_parameters():
     assert all(net.line.test_kwargs == "dummy_string")
 
     # setting params as array
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines_from_parameters 3")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     l = create_lines_from_parameters(
@@ -562,7 +562,7 @@ def test_create_lines_from_parameters():
 
 def test_create_lines_raise_errorexcept():
     # standard
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines_raise_errorexcept")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     create_lines_from_parameters(
@@ -615,8 +615,7 @@ def test_create_lines_raise_errorexcept():
 
 
 def test_create_lines_optional_columns():
-    #
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_lines_optional_columns")
     create_buses(net, 5, 110)
     create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
     create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
@@ -645,9 +644,8 @@ def test_create_lines_optional_columns():
 
 
 def test_create_line_alpha_temperature():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_line_alpha_temperature")
     b = create_buses(net, 5, 110)
-
     l1 = create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
     l2 = create_line(
         net,
@@ -678,7 +676,7 @@ def test_create_line_alpha_temperature():
 
 def test_create_transformers_from_parameters():
     # standard
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_from_parameters 0")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     index = create_transformers_from_parameters(
@@ -718,7 +716,7 @@ def test_create_transformers_from_parameters():
     assert len(net.trafo.foo) == 2
 
     # setting params as single value
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_from_parameters 1")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     create_transformers_from_parameters(
@@ -763,7 +761,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.test_kwargs == "dummy_string")
 
     # setting params as array
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_from_parameters 2")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     t = create_transformers_from_parameters(
@@ -807,7 +805,7 @@ def test_create_transformers_from_parameters():
 
 def test_create_transformers_raise_errorexcept():
     # standard
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_raise_errorexcept 0")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     create_transformers_from_parameters(
@@ -823,7 +821,6 @@ def test_create_transformers_raise_errorexcept():
         i0_percent=0.3,
         foo=2,
     )
-
     with pytest.raises(UserWarning, match=r"Trafos with indexes \[1\] already exist."):
         create_transformers_from_parameters(
             net,
@@ -838,7 +835,8 @@ def test_create_transformers_raise_errorexcept():
             i0_percent=0.3,
             index=[2, 1],
         )
-    net = create_empty_network()
+
+    net = pandapowerNet(name="test_create_transformers_raise_errorexcept 1")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     create_transformers_from_parameters(
@@ -889,7 +887,7 @@ def test_create_transformers_raise_errorexcept():
 
 
 def test_trafo_2_tap_changers():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo_2_tap_changers")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     create_transformer(net, b1, b2, "40 MVA 110/20 kV")
@@ -917,7 +915,7 @@ def test_trafo_2_tap_changers():
 
 
 def test_trafo_2_tap_changers_parameters():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo_2_tap_changers_parameters")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
 
@@ -943,7 +941,7 @@ def test_trafo_2_tap_changers_parameters():
 
 
 def test_trafos_2_tap_changers_parameters():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafos_2_tap_changers_parameters")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
 
@@ -971,7 +969,7 @@ def test_trafos_2_tap_changers_parameters():
 
 
 def test_create_transformers():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, .4)
     b3 = create_bus(net, .4)
@@ -1016,7 +1014,7 @@ def test_create_transformers():
     assert dataframes_equal(net.trafo, res_df)
 
 def test_create_transformers_for_single():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_for_single")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, .4)
     create_transformers(
@@ -1062,7 +1060,7 @@ def test_create_transformers_for_single():
 
 
 def test_create_transformers3w():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers3w")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 20)
@@ -1118,7 +1116,7 @@ def test_create_transformers3w():
 
 def test_create_transformers3w_from_parameters():
     # setting params as single value
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers3w_from_parameters 0")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     b3 = create_bus(net, 0.9)
@@ -1171,7 +1169,7 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.test_kwargs == "dummy_string")
 
     # setting params as array
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers3w_from_parameters 1")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 0.4)
     b3 = create_bus(net, 0.9)
@@ -1225,7 +1223,7 @@ def test_create_transformers3w_from_parameters():
 
 def test_create_transformers3w_raise_errorexcept():
     # standard
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers3w_raise_errorexcept 0")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     b3 = create_bus(net, 0.9)
@@ -1281,7 +1279,7 @@ def test_create_transformers3w_raise_errorexcept():
             mag0_percent=0.3,
             index=[2, 1],
         )
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers3w_raise_errorexcept 1")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     b3 = create_bus(net, 0.9)
@@ -1368,7 +1366,7 @@ def test_create_transformers3w_raise_errorexcept():
 
 
 def test_create_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_switches")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -1404,7 +1402,7 @@ def test_create_switches():
 
 
 def test_create_switches_raise_errorexcept():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_switches_raise_errorexcept")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -1526,7 +1524,7 @@ def test_create_switches_raise_errorexcept():
 
 
 def test_create_loads():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_loads")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -1568,7 +1566,7 @@ def test_create_loads():
 
 
 def test_create_loads_raise_errorexcept():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_loads_raise_errorexcept")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -1618,7 +1616,7 @@ def test_create_loads_raise_errorexcept():
 def test_const_percent_values_deprecated_handling():
     # This test checks that passing const_z_percent and const_i_percent to create_load
     # sets all four percent columns and triggers the deprecation warning.
-    net = create_empty_network()
+    net = pandapowerNet(name="test_const_percent_values_deprecated_handling")
     b1 = create_bus(net, 20)
     with pytest.warns(DeprecationWarning, match="const_z_percent and const_i_percent will be deprecated"):
         idx = create_load(
@@ -1633,7 +1631,7 @@ def test_const_percent_values_deprecated_handling():
     assert load_idx.const_i_q_percent == 22
 
 def test_create_storages():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_storage")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
@@ -1690,7 +1688,7 @@ def test_create_storages():
 
 
 def test_create_wards():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_wards")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
@@ -1729,7 +1727,7 @@ def test_create_wards():
 
 
 def test_create_sgens():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgens")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -1780,7 +1778,7 @@ def test_create_sgens():
 
 
 def test_create_sgens_raise_errorexcept():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgens_raise_errorexcept")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -1838,7 +1836,7 @@ def test_create_sgens_raise_errorexcept():
 
 
 def test_create_gens():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gens")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -1891,7 +1889,7 @@ def test_create_gens():
 
 
 def test_create_gens_raise_errorexcept():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gens_raise_errorexcept")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)

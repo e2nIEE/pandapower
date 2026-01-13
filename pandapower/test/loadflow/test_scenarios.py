@@ -8,17 +8,18 @@ import numpy as np
 import pytest
 
 from pandapower.auxiliary import get_free_id
-from pandapower.create import create_gen, create_ext_grid, create_bus, create_line, create_empty_network, \
-    create_switch, create_xward, create_transformer_from_parameters, create_transformer3w_from_parameters, \
-    create_load, create_transformer, create_transformer3w, create_motor
+from pandapower.create import (
+    create_gen, create_ext_grid, create_bus, create_line, create_switch, create_xward, create_load, create_transformer,
+    create_transformer_from_parameters, create_transformer3w_from_parameters, create_transformer3w, create_motor
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.simple_pandapower_test_networks import simple_mv_open_ring_net
 from pandapower.run import runpp, rundcpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.std_types import create_std_type
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.helper_functions import create_test_network2, add_grid_connection
-from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch, \
-    add_test_trafo
+from pandapower.test.loadflow.result_test_network_generator import add_test_bus_bus_switch, add_test_trafo
 
 
 # TODO: 2 gen 2 ext_grid missing
@@ -109,7 +110,7 @@ def test_0gen_2ext_grid_decoupled():
 
 
 def test_bus_bus_switch_at_eg():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_bus_bus_switch_at_eg")
     b1 = create_bus(net, name="bus1", vn_kv=.4)
     b2 = create_bus(net, name="bus2", vn_kv=.4)
     b3 = create_bus(net, name="bus3", vn_kv=.4)
@@ -126,13 +127,13 @@ def test_bus_bus_switch_at_eg():
 
 
 def test_bb_switch():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_bb_switch")
     net = add_test_bus_bus_switch(net)
     runpp_with_consistency_checks(net)
 
 
 def test_two_gens_at_one_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_two_gens_at_one_bus")
 
     b1 = create_bus(net, 380)
     b2 = create_bus(net, 380)
@@ -153,7 +154,7 @@ def test_two_gens_at_one_bus():
 
 
 def test_ext_grid_gen_order_in_ppc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_ext_grid_gen_order_in_ppc")
 
     for b in range(6):
         create_bus(net, vn_kv=1., name=b)
@@ -178,7 +179,7 @@ def test_ext_grid_gen_order_in_ppc():
 
 
 def test_isolated_gen_lookup():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_isolated_gen_lookup")
 
     gen_bus = create_bus(net, vn_kv=1., name='gen_bus')
     slack_bus = create_bus(net, vn_kv=1., name='slack_bus')
@@ -216,7 +217,7 @@ def test_isolated_gen_lookup():
 
 
 def test_transformer_phase_shift():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_transformer_phase_shift")
     for side in ["hv", "lv"]:
         b1 = create_bus(net, vn_kv=110.)
         b2 = create_bus(net, vn_kv=20.)
@@ -254,17 +255,16 @@ def test_transformer_phase_shift_complex():
         'lv': (0.9603, -31.1306)
     }
     for side in ["hv", "lv"]:
-        net = create_empty_network()
+        net = pandapowerNet(name=f"test_transformer_phase_shift_complex side={side}")
         b1 = create_bus(net, vn_kv=110.)
         create_ext_grid(net, b1)
         b2 = create_bus(net, vn_kv=20.)
         create_load(net, b2, p_mw=10)
-        create_transformer_from_parameters(net, hv_bus=b1, lv_bus=b2, sn_mva=40, vn_hv_kv=110,
-                                           vn_lv_kv=20, vkr_percent=0.1, vk_percent=5,
-                                           pfe_kw=0, i0_percent=0.1, shift_degree=30,
-                                           tap_side=side, tap_neutral=0, tap_max=2, tap_min=-2,
-                                           tap_step_percent=2, tap_step_degree=10, tap_pos=0,
-                                           tap_changer_type="Ratio")
+        create_transformer_from_parameters(
+            net, hv_bus=b1, lv_bus=b2, sn_mva=40, vn_hv_kv=110, vn_lv_kv=20, vkr_percent=0.1, vk_percent=5, pfe_kw=0,
+            i0_percent=0.1, shift_degree=30, tap_side=side, tap_neutral=0, tap_max=2, tap_min=-2, tap_step_percent=2,
+            tap_step_degree=10, tap_pos=0, tap_changer_type="Ratio"
+        )
         runpp(net, init="dc", calculate_voltage_angles=True)
         assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0], rtol=1e-4)
         assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[1], rtol=1e-4)
@@ -293,7 +293,7 @@ def test_transformer3w_phase_shift():
         'lv': ((0.9995, -31.003), (0.9603, -61.178))
     }
     for side in ["hv", "mv", "lv"]:
-        net = create_empty_network()
+        net = pandapowerNet(name=f"test_transformer3w_phase_shift side={side}")
         b1 = create_bus(net, vn_kv=110.)
         create_ext_grid(net, b1)
         b2 = create_bus(net, vn_kv=20.)
@@ -334,7 +334,7 @@ def test_transformer3w_phase_shift():
 
 def test_volt_dep_load_at_inactive_bus():
     # create empty net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_volt_dep_load_at_inactive_bus")
 
     # create buses
     bus1 = create_bus(net, index=0, vn_kv=20., name="Bus 1")
@@ -365,7 +365,7 @@ def test_volt_dep_load_at_inactive_bus():
 
 
 def test_two_oos_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_two_oos_buses")
 
     b1 = create_bus(net, vn_kv=0.4)
     b2 = create_bus(net, vn_kv=0.4)
@@ -389,7 +389,7 @@ def test_two_oos_buses():
 
 
 def test_oos_buses_at_trafo3w():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_oos_buses_at_trafo3w")
 
     b1 = create_bus(net, vn_kv=110.)
     b2 = create_bus(net, vn_kv=110.)
@@ -412,7 +412,7 @@ def test_oos_buses_at_trafo3w():
 
 @pytest.fixture
 def network_with_trafo3ws():
-    net = create_empty_network()
+    net = pandapowerNet(name="network_with_trafo3ws")
     add_test_trafo(net)
     slack, hv, ln = add_grid_connection(net, zone="test_trafo3w")
     for _ in range(2):
@@ -475,7 +475,7 @@ def test_trafo3w_switches(network_with_trafo3ws):
 
 
 def test_generator_as_slack():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_generator_as_slack")
     b1 = create_bus(net, 110.)
     create_ext_grid(net, b1, vm_pu=1.02)
     b2 = create_bus(net, 110.)
@@ -495,7 +495,7 @@ def test_generator_as_slack():
 
 
 def test_transformer_with_two_open_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_transformer_with_two_open_switches")
     b1 = create_bus(net, 110.)
     create_ext_grid(net, b1, vm_pu=1.02)
     b2 = create_bus(net, 20.)
@@ -520,7 +520,7 @@ def test_transformer_with_two_open_switches():
 
 
 def test_motor():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_motor")
     b1 = create_bus(net, 0.4)
     b2 = create_bus(net, 0.4)
     create_line(net, b1, b2, length_km=0.1, std_type="NAYY 4x50 SE")

@@ -11,8 +11,7 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import pandapowerNet
-from pandapower.create import create_empty_network
+from pandapower.network import pandapowerNet
 
 
 class UCTE2pandapower:
@@ -28,7 +27,6 @@ class UCTE2pandapower:
 
     @staticmethod
     def _create_empty_network() -> pandapowerNet:
-        net: pandapowerNet = create_empty_network()
         new_columns: dict[str, dict] = {
             "trafo": {
                 "tap2_min": int,
@@ -44,6 +42,7 @@ class UCTE2pandapower:
             "line": {"amica_name": str},
             "bus": {"ucte_country": str},
         }
+        net: pandapowerNet = pandapowerNet(name="")
         for pp_element in new_columns.keys():
             for col, dtype in new_columns[pp_element].items():
                 net[pp_element][col] = pd.Series(dtype=dtype)

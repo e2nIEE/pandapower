@@ -11,7 +11,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.pp_types import Int, CostElementType, PWLPowerType
 from pandapower.create._utils import (
     _cost_existance_check,

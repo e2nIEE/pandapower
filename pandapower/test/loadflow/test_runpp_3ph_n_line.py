@@ -7,8 +7,8 @@ Tests 3 phase power flow algorithm
 import numpy as np
 import pytest
 
-from pandapower import create_empty_network, create_bus, create_ext_grid, create_asymmetric_load, \
-    create_line_from_parameters
+from pandapower.create import create_bus, create_ext_grid, create_asymmetric_load, create_line_from_parameters
+from pandapower.network import pandapowerNet
 from pandapower.pf.runpp_3ph import runpp_3ph
 
 
@@ -16,7 +16,7 @@ from pandapower.pf.runpp_3ph import runpp_3ph
 def net():
     v_base = 20  # 20kV Base Voltage
     mva_base = 100  # 100 MVA
-    Net = create_empty_network(sn_mva=mva_base)
+    Net = pandapowerNet(name="net",sn_mva=mva_base)
 
     bus0 = create_bus(Net, vn_kv=v_base, name="Bus 0")
 

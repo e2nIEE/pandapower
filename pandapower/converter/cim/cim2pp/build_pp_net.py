@@ -10,8 +10,7 @@ import pandas as pd
 
 from pandapower.toolbox.grid_modification import fuse_buses
 from pandapower.run import runpp
-from pandapower.create import create_empty_network
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 from .convert_measurements import CreateMeasurements
 from .. import cim_classes
 from .. import cim_tools
@@ -31,7 +30,7 @@ class CimConverter:
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.kwargs = kwargs
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
-        self.net: pandapowerNet = create_empty_network()
+        self.net: pandapowerNet = pandapowerNet(name="CimConverter")
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()

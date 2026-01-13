@@ -7,10 +7,12 @@
 import os
 from copy import deepcopy
 
-from pandapower import pp_dir
+from pandapower import pp_dir, pandapowerNet
 from pandapower.auxiliary import get_free_id
-from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_transformer_from_parameters, \
-    create_line_from_parameters, create_load, create_gen, create_sgen
+from pandapower.create import (
+    create_bus, create_ext_grid, create_transformer_from_parameters, create_line_from_parameters, create_load,
+    create_gen, create_sgen
+)
 from pandapower.file_io import from_pickle
 from pandapower.toolbox import nets_equal
 
@@ -38,20 +40,17 @@ def create_test_network():
     """
     Creates a simple pandapower test network
     """
-    net = create_empty_network(name='test_network')
+    net = pandapowerNet(name='test_network')
     b1 = create_bus(net, name="bus1", vn_kv=10.)
     create_ext_grid(net, b1)
     b2 = create_bus(net, name="bus2", geodata=(1., 2.), vn_kv=.4)
     b3 = create_bus(net, name="bus3", geodata=(1., 3.), vn_kv=.4, index=7)
     b4 = create_bus(net, name="bus4", vn_kv=10.)
-    create_transformer_from_parameters(net, b4, b2, vk_percent=3.75,
-                                       tap_max=2, vn_lv_kv=0.4,
-                                       shift_degree=150, tap_neutral=0,
-                                       vn_hv_kv=10.0, vkr_percent=2.8125,
-                                       tap_pos=0, tap_side="hv", tap_min=-2,
-                                       tap_step_percent=2.5, i0_percent=0.68751,
-                                       sn_mva=0.016, pfe_kw=0.11, name=None,
-                                       in_service=True, index=None, tap_changer_type="Ratio")
+    create_transformer_from_parameters(
+        net, b4, b2, vk_percent=3.75, tap_max=2, vn_lv_kv=0.4, shift_degree=150, tap_neutral=0, vn_hv_kv=10.0,
+        vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2, tap_step_percent=2.5, i0_percent=0.68751,
+        sn_mva=0.016, pfe_kw=0.11, name=None, in_service=True, index=None, tap_changer_type="Ratio"
+    )
     # 0.016 MVA 10/0.4 kV ET 16/23  SGB
 
     create_line_from_parameters(net, b2, b3, 1, name="line1", r_ohm_per_km=0.2067,

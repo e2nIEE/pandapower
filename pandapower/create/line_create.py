@@ -12,7 +12,7 @@ from typing import Iterable, Sequence
 from numpy import nan, isnan, any as np_any, bool_, all as np_all, float64
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.std_types import load_std_type
 from pandapower.pp_types import Int, LineType
 from pandapower.create._utils import (

@@ -10,8 +10,6 @@ import geojson
 import numpy as np
 import pandas as pd
 
-from pandapower.control import SplineCharacteristic, Characteristic
-from pandapower.control.util.characteristic import LogSplineCharacteristic
 from math import isclose
 
 try:
@@ -21,20 +19,27 @@ try:
 except ImportError:
     GEOPANDAS_INSTALLED = False
 
-from pandapower import get_gc_objects_dict
-from pandapower.file_io import from_json_string, to_json, create_empty_network
+from pandapower import pandapowerNet
+from pandapower.file_io import from_json_string, to_json
 from pandapower.create import create_bus, create_lines, create_line, create_buses, create_shunt
-from pandapower.auxiliary import get_indices, pandapowerNet
+from pandapower.auxiliary import get_indices
 from pandapower.networks import example_simple, example_multivoltage, mv_oberrhein
 from pandapower.timeseries import DFData
+from pandapower.toolbox.element_selection import get_gc_objects_dict
 from pandapower.control import (
     SplineCharacteristic,
     ContinuousTapControl,
+    Characteristic,
     ConstControl,
     create_trafo_characteristic_object,
 )
-from pandapower.control.util.auxiliary import (create_shunt_characteristic_object, _create_trafo_characteristics,
-                                               create_q_capability_characteristics_object, get_min_max_q_mvar_from_characteristics_object)
+from pandapower.control.util.characteristic import LogSplineCharacteristic
+from pandapower.control.util.auxiliary import (
+    create_shunt_characteristic_object,
+    _create_trafo_characteristics,
+    create_q_capability_characteristics_object,
+    get_min_max_q_mvar_from_characteristics_object
+)
 
 
 class MemoryLeakDemo:
@@ -164,7 +169,7 @@ def test_memory_leaks_no_copy():
     types_dict0 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
-        net = create_empty_network()
+        net = pandapowerNet(name='test_memory_leaks_no_copy')
         # In each net copy it has only one controller
         ConstControl(net, 'sgen', 'p_mw', 0)
 
@@ -332,7 +337,7 @@ def test_create_trafo_characteristics():
 
 
 def test_creation_of_shunt_characteristics():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_creation_of_shunt_characteristics")
     b = create_buses(net, 2, 110)
     create_shunt(net, bus=b[1], q_mvar=-50, p_mw=0, step=1, max_step=5)
     net["shunt_characteristic_table"] = pd.DataFrame(
@@ -420,6 +425,7 @@ def test_creation_of_q_capability_characteristics():
     assert pd.notna(net.q_capability_characteristic.loc
                     [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'])
 
+
 def test_get_min_max_q_capability():
     net = example_multivoltage()
     sgen_indices_with_char = [1, 2]
@@ -453,9 +459,10 @@ def test_get_min_max_q_capability():
             assert qmax[1] == q_max_mvar_sgen1[i]
             assert qmax[2] == q_max_mvar_sgen2[j]
 
+
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
-    net = create_empty_network()
+    net = pandapowerNet(name='test_characteristic')
     c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
     c2 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
     c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
@@ -477,14 +484,14 @@ def test_characteristic(file_io):
 
 
 def test_log_characteristic_property():
-    net = create_empty_network()
+    net = pandapowerNet(name='test_log_characteristic_property')
     c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)
     c._x_vals
     c([2])
 
 
 def test_geo_accessor_geojson():
-    net = create_empty_network()
+    net = pandapowerNet(name='test_geo_accessor_geojson')
     b1 = create_bus(net, 10, geodata=(1, 1))
     b2 = create_bus(net, 10, geodata=(2, 2))
     l = create_lines(
@@ -520,8 +527,9 @@ def test_geo_accessor_geopandas():
     circle_polygon = gpd.GeoSeries([shapely.geometry.Point(reference_point)],
                                    crs=4326).to_crs(epsg=31467).buffer(radius_m).to_crs(epsg=4326).iloc[0]
     assert net.line.geo.geojson.within(circle_polygon).sum() == 11
-    assert all(net.line[net.line.geo.geojson.within(circle_polygon)].index == [14, 17, 46, 47, 55, 116,
-                                                                               117, 118, 120, 121, 134])
+    assert all(net.line[net.line.geo.geojson.within(circle_polygon)].index == [
+        14, 17, 46, 47, 55, 116, 117, 118, 120, 121, 134
+    ])
 
     line = shapely.geometry.LineString([[7.8947079593416, 48.40549007606241],
                                         [7.896048283667894, 48.41060722903666],

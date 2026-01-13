@@ -10,10 +10,12 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.auxiliary import get_free_id
-from pandapower.create import create_bus, create_ext_grid, create_line, create_transformer, create_empty_network, \
-    create_switch, create_transformer3w_from_parameters, create_line_from_parameters, create_gen, \
-    create_transformer_from_parameters, create_buses, create_impedance
+from pandapower.create import (
+    create_bus, create_ext_grid, create_line, create_transformer, create_switch, create_transformer3w_from_parameters,
+    create_line_from_parameters, create_gen, create_transformer_from_parameters, create_buses, create_impedance
+)
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.std_types import create_std_type, add_zero_impedance_parameters
 
@@ -73,7 +75,7 @@ def test_1ph_shortcircuit():
     }
 
     for vc, result in results.items():
-        net = create_empty_network(sn_mva=17)
+        net = pandapowerNet(name=f"test_1ph_shortcircuit {vc}", sn_mva=17)
         add_network(net, vc)
         try:
             calc_sc(net, fault="1ph", case="max")
@@ -132,7 +134,7 @@ def test_1ph_shortcircuit_min():
 
     for inv_y in (False, True):
         for vc, result in results.items():
-            net = create_empty_network(sn_mva=16)
+            net = pandapowerNet(name=f"test_1ph_shortcircuit_min {inv_y} {vc}", sn_mva=16)
             add_network(net, vc)
             try:
                 calc_sc(net, fault="1ph", case="min", inverse_y=inv_y)
@@ -177,12 +179,12 @@ def test_iec60909_example_4_bus_selection_br_res(inverse_y):
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
 def test_1ph_with_switches(inverse_y):
-    net = create_empty_network(sn_mva=67)
+    net = pandapowerNet(name="test_1ph_with_switches", sn_mva=67)
     vc = "Yy"
     l1, l2, _ = add_network(net, vc)
     calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
     create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15, std_type="unsymmetric_line_type",
-                parallel=2.)
+                parallel=2)
     add_zero_impedance_parameters(net)
     create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
     calc_sc(net, fault="1ph", case="max")
@@ -190,7 +192,7 @@ def test_1ph_with_switches(inverse_y):
 
 
 def single_3w_trafo_grid(vector_group, sn_mva=123):
-    net = create_empty_network(sn_mva=sn_mva)
+    net = pandapowerNet(name="single_3w_trafo_grid", sn_mva=sn_mva)
     b1 = create_bus(net, vn_kv=380., geodata=(1, 1))
     b2 = create_bus(net, vn_kv=110., geodata=(0, 1))
     b3 = create_bus(net, vn_kv=30., geodata=(1, 0))
@@ -207,7 +209,7 @@ def single_3w_trafo_grid(vector_group, sn_mva=123):
 
 
 def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
-    net = create_empty_network(sn_mva=3)
+    net = pandapowerNet(name="iec_60909_4_small", sn_mva=3)
 
     b1 = create_bus(net, vn_kv=380.)
     b2 = create_bus(net, vn_kv=110.)
@@ -266,7 +268,7 @@ def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
 
 
 def iec_60909_4_t1():
-    net = create_empty_network(sn_mva=26)
+    net = pandapowerNet(name="iec_60909_4_t1",sn_mva=26)
     create_bus(net, vn_kv=110.)
     create_bus(net, vn_kv=20.)
 
@@ -280,7 +282,7 @@ def iec_60909_4_t1():
 
 
 def vde_232():
-    net = create_empty_network(sn_mva=12)
+    net = pandapowerNet(name="vde_232",sn_mva=12)
     # hv buses
     create_bus(net, 110, geodata=(0, 0))
     create_bus(net, 21, geodata=(1, 0))
@@ -407,12 +409,12 @@ def test_t1_iec60909_4():
 
 
 def test_1ph_sn_mva_ext_grid():
-    net1 = create_empty_network(sn_mva=1)
+    net1 = pandapowerNet(name="test_1ph_sn_mva_ext_grid 0", sn_mva=1)
     b1 = create_bus(net1, 110)
     create_ext_grid(net1, b1, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)
 
-    net2 = create_empty_network(sn_mva=17)
+    net2 = pandapowerNet(name="test_1ph_sn_mva_ext_grid 1", sn_mva=17)
     b1 = create_bus(net2, 110)
     create_ext_grid(net2, b1, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)
@@ -429,7 +431,7 @@ def test_1ph_sn_mva_ext_grid():
 
 
 def test_line():
-    net = create_empty_network(sn_mva=17)
+    net = pandapowerNet(name="test_line",sn_mva=17)
     b1 = create_bus(net, 110)
     create_ext_grid(net, b1, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)
@@ -452,7 +454,7 @@ def test_trafo():
                "YNyn": [5.265737, 14.413729]}
 
     for vc in results.keys():
-        net = create_empty_network(sn_mva=1)
+        net = pandapowerNet(name=f"test_trafo {vc}", sn_mva=1)
         create_bus(net, vn_kv=110.)
         create_bus(net, vn_kv=20.)
 
@@ -473,7 +475,7 @@ def test_trafo():
 
 
 def test_sc_1ph_impedance():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_sc_1ph_impedance")
     create_buses(net, 2, 110)
     create_ext_grid(net, 0, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)

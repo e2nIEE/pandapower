@@ -13,7 +13,8 @@ import numpy as np
 import pandas as pd
 import geojson
 
-from pandapower.auxiliary import soft_dependency_error, version_check, ADict
+from pandapower.auxiliary import soft_dependency_error, version_check
+from pandapower.network import ADict
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 

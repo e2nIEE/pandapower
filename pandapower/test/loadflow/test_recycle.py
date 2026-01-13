@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_empty_network,
     create_bus,
     create_line_from_parameters,
     create_load,
@@ -14,6 +13,7 @@ from pandapower.create import (
     create_line,
     create_transformer_from_parameters,
 )
+from pandapower.network import pandapowerNet
 from pandapower.run import set_user_pf_options, runpp, rundcpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks, rundcpp_with_consistency_checks
 from pandapower.test.helper_functions import add_grid_connection
@@ -22,7 +22,7 @@ from pandapower.toolbox.comparison import nets_equal
 
 @pytest.fixture
 def recycle_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="recycle_net")
     b1, b2, ln = add_grid_connection(net)
     pl = 1.2
     ql = 1.1
@@ -136,7 +136,7 @@ def test_recycle_trafo_bus_gen(recycle_net):
 
 
 def test_result_index_unsorted():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_result_index_unsorted")
     set_user_pf_options(net, tolerance_mva=1e-9)
 
     b1 = create_bus(net, vn_kv=0.4, index=4)

@@ -8,8 +8,11 @@ import numpy as np
 import pytest
 import copy
 from pandapower.control import ContinuousTapControl
-from pandapower.create import create_empty_network, create_buses, create_gen, create_load, create_ext_grid, \
-    create_line_from_parameters, create_xward, create_bus, create_shunt
+from pandapower.create import (
+    create_buses, create_gen, create_load, create_ext_grid, create_line_from_parameters, create_xward, create_bus,
+    create_shunt
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9, case2848rte
 from pandapower.pypower.idx_brch import PF
@@ -31,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 def small_example_grid():
-    net = create_empty_network()
+    net = pandapowerNet(name="small_example_grid")
     create_buses(net, 3, 20)
 
     create_gen(net, 0, p_mw=100, vm_pu=1, slack=True, slack_weight=1)
@@ -333,7 +336,7 @@ def test_xward_oos():
 
 
 def test_only_xward():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_only_xward")
     create_bus(net, 110)
     create_ext_grid(net, 0, vm_pu=1.05, slack_weight=2)
     create_xward(net, 0, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
@@ -363,7 +366,7 @@ def test_separate_zones():
 
 
 def case9_simplified():
-    net = create_empty_network()
+    net = pandapowerNet(name="case9_simplified")()
     create_buses(net, 9, vn_kv=345.)
     lines = [[0, 3], [3, 4], [4, 5], [2, 5], [5, 6], [6, 7], [7, 1], [7, 8], [8, 3]]
 

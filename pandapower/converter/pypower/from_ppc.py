@@ -6,17 +6,15 @@
 from math import pi
 import numpy as np
 import pandas as pd
-from pandapower.auxiliary import pandapowerNet
-from pandapower.pypower.idx_bus import \
-    BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, VA, BASE_KV, ZONE, VMAX, VMIN
-from pandapower.pypower.idx_gen import \
-    GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
-from pandapower.pypower.idx_brch import \
-    F_BUS, T_BUS, BR_R, BR_X, BR_G, BR_B, RATE_A, RATE_B, RATE_C, TAP, SHIFT, BR_STATUS, ANGMIN, ANGMAX
+from pandapower.network import pandapowerNet
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, VA, BASE_KV, ZONE, VMAX, VMIN
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_cost import MODEL, COST, NCOST
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_loads, \
-    create_sgens, create_gens, create_lines_from_parameters, create_transformers_from_parameters, \
-    create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs, create_impedances
+from pandapower.create import (
+    create_buses, create_loads, create_sgens, create_gens, create_lines_from_parameters, create_shunts, create_ext_grid,
+    create_transformers_from_parameters, create_pwl_costs, create_poly_costs, create_impedances
+)
 from pandapower.run import runpp
 
 import logging
@@ -53,7 +51,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
     if np.any(ppc['bus'][:, BASE_KV] <= 0):
         logger.info('There are false baseKV given in the pypower case file.')
 
-    net = create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
+    net = pandapowerNet(name="from_ppc", f_hz=f_hz, sn_mva=ppc["baseMVA"])
     net._from_ppc_lookups = dict()
 
     _from_ppc_bus(net, ppc)

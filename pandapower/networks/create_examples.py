@@ -6,9 +6,12 @@
 
 import pandas as pd
 
-from pandapower.create import create_switch, create_empty_network, create_bus, create_ext_grid, create_load, \
-    create_gen, create_sgen, create_line, create_shunt, create_transformer, create_transformer_from_parameters, \
-    create_transformer3w_from_parameters, create_impedance, create_xward
+from pandapower.create import (
+    create_switch, create_bus, create_ext_grid, create_load, create_gen, create_sgen, create_line, create_shunt,
+    create_transformer, create_transformer_from_parameters, create_transformer3w_from_parameters, create_impedance,
+    create_xward
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import get_element_index
 
@@ -25,7 +28,7 @@ def example_simple():
         >>> net = example_simple()
 
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="example_simple")
 
     # create buses
     bus1 = create_bus(net, name="HV Busbar", vn_kv=110., type="b")
@@ -92,7 +95,7 @@ def example_multivoltage():
         >>> net = example_multivoltage()
 
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="example_multivoltage")
 
     # --- Busses
 

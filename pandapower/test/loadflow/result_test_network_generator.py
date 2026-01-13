@@ -4,10 +4,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.auxiliary import get_free_id
-from pandapower.create import create_empty_network, create_load, create_bus, create_switch, create_ext_grid, \
-    create_gen, create_sgen, create_transformer_from_parameters, create_ward, create_xward, \
-    create_line_from_parameters, create_transformer3w_from_parameters, create_impedance, create_shunt, \
-    create_shunt_as_capacitor
+from pandapower.create import (
+    create_load, create_bus, create_switch, create_ext_grid, create_gen, create_sgen, create_ward, create_xward,
+    create_transformer_from_parameters, create_line_from_parameters, create_transformer3w_from_parameters,
+    create_impedance, create_shunt, create_shunt_as_capacitor
+)
+from pandapower.network import pandapowerNet
 from pandapower.test.helper_functions import add_grid_connection, create_test_line
 
 
@@ -45,7 +47,7 @@ def result_test_network_generator(sn_mva=1, skip_test_impedance=False):
         It is structured like this so it can be tested for consistency at
         different stages of adding elements
     """
-    net = create_empty_network(sn_mva=sn_mva)
+    net = pandapowerNet(name='', sn_mva=sn_mva)
     yield add_test_line(net)
     yield add_test_load_sgen(net)
     yield add_test_load_sgen_split(net)
@@ -76,7 +78,7 @@ def result_test_network_generator_dcpp(sn_mva=1):
     """
     # ToDo: Uncommented tests fail in rundcpp -> Check why and correct it
 
-    net = create_empty_network(sn_mva=sn_mva)
+    net = pandapowerNet(name='', sn_mva=sn_mva)
     yield add_test_line(net)
     yield add_test_load_sgen(net)
     yield add_test_load_sgen_split(net)
@@ -476,8 +478,8 @@ def add_test_two_open_switches_on_deactive_line(net):
 
 if __name__ == '__main__':
     from pandapower.test.consistency_checks import runpp_with_consistency_checks
-    from pandapower import LoadflowNotConverged
-
+    from pandapower import LoadflowNotConverged, pandapowerNet
+    
     for net in result_test_network_generator():
         try:
             runpp_with_consistency_checks(net, enforce_q_lims=True, numba=True)

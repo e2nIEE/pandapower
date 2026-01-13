@@ -11,10 +11,13 @@ import numpy as np
 import pytest
 
 from pandapower import pp_dir
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line_from_parameters, \
-    create_measurement, create_load, create_transformer, create_line, create_sgen, create_transformer3w, create_switch
+from pandapower.create import (
+    create_bus, create_ext_grid, create_line_from_parameters, create_measurement, create_load, create_transformer,
+    create_line, create_sgen, create_transformer3w, create_switch
+)
 from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
@@ -23,7 +26,7 @@ from pandapower.std_types import create_std_type
 
 def test_2bus():
     # 1. Create network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_2bus")
     create_bus(net, name="bus1", vn_kv=1.)
     create_bus(net, name="bus2", vn_kv=1.)
     create_ext_grid(net, 0)
@@ -54,7 +57,7 @@ def test_2bus():
 
 def test_3bus():
     # 1. Create network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_3bus")
     create_bus(net, name="bus1", vn_kv=1.)
     create_bus(net, name="bus2", vn_kv=1.)
     create_bus(net, name="bus3", vn_kv=1.)
@@ -99,7 +102,7 @@ def test_3bus():
 
 
 def test_3bus_with_bad_data():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_3bus_with_bad_data")
     create_bus(net, name="bus1", vn_kv=1.)
     create_bus(net, name="bus2", vn_kv=1.)
     create_bus(net, name="bus3", vn_kv=1.)
@@ -156,7 +159,7 @@ def test_3bus_with_out_of_service_bus():
     # Measurements should be in kW/kVar/A - Voltage in p.u.
 
     # 1. Create network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_3bus_with_out_of_service_bus")
     create_bus(net, name="bus1", vn_kv=1.)
     create_bus(net, name="bus2", vn_kv=1.)
     create_bus(net, name="bus3", vn_kv=1.)
@@ -201,7 +204,7 @@ def test_3bus_with_transformer():
     np.random.seed(12)
 
     # 1. Create network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_3bus_with_transformer")
     create_bus(net, name="bus1", vn_kv=10.)
     create_bus(net, name="bus2", vn_kv=10.)
     create_bus(net, name="bus3", vn_kv=10.)
@@ -490,7 +493,7 @@ def test_cigre_with_bad_data():
 
 def test_init_slack_with_multiple_transformers():
     np.random.seed(123)
-    net = create_empty_network()
+    net = pandapowerNet(name="test_init_slack_with_multiple_transformers")
     create_bus(net, 220, index=0)
     create_bus(net, 110, index=1)
     create_bus(net, 110, index=2)
@@ -541,7 +544,7 @@ def test_init_slack_with_multiple_transformers():
 
 def test_check_existing_measurements():
     np.random.seed(2017)
-    net = create_empty_network()
+    net = pandapowerNet(name="test_check_existing_measurements")
     create_bus(net, 10.)
     create_bus(net, 10.)
     create_line(net, 0, 1, 0.5, std_type="149-AL1/24-ST1A 10.0")
@@ -571,7 +574,7 @@ def load_3bus_network():
 
 
 def test_network_with_trafo3w_pq():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_network_with_trafo3w_pq")
 
     bus_slack = create_bus(net, vn_kv=110)
     create_ext_grid(net, bus=bus_slack)
@@ -618,7 +621,7 @@ def test_network_with_trafo3w_pq():
 
 
 def test_network_with_trafo3w_with_disabled_branch():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_network_with_trafo3w_with_disabled_branch")
 
     bus_slack = create_bus(net, vn_kv=110)
     create_ext_grid(net, bus=bus_slack)
@@ -663,7 +666,7 @@ def test_network_with_trafo3w_with_disabled_branch():
 
 
 def create_net_with_bb_switch():
-    net = create_empty_network()
+    net = pandapowerNet(name="create_net_with_bb_switch")
     bus1 = create_bus(net, name="bus1", vn_kv=10.)
     bus2 = create_bus(net, name="bus2", vn_kv=10.)
     bus3 = create_bus(net, name="bus3", vn_kv=10.)
@@ -754,7 +757,7 @@ def test_net_with_bb_switch_fusing():
 
 def test_net_with_zero_injection():
     # @author: AndersLi
-    net = create_empty_network()
+    net = pandapowerNet(name="test_net_with_zero_injection")
     b1 = create_bus(net, name="Bus 1", vn_kv=220, index=1)
     b2 = create_bus(net, name="Bus 2", vn_kv=220, index=2)
     b3 = create_bus(net, name="Bus 3", vn_kv=220, index=3)
@@ -796,7 +799,7 @@ def test_net_with_zero_injection():
 
 
 def test_zero_injection_aux_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_zero_injection_aux_bus")
     bus1 = create_bus(net, name="bus1", vn_kv=10.)
     bus2 = create_bus(net, name="bus2", vn_kv=10.)
     bus3 = create_bus(net, name="bus3", vn_kv=10.)
@@ -856,7 +859,7 @@ def test_zero_injection_aux_bus():
 
 @pytest.mark.xfail
 def test_net_unobserved_island():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_net_unobserved_island")
     bus1 = create_bus(net, name="bus1", vn_kv=10.)
     bus2 = create_bus(net, name="bus2", vn_kv=10.)
     bus3 = create_bus(net, name="bus3", vn_kv=10.)

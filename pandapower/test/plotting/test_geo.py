@@ -12,6 +12,8 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_index_equal
 
+from pandapower.network import pandapowerNet
+from pandapower.create import create_bus, create_line
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.plotting.geo import _node_geometries_from_geodata, _branch_geometries_from_geodata, \
     _transform_node_geometry_to_geodata, _transform_branch_geometry_to_coords, _convert_xy_epsg, \
@@ -314,12 +316,8 @@ def test_dump_to_geojson():
 
 
 def test_convert_geodata_to_geojson():
-    pytest.importorskip("geojson")
-    pytest.importorskip("pandapower")
-    import geojson
-    from pandapower.create import create_empty_network, create_bus, create_line
     # Erstelle ein Beispielnetzwerk
-    _net = create_empty_network()
+    _net = pandapowerNet(name="test_convert_geodata_to_geojson")
 
     # Füge Busse hinzu
     create_bus(_net, 0, geodata=(10, 20))

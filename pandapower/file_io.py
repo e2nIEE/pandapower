@@ -25,11 +25,9 @@ try:
 except ImportError:
     openpyxl_INSTALLED = False
 
-from pandapower._version import __version__ as pp_version
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.std_types import basic_std_types
-from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
 from pandapower.io_utils import to_dict_with_coord_transform, to_dict_of_dfs, PPJSONEncoder, encrypt_string, \
     get_raw_data_from_pickle, transform_net_with_df_and_geo, check_net_version, from_dict_of_dfs, decrypt_string, \
@@ -211,7 +209,7 @@ def from_excel(filename, convert=True):
 def _from_excel_old(xls):
     par = xls["parameters"]["parameter"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
-    net = create_empty_network(name=name, f_hz=par.at["f_hz"])
+    net = pandapowerNet(name=name, f_hz=par.at["f_hz"])
     net.update(par)
     for item, table in xls.items():
         if item == "parameters":
@@ -257,7 +255,7 @@ def from_json(
     :param replace_elements: Keys are replaced by values found in json string. Both key and value are supposed to be
         strings, default None
     :type replace_elements: dict or None
-    :param empty_dict_like_object: If None, the output of pandapower.create_empty_network() is used as an empty element
+    :param empty_dict_like_object: If None, the output of pandapowerNet() is used as an empty element
         to be filled by the data of the json string. Give another dict-like object to start filling that alternative
         object with the json data, default None
     :type empty_dict_like_object: dict or pandapowerNet or None
@@ -316,31 +314,28 @@ def from_json_string(
     The index of the returned network is not necessarily in the same order as the original network.
     Index columns of all pandas DataFrames are sorted in ascending order.
 
-    :param str json_string: The json string representation of the network
-    :param bool convert: If True, converts the format of the net loaded from json_string
-        from the older version of pandapower to the newer version format, default False
-    :param encryption_key: If given, key to decrypt an encrypted json_string, default None
-    :type encryption_key: str or None
-    :param elements_to_deserialize: Deserialize only certain pandapower elements. If None all elements are deserialized,
-        default None
-    :type elements_to_deserialize: list or None
-    :param bool keep_serialized_elements: Keep serialized elements if given. Default: Serialized elements are kept,
-        default True
-    :param bool add_basic_std_types: Add missing standard-types from pandapower standard type library, default False
-    :param replace_elements: Keys are replaced by values found in json string.
-        Both key and value are supposed to be strings, default None
-    :type replace_elements: dict or None
-    :param empty_dict_like_object: If None, the output of pandapower.create_empty_network() is used as an empty element
-        to be filled by the data of the json string. Give another dict-like object to start filling that alternative
-        object with the json data, default None
-    :type empty_dict_like_object: dict or pandapowerNet or None
-    :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be deserialized instead of
-        raising an error, default False
+    Parameters:
+        json_string: The json string representation of the network
+        convert: If True, converts the format of the net loaded from json_string from the older version of pandapower
+            to the newer version format, default False
+        encryption_key: If given, key to decrypt an encrypted json_string, default None
+        elements_to_deserialize: Deserialize only certain pandapower elements. If None all elements are deserialized,
+            default None
+        keep_serialized_elements: Keep serialized elements if given. Default: Serialized elements are kept,
+            default True
+        add_basic_std_types: Add missing standard-types from pandapower standard type library, default False
+        replace_elements: Keys are replaced by values found in json string.
+            Both key and value are supposed to be strings, default None
+        empty_dict_like_object: If None, the output of pandapowerNet is used as an empty element to be filled by the
+            data of the json string. Give another dict-like object to start filling that alternative object with the
+            json data, default None
+        ignore_unknown_objects: If set to True, ignore any objects that cannot be deserialized instead of
+            raising an error, default False
 
-    :return: The pandapower network
-    :rtype: pandapowerNet
+    Returns:
+        The pandapower network
 
-    :example:
+    Example:
         >>> from pandapower import from_json_string
         >>> net = from_json_string("{…}")
     """
@@ -370,7 +365,7 @@ def from_json_string(
             omit_tables=omit_tables,
             omit_modules=omit_modules
         )
-        net_dummy = create_empty_network()
+        net_dummy = pandapowerNet(name='')
         if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '
                               'Convert and save your net first.')
@@ -433,8 +428,11 @@ def from_json_dict(json_dict):
         >>> net = from_json_dict(json.loads(json_str))
     """
     name = json_dict["name"] if "name" in json_dict else None
-    f_hz = json_dict["f_hz"] if "f_hz" in json_dict else 50
-    net = create_empty_network(name=name, f_hz=f_hz)
+    f_hz = json_dict["f_hz"] if "f_hz" in json_dict else 50.
+    if name is None:
+        logger.warning('pandapowerNet.name not present or empty. Please set a name and resave the network')
+        name = ""
+    net = pandapowerNet(name=name, f_hz=f_hz)
     if "parameters" in json_dict:
         for par, value in json_dict["parameters"]["parameter"].items():
             net[par] = value

@@ -14,7 +14,7 @@ import pandas as pd
 from numpy import nan, isnan, isin, array, bool_, float64, full, integer, all as all_
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.std_types import load_std_type
 from pandapower.pp_types import HVMVLVType, HVLVType, Int, TapChangerType, TapChangerWithTabularType
 from pandapower.create._utils import (

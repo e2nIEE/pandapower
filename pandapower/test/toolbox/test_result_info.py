@@ -6,15 +6,21 @@
 import numpy as np
 import pytest
 
-from pandapower import create_empty_network, create_buses, create_ext_grid, create_gen, create_load, create_sgen, \
-    create_storage, create_dcline, create_line, create_transformer, opf_task, runpp, overloaded_lines, create_bus, \
-    create_poly_cost, create_pwl_cost, violated_buses, clear_result_tables
+from pandapower.run import runpp
+from pandapower.create import (
+    create_buses, create_ext_grid, create_gen, create_load, create_sgen, create_storage, create_dcline, create_line,
+    create_transformer, create_bus, create_poly_cost, create_pwl_cost
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks import create_cigre_network_lv, case9
-from pandapower.toolbox import dataframes_equal, res_power_columns
+from pandapower.toolbox import dataframes_equal
+from pandapower.toolbox.result_info import (
+    opf_task, overloaded_lines, violated_buses, clear_result_tables, res_power_columns
+)
 
 
 def test_opf_task():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_opf_task")
     create_buses(net, 6, [10, 10, 10, 0.4, 7, 7],
                     min_vm_pu=[0.9, 0.9, 0.88, 0.9, np.nan, np.nan])
     idx_ext_grid = 1
@@ -78,7 +84,7 @@ def test_opf_task():
 
 
 def test_overloaded_lines():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_overloaded_lines")
 
     bus0 = create_bus(net, vn_kv=.4)
     bus1 = create_bus(net, vn_kv=.4)

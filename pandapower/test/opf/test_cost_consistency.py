@@ -1,22 +1,25 @@
 import pytest
 from numpy import isclose
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line_from_parameters, \
-    create_load, create_sgen, create_pwl_cost, create_poly_cost, create_gen
+from pandapower.create import (
+    create_bus, create_ext_grid, create_line_from_parameters, create_load, create_gen, create_sgen, create_pwl_cost,
+    create_poly_cost
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp, runopp
 
 
 @pytest.fixture()
 def base_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="base_net")
     create_bus(net, vn_kv=10)
     create_bus(net, vn_kv=10)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.2, controllable=False)
-    create_line_from_parameters(net, 0, 1, 50, name="line", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
-
+    create_line_from_parameters(
+        net, 0, 1, 50, name="line", r_ohm_per_km=0.876, c_nf_per_km=260.0, max_i_ka=0.123,
+        x_ohm_per_km=0.1159876, max_loading_percent=100 * 690
+    )
     runpp(net)
     return net
 

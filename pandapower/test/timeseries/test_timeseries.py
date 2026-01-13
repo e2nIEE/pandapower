@@ -12,8 +12,11 @@ import pytest
 
 from pandapower.control import ContinuousTapControl, ConstControl
 from pandapower.control.util.diagnostic import logger as diagnostic_logger
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_transformer, \
-    create_load, create_loads, create_buses, create_switch, create_lines, create_transformer3w_from_parameters
+from pandapower.create import (
+    create_bus, create_ext_grid, create_line, create_transformer, create_load, create_loads, create_buses,
+    create_switch, create_lines, create_transformer3w_from_parameters
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import set_user_pf_options, runpp
 from pandapower.timeseries import DFData
 from pandapower.timeseries import OutputWriter
@@ -24,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture
 def simple_test_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="simple_test_net")
     set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
     b0 = create_bus(net, 110)
     b1 = create_bus(net, 110)
@@ -114,7 +117,7 @@ def test_const_control(simple_test_net):
 
 
 def test_switch_states_in_time_series():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_switch_states_in_time_series")
     create_buses(net, 3, 0.4)
     create_ext_grid(net, 0)
     create_loads(net, [1, 2], 0.1)

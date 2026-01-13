@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_indices
-from pandapower.create import create_empty_network
+from pandapower import pandapowerNet
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 
@@ -428,7 +428,7 @@ def set_data_type_of_columns_to_default(net):
       No output; the net passed as input has pandapower-default dtypes of columns in element tables.
 
     """
-    new_net = create_empty_network()
+    new_net = pandapowerNet(name='')
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
