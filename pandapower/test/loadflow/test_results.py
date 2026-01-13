@@ -713,7 +713,7 @@ def test_open(result_test_network):
 
 
 def test_impedance_g_b():
-    net = pandapowerNet(name="test_impedance_g_b",sn_mva=100)
+    net = pandapowerNet(name="test_impedance_g_b", sn_mva=100)
     create_bus(net, 110)
     create_bus(net, 20)
     create_ext_grid(net, 0)
@@ -732,7 +732,7 @@ def test_impedance_g_b():
 
 
 def test_trafo_unequal_r_x_hv_lv():
-    net = pandapowerNet(name="test_trafo_unequal_r_x_hv_lv",sn_mva=10)
+    net = pandapowerNet(name="test_trafo_unequal_r_x_hv_lv", sn_mva=10)
     create_bus(net, 110)
     create_bus(net, 20)
     create_ext_grid(net, 0)

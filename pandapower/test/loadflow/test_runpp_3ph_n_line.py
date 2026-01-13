@@ -16,7 +16,7 @@ from pandapower.pf.runpp_3ph import runpp_3ph
 def net():
     v_base = 20  # 20kV Base Voltage
     mva_base = 100  # 100 MVA
-    Net = pandapowerNet(name="net",sn_mva=mva_base)
+    Net = pandapowerNet(name="net", sn_mva=mva_base)
 
     bus0 = create_bus(Net, vn_kv=v_base, name="Bus 0")
 

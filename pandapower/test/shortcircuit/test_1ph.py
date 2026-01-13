@@ -268,7 +268,7 @@ def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
 
 
 def iec_60909_4_t1():
-    net = pandapowerNet(name="iec_60909_4_t1",sn_mva=26)
+    net = pandapowerNet(name="iec_60909_4_t1", sn_mva=26)
     create_bus(net, vn_kv=110.)
     create_bus(net, vn_kv=20.)
 
@@ -282,7 +282,7 @@ def iec_60909_4_t1():
 
 
 def vde_232():
-    net = pandapowerNet(name="vde_232",sn_mva=12)
+    net = pandapowerNet(name="vde_232", sn_mva=12)
     # hv buses
     create_bus(net, 110, geodata=(0, 0))
     create_bus(net, 21, geodata=(1, 0))
@@ -431,7 +431,7 @@ def test_1ph_sn_mva_ext_grid():
 
 
 def test_line():
-    net = pandapowerNet(name="test_line",sn_mva=17)
+    net = pandapowerNet(name="test_line", sn_mva=17)
     b1 = create_bus(net, 110)
     create_ext_grid(net, b1, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)

@@ -431,7 +431,7 @@ def create_asymmetric_load(
 #     net.impedance_load.loc[index, ["name", "bus", "r_A","r_B","r_C", "scaling",
 #                       "x_A","x_B","x_C","sn_mva", "in_service", "type"]] = \
 #     [name, bus, r_A,r_B,r_C, scaling,
-#       x_A,x_B,x_C,sn_mva, in_service, type]
+#       x_A,x_B,x_C, sn_mva, in_service, type]
 #
 #     # and preserve dtypes
 #     _preserve_dtypes(net.impedance_load, dtypes)

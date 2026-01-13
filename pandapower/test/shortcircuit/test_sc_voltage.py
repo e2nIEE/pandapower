@@ -124,7 +124,7 @@ def test_voltage_simple():
 
 
 def test_voltage_very_simple():
-    net = pandapowerNet(name="test_voltage_very_simple",sn_mva=12)
+    net = pandapowerNet(name="test_voltage_very_simple", sn_mva=12)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)

@@ -14,7 +14,7 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 
 @pytest.fixture
 def motor_net():
-    net = pandapowerNet(name="motor_net",sn_mva=14)
+    net = pandapowerNet(name="motor_net", sn_mva=14)
     b1 = create_bus(net, vn_kv=0.4)
     b2 = create_bus(net, vn_kv=0.4)
     b3 = create_bus(net, vn_kv=0.4)
@@ -81,8 +81,7 @@ def test_large_motor(motor_net):
     net = motor_net
     net.motor.pn_mech_mw = 10
     calc_sc(net, case="max")
-    assert np.allclose(net.res_bus_sc.ikss_ka.values[:3],
-                       [14.695869025, 103.16722971, 0.38693418116], rtol=1e-4)
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:3], [14.695869025, 103.16722971, 0.38693418116], rtol=1e-4)
 
 
 if __name__ == '__main__':

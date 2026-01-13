@@ -35,7 +35,7 @@ from pandapower.test.loadflow.test_runpp import get_isolated
 def net():
     v_base = 110  # 110kV Base Voltage
     k_va_base = 100  # 100 MVA
-    net = pandapowerNet(name="net",sn_mva=k_va_base)
+    net = pandapowerNet(name="net", sn_mva=k_va_base)
     create_bus(net, vn_kv=v_base, index=1)
     create_bus(net, vn_kv=v_base, index=5)
     create_ext_grid(net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1,
@@ -514,7 +514,7 @@ def test_2trafos():
 def test_3ph_isolated_nodes():
     v_base = 110  # 110kV Base Voltage
     mva_base = 100  # 100 MVA
-    net = pandapowerNet(name="test_3ph_isolated_nodes",sn_mva=mva_base)
+    net = pandapowerNet(name="test_3ph_isolated_nodes", sn_mva=mva_base)
 
     busn = create_bus(net, vn_kv=v_base, name="busn", index=1)
     create_bus(net, vn_kv=20., in_service=True, index=2, name="busx")
@@ -550,7 +550,7 @@ def test_3ph_isolated_nodes():
 
 
 def test_balanced_power_flow_with_unbalanced_loads_and_sgens():
-    net = pandapowerNet(name="test_balanced_power_flow_with_unbalanced_loads_and_sgens",sn_mva=100)
+    net = pandapowerNet(name="test_balanced_power_flow_with_unbalanced_loads_and_sgens", sn_mva=100)
     make_nw(net, 10, 0, "wye", "Dyn")
     create_asymmetric_sgen(net, 1, p_a_mw=0.01, p_b_mw=0.02, scaling=0.8)
     runpp_with_consistency_checks(net)

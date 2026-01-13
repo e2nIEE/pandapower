@@ -1654,9 +1654,11 @@ def _test_net_for_q_capability_curve():
     create_load(net, bus3, p_mw=198, q_mvar=500, name="Load", vm_pu=1.0 )
 
     # create transformer
-    create_transformer_from_parameters(net, bus2, bus1, name="110kV/20kV transformer", parallel=1,max_loading_percent=100,sn_mva=210,
-    vn_hv_kv=110, vn_lv_kv=20, vk_percent=12.5, vkr_percent=0.01904762, vk0_percent=10, vkr0_percent=0,
-                          shift_degree=330, vector_group="YNd11", i0_percent= 0.26, pfe_kw=0,si0_hv_partial=0.5)
+    create_transformer_from_parameters(
+        net, bus2, bus1, name="110kV/20kV transformer", parallel=1, max_loading_percent=100, sn_mva=210, vn_hv_kv=110,
+        vn_lv_kv=20, vk_percent=12.5, vkr_percent=0.01904762, vk0_percent=10, vkr0_percent=0, shift_degree=330,
+        vector_group="YNd11", i0_percent= 0.26, pfe_kw=0,si0_hv_partial=0.5
+    )
 
     create_gen(net, bus1, p_mw=100, sn_mva=255.0, scaling=1.0, type="Hydro",
                  cos_phi=0.8, pg_percent=0.0, vn_kv=19.0, vm_pu=1.0) #,min_q_mvar=-255, max_q_mvar=255,  min_p_mw=-331.01001, max_p_mw=331.01001)

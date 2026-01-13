@@ -12,7 +12,7 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 def ring_network():
-    net = pandapowerNet(name="ring_network",sn_mva=2.)
+    net = pandapowerNet(name="ring_network", sn_mva=2.)
     b0 = create_bus(net, 220)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)

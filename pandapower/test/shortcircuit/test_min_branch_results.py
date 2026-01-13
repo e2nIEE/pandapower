@@ -11,7 +11,7 @@ from pandapower.network import pandapowerNet
 
 @pytest.fixture
 def feeder_network():
-    net = pandapowerNet(name="feeder_network",sn_mva=11)
+    net = pandapowerNet(name="feeder_network", sn_mva=11)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)

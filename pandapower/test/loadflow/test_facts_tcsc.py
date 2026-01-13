@@ -101,7 +101,7 @@ def test_tcsc_simple3():
     # (0)-------------(1)-----------------(3)->
     #                  |--(TCSC)--(2)------|
 
-    net = pandapowerNet(name="test_tcsc_simple3",sn_mva=baseMVA)
+    net = pandapowerNet(name="test_tcsc_simple3", sn_mva=baseMVA)
     create_buses(net, 4, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -135,7 +135,7 @@ def test_tcsc_simple3_slack():
     # (0)-------------(1)-----------------(3)->
     #  |-----(TCSC)--(2)-------------------|
 
-    net = pandapowerNet(name="test_tcsc_simple3_slack",sn_mva=baseMVA)
+    net = pandapowerNet(name="test_tcsc_simple3_slack", sn_mva=baseMVA)
     create_buses(net, 4, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -171,7 +171,7 @@ def test_compare_to_impedance():
     # (0)-------------(1)-----------------(3)->
     #                  |--(TCSC)--(2)------|
 
-    net = pandapowerNet(name="test_compare_to_impedance",sn_mva=baseMVA)
+    net = pandapowerNet(name="test_compare_to_impedance", sn_mva=baseMVA)
     create_buses(net, 4, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -236,7 +236,7 @@ def test_tcsc_case_study():
 
 
 def test_tcsc_simple5():
-    net = pandapowerNet(name="test_tcsc_simple5",sn_mva=100)
+    net = pandapowerNet(name="test_tcsc_simple5", sn_mva=100)
     create_buses(net, 4, 110)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)

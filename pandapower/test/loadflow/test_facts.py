@@ -24,7 +24,7 @@ def _many_tcsc_test_net():
     xl = 0.2
     xc = -15
 
-    net = pandapowerNet(name="_many_tcsc_test_net",sn_mva=baseMVA)
+    net = pandapowerNet(name="_many_tcsc_test_net", sn_mva=baseMVA)
     create_buses(net, 7, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -168,7 +168,7 @@ def test_multiple_facts():
     xl = 0.2
     xc = -15
 
-    net = pandapowerNet(name="test_multiple_facts",sn_mva=baseMVA)
+    net = pandapowerNet(name="test_multiple_facts", sn_mva=baseMVA)
     create_buses(net, 7, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)

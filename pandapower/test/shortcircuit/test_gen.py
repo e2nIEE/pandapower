@@ -16,7 +16,7 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 
 @pytest.fixture
 def one_line_one_generator():
-    net = pandapowerNet(name="one_line_one_generator",sn_mva=23)
+    net = pandapowerNet(name="one_line_one_generator", sn_mva=23)
     b1 = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=10.)
     b3 = create_bus(net, vn_kv=10.)
@@ -32,7 +32,7 @@ def one_line_one_generator():
 
 @pytest.fixture
 def gen_three_bus_example():
-    net = pandapowerNet(name="gen_three_bus_example",sn_mva=12)
+    net = pandapowerNet(name="gen_three_bus_example", sn_mva=12)
     b1 = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=10.)
     b3 = create_bus(net, vn_kv=10.)
