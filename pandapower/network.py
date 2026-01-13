@@ -233,7 +233,7 @@ class pandapowerNet(ADict):
     """
     @overload
     def __init__(
-            self, name: str, f_hz: float = 50., sn_mva: int = 1, add_stdtypes: bool = True, custom_data: dict = None
+            self, name: str, f_hz: float = 50., sn_mva: float = 1., add_stdtypes: bool = True, custom_data: dict = None
     ) -> None: ...
     
     @overload
