@@ -611,7 +611,9 @@ class FromSerializableRegistry():
             df.loc[pd.isnull(df[col]), col] = None
         return df
 
+    # removing the pandapower.auxiliary registration is not possible otherwise old networks cannot be loaded anymore
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.network')
+    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
     def to_pandapower_net(self):
         if isinstance(self.obj, str):  # backwards compatibility
             from pandapower import from_json_string
