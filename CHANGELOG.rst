@@ -1,9 +1,13 @@
 Change Log
 =============
 
-[upcoming release] - 2025-..-..
+[upcoming release] - 2026-..-..
 -------------------------------
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
+
+[3.3.1] - 2026-01-13
+-------------------------------
+- [FIXED] short circuit calculation failed, bug in scipy did calculate zbus = inv(ybus) incorrectly.
 
 [3.3.0] - 2025-12-15
 -------------------------------
