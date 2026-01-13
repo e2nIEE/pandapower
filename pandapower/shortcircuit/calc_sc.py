@@ -142,14 +142,16 @@ def calc_sc(net, bus=None,
 
     kappa = ith or ip
     net["_options"] = {}
-    _add_ppc_options(net, calculate_voltage_angles=False, trafo_model=trafo_model,
-                     check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2,
-                     init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_q_lims=False,
-                     recycle=None)
-    _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, topology=topology,
-                    r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
-                    branch_results=branch_results, kappa_method=kappa_method, return_all_currents=return_all_currents,
-                    inverse_y=inverse_y, use_pre_fault_voltage=use_pre_fault_voltage)
+    _add_ppc_options(
+        net, calculate_voltage_angles=False, trafo_model=trafo_model, check_connectivity=check_connectivity, mode="sc",
+        switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_q_lims=False, recycle=None
+    )
+    _add_sc_options(
+        net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, topology=topology,
+        r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith, branch_results=branch_results,
+        kappa_method=kappa_method, return_all_currents=return_all_currents, inverse_y=inverse_y,
+        use_pre_fault_voltage=use_pre_fault_voltage
+    )
     init_results(net, "sc")
 
     if fault in ("2ph", "3ph"):
@@ -202,8 +204,7 @@ def _calc_current(net, ppci_orig, bus):
             else:
                 _calc_branch_currents(net, this_ppci, this_ppci_bus)
 
-        _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
-                                  calc_options=net._options)
+        _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus, calc_options=net._options)
 
 
 def _calc_sc(net, bus):

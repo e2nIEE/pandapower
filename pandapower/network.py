@@ -363,6 +363,5 @@ class pandapowerNet(ADict):
             return "This pandapower network is empty"
         if len(res):
             res = [" and the following results tables:"] + res
-        lines = ["This pandapower network includes the following parameter tables:"] + \
-                par + res + res_cost
+        lines = ["This pandapower network includes the following parameter tables:"] + par + res + res_cost
         return "\n".join(lines)

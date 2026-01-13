@@ -61,7 +61,7 @@ def _calc_zbus(net, ppci):
             ppci["internal"]["Zbus"] = inv(Ybus.toarray())
     except Exception as e:
         _clean_up(net, res=False)
-        raise (e)
+        raise e
 
 
 def _calc_zbus_diag(net, ppci, bus_idx=None):
