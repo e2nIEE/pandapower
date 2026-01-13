@@ -245,7 +245,7 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     assert abs(net.res_trafo.loading_percent.at[t2] - load2) < l_tol
 
 
-def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
+def test_trafo_2_taps():
     # from pandapower.test.loadflow.test_results import *
     net = pandapowerNet(name="test_trafo_2_taps")
     create_bus(net, 110)
@@ -261,7 +261,6 @@ def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-
     create_load(net, 1, 10)
 
     runpp(net)
-    net.res_bus
 
 
 def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):

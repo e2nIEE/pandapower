@@ -49,6 +49,8 @@ try:
 
     numba_installed = True
 except ImportError:
+    def makeYbus_numba():
+        pass
     numba_installed = False
 
 
@@ -1262,8 +1264,9 @@ def test_init_results():
     add_test_trafo3w(net)  # trafo3w with internal node
     assert_init_results(net)
     t3idx = net.trafo3w.index[0]
-    t3_switch = create_switch(net, bus=net.trafo3w.hv_bus.at[t3idx],
-                              element=t3idx, et="t3", closed=False)  # trafo3w switch at hv side
+    t3_switch = create_switch(
+        net, bus=net.trafo3w.hv_bus.at[t3idx], element=t3idx, et="t3", closed=False
+    )  # trafo3w switch at hv side
     assert_init_results(net)
     net.switch.at[t3_switch, "bus"] = net.trafo3w.mv_bus.at[t3idx]  # trafo3w switch at mv side
     assert_init_results(net)
@@ -1696,8 +1699,10 @@ def test_q_capability_curve():
 def test_q_capability_curve_for_sgen():
     net = _test_net_for_q_capability_curve()
     drop_elements(net, 'gen', 0)
-    create_sgen(net, 0, p_mw=198, sn_mva=255.0, scaling=1.0, type="Hydro", cos_phi=0.8, pg_percent=0.0, vn_kv=19.0,
-                vm_pu=1.0, min_q_mvar=-255, max_q_mvar=255, controllable=True, min_p_mw=-0.03, max_p_mw=0)
+    create_sgen(
+        net, 0, p_mw=198, sn_mva=255.0, scaling=1.0, type="Hydro", cos_phi=0.8, pg_percent=0.0, vn_kv=19.0,
+        vm_pu=1.0, min_q_mvar=-255, max_q_mvar=255, controllable=True, min_p_mw=-0.03, max_p_mw=0
+    )
     net.ext_grid["controllable"] = True
     create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0.1)
     create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=-0.1)

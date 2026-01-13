@@ -51,7 +51,8 @@ def net():
     return net
 
 
-def check_it(net):
+def check_it(_net):
+    net = _net
     bus_pp = np.abs(net.res_bus_3ph[['vm_a_pu', 'vm_b_pu', 'vm_c_pu']]
                     [~np.isnan(net.res_bus_3ph.vm_a_pu)].values)
     bus_pf = np.abs(np.array([[0.96742893, 1.01302766, 1.019784],
@@ -77,12 +78,12 @@ def check_it(net):
     assert np.max(np.abs(line_pp - line_pf)) < 1.1e-4
 
 
-def test_2bus_network(net):
+def test_2bus_network(_net):
     # -o---o
-    add_zero_impedance_parameters(net)
-    runpp_3ph_with_consistency_checks(net)
-    assert net['converged']
-    check_it(net)
+    add_zero_impedance_parameters(_net)
+    runpp_3ph_with_consistency_checks(_net)
+    assert _net['converged']
+    check_it(_net)
 
 
 def test_2bus_network_single_isolated_busses(net):
@@ -623,23 +624,23 @@ def test_3ph_enforce_q_lims(result_test_network):
     v_tol = 1e-6
     s_tol = 5e-3
 
-    net = result_test_network
-    buses = net.bus[net.bus.zone == "test_enforce_qlims"]
-    gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+    _net = result_test_network
+    buses = _net.bus[_net.bus.zone == "test_enforce_qlims"]
+    gens = [x for x in _net.gen.index if _net.gen.bus[x] in buses.index]
     b2 = buses.index[1]
     b3 = buses.index[2]
     g1 = gens[0]
 
     # enforce reactive power limits
-    runpp_3ph(net, enforce_q_lims=True)
+    runpp_3ph(_net, enforce_q_lims=True)
 
     # powerfactory results
     u2 = 1.00607194
     u3 = 1.00045091
 
-    assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
-    assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
-    assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < s_tol
+    assert abs(_net.res_bus.vm_pu.at[b2] - u2) < v_tol
+    assert abs(_net.res_bus.vm_pu.at[b3] - u3) < v_tol
+    assert abs(_net.res_gen.q_mvar.at[g1] - _net.gen.min_q_mvar.at[g1]) < s_tol
 
 
 @pytest.mark.xfail
@@ -676,32 +677,32 @@ def test_recycle_pq():
 @pytest.mark.xfail
 def test_connectivity_check_island_without_pv_bus():
     # Network with islands without pv bus -> all buses in island should be set out of service
-    net = create_cigre_network_mv(with_der=False)
-    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
+    _net = create_cigre_network_mv(with_der=False)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(_net)
     assert len(iso_buses) == 0
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
 
-    isolated_bus1 = create_bus(net, vn_kv=20.0, name="isolated Bus1")
-    isolated_bus2 = create_bus(net, vn_kv=20.0, name="isolated Bus2")
+    isolated_bus1 = create_bus(_net, vn_kv=20.0, name="isolated Bus1")
+    isolated_bus2 = create_bus(_net, vn_kv=20.0, name="isolated Bus2")
     create_line(
-        net, isolated_bus2, isolated_bus1, length_km=1, std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine"
+        _net, isolated_bus2, isolated_bus1, length_km=1, std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine"
     )
-    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(_net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 0)
     assert np.isclose(iso_q, 0)
 
-    create_load(net, isolated_bus1, p_mw=0.2, q_mvar=0.02)
-    create_sgen(net, isolated_bus2, p_mw=0.15, q_mvar=0.01)
+    create_load(_net, isolated_bus1, p_mw=0.2, q_mvar=0.02)
+    create_sgen(_net, isolated_bus2, p_mw=0.15, q_mvar=0.01)
 
     # with pytest.warns(UserWarning):
-    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(_net)
     assert len(iso_buses) == 2
     assert np.isclose(iso_p, 350)
     assert np.isclose(iso_q, 30)
     # with pytest.warns(UserWarning):
-    runpp_3ph(net, check_connectivity=True)
+    runpp_3ph(_net, check_connectivity=True)
 
 
 @pytest.mark.xfail
