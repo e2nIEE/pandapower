@@ -2800,7 +2800,10 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             else:
                 logger.debug('created discrete tap controller at trafo <%s>' % name)
         else:
-            if item.uset_mode == 0:  # local
+            if item.i_rem == 1:  # remote control
+                vm_lower_pu = item.p_rem.vtarget * (1 + item.p_rem.dvmin / 100)
+                vm_upper_pu = item.p_rem.vtarget * (1 + item.p_rem.dvmax / 100)
+            elif item.uset_mode == 0:  # local
                 vm_lower_pu = item.usp_low
                 vm_upper_pu = item.usp_up
             elif item.uset_mode == 1:  # bus voltage setpoint
