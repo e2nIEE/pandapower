@@ -1565,7 +1565,7 @@ def test_2vsc_2ac_1dc(control_mode_ac, control_mode_dc):
     val_ac = {"vm_pu": 1, "q_mvar": -5}
     val_dc = {"vm_pu": 1, "p_mw": 10}
 
-    net = create_empty_network()
+    net = pandapowerNet(name='test_2vsc_2ac_1dc')
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1600,7 +1600,7 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
     val_ac = {"vm_pu": 1, "q_mvar": -5}
     val_dc = {"vm_pu": 1, "p_mw": 10}
 
-    net = create_empty_network()
+    net = pandapowerNet(name='test_2vsc_1ac_1dc')
     # AC part
     create_buses(net, 2, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1690,7 +1690,7 @@ def test_vsc_slack_minimal_wrong2():
 def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected to ext_grid buses
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name='test_vsc_slack_minimal')
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
     create_load(net, 1, 10, 4)

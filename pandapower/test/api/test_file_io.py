@@ -502,7 +502,7 @@ def test_replace_elements_json_string(net_in):
 
 
 def test_json_generalized():
-    general_net0 = pandapowerNet(name='', custom_data=pandapowerNet.create_dataframes({
+    general_net0 = pandapowerNet(name='test_json_generalized', custom_data=pandapowerNet.create_dataframes({
         # structure data
         "df1": {'col1': np.dtype(object),
                 'col2': 'f8'},

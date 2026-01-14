@@ -47,7 +47,7 @@ def result_test_network_generator(sn_mva=1, skip_test_impedance=False):
         It is structured like this so it can be tested for consistency at
         different stages of adding elements
     """
-    net = pandapowerNet(name='', sn_mva=sn_mva)
+    net = pandapowerNet(name='result_test_network_generator', sn_mva=sn_mva)
     yield add_test_line(net)
     yield add_test_load_sgen(net)
     yield add_test_load_sgen_split(net)
@@ -78,7 +78,7 @@ def result_test_network_generator_dcpp(sn_mva=1):
     """
     # ToDo: Uncommented tests fail in rundcpp -> Check why and correct it
 
-    net = pandapowerNet(name='', sn_mva=sn_mva)
+    net = pandapowerNet(name='result_test_network_generator_dcpp', sn_mva=sn_mva)
     yield add_test_line(net)
     yield add_test_load_sgen(net)
     yield add_test_load_sgen_split(net)

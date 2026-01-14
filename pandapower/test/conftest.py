@@ -16,7 +16,7 @@ from pandapower.test.loadflow.result_test_network_generator import result_test_n
 
 @pytest.fixture(scope="session")
 def simple_network():
-    net = pandapowerNet(name='')
+    net = pandapowerNet(name='simple_network')
     b1 = create_bus(net, name="bus1", vn_kv=10.)
     create_ext_grid(net, b1)
     b2 = create_bus(net, name="bus2", geodata=(1, 2))

@@ -269,7 +269,7 @@ class pandapowerNet(ADict):
             # ---- new code for the remaining version ----
             super().__init__(**kwargs)
             if name == "":
-                logger.warning("name should not be empty.")
+                logger.warning("When calling pandapowerNet() name should not be empty.")
             network_structure_dict = get_structure_dict()
             network_structure_dict["name"] = name
             network_structure_dict["f_hz"] = f_hz
@@ -318,7 +318,7 @@ class pandapowerNet(ADict):
                             "asymmetric_load", "asymmetric_sgen", "source_dc", "switch", "tcsc", "svc", "ssc", "vsc",
                             "b2b_vsc"
                         ]
-                for element in elements: # FIXME: is this related to @heckstrahler removing res_ if empty?
+                for element in elements:  # FIXME: is this related to @heckstrahler removing res_ if empty?
                     res_element = f"res_{element}" if suffix is None else f"res_{element}_{suffix}"
                     res_empty_element = f"_empty_{f'res_{element}' if suffix == 'est' else res_element}"
                     if res_empty_element in self:

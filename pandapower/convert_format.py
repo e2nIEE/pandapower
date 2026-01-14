@@ -204,7 +204,7 @@ def _convert_trafo_controller_parameter_names(net):
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
-        bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & (net.measurement.element_type == "bus")
+        bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & net.measurement.element_type == "bus"
         net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
