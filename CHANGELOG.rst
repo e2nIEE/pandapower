@@ -1,11 +1,19 @@
 Change Log
 =============
 
-[upcoming release] - 2025-..-..
+[upcoming release] - 2026-..-..
 -------------------------------
 - [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
 - [CHANGED] runpp: expanded enforce_q_lims functionality to consider max & min q limits for sgen elements (from either net.sgen.min/max_q_mvar parameters or reactive power capability curves)
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
+
+[3.3.2] - 2026-01-13
+-------------------------------
+- [FIXED] fixing the scipy version to <1.16 since python 3.10 is only compatible with scipy 1.15
+
+[3.3.1] - 2026-01-13
+-------------------------------
+- [FIXED] short circuit calculation failed, bug in scipy did calculate zbus = inv(ybus) incorrectly.
 
 [3.3.0] - 2025-12-15
 -------------------------------
