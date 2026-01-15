@@ -5,6 +5,10 @@ Change Log
 -------------------------------
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
 
+[3.3.2] - 2026-01-13
+-------------------------------
+- [FIXED] fixing the scipy version to <1.16 since python 3.10 is only compatible with scipy 1.15
+
 [3.3.1] - 2026-01-13
 -------------------------------
 - [FIXED] short circuit calculation failed, bug in scipy did calculate zbus = inv(ybus) incorrectly.
