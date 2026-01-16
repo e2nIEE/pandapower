@@ -25,6 +25,7 @@ pytest:
   parallel:
     matrix:
       - PYTHON_VERSION: ["3.11"]
+        PYTEST_GROUP: [1, 2, 3, 4]
   image: python:${PYTHON_VERSION}-slim
   script:
     - uv sync --extra test
@@ -33,7 +34,13 @@ pytest:
       uv pip install pytest-split numba openpyxl pyproj matplotlib
     - uv pip list
     - |
-      uv run pytest pandapower/test/shortcircuit/sce_tests/test_sce.py
-        -n=auto
+      uv run pytest pandapower/test/shortcircuit/sce_tests/test_sce.py --splits 4 --group ${PYTEST_GROUP}
   rules:
+    # Run when a commit is pushed directly to the `sce` branch
     - if: '$CI_COMMIT_BRANCH == "sce"'
+      when: always
+    # Run when a merge request (any source) targets the `sce` branch
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "sce"'
+      when: always
+    # Skip the job for all other cases
+    - when: never
