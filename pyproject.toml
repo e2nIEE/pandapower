@@ -97,6 +97,12 @@ exclude = [
     "*.csv"
 ]
 
+[tool.pytest.ini_options]
+addopts = ["--strict-markers"]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
+]
+
 [tool.coverage.run]
 omit = [
     "pandapower/test/*"

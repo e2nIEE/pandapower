@@ -92,6 +92,7 @@ param_wp21, param_vec_wp21, param_wp22, param_vec_wp22, param_wp23, param_vec_wp
 #     compare_results(*results)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch",
     param_vec_wp21, ids=lambda val: str(val))
@@ -113,6 +114,7 @@ def test_wp21_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_perce
     compare_results(*results)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch,"
                          "gen_loc, active_current, mode",
                          param_wp22, ids=lambda val: str(val))
@@ -143,6 +145,7 @@ def test_wp22_24_four_bus_radial_grid(fault, case, fault_values, lv_tol_percent,
     compare_results(*results)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch,"
     "gen_loc, active_current, mode",
@@ -172,6 +175,7 @@ def test_wp22_24_grids_with_trafo(net_name, fault, case, fault_values, lv_tol_pe
     compare_results(*results)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch, grounding_type",
     param_vec_wp25, ids=lambda val: str(val))
@@ -191,6 +195,7 @@ def test_wp25_trafo_grounding(net_name, fault, case, fault_values, lv_tol_percen
     compare_results(*results)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "net_name, fault, case, fault_values, lv_tol_percent, vector_group, fault_location_bus, is_branch, grounding_type, ward_loc",
     param_vec_wp25_ward, ids=lambda val: str(val))
