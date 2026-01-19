@@ -34,7 +34,7 @@ pytest:
       uv pip install pytest-split numba openpyxl pyproj matplotlib
     - uv pip list
     - |
-      uv run pytest pandapower/test/shortcircuit/sce_tests/test_sce.py --splits 4
+      uv run pytest pandapower/test/shortcircuit/sce_tests/test_sce.py --splits 4 --group 1
   rules:
     # Run when a commit is pushed directly to the `sce` branch
     - if: '$CI_COMMIT_BRANCH == "sce"'
