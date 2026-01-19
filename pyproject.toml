@@ -97,9 +97,6 @@ exclude = [
     "*.csv"
 ]
 
-[tool.pytest.ini_options]
-addopts = ["--strict-markers"]
-
 [tool.coverage.run]
 omit = [
     "pandapower/test/*"
