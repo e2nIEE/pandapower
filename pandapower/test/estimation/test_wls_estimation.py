@@ -472,6 +472,7 @@ def test_cigre_with_bad_data():
 
     # 4. Do chi2-test
     bad_data_detected = chi2_analysis(net, init='slack')
+    assert bad_data_detected
 
     # 5. Perform rn_max_test
     success_rn_max = remove_bad_data(net, init='slack')
