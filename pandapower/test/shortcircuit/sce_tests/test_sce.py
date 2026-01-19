@@ -234,10 +234,16 @@ def test_wp23(net_name, fault, case, fault_values, lv_tol_percent, fault_locatio
         net.trafo.loc[net.trafo.name.str.contains('2ph', na=False), 'lv_bus'].values
     ]))
 
+    # Check if the combination is valid; if not, do not run the test
+    is_valid = True
     if fault_location_bus in buses_1ph and fault in ['LLL', 'LL', 'LLG']:
-        pytest.skip(f"{fault} fault on 1ph bus is not applicable")
+        is_valid = False
     if fault_location_bus in buses_2ph and fault in ['LLL']:
-        pytest.skip(f"{fault} fault on 2ph bus is not applicable")
+        is_valid = False
+
+    if not is_valid:
+        # Do not execute a test case; exit early
+        return
 
     results = run_test_cases(
         net,
