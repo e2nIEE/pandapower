@@ -218,7 +218,6 @@ def test_wp25_grounding_bank(net_name, fault, case, fault_values, lv_tol_percent
     compare_results(*results)
 
 
-@pytest.mark.skip(reason="Currently working on this test")
 @pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch",
                          param_wp23, ids=lambda val: str(val))
 def test_wp23(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
