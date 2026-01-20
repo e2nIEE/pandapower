@@ -390,10 +390,15 @@ class BinarySearchControl(Controller):
                 # adapt output adjustable depending on in_service
                 self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
                                                    in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
-
                 # normalize the values distribution
                 self._normalize_distribution_in_service()
-
+            if -0.012 < self.set_point < 0.012: #clip set_point to handle pf=0
+                min_q = -0.012
+                max_q = -min_q
+                self.set_point = float(np.where((self.set_point >= 0) & (self.set_point <= max_q), max_q, self.set_point))
+                self.set_point = float(np.where((self.set_point >= min_q) & (self.set_point < 0), float(min_q), self.set_point))
+                logger.warning(f"Power factor calculation with set_point 0 not possible with BSC {self.index}.\n"
+                               f"Maximizing Q output by clipping set_point to {self.set_point}\n")
             q_set = self.reactance * sum(p_input_values)/len(p_input_values) * (np.tan(np.arccos(self.set_point)))
             self.diff = q_set - sum(input_values)/len(input_values)
             self.converged = np.all(np.abs(self.diff)<self.tol)
