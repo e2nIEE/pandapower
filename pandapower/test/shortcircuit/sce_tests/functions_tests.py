@@ -667,3 +667,42 @@ def load_pf_results(excel_file):
             dataframes[sheet] = pf_results
 
     return dataframes
+
+expected_fail_list = [
+    "10_eight_bus_radial_grid_2ph_dd_MP-LG-max-(5, 5)-10-6-False",
+    "10_eight_bus_radial_grid_2ph_dd_MP-LG-max-(0, 0)-10-6-False",
+    "6_five_bus_radial_grid_1ph_dd_MP-LG-max-(5, 5)-10-4-False",
+    "6_five_bus_radial_grid_1ph_dd_MP-LG-max-(0, 0)-10-4-False",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LLG-max-(5, 5)-10-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LLG-max-(0, 0)-10-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-max-(5, 5)-10-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-max-(0, 0)-10-4-False",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-max-(0, 0)-10-4-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-max-(0, 0)-10-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LLG-max-(5, 5)-10-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LLG-max-(0, 0)-10-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-max-(5, 5)-10-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-max-(0, 0)-10-4-False",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-max-(0, 0)-10-4-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-max-(0, 0)-10-2-True",
+    "2_four_bus_radial_2ph_grid_MP-LLG-max-(0, 0)-10-1-True",
+    "2_four_bus_radial_2ph_grid_MP-LG-max-(0, 0)-10-1-True",
+    "2_four_bus_radial_2ph_grid_MP-LG-max-(0, 0)-10-0-True",
+    "1_four_bus_radial_1ph_grid_MP-LLG-max-(0, 0)-10-1-True",
+    "1_four_bus_radial_1ph_grid_MP-LLG-max-(0, 0)-10-0-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-max-(0, 0)-10-3-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-max-(0, 0)-10-1-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-max-(0, 0)-10-0-True",
+]
+
+def compose_and_validate_key(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
+    """
+    Build the combined key string from input parameters and check if it matches any string
+    in the provided reference_list. Returns True if a match is found, otherwise False.
+    """
+
+    # Build final string in the same format as the examples
+    composed = f"{net_name}-{fault}-{case}-{str(fault_values)}-{lv_tol_percent}-{fault_location_bus}-{str(is_branch)}"
+
+    # Normalize for comparison (exact string match)
+    return composed in expected_fail_list

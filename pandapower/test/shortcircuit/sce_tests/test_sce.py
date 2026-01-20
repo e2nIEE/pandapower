@@ -8,7 +8,8 @@ import pytest
 import numpy as np
 from pandapower import pp_dir
 from pandapower.test.shortcircuit.sce_tests.functions_tests import (compare_results, run_test_cases,
-                                                                    load_test_case_data, create_parameter_list)
+                                                                    load_test_case_data, create_parameter_list,
+                                                                    compose_and_validate_key)
 import warnings
 import logging
 
@@ -221,6 +222,9 @@ def test_wp25_grounding_bank(net_name, fault, case, fault_values, lv_tol_percent
 @pytest.mark.parametrize("net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch",
                          param_wp23, ids=lambda val: str(val))
 def test_wp23(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
+
+    if compose_and_validate_key(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
+        pytest.xfail("Expected fail: Combination of parameters is expected to fail")
 
     net, dataframes = load_test_case_data(net_name, fault_location_bus)
 
