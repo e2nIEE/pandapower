@@ -34,7 +34,7 @@ faults = [
     ]
 cases = [
     "max", 
-    # "min"
+    "min"
     ]
 values = [
     (0, 0), 
