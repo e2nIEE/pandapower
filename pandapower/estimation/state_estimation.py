@@ -78,6 +78,11 @@ def estimate(net, algorithm='wls',
     OUTPUT:
         **successful** (boolean) - Was the state estimation successful?
     """
+    # numpy 1 is not reliable with estimate. Most likely precision is at fault.
+    if np.__version__.startswith('1.'):
+        raise UserWarning("numpy 1.x should not be used with estimate as it has known Issues")
+    
+    
     if algorithm not in ALGORITHM_MAPPING:
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
