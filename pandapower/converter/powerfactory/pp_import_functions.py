@@ -4252,13 +4252,13 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                                       input_inverted=input_inverted,
                                       input_element_index=res_element_index,
                                       set_point=v_setpoint_pu,
-                                      control_modus='V_ctrl',
+                                      control_modus='V_ctrl_Q_droop',
                                       bus_idx=bus,
                                       tol=1e-6,
                                       machines=[machine_obj.loc_name for machine_obj in item.psym])
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
             DroopControl(net, name=item.loc_name, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                         vm_set_pu_bsc=v_setpoint_pu, controller_idx=bsc.index, voltage_ctrl=True)
+                         vm_set_pu_bsc=v_setpoint_pu, controller_idx=bsc.index, control_modus="V_ctrl_Q_droop")
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
         else:
             BinarySearchControl(net,
@@ -4322,7 +4322,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 input_inverted=input_inverted,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
-                control_modus='Q_ctrl',
+                control_modus='Q_ctrl_V_droop',
                 bus_idx=bus,
                 damping_factor=0.9,
                 tol=1e-6,
@@ -4339,7 +4339,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 vm_set_lb=item.udeadblow,
                 q_set_mvar_bsc=item.qsetp,
                 controller_idx=bsc.index,
-                voltage_ctrl=False, machines=[machine_obj.loc_name for machine_obj in item.psym])
+                control_modus="Q_ctrl_V_droop", machines=[machine_obj.loc_name for machine_obj in item.psym])
         else:
             raise NotImplementedError
     elif control_mode==2:#PF_Control
@@ -4386,8 +4386,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             input_element_index=res_element_index,
             set_point=item.tansetp,
             input_inverted=input_inverted,
-            gen_Q_response=gen_Q_response,
-            control_modus='tan(phi)_ctrl', tol=1e-6
+            control_modus='tan_phi_ctrl', tol=1e-6
         )
     else:
         raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
