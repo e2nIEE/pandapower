@@ -12,9 +12,9 @@ Load
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_load
-
-.. autofunction:: pandapower.create_load_from_cosphi
+.. autofunction:: pandapower.create.create_load
+.. autofunction:: pandapower.create.create_loads
+.. autofunction:: pandapower.create.create_load_from_cosphi
 
 
 Input Parameters
