@@ -585,7 +585,7 @@ class CimParser:
     ) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         if cgmes_version == '2.4.15':
             return self._initialize_cim16_data_structure()
-        if cgmes_version == '3.0':
+        if cgmes_version == '3.0' or cgmes_version.lower() == 'ltds':
             return self._initialize_cim100_data_structure()
         raise NotImplementedError(f"CGMES version {cgmes_version} is not supported.")
 

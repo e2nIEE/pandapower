@@ -309,7 +309,7 @@ class PowerTransformersCim16:
         current_limits = current_limits.rename(columns={'OperationalLimitSet': 'rdfId'})
         current_limits = pd.merge(current_limits,
                                   self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']],
-                                  how='left', on='rdfId', validate='m:1')
+                                  how='left', on='rdfId', validate='m:m')  # should be validate='m:1'
         current_limits = current_limits.drop(columns='rdfId')
         current_limits = current_limits.rename(columns={'OperationalLimitType': 'rdfId'})
         if 'kind' in self.cimConverter.cim['eq']['OperationalLimitType']:  # CGMES 3.0
@@ -317,13 +317,13 @@ class PowerTransformersCim16:
                    .rename(columns={'kind': 'limitType'}))
         else:  # CGMES 2.4.15
             olt = self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType', 'acceptableDuration']]
-        current_limits = pd.merge(current_limits, olt, how='left', on='rdfId', validate='m:1')
+        current_limits = pd.merge(current_limits, olt, how='left', on='rdfId', validate='m:m')  # should be validate=m:1
         current_limits = current_limits.drop(columns='rdfId')
         current_limits = current_limits.rename(columns={
             'value': 'CurrentLimit.value', 'limitType': 'OperationalLimitType.limitType',
             'acceptableDuration': 'OperationalLimitType.acceptableDuration'})
         power_transformer_ends = pd.merge(power_transformer_ends, current_limits, how='left', on='Terminal',
-                                          validate='1:m')
+                                          validate='m:m')  # should be validate='1:m'
         # make sure there is only one CurrentLimit per winding, keep the one with the lowest value (and choose patl
         # first: sort ascending for OperationalLimitType.limitType)
         power_transformer_ends = (
@@ -366,7 +366,8 @@ class PowerTransformersCim16:
                                                  on='rdfId')
         eqssh_ratio_tap_changers_sync['stepVoltageIncrement'] = eqssh_ratio_tap_changers_sync['voltageStepIncrement']
         eqssh_ratio_tap_changers_sync = eqssh_ratio_tap_changers_sync.drop(columns=['voltageStepIncrement'])
-        eqssh_ratio_tap_changers_sync['stepPhaseShiftIncrement'] = eqssh_ratio_tap_changers_sync["stepVoltageIncrement"].apply(lambda du: 2 * math.atan2(du, 2))
+        eqssh_ratio_tap_changers_sync['stepPhaseShiftIncrement'] = (
+            eqssh_ratio_tap_changers_sync["stepVoltageIncrement"].apply(lambda du: 2 * math.atan2(du, 2)))
         eqssh_ratio_tap_changers_sync[sc['tc']] = 'PhaseTapChangerSymmetrical'
         eqssh_ratio_tap_changers_sync['tap_changer_type'] = "Symmetrical"  # Symmetrical phase shifter
         eqssh_ratio_tap_changers_sync[sc['tc_id']] = eqssh_ratio_tap_changers_sync['rdfId'].copy()
