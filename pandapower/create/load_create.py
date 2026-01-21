@@ -409,31 +409,21 @@ def create_load_dc(
 ):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
-    INPUT:
+    
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus_dc: index of the dc bus the dc load is connected to
+        p_dc_mw: The power of the load
+        name: element name
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
+        in_service: True for in service or False for out of service.
+        scaling: An OPTIONAL scaling factor, is multiplied with p_dc_mw.
+        type: A string describing the type.
+        controllable: States, whether a load is controllable or not. Only respected for OPF; defaults to False if
+            "controllable" column exists in DataFrame
 
-        **net** (pandapowerNet) - The pandapower network in which the element is created
-
-        **bus_dc** (int) - index of the dc bus the dc load is connected to
-
-        **p_dc_mw** (float) - The power of the load
-
-    OPTIONAL:
-        **name** (str, None) - element name
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **in_service** (bool, True) - True for in service or False for out of service.
-
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor, is multiplied with p_dc_mw.
-
-        **type** (str) - A string describing the type.
-
-        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
-            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created svc
+    Returns:
+        The ID of the created svc
 
     """
     _check_element(net, bus_dc, element="bus_dc")
