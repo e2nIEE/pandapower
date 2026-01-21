@@ -10,8 +10,9 @@ import numpy as np
 import pytest
 
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, LoadflowNotConverged
-from pandapower.create import create_empty_network, create_bus, create_transformer, create_transformer3w, create_load, \
-    create_xward, create_switch, create_ext_grid
+from pandapower.create import (create_empty_network, create_bus, create_transformer, create_transformer3w, create_load,
+                               create_xward, create_switch, create_ext_grid, create_line_from_parameters, create_bus_dc,
+                               create_vsc, create_line_dc_from_parameters)
 from pandapower.networks.power_system_test_cases import case4gs, case118
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import rundcpp, runpp
@@ -132,6 +133,69 @@ def test_dc_after_ac():
     # I run a second DC powerflow after the AC one, results from AC are kept
     rundcpp(net)
     assert not np.isfinite(net.res_load["q_mvar"]).any()
+
+
+def test_dc_vsc():
+    net = create_empty_network()
+    b1 = create_bus(net, name="B1", vn_kv=380)
+    b2 = create_bus(net, name="B2", vn_kv=380)
+    b3 = create_bus(net, name="B3", vn_kv=380)
+    b4 = create_bus(net, name="B4", vn_kv=380)
+
+    create_ext_grid(net, bus=b1, vm_pu=1, va_degree=0)
+    create_load(net, bus=b4, p_mw=100, q_mvar=0)
+
+    create_line_from_parameters(net, name="L1", from_bus=b1, to_bus=b2, length_km=30, r_ohm_per_km=0.049,
+                                x_ohm_per_km=0.136, g_us_per_km=0, c_nf_per_km=142, max_i_ka=1.5)
+    create_line_from_parameters(net, name="L2", from_bus=b3, to_bus=b4, length_km=30, r_ohm_per_km=0.049,
+                                x_ohm_per_km=0.136, g_us_per_km=0, c_nf_per_km=142, max_i_ka=1.5)
+
+    # DC part
+    dc_b1 = create_bus_dc(net, 380., 'DC_A')
+    dc_b2 = create_bus_dc(net, 380., 'DC_B')
+    create_vsc(net, b2, dc_b1, 0, 15, r_dc_ohm=0.5, control_mode_ac='vm_pu', control_value_ac=1,
+               control_mode_dc="vm_pu", control_value_dc=1.)
+    create_vsc(net, b3, dc_b2, 0, 15, r_dc_ohm=0.5, control_mode_ac='slack', control_value_ac=1,
+               control_mode_dc="vm_pu", control_value_dc=1.)
+    create_line_dc_from_parameters(net, dc_b1, dc_b2, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+
+    rundcpp(net)
+    assert True  # todo
+
+
+def test_dc_vsc_p():
+    net = create_empty_network()
+    b1 = create_bus(net, name="B1", vn_kv=380)
+    b2 = create_bus(net, name="B2", vn_kv=380)
+    b3 = create_bus(net, name="B3", vn_kv=380)
+    b4 = create_bus(net, name="B4", vn_kv=380)
+
+    create_ext_grid(net, bus=b1, vm_pu=1, va_degree=0)
+    create_load(net, bus=b4, p_mw=100, q_mvar=0)
+
+    create_line_from_parameters(net, name="L1", from_bus=b1, to_bus=b2, length_km=30, r_ohm_per_km=0.049,
+                                x_ohm_per_km=0.136, g_us_per_km=0, c_nf_per_km=142, max_i_ka=1.5)
+    create_line_from_parameters(net, name="L2", from_bus=b3, to_bus=b4, length_km=30, r_ohm_per_km=0.049,
+                                x_ohm_per_km=0.136, g_us_per_km=0, c_nf_per_km=142, max_i_ka=1.5)
+
+    # DC part
+    dc_b1 = create_bus_dc(net, 380., 'DC_A')
+    dc_b2 = create_bus_dc(net, 380., 'DC_B')
+    dc_b3 = create_bus_dc(net, 380., 'DC_C')
+    dc_b4 = create_bus_dc(net, 380., 'DC_D')
+    create_vsc(net, b2, dc_b1, 0, 15, r_dc_ohm=0.5, control_mode_ac='vm_pu', control_value_ac=1,
+               control_mode_dc="vm_pu", control_value_dc=1.)
+    create_vsc(net, b2, dc_b3, 0, 15, r_dc_ohm=0.5, control_mode_ac='vm_pu', control_value_ac=1,
+               control_mode_dc="p_mw", control_value_dc=50)
+    create_vsc(net, b3, dc_b2, 0, 15, r_dc_ohm=0.5, control_mode_ac='slack', control_value_ac=1,
+               control_mode_dc="vm_pu", control_value_dc=1.)
+    create_vsc(net, b3, dc_b4, 0, 15, r_dc_ohm=0.5, control_mode_ac='slack', control_value_ac=1,
+               control_mode_dc="vm_pu", control_value_dc=1.)
+    create_line_dc_from_parameters(net, dc_b1, dc_b2, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+    create_line_dc_from_parameters(net, dc_b3, dc_b4, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
+
+    rundcpp(net)
+    assert True  # todo
 
 
 if __name__ == "__main__":

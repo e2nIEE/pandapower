@@ -573,7 +573,7 @@ def create_vsc(
     x_ohm: float,
     r_dc_ohm: float,
     pl_dc_mw: float = 0.0,
-    control_mode_ac: Literal["vm_pu", "q_mvar"] = "vm_pu",
+    control_mode_ac: Literal["vm_pu", "q_mvar", "slack"] = "vm_pu",
     control_value_ac: float = 1.0,
     control_mode_dc: Literal["vm_pu", "p_mw"] = "p_mw",
     control_value_dc: float = 0.0,
