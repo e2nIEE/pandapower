@@ -998,12 +998,12 @@ def create_transformer3w_from_parameters(
         shift_lv_degree: angle shift to low voltage side*
         tap_step_percent: tap step in percent
         tap_step_degree: tap phase shift angle in degrees
-        ̀tap_side: "hv", "mv", "lv"
-        ̀tap_neutral: default tap position
-        ̀tap_min: Minimum tap position
-        ̀tap_max: Maximum tap position
-        ̀tap_pos: current tap position of the transformer. Defaults to the medium position (tap_neutral)
-        ̀tap_changer_type: specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
+        tap_side: "hv", "mv", "lv"
+        tap_neutral: default tap position
+        tap_min: Minimum tap position
+        tap_max: Maximum tap position
+        tap_pos: current tap position of the transformer. Defaults to the medium position (tap_neutral)
+        tap_changer_type: specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
             changer)
         tap_at_star_point: Whether tap changer is located at the star point of the 3w-transformer or at the bus
         name: name of the 3-winding transformer
