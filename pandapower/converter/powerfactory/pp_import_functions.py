@@ -2975,7 +2975,7 @@ def get_pf_trafo_results(net, item, tid, is_unbalanced):
         net[trafo_type].at[tid, res_var_pp] = res
 
 
-def create_trafo3w(net, item, tap_opt='nntap'):
+def create_trafo3w(net, item, tap_opt='nntap', export_controller=True, hunting_limit=None):
     # not tested properly yet...
     logger.debug('importing 3W-trafo <%s>' % item.loc_name)
     pf_type = item.typ_id
@@ -3230,6 +3230,52 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         net.res_trafo3w.at[tid, "pf_loading"] = np.nan
 
     # TODO Implement the tap changer controller for 3-winding transformer
+    # adding tap changer
+    name = item.loc_name
+    if (export_controller and item.HasAttribute('ntrcn') and item.HasAttribute('i_cont') and item.ntrcn == 1):
+        if item.t3ldc == 0:
+            logger.debug('tap controller of trafo3w <%s> at hv' % name)
+            side = 'hv'
+        elif item.t3ldc == 1:
+            logger.debug('tap controller of trafo3w <%s> at mv' % name)
+            side = 'mv'
+        else:
+            logger.debug('tap controller of trafo3w <%s> at lv' % name)
+            side = 'lv'
+        if item.i_cont == 1:
+            vm_set_pu = item.usetp
+            logger.debug('trafo3w <%s> has continuous tap controller with vm_set_pu = %.3f, side = %s' %
+                         (name, vm_set_pu, side))
+            try:
+                ContinuousTapControl(net, tid, side=side, vm_set_pu=vm_set_pu)
+            except BaseException as err:
+                logger.error('error while creating continuous tap controller at trafo3w <%s>' % name)
+                logger.error('Error: %s' % err)
+            else:
+                logger.debug('created continuous tap controller at trafo3w <%s>' % name)
+        else:
+            if item.i_rem == 1:  # remote control
+                vm_lower_pu = item.p_rem.vtarget * (1 + item.p_rem.dvmin / 100)
+                vm_upper_pu = item.p_rem.vtarget * (1 + item.p_rem.dvmax / 100)
+            elif item.uset_mode == 0:  # local
+                vm_lower_pu = item.usp_low
+                vm_upper_pu = item.usp_up
+            elif item.uset_mode == 1:  # bus voltage setpoint
+                vm_lower_pu = item.cpCtrlNode.vtarget * (1 + item.cpCtrlNode.dvmin / 100)
+                vm_upper_pu = item.cpCtrlNode.vtarget * (1 + item.cpCtrlNode.dvmax / 100)
+            logger.debug('trafo3w <%s> has discrete tap controller with '
+                         'u_low = %.3f, u_up = %.3f, side = %s' % (name, vm_lower_pu, vm_upper_pu, side))
+            try:
+                DiscreteTapControl(net, tid, side=side, element="trafo3w", vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu,
+                                   hunting_limit=hunting_limit)
+            except BaseException as err:
+                logger.error('error while creating discrete tap controller at trafo3w <%s>' % name)
+                logger.error('Error: %s' % err)
+            else:
+                logger.debug('created discrete tap controller at trafo3w <%s>' % name)
+    else:
+        logger.debug('trafo3w <%s> has no tap controller' % name)
+
     if pf_type.itapzdep and not use_tap_table:
         add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid)
 
