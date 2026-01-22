@@ -3229,7 +3229,6 @@ def create_trafo3w(net, item, tap_opt='nntap', export_controller=True, hunting_l
     else:
         net.res_trafo3w.at[tid, "pf_loading"] = np.nan
 
-    # TODO Implement the tap changer controller for 3-winding transformer
     # adding tap changer
     name = item.loc_name
     if (export_controller and item.HasAttribute('ntrcn') and item.HasAttribute('i_cont') and item.ntrcn == 1):
