@@ -459,30 +459,18 @@ class DroopControl(Controller):
     behaves in a similar way to the station controllers presented in the Power Factory Tech Ref, although not
     all possible settings from Power Factory are yet available.
 
-    INPUT:
-        **self**
-
-        **net** - A pandapower grid.
-
-        **q_droop_var** - Droop Value in Mvar/p.u.
-
-        **bus_idx** - Bus index in case of voltage control.
-
-        **vm_set_pu_bsc** - Inital voltage set point in case of voltage control.
-
-        **controller_idx** - Index of linked Binary< search control (if present).
-
-        **voltage_ctrl** - Whether the controller is used for voltage control or not.
-
-        **bus_idx=None** - Bus index which is used for voltage control.
-
-        **q_set_mvar_bsc** - Inital voltage set point in case of no voltage control.
-
-        **tol=1e-6** - Tolerance criteria of controller convergence.
-
-        **vm_set_lb=None** - Lower band border of dead band
-
-        **vm_set_ub=None** - Upper band border of dead band
+    Parameters:
+        net: A pandapower grid.
+        q_droop_var: Droop Value in Mvar/p.u.
+        bus_idx: Bus index in case of voltage control.
+        vm_set_pu_bsc: Initial voltage set point in case of voltage control.
+        controller_idx: Index of linked Binary< search control (if present).
+        voltage_ctrl: Whether the controller is used for voltage control or not.
+        bus_idx: Bus index which is used for voltage control.
+        q_set_mvar_bsc: Initial voltage set point in case of no voltage control.
+        tol: Tolerance criteria of controller convergence.
+        vm_set_lb: Lower band border of dead band
+        vm_set_ub: Upper band border of dead band
        """
 
     def __init__(self, net, q_droop_mvar, bus_idx, controller_idx, voltage_ctrl, tol=1e-6,
@@ -595,23 +583,15 @@ class VDroopControl_local(Controller):
     a binary search controller (bsc). The linked binary search controller is specified using the controller index,
     which refers to the linked bsc.
 
-    INPUT:
-        **self**
-
-        **net** - A pandapower grid.
-
-        **q_droop_var** - Droop Value in Mvar/p.u.
-
-        **vm_set_pu_bsc** - Inital voltage set point.
-
-        **controller_idx** - Index of linked Binary< search control (if present).
-
-        **tol=1e-6** - Tolerance criteria of controller convergence.
-
-        **vm_set_lb=None** - Lower band border of dead band
-
-        **vm_set_ub=None** - Upper band border of dead band
-       """
+    Parameters:
+        net: A pandapower grid.
+        q_droop_var: Droop Value in Mvar/p.u.
+        vm_set_pu_bsc: Initial voltage set point.
+        controller_idx: Index of linked Binary< search control (if present).
+        tol: Tolerance criteria of controller convergence.
+        vm_set_lb: Lower band border of dead band
+        vm_set_ub: Upper band border of dead band
+    """
 
     def __init__(self, net, q_droop_mvar, controller_idx, bus_idx, tol=1e-6, in_service=True, order=-1, level=0,
                  name="", drop_same_existing_ctrl=False, matching_params=None, q_set_mvar=None, vm_set_pu_bsc=None,
