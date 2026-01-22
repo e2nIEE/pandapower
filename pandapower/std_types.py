@@ -4,15 +4,18 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import pandas as pd
 import warnings
-
 import logging
+from typing import Literal
+
+import pandas as pd
+
+from pandapower.auxiliary import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
 
-def required_std_type_parameters(element="line"):
+def required_std_type_parameters(element: Literal["line", "line_dc", "trafo", "trafo3w", "fuse"] = "line"):
     if element == "line":
         required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
     elif element == "line_dc":
@@ -28,11 +31,17 @@ def required_std_type_parameters(element="line"):
     elif element == "fuse":
         required = ["fuse_type", "i_rated_a"]
     else:
-        raise ValueError("Unknown element type %s" % element)
+        raise ValueError(f"Unknown element type {element}")
     return required
 
 
-def create_std_type(net, data, name, element="line", overwrite=True, check_required=True):
+def create_std_type(
+        net: pandapowerNet,
+        data: dict,
+        name: str,
+        element: str = "line",
+        overwrite=True,
+        check_required=True):
     """
     Creates type data in the type database. The parameters that are used for
     the loadflow have to be at least contained in data. These parameters are:
@@ -49,56 +58,47 @@ def create_std_type(net, data, name, element="line", overwrite=True, check_requi
 
     The standard type is saved into the pandapower library of the given network by default.
 
-    INPUT:
-        **net** - The pandapower network
+    Parameters:
+        net: The pandapower network
+        data: dictionary of standard type parameters
+        name: name of the standard type as string
+        element:
+         
+            - "line"
+            - "trafo"
+            - "trafo3w"
+        
+        overwrite: whether overwrite existing standard type is allowed
+        check_required: check if required standard type parameters are present
 
-        **data** - dictionary of standard type parameters
-
-        **name** - name of the standard type as string
-
-        **element** - "line", "trafo" or "trafo3w"
-
-    EXAMPLE:
-
-    >>> line_data = {"c_nf_per_km": 0, "r_ohm_per_km": 0.642, "x_ohm_per_km": 0.083, "max_i_ka": 0.142, "type": "cs", "q_mm2": 50, "alpha": 4.03e-3}
-    >>> pandapower.create_std_type(net, line_data, "NAYY 4×50 SE", element='line')
-    >>> # Three phase line creation:
-    >>> pandapower.create_std_type(net, {"r_ohm_per_km": 0.1941, "x_ohm_per_km": 0.07476991,
-                    "c_nf_per_km": 1160., "max_i_ka": 0.421,
-                    "endtemp_degree": 70.0, "r0_ohm_per_km": 0.7766,
-                    "x0_ohm_per_km": 0.2990796,
-                    "c0_nf_per_km":  496.2}, name="unsymmetric_line_type",element = "line")
-    >>> # Three phase transformer creation
-    >>> pp.create_std_type(net, {"sn_mva": 1.6,
-            "vn_hv_kv": 10,
-            "vn_lv_kv": 0.4,
-            "vk_percent": 6,
-            "vkr_percent": 0.78125,
-            "pfe_kw": 2.7,
-            "i0_percent": 0.16875,
-            "shift_degree": 0,
-            "vector_group": vector_group,
-            "tap_side": "lv",
-            "tap_neutral": 0,
-            "tap_min": -2,
-            "tap_max": 2,
-            "tap_step_degree": 0,
-            "tap_step_percent": 2.5,
-            "tap_changer_type": "Ratio",
-            "vk0_percent": 6,
-            "vkr0_percent": 0.78125,
-            "mag0_percent": 100,
-            "mag0_rx": 0.,
-            "si0_hv_partial": 0.9,}, name='Unsymmetric_trafo_type', element="trafo")
+    Example:
+        >>> line_data = {"c_nf_per_km": 0, "r_ohm_per_km": 0.642, "x_ohm_per_km": 0.083, "max_i_ka": 0.142, "type": "cs", "q_mm2": 50, "alpha": 4.03e-3}
+        >>> create_std_type(net, line_data, "NAYY 4×50 SE", element='line')
+        >>> # Three phase line creation:
+        >>> create_std_type(
+        >>>     net, {"r_ohm_per_km": 0.1941, "x_ohm_per_km": 0.07476991, "c_nf_per_km": 1160., "max_i_ka": 0.421,
+        >>>     "endtemp_degree": 70.0, "r0_ohm_per_km": 0.7766, "x0_ohm_per_km": 0.2990796, "c0_nf_per_km":  496.2},
+        >>>     name="unsymmetric_line_type",element = "line"
+        >>> )
+        >>> # Three phase transformer creation
+        >>> create_std_type(
+        >>>     net, {"sn_mva": 1.6, "vn_hv_kv": 10, "vn_lv_kv": 0.4, "vk_percent": 6, "vkr_percent": 0.78125,
+        >>>     "pfe_kw": 2.7, "i0_percent": 0.16875, "shift_degree": 0, "vector_group": vector_group, "tap_side": "lv",
+        >>>     "tap_neutral": 0, "tap_min": -2, "tap_max": 2, "tap_step_degree": 0, "tap_step_percent": 2.5,
+        >>>     "tap_changer_type": "Ratio", "vk0_percent": 6, "vkr0_percent": 0.78125, "mag0_percent": 100, "mag0_rx": 0.,
+        >>>     "si0_hv_partial": 0.9,}, name='Unsymmetric_trafo_type', element="trafo"
+        >>> )
     """
 
     if not isinstance(data, dict):
         raise UserWarning("type data has to be given as a dictionary of parameters")
 
     if check_required:
+        if element not in ["line", "line_dc", "trafo", "trafo3w", "fuse"]:
+            raise UserWarning(f"Checking required std type elements is not supported for {element}")
         missing = [par for par in required_std_type_parameters(element) if par not in data]
         if len(missing):
-            raise UserWarning("%s are required as %s type parameters." % (missing, element))
+            raise UserWarning(f"{missing} are required as {element} type parameters.")
     library = net.std_types[element]
     if overwrite or name not in library:
         library.update({name: data})
@@ -108,17 +108,23 @@ def create_std_types(net, data, element="line", overwrite=True, check_required=T
     """
     Creates multiple standard types in the type database.
 
-    INPUT:
-        **net** - The pandapower network
-        **data** - dictionary of standard type parameter sets
+    Parameters:
+        net: The pandapower network
+        data: dictionary of standard type parameter sets
+        element:
+            
+            - "line"
+            - "line_dc"
+            - "trafo"
+            - "trafo3w"
+            
+        overwrite: whether overwriteing existing standard type is allowed
+        check_required: check if required standard type parameters are present
 
-        **element** - "line", "line_dc", "trafo" or "trafo3w"
-
-    EXAMPLE:
-
-    >>> linetypes = {"typ1": {"r_ohm_per_km": 0.01, "x_ohm_per_km": 0.02, "c_nf_per_km": 10, "max_i_ka": 0.4, "type": "cs"},
-    >>>              "typ2": {"r_ohm_per_km": 0.015, "x_ohm_per_km": 0.01, "c_nf_per_km": 30, "max_i_ka": 0.3, "type": "cs"}}
-    >>> pp.create_std_types(net, data=linetypes, element="line")
+    Example:
+        >>> linetypes = {"typ1": {"r_ohm_per_km": 0.01, "x_ohm_per_km": 0.02, "c_nf_per_km": 10, "max_i_ka": 0.4, "type": "cs"},
+        >>>              "typ2": {"r_ohm_per_km": 0.015, "x_ohm_per_km": 0.01, "c_nf_per_km": 30, "max_i_ka": 0.3, "type": "cs"}}
+        >>> create_std_types(net, data=linetypes, element="line")
 
     """
     for name, typdata in data.items():
@@ -130,15 +136,11 @@ def copy_std_types(to_net, from_net, element="line", overwrite=True):
     """
     Transfers all standard types of one network to another.
 
-    INPUT:
-
-        **to_net** - The pandapower network to which the standard types are copied
-
-        **from_net** - The pandapower network from which the standard types are taken
-
-        **element** - "line" or "trafo"
-
-        **overwrite** - if True, overwrites standard types which already exist in to_net
+    Parameters:
+        to_net: The pandapower network to which the standard types are copied
+        from_net: The pandapower network from which the standard types are taken
+        element: "line" or "trafo"
+        overwrite: if True, overwrites standard types which already exist in to_net
 
     """
     for name, typdata in from_net.std_types[element].items():
@@ -150,15 +152,13 @@ def load_std_type(net, name, element="line"):
     Loads standard type data from the linetypes database. Issues a warning if
     linetype is unknown.
 
-    INPUT:
-        **net** - The pandapower network
+    Parameters:
+        net: The pandapower network
+        name: name of the standard type as string
+        element: "line", "line_dc", "trafo" or "trafo3w"
 
-        **name** - name of the standard type as string
-
-        **element** -  "line", "line_dc", "trafo" or "trafo3w"
-
-    OUTPUT:
-        **typedata** - dictionary containing type data
+    Returns:
+        dictionary containing type data
     """
     library = net.std_types[element]
     if name in library:
@@ -171,15 +171,13 @@ def std_type_exists(net, name, element="line"):
     """
     Checks if a standard type exists.
 
-    INPUT:
-        **net** - pandapower Network
+    Parameters:
+        net: pandapower Network
+        name: name of the standard type as string
+        element: type of element ("line" or "trafo")
 
-        **name** - name of the standard type as string
-
-        **element** - type of element ("line" or "trafo")
-
-    OUTPUT:
-        **exists** - True if standard type exists, False otherwise
+    Returns:
+        True if standard type exists, False otherwise
     """
     library = net.std_types[element]
     return name in library
@@ -189,13 +187,10 @@ def delete_std_type(net, name, element="line"):
     """
     Deletes standard type parameters from database.
 
-    INPUT:
-        **net** - pandapower Network
-
-        **name** - name of the standard type as string
-
-        **element** - type of element ("line" or "trafo")
-
+    Parameters:
+        net: pandapower Network
+        name: name of the standard type as string
+        element: type of element ("line" or "trafo")
     """
     library = net.std_types[element]
     if name in library:
@@ -207,16 +202,11 @@ def delete_std_type(net, name, element="line"):
 def rename_std_type(net, old_name, new_name, element="line"):
     """Renames an existing standard type in the standard type library and the element table.
 
-    Parameters
-    ----------
-    net : pp.pandapowerNet
-        pandapower net
-    old_name : str
-        old name to be replaced
-    new_name : str
-        new name of the standard type
-    element : str, optional
-        type of element, by default "line"
+    Parameters:
+        net: pandapower net
+        old_name: old name to be replaced
+        new_name: new name of the standard type
+        element: type of element, by default "line"
     """
     library = net.std_types[element]
     if old_name not in library:
@@ -231,13 +221,12 @@ def available_std_types(net, element="line"):
     """
     Returns all standard types available for this network as a table.
 
-    INPUT:
-        **net** - pandapower Network
+    Parameters:
+        net: pandapower net
+        element: type of element ("line" or "trafo")
 
-        **element** - type of element ("line" or "trafo")
-
-    OUTPUT:
-        **typedata** - table of standard type parameters
+    Returns:
+        table of standard type parameters
 
     """
     std_types = pd.DataFrame(net.std_types[element]).T
@@ -255,19 +244,14 @@ def parameter_from_std_type(net, parameter, element="line", fill=None):
     that is not included in the original pandapower datastructure but is available in the standard
     type database.
 
-    INPUT:
-        **net** - pandapower network
+    Parameters:
+        net: pandapower network
+        parameter: name of parameter as string
+        element: type of element ("line" or "trafo")
+        fill: fill-value that is assigned to all lines/trafos without a value for the parameter, either because the
+            line/trafo has no type or because the type does not have a value for the parameter
 
-        **parameter** - name of parameter as string
-
-        **element** - type of element ("line" or "trafo")
-
-        **fill** - fill-value that is assigned to all lines/trafos without
-            a value for the parameter, either because the line/trafo has no type or because the
-            type does not have a value for the parameter
-
-    EXAMPLE:
-
+    Example:
         >>> from pandapower import parameter_from_std_type
         >>> from pandapower.networks import simple_mv_open_ring_net
         >>>
@@ -292,15 +276,11 @@ def change_std_type(net, eid, name, element="line"):
     Changes the type of a given element in pandapower. Changes only parameter that are given
     for the type.
 
-    INPUT:
-        **net** - pandapower network
-
-        **eid** - element index (either line or transformer index)
-
-        **element** - type of element ("line" or "trafo")
-
-        **name** - name of the new standard type
-
+    Parameters:
+        net: pandapower network
+        eid: element index (either line or transformer index)
+        element: type of element ("line" or "trafo")
+        name: name of the new standard type
     """
     type_param = load_std_type(net, name, element)
     table = net[element]
@@ -315,17 +295,11 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
     Searches for a std_type that fits all values given in the data dictionary with the margin of
     epsilon.
 
-    INPUT:
-        **net** - pandapower network
-
-        **data** - dictionary of standard type parameters
-
-        **element** - type of element ("line" or "trafo")
-
-        **epsilon** - tolerance margin for parameter comparison
-
-    OUTPUT:
-        **fitting_types** - list of fitting types or empty list
+    Parameters:
+        net: pandapower network
+        data: dictionary of standard type parameters
+        element: type of element ("line" or "trafo")
+        epsilon: tolerance margin for parameter comparison
     """
     fitting_types = []
     assert epsilon >= 0
@@ -341,25 +315,16 @@ def find_std_type_by_parameter(net, data, element="line", epsilon=0.):
     return fitting_types
 
 
-def find_std_type_alternative(data, voltage_rating = "", epsilon = 0.):
+def find_std_type_alternative(data, voltage_rating="", epsilon=0.):
     """
-        Searches for a std_type that fits all values given in the standard types library with the margin of
-        epsilon.
+    Searches for a std_type that fits all values given in the standard types library with the margin of
+    epsilon.
 
-        INPUT:
-            **net** - pandapower network
-
-            **data** - dictionary of standard type parameters
-
-            **element** - type of element ("line" or "trafo")
-
-            **voltage_rating** - voltage rating of the cable ("HV" or "MV" or "LV")
-
-            **epsilon** - tolerance margin for parameter comparison
-
-        OUTPUT:
-            **fitting_types** - list of fitting types or empty list
-        """
+    Parameters:
+        data: dictionary of standard type parameters
+        voltage_rating: voltage rating of the cable ("HV" or "MV" or "LV")
+        epsilon: tolerance margin for parameter comparison
+    """
 
     assert epsilon >= 0
     linetypes = basic_line_std_types()
@@ -384,17 +349,16 @@ def add_zero_impedance_parameters(net):
     """
     Adds all parameters required for zero sequence impedance calculations.
 
-    INPUT:
-        **net** - pandapower network
+    Parameters:
+        net: pandapower network
 
-        zero sequence parameters of lines and transformers in pandapower networks
-        are entered using std_type.
+    Returns:
+        Now, net has all the zero sequence parameters.
 
-        This function adds them to the pandas dataframe
+    zero sequence parameters of lines and transformers in pandapower networks
+    are entered using std_type.
 
-
-    OUTPUT:
-        Now, net has all the zero sequence  parameters
+    This function adds them to the pandas dataframe
     """
     parameter_from_std_type(net, "vector_group", element="trafo")
     parameter_from_std_type(net, "vk0_percent", element="trafo")
@@ -422,10 +386,10 @@ def add_zero_impedance_parameters(net):
 def add_temperature_coefficient(net, fill=None):
     """
     Adds alpha parameter for calculations of line temperature
-    Args:
-        fill: fill value for when the parameter in std_type is missing, e.g. 4.03e-3 for aluminum
-                or  3.93e-3 for copper
-
+    
+    Parameters:
+        net: pandapower network
+        fill: fill value for when the parameter in std_type is missing, e.g. 4.03e-3 for aluminum or 3.93e-3 for copper
     """
     parameter_from_std_type(net, "alpha", fill=fill)
     parameter_from_std_type(net, "alpha", fill=fill,element="line_dc")
@@ -1318,254 +1282,285 @@ def basic_trafo3w_std_types():
 
 def basic_fuse_std_types():
     fusetypes = {
-        'HV 100A': {'fuse_type': 'HV 100A',
-                'i_rated_a': 100.0,
-                't_avg': 0,
-                't_min': [10.0, 3.64, 0.854, 0.281, 0.1, 0.0531, 0.022, 0.01],
-                't_total': [10.0, 4.267, 1.21, 0.403, 0.1, 0.058, 0.022, 0.01],
-                'x_avg': 0,
-                'x_min': [300.0, 350.0, 450.0, 550.0, 700.0, 850.0, 1200.0, 1752.0],
-                'x_total': [600.0, 700.0, 900.0, 1150.0, 1665.0, 2000.0, 3000.0, 4313.0]},
-        'HV 10A': {'fuse_type': 'HV 10A',
-                'i_rated_a': 10.0,
-                't_avg': 0,
-                't_min': [10.0, 1675.0, 0.344, 0.156, 0.1, 0.0417, 0.0171, 0.01],
-                't_total': [10.0, 1.3, 0.3, 0.155, 0.1, 0.0555, 0.023, 0.01],
-                'x_avg': 0,
-                'x_min': [30.0, 32.0, 35.0, 37.0, 39.0, 50.0, 70.0, 88.0],
-                'x_total': [60.0, 70.0, 80.0, 87.0, 94.0, 110.0, 150.0, 216.0]},
-        'HV 125A': {'fuse_type': 'HV 125A',
-                 'i_rated_a': 125.0,
-                 't_avg': 0,
-                 't_min': [10.0, 1.82, 0.344, 0.1, 0.0467, 0.0269, 0.01],
-                 't_total': [10.0, 2.478, 0.426, 0.1, 0.0427, 0.0211, 0.01],
-                 'x_avg': 0,
-                 'x_min': [375.0, 500.0, 700.0, 925.0, 1200.0, 1500.0, 2341.0],
-                 'x_total': [750.0, 1000.0, 1500.0, 2200.0, 3000.0, 4000.0, 5765.0]},
-        'HV 160A': {'fuse_type': 'HV 160A',
-                 'i_rated_a': 160.0,
-                 't_avg': 0,
-                 't_min': [10.0, 4.15, 1.03, 0.198, 0.1, 0.051, 0.0172, 0.01],
-                 't_total': [10.0, 2.3, 0.734, 0.274, 0.1, 0.046, 0.0177, 0.01],
-                 'x_avg': 0,
-                 'x_min': [480.0, 550.0, 700.0, 1000.0, 1260.0, 1600.0, 2500.0, 3227.0],
-                 'x_total': [960.0, 1300.0, 1700.0, 2200.0, 2996.0, 4000.0, 6000.0, 7946.0]},
-        'HV 16A': {'fuse_type': 'HV 16A',
-                'i_rated_a': 16.0,
-                't_avg': 0,
-                't_min': [10.0, 0.352, 0.164, 0.1, 0.0649, 0.0342, 0.01],
-                't_total': [10.0, 2.34, 0.722, 0.181, 0.1, 0.055, 0.0296, 0.01],
-                'x_avg': 0,
-                'x_min': [48.0, 60.0, 65.0, 71.0, 80.0, 100.0, 162.0],
-                'x_total': [96.0, 110.0, 125.0, 150.0, 168.0, 200.0, 250.0, 398.0]},
-        'HV 200A': {'fuse_type': 'HV 200A',
-                 'i_rated_a': 200.0,
-                 't_avg': 0,
-                 't_min': [10.0, 4.267, 1.21, 0.403, 0.1, 0.058, 0.022, 0.01],
-                 't_total': [10.0, 3.73, 1.654, 0.328, 0.1, 0.0531, 0.019, 0.01],
-                 'x_avg': 0,
-                 'x_min': [600.0, 700.0, 900.0, 1150.0, 1665.0, 2000.0, 3000.0, 4313.0],
-                 'x_total': [1200.0, 1500.0, 1800.0, 2700.0, 3960.0, 5000.0, 7500.0, 10620.0]},
-        'HV 20A': {'fuse_type': 'HV 20A',
-                'i_rated_a': 20.0,
-                't_avg': 0,
-                't_min': [10.0, 1.3, 0.3, 0.155, 0.1, 0.0555, 0.023, 0.01],
-                't_total': [10.0, 1.3, 0.161, 0.1, 0.0611, 0.0399, 0.0141, 0.01],
-                'x_avg': 0,
-                'x_min': [60.0, 70.0, 80.0, 87.0, 94.0, 110.0, 150.0, 216.0],
-                'x_total': [120.0, 150.0, 200.0, 223.0, 260.0, 300.0, 450.0, 532.0]},
-        'HV 25A': {'fuse_type': 'HV 25A',
-                'i_rated_a': 25.0,
-                't_avg': 0,
-                't_min': [10.0, 2.512, 0.833, 0.299, 0.1, 0.0372, 0.0223, 0.01],
-                't_total': [10.0, 3.125, 0.597, 0.198, 0.1, 0.0378, 0.022, 0.01],
-                'x_avg': 0,
-                'x_min': [75.0, 82.0, 90.0, 100.0, 124.0, 170.0, 200.0, 289.0],
-                'x_total': [150.0, 170.0, 210.0, 250.0, 294.0, 400.0, 500.0, 711.0]},
-        'HV 31.5A': {'fuse_type': 'HV 31.5A',
-                  'i_rated_a': 31.5,
-                  't_avg': 0,
-                  't_min': [10.0, 2.34, 0.722, 0.181, 0.1, 0.055, 0.0296, 0.01],
-                  't_total': [10.0, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01],
-                  'x_avg': 0,
-                  'x_min': [95.0, 110.0, 125.0, 150.0, 165.0, 200.0, 250.0, 390.0],
-                  'x_total': [189.0, 220.0, 300.0, 350.0, 393.0, 450.0, 530.0, 700.0, 960.0]},
-        'HV 40A': {'fuse_type': 'HV 40A',
-                'i_rated_a': 40.0,
-                't_avg': 0,
-                't_min': [10.0, 1.3, 0.161, 0.1, 0.0611, 0.0399, 0.0141, 0.01],
-                't_total': [10.0, 2.05, 0.369, 0.198, 0.1, 0.051, 0.0298, 0.01],
-                'x_avg': 0,
-                'x_min': [120.0, 150.0, 200.0, 223.0, 260.0, 300.0, 450.0, 532.0],
-                'x_total': [240.0, 300.0, 400.0, 450.0, 530.0, 650.0, 800.0, 1311.0]},
-        'HV 50A': {'fuse_type': 'HV 50A',
-                'i_rated_a': 50.0,
-                't_avg': 0,
-                't_min': [10.0, 3.215, 0.597, 0.198, 0.1, 0.0378, 0.022, 0.01],
-                't_total': [10.0, 3.64, 0.854, 0.281, 0.1, 0.0531, 0.022, 0.01],
-                'x_avg': 0,
-                'x_min': [150.0, 170.0, 210.0, 250.0, 294.0, 400.0, 500.0, 711.0],
-                'x_total': [300.0, 350.0, 450.0, 550.0, 700.0, 850.0, 1200.0, 1752.0]},
-        'HV 6.3A': {'fuse_type': 'HV 6.3A',
-                 'i_rated_a': 6.3,
-                 't_avg': 0,
-                 't_min': [10.0, 1.39, 0.344, 0.168, 0.1, 0.056, 0.0263, 0.01],
-                 't_total': [10.0, 1.711, 0.516, 0.198, 0.1, 0.0634, 0.0303, 0.01],
-                 'x_avg': 0,
-                 'x_min': [19.0, 19.5, 20.4, 20.8, 22.0, 25.0, 32.0, 48.0],
-                 'x_total': [38.0, 40.0, 43.0, 48.0, 53.0, 60.0, 75.0, 118.0]},
-        'HV 63A': {'fuse_type': 'HV 63A',
-                'i_rated_a': 63.0,
-                't_avg': 0,
-                't_min': [10.0, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01],
-                't_total': [10.0, 1.82, 0.344, 0.1, 0.0467, 0.0269, 0.01],
-                'x_avg': 0,
-                'x_min': [189.0, 220.0, 300.0, 350.0, 393.0, 450.0, 530.0, 700.0, 961.0],
-                'x_total': [378.0, 500.0, 700.0, 934.0, 1200.0, 1500.0, 2366.0]},
-        'HV 80A': {'fuse_type': 'HV 80A',
-                'i_rated_a': 80.0,
-                't_avg': 0,
-                't_min': [10.0, 2.05, 0.369, 0.198, 0.1, 0.051, 0.0298, 0.01],
-                't_total': [10.0, 4.15, 1.03, 0.198, 0.1, 0.051, 0.0172, 0.01],
-                'x_avg': 0,
-                'x_min': [240.0, 300.0, 400.0, 450.0, 530.0, 650.0, 800.0, 1311.0],
-                'x_total': [480.0, 550.0, 700.0, 1000.0, 1260.0, 1600.0, 2500.0, 3227.0]},
-        'Siemens NH-1-100': {'fuse_type': 'Siemens NH-1-100',
-                'i_rated_a': 100.0,
-                't_avg': [5400.0, 2000.0, 400.0, 20.0, 1.0, 0.2, 0.012, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [150.0, 190.0, 250.0, 430.0, 900.0, 1250.0, 2700.0, 3600.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-125': {'fuse_type': 'Siemens NH-1-125',
-                'i_rated_a': 125.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [180.0, 400.0, 740.0, 2000.0, 4250.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-16': {'fuse_type': 'Siemens NH-1-16',
-                 'i_rated_a': 16.0,
-                 't_avg': [4000.0, 400.0, 2.0, 0.1, 0.04, 0.01],
-                 't_min': 0,
-                 't_total': 0,
-                 'x_avg': [26.0, 35.0, 75.0, 150.0, 200.0, 300.0],
-                 'x_min': 0,
-                 'x_total': 0},
-        'Siemens NH-1-160': {'fuse_type': 'Siemens NH-1-160',
-                'i_rated_a': 160.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [210.0, 500.0, 900.0, 2300.0, 5000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-25': {'fuse_type': 'Siemens NH-1-25',
-                'i_rated_a': 25.0,
-                't_avg': [4000.0, 1000.0, 10.0, 0.2, 0.02, 0.01],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [40.0, 50.0, 100.0, 210.0, 400.0, 500.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-50': {'fuse_type': 'Siemens NH-1-50',
-                'i_rated_a': 50.0,
-                't_avg': [4000.0, 40.0, 4.0, 1.0, 0.02, 0.01],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [86.0, 200.0, 300.0, 400.0, 1000.0, 1280.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-1-63': {'fuse_type': 'Siemens NH-1-63',
-                 'i_rated_a': 63.0,
-                 't_avg': [4000.0, 100.0, 10.0, 2.0, 0.04, 0.01],
-                 't_min': 0,
-                 't_total': 0,
-                 'x_avg': [100.0, 200.0, 300.0, 400.0, 1000.0, 1500.0],
-                 'x_min': 0,
-                 'x_total': 0},
-        'Siemens NH-1-80': {'fuse_type': 'Siemens NH-1-80',
-                'i_rated_a': 80.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.01],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [150.58, 250.0, 450.0, 1150.0, 2470.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-1000': {'fuse_type': 'Siemens NH-2-1000',
-                'i_rated_a': 1000.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [1900.0, 3500.0, 8400.0, 24000.0, 52000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-200': {'fuse_type': 'Siemens NH-2-200',
-                'i_rated_a': 200.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [280.0, 650.0, 1200.0, 3000.0, 7000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-224': {'fuse_type': 'Siemens NH-2-224',
-                'i_rated_a': 224.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.2, 0.04, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [400.0, 750.0, 1453.0, 3025.0, 4315.0, 7600.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-250': {'fuse_type': 'Siemens NH-2-250',
-                'i_rated_a': 250.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [450.0, 800.0, 1650.0, 4000.0, 8500.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-315': {'fuse_type': 'Siemens NH-2-315',
-                'i_rated_a': 315.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [550.0, 920.0, 1900.0, 5000.0, 11000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-355': {'fuse_type': 'Siemens NH-2-355',
-                'i_rated_a': 355.0,
-                't_avg': [4800.0, 120.0, 6.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [650.0, 1116.27, 2350.0, 5840.0, 12790.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-400': {'fuse_type': 'Siemens NH-2-400',
-                'i_rated_a': 400.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [720.0, 1350.0, 2800.0, 6500.0, 15000.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-425': {'fuse_type': 'Siemens NH-2-425',
-                'i_rated_a': 425.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [850.0, 1500.0, 3050.0, 7500.0, 16500.0],
-                'x_min': 0,
-                'x_total': 0},
-        'Siemens NH-2-630': {'fuse_type': 'Siemens NH-2-630',
-                'i_rated_a': 630.0,
-                't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
-                't_min': 0,
-                't_total': 0,
-                'x_avg': [1200.0, 2000.0, 4800.0, 12000.0, 26000.0],
-                'x_min': 0,
-                'x_total': 0}
+        'HV 100A': {
+            'fuse_type': 'HV 100A',
+            'i_rated_a': 100.0,
+            't_avg': 0,
+            't_min': [10.0, 3.64, 0.854, 0.281, 0.1, 0.0531, 0.022, 0.01],
+            't_total': [10.0, 4.267, 1.21, 0.403, 0.1, 0.058, 0.022, 0.01],
+            'x_avg': 0,
+            'x_min': [300.0, 350.0, 450.0, 550.0, 700.0, 850.0, 1200.0, 1752.0],
+            'x_total': [600.0, 700.0, 900.0, 1150.0, 1665.0, 2000.0, 3000.0, 4313.0]},
+        'HV 10A': {
+            'fuse_type': 'HV 10A',
+            'i_rated_a': 10.0,
+            't_avg': 0,
+            't_min': [10.0, 1675.0, 0.344, 0.156, 0.1, 0.0417, 0.0171, 0.01],
+            't_total': [10.0, 1.3, 0.3, 0.155, 0.1, 0.0555, 0.023, 0.01],
+            'x_avg': 0,
+            'x_min': [30.0, 32.0, 35.0, 37.0, 39.0, 50.0, 70.0, 88.0],
+            'x_total': [60.0, 70.0, 80.0, 87.0, 94.0, 110.0, 150.0, 216.0]},
+        'HV 125A': {
+            'fuse_type': 'HV 125A',
+            'i_rated_a': 125.0,
+            't_avg': 0,
+            't_min': [10.0, 1.82, 0.344, 0.1, 0.0467, 0.0269, 0.01],
+            't_total': [10.0, 2.478, 0.426, 0.1, 0.0427, 0.0211, 0.01],
+            'x_avg': 0,
+            'x_min': [375.0, 500.0, 700.0, 925.0, 1200.0, 1500.0, 2341.0],
+            'x_total': [750.0, 1000.0, 1500.0, 2200.0, 3000.0, 4000.0, 5765.0]},
+        'HV 160A': {
+            'fuse_type': 'HV 160A',
+            'i_rated_a': 160.0,
+            't_avg': 0,
+            't_min': [10.0, 4.15, 1.03, 0.198, 0.1, 0.051, 0.0172, 0.01],
+            't_total': [10.0, 2.3, 0.734, 0.274, 0.1, 0.046, 0.0177, 0.01],
+            'x_avg': 0,
+            'x_min': [480.0, 550.0, 700.0, 1000.0, 1260.0, 1600.0, 2500.0, 3227.0],
+            'x_total': [960.0, 1300.0, 1700.0, 2200.0, 2996.0, 4000.0, 6000.0, 7946.0]},
+        'HV 16A': {
+            'fuse_type': 'HV 16A',
+            'i_rated_a': 16.0,
+            't_avg': 0,
+            't_min': [10.0, 0.352, 0.164, 0.1, 0.0649, 0.0342, 0.01],
+            't_total': [10.0, 2.34, 0.722, 0.181, 0.1, 0.055, 0.0296, 0.01],
+            'x_avg': 0,
+            'x_min': [48.0, 60.0, 65.0, 71.0, 80.0, 100.0, 162.0],
+            'x_total': [96.0, 110.0, 125.0, 150.0, 168.0, 200.0, 250.0, 398.0]},
+        'HV 200A': {
+            'fuse_type': 'HV 200A',
+            'i_rated_a': 200.0,
+            't_avg': 0,
+            't_min': [10.0, 4.267, 1.21, 0.403, 0.1, 0.058, 0.022, 0.01],
+            't_total': [10.0, 3.73, 1.654, 0.328, 0.1, 0.0531, 0.019, 0.01],
+            'x_avg': 0,
+            'x_min': [600.0, 700.0, 900.0, 1150.0, 1665.0, 2000.0, 3000.0, 4313.0],
+            'x_total': [1200.0, 1500.0, 1800.0, 2700.0, 3960.0, 5000.0, 7500.0, 10620.0]},
+        'HV 20A': {
+            'fuse_type': 'HV 20A',
+            'i_rated_a': 20.0,
+            't_avg': 0,
+            't_min': [10.0, 1.3, 0.3, 0.155, 0.1, 0.0555, 0.023, 0.01],
+            't_total': [10.0, 1.3, 0.161, 0.1, 0.0611, 0.0399, 0.0141, 0.01],
+            'x_avg': 0,
+            'x_min': [60.0, 70.0, 80.0, 87.0, 94.0, 110.0, 150.0, 216.0],
+            'x_total': [120.0, 150.0, 200.0, 223.0, 260.0, 300.0, 450.0, 532.0]},
+        'HV 25A': {
+            'fuse_type': 'HV 25A',
+            'i_rated_a': 25.0,
+            't_avg': 0,
+            't_min': [10.0, 2.512, 0.833, 0.299, 0.1, 0.0372, 0.0223, 0.01],
+            't_total': [10.0, 3.125, 0.597, 0.198, 0.1, 0.0378, 0.022, 0.01],
+            'x_avg': 0,
+            'x_min': [75.0, 82.0, 90.0, 100.0, 124.0, 170.0, 200.0, 289.0],
+            'x_total': [150.0, 170.0, 210.0, 250.0, 294.0, 400.0, 500.0, 711.0]},
+        'HV 31.5A': {
+            'fuse_type': 'HV 31.5A',
+            'i_rated_a': 31.5,
+            't_avg': 0,
+            't_min': [10.0, 2.34, 0.722, 0.181, 0.1, 0.055, 0.0296, 0.01],
+            't_total': [10.0, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01],
+            'x_avg': 0,
+            'x_min': [95.0, 110.0, 125.0, 150.0, 165.0, 200.0, 250.0, 390.0],
+            'x_total': [189.0, 220.0, 300.0, 350.0, 393.0, 450.0, 530.0, 700.0, 960.0]},
+        'HV 40A': {
+            'fuse_type': 'HV 40A',
+            'i_rated_a': 40.0,
+            't_avg': 0,
+            't_min': [10.0, 1.3, 0.161, 0.1, 0.0611, 0.0399, 0.0141, 0.01],
+            't_total': [10.0, 2.05, 0.369, 0.198, 0.1, 0.051, 0.0298, 0.01],
+            'x_avg': 0,
+            'x_min': [120.0, 150.0, 200.0, 223.0, 260.0, 300.0, 450.0, 532.0],
+            'x_total': [240.0, 300.0, 400.0, 450.0, 530.0, 650.0, 800.0, 1311.0]},
+        'HV 50A': {
+            'fuse_type': 'HV 50A',
+            'i_rated_a': 50.0,
+            't_avg': 0,
+            't_min': [10.0, 3.215, 0.597, 0.198, 0.1, 0.0378, 0.022, 0.01],
+            't_total': [10.0, 3.64, 0.854, 0.281, 0.1, 0.0531, 0.022, 0.01],
+            'x_avg': 0,
+            'x_min': [150.0, 170.0, 210.0, 250.0, 294.0, 400.0, 500.0, 711.0],
+            'x_total': [300.0, 350.0, 450.0, 550.0, 700.0, 850.0, 1200.0, 1752.0]},
+        'HV 6.3A': {
+            'fuse_type': 'HV 6.3A',
+            'i_rated_a': 6.3,
+            't_avg': 0,
+            't_min': [10.0, 1.39, 0.344, 0.168, 0.1, 0.056, 0.0263, 0.01],
+            't_total': [10.0, 1.711, 0.516, 0.198, 0.1, 0.0634, 0.0303, 0.01],
+            'x_avg': 0,
+            'x_min': [19.0, 19.5, 20.4, 20.8, 22.0, 25.0, 32.0, 48.0],
+            'x_total': [38.0, 40.0, 43.0, 48.0, 53.0, 60.0, 75.0, 118.0]},
+        'HV 63A': {
+            'fuse_type': 'HV 63A',
+            'i_rated_a': 63.0,
+            't_avg': 0,
+            't_min': [10.0, 2.84, 0.368, 0.164, 0.1, 0.0621, 0.0378, 0.0195, 0.01],
+            't_total': [10.0, 1.82, 0.344, 0.1, 0.0467, 0.0269, 0.01],
+            'x_avg': 0,
+            'x_min': [189.0, 220.0, 300.0, 350.0, 393.0, 450.0, 530.0, 700.0, 961.0],
+            'x_total': [378.0, 500.0, 700.0, 934.0, 1200.0, 1500.0, 2366.0]},
+        'HV 80A': {
+            'fuse_type': 'HV 80A',
+            'i_rated_a': 80.0,
+            't_avg': 0,
+            't_min': [10.0, 2.05, 0.369, 0.198, 0.1, 0.051, 0.0298, 0.01],
+            't_total': [10.0, 4.15, 1.03, 0.198, 0.1, 0.051, 0.0172, 0.01],
+            'x_avg': 0,
+            'x_min': [240.0, 300.0, 400.0, 450.0, 530.0, 650.0, 800.0, 1311.0],
+            'x_total': [480.0, 550.0, 700.0, 1000.0, 1260.0, 1600.0, 2500.0, 3227.0]},
+        'Siemens NH-1-100': {
+            'fuse_type': 'Siemens NH-1-100',
+            'i_rated_a': 100.0,
+            't_avg': [5400.0, 2000.0, 400.0, 20.0, 1.0, 0.2, 0.012, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [150.0, 190.0, 250.0, 430.0, 900.0, 1250.0, 2700.0, 3600.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-1-125': {
+            'fuse_type': 'Siemens NH-1-125',
+            'i_rated_a': 125.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [180.0, 400.0, 740.0, 2000.0, 4250.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-1-16': {
+            'fuse_type': 'Siemens NH-1-16',
+             'i_rated_a': 16.0,
+             't_avg': [4000.0, 400.0, 2.0, 0.1, 0.04, 0.01],
+             't_min': 0,
+             't_total': 0,
+             'x_avg': [26.0, 35.0, 75.0, 150.0, 200.0, 300.0],
+             'x_min': 0,
+             'x_total': 0},
+        'Siemens NH-1-160': {
+            'fuse_type': 'Siemens NH-1-160',
+            'i_rated_a': 160.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [210.0, 500.0, 900.0, 2300.0, 5000.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-1-25': {
+            'fuse_type': 'Siemens NH-1-25',
+            'i_rated_a': 25.0,
+            't_avg': [4000.0, 1000.0, 10.0, 0.2, 0.02, 0.01],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [40.0, 50.0, 100.0, 210.0, 400.0, 500.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-1-50': {
+            'fuse_type': 'Siemens NH-1-50',
+            'i_rated_a': 50.0,
+            't_avg': [4000.0, 40.0, 4.0, 1.0, 0.02, 0.01],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [86.0, 200.0, 300.0, 400.0, 1000.0, 1280.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-1-63': {
+            'fuse_type': 'Siemens NH-1-63',
+            'i_rated_a': 63.0,
+            't_avg': [4000.0, 100.0, 10.0, 2.0, 0.04, 0.01],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [100.0, 200.0, 300.0, 400.0, 1000.0, 1500.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-1-80': {
+            'fuse_type': 'Siemens NH-1-80',
+            'i_rated_a': 80.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.01],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [150.58, 250.0, 450.0, 1150.0, 2470.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-1000': {
+            'fuse_type': 'Siemens NH-2-1000',
+            'i_rated_a': 1000.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [1900.0, 3500.0, 8400.0, 24000.0, 52000.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-200': {
+            'fuse_type': 'Siemens NH-2-200',
+            'i_rated_a': 200.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [280.0, 650.0, 1200.0, 3000.0, 7000.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-224': {
+            'fuse_type': 'Siemens NH-2-224',
+            'i_rated_a': 224.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.2, 0.04, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [400.0, 750.0, 1453.0, 3025.0, 4315.0, 7600.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-250': {
+            'fuse_type': 'Siemens NH-2-250',
+            'i_rated_a': 250.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [450.0, 800.0, 1650.0, 4000.0, 8500.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-315': {
+            'fuse_type': 'Siemens NH-2-315',
+            'i_rated_a': 315.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [550.0, 920.0, 1900.0, 5000.0, 11000.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-355': {
+            'fuse_type': 'Siemens NH-2-355',
+            'i_rated_a': 355.0,
+            't_avg': [4800.0, 120.0, 6.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [650.0, 1116.27, 2350.0, 5840.0, 12790.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-400': {
+            'fuse_type': 'Siemens NH-2-400',
+            'i_rated_a': 400.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [720.0, 1350.0, 2800.0, 6500.0, 15000.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-425': {
+            'fuse_type': 'Siemens NH-2-425',
+            'i_rated_a': 425.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [850.0, 1500.0, 3050.0, 7500.0, 16500.0],
+            'x_min': 0,
+            'x_total': 0},
+        'Siemens NH-2-630': {
+            'fuse_type': 'Siemens NH-2-630',
+            'i_rated_a': 630.0,
+            't_avg': [4800.0, 120.0, 7.0, 0.1, 0.004],
+            't_min': 0,
+            't_total': 0,
+            'x_avg': [1200.0, 2000.0, 4800.0, 12000.0, 26000.0],
+            'x_min': 0,
+            'x_total': 0}
     }
     return fusetypes
 
@@ -1585,15 +1580,11 @@ def add_basic_std_types(net):
     are the same types that are available with output of `pandapower.create_empty_network()` and
     `pandapower.create_empty_network(add_stdtypes=True)` respectively.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net which should receive the basic standard types
+    Parameters:
+        net: pandapower net which should receive the basic standard types
 
-    Returns
-    -------
-    tuple of dictionaries
-        line,line_dc, trafo and trafo3w types as dictionaries which have been added to the net.
+    Returns:
+        tuple of dictionaries, line, line_dc, trafo and trafo3w types as dictionaries which have been added to the net.
     """
 
     if "std_types" not in net:
