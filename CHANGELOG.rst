@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] cim2pp: ACLineSegments with invalid terminals no longer cause all valid lines to be discarded
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
 
 [3.3.2] - 2026-01-13
