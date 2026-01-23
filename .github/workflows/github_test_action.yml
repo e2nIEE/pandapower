@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python' and the release pipelines
         group: [ 1, 2 ]
@@ -42,6 +42,7 @@ jobs:
           uv pip uninstall juliacall
           # if ${{ matrix.python-version == '3.10' }}; then uv pip install pypower; fi
           # if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
+          # if ${{ matrix.python-version == '3.14' }}; then uv pip install lightsim2grid; fi
           # if ${{ matrix.python-version == '3.13' }}; then uv pip install lightsim2grid; fi
       - name: List of installed packages
         run: |
@@ -71,7 +72,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
         julia-version: ['1.10']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
@@ -150,7 +151,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
         group: [ 1, 2 ]
     steps:
     - uses: actions/checkout@v4
@@ -175,7 +176,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
     - uses: actions/checkout@v4
     - name: Install uv
@@ -258,7 +259,7 @@ jobs:
           --health-retries 5
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
     steps:
     - name: Wait for PostgreSQL database to be ready
       run: |
@@ -368,7 +369,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
     steps:
