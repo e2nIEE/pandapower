@@ -30,7 +30,7 @@ def to_mpc(net, filename=None, **kwargs):
         any: are passed to :func:`to_ppc`
 
     EXAMPLE:
-        >>> from pandapower.converter import to_mpc
+        >>> from pandapower.converter.matpower import to_mpc
         >>> from pandapower.networks.power_system_test_cases import case9
         >>>
         >>> net = case9()
