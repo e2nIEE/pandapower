@@ -1831,7 +1831,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
                           switch_rx_ratio, trafo3w_losses, **kwargs):
     ac = False
     numba = True
-    mode = "pf"
+    mode = "dc"
     init = 'flat'
 
     numba = _check_if_numba_is_installed()

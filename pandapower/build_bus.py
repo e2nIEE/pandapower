@@ -868,7 +868,7 @@ def _build_vsc_ppc(net, ppc, mode):
     length = len(net.vsc)
     ppc["vsc"] = np.zeros(shape=(length, vsc_cols), dtype=np.float64)
 
-    if mode != "pf":
+    if mode != "pf" and mode != "dc":
         return
 
     if length == 0:
