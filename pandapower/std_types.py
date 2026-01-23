@@ -6,7 +6,7 @@
 
 import warnings
 import logging
-from typing import Literal
+from typing import Literal, cast, get_args
 
 import pandas as pd
 
@@ -14,8 +14,10 @@ from pandapower.auxiliary import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
+DefaultStandardTypes = Literal["line", "line_dc", "trafo", "trafo3w", "fuse"]
 
-def required_std_type_parameters(element: Literal["line", "line_dc", "trafo", "trafo3w", "fuse"] = "line"):
+
+def required_std_type_parameters(element: DefaultStandardTypes = "line"):
     if element == "line":
         required = ["c_nf_per_km", "r_ohm_per_km", "x_ohm_per_km", "max_i_ka"]
     elif element == "line_dc":
@@ -94,9 +96,10 @@ def create_std_type(
         raise UserWarning("type data has to be given as a dictionary of parameters")
 
     if check_required:
-        if element not in ["line", "line_dc", "trafo", "trafo3w", "fuse"]:
+        if element not in get_args(DefaultStandardTypes):
             raise UserWarning(f"Checking required std type elements is not supported for {element}")
-        missing = [par for par in required_std_type_parameters(element) if par not in data]
+        elm: DefaultStandardTypes = cast(DefaultStandardTypes, element)
+        missing = [par for par in required_std_type_parameters(elm) if par not in data]
         if len(missing):
             raise UserWarning(f"{missing} are required as {element} type parameters.")
     library = net.std_types[element]
