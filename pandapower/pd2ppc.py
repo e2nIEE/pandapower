@@ -204,7 +204,7 @@ def _pd2ppc(net, sequence=None, **kwargs):
         _set_isolated_buses_out_of_service(net, ppc)
 
     # we need to check this after checking connectivity (isolated vsc as DC slack cause change of DC_REF to DC_P)
-    if "pf" in mode or "se" in mode:
+    if "pf" in mode or "se" in mode or "dc" in mode:
         _check_for_reference_bus(ppc)
 
     _build_gen_ppc(net, ppc)
@@ -341,8 +341,8 @@ def _ppc2ppci(ppc, net, ppci=None):
             del ppc['areas']  # delete it (so it's ignored)
 
     # bus types
-    bt = ppc["bus"][:, BUS_TYPE]
-    bt_dc = ppc["bus_dc"][:, DC_BUS_TYPE]
+    bus_type = ppc["bus"][:, BUS_TYPE]
+    bus_type_dc = ppc["bus_dc"][:, DC_BUS_TYPE]
 
     # update branch, gen and areas bus numbering
     ppc['gen'][:, GEN_BUS] = e2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)].copy()
@@ -378,53 +378,53 @@ def _ppc2ppci(ppc, net, ppci=None):
     # determine which buses, branches, gens are connected and
     # in-service
     n2i = ppc["bus"][:, BUS_I].astype(np.int64)
-    bs = (bt != NONE)  # bus status
+    bus_status = (bus_type != NONE)  # bus status
 
     n2i_dc = ppc["bus_dc"][:, DC_BUS_I].astype(np.int64)
-    bs_dc = (bt_dc != DC_NONE)  # bus status
+    bus_status_dc = (bus_type_dc != DC_NONE)  # bus status
 
     gs = ((ppc["gen"][:, GEN_STATUS] > 0) &  # gen status
-          bs[n2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)]])
+          bus_status[n2i[np.real(ppc["gen"][:, GEN_BUS]).astype(np.int64)]])
     ppci["internal"]["gen_is"] = gs
 
     svcs = ((ppc["svc"][:, SVC_STATUS] > 0) &  # gen status
-            bs[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)]])
+            bus_status[n2i[np.real(ppc["svc"][:, SVC_BUS]).astype(np.int64)]])
     ppci["internal"]["svc_is"] = svcs
 
     sscs = ((ppc["ssc"][:, SSC_STATUS] > 0) &  # ssc status
-            bs[n2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)]] &
-            bs[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
+            bus_status[n2i[np.real(ppc["ssc"][:, SSC_BUS]).astype(np.int64)]] &
+            bus_status[n2i[np.real(ppc["ssc"][:, SSC_INTERNAL_BUS]).astype(np.int64)]])
     ppci["internal"]["ssc_is"] = sscs
 
     vscs = ((ppc["vsc"][:, VSC_STATUS] > 0) &  # vsc status
-            bs[n2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)]] &
-            bs[n2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)]] &
-            bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)]] &
-            bs_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)]])
+            bus_status[n2i[np.real(ppc["vsc"][:, VSC_BUS]).astype(np.int64)]] &
+            bus_status[n2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)]] &
+            bus_status_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)]] &
+            bus_status_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)]])
     ppci["internal"]["vsc_is"] = vscs
 
     brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status
-           bs[n2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)]] &
-           bs[n2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)]]).astype(bool)
+           bus_status[n2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)]] &
+           bus_status[n2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["branch_is"] = brs
 
     brs_dc = (np.real(ppc["branch_dc"][:, DC_BR_STATUS]).astype(np.int64) &  # branch status
-              bs_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_F_BUS]).astype(np.int64)]] &
-              bs_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_T_BUS]).astype(np.int64)]]).astype(bool)
+              bus_status_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_F_BUS]).astype(np.int64)]] &
+              bus_status_dc[n2i_dc[np.real(ppc["branch_dc"][:, DC_T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["branch_dc_is"] = brs_dc
 
     trs = (np.real(ppc["tcsc"][:, TCSC_STATUS]).astype(np.int64) &  # branch status
-           bs[n2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)]] &
-           bs[n2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)]]).astype(bool)
+           bus_status[n2i[np.real(ppc["tcsc"][:, TCSC_F_BUS]).astype(np.int64)]] &
+           bus_status[n2i[np.real(ppc["tcsc"][:, TCSC_T_BUS]).astype(np.int64)]]).astype(bool)
     ppci["internal"]["tcsc_is"] = trs
 
     # source_dc in service list
     srcs = ((ppc["source_dc"][:, SOURCE_DC_STATUS] > 0) &  # source_dc status
-             bs_dc[n2i_dc[np.real(ppc["source_dc"][:, SOURCE_DC_BUS]).astype(np.int64)]])
+             bus_status_dc[n2i_dc[np.real(ppc["source_dc"][:, SOURCE_DC_BUS]).astype(np.int64)]])
     ppci["internal"]["source_dc_is"] = srcs
 
     if 'areas' in ppc:
-        ar = bs[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(np.int64)]]
+        ar = bus_status[n2i[ppc["areas"][:, PRICE_REF_BUS].astype(np.int64)]]
         # delete out of service areas
         ppci["areas"] = ppc["areas"][ar]
 
