@@ -4,7 +4,7 @@ Create Collections
 
 Matplotlib collections can be created from pandapower networks with the following functions:
 
-.. autofunciton:: pandapower.plotting.create_annotation_collection
+.. autofunction:: pandapower.plotting.create_annotation_collection
 .. autofunction:: pandapower.plotting.create_bus_bus_switch_collection
 .. autofunction:: pandapower.plotting.create_bus_collection
 .. autofunction:: pandapower.plotting.create_busbar_collection
