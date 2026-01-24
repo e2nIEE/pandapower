@@ -753,7 +753,7 @@ def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2
     vals = ()
 
     for _, vk_var in enumerate(vk_variables):
-        vk_value = get_trafo_values(trafo_df, vk_var)
+        vk_value = get_trafo_values(trafo_df, vk_var).copy()
         if any(tap_dependency_table):
             id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
             if np.any(tap_dependency_table & pd.isna(id_characteristic_table)):
