@@ -221,7 +221,7 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     elif element.startswith("asymmetric"):
         p_mw, q_mvar = _get_symmetric_pq_of_unsymetric_element(net, element)
         net[res_].loc[:, "p_mw"] = p_mw
-        net[res_].loc["q_mvar"] = q_mvar
+        net[res_].loc[:, "q_mvar"] = q_mvar
         return net
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
