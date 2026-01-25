@@ -251,7 +251,7 @@ def detach_from_groups(net, element_type, element_index, index=None):
     for i in np.arange(len(to_check), dtype=np.int64)[to_check]:
         rc = net.group.reference_column.iat[i]
         if rc is None or pd.isnull(rc):
-            net.group.iat[i, "element_index"] = pd.Index(net.group.element_index.iat[i]).difference(
+            net.group.iloc[i, "element_index"] = pd.Index(net.group.element_index.iat[i]).difference(
                 element_index).tolist()
         else:
             net.group.iat[i, "element_index"] = pd.Index(net.group.element_index.iat[i]).difference(
@@ -672,7 +672,7 @@ def ensure_lists_in_group_element_column(net, drop_empty_lines=True):
     for i in range(net.group.shape[0]):
         elm = net.group.element_index.iat[i]
         if hasattr(elm, "__iter__") and not isinstance(elm, str):
-            net.group.iat[i, "element_index"] = list(elm)
+            net.group.iloc[i, "element_index"] = list(elm)
             if not len(elm):
                 keep[i] = False
         else:
