@@ -251,10 +251,10 @@ def detach_from_groups(net, element_type, element_index, index=None):
     for i in np.arange(len(to_check), dtype=np.int64)[to_check]:
         rc = net.group.reference_column.iat[i]
         if rc is None or pd.isnull(rc):
-            net.group.iloc[i, "element_index"] = pd.Index(net.group.element_index.iat[i]).difference(
+            net.group.element_index.iat[i] = pd.Index(net.group.element_index.iat[i]).difference(
                 element_index).tolist()
         else:
-            net.group.iat[i, "element_index"] = pd.Index(net.group.element_index.iat[i]).difference(
+            net.group.element_index.iat[i] = pd.Index(net.group.element_index.iat[i]).difference(
                 pd.Index(net[element_type][rc].loc[element_index.intersection(
                     net[element_type].index)])).tolist()
 
@@ -636,7 +636,7 @@ def remove_not_existing_group_members(net, verbose=True):
                     logger.info(f"net.group row {i} is dropped because no fitting elements exist in"
                                 f" net[{et}].")
             elif np.any(not_exist_bool):
-                net.group.iat[i, "element_index"] = list(np.array(net.group.element_index.iat[i])[
+                net.group.element_index.iat[i] = list(np.array(net.group.element_index.iat[i])[
                     ~not_exist_bool])
                 if verbose:
                     logger.info(
@@ -672,15 +672,15 @@ def ensure_lists_in_group_element_column(net, drop_empty_lines=True):
     for i in range(net.group.shape[0]):
         elm = net.group.element_index.iat[i]
         if hasattr(elm, "__iter__") and not isinstance(elm, str):
-            net.group.iloc[i, "element_index"] = list(elm)
+            net.group.element_index.iloc[i] = list(elm)
             if not len(elm):
                 keep[i] = False
         else:
             if elm is None or pd.isnull(elm):
-                net.group.iat[i, "element_index"] = []
+                net.group.element_index.iat[i] = []
                 keep[i] = False
             else:
-                net.group.iat[i, "element_index"] = [elm]
+                net.group.element_index.iat[i] = [elm]
     if drop_empty_lines:
         net.group = net.group.loc[keep]
 
