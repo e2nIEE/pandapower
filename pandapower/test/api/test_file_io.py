@@ -649,8 +649,8 @@ def test_ignore_unknown_objects():
     assert isinstance(net4.controller.object.at[0], dict)
 
     # make sure that the loaded net equals the original net except for the controller
-    net3.controller.object.at[0] = net.controller.object.at[0]
-    net4.controller.object.at[0] = net.controller.object.at[0]
+    net3.controller.at[0, "object"] = net.controller.object.at[0]
+    net4.controller.at[0, "object"] = net.controller.object.at[0]
     assert_net_equal(net, net3)
     assert_net_equal(net, net4)
 

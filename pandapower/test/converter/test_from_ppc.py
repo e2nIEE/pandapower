@@ -106,7 +106,7 @@ def test_pypower_cases():
 def test_to_and_from_ppc():
     net9 = case9()
     net24 = case24_ieee_rts()
-    net24.trafo.tap_side.iat[1] = "hv"
+    net24.trafo.iat[1, "tap_side"] = "hv"
 
     for i, net in enumerate([net24, net9]):
 

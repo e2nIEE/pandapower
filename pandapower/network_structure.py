@@ -153,7 +153,7 @@ def get_structure_dict() -> dict:
             "q_mvar": "f8",
             "p_mw": "f8",
             "vn_kv": "f8",
-            "step": "u4",
+            "step": "f8",
             "max_step": "u4",
             "id_characteristic_table": pd.Int64Dtype(),
             "step_dependency_table": "bool",
