@@ -110,7 +110,7 @@ class DiscreteTapControl(TrafoController):
 
         vm_pu = read_from_net(net, "res_bus", self.trafobus, "vm_pu", self._read_write_flag)
         self.tap_pos = read_from_net(
-            net, self.element, self.element_index, "tap_pos", self._read_write_flag)
+            net, self.element, self.element_index, "tap_pos", self._read_write_flag).copy()
 
         increment = np.where(
             self.tap_side_coeff * self.tap_sign == 1,
