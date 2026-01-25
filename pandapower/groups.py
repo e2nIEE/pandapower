@@ -672,7 +672,7 @@ def ensure_lists_in_group_element_column(net, drop_empty_lines=True):
     for i in range(net.group.shape[0]):
         elm = net.group.element_index.iat[i]
         if hasattr(elm, "__iter__") and not isinstance(elm, str):
-            net.group.element_index.iloc[i] = list(elm)
+            net.group.element_index.iat[i] = list(elm)
             if not len(elm):
                 keep[i] = False
         else:
