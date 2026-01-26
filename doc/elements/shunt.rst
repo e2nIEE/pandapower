@@ -11,7 +11,7 @@ Create Function
 =====================
 
 .. autofunction:: pandapower.create.create_shunt
-
+.. autofunction:: pandapower.create.create_shunts
 .. autofunction:: pandapower.create.create_shunt_as_capacitor
 
 

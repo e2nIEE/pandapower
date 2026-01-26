@@ -27,16 +27,14 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
     literatur (as stated in the code). Transformer parameters, except the given 'vk_percent',
     'sn_mva' and voltage levels, are based the pandapower standard type data.
 
-    OPTIONAL:
+    Parameters:
+        network_class (str, 'rural_1'): specify which type of network will be created. Must be in
+            ['rural_1', 'rural_2', 'village_1', 'village_2', 'suburb_1'].
 
-        **network_class** (str, 'rural_1') - specify which type of network will be created. Must \
-            be in ['rural_1', 'rural_2', 'village_1', 'village_2', 'suburb_1'].
+    Returns:
+        The required synthetic voltage control lv network
 
-    OUTPUT:
-
-        **net** - returns the required synthetic voltage control lv network
-
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.synthetic_voltage_control_lv_networks import create_synthetic_voltage_control_lv_network
         >>> net = create_synthetic_voltage_control_lv_network()
     """
