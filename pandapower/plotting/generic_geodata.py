@@ -204,7 +204,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     :return: net - pandapower network with added geo coordinates for the buses
 
     :Example:
-        net = create_generic_coordinates(net)
+        >>> net = create_generic_coordinates(net)
     """
 
     _prepare_geodata_table(net, geodata_table, overwrite)
