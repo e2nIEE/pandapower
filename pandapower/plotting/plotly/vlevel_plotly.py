@@ -21,31 +21,21 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
                   bus_size=10, filename="temp-plot.html", auto_open=True, zoomlevel=11):
     """
-    Plots a pandapower network in plotly
-    using lines/buses colors according to the voltage level they belong to.
-    If no geodata is available, artificial geodata is generated. For advanced plotting see the
-    tutorial
+    Plots a pandapower network in plotly using lines/buses colors according to the voltage level they belong to. If no
+    geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
-    INPUT:
-        **net** - The pandapower format network.
-
-    OPTIONAL:
-        **respect_switches** (bool, True) - Respect switches when artificial geodata is created
-
-        **use_line_geo** (bool, True) - defines if lines patches are based on net.line.geo
-        of the lines (True) or on net.bus.geo of the connected buses (False)
-
-        *colors_dict** (dict, None) - dictionary for customization of colors for each voltage level
-        in the form: voltage : color
-
-        **on_map** (bool, False) - enables using mapLibre plot in plotly If provided geodata are not
-        real geo-coordinates in lon/lat form, on_map will be set to False.
-
-        **projection** (String, None) - defines a projection from which network geo-data will be
-        transformed to lat-long. For each projection a string can be found at
-        http://spatialreference.org/ref/epsg/
-
-        **map_style** (str, 'basic') - enables using mapLibre plot in plotly
+    Parameters:
+        net: The pandapower format network.
+        respect_switches (bool, True): Respect switches when artificial geodata is created
+        use_line_geo (bool, True): defines if lines patches are based on net.line.geo of the lines (True) or on
+            net.bus.geo of the connected buses (False)
+        colors_dict (dict, None): dictionary for customization of colors for each voltage level in the form:
+            voltage : color
+        on_map (bool, False): enables using mapLibre plot in plotly If provided geodata are not real geo-coordinates in
+            lon/lat form, on_map will be set to False.
+        projection (String, None): defines a projection from which network geo-data will be transformed to lat-long.
+            For each projection a string can be found at http://spatialreference.org/ref/epsg/
+        map_style (str, 'basic'): enables using mapLibre plot in plotly
 
             - 'basic'
             - 'carto-darkmatter'
@@ -62,24 +52,17 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
             - 'satellite-streets'
             - 'streets'
 
-        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
+        figsize (float, 1): aspectratio is multiplied by it in order to get final image size
+        aspectratio (tuple, 'auto'): when 'auto' it preserves original aspect ratio of the network geodata any custom
+            aspectration can be given as a tuple, e.g. (1.2, 1)
+        line_width (float, 1.0): width of lines
+        bus_size (float, 10.0): size of buses to plot.
+        filename (str, "temp-plot.html"): filename / path to plot to. Should end on `*.html`
+        auto_open (bool, True): automatically open plot in browser
+        zoomlevel (int, 11): initial zoomlevel of map plot (only if on_map=True)
 
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the
-        network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
-
-        **line_width** (float, 1.0) - width of lines
-
-        **bus_size** (float, 10.0) -  size of buses to plot.
-
-        **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on `*.html`
-
-        **auto_open** (bool, True) - automatically open plot in browser
-
-        **zoomlevel** (int, 11) - initial zoomlevel of map plot (only if on_map=True)
-
-    OUTPUT:
-        **figure** (graph_objs._figure.Figure) figure object
-
+    Returns:
+        graph_objs._figure.Figure: figure object
     """
     # getting connected components without consideration of trafos
     graph = create_nxgraph(net, include_trafos=False)
