@@ -37,14 +37,9 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], vsc, \
+    return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], ppci["vsc"], \
         ref, pv, pq, on, gbus, V0, ref_gens
 
-
-def _get_dc_variables_from_ppci(ppci):
-    bus_dc = ppci['bus_dc']
-    branch_dc = ppci['branch_dc']
-    return bus_dc, branch_dc
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch

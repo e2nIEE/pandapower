@@ -185,6 +185,7 @@ def _pd2ppc(net, sequence=None, **kwargs):
     # Adds auxilary buses for in service lines with out of service buses.
     # Also deactivates lines if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
+    _branches_with_oos_buses(net, ppc, True)
 
     if check_connectivity:
         if sequence in [None, 1, 2]:

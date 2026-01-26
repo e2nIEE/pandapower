@@ -105,7 +105,7 @@ def _build_branch_dc_ppc(net, ppc):
     all_branch_columns = branch_cols_tdpf + branch_dc_cols if tdpf else branch_dc_cols
     ppc["branch_dc"] = np.zeros(shape=(length, all_branch_columns), dtype=np.float64)
     ppc["branch_dc"][:, [DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS]] = np.array([250, 250, 250, 1])
-    if mode != "pf":
+    if mode != "pf" and mode != "dc":
         return
     if "line_dc" in lookup:
         _calc_line_dc_parameter(net, ppc)

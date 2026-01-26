@@ -137,10 +137,10 @@ def test_dc_after_ac():
 
 def test_dc_vsc():
     net = create_empty_network()
-    b1 = create_bus(net, name="B1", vn_kv=380)
-    b2 = create_bus(net, name="B2", vn_kv=380)
-    b3 = create_bus(net, name="B3", vn_kv=380)
-    b4 = create_bus(net, name="B4", vn_kv=380)
+    b1 = create_bus(net, name="AC_B1", vn_kv=380)
+    b2 = create_bus(net, name="AC_B2", vn_kv=380)
+    b3 = create_bus(net, name="AC_B3", vn_kv=380)
+    b4 = create_bus(net, name="AC_B4", vn_kv=380)
 
     create_ext_grid(net, bus=b1, vm_pu=1, va_degree=0)
     create_load(net, bus=b4, p_mw=100, q_mvar=0)
@@ -151,8 +151,8 @@ def test_dc_vsc():
                                 x_ohm_per_km=0.136, g_us_per_km=0, c_nf_per_km=142, max_i_ka=1.5)
 
     # DC part
-    dc_b1 = create_bus_dc(net, 380., 'DC_A')
-    dc_b2 = create_bus_dc(net, 380., 'DC_B')
+    dc_b1 = create_bus_dc(net, 150, 'DC_B1')
+    dc_b2 = create_bus_dc(net, 150, 'DC_B2')
     create_vsc(net, b2, dc_b1, 0, 15, r_dc_ohm=0.5, control_mode_ac='vm_pu', control_value_ac=1,
                control_mode_dc="vm_pu", control_value_dc=1.)
     create_vsc(net, b3, dc_b2, 0, 15, r_dc_ohm=0.5, control_mode_ac='slack', control_value_ac=1,
@@ -165,10 +165,10 @@ def test_dc_vsc():
 
 def test_dc_vsc_p():
     net = create_empty_network()
-    b1 = create_bus(net, name="B1", vn_kv=380)
-    b2 = create_bus(net, name="B2", vn_kv=380)
-    b3 = create_bus(net, name="B3", vn_kv=380)
-    b4 = create_bus(net, name="B4", vn_kv=380)
+    b1 = create_bus(net, name="AC_B1", vn_kv=380)
+    b2 = create_bus(net, name="AC_B2", vn_kv=380)
+    b3 = create_bus(net, name="AC_B3", vn_kv=380)
+    b4 = create_bus(net, name="AC_B4", vn_kv=380)
 
     create_ext_grid(net, bus=b1, vm_pu=1, va_degree=0)
     create_load(net, bus=b4, p_mw=100, q_mvar=0)
@@ -179,10 +179,10 @@ def test_dc_vsc_p():
                                 x_ohm_per_km=0.136, g_us_per_km=0, c_nf_per_km=142, max_i_ka=1.5)
 
     # DC part
-    dc_b1 = create_bus_dc(net, 380., 'DC_A')
-    dc_b2 = create_bus_dc(net, 380., 'DC_B')
-    dc_b3 = create_bus_dc(net, 380., 'DC_C')
-    dc_b4 = create_bus_dc(net, 380., 'DC_D')
+    dc_b1 = create_bus_dc(net, 380., 'DC_B1')
+    dc_b2 = create_bus_dc(net, 380., 'DC_B2')
+    dc_b3 = create_bus_dc(net, 380., 'DC_B3')
+    dc_b4 = create_bus_dc(net, 380., 'DC_B4')
     create_vsc(net, b2, dc_b1, 0, 15, r_dc_ohm=0.5, control_mode_ac='vm_pu', control_value_ac=1,
                control_mode_dc="vm_pu", control_value_dc=1.)
     create_vsc(net, b2, dc_b3, 0, 15, r_dc_ohm=0.5, control_mode_ac='vm_pu', control_value_ac=1,

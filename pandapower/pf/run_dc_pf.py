@@ -67,7 +67,7 @@ def _run_dc_pf(ppci, recycle=False):
         ppci["internal"]['ref_gens'] = ref_gens
 
         ## build B matrices and phase shift injections
-        B, Bf, Pbusinj, Pfinj, Cft = makeBdc(bus, branch)
+        B, Bf, Pbusinj, Pfinj, Cft = makeBdc(bus, branch, ppci["bus_dc"], ppci["branch_dc"], vsc)
 
         ## updates Bbus matrix
         ppci['internal']['Bbus'] = B
@@ -78,14 +78,20 @@ def _run_dc_pf(ppci, recycle=False):
         ppci['internal']['shift'] = branch[:, SHIFT]
 
     ## initial state
-    Va0 = bus[:, VA] * (pi / 180.)
+    va0 = bus[:, VA] * (pi / 180.)
+    # append zeros for the DC nodes
+    va0 = np.concatenate([va0, np.zeros(ppci["bus_dc"].shape[0])])
 
     ## compute complex bus power injections [generation - load]
     ## adjusted for phase shifters and real shunts
-    Pbus = makeSbus(baseMVA, bus, gen) - Pbusinj - bus[:, GS] / baseMVA
+    # Pbus = makeSbus(baseMVA, bus, gen) - Pbusinj - bus[:, GS] / baseMVA
+    Pbus = np.real(makeSbus(baseMVA, bus, gen)) - bus[:, GS] / baseMVA
+    # append zeros for the DC nodes
+    Pbus = np.concatenate([Pbus, np.zeros(ppci["bus_dc"].shape[0])]) - Pbusinj
 
+    pq_with_dc = np.concatenate([pq, np.arange(bus.shape[0], bus.shape[0] + ppci["bus_dc"].shape[0])])
     ## "run" the power flow
-    Va = dcpf(B, Pbus, Va0, ref, pv, pq)
+    Va = dcpf(B, Pbus, va0, ref, pv, pq_with_dc)
     ppci["internal"]["V"] = Va
 
     ## update data matrices with solution
