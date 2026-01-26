@@ -374,7 +374,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
                                                               respect_in_service=False)
 
             bus_list = list(get_bus_index)
-            bus_coords: List[Tuple[float, float]] = [
+            bus_coords: list[tuple[float, float]] = [
                 geojson.utils.coords(geojson.loads(net.bus.geo.at[bus])) for bus in bus_list
             ]
 
@@ -803,7 +803,7 @@ def bus_path_from_to_bus(net, radial_start_bus, loop_start_bus, end_bus):
 def get_switches_in_path(net, paths):
     """function calculate the switching times from the  bus path"""
 
-    lines_in_path: List[List] = []
+    lines_in_path: list[list] = []
 
     for path in paths:
         lines_at_path: set = set()

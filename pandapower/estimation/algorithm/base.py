@@ -114,7 +114,7 @@ class WLSAlgorithm(BaseAlgorithm):
                     norm_invG = norm(inv(G_m), np.inf)
                     cond = norm_G*norm_invG
                     if cond > 10**18:
-                        self.logger.warning("WARNING: Gain matrix is ill-conditioned: {:.2E}".format(cond))
+                        self.logger.warning(f"WARNING: Gain matrix is ill-conditioned: {cond:.2e}")
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
@@ -326,7 +326,7 @@ class AFWLSAlgorithm(BaseAlgorithm):
                     norm_invG = norm(inv(G_m), np.inf)
                     cond = norm_G*norm_invG
                     if cond > 10**18:
-                        self.logger.warning("WARNING: Gain matrix is ill-conditioned: {:.2E}".format(cond))
+                        self.logger.warning(f"WARNING: Gain matrix is ill-conditioned: {cond:.2e}")
 
                 # state vector difference d_E
                 d_E = spsolve(G_m, H.T * (r_inv * r))

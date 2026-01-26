@@ -4,10 +4,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
-import os
 import json
 from functools import reduce
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_object_dtype
@@ -193,7 +192,7 @@ def _data_correction(
         cols.loc[cols[0].str.startswith("Unnamed:").astype(bool), 0] = None
         cols.loc[cols[1] == "Length_(km)", 0] = "Electrical Parameters"  # might be wrong in
         # Tielines otherwise
-        data[key].columns = pd.MultiIndex.from_arrays(cols.values.T)
+        data[key].columns = pd.MultiIndex.from_arrays(cols.values.T.tolist())
 
         # --- correct comma separation and cast to floats
         data[key][("Maximum Current Imax (A)", "Fixed")] = \
@@ -380,10 +379,10 @@ def _create_transformers_and_buses(
         "Maximum Current Imax (A) primary", "Max")].values
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
     z_pu = vn_lv_kv**2 / sn_mva
-    rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu  # type: ignore[call-overload]
-    xk = data[key].xs("Reactance_X(Ω)", level=1, axis=1).values[:, 0] / z_pu  # type: ignore[call-overload]
-    b0 = data[key].xs("Susceptance_B (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu  # type: ignore[call-overload]
-    g0 = data[key].xs("Conductance_G (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu  # type: ignore[call-overload]
+    rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
+    xk = data[key].xs("Reactance_X(Ω)", level=1, axis=1).values[:, 0] / z_pu
+    b0 = data[key].xs("Susceptance_B (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu  # type: ignore[operator]
+    g0 = data[key].xs("Conductance_G (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu  # type: ignore[operator]
     zk = np.sqrt(rk**2 + xk**2)
     vk_percent = np.sign(xk) * zk * 100
     vkr_percent = rk * 100
@@ -575,12 +574,13 @@ def drop_islanded_grid_groups(
 
 
 def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
-    """Adds geodata to the buses. The function needs to handle cases where line_geo_data does not
-    include no or multiple geodata per bus. Primarly, the geodata are allocate via EIC Code names,
-    if ambigous, names are considered.
+    """
+    Adds geodata to the buses. The function needs to handle cases where line_geo_data includes multiple or no geodata
+    per bus. Primarily, the geodata are allocate via EIC Code names, if ambiguous, names are considered.
 
-    :param pandapowerNet net: net in which geodata are added to the buses
-    :param pd.DataFrame: line_geo_data: Converted geodata from the html file
+    Parameters:
+        net: net in which geodata are added to the buses
+        line_geo_data: Converted geodata from the html file
     """
     iSl = pd.IndexSlice
     lgd_EIC_bus = line_geo_data.pivot_table(values="value", index=["EIC_Code", "bus"],
@@ -602,9 +602,9 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         return f'{{"coordinates": [{this_bus_geo.at["lng"]}, {this_bus_geo.at["lat"]}], "type": "Point"}}'
 
     def _add_bus_geo_inner(bus: int) -> Optional[str]:
-        from_bus_line_excerpt = net.line.loc[net.line.from_bus ==
-                                             bus, ["EIC_Code", "name", "Tieline"]]
+        from_bus_line_excerpt = net.line.loc[net.line.from_bus == bus, ["EIC_Code", "name", "Tieline"]]
         to_bus_line_excerpt = net.line.loc[net.line.to_bus == bus, ["EIC_Code", "name", "Tieline"]]
+        
         line_excerpt = pd.concat([from_bus_line_excerpt, to_bus_line_excerpt])
         n_connected_line_ends = len(line_excerpt)
         if n_connected_line_ends == 0:
@@ -671,15 +671,15 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         if len_this_bus_geo == 1:
             return _geo_json_str(this_bus_geo.iloc[0])
         elif len_this_bus_geo == 2:
-            how_often = pd.Series(
-                [sum(np.isclose(lgd_EIC_bus["lat"], this_bus_geo["lat"].iat[i]) &  # type: ignore[call-overload]
-                     np.isclose(lgd_EIC_bus["lng"], this_bus_geo["lng"].iat[i])) for i in
-                 range(len_this_bus_geo)], index=this_bus_geo.index)
-            if how_often.at[how_often.idxmax()] >= 1:
-                logger.warning(f"Bus {bus} (name {net.bus.at[bus, 'name']}) was found multiple times"
-                               " in line_geo_data. No value exists more often than others. "
-                               "The first of most used geo positions is used.")
-            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()])  # type: ignore[arg-type]
+            how_often: pd.Series[int] = pd.Series([
+                int((np.isclose(lgd_EIC_bus["lat"], this_bus_geo["lat"].iat[i]) &
+                np.isclose(lgd_EIC_bus["lng"], this_bus_geo["lng"].iat[i])).sum()) for i in range(len_this_bus_geo)
+            ], index=this_bus_geo.index, dtype=int)
+            if how_often.max() >= 1:
+                logger.warning(f"Bus {bus} (name {net.bus.at[bus, 'name']}) was found multiple times in line_geo_data. "
+                               f"No geo positions was used more often than all other positions. "
+                               "The first of the most used positions is used.")
+            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()].iloc[0])
 
         return None
 
@@ -902,7 +902,11 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
     bus_df = bus_df.drop_duplicates(ignore_index=True)
     # just keep one bus per name and vn_kv. If there are multiple buses of different TSOs, join the
     # TSO strings:
-    bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: '/'.join(x)})
+    
+    def _join_tso(tso_names: Iterable[str]) -> dict[str, str]:
+        return {"TSO": '/'.join(tso_names)}
+    
+    bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg(_join_tso)
     assert not bus_df.duplicated(["name", "vn_kv"]).any()
     return bus_df
 

@@ -8,7 +8,7 @@ def get_PF_Results(trafo_vector_group):
                 "Yzn": 2}
 
     # Create lists to put in the PF loadflow results of the validation network
-    bus_vm_pu = [[], [], []]
+    bus_vm_pu: list[list] = [[], [], []]
 
     # vm_pu     ->       L1           L2              L3
     # Bus #1 ExtGrid
