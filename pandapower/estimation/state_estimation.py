@@ -29,54 +29,49 @@ ALGORITHM_MAPPING = {'wls': WLSAlgorithm,
 ALLOWED_OPT_VAR = {"a", "opt_method", "estimator"}
 
 
-def estimate(net, algorithm='wls',
-             init='flat', tolerance=1e-6, maximum_iterations=50,
-             zero_injection='aux_bus', fuse_buses_with_bb_switch='all',
-             debug_mode=False, **opt_vars):
+def estimate(
+        net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=50, zero_injection='aux_bus',
+        fuse_buses_with_bb_switch='all', debug_mode=False, **opt_vars
+):
     """
     Wrapper function for WLS state estimation.
 
-    INPUT:
-        **net** (pandapowerNet) - The net within this line should be created
-
-        **init** (string) - Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all \
-            buses, 'results' uses the values from *res_bus* if available and 'slack' considers the \
-            slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
-
-    OPTIONAL:
-        **tolerance** (float) - When the maximum state change between iterations is less than \
-            tolerance, the process stops. Default is 1e-6
-
-        **maximum_iterations** (integer) - Maximum number of iterations. Default is 50
-
-        **zero_injection** (str, iterable, None) - Defines which buses are zero injection bus or the method \
-                to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with \
-                'wls_estimator with zero constraints' the buses will be handled as constraints
+    Parameters:
+        net (pandapowerNet): The net within this line should be created
+        init (string): Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all buses, 'results' uses the
+            values from *res_bus* if available and 'slack' considers the slack bus voltage (and optionally, angle) as
+            the initial values. Default is 'flat'
+        tolerance (float): When the maximum state change between iterations is less than tolerance, the process stops.
+            Default is 1e-6
+        maximum_iterations (integer): Maximum number of iterations. Default is 50
+        zero_injection (str, iterable, None): Defines which buses are zero injection bus or the method to identify zero
+            injection bus, with 'wls_estimator' virtual measurements will be added, with 'wls_estimator with zero
+            constraints' the buses will be handled as constraints
 
                 - None: no bus will be identified as zero injection bus
                 - "aux_bus": only aux bus will be identified as zero injection bus
-                - "no_inj_bus": aux bus and bus without p,q measurement and without any connected injection (load, sgen...) \
-                        will be identified as zero injection bus
+                - "no_inj_bus": aux bus and bus without p,q measurement and without any connected injection \
+                    (load, sgen...) will be identified as zero injection bus
                 - "zero_pwr_bus": aux bus and all bus without p,q measurement that have either no connected injection \
-                        (load, sgen...) or a connected injection (load, sgen...) equal to zero will be identified as \
-                        zero injection bus
-                - iterable: the iterable should contain index of the zero injection bus and also aux bus will be identified \
-                    as zero-injection bus
+                    (load, sgen...) or a connected injection (load, sgen...) equal to zero will be identified as \
+                    zero injection bus
+                - iterable: the iterable should contain index of the zero injection bus and also aux bus will be \
+                    identified as zero-injection bus
 
-        **fuse_buses_with_bb_switch** (str, iterable, None) - Defines how buses with closed bb switches should \
-            be handled, if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and \
-            auxiliary line will be automatically added to the network to make the buses with different p,q injection \
-            measurements identifieble
+        fuse_buses_with_bb_switch (str, iterable, None): Defines how buses with closed bb switches should be handled,
+            if fuse buses will only fused to one for calculation, if not fuse, an auxiliary bus and auxiliary line will
+            be automatically added to the network to make the buses with different p,q injection measurements
+            identifiable
 
                 - "all": all buses with bb-switches will be fused, the same as the default behaviour in load flow
                 - None: buses with bb-switches and individual p,q measurements will be reconfigurated \
                     by auxiliary elements
-                - iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous e.g. \
-                    if one of the bus among the buses connected through bb switch is given, then all of them will still \
-                    be fused
+                - iterable: the iterable should contain the index of buses to be fused, the behaviour is contigous \
+                    e.g. if one of the bus among the buses connected through bb switch is given, then all of them will \
+                    still be fused
 
-    OUTPUT:
-        **successful** (boolean) - Was the state estimation successful?
+    Returns:
+        bool: Was the state estimation successful?
     """
     if algorithm not in ALGORITHM_MAPPING:
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
@@ -94,28 +89,21 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     """
     Wrapper function for bad data removal.
 
-    INPUT:
-        **net** - The net within this line should be created
+    Parameters:
+        net: The net within this line should be created
+        init (string): Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all buses, 'results' uses the
+            values from *res_bus_est* if available and 'slack' considers the slack bus voltage (and optionally, angle)
+            as the initial values. Defaults to 'flat'
+        tolerance (float): When the maximum state change between iterations is less than tolerance, the process stops.
+            Defaults to 1e-6
+        maximum_iterations (integer): Maximum number of iterations. Default is 10
+        calculate_voltage_angles (boolean): Take into account absolute voltage angles and phase shifts in transformers,
+            if init is 'slack'. Defaults to True
+        rn_max_threshold (float): Identification threshold to determine if the largest normalized residual reflects a
+            bad measurement Defaults to 3.0
 
-        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
-        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
-        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
-
-    OPTIONAL:
-        **tolerance** - (float) - When the maximum state change between iterations is less than
-        tolerance, the process stops. Default is 1e-6
-
-        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
-
-        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-        shifts in transformers, if init is 'slack'. Default is True
-
-        **rn_max_threshold** (float) - Identification threshold to determine
-        if the largest normalized residual reflects a bad measurement
-        (default value of 3.0)
-
-    OUTPUT:
-        **successful** (boolean) - Was the state estimation successful?
+    Returns:
+        bool: Was the state estimation successful?
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start, delta_start = _initialize_voltage(net, init)
@@ -128,27 +116,20 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     """
     Wrapper function for the chi-squared test.
 
-    INPUT:
-        **net** - The net within this line should be created.
+    Parameters:
+        net: The net within this line should be created.
+        init (string): Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all buses, 'results' uses the
+            values from *res_bus_est* if available and 'slack' considers the slack bus voltage (and optionally, angle)
+            as the initial values. Defaults to 'flat'
+        tolerance (float): When the maximum state change between iterations is less than tolerance, the process stops.
+            Defaults to 1e-6
+        maximum_iterations (integer): Maximum number of iterations. Defaults to 10
+        calculate_voltage_angles (boolean): Take into account absolute voltage angles and phase shifts in transformers,
+            if init is 'slack'. Defaults to True
+        chi2_prob_false (float): probability of error / false alarms. Defaults to 0.05
 
-        **init** - (string) Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all
-        buses, 'results' uses the values from *res_bus_est* if available and 'slack' considers the
-        slack bus voltage (and optionally, angle) as the initial values. Default is 'flat'
-
-    OPTIONAL:
-        **tolerance** - (float) - When the maximum state change between iterations is less than
-        tolerance, the process stops. Default is 1e-6
-
-        **maximum_iterations** - (integer) - Maximum number of iterations. Default is 10
-
-        **calculate_voltage_angles** - (boolean) - Take into account absolute voltage angles and phase
-        shifts in transformers, if init is 'slack'. Default is True
-
-        **chi2_prob_false** (float) - probability of error / false alarms
-        (default value: 0.05)
-
-    OUTPUT:
-        **bad_data_detected** (boolean) - Returns true if bad data has been detected
+    Returns:
+        bool: Returns true if bad data has been detected
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start, delta_start = _initialize_voltage(net, init)

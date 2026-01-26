@@ -21,11 +21,9 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
 
-    OPTIONAL:
-
-        **numv** (integer, 1) - maximal number of printed maximal respectively minimal voltages
-
-        **numi** (integer, 2) - maximal number of printed maximal loading at trafos or lines
+    Parameters:
+        numv (integer, 1): maximal number of printed maximal respectively minimal voltages
+        numi (integer, 2): maximal number of printed maximal loading at trafos or lines
     """
     logger.info("Max voltage in vm_pu:")
     for _, r in net.res_bus.sort_values("vm_pu", ascending=False).iloc[:numv].iterrows():
