@@ -15,6 +15,7 @@ Create Function
 =====================
 
 .. autofunction:: pandapower.create.create_gen
+.. autofunction:: pandapower.create.create_gens
 
 Input Parameters
 =====================
