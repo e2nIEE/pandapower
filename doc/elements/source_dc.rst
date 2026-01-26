@@ -14,7 +14,7 @@ Source DC
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_source_dc
+.. autofunction:: pandapower.create.create_source_dc
 
 Input Parameters
 =====================
@@ -39,18 +39,14 @@ Electric Model
 DC sources are modelled as P-buses in the power flow calculation:
 
 .. image:: pq.png
-	:width: 8em
-	:alt: alternate Text
-	:align: center
+    :width: 8em
+    :alt: alternate Text
+    :align: center
     
 The P-Values are calculated from the parameter table values as:
 
 .. math::
-   :nowrap:
-   
-   \begin{align*}
-    P_{sgen} &= p\_mw \cdot scaling \\
-    \end{align*}
+    P_{sgen} = p\_mw \cdot scaling
 
 .. note::
     
@@ -62,8 +58,8 @@ Result Parameters
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
 .. csv-table:: 
-   :file: res_source_dc.csv
-   :delim: ;
-   :widths: 10, 10, 50
+    :file: res_source_dc.csv
+    :delim: ;
+    :widths: 10, 10, 50
 
 The power values in the net.res_source_dc table are equivalent to :math:`P_{sgen}`.

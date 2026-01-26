@@ -17,16 +17,14 @@ def cmap_discrete(cmap_list):
     """
     Can be used to create a discrete colormap.
 
-    INPUT:
-        - cmap_list (list) - list of tuples, where each tuple represents one range. Each tuple has
-                             the form of ((from, to), color).
+    Parameters:
+        cmap_list (list): list of tuples, where each tuple represents one range. Each tuple has the form of
+            ((from, to), color).
 
-    OUTPUT:
-        - cmap - matplotlib colormap
+    Returns:
+        matplotlib colormap object, matplotlib norm object
 
-        - norm - matplotlib norm object
-
-    EXAMPLE:
+    Example:
         >>> from pandapower.plotting import cmap_discrete, create_line_collection, draw_collections
         >>> from pandapower.networks import mv_oberrhein
         >>> net = mv_oberrhein("generation")
@@ -56,17 +54,14 @@ def cmap_continuous(cmap_list):
     """
     Can be used to create a continuous colormap.
 
-    INPUT:
-        - cmap_list (list) - list of tuples, where each tuple represents one color. Each tuple has
-                             the form of (center, color). The colorbar is a linear segmentation of
-                             the colors between the centers.
+    Parameters:
+        cmap_list (list): list of tuples, where each tuple represents one color. Each tuple has the form of
+            (center, color). The colorbar is a linear segmentation of the colors between the centers.
 
-    OUTPUT:
-        - cmap - matplotlib colormap
+    Returns:
+        matplotlib colormap object, matplotlib norm object
 
-        - norm - matplotlib norm object
-
-    EXAMPLE:
+    Example:
         >>> from pandapower.plotting import cmap_continuous, create_bus_collection, draw_collections
         >>> from pandapower.networks import mv_oberrhein
         >>> net = mv_oberrhein("generation")
@@ -93,34 +88,29 @@ def cmap_logarithmic(min_value, max_value, colors):
         normalization (c.f. matplotlib.colors.LogNorm for more information on how the logarithmic
         normalization works).
 
-        \nPlease note: {There are numerous ways of how a logarithmic scale might
-                        be created, the intermediate values on the scale are created automatically based on the minimum
-                        and maximum given values in analogy to the LogNorm. Also, the logarithmic colormap can only be
-                        used with at least 3 colors and increasing values which all have to be above 0.}
+        .. note::
+            There are numerous ways of how a logarithmic scale might be created, the intermediate values on the scale
+            are created automatically based on the minimum and maximum given values in analogy to the LogNorm. Also, the
+            logarithmic colormap can only be used with at least 3 colors and increasing values which all have to be
+            above 0.
 
-        INPUT:
-            **min_value** (float) - the minimum value of the colorbar
+        Parameters:
+            min_value (float): the minimum value of the colorbar
+            max_value (float): the maximum value for the colorbar
+            colors (list): list of colors to be used for the colormap
 
-            **max_value** (float) - the maximum value for the colorbar
+        Returns:
+            matplotlib colormap object, matplotlib norm object
 
-            **colors** (list) - list of colors to be used for the colormap
-
-        OUTPUT:
-            **cmap** - matplotlib colormap
-
-            **norm** - matplotlib norm object
-
-        EXAMPLE:
-
-        >>> from pandapower.plotting import cmap_logarithmic, create_bus_collection, draw_collections
-        >>> from pandapower.networks import mv_oberrhein
-        >>> net = mv_oberrhein("generation")
-        >>> min_value, max_value = 1.0, 1.03
-        >>> colors = ["blue", "green", "red"]
-        >>> cmap, norm = cmap_logarithmic(min_value, max_value, colors)
-        >>> bc = create_bus_collection(net, size=70, cmap=cmap, norm=norm)
-        >>> draw_collections([bc])
-
+        Example:
+            >>> from pandapower.plotting import cmap_logarithmic, create_bus_collection, draw_collections
+            >>> from pandapower.networks import mv_oberrhein
+            >>> net = mv_oberrhein("generation")
+            >>> min_value, max_value = 1.0, 1.03
+            >>> colors = ["blue", "green", "red"]
+            >>> cmap, norm = cmap_logarithmic(min_value, max_value, colors)
+            >>> bc = create_bus_collection(net, size=70, cmap=cmap, norm=norm)
+            >>> draw_collections([bc])
     """
 
     num_values = len(colors)
@@ -132,8 +122,7 @@ def cmap_logarithmic(min_value, max_value, colors):
         raise UserWarning("The upper bound must be larger than the lower bound.")
     values = np.arange(num_values + 1)
     diff = (max_value - min_value) / (num_values - 1)
-    values = (np.log(min_value + values * diff) - np.log(min_value)) \
-             / (np.log(max_value) - np.log(min_value))
+    values = (np.log(min_value + values * diff) - np.log(min_value)) / (np.log(max_value) - np.log(min_value))
     cmap = LinearSegmentedColormap.from_list("name", list(zip(values, colors)))
     norm = LogNorm(min_value, max_value)
     return cmap, norm
