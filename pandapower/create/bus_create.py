@@ -106,7 +106,10 @@ def create_bus(
     _set_entries(net, "bus", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    if pd.notna(min_vm_pu) or pd.notna(max_vm_pu) or "min_vm_pu" in net.bus.columns:
+    if pd.notna(min_vm_pu) or pd.notna(max_vm_pu) or "min_vm_pu" in net.bus.columns or "max_vm_pu" in net.bus.columns:
+        if "min_vm_pu" not in net.bus.columns or "max_vm_pu" not in net.bus.columns:
+            net.bus["min_vm_pu"] = 0.0
+            net.bus["max_vm_pu"] = 2.0
         _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.0)
         _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.0)
 
