@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import functools
@@ -47,31 +47,26 @@ class OutputWriter(JSONSerializableClass):
     of the line loading in a time step or the mean values. Check the "advanced time series example" jupyter notebook
     for an example.
 
-    INPUT:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
+        time_steps (list): time_steps to calculate as a list (or range)
+        output_path (string, None): Path to a folder where the output is written to.
+        output_file_type (string, ".p"): output filetype to use. Allowed file extensions: [.xls, .xlsx, .csv, .csv.*,
+            .p, .json]
+            
+            .. note::
+            
+                XLS has a maximum number of 256 rows.
+                
+                CSV files can be saved in a compressed format like `.csv.zip`.
 
-        **time_steps** (list) - time_steps to calculate as a list (or range)
+        csv_separator (string, ";"): The separator used when writing to a csv file
+        write_time (int, None): Time to save periodically to disk in minutes. Deactivated by default
+        log_variables (list, None): list of tuples with (table, column) values to  be logged by output writer. Defaults
+            are: res_bus.vm_pu and res_line.loading_percent. Additional variables can be added later on with
+            ow.log_variable or removed with ow.remove_log_variable
 
-    OPTIONAL:
-
-        **output_path** (string, None) - Path to a folder where the output is written to.
-
-        **output_file_type** (string, ".p") - output filetype to use.
-        Allowed file extensions: [.xls, .xlsx, .csv, .csv.*, .p, .json]
-        Note: XLS has a maximum number of 256 rows.
-        Note: CSV files can be saved in a compressed format like `.csv.zip`.
-
-        **csv_separator** (string, ";") - The separator used when writing to a csv file
-
-        **write_time** (int, None) - Time to save periodically to disk in minutes. Deactivated by default
-
-        **log_variables** (list, None) - list of tuples with (table, column) values to  be logged by output writer.
-        Defaults are: res_bus.vm_pu and res_line.loading_percent. Additional variables can be added later on
-        with ow.log_variable or removed with ow.remove_log_variable
-
-
-
-    EXAMPLE:
+    Example:
         >>> from pandapower.timeseries.output_writer import OutputWriter
         >>> from pandapower.networks as nw
         >>> net = nw.simple_four_bus_system()
@@ -82,9 +77,6 @@ class OutputWriter(JSONSerializableClass):
         >>> def cost_logging(result, n_columns=2):
         >>>      return array([result[i][0][2] for i in range(len(result))])
         >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
-
-
-
     """
 
     def __init__(self, net, time_steps=None, output_path=None, output_file_type=".p", write_time=None,
@@ -235,7 +227,8 @@ class OutputWriter(JSONSerializableClass):
         Save the output to separate files in output_path with the file_type output_file_type. This is called after
         the time series simulation by default.
 
-           **append** (bool, False) - Option for appending instead of overwriting the file
+        Parameters:
+           append (bool, False): Option for appending instead of overwriting the file
         """
         save_single = False
         self._np_to_pd()
@@ -310,13 +303,10 @@ class OutputWriter(JSONSerializableClass):
         """
         removes a logged variable from outputs
 
-        INPUT:
-        **table** (str) - name of the DataFrame table (example: "res_bus")
-
-        OPTIONAL:
-        **variable** (str, None) - column name of the DataFrame table (example: "vm_pu"). If None all are variables of
-        table are removed
-
+        Parameters:
+            table (str): name of the DataFrame table (example: "res_bus")
+            variable (str, None): column name of the DataFrame table (example: "vm_pu"). If None all are variables of table
+                are removed
         """
         # remove variables from list
         if variable is not None:
@@ -331,26 +321,19 @@ class OutputWriter(JSONSerializableClass):
     def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         """
         Adds a variable to log during simulation and appends it to output_list.
-        INPUT:
+        
+        Parameters:
+            table (str): The DataFrame table where the variable is located as a string (e.g. "res_bus")
+            variable (str): variable that should be logged as string (e.g. "p_mw")
+            index (iterable, None): Can be either one index or a list of indices, or a numpy array of indices, or a
+                pandas Index, or a pandas Series (e.g. net.load.bus) for which the variable will be logged. If no index
+                is given, the variable will be logged for all elements in the table
+            eval_function (function, None): A function to be applied on the table / variable / index combination.
+                example: pd.min or pd.mean
+            eval_name (str, None): The name for an applied function. It *must* be unique. If the name is None the name
+                consists of the table, variable, index and eval function. example: "max_load_p_mw_values"
 
-        **table** (str) - The DataFrame table where the variable is located as a string (e.g. "res_bus")
-
-        **variable** (str) -  variable that should be logged as string (e.g. "p_mw")
-
-        OPTIONAL:
-
-        **index** (iterable, None) - Can be either one index or a list of indices, or a numpy array of indices,
-        or a pandas Index, or a pandas Series (e.g. net.load.bus) for which
-        the variable will be logged. If no index is given, the variable will be logged for all elements in the table
-
-        **eval_function** (function, None) - A function to be applied on the table / variable / index combination.
-        example: pd.min or pd.mean
-
-        **eval_name** (str, None) - The name for an applied function. It *must* be unique.
-                                    If the name is None the name consists of the table, variable, index and eval function
-                                    example: "max_load_p_mw_values"
-
-        EXAMPLE:
+        Example:
             >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
             >>> ow.log_variable('res_line', 'loading_percent', index=[0, 2, 5]) # add logging for line loading of lines with indices 0, 2, 5
             >>> ow.log_variable('res_line', 'loading_percent', eval_function=pd.max) # get the highest line loading only
@@ -359,7 +342,6 @@ class OutputWriter(JSONSerializableClass):
             >>> def cost_logging(result, n_columns=2):
             >>>      return array([result[i][0][2] for i in range(len(result))])
             >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
-
         """
         del_indices = list()
         append_args = set()

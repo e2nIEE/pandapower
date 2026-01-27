@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def create_sgen(
     **kwargs,
 ) -> Int:
     """
-    Adds one static generator in table net["sgen"].
+    Adds one static generator in table `net["sgen"]`.
 
     Static generators are modelled as positive and constant PQ power. This element is used to model
     generators with a constant active and reactive power feed-in. If you want to model a voltage
@@ -69,91 +69,55 @@ def create_sgen(
     to the generator. Please pay attention to the correct signing of the
     reactive power as well (positive for injection and negative for consumption).
 
-    INPUT:
-        **net** - The net within this static generator should be created
-
-        **bus** (int) - The bus id to which the static generator is connected
-
-        **p_mw** (float) - The active power of the static generator  (positive for generation!)
-
-    OPTIONAL:
-        **q_mvar** (float, 0) - The reactive power of the sgen
-
-        **sn_mva** (float, None) - Nominal power of the sgen
-
-        **name** (string, None) - The name for this sgen
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **scaling** (float, 1.) - An optional scaling factor to be set customly.
-        Multiplies with p_mw and q_mvar.
-
-        **type** (string, None) -  Three phase Connection type of the static generator: wye/delta
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **max_p_mw** (float, NaN) - Maximum active power injection - necessary for \
-            controllable sgens in OPF
-
-        **min_p_mw** (float, NaN) - Minimum active power injection - necessary for \
-            controllable sgens in OPF
-
-        **max_q_mvar** (float, NaN) - Maximum reactive power injection - necessary for \
-            controllable sgens in OPF
-
-        **min_q_mvar** (float, NaN) - Minimum reactive power injection - necessary for \
-            controllable sgens in OPF
-
-        **controllable** (bool, NaN) - Whether this generator is controllable by the optimal \
-            powerflow; defaults to False if "controllable" column exists in DataFrame
-
-        **k** (float, NaN) - Ratio of short circuit current to nominal current
-
-        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
-            specified as motor so that sgen is treated as asynchronous motor. Relevant for \
-            short-circuit calculation for all generator types
-
-        **reactive_capability_curve** (bool, False) - True if both the id_q_capability_characteristic and the \
-            curve style are present in the generator
-
-        **id_q_capability_characteristic** (int, None) - references the index of the characteristic from the \
+    Parameters:
+        net: The net within this static generator should be created
+        bus: The bus id to which the static generator is connected
+        p_mw: The active power of the static generator (positive for generation!)
+        q_mvar: The reactive power of the sgen
+        sn_mva: Nominal power of the sgen
+        name: The name for this sgen
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        scaling: An optional custom scaling factor. Multiplies with p_mw and q_mvar.
+        type: Three phase Connection type of the static generator: wye/delta
+        in_service: True for in_service or False for out of service
+        max_p_mw: Maximum active power injection - necessary for controllable sgens in OPF
+        min_p_mw: Minimum active power injection - necessary for controllable sgens in OPF
+        max_q_mvar: Maximum reactive power injection - necessary for controllable sgens in OPF
+        min_q_mvar: Minimum reactive power injection - necessary for controllable sgens in OPF
+        controllable: Whether this generator is controllable by the optimal powerflow; defaults to False if
+            "controllable" column exists in DataFrame
+        k: Ratio of short circuit current to nominal current
+        rx: R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated
+            as asynchronous motor. Relevant for short-circuit calculation for all generator types
+        reactive_capability_curve: True if both the id_q_capability_characteristic and the curve style are present in
+            the generator
+        id_q_capability_characteristic: references the index of the characteristic from the
             net.q_capability_characteristic table (id_q_capability_curve column)
+        curve_style: The curve style of the generator represents the relationship between active power (P) and reactive
+            power (Q). It indicates whether the reactive power remains constant as the active power changes or varies dynamically in response to it, e.g. "straightLineYValues" and "constantYValue"
+        generator_type: can be one of
+         
+            - "current_source" (full size converter)
+            - "async" (asynchronous generator)
+            - "async_doubly_fed" (doubly fed asynchronous generator, DFIG).
+            
+            Represents the type of the static generator in the context of the short-circuit calculations of wind power
+            station units. If None, other short-circuit-related parameters are not set
+        lrc_pu: locked rotor current in relation to the rated generator current. Relevant if the generator_type is
+            "async".
+        max_ik_ka: the highest instantaneous short-circuit value in case of a three-phase short-circuit
+            (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed".
+        kappa: the factor for the calculation of the peak short-circuit current, referred to the high-voltage side
+            (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed". If the superposition method is used (use_pre_fault_voltage=True), this parameter is used to pass through the max. current limit of the machine in p.u.
+        current_source: Model this sgen as a current source during short-circuit calculations; useful in some cases,
+            for example the simulation of fullsize converters per IEC 60909-0:2016.
 
-        **curve_style** (string, None) - The curve style of the generator represents the relationship \
-            between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-            constant as the active power changes or varies dynamically in response to it, \
-            e.g. "straightLineYValues" and "constantYValue"
+    Returns:
+        The ID of the created sgen
 
-        **generator_type** (str, None) - can be one of "current_source" \
-            (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
-            (doubly fed asynchronous generator, DFIG). Represents the type of the static \
-            generator in the context of the short-circuit calculations of wind power station units. \
-            If None, other short-circuit-related parameters are not set
-
-        **lrc_pu** (float, nan) - locked rotor current in relation to the rated generator \
-            current. Relevant if the generator_type is "async".
-
-        **max_ik_ka** (float, nan) - the highest instantaneous short-circuit value in case \
-            of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
-            generator_type is "async_doubly_fed".
-
-        **kappa** (float, nan) - the factor for the calculation of the peak short-circuit \
-            current, referred to the high-voltage side (provided by the manufacturer). \
-            Relevant if the generator_type is "async_doubly_fed". \
-            If the superposition method is used (use_pre_fault_voltage=True), this parameter \
-            is used to pass through the max. current limit of the machine in p.u.
-
-        **current_source** (bool, True) - Model this sgen as a current source during short-\
-            circuit calculations; useful in some cases, for example the simulation of full-\
-            size converters per IEC 60909-0:2016.
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created sgen
-
-    EXAMPLE:
-        create_sgen(net, 1, p_mw=120)
-
+    Example:
+        >>> create_sgen(net, 1, p_mw=120)
     """
     _check_element(net, bus)
 
@@ -237,99 +201,48 @@ def create_sgens(
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
-    Adds a number of sgens in table net["sgen"].
+    Adds a number of sgens in table `net["sgen"]`.
 
     Static generators are modelled as positive and constant PQ power. This element is used to model
     generators with a constant active and reactive power feed-in. If you want to model a voltage
     controlled generator, use the generator element instead.
 
     INPUT:
-        **net** - The net within this load should be created
+        net: The net within this load should be created
+        buses: A list of bus ids to which the loads are connected
+        p_mw: The active power of the sgens
 
-        **buses** (list of int) - A list of bus ids to which the loads are connected
+            - positive value -> generation
+            - negative value -> load
 
-    OPTIONAL:
+        q_mvar: The reactive power of the sgens
+        sn_mva: Nominal power of the sgens
+        name: The name for this sgen
+        scaling: An OPTIONAL custom scaling factor. Multiplies with p_mw and q_mvar.
+        type: type variable to classify the sgen
+        index: Force a specified ID if it is available. If None, the index is set to a range between one higher than the highest already existing index and the length of sgens that shall be created.
+        in_service: True for in_service or False for out of service
+        max_p_mw: Maximum active power sgen - necessary for controllable sgens in for OPF
+        min_p_mw: Minimum active power sgen - necessary for controllable sgens in for OPF
+        max_q_mvar: Maximum reactive power sgen - necessary for controllable sgens in for OPF
+        min_q_mvar: Minimum reactive power sgen - necessary for controllable sgens in OPF
+        controllable: States, whether a sgen is controllable or not. Only respected for OPF. Defaults to False if "controllable" column exists in DataFrame
+        k: Ratio of nominal current to short circuit current
+        rx: R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor. Relevant for short-circuit calculation for all generator types
+        reactive_capability_curve: True if both the id_q_capability_characteristic and the curve style are present in the generator.
+        id_q_capability_characteristic: references the index of the characteristic from the lookup table net.q_capability_characteristic e.g. 0, 1, 2, 3
+        curve_style: The curve style of the generator represents the relationship between active power (P) and reactive power (Q). It indicates whether the reactive power remains constant as the active power changes or varies dynamically in response to it. e.g. "straightLineYValues" and "constantYValue"
+        generator_type: can be one of "current_source" (full size converter), "async" (asynchronous generator), or "async_doubly_fed" (doubly fed asynchronous generator, DFIG). Represents the type of the static generator in the context of the short-circuit calculations of wind power station units
+        lrc_pu: locked rotor current in relation to the rated generator current. Relevant if the generator_type is "async".
+        max_ik_ka: the highest instantaneous short-circuit value in case of a three-phase short-circuit (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed".
+        kappa: the factor for the calculation of the peak short-circuit current, referred to the high-voltage side (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed".
+        current_source: Model this sgen as a current source during shortcircuit calculations; useful in some cases, for example the simulation of fullsize converters per IEC 60909-0:2016.
 
-        **p_mw** (list of floats) - The active power of the sgens
+    Returns:
+        The IDs of the created elements
 
-             - positive value   -> generation
-             - negative value  -> load
-
-        **q_mvar** (list of floats, default 0) - The reactive power of the sgens
-
-        **sn_mva** (list of floats, default None) - Nominal power of the sgens
-
-        **name** (list of strings, default None) - The name for this sgen
-
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplies with p_mw and q_mvar.
-
-        **type** (string, None) -  type variable to classify the sgen
-
-        **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
-             is set to a range between one higher than the highest already existing index and the \
-             length of sgens that shall be created.
-
-        **in_service** (list of boolean) - True for in_service or False for out of service
-
-        **max_p_mw** (list of floats, default NaN) - Maximum active power sgen - necessary for \
-             controllable sgens in for OPF
-
-        **min_p_mw** (list of floats, default NaN) - Minimum active power sgen - necessary for \
-             controllable sgens in for OPF
-
-        **max_q_mvar** (list of floats, default NaN) - Maximum reactive power sgen - necessary for \
-             controllable sgens in for OPF
-
-        **min_q_mvar** (list of floats, default NaN) - Minimum reactive power sgen - necessary for \
-             controllable sgens in OPF
-
-        **controllable** (list of boolean, default NaN) - States, whether a sgen is controllable \
-             or not. Only respected for OPF. Defaults to False if "controllable" column exists in DataFrame
-
-        **k** (list of floats, None) - Ratio of nominal current to short circuit current
-
-        **rx** (float, NaN) - R/X ratio for short circuit impedance. Only relevant if type is \
-            specified as motor so that sgen is treated as asynchronous motor. Relevant for \
-            short-circuit calculation for all generator types
-
-        **reactive_capability_curve** (list of bools, False) - True if both the id_q_capability_characteristic \
-            and the curve style are present in the generator.
-
-        **id_q_capability_characteristic** (list of ints, None) - references the index of the characteristic \
-            from the lookup table net.q_capability_characteristic e.g. 0, 1, 2, 3
-
-        **curve_style** (list of strings, None) - The curve style of the generator represents the relationship \
-           between active power (P) and reactive power (Q). It indicates whether the reactive power remains \
-           constant as the active power changes or varies dynamically in response to it.
-           e.g. "straightLineYValues" and "constantYValue"
-
-        **generator_type** (list of strings, "current_source") - can be one of "current_source" \
-            (full size converter), "async" (asynchronous generator), or "async_doubly_fed"\
-            (doubly fed asynchronous generator, DFIG). Represents the type of the static \
-            generator in the context of the short-circuit calculations of wind power station units
-
-        **lrc_pu** (list of float, nan) - locked rotor current in relation to the rated generator \
-            current. Relevant if the generator_type is "async".
-
-        **max_ik_ka** (list of float, nan) - the highest instantaneous short-circuit value in case \
-            of a three-phase short-circuit (provided by the manufacturer). Relevant if the \
-            generator_type is "async_doubly_fed".
-
-        **kappa** (list of float, nan) - the factor for the calculation of the peak short-circuit \
-            current, referred to the high-voltage side (provided by the manufacturer). \
-            Relevant if the generator_type is "async_doubly_fed".
-
-        **current_source** (list of bool, True) - Model this sgen as a current source during short-\
-            circuit calculations; useful in some cases, for example the simulation of full-\
-            size converters per IEC 60909-0:2016.
-
-    OUTPUT:
-        **index** (int) - The unique IDs of the created elements
-
-    EXAMPLE:
-        create_sgens(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
-
+    Example:
+        >>> create_sgens(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
     """
     _check_multiple_elements(net, buses)
 
@@ -404,6 +317,9 @@ def create_asymmetric_sgen(
     q_a_mvar: float = 0,
     q_b_mvar: float = 0,
     q_c_mvar: float = 0,
+    sn_a_mva: float = nan,
+    sn_b_mva: float = nan,
+    sn_c_mva: float = nan,
     sn_mva: float = nan,
     name: str | None = None,
     index: Int | None = None,
@@ -414,50 +330,36 @@ def create_asymmetric_sgen(
 ) -> Int:
     """
 
-    Adds one static generator in table net["asymmetric_sgen"].
+    Adds one static generator in table `net["asymmetric_sgen"]`.
 
     Static generators are modelled as negative  PQ loads. This element is used to model generators
     with a constant active and reactive power feed-in. Positive active power means generation.
 
     INPUT:
-        **net** - The net within this static generator should be created
+        net: The net within this static generator should be created
+        bus: The bus id to which the static generator is connected
+        p_a_mw: The active power of the static generator : Phase A
+        p_b_mw: The active power of the static generator : Phase B
+        p_c_mw: The active power of the static generator : Phase C
+        q_a_mvar: The reactive power of the sgen : Phase A
+        q_b_mvar: The reactive power of the sgen : Phase B
+        q_c_mvar: The reactive power of the sgen : Phase C
+        sn_a_mva: Nominal power of the sgen: Phase A
+        sn_b_mva: Nominal power of the sgen: Phase B
+        sn_c_mva: Nominal power of the sgen: Phase C
+        sn_mva: Nominal power of the sgen
+        name: The name for this sgen
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        scaling: An OPTIONAL scaling factor to be set customly. Multiplies with p_mw and q_mvar of all phases.
+        type: Three phase Connection type of the static generator: wye/delta
+        in_service: True for in_service or False for out of service
 
-        **bus** (int) - The bus id to which the static generator is connected
+    Returns:
+        The ID of the created sgen
 
-    OPTIONAL:
-
-        **p_a_mw** (float, default 0) - The active power of the static generator : Phase A
-
-        **p_b_mw** (float, default 0) - The active power of the static generator : Phase B
-
-        **p_c_mw** (float, default 0) - The active power of the static generator : Phase C
-
-        **q_a_mvar** (float, default 0) - The reactive power of the sgen : Phase A
-
-        **q_b_mvar** (float, default 0) - The reactive power of the sgen : Phase B
-
-        **q_c_mvar** (float, default 0) - The reactive power of the sgen : Phase C
-
-        **sn_mva** (float, default None) - Nominal power of the sgen
-
-        **name** (string, default None) - The name for this sgen
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplies with p_mw and q_mvar of all phases.
-
-        **type** (string, 'wye') -  Three phase Connection type of the static generator: wye/delta
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created sgen
-
-    EXAMPLE:
-        create_asymmetric_sgen(net, 1, p_b_mw=0.12)
-
+    Example:
+        >>> create_asymmetric_sgen(net, 1, p_b_mw=0.12)
     """
     _check_element(net, bus)
 
@@ -473,6 +375,9 @@ def create_asymmetric_sgen(
         "q_a_mvar": q_a_mvar,
         "q_b_mvar": q_b_mvar,
         "q_c_mvar": q_c_mvar,
+        "sn_a_mva": sn_a_mva,
+        "sn_b_mva": sn_b_mva,
+        "sn_c_mva": sn_c_mva,
         "sn_mva": sn_mva,
         "in_service": in_service,
         "type": type,
@@ -494,20 +399,18 @@ def create_sgen_from_cosphi(  # no index ?
     """
     Creates an sgen element from rated power and power factor cos(phi).
 
-    INPUT:
-        **net** - The net within this static generator should be created
+    Parameters:
+        net: The net within this static generator should be created
+        bus: The bus id to which the static generator is connected
+        sn_mva: rated power of the generator
+        cos_phi: power factor cos_phi
+        mode:
+        
+            - "underexcited" (Q absorption, decreases voltage)
+            - "overexcited" (Q injection, increases voltage)
 
-        **bus** (int) - The bus id to which the static generator is connected
-
-        **sn_mva** (float) - rated power of the generator
-
-        **cos_phi** (float) - power factor cos_phi
-
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited" \
-                         (Q injection, increases voltage)
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created sgen
+    Returns:
+        The ID of the created sgen
 
     gen, sgen, and ext_grid are modelled in the generator point of view. Active power
     will therefore be positive for generation, and reactive power will be negative for

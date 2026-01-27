@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -145,7 +145,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             violated at any generator, so that the runtime for the loadflow will increase if reactive
             power has to be curtailed.
             Note: enforce_q_lims only works if algorithm="nr"!
-        check_connectivity (bool, True): Perform an extra connectivity test after the conversion from pandapower to PYPOWER
+        check_connectivity (bool, True): Perform an extra connectivity test after the conversion from pandapower to
+            PYPOWER
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
             If check finds unsupplied buses, they are set out of service in the ppc
         voltage_depend_loads (bool, True): consideration of voltage-dependent loads.
@@ -159,8 +160,10 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         distributed_slack (bool, False): Distribute slack power
             according to contribution factor weights for external grids
             and generators.
-        tdpf (bool, False): Temperature Dependent Power Flow (TDPF). If True, line temperature is calculated based on the TDPF parameters in net.line table.
-        tdpf_delay_s (float, None): TDPF parameter, specifies the time delay in s to consider thermal inertia of conductors.
+        tdpf (bool, False): Temperature Dependent Power Flow (TDPF). If True, line temperature is calculated based on
+            the TDPF parameters in net.line table.
+        tdpf_delay_s (float, None): TDPF parameter, specifies the time delay in s to consider thermal inertia of
+            conductors.
 
 
     Keyword Args:
@@ -239,32 +242,28 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
 def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8, symmetric=True, validate_input=False):
     """
-        Runs powerflow using power-grid-model library
+    Runs powerflow using power-grid-model library
 
-        INPUT:
-            **net** - The pandapower format network
-
-        OPTIONAL:
-            **symmetric** (bool, True) -
+    Parameters:
+        net: The pandapower format network
+        symmetric (bool, True):
 
             - True: three-phase symmetric calculation, even for asymmetric loads/generations
             - False: three-phase asymmetric calculation
 
-            **algorithm** (str, "nr") - Algorithms available in power-grid-model.
-            Check power-grid-model documentation for detailed information on the algorithms.
+        algorithm (str, "nr"): Algorithms available in power-grid-model. Check power-grid-model documentation for
+            detailed information on the algorithms.
 
             - "nr" - Newton Raphson algorithm
             - "bfsw" - Iterative current algorithm. Similar to backward-forward sweep algorithm
             - "lc" - Linear current approximation algorithm
             - "lin" - Linear approximation algorithm
 
-            **error_tolerance_u_pu** (float, 1e-8) - error tolerance for voltage in p.u.
-
-            **max_iterations** (int, 20) - Maximum number of iterations for algorithms.
-            No effect on linear approximation algorithms.
-
-            **validate_input** (bool, False) - Validate input data to be used for power-flow in power-grid-model.
-            It is recommended to use pandapower.diagnostic tool prior.
+        error_tolerance_u_pu (float, 1e-8): error tolerance for voltage in p.u.
+        max_iterations (int, 20): Maximum number of iterations for algorithms. No effect on linear approximation
+            algorithms.
+        validate_input (bool, False): Validate input data to be used for power-flow in power-grid-model. It is
+            recommended to use pandapower.diagnostic tool prior.
     """
     if not PGM_IMPORTED:
         raise ImportError(
@@ -334,36 +333,45 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     """
     Runs PANDAPOWER DC Flow
 
-    INPUT:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
+        trafo_model (str, "t"): transformer equivalent circuit model pandapower provides two equivalent circuit models
+            for the transformer:
 
-    OPTIONAL:
-        **trafo_model** (str, "t")  - transformer equivalent circuit model
-        pandapower provides two equivalent circuit models for the transformer:
+            - "t"
+                transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is
+                also more accurate than the PI-model. We recommend using this transformer model.
+            - "pi"
+                transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is
+                questionable since the transformer is physically T-shaped. We therefore recommend the use of the
+                T-model.
 
-        - "t" - transformer is modeled as equivalent with the T-model. This is consistent with PowerFactory and is also more accurate than the PI-model. We recommend using this transformer model.
-        - "pi" - transformer is modeled as equivalent PI-model. This is consistent with Sincal, but the method is questionable since the transformer is physically T-shaped. We therefore recommend the use of the T-model.
+        trafo_loading (str, "current"): mode of calculation for transformer loading. Transformer loading can be
+            calculated relative to the rated current or the rated power. In both cases the overall transformer loading
+            is defined as the maximum loading on the two sides of the transformer.
 
-        **trafo_loading** (str, "current") - mode of calculation for transformer loading
+            - "current"
+                transformer loading is given as ratio of current flow and rated current of the transformer.
+                This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on
+                the current.
+            - "power"
+                transformer loading is given as ratio of apparent power flow to the rated apparent power of the
+                transformer.
 
-        Transformer loading can be calculated relative to the rated current or the rated power. In both cases the overall transformer loading is defined as the maximum loading on the two sides of the transformer.
+        check_connectivity (bool, False): Perform an extra connectivity test after the conversion from pandapower to
+            PYPOWER
 
-        - "current"- transformer loading is given as ratio of current flow and rated current of the transformer. This is the recommended setting, since thermal as well as magnetic effects in the transformer depend on the current.
-        - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the transformer.
-
-        **check_connectivity** (bool, False) - Perform an extra connectivity test after the conversion from pandapower to PYPOWER
-
-        If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
-        If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
-
-        **switch_rx_ratio** (float, 2) - rx_ratio of bus-bus-switches. If the impedance of switches
-        defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
-        model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
-        as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
-
-        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
-
-        **kwargs** - options to use for PYPOWER.runpf
+            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
+        switch_rx_ratio (float, 2): rx_ratio of bus-bus-switches. If the impedance of switches defined in
+            net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Closed
+            bus-bus switches, whose impedance z_ohm is not zero, are modelled as branches with resistance and reactance
+            according to net.switch.z_ohm and switch_rx_ratio.
+        trafo3w_losses (str, "hv"): defines where open loop losses of three-winding transformers are considered. Valid
+            options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+        
+    Keyword Arguments:
+        options to use for PYPOWER.runpf
     """
     _init_rundcpp_options(net, trafo_model=trafo_model, trafo_loading=trafo_loading,
                           recycle=recycle, check_connectivity=check_connectivity,
@@ -415,49 +423,47 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
         - net.trafo3w.max_loading_percent
 
         If the external grid ist controllable, the voltage setpoint of the external grid can be optimized within the
-        voltage constraints by the OPF. The same applies to the voltage setpoints of the controllable generator elements.
+        voltage constraints by the OPF. The same applies to the voltage setpoints of the controllable generator
+        elements.
 
         How these costs are combined into a cost function depends on the cost_function parameter.
 
-        INPUT:
-            **net** - The pandapower format network
-
-        OPTIONAL:
-            **verbose** (bool, False) - If True, some basic information is printed
-
-            **suppress_warnings** (bool, True) - suppress warnings in pypower
-
+        Parameters:
+            net: The pandapower format network
+            verbose (bool, False): If True, some basic information is printed
+            suppress_warnings (bool, True): suppress warnings in pypower
                 If set to True, warnings are disabled during the loadflow. Because of the way data is
                 processed in pypower, ComplexWarnings are raised during the loadflow.
                 These warnings are suppressed by this option, however keep in mind all other pypower
                 warnings are suppressed, too.
-
-            **init** (str, "flat") - init of starting opf vector. Options are "flat", "pf" or "results"
-
+            init (str, "flat"): init of starting opf vector. Options are "flat", "pf" or "results"
                 Starting solution vector (x0) for opf calculations is determined by this flag. Options are:
-                "flat" (default): starting vector is (upper bound - lower bound) / 2
-                "pf": a power flow is executed prior to the opf and the pf solution is the starting vector. This may improve
-                convergence, but takes a longer runtime (which are probably neglectible for opf calculations)
-                "results": voltage magnitude vector is taken from result table
-
-            **delta** (float, 1e-10) - power tolerance
-
-            **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
-
-            **consider_line_temperature** (bool, False) - adjustment of line impedance based on provided\
-                line temperature. If True, net.line must contain a column "temperature_degree_celsius".\
-                The temperature dependency coefficient alpha must be provided in the net.line.alpha\
-                column, otherwise the default value of 0.004 is used
-
-            **kwargs** - Pypower / Matpower keyword arguments:
-
-            - OPF_VIOLATION (5e-6) constraint violation tolerance
-            - PDIPM_COSTTOL (1e-6) optimality tolerance
-            - PDIPM_GRADTOL (1e-6) gradient tolerance
-            - PDIPM_COMPTOL (1e-6) complementarity condition (inequality) tolerance
-            - PDIPM_FEASTOL (set to OPF_VIOLATION if not specified) feasibiliy (equality) tolerance
-            - PDIPM_MAX_IT  (150) maximum number of iterations
-            - SCPDIPM_RED_IT(20) maximum number of step size reductions per iteration
+                
+                - "flat" (default)
+                    starting vector is (upper bound - lower bound) / 2
+                - "pf"
+                    a power flow is executed prior to the opf and the pf solution is the starting vector.
+                    This may improve convergence, but takes a longer runtime (which are probably neglectable for opf
+                    calculations)
+                - "results"
+                    voltage magnitude vector is taken from result table
+                
+            delta (float, 1e-10): power tolerance
+            trafo3w_losses (str, "hv"): defines where open loop losses of three-winding transformers are considered.
+                Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+            consider_line_temperature (bool, False): adjustment of line impedance based on provided line temperature.
+                If True, net.line must contain a column "temperature_degree_celsius". The temperature dependency
+                coefficient alpha must be provided in the net.line.alpha column, otherwise the default value of 0.004
+                is used
+                
+        Keyword Arguments:
+            OPF_VIOLATION (5e-6): constraint violation tolerance
+            PDIPM_COSTTOL (1e-6): optimality tolerance
+            PDIPM_GRADTOL (1e-6): gradient tolerance
+            PDIPM_COMPTOL (1e-6): complementarity condition (inequality) tolerance
+            PDIPM_FEASTOL: (set to OPF_VIOLATION if not specified) feasibiliy (equality) tolerance
+            PDIPM_MAX_IT (150): maximum number of iterations
+            SCPDIPM_RED_IT (20): maximum number of step size reductions per iteration
     """
     _check_necessary_opf_parameters(net, logger)
     _init_runopp_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -489,22 +495,17 @@ def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True
     - net.trafo.max_loading_percent
     - net.trafo3w.max_loading_percent
 
-    INPUT:
-        **net** - The pandapower format network
-
-    OPTIONAL:
-        **verbose** (bool, False) - If True, some basic information is printed
-
-        **suppress_warnings** (bool, True) - suppress warnings in pypower
-
+    Parameters:
+        net: The pandapower format network
+        verbose: If True, some basic information is printed
+        suppress_warnings (bool, True): suppress warnings in pypower
             If set to True, warnings are disabled during the loadflow. Because of the way data is
             processed in pypower, ComplexWarnings are raised during the loadflow.
             These warnings are suppressed by this option, however keep in mind all other pypower
             warnings are suppressed, too.
-
-        **delta** (float, 1e-10) - power tolerance
-
-        **trafo3w_losses** (str, "hv") - defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
+        delta (float, 1e-10): power tolerance
+        trafo3w_losses (str, "hv"): defines where open loop losses of three-winding transformers are considered. Valid
+            options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
     """
     if (not net.sgen.empty) & ("controllable" not in net.sgen.columns):
         logger.warning('Warning: Please specify sgen["controllable"]\n')

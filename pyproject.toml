@@ -39,7 +39,7 @@ classifiers = [
 dependencies = [
     "pandas~=2.3",
     "networkx~=3.4",
-    "scipy~=1.15",
+    "scipy<1.17",
     "numpy~=2.2",
     "packaging~=25.0",
     "tqdm~=4.67",
@@ -73,7 +73,7 @@ docs = [
 ]
 plotting = ["plotly~=6.3", "matplotlib~=3.10", "igraph", "geopandas~=1.1"]
 test = ["pytest~=8.4", "pytest-xdist~=3.8", "nbmake~=1.5"]
-performance = ["ortools~=9.14", "numba~=0.61", "lightsim2grid~=0.10.3"]
+performance = ["ortools~=9.14", "numba~=0.61", "lightsim2grid~=0.11.0"]
 fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=46.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.0"]
 converter = ["matpowercaseframes~=1.1", "lxml~=6.0"]
 pgm = ["power-grid-model-io~=1.2"]
