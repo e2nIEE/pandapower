@@ -153,9 +153,12 @@ def reindex_buses(net, bus_lookup):
 
     # --- reindex buses
     net.bus.index = get_indices(net.bus.index, bus_lookup)
-    net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
-    net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
-    net.res_bus_sc.index = get_indices(net.res_bus_sc.index, bus_lookup)
+    if "res_bus" in net:
+        net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
+    if "res_bus_3ph" in net:
+        net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
+    if "res_bus_sc" in net:
+        net.res_bus_sc.index = get_indices(net.res_bus_sc.index, bus_lookup)
 
     # --- adapt link in bus elements
     for element, value in element_bus_tuples():
@@ -253,8 +256,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         raise ValueError("Either new_indices or lookup must be given.")
     elif new_indices is not None and lookup is not None:
         raise ValueError("Only one can be considered, new_indices or lookup.")
-    if new_indices is not None and not len(new_indices) or lookup is not None and not len(
-            lookup.keys()):
+    if new_indices is not None and not len(new_indices) or lookup is not None and not len(lookup):
         return
 
     if new_indices is not None:
@@ -351,19 +353,20 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
     # run reindex_elements() for all element_types
     for et in element_types:
-        net[et] = net[et].sort_index()
-        new_index = list(np.arange(start, len(net[et]) + start))
-        if et == "trafo_characteristic_table":
-            ids = net[et].id_characteristic.dropna().unique()
-            reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
-        elif et in net and isinstance(net[et], pd.DataFrame):
-            if et in ["bus_geodata", "line_geodata"]:
-                logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
-                            "already included by et=='" + et.split("_")[0] + "'.")
+        if et in net:
+            net[et] = net[et].sort_index()
+            new_index = list(np.arange(start, len(net[et]) + start))
+            if et == "trafo_characteristic_table":
+                ids = net[et].id_characteristic.dropna().unique()
+                reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
+            elif et in net and isinstance(net[et], pd.DataFrame):
+                if et in ["bus_geodata", "line_geodata"]:
+                    logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
+                                "already included by et=='" + et.split("_")[0] + "'.")
+                else:
+                    reindex_elements(net, et, new_index)
             else:
-                reindex_elements(net, et, new_index)
-        else:
-            logger.debug("No indices could be changed for element '%s'." % et)
+                logger.debug("No indices could be changed for element '%s'." % et)
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):

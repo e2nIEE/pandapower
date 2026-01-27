@@ -17,6 +17,7 @@ from pandapower.plotting.geo import _node_geometries_from_geodata, _branch_geome
     _transform_node_geometry_to_geodata, _transform_branch_geometry_to_coords, _convert_xy_epsg, \
     convert_geodata_to_geojson, dump_to_geojson, convert_crs
 from pandapower.test.helper_functions import create_test_network
+from pandapower.run import runpp
 
 
 def _bus_geojson_to_geodata_(_net):
@@ -287,6 +288,7 @@ def test_dump_to_geojson():
                                              '"type": "FeatureCollection"}')
 
     # test exporting props from bus and res_bus
+    runpp(_net)
     _net.res_bus.loc[1, ["vm_pu", "va_degree", "p_mw", "q_mvar"]] = [1.0, 1.0, 1.0, 1.0]
     result = dump_to_geojson(_net, buses=[1])
     assert isinstance(result, FeatureCollection)

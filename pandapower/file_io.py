@@ -371,24 +371,24 @@ def from_json_string(
             omit_modules=omit_modules
         )
         net_dummy = create_empty_network()
-        if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
+        if ('version' not in net) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '
                               'Convert and save your net first.')
         if keep_serialized_elements:
             for key in elements_to_deserialize:
                 net[key] = json.loads(net[key], cls=PPJSONDecoder)
         else:
-            if (('version' not in net.keys()) or (net['version'] != net_dummy.version)) and \
+            if (('version' not in net) or (net['version'] != net_dummy.version)) and \
                     not convert:
                 raise UserWarning(
                     'The version of your net %s you are trying to load differs from the actual '
                     'pandapower version %s. Before you can load only distinct tables, convert '
                     'and save your net first or set convert to True!'
                     % (net['version'], net_dummy.version))
-            for key in net.keys():
+            for key in net:
                 if key in elements_to_deserialize:
                     net[key] = json.loads(net[key], cls=PPJSONDecoder)
-                elif not isinstance(net[key], str):
+                elif not isinstance(net[key], str) or "res_" in key:
                     continue
                 elif 'pandas' in net[key]:
                     net[key] = net_dummy[key]
@@ -439,11 +439,12 @@ def from_json_dict(json_dict):
         for par, value in json_dict["parameters"]["parameter"].items():
             net[par] = value
 
-    for key in sorted(json_dict.keys()):
+    for key in sorted(json_dict):
         if key == 'dtypes':
             continue
         if key in net and isinstance(net[key], pd.DataFrame) and isinstance(json_dict[key], dict) \
-                or key == "piecewise_linear_cost" or key == "polynomial_cost":
+                or key == "piecewise_linear_cost" or key == "polynomial_cost" \
+                or (key.startswith("res_") and key[4:] in net and isinstance(net[key[4:]], pd.DataFrame)):
             net[key] = pd.DataFrame.from_dict(json_dict[key], orient="columns")
             net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:

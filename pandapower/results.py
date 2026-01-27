@@ -12,6 +12,7 @@ from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_b
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
     _get_bus_results_3ph, _get_bus_dc_v_results, _get_p_dc_results, _set_dc_buses_out_of_service
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph, _get_dc_slack_results
+from pandapower.network_structure import get_structure_dict
 
 BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
                        "branch_ikss_angle_f", "branch_ikss_angle_t",
@@ -128,10 +129,10 @@ def _get_aranged_lookup(net, bus_table="bus"):
 
 
 def verify_results(net, mode="pf"):
-    elements = get_relevant_elements(mode)
+    elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
-        res_element, res_empty_element = get_result_tables(element, suffix)
+        res_element, _ = get_result_tables(element, suffix)
 
         index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
         if not index_equal:
@@ -173,39 +174,38 @@ def init_element(net, element, suffix=None):
     if len(index):
         # init empty dataframe
         if res_empty_element in net:
-            columns = net[res_empty_element].columns
-            net[res_element] = pd.DataFrame(np.nan, index=index,
-                                            columns=columns, dtype='float')
+            net[res_element] = pd.DataFrame(np.nan, index=index, columns=list(get_structure_dict()[res_empty_element]), dtype='float')
         else:
             net[res_element] = pd.DataFrame(index=index, dtype='float')
     else:
         empty_res_element(net, element, suffix)
 
 
-def get_relevant_elements(mode="pf"):
-    if mode == "pf" or mode == "opf":
-        return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
-                "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
-                "xward", "dcline", "asymmetric_load", "asymmetric_sgen", "source_dc",
-                "switch", "tcsc", "svc", "ssc", "vsc", "b2b_vsc"]
-    elif mode == "sc":
-        return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
-    elif mode == "se":
-        return ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"]
-    elif mode == "pf_3ph":
-        return ["bus", "line", "trafo", "ext_grid", "shunt",
-                "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]
+def get_relevant_elements(net, mode="pf"):
+    elements = {
+        "pf": ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
+               "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
+               "xward", "dcline", "asymmetric_load", "asymmetric_sgen", "source_dc",
+               "switch", "tcsc", "svc", "ssc", "vsc", "b2b_vsc"],
+        "sc": ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"],
+        "se": ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"],
+        "pf_3ph": ["bus", "line", "trafo", "ext_grid", "shunt", "load", "sgen", "gen", "storage",
+                   "asymmetric_load", "asymmetric_sgen"]
+    }
+    elements["opf"] = elements["pf"]
+
+    return [elem for elem in elements.get(mode, []) if not net[elem].empty]
 
 
 def init_results(net, mode="pf"):
-    elements = get_relevant_elements(mode)
+    elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         init_element(net, element, suffix)
 
 
 def reset_results(net, mode="pf"):
-    elements = get_relevant_elements(mode)
+    elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         empty_res_element(net, element, suffix)
@@ -267,8 +267,6 @@ def _ppci_internal_to_ppc(result, ppc):
         # Only for sc calculation
         # if branch current matrices have been stored they need to include out of service elements
         if key in BRANCH_RESULTS_KEYS:
-
-            # n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]
             # n_rows_result = np.shape(result['bus'])[0]
             # update_matrix = np.empty((n_branches, n_buses)) * np.nan

@@ -97,6 +97,11 @@ def test_single_bus_network():
 
 def test_missing_gen():
     net = case4gs()
+    del net.res_bus
+    del net.res_line
+    del net.res_ext_grid
+    del net.res_load
+    del net.res_gen
     rundcpp(net)
     res_gen = copy.deepcopy(net.res_gen.values)
     net.pop("res_gen")

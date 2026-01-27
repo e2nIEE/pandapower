@@ -222,7 +222,7 @@ def test_micro_sc_gen(mirco_sc):
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
         SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow.res_bus.index) == 0
+    assert "res_bus" not in SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow
 
 
 def test_example_multivoltage_res_xward(example_multivoltage):
@@ -329,35 +329,35 @@ def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_xward.index) == 0
+    assert "res_xward" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ward.index) == 0  # TODO:
+    assert "res_ward" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_sc.index) == 0
+    assert "res_trafo_sc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_est.index) == 0
+    assert "res_trafo_est" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_3ph.index) == 0
+    assert "res_trafo_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w_sc.index) == 0
+    assert "res_trafo3w_sc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w_est.index) == 0
+    assert "res_trafo3w_est" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w.index) == 0
+    assert "res_trafo3w" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -384,15 +384,15 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_tcsc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_tcsc.index) == 0
+    assert "res_tcsc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch_sc.index) == 0
+    assert "res_switch_sc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch_est.index) == 0
+    assert "res_switch_est" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -410,31 +410,31 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixe
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_svc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_svc.index) == 0
+    assert "res_svc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_storage_3ph.index) == 0
+    assert "res_storage_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_storage.index) == 0
+    assert "res_storage" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_shunt_3ph.index) == 0
+    assert "res_shunt_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_shunt.index) == 0
+    assert "res_shunt" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen_sc.index) == 0
+    assert "res_sgen_sc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen_3ph.index) == 0
+    assert "res_sgen_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -456,11 +456,11 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_motor(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_motor.index) == 0
+    assert "res_motor" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load_3ph.index) == 0
+    assert "res_load_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -482,15 +482,15 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_sc.index) == 0
+    assert "res_line_sc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_est.index) == 0
+    assert "res_line_est" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_3ph.index) == 0
+    assert "res_line_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -533,27 +533,27 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_impedance_est.index) == 0
+    assert "res_impedance_est" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_impedance.index) == 0
+    assert "res_impedance" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen_sc.index) == 0
+    assert "res_gen_sc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen.index) == 0
+    assert "res_gen" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid_sc.index) == 0
+    assert "res_ext_grid_sc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid_3ph.index) == 0
+    assert "res_ext_grid_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -567,19 +567,19 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmi
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_dcline.index) == 0
+    assert "res_dcline" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_sc.index) == 0
+    assert "res_bus_sc" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_est.index) == 0
+    assert "res_bus_est" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_3ph.index) == 0
+    assert "res_bus_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -607,19 +607,19 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_sgen_3ph.index) == 0
+    assert "res_asymmetric_sgen_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_sgen.index) == 0
+    assert "res_asymmetric_sgen" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_load_3ph.index) == 0
+    assert "res_asymmetric_load_3ph" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_load.index) == 0
+    assert "res_asymmetric_load" not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):

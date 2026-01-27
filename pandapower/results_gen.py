@@ -105,7 +105,8 @@ def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
     # read results from ppc for these buses
     scd_bus = ppc["source_dc"][scd_relevant, SOURCE_DC_BUS].astype(int).tolist()
     p[scd_relevant] = ppc["bus_dc"][scd_bus, DC_PD]
-    net['res_source_dc']['p_dc_mw'] = p
+    if 'res_source_dc' in net:
+        net['res_source_dc']['p_dc_mw'] = p
 
     #bus_dc_slack = ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF
 
@@ -328,15 +329,15 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
 
     # voltage magnitudes
     vA_pu, vB_pu, vC_pu = np.copy((np.zeros(n_res_gen),) * 3)
-    vA_pu[gen_idx_ppc] = np.abs(VABC[0, gen_idx_ppc])
-    vB_pu[gen_idx_ppc] = np.abs(VABC[1, gen_idx_ppc])
-    vC_pu[gen_idx_ppc] = np.abs(VABC[2, gen_idx_ppc])
+    vA_pu[gen_is_idx] = np.abs(VABC[0, gen_is_idx])
+    vB_pu[gen_is_idx] = np.abs(VABC[1, gen_is_idx])
+    vC_pu[gen_is_idx] = np.abs(VABC[2, gen_is_idx])
 
     # voltage angles
     vA_a, vB_a, vC_a = np.copy((np.zeros(n_res_gen),) * 3)
-    vA_a[gen_idx_ppc] = np.rad2deg(np.angle(VABC[0, gen_idx_ppc]))
-    vB_a[gen_idx_ppc] = np.rad2deg(np.angle(VABC[1, gen_idx_ppc]))
-    vC_a[gen_idx_ppc] = np.rad2deg(np.angle(VABC[2, gen_idx_ppc]))
+    vA_a[gen_is_idx] = np.rad2deg(np.angle(VABC[0, gen_is_idx]))
+    vB_a[gen_is_idx] = np.rad2deg(np.angle(VABC[1, gen_is_idx]))
+    vC_a[gen_is_idx] = np.rad2deg(np.angle(VABC[2, gen_is_idx]))
 
     net["res_gen_3ph"]["vmA_pu"] = vA_pu
     net["res_gen_3ph"]["vmB_pu"] = vB_pu

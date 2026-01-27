@@ -934,10 +934,11 @@ def _compare_pf_and_se_results(net):
     assert (np.allclose(net.res_line_est.q_from_mvar.values, net.res_line.q_from_mvar.values, 1e-6))
     assert (np.allclose(net.res_line_est.p_to_mw.values, net.res_line.p_to_mw.values, 1e-6))
     assert (np.allclose(net.res_line_est.q_to_mvar.values, net.res_line.q_to_mvar.values, 1e-6))
-    assert (np.allclose(net.res_trafo_est.p_lv_mw.values, net.res_trafo.p_lv_mw.values, 1e-6))
-    assert (np.allclose(net.res_trafo_est.q_lv_mvar.values, net.res_trafo.q_lv_mvar.values, 1e-6))
-    assert (np.allclose(net.res_trafo_est.p_hv_mw.values, net.res_trafo.p_hv_mw.values, 1e-6))
-    assert (np.allclose(net.res_trafo_est.q_hv_mvar.values, net.res_trafo.q_hv_mvar.values, 1e-6))
+    if "trafo" in net and net.trafo.shape[0] > 0:
+        assert (np.allclose(net.res_trafo_est.p_lv_mw.values, net.res_trafo.p_lv_mw.values, 1e-6))
+        assert (np.allclose(net.res_trafo_est.q_lv_mvar.values, net.res_trafo.q_lv_mvar.values, 1e-6))
+        assert (np.allclose(net.res_trafo_est.p_hv_mw.values, net.res_trafo.p_hv_mw.values, 1e-6))
+        assert (np.allclose(net.res_trafo_est.q_hv_mvar.values, net.res_trafo.q_hv_mvar.values, 1e-6))
 
 
 if __name__ == '__main__':

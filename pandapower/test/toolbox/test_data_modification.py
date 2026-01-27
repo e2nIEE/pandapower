@@ -84,7 +84,7 @@ def test_reindex_buses():
     # a more complexe bus_lookup of course should also work, but this one is easy to check
     reindex_buses(net, bus_lookup)
 
-    for elm in net.keys():
+    for elm in net:
         if isinstance(net[elm], pd.DataFrame) and net[elm].shape[0]:
             cols = pd.Series(net[elm].columns)
             bus_cols = cols.loc[cols.str.contains("bus")]
@@ -128,7 +128,7 @@ def test_continuos_bus_numbering():
     assert buses[0] == 0  # starts at zero
 
     used_buses = []
-    for element in net.keys():
+    for element in net:
         try:
             used_buses.extend(net[element].bus.values)
         except AttributeError:

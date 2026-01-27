@@ -755,6 +755,10 @@ def get_structure_dict() -> dict:
             "loading_b_percent": "f8",
             "loading_c_percent": "f8",
         },
+        "_empty_res_load_3ph": {
+            "p_mw": "f8",
+            "q_mvar": "f8",
+        },
         "_empty_res_asymmetric_load_3ph": {
             "p_a_mw": "f8",
             "q_a_mvar": "f8",

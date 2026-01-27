@@ -26,18 +26,18 @@ def test_convert_format(version):
         raise ValueError("File for version %s does not exist" % version)
     try:
         net = from_json(filename, convert=False)
-        if ('version' in net) and (vs.parse(str(net.version)) > vs.parse('2.0.1')):
+        if 'version' in net and vs.parse(str(net.version)) > vs.parse('2.0.1'):
             _ = from_json(filename, elements_to_deserialize=['bus', 'load'])
     except:
         raise UserWarning("Can not load network saved in pandapower version %s" % version)
-    vm_pu_old = net.res_bus.vm_pu.copy()
+    vm_pu_old = net.res_bus["vm_pu"].copy()
     convert_format(net)
     try:
         runpp(net, run_control="controller" in net and len(net.controller) > 0)
     except:
         raise UserWarning("Can not run power flow in network "
                           "saved with pandapower version %s" % version)
-    if not np.allclose(vm_pu_old.values, net.res_bus.vm_pu.values):
+    if not np.allclose(vm_pu_old.values, net.res_bus["vm_pu"].values):
         raise UserWarning("Power flow results mismatch "
                           "with pandapower version %s" % version)
 

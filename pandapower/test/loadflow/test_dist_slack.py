@@ -5,6 +5,7 @@
 
 
 import numpy as np
+import pandas as pd
 import pytest
 import copy
 from pandapower.control import ContinuousTapControl
@@ -85,7 +86,8 @@ def _get_xward_result(net):
 def _get_losses(net):
     pl_mw = 0
     for elm in ['line', 'trafo', 'trafo3w', 'impedance']:
-        pl_mw += net['res_' + elm].pl_mw.sum()
+        if elm in net and net[elm].shape[0] > 0:
+            pl_mw += net['res_' + elm].pl_mw.sum()
     return pl_mw
 
 
@@ -116,12 +118,21 @@ def _get_inputs_results(net):
     # that is why we only consider the active power consumption by the PQ load of the xward here
     xward_pq_res, _ = _get_xward_result(net)
     # xward is in the consumption reference system, but here the results are all assumed in the generation reference system
-    inputs = np.r_[net.gen.query("in_service").p_mw,
-    np.zeros(len(net.ext_grid.query("in_service"))),
-    -net.xward.query("in_service").ps_mw]
-    results = np.r_[net.res_gen[net.gen.in_service].p_mw,
-    net.res_ext_grid[net.ext_grid.in_service].p_mw,
-    -xward_pq_res]
+    inputs = np.r_[
+        net.gen.query("in_service").p_mw,
+        np.zeros(len(net.ext_grid.query("in_service"))),
+        -net.xward.query("in_service").ps_mw
+    ]
+    results = np.r_[
+        net.res_gen[net.gen.in_service].p_mw,
+        net.res_ext_grid[net.ext_grid.in_service].p_mw if (
+                hasattr(net, 'res_ext_grid') and
+                net.res_ext_grid is not None and
+                hasattr(net, 'ext_grid') and
+                not net.ext_grid.empty
+        ) else pd.Series(dtype=float),
+        -xward_pq_res
+    ]
     return inputs, results
 
 

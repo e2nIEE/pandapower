@@ -167,10 +167,7 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
 
     runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
 
-    eq_power.p_mw -= \
-        pd.concat([net_external.res_ext_grid.p_mw, net_external.res_gen.p_mw[slack_gen]])
-    eq_power.q_mvar -= \
-        pd.concat([net_external.res_ext_grid.q_mvar, net_external.res_gen.q_mvar[slack_gen]])
+    subtract_concat_of_p_and_q_from_first_input(eq_power, net_external, slack_gen)
     for bus in eq_power.bus:
         net_external.ward.loc[net_external.ward.bus == bus, 'ps_mw'] = \
             eq_power.p_mw[eq_power.bus == bus].values
@@ -182,12 +179,28 @@ def _replace_external_area_by_wards(net_external, bus_lookups, ward_parameter_no
     if len(ext_buses_with_xward):
         drop_buses(net_external,
                    net_external.bus.index.tolist()[-(len(ext_buses_with_xward)):])
-    # net_external.ward.qs_mvar[i] = eq_power.q_mvar[
-    #     net_external.ext_grid.bus == ward_parameter_no_power.bus_pd[i]]
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"replace_external_area_by_wards\" finished in %s seconds:" % round((
                 t_end - t_start), 2))
+
+
+def subtract_concat_of_p_and_q_from_first_input(eq_power, net_external, slack_gen):
+    p_parts = []
+    if hasattr(net_external, 'res_ext_grid') and not net_external.res_ext_grid.empty:
+        p_parts.append(net_external.res_ext_grid.p_mw)
+    if hasattr(net_external, 'res_gen') and not net_external.res_gen.empty:
+        p_parts.append(net_external.res_gen.p_mw[slack_gen])
+    if p_parts:
+        eq_power.p_mw -= pd.concat(p_parts)
+
+    q_parts = []
+    if hasattr(net_external, 'res_ext_grid') and not net_external.res_ext_grid.empty:
+        q_parts.append(net_external.res_ext_grid.q_mvar)
+    if hasattr(net_external, 'res_gen') and not net_external.res_gen.empty:
+        q_parts.append(net_external.res_gen.q_mvar[slack_gen])
+    if q_parts:
+        eq_power.q_mvar -= pd.concat(q_parts)
 
 
 def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_no_power,
@@ -252,8 +265,7 @@ def _replace_external_area_by_xwards(net_external, bus_lookups, xward_parameter_
     runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles,
               tolerance_mva=1e-6, max_iteration=100, **kwargs)
 
-    eq_power.p_mw -= pd.concat([net_external.res_ext_grid.p_mw, net_external.res_gen.p_mw[slack_gen]])
-    eq_power.q_mvar -= pd.concat([net_external.res_ext_grid.q_mvar, net_external.res_gen.q_mvar[slack_gen]])
+    subtract_concat_of_p_and_q_from_first_input(eq_power, net_external, slack_gen)
     for bus in eq_power.bus:
         net_external.xward.loc[net_external.xward.bus == bus, "ps_mw"] =  eq_power.p_mw[eq_power.bus == bus].values
         net_external.xward.loc[net_external.xward.bus == bus, "qs_mvar"] = eq_power.q_mvar[eq_power.bus == bus].values
