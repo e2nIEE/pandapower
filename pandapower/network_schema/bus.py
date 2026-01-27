@@ -15,10 +15,10 @@ _bus_columns = {
         description="can be used to group buses, for example network groups / regions",
     ),
     "max_vm_pu": pa.Column(
-        float, pa.Check.gt(0), nullable=True, required=False, description="Maximum voltage", metadata={"opf": True}
+        float, pa.Check.gt(0), nullable=False, required=False, description="Maximum voltage", metadata={"opf": True}
     ),
     "min_vm_pu": pa.Column(
-        float, pa.Check.ge(0), nullable=True, required=False, description="Minimum voltage", metadata={"opf": True}
+        float, pa.Check.ge(0), nullable=False, required=False, description="Minimum voltage", metadata={"opf": True}
     ),
     "in_service": pa.Column(bool, description="specifies if the bus is in service."),
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
