@@ -16,6 +16,15 @@ asymmetric_load_schema = pa.DataFrameSchema(
         "sn_mva": pa.Column(
             float, pa.Check.gt(0), nullable=True, required=False, description="rated power of the load [MVA]"
         ),
+        "sn_a_mva": pa.Column(
+            float, pa.Check.gt(0), nullable=True, required=False, description="Phase A rated power of the load [MVA]"
+        ),
+        "sn_b_mva": pa.Column(
+            float, pa.Check.gt(0), nullable=True, required=False, description="Phase B rated power of the load [MVA]"
+        ),
+        "sn_b_mva": pa.Column(
+            float, pa.Check.gt(0), nullable=True, required=False, description="Phase C rated power of the load [MVA]"
+        ),
         "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
         "in_service": pa.Column(bool, description="specifies if the load is in service."),
         "type": pa.Column(str, pa.Check.isin(["wye", "delta"]), description="type of load"),
