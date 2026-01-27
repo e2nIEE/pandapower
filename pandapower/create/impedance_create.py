@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -409,40 +409,23 @@ def create_tcsc(
 
     min_angle_degree, max_angle_degree are placeholders (ignored in the Newton-Raphson power flow at the moment).
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters:
+        net: The pandapower network in which the element is created
+        from_bus: starting bus of the tcsc
+        to_bus: ending bus of the tcsc
+        x_l_ohm: impedance of the reactor component of tcsc
+        x_cvar_ohm: impedance of the fixed capacitor component of tcsc
+        set_p_to_mw: set-point for the branch active power at the to_bus
+        thyristor_firing_angle_degree: the value of thyristor firing angle of tcsc (is used directly if controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+        name: element name
+        controllable: whether the element is considered as actively controlling or as a fixed series impedance
+        in_service: True for in_service or False for out of service
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
+        min_angle_degree: minimum value of the thyristor_firing_angle_degree
+        max_angle_degree: maximum value of the thyristor_firing_angle_degree
 
-        **from_bus** (int) - starting bus of the tcsc
-
-        **to_bus** (int) - ending bus of the tcsc
-
-        **x_l_ohm** (float) - impedance of the reactor component of tcsc
-
-        **x_cvar_ohm** (float) - impedance of the fixed capacitor component of tcsc
-
-        **set_p_to_mw** (float) - set-point for the branch active power at the to_bus
-
-        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of tcsc (is used directly if
-            controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
-
-    OPTIONAL:
-        **name** (list of strs, None) - element name
-
-        **controllable** (bool, True) - whether the element is considered as actively controlling
-            or as a fixed series impedance
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the
-            index one higher than the highest already existing index is selected.
-
-        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
-
-        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created tcsc
-
+    Returns:
+        The ID of the created tcsc
     """
     index = _get_index_with_check(net, "tcsc", index)
 
@@ -483,19 +466,20 @@ def create_series_reactor_as_impedance(
 ) -> Int:
     """
     Creates a series reactor as per-unit impedance
-    :param net: (pandapowerNet) - The pandapower network in which the element is created
-    :param from_bus: (int) - starting bus of the series reactor
-    :param to_bus: (int) - ending bus of the series reactor
-    :param r_ohm: (float) - real part of the impedance in Ohm
-    :param x_ohm: (float) - imaginary part of the impedance in Ohm
-    :param sn_mva: (float) - rated power of the series reactor in MVA
-    :param name:
-    :type name:
-    :param in_service:
-    :type in_service:
-    :param index:
-    :type index:
-    :return: index of the created element
+    
+    Parameters:
+        net: The pandapower network in which the element is created
+        from_bus: starting bus of the series reactor
+        to_bus: ending bus of the series reactor
+        r_ohm: real part of the impedance in Ohm
+        x_ohm: imaginary part of the impedance in Ohm
+        sn_mva: rated power of the series reactor in MVA
+        name:
+        in_service:
+        index:
+    
+    Returns:
+        index of the created element
     """
     if net.bus.at[from_bus, "vn_kv"] == net.bus.at[to_bus, "vn_kv"]:
         vn_kv = net.bus.at[from_bus, "vn_kv"]

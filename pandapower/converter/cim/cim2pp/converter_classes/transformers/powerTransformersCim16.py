@@ -299,6 +299,37 @@ class PowerTransformersCim16:
         power_transformer_ends = power_transformer_ends[
             ['rdfId', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0',
              'phaseAngleClock', 'connectionKind', 'grounded']]
+        # merge the CurrentLimits to the power_transformer_ends
+        if 'CurrentLimit' in self.cimConverter.cim['ssh']:  # CGMES 3.0
+            current_limits = self.cimConverter.merge_eq_ssh_profile('CurrentLimit')[['OperationalLimitSet', 'value',
+                                                                                     'OperationalLimitType']]
+        else:  # CGMES 2.4.15
+            current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['OperationalLimitSet', 'OperationalLimitType',
+                                                                          'value']]
+        current_limits = current_limits.rename(columns={'OperationalLimitSet': 'rdfId'})
+        current_limits = pd.merge(current_limits,
+                                  self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']],
+                                  how='left', on='rdfId', validate='m:1')
+        current_limits = current_limits.drop(columns='rdfId')
+        current_limits = current_limits.rename(columns={'OperationalLimitType': 'rdfId'})
+        if 'kind' in self.cimConverter.cim['eq']['OperationalLimitType']:  # CGMES 3.0
+            olt = (self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'kind', 'acceptableDuration']]
+                   .rename(columns={'kind': 'limitType'}))
+        else:  # CGMES 2.4.15
+            olt = self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType', 'acceptableDuration']]
+        current_limits = pd.merge(current_limits, olt, how='left', on='rdfId', validate='m:1')
+        current_limits = current_limits.drop(columns='rdfId')
+        current_limits = current_limits.rename(columns={
+            'value': 'CurrentLimit.value', 'limitType': 'OperationalLimitType.limitType',
+            'acceptableDuration': 'OperationalLimitType.acceptableDuration'})
+        power_transformer_ends = pd.merge(power_transformer_ends, current_limits, how='left', on='Terminal',
+                                          validate='1:m')
+        # make sure there is only one CurrentLimit per winding, keep the one with the lowest value (and choose patl
+        # first: sort ascending for OperationalLimitType.limitType)
+        power_transformer_ends = (
+            power_transformer_ends.sort_values(['rdfId', 'OperationalLimitType.limitType', 'CurrentLimit.value'],
+                                               ascending=[True, True, True])
+            .drop_duplicates(subset='rdfId', keep='first').reset_index(drop=True))
 
         # merge and append the tap changers
         eqssh_tap_changers = pd.merge(self.cimConverter.cim['eq']['RatioTapChanger'][[
@@ -450,7 +481,8 @@ class PowerTransformersCim16:
         copy_list = ['index_bus', 'Terminal', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0', 'neutralStep', 'lowStep',
                      'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step', 'connected',
                      'phaseAngleClock', 'connectionKind', sc['pte_id'], sc['tc'], sc['tc_id'], 'grounded', 'angle',
-                     'tap_changer_type']
+                     'tap_changer_type', 'CurrentLimit.value', 'OperationalLimitType.limitType',
+                     'OperationalLimitType.acceptableDuration']
         for one_item in copy_list:
             # copy the columns which are required for each winding
             power_trafo2w[one_item + '_lv'] = power_trafo2w[one_item].copy()
@@ -537,7 +569,10 @@ class PowerTransformersCim16:
             'neutralStep_lv': 'tap2_neutral',  'lowStep_lv': 'tap2_min', 'highStep_lv': 'tap2_max',
             'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',
             'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',
-            'tapchanger_class_lv': sc['tc2'], 'tapchanger_id_lv': sc['tc2_id']})
+            'tapchanger_class_lv': sc['tc2'], 'tapchanger_id_lv': sc['tc2_id'],
+            'CurrentLimit.value': 'CurrentLimit.value_hv',
+            'OperationalLimitType.limitType': 'OperationalLimitType.limitType_hv',
+            'OperationalLimitType.acceptableDuration': 'OperationalLimitType.acceptableDuration_hv'})
         return power_trafo2w
 
     def _prepare_trafo3w_cim16(self, power_trafo3w: pd.DataFrame) -> pd.DataFrame:
@@ -547,7 +582,8 @@ class PowerTransformersCim16:
         copy_list = ['index_bus', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0', 'neutralStep',
                      'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step', 'connected',
                      'angle', 'phaseAngleClock', 'connectionKind', 'grounded', sc['pte_id'], sc['tc'], sc['tc_id'],
-                     'tap_changer_type']
+                     'tap_changer_type', 'CurrentLimit.value', 'OperationalLimitType.limitType',
+                     'OperationalLimitType.acceptableDuration']
         for one_item in copy_list:
             # copy the columns which are required for each winding
             power_trafo3w[one_item + '_mv'] = power_trafo3w[one_item].copy()
@@ -665,5 +701,8 @@ class PowerTransformersCim16:
             'index_bus_lv': 'lv_bus', 'neutralStep': 'tap_neutral', 'lowStep': 'tap_min', 'highStep': 'tap_max',
             'step': 'tap_pos', 'stepVoltageIncrement': 'tap_step_percent', 'stepPhaseShiftIncrement': 'tap_step_degree',
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_mv': 'vn_mv_kv',
-            'ratedU_lv': 'vn_lv_kv', 'ratedS': 'sn_hv_mva', 'ratedS_mv': 'sn_mv_mva', 'ratedS_lv': 'sn_lv_mva'})
+            'ratedU_lv': 'vn_lv_kv', 'ratedS': 'sn_hv_mva', 'ratedS_mv': 'sn_mv_mva', 'ratedS_lv': 'sn_lv_mva',
+            'CurrentLimit.value': 'CurrentLimit.value_hv',
+            'OperationalLimitType.limitType': 'OperationalLimitType.limitType_hv',
+            'OperationalLimitType.acceptableDuration': 'OperationalLimitType.acceptableDuration_hv'})
         return power_trafo3w

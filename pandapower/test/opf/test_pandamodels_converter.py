@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -19,15 +19,12 @@ from pandapower.run import runopp
 from pandapower.test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
+
 try:
-    from julia.api import Julia
-
-    Julia(compiled_modules=False)
-    from julia import Main
-
+    from juliacall import Main # type: ignore
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False

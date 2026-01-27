@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -50,40 +50,41 @@ def create_switch(
     An element that is connected to a bus through a bus-element switch is connected to the bus
     if the switch is closed or disconnected if the switch is open.
 
-    INPUT:
-        **net** (pandapowerNet) - The net within which this switch should be created
+    Parameters:
+        net: The net within which this switch should be created
+        bus: The bus that the switch is connected to
+        element: index of the element
+        et: element type
+        
+            - "l" = switch between bus and line
+            - "t" = switch between bus and transformer
+            - "t3" = switch between bus and transformer3w
+            - "b" = switch between two buses
+        
+        closed: switch position:
+         
+            - False = open
+            - True = closed
+        
+        type: indicates the type of switch
+        
+            - "LS" = Load Switch
+            - "CB" = Circuit Breaker
+            - "LBS" = Load Break Switch
+            - "DS" = Disconnecting Switch
+        
+        z_ohm: indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0, the
+            buses will be fused like before, if larger than 0 a branch will be created for the switch which has also
+            effects on the bus mapping
+        name: The name for this switch
+        in_ka: maximum current that the switch can carry normal operating conditions without tripping
 
-        **bus** - The bus that the switch is connected to
+    Returns:
+        The unique switch_id of the created switch
 
-        **element** - index of the element: bus id if et == "b", line id if et == "l", trafo id if \
-            et == "t"
-
-        **et** - (string) element type: "l" = switch between bus and line, "t" = switch between
-            bus and transformer, "t3" = switch between bus and transformer3w, "b" = switch between
-            two buses
-
-    OPTIONAL:
-        **closed** (boolean, True) - switch position: False = open, True = closed
-
-        **type** (str, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
-            Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
-
-        **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
-            bus-bus switches, if sets to 0, the buses will be fused like before, if larger than
-            0 a branch will be created for the switch which has also effects on the bus mapping
-
-        **name** (string, default None) - The name for this switch
-
-        **in_ka** (float, default None) - maximum current that the switch can carry
-            normal operating conditions without tripping
-
-    OUTPUT:
-        **sid** - The unique switch_id of the created switch
-
-    EXAMPLE:
-        create_switch(net, bus=0, element=1, et='b', type="LS", z_ohm=0.1)
-
-        create_switch(net, bus=0, element=1, et='l')
+    Example:
+        >>> create_switch(net, bus=0, element=1, et='b', type="LS", z_ohm=0.1)
+        >>> create_switch(net, bus=0, element=1, et='l')
 
     """
     _check_element(net, bus)
@@ -158,41 +159,41 @@ def create_switches(
     An element that is connected to a bus through a bus-element switch is connected to the bus
     if the switch is closed or disconnected if the switch is open.
 
-    INPUT:
-        **net** (pandapowerNet) - The net within which this switch should be created
+    Parameters:
+        net: The net within which this switch should be created
+        buses: The bus that the switch is connected to
+        element: index of the element
+        et: element type
+         
+            - "l" = switch between bus and line
+            - "t" = switch between bus and transformer
+            - "t3" = switch between bus and transformer3w
+            - "b" = switch between two buses
+        
+        closed: switch position
+         
+            - False = open
+            - True = closed
+        
+        type: indicates the type of switch
+         
+            - "LS" = Load Switch
+            - "CB" = Circuit Breaker
+            - "LBS" = Load Break Switch or
+            - "DS" = Disconnecting Switch
+        
+        z_ohm: indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0,
+            the buses will be fused like before, if larger than 0 a branch will be created for the switch which has also
+            effects on the bus mapping
+        name: The name for this switch
+        in_ka: maximum current that the switch can carry normal operating conditions without tripping
 
-        **buses** (list)- The bus that the switch is connected to
+    Returns:
+        List of ids of the created switches
 
-        **element** (list)- index of the element: bus id if et == "b", line id if et == "l", \
-            trafo id if et == "t"
-
-        **et** - (list) element type: "l" = switch between bus and line, "t" = switch between
-            bus and transformer, "t3" = switch between bus and transformer3w, "b" = switch between
-            two buses
-
-    OPTIONAL:
-        **closed** (boolean, True) - switch position: False = open, True = closed
-
-        **type** (str, None) - indicates the type of switch: "LS" = Load Switch, "CB" = \
-            Circuit Breaker, "LBS" = Load Break Switch or "DS" = Disconnecting Switch
-
-        **z_ohm** (float, 0) - indicates the resistance of the switch, which has effect only on
-            bus-bus switches, if sets to 0, the buses will be fused like before, if larger than
-            0 a branch will be created for the switch which has also effects on the bus mapping
-
-        **name** (list of str, default None) - The name for this switch
-
-        **in_ka** (float, default None) - maximum current that the switch can carry
-            normal operating conditions without tripping
-
-    OUTPUT:
-        **sid** - List of switch_id of the created switches
-
-    EXAMPLE:
-        create_switches(net, buses=[0, 1], element=1, et='b', type="LS", z_ohm=0.1)
-
-        create_switches(net, buses=[0, 1], element=1, et='l')
-
+    Example:
+        >>> create_switches(net, buses=[0, 1], element=1, et='b', type="LS", z_ohm=0.1)
+        >>> create_switches(net, buses=[0, 1], element=1, et='l')
     """
     index = _get_multiple_index_with_check(net, "switch", index, len(buses), name="Switches")
     _check_multiple_elements(net, buses)

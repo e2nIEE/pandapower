@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandas as pd
@@ -106,22 +106,16 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
     Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower format network.
-
-    OPTIONAL:
-        **respect_switches** (bool, True) - Respect switches when artificial geodata is created
-
-        **use_line_geo** (bool, True) - defines if lines patches are based on
-        net.line.geo of the lines (True) or on net.bus.geo of the connected buses (False)
-
-        **on_map** (bool, False) - enables using mapLibre plot in plotly.
-        If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
-
-        **projection** (String, None) - defines a projection from which network geo-data will be transformed to
-        lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
-
-        **map_style** (str, 'basic') - enables using mapLibre plot in plotly
+    Parameters:
+        net (pandapowerNet): The pandapower format network.
+        respect_switches (bool, True): Respect switches when artificial geodata is created
+        use_line_geo (bool, True): defines if lines patches are based on net.line.geo of the lines (True) or on
+            net.bus.geo of the connected buses (False)
+        on_map (bool, False): enables using mapLibre plot in plotly. If provided geodata are not real geo-coordinates in
+            lon/lat form, on_map will be set to False.
+        projection (String, None): defines a projection from which network geo-data will be transformed to lat-long. For
+            each projection a string can be found at http://spatialreference.org/ref/epsg/
+        map_style (str, 'basic'): enables using mapLibre plot in plotly
 
             - 'basic'
             - 'carto-darkmatter'
@@ -138,48 +132,31 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
             - 'satellite-streets'
             - 'streets'
 
-        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
+        figsize (float, 1): aspectratio is multiplied by it in order to get final image size
+        aspectratio (tuple, 'auto'): when 'auto' it preserves original aspect ratio of the network geodata; any custom
+            aspectration can be given as a tuple, e.g. (1.2, 1)
+        line_width (float, 1.0): width of lines
+        bus_size (float, 10.0): size of buses to plot.
+        ext_grid_size (float, 20.0): size of ext_grids to plot. See bus sizes for details. Note: ext_grids are plotted
+            as rectangles
+        bus_color (String, "blue"): Bus Color. Init as first value of color palette.
+        line_color (String, 'grey'): Line Color. Init is grey
+        trafo_color (String, 'green'): Trafo Color. Init is green
+        trafo3w_color (String, 'green'): Trafo 3W Color. Init is blue
+        ext_grid_color (String, 'yellow'): External Grid Color. Init is yellow
+        auto_open (bool, True): automatically open plot in browser
+        showlegend (bool, True): If True, a legend will be shown
+        additional_traces (list, None): List with additional, user-created traces that will be appended to the
+            simple_plotly traces before drawing all traces
+        zoomlevel (int, 11): initial mapLibre-zoomlevel on a map if `on_map=True`. Small values = less zoom / larger
+            area shown
+        auto_draw_traces (bool, True): if True, a figure with the drawn traces is returned. If False, the traces and a
+            dict with settings is returned
+        hvdc_color (str, "cyan"): color for HVDC lines
 
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata;
-        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
-
-        **line_width** (float, 1.0) - width of lines
-
-        **bus_size** (float, 10.0) -  size of buses to plot.
-
-        **ext_grid_size** (float, 20.0) - size of ext_grids to plot.
-
-            See bus sizes for details. Note: ext_grids are plotted as rectangles
-
-        **bus_color** (String, "blue") - Bus Color. Init as first value of color palette.
-
-        **line_color** (String, 'grey') - Line Color. Init is grey
-
-        **trafo_color** (String, 'green') - Trafo Color. Init is green
-
-        **trafo3w_color** (String, 'green') - Trafo 3W Color. Init is blue
-
-        **ext_grid_color** (String, 'yellow') - External Grid Color. Init is yellow
-
-        **auto_open** (bool, True) - automatically open plot in browser
-
-        **showlegend** (bool, True) - If True, a legend will be shown
-
-        **additional_traces** (list, None) - List with additional, user-created traces that will
-        be appended to the simple_plotly traces before drawing all traces
-
-        **zoomlevel** (int, 11) - initial mapLibre-zoomlevel on a map if `on_map=True`. Small
-        values = less zoom / larger area shown
-
-        **auto_draw_traces** (bool, True) - if True, a figure with the drawn traces is returned.
-        If False, the traces and a dict with settings is returned
-
-        **hvdc_color** (str, "cyan") - color for HVDC lines
-
-    OUTPUT:
-        **figure** (graph_objs._figure.Figure) figure object
+    Returns:
+        graph_objs._figure.Figure: figure object
     """
-
     settings = dict(
         on_map=on_map,
         map_style=map_style,
@@ -221,9 +198,9 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         for weighted_trace in additional_traces:
             # for weighted_marker_traces "meta" should include information for the "scale legend"
             if ("meta" in weighted_trace) and (weighted_trace["meta"]["show_scale_legend"]):
-                sc_trace = create_scale_trace(net, weighted_trace, down_shift=shift)
+                sc_trace, next_shift = create_scale_trace(net, weighted_trace, down_shift=shift)
                 traces.extend(sc_trace)
-                shift += len(weighted_trace["meta"]["scale_marker_size"])
+                shift += next_shift
 
         traces.extend(additional_traces)
     if auto_draw_traces:

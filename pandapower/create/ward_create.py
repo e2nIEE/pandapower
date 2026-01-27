@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -42,21 +42,16 @@ def create_ward(
 
     A ward equivalent is a combination of an impedance load and a PQ load.
 
-    INPUT:
-        **net** (pandapowernet) - The pandapower net within the element should be created
+    Parameters:
+        net: The pandapower net within the element should be created
+        bus:  bus of the ward equivalent
+        ps_mw: active power of the PQ load
+        qs_mvar: reactive power of the PQ load
+        pz_mw: active power of the impedance load in MW at 1.pu voltage
+        qz_mvar: reactive power of the impedance load in MVar at 1.pu voltage
 
-        **bus** (int) -  bus of the ward equivalent
-
-        **ps_mw** (float) - active power of the PQ load
-
-        **qs_mvar** (float) - reactive power of the PQ load
-
-        **pz_mw** (float) - active power of the impedance load in MW at 1.pu voltage
-
-        **qz_mvar** (float) - reactive power of the impedance load in MVar at 1.pu voltage
-
-    OUTPUT:
-        ward id
+    Returns:
+        the id of the created ward
     """
     _check_element(net, bus)
 
@@ -94,21 +89,16 @@ def create_wards(
 
     A ward equivalent is a combination of an impedance load and a PQ load.
 
-    INPUT:
-        **net** (pandapowernet) - The pandapower net within the element should be created
+    Parameters:
+        net: The pandapower net within the element should be created
+        buses:  bus of the ward equivalent
+        ps_mw: active power of the PQ load
+        qs_mvar: reactive power of the PQ load
+        pz_mw: active power of the impedance load in MW at 1.pu voltage
+        qz_mvar: reactive power of the impedance load in MVar at 1.pu voltage
 
-        **buses** (list of int) -  bus of the ward equivalent
-
-        **ps_mw** (list of float) - active power of the PQ load
-
-        **qs_mvar** (list of float) - reactive power of the PQ load
-
-        **pz_mw** (list of float) - active power of the impedance load in MW at 1.pu voltage
-
-        **qz_mvar** (list of float) - reactive power of the impedance load in MVar at 1.pu voltage
-
-    OUTPUT:
-        ward id
+    Returns:
+        the ids of the created ward
     """
     _check_multiple_elements(net, buses)
 
@@ -152,30 +142,20 @@ def create_xward(
     A ward equivalent is a combination of an impedance load, a PQ load and as voltage source with
     an internal impedance.
 
-    INPUT:
-        **net** - The pandapower net within the impedance should be created
+    Parameters::
+        net: The pandapower net within the impedance should be created
+        bus:  bus of the ward equivalent
+        ps_mw: active power of the PQ load
+        qs_mvar: reactive power of the PQ load
+        pz_mw: active power of the impedance load in MW at 1.pu voltage
+        qz_mvar: reactive power of the impedance load in MVar at 1.pu voltage
+        r_ohm: internal resistance of the voltage source
+        x_ohm: internal reactance of the voltage source
+        vm_pu: voltage magnitude at the additional PV-node
+        slack_weight: Contribution factor for distributed slack power flow calculation (active power balancing)
 
-        **bus** (int) -  bus of the ward equivalent
-
-        **ps_mw** (float) - active power of the PQ load
-
-        **qs_mvar** (float) - reactive power of the PQ load
-
-        **pz_mw** (float) - active power of the impedance load in MW at 1.pu voltage
-
-        **qz_mvar** (float) - reactive power of the impedance load in MVar at 1.pu voltage
-
-        **r_ohm** (float) - internal resistance of the voltage source
-
-        **x_ohm** (float) - internal reactance of the voltage source
-
-        **vm_pu** (float) - voltage magnitude at the additional PV-node
-
-        **slack_weight** (float, default 0.0) - Contribution factor for distributed slack power
-            flow calculation (active power balancing)
-
-    OUTPUT:
-        xward id
+    Returns:
+        the id of the created xward
     """
     _check_element(net, bus)
 

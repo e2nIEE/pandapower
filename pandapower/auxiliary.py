@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -767,7 +767,7 @@ def _write_to_object_attribute(net, element, index, variable, values):
 
 
 def _set_isolated_nodes_out_of_service(ppc, bus_not_reachable, dc=False):
-    isolated_nodes = np.where(bus_not_reachable)[0]
+    isolated_nodes = np.nonzero(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
         logger.debug("There are isolated buses in the network! (%i nodes in the PPC)" % len(isolated_nodes))
         # set buses in ppc out of service
@@ -1732,7 +1732,7 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
     mode = "pf"
     if calculate_voltage_angles == "auto":
         calculate_voltage_angles = False
-        is_hv_bus = np.where(net.bus.vn_kv.values > 70)[0]
+        is_hv_bus = np.nonzero(net.bus.vn_kv.values > 70)[0]
         if any(is_hv_bus) > 0:
             line_buses = set(net.line.from_bus.values) & set(net.line.to_bus.values)
             hv_buses = net.bus.index[is_hv_bus]

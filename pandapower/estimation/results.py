@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -47,7 +47,7 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
     # overwrite power values for buses that were merged because they would not have the same power inj
     # as the bus they were merged to
     merged_bus = net["_pd2ppc_lookups"]["merged_bus"]
-    merged_bus_idx = np.where(merged_bus == True)[0]
+    merged_bus_idx = np.nonzero(merged_bus)[0]
     net.res_bus_est.loc[merged_bus_idx, 'p_mw'] = 0
     net.res_bus_est.loc[merged_bus_idx, "q_mvar"] = 0
     # add shunt power because the injection at the node computed via Ybus is only the extra injection on top of the shunt

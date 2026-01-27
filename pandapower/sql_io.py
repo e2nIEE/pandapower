@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import Optional
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -469,7 +469,7 @@ def from_postgresql(
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 
-    with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
+    with psycopg2.connect(host=host, user=user, password=password, database=database, port=port) as conn:
         net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name, empty_dict_like_object, grid_tables)
 
     return net

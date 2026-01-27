@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from __future__ import annotations
 import logging
@@ -203,7 +203,7 @@ class CimParser:
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
-                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'limitType']),
+                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'limitType', 'acceptableDuration']),
                 'CurrentLimit': pd.DataFrame(columns=[
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType', 'value']),
                 'VoltageLimit': pd.DataFrame(columns=[
@@ -220,13 +220,13 @@ class CimParser:
                 'ACDCConverterDCTerminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'DCNode', 'DCConductingEquipment', 'sequenceNumber']),
                 'Breaker': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'Disconnector': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'Switch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'LoadBreakSwitch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'EnergyConsumer': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'EquipmentContainer']),
                 'ConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),
@@ -618,7 +618,7 @@ class CimParser:
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
-                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'kind']),
+                'OperationalLimitType': pd.DataFrame(columns=['rdfId', 'name', 'kind', 'acceptableDuration']),
                 'CurrentLimit': pd.DataFrame(columns=[
                     'rdfId', 'name', 'OperationalLimitSet', 'OperationalLimitType']),
                 'VoltageLimit': pd.DataFrame(columns=[
@@ -635,13 +635,13 @@ class CimParser:
                 'ACDCConverterDCTerminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'DCNode', 'DCConductingEquipment', 'sequenceNumber']),
                 'Breaker': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'Disconnector': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'Switch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'LoadBreakSwitch': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained']),
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'normalOpen', 'retained', 'ratedCurrent']),
                 'EnergyConsumer': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'EquipmentContainer']),
                 'ConformLoad': pd.DataFrame(columns=['rdfId', 'name', 'description']),

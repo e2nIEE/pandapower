@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from math import pi
 import numpy as np
 import pandas as pd
+from pandapower.auxiliary import pandapowerNet
 from pandapower.pypower.idx_bus import \
     BUS_I, BUS_TYPE, PD, QD, GS, BS, BUS_AREA, VM, VA, BASE_KV, ZONE, VMAX, VMIN
 from pandapower.pypower.idx_gen import \
@@ -24,34 +25,29 @@ logger = logging.getLogger(__name__)
 ppc_elms = ["bus", "branch", "gen"]
 
 
-def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs):
+def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet:
     """
     This function converts pypower case files to pandapower net structure.
 
-    INPUT:
-        **ppc** (dict) -  The pypower case file.
+    Parameters:
+        ppc (dict): The pypower case file.
+        f_hz (int): The frequency of the network, by default 50
+        validate_conversion (bool): If True, validate_from_ppc is run after conversion. For running the validation, the ppc must already contain the pypower powerflow results or pypower must be installed, by default False
+    
+    Keyword Arguments:
+        validate_from_ppc: if validate_conversion is True
+        tap_side:
+        check_costs: is passed as "check" to create_pwl_costs() and create_poly_costs()
+        branch_g_name: name of branch_g column if it exists in ppc. if not given, branch G is set to 0
 
-        **f_hz** (int) - The frequency of the network, by default 50
+    Returns:
+        ppc converted to pandapower net structure
 
-        **validate_conversion** (bool) - If True, validate_from_ppc is run after conversion. For running the validation, the ppc must already contain the pypower powerflow results or pypower must be installed, by default False
-
-        **kwargs** (dict) - keyword arguments for:
-                            - validate_from_ppc if validate_conversion is True
-
-                            - tap_side
-
-                            - check_costs is passed as "check" to create_pwl_costs() and create_poly_costs()
-                            
-                            - branch_g_name: name of branch_g column if it exists in ppc. if not given, branch G is set to 0
-
-    OUTPUT:
-        **net** - ppc converted to pandapower net structure
-
-    EXAMPLES:
-        >>> import pandapower
+    Example:
+        >>> from pandapower.converter.pypower.from_ppc import from_ppc
         >>> from pandapower.test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
-        >>> net = pandapower.converter.pypower.from_ppc(ppc, f_hz=60)
+        >>> net = from_ppc(ppc, f_hz=60)
     """
     # --- catch common failures
     if np.any(ppc['bus'][:, BASE_KV] <= 0):
@@ -534,25 +530,21 @@ def _log_dict(key=None):
         return log_dict[key]
 
 
-def validate_from_ppc(ppc, net, max_diff_values={"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5,
-                                                 "branch_p_mw": 1e-6, "branch_q_mvar": 1e-6,
-                                                 "gen_p_mw": 1e-6, "gen_q_mvar": 1e-6}):
+def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | None = None):
     """
     This function validates the conversion of a pypower case file (ppc) to a pandapower net.
     It compares the power flow calculation results which must be provided within the ppc and the net.
 
-    INPUT:
-        **ppc** - dict
-
-        **net** - pandapower.pandapowerNet
-
-        **max_diff_values** - dict, optional by default { "bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-6,
+    Parameters:
+        ppc: dict to validate
+        net: pandapower net
+        max_diff_values: Defaults to {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-6,
             "branch_q_mvar": 1e-6, "gen_p_mw": 1e-6, "gen_q_mvar": 1e-6}
 
-    OUTPUT:
-    **pf_match** - Whether the power flow results matches.
+    Returns:
+        Whether the power flow results matches.
 
-    EXAMPLES:
+    Example:
         >>> import pandapower
         >>> from pandapower.test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
@@ -560,6 +552,11 @@ def validate_from_ppc(ppc, net, max_diff_values={"bus_vm_pu": 1e-6, "bus_va_degr
         >>> pandapower.runpp(net)
         >>> pf_match = pandapower.converter.validate_from_ppc(ppc, net)
     """
+    if max_diff_values is None:
+        max_diff_values = {
+            "bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-6, "branch_q_mvar": 1e-6, "gen_p_mw": 1e-6,
+            "gen_q_mvar": 1e-6
+        }
     if "_from_ppc_lookups" not in net.keys() or \
             ("gen" not in net._from_ppc_lookups.keys() and len(ppc["gen"]) > 0) or \
             ("branch" not in net._from_ppc_lookups.keys() and len(ppc["branch"]) > 0):
