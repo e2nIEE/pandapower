@@ -400,8 +400,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                             df.loc[pc_idx[0], 'element'] = idx
             net_zpbn[cost_elm] = df
 
-    drop_and_edit_cost_functions(net_zpbn, [], False, True, False)
-    # pp.runpp(net_zpbn)
+    drop_and_edit_cost_functions(net_zpbn, [], False, True)
     runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles,
               tolerance_mva=1e-3, max_iteration=100, **kwargs)
     return net_zpbn, net_internal, net_external
@@ -514,17 +513,14 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
         net_internal = None
     else:
         net_internal = deepcopy(net)
-        drop_measurements_and_controllers(net_internal, all_external_buses, True)
-        drop_and_edit_cost_functions(net_internal,
-                                     all_external_buses + boundary_buses,
-                                     True, True)
+        drop_measurements_and_controllers(net_internal, all_external_buses)
+        drop_and_edit_cost_functions(net_internal, all_external_buses + boundary_buses, True, True)
         drop_buses(net_internal, all_external_buses)
 
     net_external = deepcopy(net)
     if "group" in net_external:
         net_external.group = net_external.group.drop(net_external.group.index)
-    drop_and_edit_cost_functions(net_external, all_internal_buses,
-                                 True, True)
+    drop_and_edit_cost_functions(net_external, all_internal_buses, True, True)
     drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     drop_buses(net_external, all_internal_buses)
     replace_motor_by_load(net_external, all_external_buses)
