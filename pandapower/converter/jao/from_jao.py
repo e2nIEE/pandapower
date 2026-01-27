@@ -3,13 +3,16 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import os
 from copy import deepcopy
 import json
 from functools import reduce
 from typing import Optional, Union, Iterable
+
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_object_dtype
+
 from pandapower.io_utils import pandapowerNet
 from pandapower.create import create_empty_network, create_buses, create_lines_from_parameters, \
     create_transformers_from_parameters

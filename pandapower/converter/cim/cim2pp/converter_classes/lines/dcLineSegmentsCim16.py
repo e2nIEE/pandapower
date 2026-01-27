@@ -134,9 +134,12 @@ class DcLineSegmentsCim16:
             dc_line_segments[one_item + '2'] = dc_line_segments[one_item + '2'].iloc[1:].reset_index()[one_item + '2']
         del copy_list, one_item
         dc_line_segments = dc_line_segments.drop_duplicates(['rdfId'], keep='first')
-        dc_line_segments = pd.merge(dc_line_segments,
-                                    pd.DataFrame(dc_line_segments.pivot_table(index=['converters'], aggfunc='size'),
-                                                 columns=['converter_dups']), how='left', on='converters')
+        dc_line_segments = pd.merge(
+            dc_line_segments,
+            pd.DataFrame(
+                dc_line_segments.pivot_table(index=['converters'], aggfunc='size'), columns=['converter_dups']),  # type: ignore[arg-type]
+                how='left', on='converters'
+        )
         dc_line_segments['loss_mw'] = \
             abs(abs(dc_line_segments['p']) - abs(dc_line_segments['p2'])) / dc_line_segments['converter_dups']
         dc_line_segments['p_mw'] = dc_line_segments['p'] / dc_line_segments['converter_dups']

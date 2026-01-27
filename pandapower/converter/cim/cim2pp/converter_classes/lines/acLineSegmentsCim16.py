@@ -100,7 +100,7 @@ class AcLineSegmentsCim16:
             self.cimConverter.report_container.add_log(Report(
                 level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
                 message="Error processing the ACLineSegments, there is a problem with Terminals in the source data!"))
-            dups = ac_line_segments.pivot_table(index=['rdfId'], aggfunc='size')
+            dups = ac_line_segments.pivot_table(index=['rdfId'], aggfunc='size')  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]
             for rdfId, count in dups.items():
                 self.logger.warning("The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count))
@@ -126,7 +126,7 @@ class AcLineSegmentsCim16:
                                           'OperationalLimitSet': 'rdfId_OperationalLimitSet'})
         ac_line_segments = pd.merge(ac_line_segments, current_limits, how='left',
                                     on='rdfId_OperationalLimitSet')
-        ac_line_segments.value = ac_line_segments.value.astype(float)
+        ac_line_segments.value = ac_line_segments.value.astype(float)  # type: ignore[attr-defined]
         # sort by rdfId, sequenceNumber and value. value is max_i_ka, choose the lowest one if more than one is
         # given (A line may have more than one max_i_ka in CIM, different modes e.g. normal)
         ac_line_segments = ac_line_segments.sort_values(by=['rdfId', 'sequenceNumber', 'value'])
@@ -140,11 +140,10 @@ class AcLineSegmentsCim16:
         ac_line_segments = ac_line_segments.reset_index()
         # here is where the magic happens: just remove the first value from the copied columns, reset the index
         # and replace the old column with the cut one. At least just remove the duplicates on column rdfId
-        ac_line_segments.rdfId_Terminal2 = ac_line_segments.rdfId_Terminal2.iloc[
-                                              1:].reset_index().rdfId_Terminal2
-        ac_line_segments.connected2 = ac_line_segments.connected2.iloc[1:].reset_index().connected2
-        ac_line_segments.index_bus2 = ac_line_segments.index_bus2.iloc[1:].reset_index().index_bus2
-        ac_line_segments.value2 = ac_line_segments.value2.iloc[1:].reset_index().value2
+        ac_line_segments.rdfId_Terminal2 = ac_line_segments.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2  # type: ignore[attr-defined]
+        ac_line_segments.connected2 = ac_line_segments.connected2.iloc[1:].reset_index().connected2  # type: ignore[attr-defined]
+        ac_line_segments.index_bus2 = ac_line_segments.index_bus2.iloc[1:].reset_index().index_bus2  # type: ignore[attr-defined]
+        ac_line_segments.value2 = ac_line_segments.value2.iloc[1:].reset_index().value2  # type: ignore[attr-defined]
         ac_line_segments = ac_line_segments.drop_duplicates(['rdfId'], keep='first')
         # get the max_i_ka
         ac_line_segments['max_i_ka'] = ac_line_segments['value'].fillna(ac_line_segments['value2']) * 1e-3

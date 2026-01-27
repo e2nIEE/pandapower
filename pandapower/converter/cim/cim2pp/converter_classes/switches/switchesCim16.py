@@ -67,9 +67,9 @@ class SwitchesCim16:
         if eqssh_switches.index.size == switch_length_before_merge * 2:
             # here is where the magic happens: just remove the first value from the copied columns, reset the index
             # and replace the old column with the cut one. At least just remove the duplicates on column rdfId
-            eqssh_switches.rdfId_Terminal2 = eqssh_switches.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2
-            eqssh_switches.connected2 = eqssh_switches.connected2.iloc[1:].reset_index().connected2
-            eqssh_switches.index_bus2 = eqssh_switches.index_bus2.iloc[1:].reset_index().index_bus2
+            eqssh_switches.rdfId_Terminal2 = eqssh_switches.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2  # type: ignore[attr-defined]
+            eqssh_switches.connected2 = eqssh_switches.connected2.iloc[1:].reset_index().connected2  # type: ignore[attr-defined]
+            eqssh_switches.index_bus2 = eqssh_switches.index_bus2.iloc[1:].reset_index().index_bus2  # type: ignore[attr-defined]
             eqssh_switches = eqssh_switches.drop_duplicates(subset=['rdfId'], keep='first')
         else:
             self.logger.error("Something went wrong at switches, seems like that terminals for connection with "
@@ -78,7 +78,7 @@ class SwitchesCim16:
                 level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
                 message="Something went wrong at switches, seems like that terminals for connection with "
                         "connectivity nodes are missing!"))
-            dups = eqssh_switches.pivot_table(index=['rdfId'], aggfunc='size')
+            dups = eqssh_switches.pivot_table(index=['rdfId'], aggfunc='size')  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]
             for rdfId, count in dups.items():
                 self.logger.warning("The switch with RDF ID %s has %s Terminals!" % (rdfId, count))
