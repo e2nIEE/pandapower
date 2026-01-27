@@ -65,7 +65,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         net.user_pf_options.update(additional_kwargs)
 
 
-def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
+def runpp(net, algorithm='nr', calculate_voltage_angles="auto", init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, consider_line_temperature=False,
