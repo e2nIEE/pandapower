@@ -18,7 +18,8 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.control import DiscreteTapControl, ConstControl, ContinuousTapControl, Characteristic, \
     SplineCharacteristic
 from pandapower.create import create_transformer
-from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, convert_format, from_json, to_json, \
+from pandapower.convert_format import convert_format
+from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, from_json, to_json, \
     from_json_string, create_empty_network
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.networks import mv_oberrhein, simple_four_bus_system, case9, case14, create_kerber_dorfnetz
@@ -518,8 +519,8 @@ def test_json_generalized():
                 "col4": "i8"}
     }))
     general_net1 = copy.deepcopy(general_net0)
-    general_net1.df1.loc[0] = ["hey", 1.2]
-    general_net1.df2.loc[2] = [False, 2]
+    general_net1.df1.loc[0, ["col1", "col2"]] = ["hey", 1.2]
+    general_net1.df2.loc[2, ["col3", "col4"]] = [False, 2]
 
     for general_in in [general_net0, general_net1]:
         out = from_json_string(to_json(general_in),
