@@ -32,7 +32,7 @@ from pandapower.test.loadflow.test_runpp import get_isolated
 
 
 @pytest.fixture
-def net():
+def _net():
     v_base = 110  # 110kV Base Voltage
     k_va_base = 100  # 100 MVA
     net = pandapowerNet(name="net", sn_mva=k_va_base)
@@ -86,60 +86,60 @@ def test_2bus_network(_net):
     check_it(_net)
 
 
-def test_2bus_network_single_isolated_busses(net):
+def test_2bus_network_single_isolated_busses(_net):
     # -o---o o x
-    create_bus(net, vn_kv=110)
-    create_bus(net, vn_kv=110, in_service=False)
-    add_zero_impedance_parameters(net)
-    runpp_3ph_with_consistency_checks(net)
-    assert net['converged']
-    check_it(net)
+    create_bus(_net, vn_kv=110)
+    create_bus(_net, vn_kv=110, in_service=False)
+    add_zero_impedance_parameters(_net)
+    runpp_3ph_with_consistency_checks(_net)
+    assert _net['converged']
+    check_it(_net)
 
 
-def test_2bus_network_isolated_net_part(net):
+def test_2bus_network_isolated_net_part(_net):
     # -o---o o---o
-    b1 = create_bus(net, vn_kv=110)
-    b2 = create_bus(net, vn_kv=110)
-    create_line(net, from_bus=b1, to_bus=b2, length_km=50.0, std_type="example_type")
-    create_asymmetric_load(net, b2, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
+    b1 = create_bus(_net, vn_kv=110)
+    b2 = create_bus(_net, vn_kv=110)
+    create_line(_net, from_bus=b1, to_bus=b2, length_km=50.0, std_type="example_type")
+    create_asymmetric_load(_net, b2, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15,
                            p_c_mw=10, q_c_mvar=5)
-    add_zero_impedance_parameters(net)
-    runpp_3ph_with_consistency_checks(net)
-    assert net['converged']
-    check_it(net)
+    add_zero_impedance_parameters(_net)
+    runpp_3ph_with_consistency_checks(_net)
+    assert _net['converged']
+    check_it(_net)
 
 
-def test_2bus_network_singel_oos_bus(net):
+def test_2bus_network_singel_oos_bus(_net):
     # -o---x---o
-    b1 = create_bus(net, vn_kv=110)
-    net.bus.loc[5, "in_service"] = False
-    create_line(net, from_bus=5, to_bus=b1, length_km=10.0, std_type="example_type")
-    create_asymmetric_load(net, b1, p_a_mw=-5, q_a_mvar=5, p_b_mw=-1, q_b_mvar=1.5,
+    b1 = create_bus(_net, vn_kv=110)
+    _net.bus.loc[5, "in_service"] = False
+    create_line(_net, from_bus=5, to_bus=b1, length_km=10.0, std_type="example_type")
+    create_asymmetric_load(_net, b1, p_a_mw=-5, q_a_mvar=5, p_b_mw=-1, q_b_mvar=1.5,
                            p_c_mw=-1, q_c_mvar=.5)
-    add_zero_impedance_parameters(net)
-    runpp_3ph_with_consistency_checks(net)
-    assert net['converged']
+    add_zero_impedance_parameters(_net)
+    runpp_3ph_with_consistency_checks(_net)
+    assert _net['converged']
 
 
-def test_out_serv_load(net):
+def test_out_serv_load(_net):
     # <-x--o------o
-    add_zero_impedance_parameters(net)
-    runpp_3ph_with_consistency_checks(net)
-    assert net['converged']
-    check_it(net)
-    create_asymmetric_load(net, 5, p_a_mw=50, q_a_mvar=100, p_b_mw=29, q_b_mvar=38,
+    add_zero_impedance_parameters(_net)
+    runpp_3ph_with_consistency_checks(_net)
+    assert _net['converged']
+    check_it(_net)
+    create_asymmetric_load(_net, 5, p_a_mw=50, q_a_mvar=100, p_b_mw=29, q_b_mvar=38,
                            p_c_mw=10, q_c_mvar=5, in_service=False)
-    runpp_3ph_with_consistency_checks(net)
-    assert net['converged']
-    check_it(net)
+    runpp_3ph_with_consistency_checks(_net)
+    assert _net['converged']
+    check_it(_net)
 
 
-def test_2bus_network_one_of_two_ext_grids_oos(net):
+def test_2bus_network_one_of_two_ext_grids_oos(_net):
     """ Out of service ext_grids should not affect the unbalanced powerflow"""
-    create_ext_grid(net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1,
+    create_ext_grid(_net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1,
                     r0x0_max=0.1, x0x_max=1.0, in_service=False)
-    runpp_3ph(net)
-    assert net['converged']
+    runpp_3ph(_net)
+    assert _net['converged']
 
 
 @pytest.mark.parametrize("init", ["auto", "results", "flat", "dc"])
@@ -331,14 +331,14 @@ def test_3ph_two_bus_line_powerfactory():
     assert np.max(np.abs(line_load_pp - line_load_pf)) < 1e-2
 
 
-def check_bus_voltages(net, result, trafo_vector_group):
+def check_bus_voltages(_net, result, trafo_vector_group):
     res_vm_pu = []
-    ordered_bus_table = net.bus.sort_values(by='name').reset_index(drop=True)
+    ordered_bus_table = _net.bus.sort_values(by='name').reset_index(drop=True)
     for i in range(len(ordered_bus_table)):
-        index = net.bus[net.bus.name == ordered_bus_table['name'][i]].index[0]
-        res_vm_pu.append(net.res_bus_3ph.vm_a_pu[index])
-        res_vm_pu.append(net.res_bus_3ph.vm_b_pu[index])
-        res_vm_pu.append(net.res_bus_3ph.vm_c_pu[index])
+        index = _net.bus[_net.bus.name == ordered_bus_table['name'][i]].index[0]
+        res_vm_pu.append(_net.res_bus_3ph.vm_a_pu[index])
+        res_vm_pu.append(_net.res_bus_3ph.vm_b_pu[index])
+        res_vm_pu.append(_net.res_bus_3ph.vm_c_pu[index])
 
     # max_tol = 0
     # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
@@ -354,17 +354,17 @@ def check_bus_voltages(net, result, trafo_vector_group):
                        rtol=0), f"Incorrect results for {trafo_vector_group}"
 
 
-def check_line_currents(net, result, trafo_vector_group):
+def check_line_currents(_net, result, trafo_vector_group):
     res_line_i_ka = []
-    ordered_line_table = net.line.sort_values(by='name').reset_index(drop=True)
+    ordered_line_table = _net.line.sort_values(by='name').reset_index(drop=True)
     for i in range(len(ordered_line_table)):
-        index = net.line[net.line.name == ordered_line_table['name'][i]].index[0]
-        res_line_i_ka.append(net.res_line_3ph.i_a_from_ka[index])
-        res_line_i_ka.append(net.res_line_3ph.i_b_from_ka[index])
-        res_line_i_ka.append(net.res_line_3ph.i_c_from_ka[index])
-        res_line_i_ka.append(net.res_line_3ph.i_a_to_ka[index])
-        res_line_i_ka.append(net.res_line_3ph.i_b_to_ka[index])
-        res_line_i_ka.append(net.res_line_3ph.i_c_to_ka[index])
+        index = _net.line[_net.line.name == ordered_line_table['name'][i]].index[0]
+        res_line_i_ka.append(_net.res_line_3ph.i_a_from_ka[index])
+        res_line_i_ka.append(_net.res_line_3ph.i_b_from_ka[index])
+        res_line_i_ka.append(_net.res_line_3ph.i_c_from_ka[index])
+        res_line_i_ka.append(_net.res_line_3ph.i_a_to_ka[index])
+        res_line_i_ka.append(_net.res_line_3ph.i_b_to_ka[index])
+        res_line_i_ka.append(_net.res_line_3ph.i_c_to_ka[index])
 
     # max_tol = 0
     # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
@@ -381,17 +381,17 @@ def check_line_currents(net, result, trafo_vector_group):
         raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_line_i_ka, result)
 
 
-def check_trafo_currents(net, result, trafo_vector_group):
+def check_trafo_currents(_net, result, trafo_vector_group):
     res_trafo_i_ka = []
-    ordered_trafo_table = net.trafo.sort_values(by='name').reset_index(drop=True)
+    ordered_trafo_table = _net.trafo.sort_values(by='name').reset_index(drop=True)
     for i in range(len(ordered_trafo_table)):
-        index = net.trafo[net.trafo.name == ordered_trafo_table['name'][i]].index[0]
-        res_trafo_i_ka.append(net.res_trafo_3ph.i_a_hv_ka[index])
-        res_trafo_i_ka.append(net.res_trafo_3ph.i_b_hv_ka[index])
-        res_trafo_i_ka.append(net.res_trafo_3ph.i_c_hv_ka[index])
-        res_trafo_i_ka.append(net.res_trafo_3ph.i_a_lv_ka[index])
-        res_trafo_i_ka.append(net.res_trafo_3ph.i_b_lv_ka[index])
-        res_trafo_i_ka.append(net.res_trafo_3ph.i_c_lv_ka[index])
+        index = _net.trafo[_net.trafo.name == ordered_trafo_table['name'][i]].index[0]
+        res_trafo_i_ka.append(_net.res_trafo_3ph.i_a_hv_ka[index])
+        res_trafo_i_ka.append(_net.res_trafo_3ph.i_b_hv_ka[index])
+        res_trafo_i_ka.append(_net.res_trafo_3ph.i_c_hv_ka[index])
+        res_trafo_i_ka.append(_net.res_trafo_3ph.i_a_lv_ka[index])
+        res_trafo_i_ka.append(_net.res_trafo_3ph.i_b_lv_ka[index])
+        res_trafo_i_ka.append(_net.res_trafo_3ph.i_c_lv_ka[index])
 
     # max_tol = 0
     # for tol in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
@@ -408,19 +408,19 @@ def check_trafo_currents(net, result, trafo_vector_group):
         raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_trafo_i_ka, result)
 
 
-def check_results(net, trafo_vector_group, results):
-    check_bus_voltages(net, results[0], trafo_vector_group)
-    check_line_currents(net, results[1], trafo_vector_group)
-    check_trafo_currents(net, results[2], trafo_vector_group)
+def check_results(_net, trafo_vector_group, results):
+    check_bus_voltages(_net, results[0], trafo_vector_group)
+    check_line_currents(_net, results[1], trafo_vector_group)
+    check_trafo_currents(_net, results[2], trafo_vector_group)
 
 
-def make_nw(net, bushv, tap_ps, case, vector_group):
-    b1 = create_bus(net, bushv, zone=vector_group, index=get_free_id(net.bus))
-    b2 = create_bus(net, 0.4, zone=vector_group)
-    b3 = create_bus(net, 0.4, zone=vector_group)
-    create_ext_grid(net, b1, s_sc_max_mva=10000,
+def make_nw(_net, bushv, tap_ps, case, vector_group):
+    b1 = create_bus(_net, bushv, zone=vector_group, index=get_free_id(_net.bus))
+    b2 = create_bus(_net, 0.4, zone=vector_group)
+    b3 = create_bus(_net, 0.4, zone=vector_group)
+    create_ext_grid(_net, b1, s_sc_max_mva=10000,
                     rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
-    create_transformer_from_parameters(net, hv_bus=b1, lv_bus=b2,
+    create_transformer_from_parameters(_net, hv_bus=b1, lv_bus=b2,
                                        sn_mva=1.6, vn_hv_kv=10,
                                        vn_lv_kv=0.4, vk_percent=6,
                                        vkr_percent=0.78125, pfe_kw=2.7,
@@ -434,25 +434,25 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
                                        mag0_percent=100, mag0_rx=0.,
                                        si0_hv_partial=0.9, vector_group=vector_group,
                                        parallel=1, tap_pos=tap_ps,
-                                       index=get_free_id(net.trafo) + 1)
-    create_line_from_parameters(net, b2, b3, length_km=0.5, r_ohm_per_km=0.1941, x_ohm_per_km=0.07476991,
+                                       index=get_free_id(_net.trafo) + 1)
+    create_line_from_parameters(_net, b2, b3, length_km=0.5, r_ohm_per_km=0.1941, x_ohm_per_km=0.07476991,
                                 c_nf_per_km=1160., max_i_ka=0.421,
                                 endtemp_degree=70.0, r0_ohm_per_km=0.7766,
                                 x0_ohm_per_km=0.2990796,
                                 c0_nf_per_km=496.2,
-                                index=get_free_id(net.line) + 1)
+                                index=get_free_id(_net.line) + 1)
     if case == "bal_wye":
         # Symmetric Load
-        create_load(net, b3, 0.08, 0.012, type='wye')
+        create_load(_net, b3, 0.08, 0.012, type='wye')
     elif case == "delta_wye":
         # Unsymmetric Light Load
-        create_asymmetric_load(net, b3, p_a_mw=0.0044, q_a_mvar=0.0013, p_b_mw=0.0044, q_b_mvar=0.0013,
+        create_asymmetric_load(_net, b3, p_a_mw=0.0044, q_a_mvar=0.0013, p_b_mw=0.0044, q_b_mvar=0.0013,
                                p_c_mw=0.0032, q_c_mvar=0.0013, type='wye')
-        create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
+        create_asymmetric_load(_net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
                                p_c_mw=0.027, q_c_mvar=0.0043, type='delta')
     elif case == "wye" or case == "delta":
         # Unsymmetric Heavy Load
-        create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
+        create_asymmetric_load(_net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
                                p_c_mw=0.027, q_c_mvar=0.0043, type=case)
 
 
@@ -466,20 +466,20 @@ def test_trafo_asym():
         assert net['converged']
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
-def _test_trafo_shifts(net, rtol):
+def _test_trafo_shifts(_net, rtol):
     # Dyn
     for clock in [-30, 30, 150, 210, -150]:
-        net.trafo.vector_group = "Dyn"
-        net.trafo.shift_degree = clock
-        runpp_3ph_with_consistency_checks(net)
-        trafo_currents_consistent_3ph(net, rtol)
+        _net.trafo.vector_group = "Dyn"
+        _net.trafo.shift_degree = clock
+        runpp_3ph_with_consistency_checks(_net)
+        trafo_currents_consistent_3ph(_net, rtol)
 
     # YNyn
     for clock in [0, 180, -180]:
-        net['trafo'].vector_group = "YNyn"
-        net['trafo'].shift_degree = clock
-        runpp_3ph_with_consistency_checks(net)
-        trafo_currents_consistent_3ph(net, rtol)
+        _net['trafo'].vector_group = "YNyn"
+        _net['trafo'].shift_degree = clock
+        runpp_3ph_with_consistency_checks(_net)
+        trafo_currents_consistent_3ph(_net, rtol)
 
 def test_trafo_asym_currents__high_neg_seq():
     """
