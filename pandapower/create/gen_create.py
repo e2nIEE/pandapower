@@ -47,7 +47,7 @@ def create_gen(
     id_q_capability_characteristic: int | None = None,
     reactive_capability_curve: bool = False,
     curve_style: str | None = None,
-    controllable: bool | float = nan,
+    controllable: bool = True,
     vn_kv: float = nan,
     xdss_pu: float = nan,
     rdss_ohm: float = nan,
@@ -130,34 +130,40 @@ def create_gen(
         "p_mw": p_mw,
         "vm_pu": vm_pu,
         "sn_mva": sn_mva,
-        "type": type,
-        "slack": slack,
-        "in_service": in_service,
+        "min_q_mvar": min_q_mvar,
+        "max_q_mvar": max_q_mvar,
         "scaling": scaling,
+        "slack": slack,
+        "controllable": controllable,
+        "id_q_capability_characteristic": id_q_capability_characteristic,
+        "reactive_capability_curve": reactive_capability_curve,
+        "curve_style": curve_style,
+        "in_service": in_service,
         "slack_weight": slack_weight,
+        "type": type,
         **kwargs,
     }
     _set_entries(net, "gen", index, True, entries=entries)
 
     # OPF limits
-    _set_value_if_not_nan(net, index, controllable, "controllable", "gen", dtype=bool_, default_val=True)
+    # _set_value_if_not_nan(net, index, controllable, "controllable", "gen", dtype=bool_, default_val=True)
 
     # id for q capability curve table
-    _set_value_if_not_nan(
-        net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "gen", dtype="Int64"
-    )
+    #_set_value_if_not_nan(
+    #    net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "gen", dtype="Int64"
+    #)
 
     # behaviour of reactive power capability curve
-    _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
+    #_set_value_if_not_nan(net, index, curve_style, "curve_style", "gen", dtype=object, default_val=None)
 
-    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen", dtype=bool_)
+    #_set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen", dtype=bool_)
 
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "gen")
     # Q limits for OPF if controllable == True
-    _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "gen")
-    _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "gen")
+    #_set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "gen")
+    #_set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "gen")
     # V limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.0)
     _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.0)
@@ -193,7 +199,7 @@ def create_gens(
     id_q_capability_characteristic: Int | Iterable[Int] | None = None,
     reactive_capability_curve: bool | Iterable[bool] = False,
     curve_style: str | Iterable[str] | None = None,
-    controllable: bool | float | Iterable[bool | float] = nan,
+    controllable: bool | Iterable[bool] = True,
     vn_kv: float | Iterable[float] = nan,
     xdss_pu: float | Iterable[float] = nan,
     rdss_ohm: float | Iterable[float] = nan,
@@ -283,21 +289,25 @@ def create_gens(
         "p_mw": p_mw,
         "vm_pu": vm_pu,
         "sn_mva": sn_mva,
+        "min_q_mvar": min_q_mvar,
+        "max_q_mvar": max_q_mvar,
         "scaling": scaling,
         "in_service": in_service,
         "slack_weight": slack_weight,
         "name": name,
         "type": type,
         "slack": slack,
+        "controllable": controllable,
         "curve_style": curve_style,
+        "id_q_capability_characteristic": id_q_capability_characteristic,
         "reactive_capability_curve": reactive_capability_curve,
         **kwargs,
     }
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "min_q_mvar", min_q_mvar)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "max_q_mvar", max_q_mvar)
+    #_add_to_entries_if_not_nan(net, "gen", entries, index, "min_q_mvar", min_q_mvar)
+    #_add_to_entries_if_not_nan(net, "gen", entries, index, "max_q_mvar", max_q_mvar)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_vm_pu", max_vm_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "vn_kv", vn_kv)
@@ -305,17 +315,17 @@ def create_gens(
     _add_to_entries_if_not_nan(net, "gen", entries, index, "xdss_pu", xdss_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "rdss_ohm", rdss_ohm)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "pg_percent", pg_percent)
-    _add_to_entries_if_not_nan(
-        net, "gen", entries, index, "id_q_capability_characteristic", id_q_capability_characteristic, dtype="Int64"
-    )
+    #_add_to_entries_if_not_nan(
+    #    net, "gen", entries, index, "id_q_capability_characteristic", id_q_capability_characteristic, dtype="Int64"
+    #)
 
     _add_to_entries_if_not_nan(
         net, "gen", entries, index, "reactive_capability_curve", reactive_capability_curve, dtype=bool_
     )
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo", power_station_trafo, dtype="Int64")
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_, default_val=True)
-    defaults_to_fill = [("controllable", True), ("reactive_capability_curve", False), ("curve_style", None)]
+    #_add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_, default_val=True)
+    #defaults_to_fill = [("controllable", True), ("reactive_capability_curve", False), ("curve_style", None)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, entries=entries)
 
