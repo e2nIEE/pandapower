@@ -12,9 +12,9 @@ Load
 Create Function
 =====================
 
-.. autofunction:: pandapower.create_load
-
-.. autofunction:: pandapower.create_load_from_cosphi
+.. autofunction:: pandapower.create.create_load
+.. autofunction:: pandapower.create.create_loads
+.. autofunction:: pandapower.create.create_load_from_cosphi
 
 
 Input Parameters
@@ -25,9 +25,9 @@ Input Parameters
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
 
 .. csv-table::
-   :file: load_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+    :file: load_par.csv
+    :delim: ;
+    :widths: 10, 10, 25, 40
 
 \*necessary for executing a power flow calculation.
 
@@ -42,34 +42,26 @@ Electric Model
 Loads are modelled as PQ-buses in the power flow calculation, with an option to use the so-called ZIP load model, where a load is represented as a composition of constant power (P), constant current (I) and constant impedance (Z):
 
 .. image:: load.png
-	:width: 8em
-	:alt: alternate Text
-	:align: center
+    :width: 8em
+    :alt: alternate Text
+    :align: center
 
 
 What part of the load is considered constant with constant power, constant current or constant impedance is defined as follows. This is considered separately for active and reactive power:
   
 .. math::
-   :nowrap:
-   
-    \begin{align*}
-    z_{const_p} =& const\_z\_p\_percent / 100 \\
-    z_{const_q} =& const\_z\_q\_percent / 100 \\
-    i_{const_p} =& const\_i\_p\_percent / 100 \\
-    i_{const_q} =& const\_i\_q\_percent / 100 \\
-    p_{const_p} =& (100 - const\_z\_p\_percent - const\_i\_p\_percent) / 100 \\
-    p_{const_q} =& (100 - const\_z\_q\_percent - const\_i\_q\_percent) / 100
-    \end{align*}
+    z_{const_p} &= \frac{const\_z\_p\_percent}{100} \\
+    z_{const_q} &= \frac{const\_z\_q\_percent}{100} \\
+    i_{const_p} &= \frac{const\_i\_p\_percent}{100} \\
+    i_{const_q} &= \frac{const\_i\_q\_percent}{100} \\
+    p_{const_p} &= \frac{100 - const\_z\_p\_percent - const\_i\_p\_percent}{100} \\
+    p_{const_q} &= \frac{100 - const\_z\_q\_percent - const\_i\_q\_percent}{100}
     
 The load power values are then defines as:
 
 .. math::
-   :nowrap:
-   
-   \begin{align*}
-    P_{load} =&  p\_mw \cdot scaling \cdot (p_{const_p} + z_{const_p} \cdot V^2 + i_{const_p} \cdot V ) \\
-    Q_{load} =&  q\_mvar \cdot scaling \cdot (p_{const_q} + z_{const_q} \cdot V^2 + i_{const_q} \cdot V)
-    \end{align*}
+    P_{load} &= p\_mw \cdot scaling \cdot (p_{const_p} + z_{const_p} \cdot V^2 + i_{const_p} \cdot V ) \\
+    Q_{load} &= q\_mvar \cdot scaling \cdot (p_{const_q} + z_{const_q} \cdot V^2 + i_{const_q} \cdot V)
 
 
 Result Parameters

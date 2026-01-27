@@ -10,7 +10,8 @@ Create Function
 
 .. _create_bus:
 
-.. autofunction:: pandapower.create_bus
+.. autofunction:: pandapower.create.create_bus
+.. autofunction:: pandapower.create.create_buses
 
 Input Parameters
 =========================

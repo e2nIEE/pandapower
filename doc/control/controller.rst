@@ -12,6 +12,8 @@ The basic controller is the base controller class that should be subclassed when
 
 .. autoclass:: pandapower.control.basic_controller.Controller
     :members:
+    :inherited-members:
+    :show-inheritance:
 
 ConstControl
 ==============
