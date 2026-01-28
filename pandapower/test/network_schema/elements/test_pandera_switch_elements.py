@@ -44,8 +44,8 @@ class TestSwitchRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)           # 0
-        create_bus(net, 0.4)           # 1
+        create_bus(net, 0.4)  # 0
+        create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
 
         # Base: bus-bus switch between bus 0 and bus 1

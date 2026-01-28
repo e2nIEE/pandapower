@@ -42,9 +42,9 @@ class TestWardRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)           # index 0
-        create_bus(net, 0.4)           # index 1
-        create_bus(net, 0.4, index=42) # ensure 42 exists for FK-positive tests
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
+        create_bus(net, 0.4, index=42)  # ensure 42 exists for FK-positive tests
 
         create_ward(net, bus=0, ps_mw=1.0, qs_mvar=0.5, pz_mw=0.1, qz_mvar=0.05, in_service=True, name="w1")
 

@@ -4,7 +4,7 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _line_dc_columns = {
-    "name": pa.Column(pd.StringDtype, required=False, description="name of the dc line"),
+    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc line"),
     "std_type": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -39,7 +39,14 @@ _line_dc_columns = {
         required=False,
         description="type of dc line Naming conventions: “”ol”” - overhead dc line, “”cs”” - underground cable system”",
     ),
-    "max_loading_percent": pa.Column(float, pa.Check.gt(0), description="Maximum loading of the dc line"),
+    "max_loading_percent": pa.Column(
+        float,
+        pa.Check.gt(0),
+        nullable=True,
+        required=False,
+        description="Maximum loading of the dc line",
+        metadata={"opf": True},
+    ),
     "in_service": pa.Column(bool, description="specifies if the dc line is in service."),
     "geo": pa.Column(
         pd.StringDtype,

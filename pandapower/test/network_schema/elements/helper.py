@@ -49,12 +49,7 @@ positiv_floats_plus_zero = [*positiv_floats, *zero_float]
 negativ_floats = [-1.0, np.float64(-1.0)]
 negativ_floats_plus_zero = [*negativ_floats, *zero_float]
 all_allowed_floats = [*zero_float, *positiv_floats, *negativ_floats]
-not_allowed_floats = [
-    np.float32(1.0),
-    np.float16(1.0),
-    float("inf"),
-    float("-inf")
-]
+not_allowed_floats = [np.float32(1.0), np.float16(1.0), float("inf"), float("-inf")]
 all_floats = [*all_allowed_floats, *not_allowed_floats]
 
 not_boolean_list = [*others, *strings, *all_ints, *all_floats]
@@ -62,9 +57,8 @@ not_floats_list = [*others, *strings, *all_ints, *bools]
 not_strings_list = [*others, *all_ints, *bools, *all_floats]
 not_ints_list = [*others, *strings, *all_floats, *bools]
 
-#percentages and ratios
+# percentages and ratios
 ratio_valid = [0.0, 0.5, 1.0]
 ratio_invalid = [-0.1, 1.1]
 percent_valid = [0.0, 50.0, 100.0]
 percent_invalid = [-0.1, 100.1]
-

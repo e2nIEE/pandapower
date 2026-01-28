@@ -25,6 +25,7 @@ from pandapower.test.network_schema.elements.helper import (
     all_allowed_floats,
 )
 
+
 class TestSscRequiredFields:
     """Tests for required SSC fields"""
 
@@ -46,8 +47,8 @@ class TestSscRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # 0
-        create_bus(net, 0.4)          # 1
+        create_bus(net, 0.4)  # 0
+        create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
 
         create_ssc(
@@ -99,6 +100,7 @@ class TestSscRequiredFields:
         net.ssc[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
 
 class TestSscOptionalFields:
     """Tests for optional SSC fields"""
@@ -209,6 +211,7 @@ class TestSscOptionalFields:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+
 class TestSscForeignKey:
     """Tests for foreign key constraints"""
 
@@ -231,6 +234,7 @@ class TestSscForeignKey:
         net.ssc["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
 
 class TestSscResults:
     """Tests for ssc results after calculations"""

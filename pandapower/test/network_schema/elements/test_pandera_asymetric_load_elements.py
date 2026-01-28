@@ -1,4 +1,3 @@
-
 # test_asymmetric_load_elements.py
 
 import itertools

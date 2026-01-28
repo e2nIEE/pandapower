@@ -314,6 +314,8 @@ def _add_branch_geodata(net: pandapowerNet, geodata, index, table="line"):
         if not isinstance(geodata, (list, tuple)):
             raise ValueError("geodata needs to be list or tuple")
         geodata = f'{{"coordinates": {_branch_geodata(geodata)}, "type": "LineString"}}'
+    elif "geo" in net[table].columns:
+        return
     else:
         geodata = pd.NA
     net[table].loc[index, "geo"] = geodata

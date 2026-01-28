@@ -20,13 +20,19 @@ from pandapower.test.network_schema.elements.helper import (
     positiv_ints_plus_zero,
     positiv_floats_plus_zero,
     negativ_floats_plus_zero,
-    all_ints, negativ_ints, not_ints_list, negativ_floats, positiv_floats, all_allowed_floats
+    all_ints,
+    negativ_ints,
+    not_ints_list,
+    negativ_floats,
+    positiv_floats,
+    all_allowed_floats,
 )
 
 float_range = [x for x in all_allowed_floats if 90 <= x <= 180]
 not_float_range = [x for x in all_floats if x < 90 or x > 180]
 invalid_low_float_range = [x for x in all_floats if x < 90]
 invalid_high_float_range = [x for x in all_floats if x > 180]
+
 
 class TestTcscRequiredFields:
     """Tests for required TCSC fields"""
@@ -53,8 +59,17 @@ class TestTcscRequiredFields:
         create_bus(net, 0.4)
         create_bus(net, 0.4)
         create_bus(net, 0.4, index=42)
-        create_tcsc(net,from_bus=0, to_bus=1, x_l_ohm=0.0, x_cvar_ohm=-0.1, set_p_to_mw=0.0,
-                    thyristor_firing_angle_degree=100, controllable=True, in_service=False)
+        create_tcsc(
+            net,
+            from_bus=0,
+            to_bus=1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100,
+            controllable=True,
+            in_service=False,
+        )
         net.tcsc[parameter] = valid_value
         validate_network(net)
 
@@ -78,8 +93,17 @@ class TestTcscRequiredFields:
         net = create_empty_network()
         create_bus(net, 0.4)
         create_bus(net, 0.4)
-        create_tcsc(net,from_bus=0, to_bus=1, x_l_ohm=0.0, x_cvar_ohm=-0.1, set_p_to_mw=0.0,
-                    thyristor_firing_angle_degree=100, controllable=True, in_service=False)
+        create_tcsc(
+            net,
+            from_bus=0,
+            to_bus=1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100,
+            controllable=True,
+            in_service=False,
+        )
         net.tcsc[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
@@ -94,9 +118,20 @@ class TestTcscOptionalFields:
         net = create_empty_network()
         create_bus(net, 0.4)
         create_bus(net, 0.4)
-        create_tcsc(net, from_bus=0, to_bus=1, x_l_ohm=0.0, x_cvar_ohm=-0.1, set_p_to_mw=0.0,
-                    thyristor_firing_angle_degree=100, controllable=True, in_service=False,
-                    name='lorem ipsum', min_angle_degree=100.0, max_angle_degree=110.6)
+        create_tcsc(
+            net,
+            from_bus=0,
+            to_bus=1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100,
+            controllable=True,
+            in_service=False,
+            name="lorem ipsum",
+            min_angle_degree=100.0,
+            max_angle_degree=110.6,
+        )
         validate_network(net)
 
     def test_optional_fields_with_nulls(self):
@@ -115,7 +150,7 @@ class TestTcscOptionalFields:
             thyristor_firing_angle_degree=100.0,
             controllable=True,
             in_service=False,
-            name='bye world'
+            name="bye world",
         )
         create_tcsc(
             net,
@@ -139,12 +174,12 @@ class TestTcscOptionalFields:
             thyristor_firing_angle_degree=100.0,
             controllable=True,
             in_service=False,
-            max_angle_degree=90
+            max_angle_degree=90,
         )
-        net.tcsc['min_angle_degree'].at[0] = float(np.nan)
-        net.tcsc['max_angle_degree'].at[0] = float(np.nan)
-        net.tcsc['max_angle_degree'].at[1] = float(np.nan)
-        net.tcsc['min_angle_degree'].at[2] = float(np.nan)
+        net.tcsc["min_angle_degree"].at[0] = float(np.nan)
+        net.tcsc["max_angle_degree"].at[0] = float(np.nan)
+        net.tcsc["max_angle_degree"].at[1] = float(np.nan)
+        net.tcsc["min_angle_degree"].at[2] = float(np.nan)
 
         validate_network(net)
 

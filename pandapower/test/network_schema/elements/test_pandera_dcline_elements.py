@@ -1,4 +1,3 @@
-
 # test_dcline.py
 
 import itertools
@@ -133,7 +132,6 @@ class TestDclineOptionalFields:
         )
         validate_network(net)
 
-
     def test_optional_fields_with_nulls(self):
         """Test: dcline with optional fields including nulls is valid"""
         net = create_empty_network()
@@ -169,7 +167,6 @@ class TestDclineOptionalFields:
             max_q_to_mvar=40.0,
         )
         validate_network(net)
-
 
     @pytest.mark.parametrize(
         "parameter,valid_value",

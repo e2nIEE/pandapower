@@ -48,12 +48,13 @@ class TestShuntRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
-        create_shunt(net, bus=0, q_mvar=0.0, p_mw=0.0, in_service=True,vn_kv=0.4, step=1, id_characteristic_table=0,
-                     max_step=42)
+        create_shunt(
+            net, bus=0, q_mvar=0.0, p_mw=0.0, in_service=True, vn_kv=0.4, step=1, id_characteristic_table=0, max_step=42
+        )
 
         if parameter == "id_characteristic_table":
             net.shunt[parameter] = pd.Series([valid_value], dtype="Int64")
@@ -73,15 +74,15 @@ class TestShuntRequiredFields:
                 itertools.product(["step"], [*negativ_ints_plus_zero, *not_ints_list]),
                 itertools.product(["in_service"], not_boolean_list),
                 # id_characteristic_table: invalid values (negative or wrong dtype)
-                itertools.product(["id_characteristic_table"], not_ints_list), #TODO fails for bools
+                itertools.product(["id_characteristic_table"], not_ints_list),  # TODO fails for bools
             )
         ),
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # 0
-        create_bus(net, 0.4)          # 1
+        create_bus(net, 0.4)  # 0
+        create_bus(net, 0.4)  # 1
 
         create_shunt(net, bus=0, q_mvar=0.0, p_mw=0.0, in_service=True)
         net.shunt["p_mw"] = 0.0

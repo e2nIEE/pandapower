@@ -46,8 +46,8 @@ class TestStorageRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)           # 0
-        create_bus(net, 0.4)           # 1
+        create_bus(net, 0.4)  # 0
+        create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
 
         create_storage(net, bus=0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True)

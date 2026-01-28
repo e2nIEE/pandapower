@@ -1,4 +1,3 @@
-
 # test_ext_grid.py
 
 import itertools
@@ -28,6 +27,7 @@ from pandapower.test.network_schema.elements.helper import (
 
 class TestExtGridRequiredFields:
     """Tests for required ext_grid fields"""
+
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
@@ -44,8 +44,8 @@ class TestExtGridRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
         create_ext_grid(net, bus=0, vm_pu=1.0, va_degree=0.0, in_service=True)
@@ -70,8 +70,8 @@ class TestExtGridRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
 
         create_ext_grid(net, bus=0, vm_pu=1.0, va_degree=0.0, in_service=True)
 
@@ -83,6 +83,7 @@ class TestExtGridRequiredFields:
 
 class TestExtGridOptionalFields:
     """Tests for optional ext_grid fields, including group dependencies (opf, sc, 3ph)"""
+
     def test_all_optional_fields_valid(self):
         """Test: ext_grid with every optional field is valid and dependencies satisfied"""
         net = create_empty_network()
@@ -194,7 +195,6 @@ class TestExtGridOptionalFields:
         net.ext_grid["name"] = net.ext_grid["name"].astype("string")
         validate_network(net)
 
-
     def test_opf_group_partial_missing_invalid(self):
         """Test: OPF group must be complete if any OPF value is set"""
         net = create_empty_network()
@@ -277,8 +277,10 @@ class TestExtGridOptionalFields:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+
 class TestExtGridForeignKey:
     """Tests for foreign key constraints"""
+
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
         net = create_empty_network()

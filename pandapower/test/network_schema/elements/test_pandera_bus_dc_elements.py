@@ -17,7 +17,8 @@ from pandapower.test.network_schema.elements.helper import (
     not_boolean_list,
     negativ_floats,
     positiv_floats,
-    not_allowed_floats, zero_float,
+    not_allowed_floats,
+    zero_float,
 )
 
 
@@ -31,7 +32,7 @@ class TestBusDCRequiredFields:
                 itertools.product(["vn_kv"], positiv_floats),
                 itertools.product(["in_service"], bools),
             )
-        )
+        ),
     )
     def test_valid_required_values(self, parameter, valid_value):
         net = create_empty_network()
@@ -48,16 +49,10 @@ class TestBusDCRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(
-                    ["vn_kv"],
-                    [*not_floats_list, *negativ_floats, *zero_float]
-                ),
-                itertools.product(
-                    ["in_service"],
-                    [*not_boolean_list]
-                ),
+                itertools.product(["vn_kv"], [*not_floats_list, *negativ_floats, *zero_float]),
+                itertools.product(["in_service"], [*not_boolean_list]),
             )
-        )
+        ),
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         net = create_empty_network()
@@ -89,8 +84,8 @@ class TestBusDCOptionalFields:
 
     def test_bus_dc_with_optional_fields_including_nulls(self):
         net = create_empty_network()
-        create_bus_dc(net, vn_kv=1.0, in_service=True, name='bye world')
-        create_bus_dc(net, vn_kv=1.0, in_service=True, type='b')
+        create_bus_dc(net, vn_kv=1.0, in_service=True, name="bye world")
+        create_bus_dc(net, vn_kv=1.0, in_service=True, type="b")
         create_bus_dc(net, vn_kv=1.0, in_service=True, zone="somewhere")
         create_bus_dc(net, vn_kv=1.0, in_service=True, geo=pd.NA)
         validate_network(net)
@@ -102,7 +97,7 @@ class TestBusDCOptionalFields:
                 # itertools.product(["name", "type", "zone", "geo"], [pd.NA, *strings]),
                 itertools.product(["min_vm_pu", "max_vm_pu"], [float(np.nan), np.nan, *positiv_floats]),
             )
-        )
+        ),
     )
     def test_valid_optional_values(self, parameter, valid_value):
         net = create_empty_network()
@@ -121,7 +116,7 @@ class TestBusDCOptionalFields:
                 itertools.product(["name", "type", "zone", "geo"], [*not_strings_list, np.nan]),
                 itertools.product(["min_vm_pu", "max_vm_pu"], [*not_floats_list, *not_allowed_floats]),
             )
-        )
+        ),
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         net = create_empty_network()

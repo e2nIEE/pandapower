@@ -1,4 +1,3 @@
-
 # test_pandera_b2b_vsc_elements.py
 
 import itertools
@@ -49,11 +48,11 @@ class TestB2BVSCRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, vn_kv=110.0)          # index 0
-        create_bus(net, vn_kv=110.0)          # index 1
+        create_bus(net, vn_kv=110.0)  # index 0
+        create_bus(net, vn_kv=110.0)  # index 1
         create_bus(net, vn_kv=110.0, index=42)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
         create_bus_dc(net, vn_kv=110.0, index=42)
 
         create_b2b_vsc(
@@ -100,10 +99,10 @@ class TestB2BVSCRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 110.0)          # index 0
-        create_bus(net, 110.0)          # index 1
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus(net, 110.0)  # index 0
+        create_bus(net, 110.0)  # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
         create_bus_dc(net, vn_kv=110.0, index=42)
         create_b2b_vsc(
             net,
@@ -129,6 +128,7 @@ class TestB2BVSCRequiredFields:
 
 class TestB2BVSCOptionalFields:
     """Tests for optional b2b_vsc fields"""
+
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
@@ -141,8 +141,8 @@ class TestB2BVSCOptionalFields:
         """Test: valid optional values are accepted"""
         net = create_empty_network()
         b0 = create_bus(net, 110.0)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
         create_b2b_vsc(
             net,
             bus=b0,
@@ -176,8 +176,8 @@ class TestB2BVSCOptionalFields:
         """Test: invalid optional values are rejected"""
         net = create_empty_network()
         b0 = create_bus(net, 110.0)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
         create_b2b_vsc(
             net,
             bus=b0,
@@ -207,8 +207,8 @@ class TestB2BVSCSchemaForeignKey:
         """Test: bus FK must reference an existing bus index"""
         net = create_empty_network()
         b0 = create_bus(net, 110.0)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
         create_b2b_vsc(
             net,
             bus=b0,
@@ -234,8 +234,8 @@ class TestB2BVSCSchemaForeignKey:
         """Test: bus_dc_plus FK must reference an existing dc bus index"""
         net = create_empty_network()
         b0 = create_bus(net, 110.0)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
         create_b2b_vsc(
             net,
             bus=b0,
@@ -261,8 +261,8 @@ class TestB2BVSCSchemaForeignKey:
         """Test: bus_dc_minus FK must reference an existing dc bus index"""
         net = create_empty_network()
         b0 = create_bus(net, 110.0)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
         create_b2b_vsc(
             net,
             bus=b0,

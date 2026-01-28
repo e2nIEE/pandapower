@@ -1,4 +1,3 @@
-
 # test_pandera_bi_vsc_elements.py
 
 import itertools
@@ -45,6 +44,7 @@ def _create_valid_bi_vsc_row(required=True, bus=0, bus_dc_plus=0, bus_dc_minus=1
 
 class TestBiVSCRequiredFields:
     """Tests for required bi_vsc fields"""
+
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
@@ -68,11 +68,11 @@ class TestBiVSCRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)           # index 0
-        create_bus(net, 0.4)           # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
         create_bus_dc(net, vn_kv=110.0, index=42)
 
         # Create a valid bi_vsc element
@@ -107,8 +107,8 @@ class TestBiVSCRequiredFields:
         net = create_empty_network()
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
 
         row = _create_valid_bi_vsc_row(bus=0, bus_dc_plus=0, bus_dc_minus=1)
         net.bi_vsc = pd.DataFrame([row])
@@ -124,7 +124,7 @@ class TestBiVSCOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"],[pd.NA, *strings]),
+                itertools.product(["name"], [pd.NA, *strings]),
             )
         ),
     )
@@ -132,8 +132,8 @@ class TestBiVSCOptionalFields:
         """Test: valid optional values are accepted"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
-        create_bus_dc(net, vn_kv=110.0)          # index 0
-        create_bus_dc(net, vn_kv=110.0)          # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
 
         row = _create_valid_bi_vsc_row(required=False, bus=b0, bus_dc_plus=0, bus_dc_minus=1)
         net.bi_vsc = pd.DataFrame([row])

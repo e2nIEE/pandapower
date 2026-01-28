@@ -1,4 +1,3 @@
-
 import itertools
 import pandas as pd
 import pandera as pa
@@ -22,7 +21,9 @@ from pandapower.test.network_schema.elements.helper import (
     negativ_floats_plus_zero,
     not_ints_list,
     negativ_ints,
-    all_allowed_floats, zero_float, all_allowed_ints,
+    all_allowed_floats,
+    zero_float,
+    all_allowed_ints,
 )
 
 
@@ -45,8 +46,8 @@ class TestGenRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
         create_gen(
@@ -97,6 +98,7 @@ class TestGenRequiredFields:
 
 class TestGenOptionalFields:
     """Tests for optional gen fields, including group dependencies"""
+
     def test_all_optional_fields_valid(self):
         """Test: gen with every optional field is valid and dependencies satisfied"""
         net = create_empty_network()
@@ -110,8 +112,8 @@ class TestGenOptionalFields:
             in_service=True,
             slack=True,
             # optional
-            name='test',
-            type='sync',
+            name="test",
+            type="sync",
             sn_mva=1.0,
             max_q_mvar=1.1,
             min_q_mvar=1.0,
@@ -123,7 +125,7 @@ class TestGenOptionalFields:
             cos_phi=1.0,
             power_station_trafo=0,
             id_q_capability_characteristic=0,
-            curve_style='straightLineYValues',
+            curve_style="straightLineYValues",
             reactive_capability_curve=True,
             slack_weight=1.0,
             controllable=True,
@@ -138,7 +140,7 @@ class TestGenOptionalFields:
         net = create_empty_network()
         create_bus(net, 0.4)
 
-        #Row 1: opf + q_lim_enforced present
+        # Row 1: opf + q_lim_enforced present
         create_gen(
             net,
             bus=0,
@@ -172,14 +174,14 @@ class TestGenOptionalFields:
             slack=True,
             # optional
             id_q_capability_characteristic=0,
-            curve_style='straightLineYValues',
+            curve_style="straightLineYValues",
             reactive_capability_curve=True,
         )
 
-    # def test_optional_fields_qcc_with_nulls(self): TODO scc commented out in gen.py
-    #     """Test: gen with optional fields including nulls, with dependencies respected"""
-    #     net = create_empty_network()
-    #     create_bus(net, 0.4)
+        # def test_optional_fields_qcc_with_nulls(self): TODO scc commented out in gen.py
+        #     """Test: gen with optional fields including nulls, with dependencies respected"""
+        #     net = create_empty_network()
+        #     create_bus(net, 0.4)
         # Row 3: sc present
         # create_gen(
         #     net,
@@ -227,7 +229,7 @@ class TestGenOptionalFields:
         ),
     )
     def test_valid_optional_values(self, parameter, valid_value):
-        #TODO: bool or pd.BooleanDtype
+        # TODO: bool or pd.BooleanDtype
         """Test: valid optional values are accepted"""
         net = create_empty_network()
         create_bus(net, 0.4)
@@ -240,8 +242,8 @@ class TestGenOptionalFields:
             in_service=True,
             slack=True,
             # optional
-            name='test',
-            type='sync',
+            name="test",
+            type="sync",
             sn_mva=1.0,
             max_q_mvar=2.0,
             min_q_mvar=-2.0,
@@ -253,7 +255,7 @@ class TestGenOptionalFields:
             cos_phi=1.0,
             power_station_trafo=0,
             id_q_capability_characteristic=0,
-            curve_style='straightLineYValues',
+            curve_style="straightLineYValues",
             reactive_capability_curve=True,
             slack_weight=1.0,
             controllable=True,
@@ -371,6 +373,7 @@ class TestGenOptionalFields:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+
 class TestGenForeignKey:
     """Tests for foreign key constraints"""
 
@@ -383,6 +386,7 @@ class TestGenForeignKey:
         net.gen["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
 
 class TestGenResults:
     """Tests for gen results after calculations"""

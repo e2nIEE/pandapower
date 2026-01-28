@@ -43,8 +43,8 @@ class TestSgenRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         net = create_empty_network()
-        create_bus(net, 0.4)          # 0
-        create_bus(net, 0.4)          # 1
+        create_bus(net, 0.4)  # 0
+        create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
 
         create_sgen(net, bus=0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
@@ -118,22 +118,35 @@ class TestSgenOptionalFields:
         b0 = create_bus(net, 0.4)
 
         # Row 1: OPF group complete
-        create_sgen(net, bus=b0, p_mw=0.8, q_mvar=0.1, scaling=1.0, in_service=True,
-                    max_p_mw=1.5,
-                    min_p_mw=-1.0,
-                    max_q_mvar=0.8,
-                    min_q_mvar=-0.6,
-                    name='alpha')
+        create_sgen(
+            net,
+            bus=b0,
+            p_mw=0.8,
+            q_mvar=0.1,
+            scaling=1.0,
+            in_service=True,
+            max_p_mw=1.5,
+            min_p_mw=-1.0,
+            max_q_mvar=0.8,
+            min_q_mvar=-0.6,
+            name="alpha",
+        )
         # Row 2: QCC group complete
-        create_sgen(net, bus=b0, p_mw=1.2, q_mvar=0.0, scaling=0.9, in_service=True,
-                    id_q_capability_characteristic=1,
-                    curve_style='constantYValue',
-                    reactive_capability_curve=True,
-                    type='wye')
+        create_sgen(
+            net,
+            bus=b0,
+            p_mw=1.2,
+            q_mvar=0.0,
+            scaling=0.9,
+            in_service=True,
+            id_q_capability_characteristic=1,
+            curve_style="constantYValue",
+            reactive_capability_curve=True,
+            type="wye",
+        )
 
         # Row 3: other optionals without triggering groups
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=-0.2, scaling=1.1, in_service=False,
-                    sn_mva=2.0)
+        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=-0.2, scaling=1.1, in_service=False, sn_mva=2.0)
         net.sgen["controllable"] = pd.Series([pd.NA, True, False], dtype="boolean")
         net.sgen["name"] = pd.Series(["alpha", pd.NA, "gamma"], dtype="string")
 

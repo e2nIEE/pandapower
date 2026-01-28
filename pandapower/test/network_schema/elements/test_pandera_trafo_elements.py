@@ -24,7 +24,7 @@ from pandapower.test.network_schema.elements.helper import (
     positiv_floats_plus_zero,
     negativ_floats_plus_zero,
     all_allowed_floats,
-    negativ_floats
+    negativ_floats,
 )
 
 # Common std_type available in pandapower
@@ -55,8 +55,8 @@ class TestTrafoRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         net = create_empty_network()
-        create_bus(net, 110)          # index 0 (HV)
-        create_bus(net, 10)           # index 1 (LV)
+        create_bus(net, 110)  # index 0 (HV)
+        create_bus(net, 10)  # index 1 (LV)
         create_bus(net, 0.4, index=42)
 
         create_transformer(net, hv_bus=0, lv_bus=1, std_type=STD_TYPE, in_service=True, parallel=1)
@@ -168,8 +168,9 @@ class TestTrafoOptionalFields:
         net.trafo["vector_group"] = pd.Series(["Dyn5"], dtype="string")
 
         # Row 2: OPF present
-        create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1,
-                           max_loading_percent=80)
+        create_transformer(
+            net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1, max_loading_percent=80
+        )
 
         # Row 3: tdt complete, others NA
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=False, parallel=1)
@@ -309,7 +310,7 @@ class TestTrafoOptionalFields:
                 itertools.product(["leakage_reactance_ratio_hv"], [*negativ_floats, 1.1, *not_floats_list]),
                 itertools.product(["xn_ohm"], not_floats_list),
                 itertools.product(["pt_percent"], not_floats_list),
-                itertools.product(["max_loading_percent"], [*not_ints_list]), #TODO int?
+                itertools.product(["max_loading_percent"], [*not_ints_list]),  # TODO int?
             )
         ),
     )
