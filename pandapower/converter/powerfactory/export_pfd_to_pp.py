@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def from_pfd(app, prj_name: str, net_name:str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
              pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
-             export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
+             export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True, activate_loadcase=None):
     """
 
     Args:
@@ -44,7 +44,7 @@ def from_pfd(app, prj_name: str, net_name:str, path_dst=None, pv_as_slack=False,
 
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics)
-    pf_load_flow_failed = run_load_flow(app)
+    pf_load_flow_failed = run_load_flow(app, activate_loadcase=activate_loadcase)
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
     net = from_pf(net_name=net_name, dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,

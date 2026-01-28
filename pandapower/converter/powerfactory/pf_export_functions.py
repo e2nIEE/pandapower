@@ -174,7 +174,7 @@ def apply_unit_settings(app, elm_units, exponent):
 
 
 def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=None,
-                  motor_scaling=None):
+                  motor_scaling=None, activate_loadcase=None):
     """
     :param app: PowerFactory Application object
     :param scale_feeder_loads: if loads have to be scaled according to the feeder scaling factor
@@ -185,6 +185,22 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     """
 
     com_ldf = app.GetFromStudyCase('ComLdf')
+
+    study = app.GetActiveStudyCase()
+    triggers = study.GetContents('*.SetTrigger', 1)
+    if activate_loadcase == 'Starklastfall':
+        for t in triggers:
+            if t.triggerName == "Globaler_Faktor_PE":
+                t.ftrigger = 0.0
+            elif t.triggerName == "Globaler_Faktor_PL":
+                t.ftrigger = 1.0
+    elif activate_loadcase == 'Einspeisefall':
+        for t in triggers:
+            if t.triggerName == "Globaler_Faktor_PE":
+                t.ftrigger = 1.0
+            elif t.triggerName == "Globaler_Faktor_PL":
+                t.ftrigger = 0.0
+
 
     # com_ldf.iopt_net = 0
     # com_ldf.iopt_at = 1
