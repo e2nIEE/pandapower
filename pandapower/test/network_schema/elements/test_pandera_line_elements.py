@@ -116,11 +116,10 @@ class TestLineOptionalFields:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
 
         # Optional text fields
         net.line["name"] = pd.Series(["Line A"], dtype="string")
-        net.line["std_type"] = pd.Series(["custom_type"], dtype="string")
         net.line["type"] = pd.Series(["ol"], dtype="string")
         net.line["geo"] = pd.Series(['{"type":"LineString","coordinates":[]}'], dtype="string")
 
@@ -160,7 +159,9 @@ class TestLineOptionalFields:
         b1 = create_bus(net, 0.4)
 
         # Line 1: name/type/alpha
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, name="test", alpha=0.0)
+        create_line(
+            net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, name="test", alpha=0.0, std_type=STD_TYPE
+        )
         # Line 2: max_loading_percent only (opf)
         create_line(
             net,
@@ -171,6 +172,7 @@ class TestLineOptionalFields:
             name="test",
             alpha=0.0,
             max_loading_percent=80.0,
+            std_type=STD_TYPE,
         )
         # Line 3: zero-sequence params only
         create_line(
@@ -185,6 +187,7 @@ class TestLineOptionalFields:
             x0_ohm_per_km=0.2,
             c0_nf_per_km=1.0,
             g0_us_per_km=0.0,
+            std_type=STD_TYPE,
         )
 
         net.line["name"].iat[0] = pd.NA
@@ -200,19 +203,19 @@ class TestLineOptionalFields:
         b1 = create_bus(net, 0.4)
 
         # Case 1: tdpf flag only -> invalid
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["tdpf"] = True
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 2: one tdpf param only -> invalid
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["wind_speed_m_per_s"] = 3.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 3: another tdpf param only -> invalid
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["reference_temperature_degree_celsius"] = 20.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)

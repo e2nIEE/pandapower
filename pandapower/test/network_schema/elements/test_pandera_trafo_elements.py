@@ -163,7 +163,9 @@ class TestTrafoOptionalFields:
         b_lv = create_bus(net, 10)
 
         # Row 1: name/vector_group only
-        create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1, max_loading_percent=80.0)
+        create_transformer(
+            net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1, max_loading_percent=80.0
+        )
         net.trafo["name"] = pd.Series(["T1"], dtype="string")
         net.trafo["vector_group"] = pd.Series(["Dyn5"], dtype="string")
 
