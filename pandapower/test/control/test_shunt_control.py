@@ -19,10 +19,11 @@ def simple_test_net_shunt_control():
 
 def test_continuous_shunt_control(tol=1e-6):
     net = simple_test_net_shunt_control()
-    BinarySearchControl(net, ctrl_in_service=True, output_element='shunt', output_variable='step',
-                        output_element_index=[0], output_element_in_service=[True], output_values_distribution=[1],
-                        input_element='res_bus', input_variable='vm_pu', input_element_index=[1], set_point=1.08, voltage_ctrl=True,
-                        tol=tol)
+    BinarySearchControl(
+        net, ctrl_in_service=True, output_element='shunt', output_variable='step', output_element_index=[0], tol=tol,
+        output_element_in_service=[True], output_values_distribution=[1], input_element='res_bus', voltage_ctrl=True,
+        input_variable='vm_pu', input_element_index=[1], set_point=1.08
+    )
     runpp(net, run_control=False)
     assert (abs(net.res_bus.loc[1, "vm_pu"] - 1.041789) < tol)
     runpp(net, run_control=True)

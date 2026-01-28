@@ -73,6 +73,11 @@ def estimate(
     Returns:
         bool: Was the state estimation successful?
     """
+    # numpy 1 is not reliable with estimate. Most likely precision is at fault.
+    if np.__version__.startswith('1.'):
+        raise UserWarning("numpy 1.x should not be used with estimate as it has known Issues")
+    
+    
     if algorithm not in ALGORITHM_MAPPING:
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
@@ -397,7 +402,7 @@ class StateEstimation:
                 # Diagonalize \Omega:
                 Omega = np.diag(np.diag(Omega))
 
-                # Compute squareroot (|.| since some -0.0 produced nans):
+                # Compute square root (|.| since some -0.0 produced nans):
                 Omega = np.sqrt(np.absolute(Omega))
 
                 OmegaInv = np.linalg.inv(Omega)
@@ -406,13 +411,12 @@ class StateEstimation:
                 rN = np.dot(OmegaInv, np.absolute(self.solver.r))
 
                 if max(rN) <= rn_max_threshold:
-                    self.logger.debug("Largest normalized residual test passed. "
-                                      "No bad data detected.")
+                    self.logger.debug("Largest normalized residual test passed. No bad data detected.")
                     return True
                 else:
                     self.logger.debug(
-                        "Largest normalized residual test failed (%.1f > %.1f)."
-                        % (max(rN).item(), rn_max_threshold))
+                        f"Largest normalized residual test failed ({max(rN).item():.1f} > {rn_max_threshold:.1f})."
+                    )
 
                     # Identify bad data: Determine index corresponding to max(rN):
                     idx_rN = np.argsort(rN, axis=0)[-1]
@@ -421,17 +425,17 @@ class StateEstimation:
                     meas_idx = self.solver.pp_meas_indices[idx_rN]
 
                     # Remove bad measurement:
-                    self.logger.debug("Removing measurement: %s"
-                                      % self.net.measurement.loc[meas_idx].values[0])
+                    self.logger.debug(f"Removing measurement: {self.net.measurement.loc[meas_idx].values[0]}")
                     self.net.measurement = self.net.measurement.drop(meas_idx)
                     self.logger.debug("Bad data removed from the set of measurements.")
 
             except np.linalg.linalg.LinAlgError:
-                self.logger.error("A problem appeared while using the linear algebra methods."
-                                  "Check and change the measurement set.")
+                self.logger.error(
+                    "A problem appeared while using the linear algebra methods. Check and change the measurement set."
+                )
                 return False
 
-            self.logger.debug("rN_max identification threshold: %.2f" % rn_max_threshold)
+            self.logger.debug(f"rN_max identification threshold: {rn_max_threshold:.2f}")
             num_iterations += 1
 
         return False
