@@ -89,6 +89,9 @@ typing = [
     "types-networkx~=3.4",
     "types-tqdm~=4.67",
     "scipy-stubs~=1.15",
+    "types-geopandas~=1.1",
+    "types-seaborn~=0.13",
+    "lxml-stubs",
     "pandera[mypy]~=0.26.1"
 ]
 

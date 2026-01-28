@@ -386,12 +386,12 @@ class PowerTransformersCim16:
                 keep_index = keep_index[0]
             else:
                 self.logger.warning("Ignoring PhaseTapChangerTabular with ID: %s. The current tap position is missing "
-                                    "in the PhaseTapChangerTablePoints!" % one_id)
-                ptct = ptct.drop(drop_index)
+                                    "in the PhaseTapChangerTablePoints!" % one_id)  # type: ignore[str-bytes-safe]
+                ptct = ptct.drop(drop_index)  # type: ignore[call-overload]
                 continue
             one_df = one_df.set_index('step')
             neutral_step = one_df['neutralStep'].iloc[0]
-            ptct = ptct.drop(drop_index)
+            ptct = ptct.drop(drop_index)  # type: ignore[call-overload]
             # keep the angle and ratio based on neutral tap position (to populate tap_step_percent and tap_step_degree)
             ptct.loc[keep_index, 'angle'] = one_df.loc[neutral_step, 'angle']
             ptct.loc[keep_index, 'ratio'] = (one_df.loc[neutral_step, 'ratio'] - 1) * 100

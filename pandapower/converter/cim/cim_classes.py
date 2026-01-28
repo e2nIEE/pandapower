@@ -95,8 +95,8 @@ class CimParser:
                         self.logger.debug("Skipping CIM element type %s from profile %s." % (cim_element_type, profile))
                         continue
                     if col in cim_schema[profile][cim_element_type]['fields'] and \
-                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col]:
-                        data_type_col_str = cim_schema[profile][cim_element_type]['fields'][col]['data_type_prim']
+                            'data_type_prim' in cim_schema[profile][cim_element_type]['fields'][col]:  # type: ignore[index]
+                        data_type_col_str = cim_schema[profile][cim_element_type]['fields'][col]['data_type_prim']  # type: ignore[index]
                         if data_type_col_str in data_types_map:
                             data_type_col = data_types_map[data_type_col_str]
                         else:
@@ -116,7 +116,7 @@ class CimParser:
                                 self.cim[profile][cim_element_type][col] = \
                                     self.cim[profile][cim_element_type][col].astype(float_type)
                             self.cim[profile][cim_element_type][col] = \
-                                self.cim[profile][cim_element_type][col].astype(data_type_col)
+                                self.cim[profile][cim_element_type][col].astype(data_type_col)  # type: ignore[call-overload]
                         except Exception as e:
                             self.logger.warning(f"Couldn't set the datatype to {data_type_col_str} for field {col} "
                                                 f"at CIM type {cim_element_type} in profile {profile}!")
@@ -416,11 +416,11 @@ class CimParser:
         element_types = element_types.drop_duplicates()
         full_model = element_types.str.find('FullModel')
         if full_model.max() >= 0:
-            full_model = element_types[full_model >= 0].values[0]
+            full_model = element_types[full_model >= 0].values[0]  # type: ignore[assignment]
         else:
-            full_model = 'FullModel'
+            full_model = 'FullModel'  # type: ignore[assignment]
         full_model_profile = full_model[:-9] + 'Model.profile'
-        full_model_df = self._get_df(root.findall('.//' + full_model))
+        full_model_df = self._get_df(root.findall('.//' + full_model))  # type: ignore[arg-type]
         if full_model_df.index.size == 0 and self.ignore_errors:
             self.logger.warning("The FullModel is not given in the XML tree, returning %s" % default_profile)
             return default_profile
@@ -504,15 +504,15 @@ class CimParser:
         else:
             prf = profile_name
         self.file_names[prf] = file
-        self._parse_xml_tree(xml_tree.getroot(), prf, output)
+        self._parse_xml_tree(xml_tree.getroot(), prf, output)  # type: ignore[arg-type]
 
-    def _parse_xml_tree(self, xml_tree, profile_name: str, output: dict | None = None):
+    def _parse_xml_tree(self, xml_tree: etree._Element, profile_name: str, output: dict | None = None):
         output = self.cim if output is None else output
         # get all CIM elements to parse
-        element_types = pd.Series([ele.tag for ele in xml_tree])
+        element_types = pd.Series([ele.tag for ele in xml_tree])  # type: ignore[attr_defined]
         element_types = element_types.drop_duplicates()
         prf_content: dict[str, pd.DataFrame] = {}
-        ns_dict = {}
+        ns_dict: dict = {}
         prf = profile_name
         if prf not in ns_dict:
             ns_dict[prf] = {}
@@ -538,10 +538,10 @@ class CimParser:
                         # get the namespace from the literal, Note: get the largest string because some values could
                         # be nan
                         name_space = \
-                            prf_content[element_type_c][col].values[prf_content[element_type_c][col].str.len().idxmax()]
+                            prf_content[element_type_c][col].values[prf_content[element_type_c][col].str.len().idxmax()]  # type: ignore[index]
                         # remove the namespace from the literal
                         prf_content[element_type_c][col] = \
-                            prf_content[element_type_c][col].str[name_space.rfind('.') + 1:]
+                            prf_content[element_type_c][col].str[name_space.rfind('.') + 1:]  # type: ignore[union-attr]
                 elif col_new.endswith('-about'):
                     col_new = 'rdfId'
                     prf_content[element_type_c][col] = prf_content[element_type_c][col].str[1:]

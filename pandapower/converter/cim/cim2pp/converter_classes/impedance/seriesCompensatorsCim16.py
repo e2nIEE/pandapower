@@ -70,7 +70,7 @@ class SeriesCompensatorsCim16:
                 message="There is a problem at the SeriesCompensators source data: Not each SeriesCompensator "
                         "has two Terminals, %s Terminals should be given but there are %s Terminals available" %
                         (eqs_length_before_merge * 2, ser_comp.index.size)))
-            dups = ser_comp.pivot_table(index=['rdfId'], aggfunc='size')
+            dups = ser_comp.pivot_table(index=['rdfId'], aggfunc='size')  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]
             for rdfId, count in dups.items():
                 self.logger.warning("The SeriesCompensator with RDF ID %s has %s Terminals!" % (rdfId, count))
@@ -88,9 +88,9 @@ class SeriesCompensatorsCim16:
         ser_comp = ser_comp.reset_index()
         # here is where the magic happens: just remove the first value from the copied columns, reset the index
         # and replace the old column with the cut one. At least just remove the duplicates on column rdfId
-        ser_comp.rdfId_Terminal2 = ser_comp.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2
-        ser_comp.connected2 = ser_comp.connected2.iloc[1:].reset_index().connected2
-        ser_comp.index_bus2 = ser_comp.index_bus2.iloc[1:].reset_index().index_bus2
+        ser_comp.rdfId_Terminal2 = ser_comp.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2  # type: ignore[attr-defined]
+        ser_comp.connected2 = ser_comp.connected2.iloc[1:].reset_index().connected2  # type: ignore[attr-defined]
+        ser_comp.index_bus2 = ser_comp.index_bus2.iloc[1:].reset_index().index_bus2  # type: ignore[attr-defined]
         ser_comp = ser_comp.drop_duplicates(['rdfId'], keep='first')
         if hasattr(self.cimConverter.net, 'sn_mva'):
             ser_comp['sn_mva'] = self.cimConverter.net['sn_mva']

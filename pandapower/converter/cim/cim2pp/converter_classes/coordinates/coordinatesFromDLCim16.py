@@ -18,12 +18,12 @@ class CoordinatesFromDLCim16:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cimConverter = cimConverter
 
-    def add_coordinates_from_dl_cim16(self, diagram_name: str = None):
+    def add_coordinates_from_dl_cim16(self, diagram_name: str | None = None):
         self.logger.info("Creating the coordinates from CGMES DiagramLayout.")
         time_start = time.time()
         # choose a diagram if it is not given (the first one ascending)
         if diagram_name is None:
-            diagram_name = self.cimConverter.cim['dl']['Diagram'].sort_values(by='name')['name'].values[0]
+            diagram_name = self.cimConverter.cim['dl']['Diagram'].sort_values(by='name')['name'].values[0]  # type: ignore[assignment]
         self.logger.debug("Choosing the geo coordinates from diagram %s" % diagram_name)
         if diagram_name != 'all':
             # reduce the source data to the chosen diagram only
@@ -58,8 +58,9 @@ class CoordinatesFromDLCim16:
                 one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
                 one_ele_df['coords'] = one_ele_df[['coords']].values.tolist()
                 for _, df_group in one_ele_df.groupby(by=sc['o_id']):
-                    one_ele_df.at[df_group.index.values[0], 'coords'] = df_group[
-                        ['xPosition', 'yPosition']].values.tolist()
+                    one_ele_df.at[df_group.index.values[0], 'coords'] = df_group[  # type: ignore[assignment, index]
+                        ['xPosition', 'yPosition']
+                    ].values.tolist()
                 one_ele_df = one_ele_df.drop_duplicates([sc['o_id']], keep='first')
                 one_ele_df['coords'] = one_ele_df['coords'].astype(str)
                 one_ele_df['diagram'] = '{"coordinates": '+one_ele_df['coords'].astype(str)+', "type": "LineString"}'

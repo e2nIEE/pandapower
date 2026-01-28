@@ -71,7 +71,7 @@ class EquivalentBranchesCim16:
                 message="There is a problem at the EquivalentBranches source data: Not each EquivalentBranch "
                         "has two Terminals, %s Terminals should be given but there are %s Terminals available" %
                         (eqb_length_before_merge * 2, eqb.index.size)))
-            dups = eqb.pivot_table(index=['rdfId'], aggfunc='size')
+            dups = eqb.pivot_table(index=['rdfId'], aggfunc='size')  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]
             for rdfId, count in dups.items():
                 self.logger.warning("The EquivalentBranch with RDF ID %s has %s Terminals!" % (rdfId, count))
@@ -89,9 +89,9 @@ class EquivalentBranchesCim16:
         eqb = eqb.reset_index()
         # here is where the magic happens: just remove the first value from the copied columns, reset the index
         # and replace the old column with the cut one. At least just remove the duplicates on column rdfId
-        eqb.rdfId_Terminal2 = eqb.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2
-        eqb.connected2 = eqb.connected2.iloc[1:].reset_index().connected2
-        eqb.index_bus2 = eqb.index_bus2.iloc[1:].reset_index().index_bus2
+        eqb.rdfId_Terminal2 = eqb.rdfId_Terminal2.iloc[1:].reset_index().rdfId_Terminal2  # type: ignore[attr-defined]
+        eqb.connected2 = eqb.connected2.iloc[1:].reset_index().connected2  # type: ignore[attr-defined]
+        eqb.index_bus2 = eqb.index_bus2.iloc[1:].reset_index().index_bus2  # type: ignore[attr-defined]
         eqb = eqb.drop_duplicates(['rdfId'], keep='first')
         if hasattr(self.cimConverter.net, 'sn_mva'):
             eqb['sn_mva'] = self.cimConverter.net['sn_mva']

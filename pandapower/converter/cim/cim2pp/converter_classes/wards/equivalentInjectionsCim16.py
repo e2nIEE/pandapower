@@ -1,5 +1,6 @@
 import logging
 import time
+from typing import runtime_checkable, Protocol
 
 import pandas as pd
 
@@ -34,6 +35,11 @@ class EquivalentInjectionsCim16:
                     (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start)))
 
     def _prepare_equivalent_injections_cim16(self) -> pd.DataFrame:
+        
+        @runtime_checkable
+        class EquivalentInjectionDF(Protocol):
+            nominalVoltage: pd.Series
+
         if 'sc' in self.cimConverter.cim:
             equivalent_injection = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'], 'EquivalentInjection',
                                                                              add_cim_type_column=True)
@@ -50,7 +56,7 @@ class EquivalentInjectionsCim16:
         # maybe the BaseVoltage is not given, also get the nominalVoltage from the buses
         equivalent_injection = pd.merge(equivalent_injection, self.cimConverter.net.bus[['vn_kv']], how='left',
                                         left_on='index_bus', right_index=True)
-        equivalent_injection.nominalVoltage = equivalent_injection.nominalVoltage.fillna(equivalent_injection.vn_kv)
+        equivalent_injection.nominalVoltage = equivalent_injection.nominalVoltage.fillna(equivalent_injection.vn_kv)  # type: ignore[attr-defined]
         equivalent_injection['regulationStatus'] = equivalent_injection['regulationStatus'].fillna(False)
         equivalent_injection['vm_pu'] = equivalent_injection.regulationTarget / equivalent_injection.nominalVoltage
         if 'inService' in equivalent_injection.columns:

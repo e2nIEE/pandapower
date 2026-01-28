@@ -27,40 +27,38 @@ class AssetType(CustomLogger):
 
 
 class RepairMain(CustomLogger):
-    def __init__(self, assets: List[str] = None):
+    def __init__(self, assets: List[AssetType] | None = None):
         super().__init__()
         self.assets = assets
 
     def get_assets(self):
         pass
 
-    def repair(self, data: Dict[str, pd.DataFrame], report_container: ReportContainer = None):
+    def repair(self, data: Dict[str, pd.DataFrame], report_container: ReportContainer | None = None):
         pass
 
-    def deserialize(self, path_or_json_str: str, report_container: ReportContainer) -> RepairMain:
+    def deserialize(self, path_or_json_str: str, report_container: ReportContainer) -> RepairMain:  # type: ignore[empty-body]
         pass
 
 
 class PandapowerRepair(RepairMain):
-    def __init__(self, assets: List[AssetType] = None):
+    def __init__(self, assets: List[AssetType] | None = None):
         super().__init__(assets)
 
-    def deserialize(self, path_or_json_str: Union[str, PandapowerRepair], report_container: ReportContainer = None) -> \
-            PandapowerRepair:
+    def deserialize(self, path_or_json_str: Union[str, PandapowerRepair], report_container: ReportContainer | None = None) -> PandapowerRepair:  # type: ignore[empty-body]
         pass
 
 
 class CIMRepair(CustomLogger):
-    def __init__(self, profiles: Dict[str, RepairMain] = None):
+    def __init__(self, profiles: Dict[str, RepairMain] | None = None):
         super().__init__()
         self.profiles = profiles
 
     def set_profile(self, profile: str, repair_main: RepairMain):
         pass
 
-    def repair(self, cim_dict: Dict[str, Dict[str, pd.DataFrame]], report_container: ReportContainer = None):
+    def repair(self, cim_dict: Dict[str, Dict[str, pd.DataFrame]], report_container: ReportContainer | None = None):
         pass
 
-    def deserialize(self, path_or_json_str: Union[str, CIMRepair], report_container: ReportContainer = None) -> \
-            CIMRepair:
+    def deserialize(self, path_or_json_str: Union[str, CIMRepair], report_container: ReportContainer | None = None) -> CIMRepair:  # type: ignore[empty-body]
         pass

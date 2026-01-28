@@ -34,11 +34,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Define global variables
-line_dict = {}
-trafo_dict = {}
-trafo3w_dict = {}
-switch_dict = {}
-bus_dict = {}
+line_dict: dict = {}
+trafo_dict: dict = {}
+trafo3w_dict: dict = {}
+switch_dict: dict = {}
+bus_dict: dict = {}
 grf_map = {}
 
 
@@ -63,7 +63,7 @@ def from_pf(
     line_dict = {}
     trafo_dict = {}
     trafo3w_dict = {}
-    impedance_dict = {}
+    impedance_dict = {}  # type: ignore[name-defined]
     switch_dict = {}
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
@@ -858,7 +858,7 @@ def calc_len_coords(coords: list[tuple[Union[float, int], Union[float, int]]]) -
     """
     tot_len = 0
     for i in range(len(coords) - 1):
-        tot_len += point_len(coords[i], coords[i + 1])
+        tot_len += point_len(coords[i], coords[i + 1])  # type: ignore[assignment]
     return tot_len
 
 
