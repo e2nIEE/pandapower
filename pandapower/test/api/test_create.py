@@ -984,8 +984,8 @@ def test_create_transformers():
         test_kwargs="TestKW"
     )
     res_df = pd.DataFrame({
-        'name': ['trafo1', 'trafo2'],
-        'std_type': ['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'],
+        'name': pd.Series(['trafo1', 'trafo2'], dtype=object),
+        'std_type': pd.Series(['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'], dtype=object),
         'hv_bus': pd.Series([0, 0], dtype=np.uint32),
         'lv_bus': pd.Series([1, 2], dtype=np.uint32),
         'sn_mva': [0.4, 0.4],
@@ -996,22 +996,22 @@ def test_create_transformers():
         'pfe_kw': [0.95, 0.95],
         'i0_percent': [0.2375, 0.2375],
         'shift_degree': [0.0, 0.0],
-        'tap_side': ['', ''],
+        'tap_side': pd.Series(['', ''], dtype=object),
         'tap_neutral': [nan, nan],
         'tap_min': [nan, nan],
         'tap_max': [nan, nan],
         'tap_step_percent': [nan, nan],
         'tap_step_degree': [nan, nan],
         'tap_pos': [nan, nan],
-        'tap_changer_type': ['', ''],
+        'tap_changer_type': pd.Series(['', ''], dtype=object),
         'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
         'tap_dependency_table': [False, False],
         'parallel': pd.Series([1, 1], dtype=np.uint32),
         'df': [1.0, 1.0],
         'in_service': [True, True],
+        'vector_group': pd.Series(['Dyn5', 'Dyn5'], dtype=object),
         'oltc': [False, False],
-        'test_kwargs': ['TestKW', 'TestKW'],
-        'vector_group': ['Dyn5', 'Dyn5'],
+        'test_kwargs': pd.Series(['TestKW', 'TestKW'], dtype=object),
     })
     assert dataframes_equal(net.trafo, res_df)
 
@@ -1029,8 +1029,8 @@ def test_create_transformers_for_single():
         sn_mva=.4
     )
     res_df = pd.DataFrame({
-        'name': ['trafo1'],
-        'std_type': ['0.4 MVA 10/0.4 kV'],
+        'name': pd.Series(['trafo1'], dtype=object),
+        'std_type': pd.Series(['0.4 MVA 10/0.4 kV'], dtype=object),
         'hv_bus': pd.Series([0], dtype=np.uint32),
         'lv_bus': pd.Series([1], dtype=np.uint32),
         'sn_mva': [0.4],
@@ -1041,22 +1041,22 @@ def test_create_transformers_for_single():
         'pfe_kw': [0.95],
         'i0_percent': [0.2375],
         'shift_degree': [0.0],
-        'tap_side': [''],
+        'tap_side': pd.Series([''], dtype=object),
         'tap_neutral': [nan],
         'tap_min': [nan],
         'tap_max': [nan],
         'tap_step_percent': [nan],
         'tap_step_degree': [nan],
         'tap_pos': [nan],
-        'tap_changer_type': [''],
+        'tap_changer_type': pd.Series([''], dtype=object),
         'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
         'tap_dependency_table': [False],
         'parallel': pd.Series([1], dtype=np.uint32),
         'df': [1.0],
         'in_service': [True],
         'oltc': [False],
-        'test_kwargs': ['TestKW'],
-        'vector_group': ['Dyn5'],
+        'vector_group': pd.Series(['Dyn5'], dtype=object),
+        'test_kwargs': pd.Series(['TestKW'], dtype=object),
     })
     assert dataframes_equal(net.trafo, res_df)
 
@@ -1079,8 +1079,8 @@ def test_create_transformers3w():
         index=[5, 6],
     )
     res_df = pd.DataFrame({
-        'name': ['t3w-1', 't3w-2'],
-        'std_type': ['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'],
+        'name': pd.Series(['t3w-1', 't3w-2'], dtype=object),
+        'std_type': pd.Series(['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'], dtype=object),
         'hv_bus': pd.Series([0, 0], dtype=np.uint32),
         'mv_bus': pd.Series([1, 2], dtype=np.uint32),
         'lv_bus': pd.Series([3, 4], dtype=np.uint32),
@@ -1100,7 +1100,7 @@ def test_create_transformers3w():
         'i0_percent': [0.89, 0.89],
         'shift_mv_degree': [0.0, 0.0],
         'shift_lv_degree': [0.0, 0.0],
-        'tap_side': ['hv', 'hv'],
+        'tap_side': pd.Series(['hv', 'hv'], dtype=object),
         'tap_neutral': [0.0, 0.0],
         'tap_min': [-10.0, -10.0],
         'tap_max': [10.0, 10.0],
@@ -1108,7 +1108,7 @@ def test_create_transformers3w():
         'tap_step_degree': [nan, nan],
         'tap_pos': [0.0, 0.0],
         'tap_at_star_point': [False, False],
-        'tap_changer_type': ['Ratio', 'Ratio'],
+        'tap_changer_type': pd.Series(['Ratio', 'Ratio'], dtype=object),
         'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
         'tap_dependency_table': [False, False],
         'in_service': [True, False]
@@ -1725,6 +1725,11 @@ def test_create_wards():
     assert net.ward.in_service.at[0]
     assert not net.ward.in_service.at[1]
     assert not net.ward.in_service.at[2]
+    print(net.ward.columns)
+    print(net.ward.values)
+    print(net_bulk.ward.values)
+    print(net.ward.dtypes)
+    print(net_bulk.ward.dtypes)
     assert nets_equal(net, net_bulk)
 
 

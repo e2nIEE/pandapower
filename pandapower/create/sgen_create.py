@@ -44,7 +44,7 @@ def create_sgen(
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
-    controllable: bool | float = nan,
+    controllable: bool = False,
     k: float = nan,
     rx: float = nan,
     id_q_capability_characteristic: int | None = None,
@@ -129,27 +129,33 @@ def create_sgen(
         "p_mw": p_mw,
         "scaling": scaling,
         "q_mvar": q_mvar,
+        "min_q_mvar": min_q_mvar,
+        "max_q_mvar": max_q_mvar,
         "sn_mva": sn_mva,
         "in_service": in_service,
         "type": type,
+        "controllable": controllable,
         "current_source": current_source,
+        "id_q_capability_characteristic": id_q_capability_characteristic,
+        "reactive_capability_curve": reactive_capability_curve,
+        "curve_style": curve_style,
         **kwargs,
     }
     _set_entries(net, "sgen", index, True, entries=entries)
 
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "sgen")
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
-    _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
-    _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_, default_val=False)
+    #_set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
+    #_set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
+    #_set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_, default_val=False)
 
-    _set_value_if_not_nan(
-        net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "sgen", dtype="Int64"
-    )
+    #_set_value_if_not_nan(
+    #    net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "sgen", dtype="Int64"
+    #)
 
-    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen", dtype=bool_)
+    #_set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen", dtype=bool_)
 
-    _set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", dtype=object, default_val=None)
+    #_set_value_if_not_nan(net, index, curve_style, "curve_style", "sgen", dtype=object, default_val=None)
 
     _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     if np.isfinite(kappa):
@@ -187,7 +193,7 @@ def create_sgens(
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
-    controllable: bool | Iterable[bool | float] | float = nan,  # TODO: do not think this should ever be float
+    controllable: bool | Iterable[bool] = False,
     k: float | Iterable[float] = nan,
     rx: float = nan,
     id_q_capability_characteristic: Int | Iterable[Int] | None = None,
@@ -252,12 +258,16 @@ def create_sgens(
         "bus": buses,
         "p_mw": p_mw,
         "q_mvar": q_mvar,
+        "min_q_mvar": min_q_mvar,
+        "max_q_mvar": max_q_mvar,
         "sn_mva": sn_mva,
         "scaling": scaling,
         "in_service": in_service,
         "name": name,
         "type": type,
+        "controllable": controllable,
         "current_source": current_source,
+        "id_q_capability_characteristic": id_q_capability_characteristic,
         "reactive_capability_curve": reactive_capability_curve,
         "curve_style": curve_style,
         **kwargs,
@@ -265,11 +275,11 @@ def create_sgens(
 
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_p_mw", min_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_q_mvar", min_q_mvar)
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(
-        net, "sgen", entries, index, "controllable", controllable, dtype=bool_, default_val=False
-    )
+    #_add_to_entries_if_not_nan(net, "sgen", entries, index, "min_q_mvar", min_q_mvar)
+    #_add_to_entries_if_not_nan(net, "sgen", entries, index, "max_q_mvar", max_q_mvar)
+    #_add_to_entries_if_not_nan(
+    #    net, "sgen", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+    #)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
         _add_to_entries_if_not_nan(
@@ -281,9 +291,9 @@ def create_sgens(
     gen_types = ["current_source", "async", "async_doubly_fed"]
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1, keys=gen_types)  # type: ignore[call-overload]
 
-    _add_to_entries_if_not_nan(
-        net, "sgen", entries, index, "id_q_capability_characteristic", id_q_capability_characteristic, dtype="Int64"
-    )
+    #_add_to_entries_if_not_nan(
+    #    net, "sgen", entries, index, "id_q_capability_characteristic", id_q_capability_characteristic, dtype="Int64"
+    #)
 
     if gen_type_match["current_source"].any():
         _add_to_entries_if_not_nan(net, "sgen", entries, index, "k", k)
@@ -326,6 +336,7 @@ def create_asymmetric_sgen(
     scaling: float = 1.0,
     type: WyeDeltaType = "wye",
     in_service: bool = True,
+    current_source: bool = True,
     **kwargs,
 ) -> Int:
     """
@@ -381,8 +392,10 @@ def create_asymmetric_sgen(
         "sn_mva": sn_mva,
         "in_service": in_service,
         "type": type,
+        "current_source": current_source,
         **kwargs,
     }
+
     _set_entries(net, "asymmetric_sgen", index, True, entries=entries)
 
     return index

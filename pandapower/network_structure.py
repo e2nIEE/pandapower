@@ -265,6 +265,7 @@ def get_structure_dict() -> dict:
             "parallel": "u4",
             "df": "f8",
             "in_service": "bool",
+            "vector_group": dtype(object),
         },
         "trafo3w": {
             "name": dtype(object),
