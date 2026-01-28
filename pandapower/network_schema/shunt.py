@@ -14,7 +14,7 @@ shunt_schema = pa.DataFrameSchema(
         "q_mvar": pa.Column(float, description="shunt reactive power in MVAr at v= 1.0 p.u. per step"),
         "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the shunt element"),
         "step": pa.Column(
-            int, pa.Check.ge(1), description="step position of the shunt with which power values are multiplied"
+            float, pa.Check.ge(1), description="step position of the shunt with which power values are multiplied"
         ),
         "max_step": pa.Column(
             pd.Int64Dtype,

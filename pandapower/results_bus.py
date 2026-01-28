@@ -99,9 +99,9 @@ def _get_bus_results(net, ppc, bus_pq):
     mode = net["_options"]["mode"]
 
     # write sum of p and q values to bus
-    net["res_bus"]["p_mw"].values[:] = bus_pq[:, 0]
+    net["res_bus"].loc[:, "p_mw"] = bus_pq[:, 0]
     if ac:
-        net["res_bus"]["q_mvar"].values[:] = bus_pq[:, 1]
+        net["res_bus"].loc[:, "q_mvar"] = bus_pq[:, 1]
 
     # opf variables
     if mode == "opf":
@@ -114,7 +114,7 @@ def _get_bus_results(net, ppc, bus_pq):
 def _get_bus_dc_results(net, bus_p_dc):
 
     # write sum of p and q values to bus
-    net["res_bus_dc"]["p_mw"].values[:] = bus_p_dc[:, 0]
+    net["res_bus_dc"].loc[:, "p_mw"] = bus_p_dc[:, 0]
 
     # update index in res_bus_dc
     net["res_bus_dc"].index = net["bus_dc"].index
@@ -215,13 +215,13 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
 
     if element == "motor":
         p_mw, q_mvar = _get_motor_pq(net)
-        net[res_]["p_mw"].values[:] = p_mw
-        net[res_]["q_mvar"].values[:] = q_mvar
+        net[res_].loc[:, "p_mw"] = p_mw
+        net[res_].loc[:, "q_mvar"] = q_mvar
         return net
     elif element.startswith("asymmetric"):
         p_mw, q_mvar = _get_symmetric_pq_of_unsymetric_element(net, element)
-        net[res_]["p_mw"].values[:] = p_mw
-        net[res_]["q_mvar"].values[:] = q_mvar
+        net[res_].loc[:, "p_mw"] = p_mw
+        net[res_].loc[:, "q_mvar"] = q_mvar
         return net
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
@@ -232,7 +232,7 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     element_in_service = _is_elements[element]
 
     # P result in mw to element
-    net[res_]["p_mw"].values[:] = el_data[p_mw].values * scaling * element_in_service
+    net[res_].loc[:, "p_mw"] = el_data[p_mw].values * scaling * element_in_service
     if is_controllable:
         net[res_].loc[controlled_elements, "p_mw"] = ppc["gen"][gen_idx, PG] * gen_sign
 
@@ -242,11 +242,11 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
 
     if ac:
         # Q result in mvar to element
-        net[res_]["q_mvar"].values[:] = el_data[q_mvar].values * scaling * element_in_service
+        net[res_].loc[:, "q_mvar"] = el_data[q_mvar].values * scaling * element_in_service
         if is_controllable:
             net[res_].loc[controlled_elements, "q_mvar"] = ppc["gen"][gen_idx, QG] * gen_sign
     else:
-        net[res_]["q_mvar"].values[:] = np.nan
+        net[res_].loc[:, "q_mvar"] = np.nan
 
     return net
 
@@ -282,16 +282,16 @@ def write_p_dc_results_to_element(net, ppc, element):
         vsc_p_mode = _is_elements[element] & (net.vsc.control_mode_dc == "p_mw")
 
         # P result in mw to element
-        # net[res_]["p_dc_mw"].values[:] = element_data[p_mw].values * vsc_p_mode
+        # net[res_].loc[:, "p_dc_mw"] = element_data[p_mw].values * vsc_p_mode
 
         # use the ppc value for the result instead:
         #res_p = np.nans(shape=(len(net[element])), dtype=np.float64)
         #res_p[net._is_elements["vsc"]] = ppc[element][:, VSC_P_DC]
-        net[res_]["p_dc_mw"].values[:] = ppc[element][:, VSC_P_DC]
+        net[res_].loc[:, "p_dc_mw"] = ppc[element][:, VSC_P_DC]
     else:
         scaling = element_data["scaling"].values if 'scaling' in element_data else 1.0
         element_in_service = _is_elements[element]
-        net[res_]["p_dc_mw"].values[:] = element_data["p_dc_mw"].values * scaling * element_in_service
+        net[res_].loc[:, "p_dc_mw"] = element_data["p_dc_mw"].values * scaling * element_in_service
 
         #if is_controllable:
         #    net[res_].loc[controlled_elements, "p_dc_mw"] = ppc["gen"][gen_idx, PG] * gen_sign
@@ -548,12 +548,12 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
             p_shunt_step = net["shunt"]["p_mw"].values
             q_shunt_step = net["shunt"]["q_mvar"].values
         p_shunt = u_shunt ** 2 * p_shunt_step * shunt_is * v_ratio * step
-        net["res_shunt"]["p_mw"].values[:] = p_shunt
+        net["res_shunt"].loc[:, "p_mw"] = p_shunt
         p = np.hstack([p, p_shunt])
         if ac:
-            net["res_shunt"]["vm_pu"].values[:] = u_shunt
+            net["res_shunt"].loc[:, "vm_pu"] = u_shunt
             q_shunt = u_shunt ** 2 * q_shunt_step * shunt_is * v_ratio * step
-            net["res_shunt"]["q_mvar"].values[:] = q_shunt
+            net["res_shunt"].loc[:, "q_mvar"] = q_shunt
             q = np.hstack([q, q_shunt])
         b = np.hstack([b, s["bus"].values])
 
@@ -564,12 +564,12 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         u_ward = ppc["bus"][widx, VM]
         u_ward = np.nan_to_num(u_ward)
         p_ward = u_ward ** 2 * net["ward"]["pz_mw"].values * ward_is
-        net["res_ward"]["p_mw"].values[:] = net["res_ward"]["p_mw"].values + p_ward
+        net["res_ward"].loc[:, "p_mw"] = net["res_ward"]["p_mw"].values + p_ward
         p = np.hstack([p, p_ward])
         if ac:
-            net["res_ward"]["vm_pu"].values[:] = u_ward
+            net["res_ward"].loc[:, "vm_pu"] = u_ward
             q_ward = u_ward ** 2 * net["ward"]["qz_mvar"].values * ward_is
-            net["res_ward"]["q_mvar"].values[:] = net["res_ward"]["q_mvar"].values + q_ward
+            net["res_ward"].loc[:, "q_mvar"] = net["res_ward"]["q_mvar"].values + q_ward
             q = np.hstack([q, q_ward])
         b = np.hstack([b, w["bus"].values])
 
@@ -580,12 +580,12 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         u_xward = ppc["bus"][widx, VM]
         u_xward = np.nan_to_num(u_xward)
         p_xward = u_xward ** 2 * net["xward"]["pz_mw"].values * xward_is
-        net["res_xward"]["p_mw"].values[:] = net["res_xward"]["p_mw"].values + p_xward
+        net["res_xward"].loc[:, "p_mw"] = net["res_xward"]["p_mw"].values + p_xward
         p = np.hstack([p, p_xward])
         if ac:
-            net["res_xward"]["vm_pu"].values[:] = u_xward
+            net["res_xward"].loc[:, "vm_pu"] = u_xward
             q_xward = u_xward ** 2 * net["xward"]["qz_mvar"].values * xward_is
-            net["res_xward"]["q_mvar"].values[:] = net["res_xward"]["q_mvar"].values + q_xward
+            net["res_xward"].loc[:, "q_mvar"] = net["res_xward"]["q_mvar"].values + q_xward
             q = np.hstack([q, q_xward])
         b = np.hstack([b, xw["bus"].values])
 

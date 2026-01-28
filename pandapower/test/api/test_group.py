@@ -156,7 +156,7 @@ def test_remove_not_existing_group_members():
         assert set(net.group.loc[0].element_type.tolist()) == {"gen", "sgen"}
 
         # manipulate group table with false data
-        net.group.element_index.iat[-1] = net.group.element_index.iat[-1] + [8]  # tafo 8 doesn't exist
+        net.group.iat[-1, net.group.columns.get_loc("element_index")] = net.group.element_index.iat[-1] + [8]  # tafo 8 doesn't exist
         net.group = pd.concat([net.group, pd.DataFrame({
             "name": [net.group.name.iat[-1]] * 3,
             "element_type": ["impedance", "line", "gen"],

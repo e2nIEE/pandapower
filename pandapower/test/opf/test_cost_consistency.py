@@ -65,7 +65,7 @@ def test_contingency_sgen(base_net):
     assert isclose(net.res_cost, net.res_sgen.p_mw.at[0], atol=1e-3)
 
     # negative slope as in the case above
-    net.poly_cost.cp1_eur_per_mw.at[0] *= -1
+    net.poly_cost.at[0, "cp1_eur_per_mw"] *= -1
     runopp(net)
 
     assert isclose(net.res_cost, -net.res_sgen.p_mw.at[0], atol=1e-4)
@@ -114,7 +114,7 @@ def test_contingency_load(base_net):
     assert isclose(net.res_cost, net.res_gen.p_mw.at[0], atol=1e-3)
 
     # negative slope as in the case above
-    net.poly_cost.cp1_eur_per_mw.at[0] *= -1
+    net.poly_cost.at[0, "cp1_eur_per_mw"] *= -1
     runopp(net)
 
     assert isclose(net.res_cost, -net.res_gen.p_mw.at[0], atol=1e-3)

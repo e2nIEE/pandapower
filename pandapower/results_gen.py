@@ -232,9 +232,9 @@ def _get_p_q_gen_results(net, ppc):
     if net["_options"]["ac"]:
         q_gen = np.zeros(n_res_gen)
         q_gen[gen_is] = ppc["gen"][gen_idx_ppc, QG]
-        net["res_gen"]["q_mvar"].values[:] = q_gen
+        net["res_gen"].loc[:, "q_mvar"] = q_gen
 
-    net["res_gen"]["p_mw"].values[:] = p_gen
+    net["res_gen"].loc[:, "p_mw"] = p_gen
     return p_gen, q_gen
 
 def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
@@ -301,8 +301,8 @@ def _get_v_gen_resuts(net, ppc):
     v_a = np.zeros(n_res_gen)
     v_a[gen_is] = ppc["bus"][bus_idx_ppc][:, VA]
 
-    net["res_gen"]["vm_pu"].values[:] = v_pu
-    net["res_gen"]["va_degree"].values[:] = v_a
+    net["res_gen"].loc[:, "vm_pu"] = v_pu
+    net["res_gen"].loc[:, "va_degree"] = v_a
     return v_pu, v_a
 
 

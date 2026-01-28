@@ -828,10 +828,10 @@ def test_zip_loads_mixed_voltage_dependencies():
                                                                              const_z_p_percent, const_z_q_percent, 
                                                                              res_load_p_mw, res_load_q_mvar, 
                                                                              res_bus_vm_pu):
-        net.load.const_i_p_percent.at[0] = c_i_p
-        net.load.const_i_q_percent.at[0] = c_i_q
-        net.load.const_z_p_percent.at[0] = c_z_p
-        net.load.const_z_q_percent.at[0] = c_z_q
+        net.load.at[0, "const_i_p_percent"] = c_i_p
+        net.load.at[0, "const_i_q_percent"] = c_i_q
+        net.load.at[0, "const_z_p_percent"] = c_z_p
+        net.load.at[0, "const_z_q_percent"] = c_z_q
 
         runpp(net, tolerance_mva=1e-6)
         
@@ -848,20 +848,20 @@ def test_invalid_zip_percentage_sum():
     err_msg = "const_z_p_percent + const_i_p_percent need to be less or equal to 100%! The same applies to const_z_q_percent + const_i_q_percent!"
 
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        net.load.const_z_p_percent.at[0] = 60
-        net.load.const_i_p_percent.at[0] = 50
-        net.load.const_z_q_percent.at[0] = 30
-        net.load.const_i_q_percent.at[0] = 20
+        net.load.at[0, "const_z_p_percent"] = 60
+        net.load.at[0, "const_i_p_percent"] = 50
+        net.load.at[0, "const_z_q_percent"] = 30
+        net.load.at[0, "const_i_q_percent"] = 20
         runpp(net, voltage_depend_loads=True)
 
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        net.load.const_z_q_percent.at[0] = 60
-        net.load.const_i_q_percent.at[0] = 50 
+        net.load.at[0, "const_z_q_percent"] = 60
+        net.load.at[0, "const_i_q_percent"] = 50
         runpp(net, voltage_depend_loads=True)
     
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        net.load.const_z_p_percent.at[0] = 30
-        net.load.const_i_p_percent.at[0] = 20 
+        net.load.at[0, "const_z_p_percent"] = 30
+        net.load.at[0, "const_i_p_percent"] = 20
         runpp(net, voltage_depend_loads=True)
 
 def test_xward_buses():
@@ -1407,9 +1407,9 @@ def test_tap_dependent_impedance():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5],
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
-    net.trafo['id_characteristic_table'].at[0] = 0
-    net.trafo['tap_dependency_table'].at[0] = True
-    net.trafo['tap_dependency_table'].at[1] = False
+    net.trafo.at[0, 'id_characteristic_table'] = 0
+    net.trafo.at[0, 'tap_dependency_table'] = True
+    net.trafo.at[1, 'tap_dependency_table'] = False
 
     new_rows = pd.DataFrame(
         {'id_characteristic': [1, 1, 1, 1, 1], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
@@ -1418,8 +1418,8 @@ def test_tap_dependent_impedance():
          'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_lv_percent': [1, 1, 1, 1, 1],
          'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
-    net.trafo3w['id_characteristic_table'].at[0] = 1
-    net.trafo3w['tap_dependency_table'].at[0] = True
+    net.trafo3w.at[0, 'id_characteristic_table'] = 1
+    net.trafo3w.at[0, 'tap_dependency_table'] = True
 
     runpp(net)
     runpp(net_backup)
@@ -1466,8 +1466,8 @@ def test_tap_table_order():
          'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05], 'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
          'vk_mv_percent': [1, 1, 1, 1, 1], 'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
          'vk_lv_percent': [1, 1, 1, 1, 1], 'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
-    net.trafo3w['id_characteristic_table'].at[0] = 0
-    net.trafo3w['tap_dependency_table'].at[0] = True
+    net.trafo3w.at[0, 'id_characteristic_table'] = 0
+    net.trafo3w.at[0, 'tap_dependency_table'] = True
 
     new_rows = pd.DataFrame(
         {'id_characteristic': [1, 1, 1, 1, 1, 2, 2, 2, 2, 2], 'step': [-2, -1, 0, 1, 2, -2, -1, 0, 1, 2],
@@ -1476,22 +1476,22 @@ def test_tap_table_order():
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48, 1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
-    net.trafo['id_characteristic_table'].at[0] = 2
-    net.trafo['id_characteristic_table'].at[1] = 1
-    net.trafo['tap_dependency_table'].at[0] = True
-    net.trafo['tap_dependency_table'].at[1] = True
-    net.trafo['tap_pos'].at[0] = -2
-    net.trafo['tap_pos'].at[1] = 2
+    net.trafo.at[0, 'id_characteristic_table'] = 2
+    net.trafo.at[1, 'id_characteristic_table'] = 1
+    net.trafo.at[0, 'tap_dependency_table'] = True
+    net.trafo.at[1, 'tap_dependency_table'] = True
+    net.trafo.at[0, 'tap_pos'] = -2
+    net.trafo.at[1, 'tap_pos'] = 2
 
     runpp(net)
 
     tol = 0.001
 
     assert net.converged == True
-    assert np.isclose(net.res_bus.loc[4, 'va_degree'], -1 * (150 - 2 + 0.03717), 0, tol, False)
-    assert np.isclose(net.res_bus.loc[5, 'va_degree'], -1 * (150 - 0 + 0.03810), 0, tol, False)
-    assert np.isclose(net.res_bus.loc[4, 'vm_pu'], 1.03144595, tol, False)
-    assert np.isclose(net.res_bus.loc[5, 'vm_pu'], 0.96268165, tol, False)
+    assert np.isclose(net.res_bus.at[4, 'va_degree'], -1 * (150 - 2 + 0.03717), 0, tol, False)
+    assert np.isclose(net.res_bus.at[5, 'va_degree'], -1 * (150 - 0 + 0.03810), 0, tol, False)
+    assert np.isclose(net.res_bus.at[4, 'vm_pu'], 1.03144595, tol, False)
+    assert np.isclose(net.res_bus.at[5, 'vm_pu'], 0.96268165, tol, False)
 
 def test_shunt_step_dependency_warning():
     net = simple_test_net_shunt_control()
@@ -1499,8 +1499,8 @@ def test_shunt_step_dependency_warning():
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -50, -75, -100, -125],
          'p_mw': [0, 0, 0, 0, 0]})
     create_shunt(net, bus=0, q_mvar=-10, p_mw=20, step=1, max_step=5)
-    net.shunt.step_dependency_table.at[0] = True
-    net.shunt.step.at[0] = 1
+    net.shunt.at[0, "step_dependency_table"] = True
+    net.shunt.at[0, "step"] = 1
 
     with pytest.raises(UserWarning):
         runpp(net)
@@ -1679,7 +1679,7 @@ def test_q_capability_curve():
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 30, 40,
                         134.0099, 0.01]})
 
-    net.gen.id_q_capability_characteristic.at[0] = 0
+    net.gen.at[0, "id_q_capability_characteristic"] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
     # Add q_capability_characteristic for one gen based on q_capability_curve_table
@@ -1728,7 +1728,7 @@ def test_q_capability_curve_for_sgen():
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 218.0099945068,
                         134.0099, 0.01]})
 
-    net.sgen.id_q_capability_characteristic.at[0] = 0
+    net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)
 

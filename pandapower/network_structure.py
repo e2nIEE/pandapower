@@ -153,7 +153,7 @@ def get_structure_dict() -> dict:
             "q_mvar": "f8",
             "p_mw": "f8",
             "vn_kv": "f8",
-            "step": "u4",
+            "step": "f8",
             "max_step": "u4",
             "id_characteristic_table": pd.Int64Dtype(),
             "step_dependency_table": "bool",
@@ -265,6 +265,7 @@ def get_structure_dict() -> dict:
             "parallel": "u4",
             "df": "f8",
             "in_service": "bool",
+            "vector_group": dtype(object),
         },
         "trafo3w": {
             "name": dtype(object),

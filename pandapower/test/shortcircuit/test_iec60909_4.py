@@ -360,7 +360,7 @@ def test_iec_60909_4_3ph_ps_trafo_flag():
     ps_trafo = net.gen.power_station_trafo.values
     ps_trafo = ps_trafo[~np.isnan(ps_trafo)].astype(np.int64)
     net.trafo.loc[ps_trafo, "power_station_unit"] = True
-    net.gen.power_station_trafo.values[:] = np.nan
+    net.gen.loc[:, "power_station_trafo"] = np.nan
 
     detect_power_station_unit(net, mode="trafo")
     calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")

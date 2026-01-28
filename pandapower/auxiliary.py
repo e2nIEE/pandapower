@@ -486,6 +486,12 @@ def _preserve_dtypes(df, dtypes):
                 df[item] = df[item].astype(dtype)
             except ValueError:
                 df[item] = df[item].astype(float)
+    dtype_cols = dtypes.keys()
+    df_cols = df.columns.values
+    for col in df_cols:
+        if not (col in dtype_cols):
+            if df[col].dtype == "str":
+                df[col] = df[col].astype(object)
 
 
 def get_free_id(df):

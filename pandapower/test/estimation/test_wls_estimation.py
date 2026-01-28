@@ -903,7 +903,7 @@ def test_net_unobserved_island():
 
 def test_net_oos_line():
     net = case9()
-    net.line.in_service.iat[4] = False
+    net.line.iat[4, net.line.columns.get_loc("in_service")] = False
     runpp(net)
 
     for line_ix in net.line.index:
