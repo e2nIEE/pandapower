@@ -73,8 +73,7 @@ class TestShuntRequiredFields:
                 itertools.product(["vn_kv"], [*negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(["step"], [*negativ_ints_plus_zero, *not_ints_list]),
                 itertools.product(["in_service"], not_boolean_list),
-                # id_characteristic_table: invalid values (negative or wrong dtype)
-                itertools.product(["id_characteristic_table"], not_ints_list),  # TODO fails for bools
+                itertools.product(["id_characteristic_table"], not_ints_list),
             )
         ),
     )
@@ -95,7 +94,7 @@ class TestShuntRequiredFields:
         if parameter == "id_characteristic_table":
             # If invalid_value is an int, keep Int64 dtype to trigger 'ge(0)' check;
             # otherwise assign as-is to trigger dtype mismatch.
-            if isinstance(invalid_value, (int, np.integer)):
+            if isinstance(invalid_value, (int, np.integer)) and not isinstance(invalid_value, (bool, np.bool_)):
                 net.shunt[parameter] = pd.Series([invalid_value], dtype="Int64")
             else:
                 net.shunt[parameter] = invalid_value

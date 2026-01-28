@@ -115,7 +115,7 @@ _trafo_columns = {
         metadata={"tdt": True},
     ),
     "max_loading_percent": pa.Column(
-        int,
+        float,
         nullable=True,
         required=False,
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
