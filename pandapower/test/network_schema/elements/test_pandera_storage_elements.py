@@ -38,7 +38,7 @@ class TestStorageRequiredFields:
                 itertools.product(["p_mw"], all_allowed_floats),
                 itertools.product(["q_mvar"], all_allowed_floats),
                 itertools.product(["sn_mva"], positiv_floats),
-                itertools.product(["scaling"], positiv_floats_plus_zero),
+                itertools.product(["scaling"], [*positiv_floats_plus_zero, *negativ_floats_plus_zero]),
                 itertools.product(["in_service"], bools),
             )
         ),
@@ -50,7 +50,7 @@ class TestStorageRequiredFields:
         create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
 
-        create_storage(net, bus=0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True)
+        create_storage(net, bus=0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage[parameter] = valid_value
         validate_network(net)
 
@@ -62,7 +62,7 @@ class TestStorageRequiredFields:
                 itertools.product(["p_mw"], not_floats_list),
                 itertools.product(["q_mvar"], not_floats_list),
                 itertools.product(["sn_mva"], not_floats_list),
-                itertools.product(["scaling"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["scaling"], not_floats_list),
                 itertools.product(["in_service"], not_boolean_list),
             )
         ),
@@ -73,7 +73,7 @@ class TestStorageRequiredFields:
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
 
-        create_storage(net, bus=0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True)
+        create_storage(net, bus=0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
@@ -87,7 +87,7 @@ class TestStorageOptionalFields:
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
 
-        create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True)
+        create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
 
         # Optional fields
         net.storage["name"] = pd.Series(["Storage A"], dtype="string")
@@ -112,11 +112,11 @@ class TestStorageOptionalFields:
         b0 = create_bus(net, 0.4)
 
         # Row 1
-        create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.0, scaling=1.0, in_service=True)
+        create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         # Row 2
-        create_storage(net, bus=b0, p_mw=-0.4, q_mvar=0.1, scaling=1.0, in_service=False)
+        create_storage(net, bus=b0, p_mw=-0.4, q_mvar=0.1, scaling=1.0, in_service=False, max_e_mwh=10.0)
         # Row 3
-        create_storage(net, bus=b0, p_mw=0.0, q_mvar=-0.2, scaling=0.8, in_service=True)
+        create_storage(net, bus=b0, p_mw=0.0, q_mvar=-0.2, scaling=0.8, in_service=True, max_e_mwh=10.0)
 
         net.storage["name"] = pd.Series(["A", pd.NA, "C"], dtype="string")
         net.storage["type"] = pd.Series([pd.NA, "flywheel", pd.NA], dtype="string")
@@ -133,19 +133,19 @@ class TestStorageOptionalFields:
         b0 = create_bus(net, 0.4)
 
         # Case 1: only max_p_mw
-        create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True)
+        create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["max_p_mw"] = 1.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 2: only controllable
-        create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.1, scaling=1.0, in_service=True)
+        create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["controllable"] = pd.Series([True], dtype="boolean")
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 3: only min_q_mvar
-        create_storage(net, bus=b0, p_mw=-0.2, q_mvar=0.0, scaling=1.0, in_service=True)
+        create_storage(net, bus=b0, p_mw=-0.2, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["min_q_mvar"] = -0.5
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
@@ -172,7 +172,7 @@ class TestStorageOptionalFields:
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
 
-        create_storage(net, bus=b0, p_mw=0.3, q_mvar=0.0, sn_mva=1.0, scaling=1.0, in_service=True)
+        create_storage(net, bus=b0, p_mw=0.3, q_mvar=0.0, sn_mva=1.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
 
         # Satisfy OPF group to avoid dependency failures
         net.storage["max_p_mw"] = 1.0
@@ -213,7 +213,7 @@ class TestStorageOptionalFields:
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
 
-        create_storage(net, bus=b0, p_mw=0.3, q_mvar=0.0, scaling=1.0, in_service=True)
+        create_storage(net, bus=b0, p_mw=0.3, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
 
         # Provide complete OPF group so only the target parameter triggers failure
         net.storage["max_p_mw"] = 1.0
@@ -235,7 +235,7 @@ class TestStorageForeignKey:
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
 
-        create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.0, scaling=1.0, in_service=True)
+        create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)

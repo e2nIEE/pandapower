@@ -12,7 +12,7 @@ _storage_columns = {
     ),
     "q_mvar": pa.Column(float, description="Reactive power of the storage [MVar]"),
     "sn_mva": pa.Column(float, pa.Check.gt(0), nullable=True, description="Nominal power ot the storage [MVA]"),
-    "scaling": pa.Column(float, pa.Check.ge(0), description="Scaling factor for the active and reactive power"),
+    "scaling": pa.Column(float, description="Scaling factor for the active and reactive power"),
     "max_e_mwh": pa.Column(
         float,
         nullable=True,
