@@ -11,14 +11,15 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pandapower import pp_dir, create_b2b_vsc, LoadflowNotConverged
+from pandapower import pp_dir
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
-from pandapower.create import create_impedance, create_shunts, create_buses, create_gens, create_bus,  \
-    create_empty_network, create_line_from_parameters, create_gen, create_load_dc, \
-    create_load, create_ext_grid, create_vsc, create_line_dc_from_parameters, \
-    create_buses_dc, create_bus_dc, create_line_dc, create_lines_from_parameters, create_lines_dc
-
+from pandapower.create import (
+    create_impedance, create_shunts, create_buses, create_gens, create_bus, create_line_from_parameters, create_gen,
+    create_load, create_ext_grid, create_vsc, create_line_dc_from_parameters, create_buses_dc, create_bus_dc,
+    create_line_dc, create_lines_from_parameters, create_lines_dc
+)
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
@@ -94,9 +95,9 @@ def copy_with_impedance(net):
     return net_ref
 
 
-#
+# FIXME: @v31337 still relevant or remove?
 # def test_tcsc_firing_angle_formula():
-#     net = create_empty_network()
+#     net = pandapowerNet(name="test_tcsc_firing_angle_formula")
 #     create_buses(net, 2, 110)
 #     create_ext_grid(net, 0)
 #     create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
@@ -118,7 +119,7 @@ def copy_with_impedance(net):
 
 #
 # def test_tcsc_firing_angle_formula():
-#     net = create_empty_network()
+#     net = pandapowerNet(name="test_tcsc_firing_angle_formula")
 #     create_buses(net, 2, 110)
 #     create_ext_grid(net, 0)
 #     create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
@@ -138,7 +139,7 @@ def copy_with_impedance(net):
 #
 #
 # def test_tcsc_firing_angle_formula():
-#     net = create_empty_network()
+#     net = pandapowerNet(name="test_tcsc_firing_angle_formula")
 #     create_buses(net, 2, 110)
 #     create_ext_grid(net, 0)
 #     create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
@@ -158,7 +159,7 @@ def copy_with_impedance(net):
 
 
 def test_vsc_hvdc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc")
     # AC part
     create_buses(net, 3, 110, geodata=[(0, 0), (100, 0), (200, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -184,7 +185,7 @@ def test_vsc_hvdc():
 
 
 def test_vsc_hvdc_control_q():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_control_q")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -209,7 +210,7 @@ def test_vsc_hvdc_control_q():
 
 
 def test_vsc_multiterminal_hvdc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_multiterminal_hvdc")
     # AC part
     create_buses(net, 5, 110, geodata=[(0, 50), (50, 100), (200, 100), (50, 0), (200, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -254,7 +255,7 @@ def test_vsc_multiterminal_hvdc():
 
 
 def test_line_dc_bus_dc_structures():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_line_dc_bus_dc_structures")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -289,7 +290,7 @@ def test_line_dc_bus_dc_structures():
 
 
 def test_line_dc_bus_dc_structures2():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_line_dc_bus_dc_structures2")
     # AC part
     create_buses(net, 5, 110, geodata=[(0, 50), (50, 100), (200, 100), (50, 0), (200, 0)])
     create_lines_from_parameters(net, [0, 1, 0, 1, 3], [1, 2, 3, 3, 4], 30, 0.0487, 0.13823, 160, 0.664)
@@ -327,7 +328,7 @@ def test_line_dc_bus_dc_structures2():
 
 
 def test_vsc_hvdc_structure1():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_structure1")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -352,7 +353,7 @@ def test_vsc_hvdc_structure1():
 
 
 def test_vsc_hvdc_structure1_alternate():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_structure1_alternate")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -377,7 +378,7 @@ def test_vsc_hvdc_structure1_alternate():
 
 
 def test_setting_of_dc_out_of_service():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_setting_of_dc_out_of_service")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -398,7 +399,7 @@ def test_setting_of_dc_out_of_service():
 
 
 def test_setting_of_dc_vsc_out_of_service():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_setting_of_dc_vsc_out_of_service")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -419,7 +420,7 @@ def test_setting_of_dc_vsc_out_of_service():
 
 
 def test_vsc_hvdc_structure2():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_structure2")
     # AC part
     create_buses(net, 5, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -460,7 +461,7 @@ def test_vsc_hvdc_structure2():
 
 
 def test_vsc_hvdc_mode0_without_dc_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode0_without_dc_line")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -489,7 +490,7 @@ def test_vsc_hvdc_mode0_without_dc_line():
 
 
 def test_vsc_hvdc_dc_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_dc_line")
     # AC part
     create_buses(net, 2, 110)
 
@@ -513,7 +514,7 @@ def test_vsc_hvdc_dc_line():
 
 
 def test_vsc_hvdc_mode1():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode1")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -544,7 +545,7 @@ def test_vsc_hvdc_mode1():
 
 
 def test_vsc_hvdc_mode2():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode2")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -577,7 +578,7 @@ def test_vsc_hvdc_mode2():
 
 
 def test_vsc_hvdc_mode2_without_dc_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode2_without_dc_line")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -606,7 +607,7 @@ def test_vsc_hvdc_mode2_without_dc_line():
 
 
 def test_vsc_hvdc_mode3():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode3")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -637,7 +638,7 @@ def test_vsc_hvdc_mode3():
 
 
 def test_vsc_hvdc_mode4():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode4")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -664,7 +665,7 @@ def test_vsc_hvdc_mode4():
 
 
 def test_vsc_hvdc_mode5():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode5")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -696,7 +697,7 @@ def test_vsc_hvdc_mode5():
 
 
 def test_vsc_hvdc_mode6():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode6")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -728,7 +729,7 @@ def test_vsc_hvdc_mode6():
 
 
 def test_vsc_hvdc_mode7():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode7")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -760,7 +761,7 @@ def test_vsc_hvdc_mode7():
 
 
 def test_vsc_hvdc_mode9():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode9")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -791,7 +792,7 @@ def test_vsc_hvdc_mode9():
 
 
 def test_vsc_hvdc_mode10():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode10")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -822,7 +823,7 @@ def test_vsc_hvdc_mode10():
 
 
 def test_vsc_hvdc_mode11():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode11")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -853,7 +854,7 @@ def test_vsc_hvdc_mode11():
 
 
 def test_vsc_hvdc_mode13():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode13")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -885,7 +886,7 @@ def test_vsc_hvdc_mode13():
 
 
 def test_vsc_hvdc_mode14():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode14")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -915,7 +916,7 @@ def test_vsc_hvdc_mode14():
 
 
 def test_vsc_hvdc_mode15():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_mode15")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -955,7 +956,7 @@ def test_minimal_ac():
     It checks, if two slacks with different setpoints are connected together, but then impedances are checked and
     for some reason after the copy it fails.
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="test_minimal_ac")
     # AC part
     create_bus(net, 110)
     create_ext_grid(net, 0, vm_pu=1.02)
@@ -984,7 +985,7 @@ def test_minimal_ac():
 
 
 def test_minimal_vsc_hvdc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_minimal_vsc_hvdc")
     # AC part
     create_bus(net, 110)
     create_ext_grid(net, 0)
@@ -1019,7 +1020,7 @@ def test_minimal_vsc_hvdc():
 
 
 def test_simple_vsc_hvdc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_simple_vsc_hvdc")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1047,7 +1048,7 @@ def test_simple_vsc_hvdc():
 
 def test_simple_2vsc_hvdc1():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    net = create_empty_network()
+    net = pandapowerNet(name="test_simple_2vsc_hvdc1")
 
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
@@ -1086,7 +1087,7 @@ def test_simple_2vsc_hvdc1():
 
 def test_simple_2vsc_hvdc2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    net = create_empty_network()
+    net = pandapowerNet(name="test_simple_2vsc_hvdc2")
     # AC part
     create_buses(net, 3, 110, geodata=[(0, 0), (100, 0), (200, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1129,7 +1130,7 @@ def test_simple_2vsc_hvdc2():
 
 
 def test_b2b_vsc_1():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_1")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1154,7 +1155,7 @@ def test_b2b_vsc_1():
 
 
 def test_multiple_b2b_vsc_1():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_multiple_b2b_vsc_1")
     # AC part
     create_buses(net, 5, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1195,7 +1196,7 @@ def test_multiple_b2b_vsc_1():
 
 
 def test_tres_amigas_b2b_vsc_1():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tres_amigas_b2b_vsc_1")
     # AC part
     create_buses(net, 5, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1228,7 +1229,7 @@ def test_tres_amigas_b2b_vsc_1():
 
 
 def test_tres_amigas_b2b_vsc_2():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tres_amigas_b2b_vsc_2")
     # AC part
     create_buses(net, 5, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1261,7 +1262,7 @@ def test_tres_amigas_b2b_vsc_2():
 
 
 def test_b2b_vsc_2():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_2")
     # AC part
     create_buses(net, 4, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1285,7 +1286,7 @@ def test_b2b_vsc_2():
 
 
 def test_b2b_vsc_2a():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_2a")
     # AC part
     create_buses(net, 4, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1308,7 +1309,7 @@ def test_b2b_vsc_2a():
 
 
 def test_b2b_vsc_3():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_3")
     # AC part
     create_buses(net, 4, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1336,7 +1337,7 @@ def test_b2b_vsc_4():
     """
     For reasons I do not understand, this test fails on the github server, but runs locally.
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_4")
     # AC part
     create_buses(net, 4, 110)
     create_line_from_parameters(net, 1, 3, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1361,7 +1362,7 @@ def test_b2b_vsc_4():
 
 
 def test_b2b_vsc_5():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_5")
     # AC part
     create_buses(net, 5, 110)
     create_line_from_parameters(net, 1, 3, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1387,7 +1388,7 @@ def test_b2b_vsc_5():
 
 
 def test_b2b_vsc_6():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_6")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 1, 2, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1409,7 +1410,7 @@ def test_b2b_vsc_6():
 
 
 def test_b2b_vsc_7():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_vsc_7")
     # AC part
     create_buses(net, 2, 110)
     create_ext_grid(net, 1)  # todo: why is it not working when ext_grid is connected to the VSC AC bus?
@@ -1428,7 +1429,7 @@ def test_b2b_vsc_7():
 
 
 def test_b2b_line_dc_raise():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_b2b_line_dc_raise")
     # AC part
     create_buses(net, 4, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1460,7 +1461,7 @@ def test_b2b_line_dc_raise():
 
 
 def test_line_dc_and_2_vsc1():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_line_dc_and_2_vsc1")
     # AC part
     create_buses(net, 4, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1489,7 +1490,7 @@ def test_line_dc_and_2_vsc1():
 
 
 def test_line_dc_and_2_vsc2():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_line_dc_and_2_vsc2")
     # AC part
     create_buses(net, 4, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1527,7 +1528,7 @@ def test_2vsc_1ac_2dc(control_mode_ac, control_mode_dc):
     val_ac = {"vm_pu": 1, "q_mvar": -5}
     val_dc = {"vm_pu": 1, "p_mw": 10}
 
-    net = create_empty_network()
+    net = pandapowerNet(name="test_2vsc_1ac_2dc")
     # AC part
     create_buses(net, 2, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1564,7 +1565,7 @@ def test_2vsc_2ac_1dc(control_mode_ac, control_mode_dc):
     val_ac = {"vm_pu": 1, "q_mvar": -5}
     val_dc = {"vm_pu": 1, "p_mw": 10}
 
-    net = create_empty_network()
+    net = pandapowerNet(name='test_2vsc_2ac_1dc')
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1599,7 +1600,7 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
     val_ac = {"vm_pu": 1, "q_mvar": -5}
     val_dc = {"vm_pu": 1, "p_mw": 10}
 
-    net = create_empty_network()
+    net = pandapowerNet(name='test_2vsc_1ac_1dc')
     # AC part
     create_buses(net, 2, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1630,7 +1631,7 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
 def test_vsc_slack_minimal_wrong():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_slack_minimal_wrong")
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
     create_load(net, 1, 10, 4)
@@ -1660,7 +1661,7 @@ def test_vsc_slack_minimal_wrong():
 def test_vsc_slack_minimal_wrong2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_slack_minimal_wrong2")
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
     create_load(net, 1, 10, 4)
@@ -1689,7 +1690,7 @@ def test_vsc_slack_minimal_wrong2():
 def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected to ext_grid buses
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name='test_vsc_slack_minimal')
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
     create_load(net, 1, 10, 4)
@@ -1718,7 +1719,7 @@ def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected 
 def test_vsc_slack():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_slack")
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (200, 0), (400, 0), (600, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1747,7 +1748,7 @@ def test_vsc_slack():
 def test_vsc_slack2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_slack2")
     # AC part
     create_buses(net, 3, 110, geodata=[(0, 0), (200, 0), (400, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1775,7 +1776,7 @@ def test_vsc_slack2():
 def test_vsc_slack_oos():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_slack_oos")
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (200, 0), (400, 0), (600, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1803,7 +1804,7 @@ def test_vsc_slack_oos():
 def test_vsc_dc_r():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_dc_r")
     # AC part
     create_buses(net, 3, 110, geodata=[(0, 0), (200, 0), (400, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
@@ -1828,7 +1829,7 @@ def test_vsc_dc_r():
 
 def test_vsc_hvdc_dc_rl():
     # from pandapower.test.loadflow.test_facts import *
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_hvdc_dc_rl")
     # AC part
     create_buses(net, 3, 110)
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)

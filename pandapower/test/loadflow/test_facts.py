@@ -3,9 +3,11 @@ from itertools import product
 
 import numpy as np
 import pytest
-from pandapower.create import create_impedance, create_shunts, create_buses, create_gens, create_svc, create_tcsc, \
-    create_bus, create_empty_network, create_line_from_parameters, create_load, create_ext_grid, \
-    create_transformer_from_parameters, create_gen, create_ssc
+from pandapower.create import (
+    create_impedance, create_shunts, create_buses, create_gens, create_svc, create_tcsc, create_bus, create_load,
+    create_line_from_parameters, create_ext_grid, create_transformer_from_parameters, create_gen, create_ssc
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 
@@ -22,7 +24,7 @@ def _many_tcsc_test_net():
     xl = 0.2
     xc = -15
 
-    net = create_empty_network(sn_mva=baseMVA)
+    net = pandapowerNet(name="_many_tcsc_test_net", sn_mva=baseMVA)
     create_buses(net, 7, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -166,7 +168,7 @@ def test_multiple_facts():
     xl = 0.2
     xc = -15
 
-    net = create_empty_network(sn_mva=baseMVA)
+    net = pandapowerNet(name="test_multiple_facts", sn_mva=baseMVA)
     create_buses(net, 7, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -266,7 +268,7 @@ def test_svc_tcsc_case_study():
 
 
 def facts_case_study_grid():
-    net = create_empty_network()
+    net = pandapowerNet(name="facts_case_study_grid")
 
     b1 = create_bus(net, name="B1", vn_kv=18)
     b2 = create_bus(net, name="B2", vn_kv=16.5)

@@ -6,8 +6,10 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_gen, create_ext_grid, create_load, \
-    create_line_from_parameters, create_poly_cost, create_sgen
+from pandapower.create import (
+    create_bus, create_gen, create_ext_grid, create_load, create_line_from_parameters, create_poly_cost, create_sgen
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runopp
 
 import logging
@@ -21,7 +23,7 @@ def test_cost_pol_gen():
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_cost_pol_gen")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05,
@@ -56,7 +58,7 @@ def test_cost_pol_all_elements():
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_cost_pol_all_elements")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05,
@@ -94,7 +96,7 @@ def test_cost_pol_q():
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_cost_pol_q")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05,

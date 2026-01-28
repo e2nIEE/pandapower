@@ -8,7 +8,8 @@ import math
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-from pandapower.auxiliary import _clean_up, pandapowerNet
+from pandapower.auxiliary import _clean_up
+from pandapower import pandapowerNet
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
 from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG

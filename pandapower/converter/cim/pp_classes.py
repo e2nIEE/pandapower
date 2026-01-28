@@ -8,7 +8,7 @@ import json
 from . import cim_tools
 
 from pandapower.diagnostic import diagnostic
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 
 
 class PandapowerDiagnostic:

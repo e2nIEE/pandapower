@@ -9,11 +9,12 @@ import copy
 import numpy as np
 import pytest
 
-from pandapower.auxiliary import _check_connectivity, _add_ppc_options, LoadflowNotConverged
-from pandapower.create import create_empty_network, create_bus, create_transformer, create_transformer3w, create_load, \
-    create_xward, create_switch, create_ext_grid
+from pandapower.auxiliary import LoadflowNotConverged
+from pandapower.create import (
+    create_bus, create_transformer, create_transformer3w, create_load, create_xward, create_switch, create_ext_grid
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case4gs, case118
-from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import rundcpp, runpp
 from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal
@@ -21,7 +22,7 @@ from pandapower.test.loadflow.result_test_network_generator import result_test_n
 
 
 def test_rundcpp_init():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_rundcpp_init")
     _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
@@ -29,7 +30,7 @@ def test_rundcpp_init():
 
 
 def test_rundcpp_init_auxiliary_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_rundcpp_init_auxiliary_buses")
     _, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
@@ -60,7 +61,7 @@ def test_result_iter():
 
 
 def test_two_open_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_two_open_switches")
     b1, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=20.)
     l2 = create_test_line(net, b2, b3)
@@ -84,7 +85,7 @@ def test_test_sn_mva():
 
 
 def test_single_bus_network():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_single_bus_network")
     b = create_bus(net, vn_kv=20.)
     create_ext_grid(net, b)
 

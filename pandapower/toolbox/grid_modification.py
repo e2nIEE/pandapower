@@ -9,19 +9,22 @@ import warnings
 
 import numpy as np
 import pandas as pd
-from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterability, \
-    log_to_level, plural_s
+from pandapower.auxiliary import _preserve_dtypes, ensure_iterability, log_to_level
+from pandapower.network import pandapowerNet, plural_s
 from pandapower.std_types import change_std_type
-from pandapower.create import create_switch, create_line_from_parameters, \
-    create_impedance, create_empty_network, create_gen, create_ext_grid, \
-    create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
+from pandapower.create import (
+    create_switch, create_line_from_parameters, create_impedance, create_gen, create_ext_grid, create_load,
+    create_shunt, create_bus, create_sgen, create_storage, create_ward
+)
 from pandapower.run import runpp
-from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, pp_elements, \
-    get_connected_elements, get_connected_elements_dict, next_bus
+from pandapower.toolbox.element_selection import (
+    branch_element_bus_dict, element_bus_tuples, pp_elements, get_connected_elements, get_connected_elements_dict
+)
 from pandapower.toolbox.result_info import clear_result_tables
 from pandapower.toolbox.data_modification import reindex_elements
-from pandapower.groups import detach_from_groups, attach_to_group, attach_to_groups, isin_group, \
-    check_unique_group_rows, element_associated_groups
+from pandapower.groups import (
+    detach_from_groups, attach_to_group, attach_to_groups, check_unique_group_rows, element_associated_groups
+)
 
 import logging
 
@@ -65,7 +68,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         if not include_results:
             clear_result_tables(p2)
     else:
-        p2 = create_empty_network(add_stdtypes=False)
+        p2 = pandapowerNet(name='', add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
 
         net_parameters = ["name", "f_hz"]
@@ -138,7 +141,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
             net.switch[net.switch.et == 'l'].element.isin(p2.line.index),
             net.switch[net.switch.et == 't'].element.isin(p2.trafo.index),
         ], sort=False)
-        ]
+    ]
 
     return pandapowerNet(p2)
 

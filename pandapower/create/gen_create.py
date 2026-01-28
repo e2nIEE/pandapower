@@ -11,7 +11,7 @@ from typing import Iterable, Sequence
 from numpy import nan, bool_
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.pp_types import Int
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,

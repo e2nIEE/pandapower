@@ -21,25 +21,23 @@ found_versions = [file.split("_")[1].split(".json")[0] for _, _, files
 @pytest.mark.slow
 @pytest.mark.parametrize("version", found_versions)
 def test_convert_format(version):
-    filename = os.path.join(folder, "example_%s.json" % version)
+    filename = os.path.join(folder, f"example_{version}.json")
     if not os.path.isfile(filename):
-        raise ValueError("File for version %s does not exist" % version)
+        raise ValueError(f"File for version {version} does not exist")
     try:
         net = from_json(filename, convert=False)
         if ('version' in net) and (vs.parse(str(net.version)) > vs.parse('2.0.1')):
             _ = from_json(filename, elements_to_deserialize=['bus', 'load'])
     except:
-        raise UserWarning("Can not load network saved in pandapower version %s" % version)
+        raise UserWarning(f"Can not load network saved in pandapower version {version}")
     vm_pu_old = net.res_bus.vm_pu.copy()
     convert_format(net)
     try:
         runpp(net, run_control="controller" in net and len(net.controller) > 0)
     except:
-        raise UserWarning("Can not run power flow in network "
-                          "saved with pandapower version %s" % version)
+        raise UserWarning(f"Can not run power flow in network saved with pandapower version {version}")
     if not np.allclose(vm_pu_old.values, net.res_bus.vm_pu.values):
-        raise UserWarning("Power flow results mismatch "
-                          "with pandapower version %s" % version)
+        raise UserWarning(f"Power flow results mismatch with pandapower version {version}")
 
 
 def test_convert_format_pq_bus_meas():

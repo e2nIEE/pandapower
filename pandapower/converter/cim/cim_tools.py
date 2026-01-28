@@ -6,7 +6,7 @@ import os
 import json
 from typing import Dict, List
 import numpy as np
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 import pandas as pd
 
 logger = logging.getLogger(__name__)

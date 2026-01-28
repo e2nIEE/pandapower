@@ -6,13 +6,17 @@
 import pandas as pd
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_transformer3w, create_transformer, create_line, \
-    create_switch, create_buses, create_gens, create_sgens, create_measurement, create_poly_cost
+from pandapower.create import (
+    create_bus, create_transformer3w, create_transformer, create_line, create_switch, create_buses, create_gens,
+    create_sgens, create_measurement, create_poly_cost
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9
-from pandapower.toolbox.element_selection import get_element_indices, next_bus, get_connected_elements, \
-    get_connected_buses, false_elm_links_loop, get_connected_buses_at_switches, pp_elements, element_bus_tuples, \
-    count_elements, branch_element_bus_dict
+from pandapower.toolbox.element_selection import (
+    get_element_indices, next_bus, get_connected_elements, get_connected_buses, false_elm_links_loop,
+    get_connected_buses_at_switches, pp_elements, element_bus_tuples, count_elements, branch_element_bus_dict
+)
 
 
 def test_get_element_indices():
@@ -27,7 +31,7 @@ def test_get_element_indices():
 
 
 def test_next_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_next_bus")
 
     bus0 = create_bus(net, vn_kv=110)
     bus1 = create_bus(net, vn_kv=20)
@@ -60,7 +64,7 @@ def test_next_bus():
 
 
 def test_get_connected_lines_at_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_get_connected_lines_at_bus")
 
     bus0 = create_bus(net, 0.4)
     bus1 = create_bus(net, 0.4)
@@ -93,7 +97,7 @@ def test_get_connected_lines_at_bus():
 
 
 def test_get_connected_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_get_connected_buses")
 
     bus0 = create_bus(net, vn_kv=110)
     bus1 = create_bus(net, vn_kv=20)
@@ -141,7 +145,7 @@ def test_get_connected_buses_at_switches():
 
 
 def test_get_false_links():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_get_false_links")
     create_buses(net, 6, 10, index=[0, 1, 3, 4, 6, 7])
 
     # --- gens

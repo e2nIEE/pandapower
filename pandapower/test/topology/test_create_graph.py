@@ -8,13 +8,13 @@ from itertools import combinations
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_switch
+from pandapower.create import create_switch
 from pandapower.pypower.idx_brch import BR_R, BR_X
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
-from pandapower.test.loadflow.result_test_network_generator import add_test_trafo3w, \
-    add_test_trafo, add_test_line, \
-    add_test_impedance, \
-    add_test_bus_bus_switch
+from pandapower.test.loadflow.result_test_network_generator import (
+    add_test_trafo3w, add_test_trafo, add_test_line, add_test_impedance, add_test_bus_bus_switch
+)
 from pandapower.test.loadflow.test_scenarios import network_with_trafo3ws
 from pandapower.topology.create_graph import create_nxgraph, graph_tool_available
 
@@ -24,7 +24,7 @@ if graph_tool_available:
 
 
 def test_line():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_line")
     add_test_line(net)
     line, open_loop_line, oos_line = net.line.index
     f, t = net.line.from_bus.at[line], net.line.to_bus.at[line]
@@ -68,7 +68,7 @@ def test_line():
 
 
 def test_trafo():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo")
     add_test_trafo(net)
 
     for library in libraries:
@@ -115,7 +115,7 @@ def test_trafo():
 
 def test_trafo3w():
     for library in libraries:
-        net = create_empty_network()
+        net = pandapowerNet(name="test_trafo3w")
         add_test_trafo3w(net)
 
         t1, t2 = net.trafo3w.index
@@ -178,7 +178,7 @@ def test_trafo3w_impedances(network_with_trafo3ws):
 
 
 def test_impedance():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_impedance")
     add_test_impedance(net)
 
     for library in libraries:
@@ -207,7 +207,7 @@ def test_impedance():
 
 
 def test_bus_bus_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_bus_bus_switches")
     add_test_bus_bus_switch(net)
 
     for library in libraries:
@@ -238,7 +238,7 @@ def test_bus_bus_switches():
 
 
 def test_nogo():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_nogo")
     add_test_line(net)
     mg = create_nxgraph(net)
     assert set(mg.nodes()) == set(net.bus.index)
@@ -247,7 +247,7 @@ def test_nogo():
 
 
 def test_branch_impedance_unit():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_nogo")
     with pytest.raises(ValueError) as exception_info:
         mg = create_nxgraph(net, branch_impedance_unit="p.u.")
     assert str(exception_info.value) == "branch impedance unit can be either 'ohm' or 'pu'"
@@ -256,7 +256,7 @@ def test_branch_impedance_unit():
 @pytest.mark.xfail(reason="This test fails, since graph_tool bus indices must be a range(0, n_buses). "
                           "If a bus is removed, graph-tool is not working.")
 def test_nogo_graph_tool():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_nogo_graph_tool")
     add_test_line(net)
     mg = create_nxgraph(net, library="graph_tool")
     assert set(mg.nodes()) == set(net.bus.index)

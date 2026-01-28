@@ -11,12 +11,13 @@ import pandas.testing as pdt
 import uuid
 
 from pandapower.auxiliary import ensure_iterability, log_to_level
-from pandapower.create import create_empty_network, _group_parameter_list, _set_multiple_entries, \
-    _check_elements_existence, create_group
+from pandapower.create import _group_parameter_list, _set_multiple_entries, _check_elements_existence
 from pandapower.toolbox.power_factor import signing_system_value
-from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples, \
-    pp_elements, get_connected_elements_dict
+from pandapower.toolbox.element_selection import (
+    branch_element_bus_dict, element_bus_tuples, pp_elements, get_connected_elements_dict
+)
 from pandapower.toolbox.result_info import res_power_columns
+from pandapower.network import pandapowerNet
 
 import logging
 
@@ -960,12 +961,10 @@ def set_group_reference_column(net, index, reference_column, element_type=None):
 
     dupl_elements = list()
     for et in element_type:
-
         if reference_column is None:
             # determine duplicated indices which would corrupt Groups functionality
             if len(set(net[et].index)) != net[et].shape[0]:
                 dupl_elements.append(et)
-
         else:
             # fill nan values in net[et][reference_column] with unique names
             if reference_column not in net[et].columns:
@@ -1036,9 +1035,10 @@ def return_group_as_net(net, index, keep_everything_else=False, verbose=True, **
                                "dropped now.")
             remove_not_existing_group_members(net, verbose=verbose)
     else:
-        group_net = create_empty_network(
+        group_net = pandapowerNet(
             name=group_name(net, index), f_hz=net.f_hz, sn_mva=net.sn_mva,
-            add_stdtypes=kwargs.get("add_stdtypes", True))
+            add_stdtypes=kwargs.get("add_stdtypes", True)
+        )
         group_net["group"] = net.group.loc[[index]]
         for et in net.group.loc[[index], "element_type"].tolist():
             idx = group_element_index(net, index, et)
@@ -1172,7 +1172,7 @@ def elements_connected_to_group(net, index, element_types, find_buses_only_from_
 if __name__ == "__main__":
     from pandapower import create_buses, create_gens, create_group, count_group_elements
 
-    net = create_empty_network()
+    net = pandapowerNet(name="groups")
     create_buses(net, 3, 10)
     create_gens(net, [0]*5, [10]*5)
     create_group(net, ["bus", "gen"], [[2, 1], [1, 2]], name="hello")

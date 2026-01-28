@@ -8,12 +8,12 @@ import numpy as np
 import pandas as pd
 from numpy import complex128
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
-from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS, BUS_TYPE, BUS_I
-from pandapower.pypower.idx_bus_dc import DC_VM, DC_BUS_TYPE, DC_NONE, DC_PD, DC_BUS_I
-
-from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
-from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q, SSC_INTERNAL_BUS
+from pandapower.network import pandapowerNet
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BUS_TYPE, BUS_I
+from pandapower.pypower.idx_bus_dc import DC_VM, DC_BUS_TYPE, DC_NONE, DC_PD, DC_BUS_I
+from pandapower.pypower.idx_gen import PG, QG
+from pandapower.pypower.idx_ssc import SSC_Q, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
 from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, VSC_INTERNAL_BUS
 
@@ -187,13 +187,19 @@ def write_voltage_dependend_load_results(net, p, q, b):
         return p, q, b
 
 
-def write_pq_results_to_element(net, ppc, element, suffix=None):
+# TODO: many tests fail if this function fails, yet i could not find tests for it
+def write_pq_results_to_element(
+        net: pandapowerNet, ppc: pd.DataFrame, element, suffix=None
+) -> None:
     """
     get p_mw and q_mvar for a specific pq element ("load", "sgen"...).
     This function basically writes values element table to res_element table
-    :param net: pandapower net
-    :param element: element name (str)
-    :return:
+    
+    Parameter:
+        net: the pandapower net
+        ppc: a ppc DataFrame
+        element: element name (str)
+        suffix: the suffix for the res tables
     """
     # info from net
     _is_elements = net["_is_elements"]
@@ -201,10 +207,8 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
 
     # info element
     el_data = net[element]
-    res_ = "res_%s" % element
-    if suffix is not None:
-        res_ += "_%s" % suffix
-    ctrl_ = "%s_controllable" % element
+    res_ = f"res_{element}_{suffix}" if suffix is not None else f"res_{element}"
+    ctrl_ = f"{element}_controllable"
 
     is_controllable = False
     if ctrl_ in _is_elements:
@@ -225,9 +229,8 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         return net
 
     # Wards and xwards have different names in their element table, but not in res table. Also no scaling -> Fix...
-    p_mw = "ps_mw" if element in ["ward", "xward"] else "p_mw"
-    q_mvar = "qs_mvar" if element in ["ward", "xward"] else "q_mvar"
-    scaling = el_data["scaling"].values if element not in ["ward", "xward"] else 1.0
+    p_mw, q_mvar, scaling = \
+        ("ps_mw", "qs_mvar", 1.) if element in ["ward", "xward"] else ("p_mw", "q_mvar", el_data["scaling"].values)
 
     element_in_service = _is_elements[element]
 

@@ -6,15 +6,17 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_load, \
-    create_transformer3w_from_parameters
+from pandapower.create import (
+    create_bus, create_ext_grid, create_load, create_transformer3w_from_parameters
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 @pytest.fixture
 def trafo3w_net():
-    net = create_empty_network(sn_mva=5)
+    net = pandapowerNet(name="trafo3w_net", sn_mva=5)
     b1 = create_bus(net, 220)
     b2 = create_bus(net, 30)
     b3 = create_bus(net, 10)

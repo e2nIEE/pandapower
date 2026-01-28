@@ -8,8 +8,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from pandapower import ADict, select_subnet
-from pandapower.toolbox import replace_xward_by_ward, get_connected_elements, create_continuous_bus_index
+from pandapower.network import ADict, pandapowerNet
+from pandapower.toolbox import replace_xward_by_ward, get_connected_elements, create_continuous_bus_index, select_subnet
 from pandapower.create import create_impedance, create_switch
 from pandapower.run import runpp
 from pandapower.auxiliary import (
@@ -17,7 +17,6 @@ from pandapower.auxiliary import (
     OPFNotConverged,
     ControllerNotConverged,
     NetCalculationNotConverged,
-    pandapowerNet,
 )
 from pandapower.diagnostic.diagnostic_helpers import (
     DiagnosticFunction,

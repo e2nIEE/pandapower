@@ -11,9 +11,10 @@ from typing import Optional, Union
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_object_dtype
-from pandapower.io_utils import pandapowerNet
-from pandapower.create import create_empty_network, create_buses, create_lines_from_parameters, \
-    create_transformers_from_parameters
+from pandapower.network import pandapowerNet
+from pandapower.create import (
+    create_buses, create_lines_from_parameters, create_transformers_from_parameters
+)
 from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 from pandapower.toolbox import drop_buses, fuse_buses
@@ -119,8 +120,10 @@ def from_jao(excel_file_path: str,
             logger.error(f"html data were ignored due to this error:\n{e}")
 
     # --- create the pandapower net
-    net = create_empty_network(name=os.path.splitext(os.path.basename(excel_file_path))[0],
-                               **{key: val for key, val in kwargs.items() if key == "sn_mva"})
+    net = pandapowerNet(
+        name=os.path.splitext(os.path.basename(excel_file_path))[0],
+        sn_mva=kwargs.get("sn_mva", 1.)
+    )
     _create_buses_from_line_data(net, data)
     _create_lines(net, data, max_i_ka_fillna)
     _create_transformers_and_buses(net, data, **kwargs)

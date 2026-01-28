@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.pp_types import Int
 from pandapower.create._utils import _check_element, _get_index_with_check, _set_entries
 

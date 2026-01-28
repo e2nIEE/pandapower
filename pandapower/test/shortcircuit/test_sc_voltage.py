@@ -5,13 +5,14 @@
 
 import numpy as np
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_ext_grid, create_sgen, create_gen
+from pandapower.create import create_bus, create_line, create_ext_grid, create_sgen, create_gen
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.test.shortcircuit.test_iec60909_4 import iec_60909_4
 
 
 def simple_grid():
-    net = create_empty_network(sn_mva=4)
+    net = pandapowerNet(name="simple_grid", sn_mva=4)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
@@ -123,7 +124,7 @@ def test_voltage_simple():
 
 
 def test_voltage_very_simple():
-    net = create_empty_network(sn_mva=12)
+    net = pandapowerNet(name="test_voltage_very_simple", sn_mva=12)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)

@@ -6,11 +6,12 @@
 
 import warnings
 import logging
-from typing import Literal, cast, get_args
+from typing import Literal, cast, get_args, TYPE_CHECKING
 
 import pandas as pd
 
-from pandapower.auxiliary import pandapowerNet
+if TYPE_CHECKING:
+    from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ def required_std_type_parameters(element: DefaultStandardTypes = "line"):
 
 
 def create_std_type(
-        net: pandapowerNet,
+        net: 'pandapowerNet',
         data: dict,
         name: str,
         element: str = "line",

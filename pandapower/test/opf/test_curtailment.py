@@ -7,8 +7,10 @@
 import pytest
 from numpy import allclose, all
 
-from pandapower.create import create_empty_network, create_bus, create_transformer, create_line, create_load, \
-    create_ext_grid, create_gen, create_poly_cost
+from pandapower.create import (
+    create_bus, create_transformer, create_line, create_load, create_ext_grid, create_gen, create_poly_cost
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runopp
 
 import logging
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_minimize_active_power_curtailment():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_minimize_active_power_curtailment")
 
     # create buses
     bus1 = create_bus(net, vn_kv=220.)

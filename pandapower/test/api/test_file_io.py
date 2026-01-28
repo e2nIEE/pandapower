@@ -13,13 +13,14 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from pandapower import pp_dir
-from pandapower.auxiliary import pandapowerNet
-from pandapower.control import DiscreteTapControl, ConstControl, ContinuousTapControl, Characteristic, \
-    SplineCharacteristic
+from pandapower import pp_dir, pandapowerNet
+from pandapower.control import (
+    DiscreteTapControl, ConstControl, ContinuousTapControl, Characteristic, SplineCharacteristic
+)
 from pandapower.create import create_transformer
-from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, convert_format, from_json, to_json, \
-    from_json_string, create_empty_network
+from pandapower.file_io import (
+    to_pickle, from_pickle, to_excel, from_excel, convert_format, from_json, to_json, from_json_string
+)
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.networks import mv_oberrhein, simple_four_bus_system, case9, case14, create_kerber_dorfnetz
 from pandapower.run import set_user_pf_options, runpp
@@ -30,7 +31,7 @@ from pandapower.toolbox import nets_equal, dataframes_equal
 from pandapower.topology.create_graph import create_nxgraph
 
 try:
-    import cryptography.fernet # type: ignore
+    import cryptography.fernet  # type: ignore
 
     cryptography_INSTALLED = True
 except ImportError:
@@ -68,6 +69,7 @@ def net_in(request):
         net.line.at[0, "geo"] = geojson.dumps(geojson.LineString([(1.1, 2.2), (3.3, 4.4)]))
         net.line.at[1, "geo"] = geojson.dumps(geojson.LineString([(5.5, 5.5), (6.6, 6.6), (7.7, 7.7)]))
         return net
+
 
 @pytest.fixture()
 def net_charactistics():
@@ -463,16 +465,6 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
     assert_net_equal(net, net_select, name_selection=['bus', 'load'])
 
 
-@pytest.mark.skipif(not GEOPANDAS_INSTALLED, reason="requires the GeoPandas library")
-def test_empty_geo_dataframe():
-    net = create_empty_network()
-    net['bus_geodata'] = pd.DataFrame(columns=['geometry'])
-    net['bus_geodata'] = gpd.GeoDataFrame(net['bus_geodata'])
-    s = to_json(net)
-    net1 = from_json_string(s)
-    assert_net_equal(net, net1)
-
-
 def test_json_io_with_characteristics(net_in):
     c1 = Characteristic.from_points(net_in, [(0, 0), (1, 1)])
     c2 = SplineCharacteristic.from_points(net_in, [(2, 2), (3, 4), (4, 5)])
@@ -490,16 +482,16 @@ def test_replace_elements_json_string(net_in):
     net_orig = copy.deepcopy(net_in)
     ConstControl(net_orig, 'load', 'p_mw', 0)
     json_string = to_json(net_orig)
-    net_load = from_json_string(json_string,
-                                replace_elements={r'pandapower.control.controller.const_control':
-                                                      r'pandapower.test.api.input_files.test_control',
-                                                  r'ConstControl': r'MyTestControl'})
+    net_load = from_json_string(json_string, replace_elements={
+            r'pandapower.control.controller.const_control': r'pandapower.test.api.input_files.test_control',
+            r'ConstControl': r'MyTestControl'
+    })
     assert net_orig.controller.at[0, 'object'] != net_load.controller.at[0, 'object']
     assert not nets_equal(net_orig, net_load)
 
-    net_load = from_json_string(json_string,
-                                replace_elements={r'pandapower.control.controller.const_control':
-                                                      r'pandapower.test.api.input_files.test_control'})
+    net_load = from_json_string(json_string, replace_elements={
+        r'pandapower.control.controller.const_control': r'pandapower.test.api.input_files.test_control'
+    })
     assert net_orig.controller.at[0, 'object'] == net_load.controller.at[0, 'object']
     assert nets_equal(net_orig, net_load)
     runpp(net_load, run_control=True)
@@ -510,7 +502,7 @@ def test_replace_elements_json_string(net_in):
 
 
 def test_json_generalized():
-    general_net0 = pandapowerNet(pandapowerNet.create_dataframes({
+    general_net0 = pandapowerNet(name='test_json_generalized', custom_data=pandapowerNet.create_dataframes({
         # structure data
         "df1": {'col1': np.dtype(object),
                 'col2': 'f8'},
@@ -523,8 +515,8 @@ def test_json_generalized():
 
     for general_in in [general_net0, general_net1]:
         out = from_json_string(to_json(general_in),
-                               empty_dict_like_object=pandapowerNet({}))
-        assert sorted(out.keys()) == ["df1", "df2"]
+                               empty_dict_like_object=pandapowerNet(name=''))
+        assert sorted(out.keys()) == sorted(general_in.keys())
         assert nets_equal(out, general_in)
 
 

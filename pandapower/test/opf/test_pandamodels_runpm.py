@@ -15,12 +15,15 @@ from pandapower import pp_dir
 from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
-from pandapower.create import create_storage, create_shunt, create_pwl_cost, create_poly_cost, create_empty_network, \
-    create_bus, create_line, create_gen, create_load, create_transformer3w_from_parameters, create_sgen, \
-    create_transformer3w
+from pandapower.create import (
+    create_storage, create_shunt, create_pwl_cost, create_poly_cost, create_bus, create_line, create_gen, create_load,
+    create_transformer3w_from_parameters, create_sgen, create_transformer3w
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
-from pandapower.networks.power_system_test_cases import case5, case9, case14, case30, case39, case57, case118, \
-    case145, case300
+from pandapower.networks.power_system_test_cases import (
+    case5, case9, case14, case30, case39, case57, case118, case145, case300
+)
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
 from pandapower.opf.pm_storage import read_pm_storage_results
 from pandapower.run import rundcpp, runpp
@@ -233,7 +236,7 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pwl():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_pwl")
 
     # create buses
     bus1 = create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)
@@ -292,7 +295,7 @@ def test_pwl():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_without_ext_grid():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_without_ext_grid")
 
     min_vm_pu = 0.95
     max_vm_pu = 1.05
@@ -358,7 +361,7 @@ def test_without_ext_grid():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_multiple_ext_grids():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_multiple_ext_grids")
     # generate three ext grids
     b11, b12, l11 = add_grid_connection(net, vn_kv=110.)
     b21, b22, l21 = add_grid_connection(net, vn_kv=110.)
@@ -387,7 +390,7 @@ def test_multiple_ext_grids():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_voltage_angles():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_voltage_angles")
     b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
@@ -425,7 +428,7 @@ def test_voltage_angles():
 
 
 def tnep_grid():
-    net = create_empty_network()
+    net = pandapowerNet(name="tnep_grid")
 
     min_vm_pu = 0.95
     max_vm_pu = 1.05

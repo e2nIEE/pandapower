@@ -1,14 +1,15 @@
 import pandas as pd
 import pytest
+
 from pandapower.control.controller.shunt_control import DiscreteShuntController
 from pandapower.control.controller.station_control import BinarySearchControl
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_line_from_parameters, \
-    create_shunt
+from pandapower.create import create_buses, create_ext_grid, create_line_from_parameters, create_shunt
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 
 
 def simple_test_net_shunt_control():
-    net = create_empty_network()
+    net = pandapowerNet(name="simple_test_net_shunt_control")
     b = create_buses(net, 2, 110)
     create_ext_grid(net, b[0])
     create_line_from_parameters(net, from_bus=b[0], to_bus=b[1], length_km=50, r_ohm_per_km=0.1021,

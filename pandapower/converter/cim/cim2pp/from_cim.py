@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Union, List, Type, Dict
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from . import build_pp_net
 from . import converter_classes as std_converter_classes
 from .. import cim_classes
