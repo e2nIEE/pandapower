@@ -141,7 +141,7 @@ def opf_setup(ppc, ppopt):
         q1    = array([])    ## index of 1st Qg column in Ay
 
         ## power mismatch constraints
-        B, Bf, Pbusinj, Pfinj, _ = makeBdc(bus, branch)
+        B, Bf, Pbusinj, Pfinj, *_ = makeBdc(bus, branch)
         neg_Cg = sparse((-ones(ng), (gen[:, GEN_BUS], arange(ng))), (nb, ng))   ## Pbus w.r.t. Pg
         Amis = hstack([B, neg_Cg], 'csr')
         bmis = -(bus[:, PD] + bus[:, GS]) / baseMVA - Pbusinj
