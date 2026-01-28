@@ -366,7 +366,7 @@ def _set_multiple_entries(
         for col, val in defaults_to_fill:
             if col in dd.columns and col not in net[table].columns:
                 net[table][col] = val
-    
+
     # extend the table by the frame we just created
     if len(net[table]):
         net[table] = pd.concat([net[table], dd[dd.columns[~dd.isnull().all()]]], sort=False)
