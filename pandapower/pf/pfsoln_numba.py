@@ -33,9 +33,11 @@ except ImportError:
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
-def pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None,
-           limited_gens=None):
-    """Updates bus, gen, branch data structures to match power flow soln.
+def pfsoln(
+        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None
+):
+    """
+    Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Richard Lincoln

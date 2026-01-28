@@ -7,6 +7,7 @@
 import numpy as np
 import pandas as pd
 
+from pandapower.auxiliary import get_b2b_vsc_names
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
@@ -59,8 +60,7 @@ def _get_b2b_vsc_results(net):
         # create an index of the b2b_vsc's
         indices = net.b2b_vsc.index.values
         # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
-        naming_scheme = 'b2b_' + np.repeat(indices, 2).astype(str) + np.tile(['+', '-'], len(indices))
-        vsc_idx = net.vsc[net.vsc['name'].isin(naming_scheme)].index
+        vsc_idx = net.vsc[net.vsc['name'].isin(get_b2b_vsc_names(indices))].index
         res_vsc = net.res_vsc.loc[vsc_idx]
 
         # Add a grouping index to split rows into pairs (0,1), (2,3), etc.
