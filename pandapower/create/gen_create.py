@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ def create_gen(
     is active power and a voltage set point. If you want to model a generator as PQ load with fixed
     reactive power and variable voltage, please use a static generator instead.
 
-    Parameters::
+    Parameters:
         net: The net within this generator should be created
         bus: The bus id to which the generator is connected
         p_mw: The active power of the generator (positive for generation!)
@@ -78,32 +78,45 @@ def create_gen(
         scaling: scaling factor applying to the active power of the generator
         type: type variable to classify generators
         slack: flag that sets the generator as slack if True
-        reactive_capability_curve: True if both the id_q_capability_characteristic and the curve_style are present for
+        reactive_capability_curve: True if both the id_q_capability_characteristic and the curve style are present in
             the generator
         id_q_capability_characteristic: references the index of the characteristic from the
             net.q_capability_characteristic table (id_q_capability_curve column)
         curve_style: The curve style of the generator represents the relationship between active power (P) and reactive
             power (Q). It indicates whether the reactive power remains constant as the active power changes or varies
             dynamically in response to it, e.g. "straightLineYValues" and "constantYValue".
-        controllable: True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF;
-            False: p_mw and vm_pu set points are enforced and *limits are ignored*.
+        controllable: True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF; False: p_mw and vm_pu
+            set points are enforced and *limits are ignored*. Defaults to True if "controllable" column exists in
+            DataFrame.
         slack_weight: Contribution factor for distributed slack power flow calculation (active power balancing)
-        vn_kv: Rated voltage of the generator for short-circuit calculation
-        xdss_pu: Subtransient generator reactance for short-circuit calculation
-        rdss_ohm: Subtransient generator resistance for short-circuit calculation
-        cos_phi: Rated cosine phi of the generator for short-circuit calculation
-        pg_percent: Rated pg (voltage control range) of the generator for short-circuit calculation
-        power_station_trafo: Index of the power station transformer for short-circuit calculation
+        vn_kv: Rated voltage of the generator for shortcircuit calculation
+        xdss_pu: Subtransient generator reactance for shortcircuit calculation
+        rdss_ohm: Subtransient generator resistance for shortcircuit calculation
+        cos_phi: Rated cosine phi of the generator for shortcircuit calculation
+        pg_percent: Rated pg (voltage control range) of the generator for shortcircuit calculation
+        power_station_trafo: Index of the power station transformer for shortcircuit calculation
         in_service: True for in_service or False for out of service
-        max_p_mw: Maximum active power injection - necessary for OPF
-        min_p_mw: Minimum active power injection - necessary for OPF
-        max_q_mvar: Maximum reactive power injection - necessary for OPF
-        min_q_mvar: Minimum reactive power injection - necessary for OPF
+        max_p_mw: Maximum active power injection
+
+            - necessary for OPF
+
+        min_p_mw: Minimum active power injection
+
+            - necessary for OPF
+
+        max_q_mvar: Maximum reactive power injection
+
+            - necessary for OPF
+
+        min_q_mvar: Minimum reactive power injection
+
+            - necessary for OPF
+
         min_vm_pu: Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.
         max_vm_pu: Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.
 
     Returns:
-        The unique ID of the created generator
+        The ID of the created generator
 
     Example:
         >>> create_gen(net, 1, p_mw=120, vm_pu=1.02)
@@ -208,37 +221,57 @@ def create_gens(
             index is selected.
         scaling: scaling factor which for the active power of the generator
         type: type variable to classify generators
-        reactive_capability_curve: True if both the id_q_capability_characteristic and the curve_style are present in
+        reactive_capability_curve: True if both the id_q_capability_characteristic and the curve style are present in
             the generator.
         id_q_capability_characteristic: references the index of the characteristic from the lookup table
-            net.q_capability_characteristic
+            net.q_capability_characteristic e.g. 0, 1, 2, 3
         curve_style: The curve style of the generator represents the relationship between active power (P) and reactive
             power (Q). It indicates whether the reactive power remains constant as the active power changes or varies
-            dynamically in response to it.
-            e.g. "straightLineYValues" and "constantYValue"
-        controllable: True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF
-            False: p_mw and vm_pu set points are enforced and *limits are ignored*.
-        vn_kv: Rated voltage of the generator for short-circuit calculation
-        xdss_pu: Subtransient generator reactance for short-circuit calculation
-        rdss_ohm: Subtransient generator resistance for short-circuit calculation
-        cos_phi: Rated cosine phi of the generator for short-circuit calculation
-        pg_percent: Rated pg (voltage control range) of the generator for short-circuit calculation
-        power_station_trafo: Index of the power station transformer for short-circuit calculation
+            dynamically in response to it. e.g. "straightLineYValues" and "constantYValue"
+        controllable:
+
+            - True: p_mw, q_mvar and vm_pu limits are enforced for this generator in OPF
+            - False: p_mw and vm_pu set points are enforced and *limits are ignored*.
+
+            defaults to True if "controllable" column exists in DataFrame
+
+        vn_kv: Rated voltage of the generator for shortcircuit calculation
+        xdss_pu: Subtransient generator reactance for shortcircuit calculation
+        rdss_ohm: Subtransient generator resistance for shortcircuit calculation
+        cos_phi: Rated cosine phi of the generator for shortcircuit calculation
+        pg_percent: Rated pg (voltage control range) of the generator for shortcircuit calculation
+        power_station_trafo: Index of the power station transformer for shortcircuit calculation
         in_service: True for in_service or False for out of service
         slack_weight: Contribution factor for distributed slack power flow calculation (active power balancing)
-        max_p_mw: Maximum active power injection - necessary for OPF
-        min_p_mw: Minimum active power injection - necessary for OPF
-        max_q_mvar: Maximum reactive power injection - necessary for OPF
-        min_q_mvar: Minimum reactive power injection - necessary for OPF
-        min_vm_pu: Minimum voltage magnitude. If not set the bus voltage limit is taken. - necessary for OPF.
-        max_vm_pu: Maximum voltage magnitude. If not set the bus voltage limit is taken. - necessary for OPF
+        max_p_mw: Maximum active power injection
+
+            - necessary for OPF
+
+        min_p_mw: Minimum active power injection
+
+            - necessary for OPF
+
+        max_q_mvar: Maximum reactive power injection
+
+            - necessary for OPF
+
+        min_q_mvar: Minimum reactive power injection
+
+            - necessary for OPF
+
+        min_vm_pu: Minimum voltage magnitude. If not set the bus voltage limit is taken.
+
+            - necessary for OPF.
+
+        max_vm_pu: Maximum voltage magnitude. If not set the bus voltage limit is taken.
+
+            - necessary for OPF
 
     Returns:
-        The unique ID of the created generators
+        The ID of the created generator
 
     Example:
         >>> create_gens(net, [1, 2], p_mw=[120, 100], vm_pu=[1.02, 0.99])
-
     """
     _check_multiple_elements(net, buses)
 
@@ -273,7 +306,7 @@ def create_gens(
     _add_to_entries_if_not_nan(
         net, "gen", entries, index, "id_q_capability_characteristic", id_q_capability_characteristic
     )
-    
+
     if "reactive_capability_curve" in net.gen or reactive_capability_curve is not None:
         _add_to_entries_if_not_nan(
             net, "gen", entries, index, "reactive_capability_curve", reactive_capability_curve, default_val=False

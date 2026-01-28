@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -63,59 +63,33 @@ def create_storage(
     customized, time dependent simulations by running several power flow calculations and updating
     variables manually.
 
-    INPUT:
-        **net** - The net within this storage should be created
+    Parameters:
+        net: The net within this storage should be created
+        bus: The bus id to which the storage is connected
+        p_mw: The momentary active power of the storage (positive for charging, negative for discharging)
+        max_e_mwh: The maximum energy content of the storage (maximum charge level)
+        q_mvar: The reactive power of the storage
+        sn_mva: Nominal power of the storage
+        soc_percent: The state of charge of the storage
+        min_e_mwh: The minimum energy content of the storage (minimum charge level)
+        name: The name for this storage
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        scaling: An OPTIONAL custom scaling factor. Multiplies with p_mw and q_mvar.
+        type: type variable to classify the storage
+        in_service: True for in_service or False for out of service
+        max_p_mw: Maximum active power injection - necessary for a controllable storage in OPF
+        min_p_mw: Minimum active power injection - necessary for a controllable storage in OPF
+        max_q_mvar: Maximum reactive power injection - necessary for a controllable storage in OPF
+        min_q_mvar: Minimum reactive power injection - necessary for a controllable storage in OPF
+        controllable: Whether this storage is controllable by the optimal powerflow; defaults to False if "controllable"
+            column exists in DataFrame
 
-        **bus** (int) - The bus id to which the storage is connected
+    Returns:
+        The ID of the created storage
 
-        **p_mw** (float) - The momentary active power of the storage \
-            (positive for charging, negative for discharging)
-
-        **max_e_mwh** (float) - The maximum energy content of the storage \
-            (maximum charge level)
-
-    OPTIONAL:
-        **q_mvar** (float, default 0) - The reactive power of the storage
-
-        **sn_mva** (float, default NaN) - Nominal power of the storage
-
-        **soc_percent** (float, NaN) - The state of charge of the storage
-
-        **min_e_mwh** (float, 0) - The minimum energy content of the storage \
-            (minimum charge level)
-
-        **name** (string, default None) - The name for this storage
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **scaling** (float, 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplies with p_mw and q_mvar.
-
-        **type** (string, None) -  type variable to classify the storage
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **max_p_mw** (float, NaN) - Maximum active power injection - necessary for a \
-            controllable storage in OPF
-
-        **min_p_mw** (float, NaN) - Minimum active power injection - necessary for a \
-            controllable storage in OPF
-
-        **max_q_mvar** (float, NaN) - Maximum reactive power injection - necessary for a \
-            controllable storage in OPF
-
-        **min_q_mvar** (float, NaN) - Minimum reactive power injection - necessary for a \
-            controllable storage in OPF
-
-        **controllable** (bool, NaN) - Whether this storage is controllable by the optimal \
-            powerflow; defaults to False if "controllable" column exists in DataFrame
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created storage
-
-    EXAMPLE:
-        create_storage(net, 1, p_mw=-30, max_e_mwh=60, soc_percent=1.0, min_e_mwh=5)
+    Example:
+        >>> create_storage(net, 1, p_mw=-30, max_e_mwh=60, soc_percent=1.0, min_e_mwh=5)
 
     """
     _check_element(net, bus)
@@ -184,60 +158,33 @@ def create_storages(
     customized, time dependent simulations by running several power flow calculations and updating
     variables manually.
 
-    INPUT:
-        **net** - The net within this storage should be created
+    Parameters:
+        net: The net within this storage should be created
+        buses: The bus ids to which the generators are connected
+        p_mw: The momentary active power of the storage (positive for charging, negative for discharging)
+        max_e_mwh: The maximum energy content of the storage (maximum charge level)
+        q_mvar: The reactive power of the storage
+        sn_mva: Nominal power of the storage
+        soc_percent: The state of charge of the storage
+        min_e_mwh: The minimum energy content of the storage (minimum charge level)
+        name: The name for this storage
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        scaling: An OPTIONAL custom scaling factor. Multiplies with p_mw and q_mvar.
+        type:  type variable to classify the storage
+        in_service: True for in_service or False for out of service
+        max_p_mw: Maximum active power injection - necessary for a controllable storage in OPF
+        min_p_mw: Minimum active power injection - necessary for a controllable storage in OPF
+        max_q_mvar: Maximum reactive power injection - necessary for a controllable storage in OPF
+        min_q_mvar: Minimum reactive power injection - necessary for a controllable storage in OPF
+        controllable: Whether this storage is controllable by the optimal powerflow; defaults to False if "controllable"
+            column exists in DataFrame
 
-        **buses** (list of int) - The bus ids to which the generators are connected
+    Returns:
+        The ID of the created storage
 
-        **p_mw** (list of float) - The momentary active power of the storage \
-            (positive for charging, negative for discharging)
-
-        **max_e_mwh** (list of float) - The maximum energy content of the storage \
-            (maximum charge level)
-
-    OPTIONAL:
-        **q_mvar** (list of float, default 0) - The reactive power of the storage
-
-        **sn_mva** (list of float, default NaN) - Nominal power of the storage
-
-        **soc_percent** (list of float, NaN) - The state of charge of the storage
-
-        **min_e_mwh** (list of float, 0) - The minimum energy content of the storage \
-            (minimum charge level)
-
-        **name** (list of string, default None) - The name for this storage
-
-        **index** (list of int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **scaling** (list of float, 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplies with p_mw and q_mvar.
-
-        **type** (list of string, None) -  type variable to classify the storage
-
-        **in_service** (list of boolean, default True) - True for in_service or False for out of service
-
-        **max_p_mw** (list of float, NaN) - Maximum active power injection - necessary for a \
-            controllable storage in OPF
-
-        **min_p_mw** (list of float, NaN) - Minimum active power injection - necessary for a \
-            controllable storage in OPF
-
-        **max_q_mvar** (list of float, NaN) - Maximum reactive power injection - necessary for a \
-            controllable storage in OPF
-
-        **min_q_mvar** (list of float, NaN) - Minimum reactive power injection - necessary for a \
-            controllable storage in OPF
-
-        **controllable** (list of bool, NaN) - Whether this storage is controllable by the optimal \
-            powerflow; defaults to False if "controllable" column exists in DataFrame
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created storage
-
-    EXAMPLE:
-        create_storage(net, 1, p_mw=-30, max_e_mwh=60, soc_percent=1.0, min_e_mwh=5)
-
+    Example:
+        >>> create_storage(net, 1, p_mw=-30, max_e_mwh=60, soc_percent=1.0, min_e_mwh=5)
     """
     _check_multiple_elements(net, buses)
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-nt
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
@@ -52,57 +52,41 @@ def from_jao(excel_file_path: str,
     - **Grid Group Connections:** Optionally extends the network by connecting islanded grid groups to avoid disconnected components.
     - **Data Customization:** Allows for customization through additional parameters to control transformer creation, grid group dropping, and voltage level deviations.
 
-    :param str excel_file_path:
-        input data including electrical parameters of grids' utilities, stored in multiple sheets
-        of an excel file
+    Parameters:
+        excel_file_path: input data including electrical parameters of grids' utilities, stored in multiple sheets
+            of an excel file
+        html_file_path: input data for geo information. If The converter should be run without geo information, None
+            can be passed., provided by an html file
+        extend_data_for_grid_group_connections: if True, connections (additional transformers and merging buses) are
+            created to avoid islanded grid groups, by default False
+        drop_grid_groups_islands: if True, islanded grid groups will be dropped if their number of buses is below
+            `min_bus_number` default for this is 6 (default: False)
+        apply_data_correction: _description_ (default: True)
+        max_i_ka_fillna: value to fill missing values or data of false type in max_i_ka of lines and transformers.
+            If no value should be set, you can also pass np.nan. (default: 999)
 
-    :param str html_file_path:
-        input data for geo information. If The converter should be run without geo information, None
-        can be passed., provided by an html file
-
-    :param bool extend_data_for_grid_group_connections:
-        if True, connections (additional transformers and merging buses) are created to avoid
-        islanded grid groups, by default False
-
-    :param Optional[bool] drop_grid_groups_islands:
-        if True, islanded grid groups will be dropped if their number of buses is below
-        `min_bus_number` default for this is 6 (default: False)
-
-    :param Optional[bool] apply_data_correction:
-        _description_ (default: True)
-
-    :param Optional[float|int] max_i_ka_fillna:
-        value to fill missing values or data of false type in max_i_ka of lines and transformers.
-        If no value should be set, you can also pass np.nan. (default: 999)
-
-    :param '**'kwargs: following params are available
-
-    :param Optional[bool] minimal_trafo_invention:
-        applies if extend_data_for_grid_group_connections is True. Then, if minimal_trafo_invention
-        is True, adding transformers stops when no grid groups is islanded anymore (does not apply
-        for release version 5 or 6, i.e. it does not care what value is passed to
-        minimal_trafo_invention). If False, all equally named buses that have different voltage
-        level and lay in different groups will be connected via additional transformers (default: False)
-
-    :param Optional[int|str] min_bus_number:
-        Threshold value to decide which small grid groups should be dropped and which large grid
-        groups should be kept. If all islanded grid groups should be dropped except of the one
-        largest, set "max". If all grid groups that do not contain a slack element should be
-        dropped, set "unsupplied". (default: 6)
-
-    :param Optional[float] rel_deviation_threshold_for_trafo_bus_creation:
-        If the voltage level of transformer locations is far different than the transformer data,
-        additional buses are created. rel_deviation_threshold_for_trafo_bus_creation defines the
-        tolerance in which no additional buses are created. (default: 0.2)
-
-    :param Optional[float] log_rel_vn_deviation:
-        This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
-        a warning is logged instead of a creating additional buses. (default: 0.12)
-
-    :return: net created from the jao data
-    :rtype: pandapowerNet
-
-    :example:
+    Keyword Arguments:
+        minimal_trafo_invention (Optional[bool]): applies if extend_data_for_grid_group_connections is True. Then,
+            if minimal_trafo_invention is True, adding transformers stops when no grid groups is islanded anymore
+            (does not apply for release version 5 or 6, i.e. it does not care what value is passed to
+            minimal_trafo_invention). If False, all equally named buses that have different voltage level and lay in
+            different groups will be connected via additional transformers (default: False)
+        min_bus_number (Optional[int|str]): Threshold value to decide which small grid groups should be dropped and
+            which large grid groups should be kept. If all islanded grid groups should be dropped except of the one
+            largest, set "max". If all grid groups that do not contain a slack element should be dropped, set
+            "unsupplied". (default: 6)
+        rel_deviation_threshold_for_trafo_bus_creation (Optional[float]): If the voltage level of transformer locations
+            is far different than the transformer data, additional buses are created.
+            rel_deviation_threshold_for_trafo_bus_creation defines the tolerance in which no additional buses are
+            created. (default: 0.2)
+        log_rel_vn_deviation (Optional[float]): This parameter allows a range below
+            rel_deviation_threshold_for_trafo_bus_creation in which a warning is logged instead of a creating additional
+            buses. (default: 0.12)
+    
+    Returns:
+        net created from the jao data
+    
+    Example:
         >>> from pathlib import Path
         >>> import os
         >>> from pandapower.converter.jao.from_jao import from_jao

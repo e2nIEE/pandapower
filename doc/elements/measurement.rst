@@ -8,7 +8,7 @@ Create Function
 
 .. _create_measurement:
 
-.. autofunction:: pandapower.create_measurement
+.. autofunction:: pandapower.create.create_measurement
 
 Input Parameters
 =========================

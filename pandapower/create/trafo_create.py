@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -56,70 +56,47 @@ def create_transformer(
     Creates a two-winding transformer in table net.trafo.
     The trafo parameters are defined through the standard type library.
 
-    INPUT:
-        **net** (pandapowerNet) - the net within this transformer should be created
+    Parameters:
+        net: the net within this transformer should be created
+        hv_bus: the bus on the high-voltage side on which the transformer will be connected to
+        lv_bus: the bus on the low-voltage side on which the transformer will be connected to
+        std_type: the used standard type from the standard type library
 
-        **hv_bus** (int) - the bus on the high-voltage side on which the transformer will be connected to
+            **Zero sequence parameters** (added through std_type for three-phase load flow):
 
-        **lv_bus** (int) - τhe bus on the low-voltage side on which the transformer will be connected to
+            - vk0_percent (float): zero sequence relative short-circuit voltage
+            - vkr0_percent (float): real part of zero sequence relative short-circuit voltage
+            - mag0_percent (float): ratio between magnetizing and short circuit impedance (zero sequence) z_mag0 / z0
+            - mag0_rx (float): zero sequence magnetizing r/x ratio
+            - si0_hv_partial (float): zero sequence short circuit impedance distribution in hv side
 
-        **std_type** (str) - τhe used standard type from the standard type library
-
-    **Zero sequence parameters** (added through std_type for three-phase load flow):
-
-        **vk0_percent** (float) - zero sequence relative short-circuit voltage
-
-        **vkr0_percent** (float) - real part of zero sequence relative short-circuit voltage
-
-        **mag0_percent** (float) - ratio between magnetizing and short circuit impedance (zero sequence)
-
-                                   z_mag0 / z0
-
-        **mag0_rx** (float) - zero sequence magnetizing r/x ratio
-
-        **si0_hv_partial** (float) - zero sequence short circuit impedance distribution in hv side
-
-    OPTIONAL:
-        **name** (str, None) - a custom name for this transformer
-
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
-
-        **in_service** (boolean, True) - True for in_service or False for out of service
-
-        **index** (int, None) - force a specified ID if it is available. If None, the index one higher than the \
-                                highest already existing index is selected
-
-        **max_loading_percent** (float) - maximum current loading (only needed for OPF)
-
-        **parallel** (int) - number of parallel transformers
-
-        **df** (float) - derating factor: maximum current of transformer in relation to nominal current of transformer \
-                         (from 0 to 1)
-
-        **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
-            must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
-            can be used for sanity checks. \
-            The function pandapower.control.create_trafo_characteristic_object can be used to create \
-            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+        name: a custom name for this transformer
+        tap_pos: current tap position of the transformer. Defaults to the medium position (tap_neutral)
+        in_service: True for in_service or False for out of service
+        index: force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected
+        max_loading_percent: maximum current loading (only needed for OPF)
+        parallel: number of parallel transformers
+        df: derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)
+        tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
+            dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
+            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
+            The function pandapower.control.create_trafo_characteristic_object can be used to create
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column
             "id_characteristic_spline" to set up the reference to the spline characteristics.
+        id_characteristic_table: references the index of the characteristic from the lookup table
+            net.trafo_characteristic_table
+        tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
+            changer)
+        xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation
+        tap2_pos: current tap position of the second tap changer of the transformer. Defaults to the medium position
+            (tap2_neutral)
 
-        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
-                                                 net.trafo_characteristic_table
+    Returns:
+        The ID of the created transformer
 
-        **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", \
-                                           "Tabular", None: no tap changer)
-
-        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for short circuit calculation
-
-        **tap2_pos** (int, float, nan) - current tap position of the second tap changer of the transformer. \
-                                         Defaults to the medium position (tap2_neutral)
-
-    OUTPUT:
-        **index** (int) - the unique ID of the created transformer
-
-    EXAMPLE:
-        create_transformer(net, hv_bus=0, lv_bus=1, std_type="0.4 MVA 10/0.4 kV", name="trafo1")
+    Example:
+        >>> create_transformer(net, hv_bus=0, lv_bus=1, std_type="0.4 MVA 10/0.4 kV", name="trafo1")
     """
 
     from pandapower.convert_format import convert_trafo_pst_logic
@@ -237,32 +214,33 @@ def create_transformers(
     Additional parameters passed will be added to the transformers dataframe. If keywords are passed that are present
     in the std_type they will override any setting from the standard type.
 
-    :param net: the pandapower network to which the transformers should be added
-    :type net: pandapower.pandapowerNet
-    :param Sequence hv_buses: a Sequence of bus ids that are the high voltage buses for the transformers
-    :param Sequence lv_buses: a Sequence of bus ids that are the low valtage buses for the transformers
-    :param str std_type: the transformer std_type to get the not specified parameters from
-    :param name: names for the transformers, default None
-    :type name: Iterable[str]
-    :param tap_pos: current tap position of the transformers. Defaults to the medium position (tap_neutral), default nan
-    :type tap_pos: int | Iterable[int] | float
-    :param in_service: Wheather the transforers are in or out of service, default True
-    :type in_service: bool | Itreable[bool]
-    :param index: the index to use for the new elements, default None
-    :type index: Int | Iterable[Int] | None
-    :param max_loading_percent: the maximum loading percentage of the transformer, default nan
-    :type max_loading_percent: float | Iterable[float]
-    :param parallel: number of parallel transformer, default 1
-    :param df: derating factor: maximum current of transformer in relation to nominal current of transformer (0 - 1), default 1.0
-    :param tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular" or None), default None
-    :param tap_dependency_table: True if sanity checks should be performed. See SplineCharacteristics, default False
-    :param id_characteristic_table: id of the SplineCharacteristic, default None
-    :param pt_percent: default nan
-    :param oltc: default False
-    :param xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation, default nan
-    :param tap2_pos: current tap position of the second tap changer ot the transformer. Defaults to the medium position (tap2_neutral), default nan
+    Parameters:
+        net: the pandapower network to which the transformers should be added
+        Sequence hv_buses: a Sequence of bus ids that are the high voltage buses for the transformers
+        Sequence lv_buses: a Sequence of bus ids that are the low valtage buses for the transformers
+        str std_type: the transformer std_type to get the not specified parameters from
+        name: names for the transformers, default None
+        tap_pos: current tap position of the transformers. Defaults to the medium position (tap_neutral), default nan
+        in_service: Wheather the transforers are in or out of service, default True
+        index: the index to use for the new elements, default None
+        max_loading_percent: the maximum loading percentage of the transformer, default nan
+        parallel: number of parallel transformer, default 1
+        df: derating factor: maximum current of transformer in relation to nominal current of transformer (0 - 1),
+            default 1.0
+        tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular" or None),
+            default None
+        tap_dependency_table: True if sanity checks should be performed. See SplineCharacteristics, default False
+        id_characteristic_table: id of the SplineCharacteristic, default None
+        pt_percent: default nan
+        oltc: default False
+        xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation, default nan
+        tap2_pos: current tap position of the second tap changer ot the transformer. Defaults to the medium position
+            (tap2_neutral), default nan
 
-    :example:
+    Returns:
+        The IDs of the created transformers
+
+    Example:
         >>> create_transformers(
         >>>     net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="0.4 MVA 10/0.4 kV", name=["trafo1", "trafo2"]
         >>> )
@@ -341,126 +319,75 @@ def create_transformer_from_parameters(
     """
     Creates a two-winding transformer in table net.trafo with the specified parameters.
 
-    INPUT:
-        **net** (pandapowerNet) - the net within this transformer should be created
-
-        **hv_bus** (int) - the bus on the high-voltage side on which the transformer will be connected to
-
-        **lv_bus** (int) - the bus on the low-voltage side on which the transformer will be connected to
-
-        **sn_mva** (float) - rated apparent power
-
-        **vn_hv_kv** (float) - rated voltage on high voltage side
-
-        **vn_lv_kv** (float) - rated voltage on low voltage side
-
-        **vkr_percent** (float) - real part of relative short-circuit voltage
-
-        **vk_percent** (float) - relative short-circuit voltage
-
-        **pfe_kw** (float)  - iron losses in kW
-
-        **i0_percent** (float) - open loop losses in percent of rated current
-
-        **vector_group** (str) - vector group of the transformer
-
-                                    HV side is Uppercase letters and LV side is lower case
-
-        **vk0_percent** (float) - zero sequence relative short-circuit voltage
-
-        **vkr0_percent** (float) - real part of zero sequence relative short-circuit voltage
-
-        **mag0_percent** (float) - zero sequence magnetizing impedance/ vk0
-
-        **mag0_rx** (float) - zero sequence magnetizing R/X ratio
-
-        **si0_hv_partial** (float) - Distribution of zero sequence leakage impedance's for HV side
-
-    OPTIONAL:
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **parallel** (int) - number of parallel transformers
-
-        **name** (str) - A custom name for this transformer
-
-        **shift_degree** (float) - angle shift over the transformer*
-
-        **tap_side** (str) - position of tap changer ("hv", "lv")
-
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
-
-        **tap_neutral** (int, nan) - tap position where the transformer ratio is equal to the ratio of the \
-                                     rated voltages
-
-        **tap_max** (int, nan) - maximum allowed tap position
-
-        **tap_min** (int, nan) - minimum allowed tap position
-
-        **tap_step_percent** (float) - tap step size for voltage magnitude in percent
-
-        **tap_step_degree** (float) - tap step size for voltage angle in degree*
-
-        **tap_changer_type** (str, None) - specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", \
-                                           "Tabular", None: no tap changer)*
-
-        **index** (int, None) - force a specified ID if it is available. If None, the index one higher than the \
-                                highest already existing index is selected.
-
-        **max_loading_percent** (float) - maximum current loading (only needed for OPF)
-
-        **df** (float) - derating factor: maximum current of transformer in relation to nominal \
-                                          current of transformer (from 0 to 1)
-
-        **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
-            must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
-            can be used for sanity checks. \
-            The function pandapower.control.create_trafo_characteristic_object can be used to create \
-            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+    Parameters:
+        net: the net within this transformer should be created
+        hv_bus: the bus on the high-voltage side on which the transformer will be connected to
+        lv_bus: the bus on the low-voltage side on which the transformer will be connected to
+        sn_mva: rated apparent power
+        vn_hv_kv: rated voltage on high voltage side
+        vn_lv_kv: rated voltage on low voltage side
+        vkr_percent: real part of relative short-circuit voltage
+        vk_percent: relative short-circuit voltage
+        pfe_kw: iron losses in kW
+        i0_percent: open loop losses in percent of rated current
+        vector_group: vector group of the transformer HV side is Uppercase letters and LV side is lower case
+        vk0_percent: zero sequence relative short-circuit voltage
+        vkr0_percent: real part of zero sequence relative short-circuit voltage
+        mag0_percent: zero sequence magnetizing impedance/ vk0
+        mag0_rx: zero sequence magnetizing R/X ratio
+        si0_hv_partial: Distribution of zero sequence leakage impedance's for HV side
+        in_service: True for in_service or False for out of service
+        parallel: number of parallel transformers
+        name: A custom name for this transformer
+        shift_degree: angle shift over the transformer*
+        tap_side: position of tap changer ("hv", "lv")
+        tap_pos: current tap position of the transformer. Defaults to the medium position (tap_neutral)
+        tap_neutral: tap position where the transformer ratio is equal to the ratio of the rated voltages
+        tap_max: maximum allowed tap position
+        tap_min: minimum allowed tap position
+        tap_step_percent: tap step size for voltage magnitude in percent
+        tap_step_degree: tap step size for voltage angle in degree*
+        tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
+            changer)*
+        index: force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        max_loading_percent: maximum current loading (only needed for OPF)
+        df: derating factor - maximum current of transformer in relation to nominal current of transformer (from 0 to 1)
+        tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
+            dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
+            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
+            The function pandapower.control.create_trafo_characteristic_object can be used to create
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column
             "id_characteristic_spline" to set up the reference to the spline characteristics.
+        id_characteristic_table: references the index of the characteristic from the lookup table
+            net.trafo_characteristic_table
+        pt_percent: (short circuit only)
+        oltc: (short circuit only)
+        xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation
+        tap2_side: position of the second tap changer ("hv", "lv")
+        tap2_pos: current tap position of the second tap changer of the transformer. Defaults to the medium position
+            (tap2_neutral)
+        tap2_neutral: second tap position where the transformer ratio is equal to the ratio of the rated voltages
+        tap2_max: maximum allowed tap position of the second tap changer
+        tap2_min: minimum allowed tap position of the second tap changer
+        tap2_step_percent: second tap step size for voltage magnitude in percent
+        tap2_step_degree: second tap step size for voltage angle in degree*
+        tap2_changer_type: specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", None: no tap changer)*
 
-        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
-                                                 net.trafo_characteristic_table
+            \\* only considered in load flow if calculate_voltage_angles = True
 
-        **pt_percent** (float, nan) - (short circuit only)
+    Keyword Arguments:
+        leakage_resistance_ratio_hv: ratio of transformer short-circuit resistance on HV side (default 0.5)
+        leakage_reactance_ratio_hv: ratio of transformer short-circuit reactance on HV side (default 0.5)
 
-        **oltc** (boolean, False) - (short circuit only)
-
-        **xn_ohm** (float) - impedance of the grounding reactor (Z_N) for short circuit calculation
-
-        **tap2_side** (str) - position of the second tap changer ("hv", "lv")
-
-        **tap2_pos** (int, nan) - current tap position of the second tap changer of the transformer. \
-                                  Defaults to the medium position (tap2_neutral)
-
-        **tap2_neutral** (int, nan) - second tap position where the transformer ratio is equal to the \
-                                      ratio of the rated voltages
-
-        **tap2_max** (int, nan) - maximum allowed tap position of the second tap changer
-
-        **tap2_min** (int, nan) - minimum allowed tap position of the second tap changer
-
-        **tap2_step_percent** (float, nan) - second tap step size for voltage magnitude in percent
-
-        **tap2_step_degree** (float, nan) - second tap step size for voltage angle in degree*
-
-        **tap2_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
-                                            None: no tap changer)*
-
-        **leakage_resistance_ratio_hv** (bool) - ratio of transformer short-circuit resistance on HV side (default 0.5)
-
-        **leakage_reactance_ratio_hv** (bool) - ratio of transformer short-circuit reactance on HV side (default 0.5)
-
-        \\* only considered in load flow if calculate_voltage_angles = True
-
-    OUTPUT:
+    Returns:
         **index** (int) - the unique ID of the created transformer
 
-    EXAMPLE:
-        create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, vn_hv_kv=110, \
-                                           vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, i0_percent=0.1, \
-                                           shift_degree=30)
+    Example:
+        >>> create_transformer_from_parameters(
+        >>>     net, hv_bus=0, lv_bus=1, name="trafo1", sn_mva=40, vn_hv_kv=110, vn_lv_kv=10, vk_percent=10,
+        >>>     vkr_percent=0.3, pfe_kw=30, i0_percent=0.1, shift_degree=30
+        >>> )
     """
 
     from pandapower.convert_format import convert_trafo_pst_logic
@@ -619,123 +546,71 @@ def create_transformers_from_parameters(  # index missing ?
     """
     Creates several two-winding transformers in table net.trafo with the specified parameters.
 
-    INPUT:
-        **net** (pandapowerNet) - the net within this transformer should be created
-
-        **hv_bus** (list of int) - the bus on the high-voltage side on which the transformer will be connected to
-
-        **lv_bus** (list of int) - the bus on the low-voltage side on which the transformer will be connected to
-
-        **sn_mva** (list of float) - rated apparent power
-
-        **vn_hv_kv** (list of float) - rated voltage on high voltage side
-
-        **vn_lv_kv** (list of float) - rated voltage on low voltage side
-
-        **vkr_percent** (list of float) - real part of relative short-circuit voltage
-
-        **vk_percent** (list of float) - relative short-circuit voltage
-
-        **pfe_kw** (list of float)  - iron losses in kW
-
-        **i0_percent** (list of float) - open loop losses in percent of rated current
-
-        **vector_group** (list of str) - Vector group of the transformer
-
-            HV side is Uppercase letters and LV side is lower case
-
-        **vk0_percent** (list of float) - zero sequence relative short-circuit voltage
-
-        **vkr0_percent** (list of float) - real part of zero sequence relative short-circuit voltage
-
-        **mag0_percent** (list of float) - zero sequence magnetizing impedance/ vk0
-
-        **mag0_rx** (list of float) - zero sequence magnetizing R/X ratio
-
-        **si0_hv_partial** (list of float) - distribution of zero sequence leakage impedance's for HV side
-
-    OPTIONAL:
-
-        **in_service** (list of boolean) - True for in_service or False for out of service
-
-        **parallel** (list of int) - number of parallel transformers
-
-        **name** (list of str) - a custom name for this transformer
-
-        **shift_degree** (list of float) - angle shift over the transformer*
-
-        **tap_side** (list of str) - position of tap changer ("hv", "lv")
-
-        **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the neutral \
-                                         tap position (tap_neutral)
-
-        **tap_neutral** (list of int, nan) - tap position where the transformer ratio is equal to the ratio \
-                                             of the rated voltages
-
-        **tap_max** (list of int, nan) - maximum allowed tap position
-
-        **tap_min** (list of int, nan) - minimum allowed tap position
-
-        **tap_step_percent** (list of float) - tap step size for voltage magnitude in percent
-
-        **tap_step_degree** (list of float) - tap step size for voltage angle in degree*
-
-        **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
-                                                   "Tabular", None: no tap changer)*
-
-        **index** (list of int, None) - force a specified ID if it is available. If None, the index one \
-                                        higher than the highest already existing index is selected.
-
-        **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
-
-        **df** (list of float) - derating factor: maximum current of transformer in relation to nominal \
-                                                  current of transformer (from 0 to 1)
-
-        **tap_dependency_table** (list of boolean, False) - True if transformer parameters (voltage ratio, angle, \
-            impedance) must be adjusted dependent on the tap position of the transformer. Requires the additional \
-            column "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
-            can be used for sanity checks. \
-            The function pandapower.control.create_trafo_characteristic_object can be used to create \
-            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+    Parameters:
+        net: the net within this transformer should be created
+        hv_buses: the bus on the high-voltage side on which the transformer will be connected to
+        lv_buses: the bus on the low-voltage side on which the transformer will be connected to
+        sn_mva: rated apparent power
+        vn_hv_kv: rated voltage on high voltage side
+        vn_lv_kv: rated voltage on low voltage side
+        vkr_percent: real part of relative short-circuit voltage
+        vk_percent: relative short-circuit voltage
+        pfe_kw: iron losses in kW
+        i0_percent: open loop losses in percent of rated current
+        vector_group: Vector group of the transformer HV side is Uppercase letters and LV side is lower case
+        vk0_percent: zero sequence relative short-circuit voltage
+        vkr0_percent: real part of zero sequence relative short-circuit voltage
+        mag0_percent: zero sequence magnetizing impedance/ vk0
+        mag0_rx: zero sequence magnetizing R/X ratio
+        si0_hv_partial: distribution of zero sequence leakage impedance's for HV side
+        in_service: True for in_service or False for out of service
+        parallel: number of parallel transformers
+        name: a custom name for this transformer
+        shift_degree: angle shift over the transformer*
+        tap_side: position of tap changer ("hv", "lv")
+        tap_pos: current tap position of the transformer. Defaults to the neutral tap position (tap_neutral)
+        tap_neutral: tap position where the transformer ratio is equal to the ratio of the rated voltages
+        tap_max: maximum allowed tap position
+        tap_min: minimum allowed tap position
+        tap_step_percent: tap step size for voltage magnitude in percent
+        tap_step_degree: tap step size for voltage angle in degree*
+        tap_changer_type: specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
+            changer)*
+        index: force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        max_loading_percent: maximum current loading (only needed for OPF)
+        df: derating factor - maximum current of transformer in relation to nominal current of transformer (from 0 to 1)
+        tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
+            dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
+            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
+            The function pandapower.control.create_trafo_characteristic_object can be used to create
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column
             "id_characteristic_spline" to set up the reference to the spline characteristics.
+        id_characteristic_table: references the index of the characteristic from the lookup table
+            net.trafo_characteristic_table
+        pt_percent: (short circuit only)
+        oltc: (short circuit only)
+        xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation
+        tap2_side: position of the second tap changer ("hv", "lv")
+        tap2_pos: current tap position of the second tap changer of the transformer. Defaults to the medium position
+            (tap2_neutral)
+        tap2_neutral: second tap position where the transformer ratio is equal to the ratio of the rated voltages
+        tap2_max: maximum allowed tap position of the second tap changer
+        tap2_min: minimum allowed tap position of the second tap changer
+        tap2_step_percent: second tap step size for voltage magnitude in percent
+        tap2_step_degree: second tap step size for voltage angle in degree*
+        tap2_changer_type: specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", None: no tap changer)*
 
-        **id_characteristic_table** (list of int, None) - references the index of the characteristic from the lookup \
-            table net.trafo_characteristic_table
+            \\* only considered in load flow if calculate_voltage_angles = True
 
-        **pt_percent** (list of float, nan) - (short circuit only)
+    Returns:
+        The list of IDs of the created transformers
 
-        **oltc** (list of bool, False) - (short circuit only)
-
-        **xn_ohm** (list of float) - impedance of the grounding reactor (Z_N) for short circuit calculation
-
-        **tap2_side** (list of str) - position of the second tap changer ("hv", "lv")
-
-        **tap2_pos** (list of int, nan) - current tap position of the second tap changer of the transformer. \
-                                          Defaults to the medium position (tap2_neutral)
-
-        **tap2_neutral** (list of int, nan) - second tap position where the transformer ratio is equal to the \
-                                              ratio of the rated voltages
-
-        **tap2_max** (list of int, nan) - maximum allowed tap position of the second tap changer
-
-        **tap2_min** (list of int, nan) - minimum allowed tap position of the second tap changer
-
-        **tap2_step_percent** (list of float) - second tap step size for voltage magnitude in percent
-
-        **tap2_step_degree** (list of float) - second tap step size for voltage angle in degree*
-
-        **tap2_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
-                                                    None: no tap changer)*
-
-        \\* only considered in load flow if calculate_voltage_angles = True
-
-    OUTPUT:
-        **index** (list of int) - The list of IDs of the created transformers
-
-    EXAMPLE:
-        create_transformers_from_parameters(net, hv_bus=[0, 1], lv_bus=[2, 3], name="trafo1", sn_mva=40, \
-                                            vn_hv_kv=110, vn_lv_kv=10, vk_percent=10, vkr_percent=0.3, pfe_kw=30, \
-                                            i0_percent=0.1, shift_degree=30)
+    Example:
+        >>> create_transformers_from_parameters(
+        >>>     net, hv_bus=[0, 1], lv_bus=[2, 3], name="trafo1", sn_mva=40, vn_hv_kv=110, vn_lv_kv=10, vk_percent=10,
+        >>>     vkr_percent=0.3, pfe_kw=30, i0_percent=0.1, shift_degree=30
+        >>> )
     """
 
     from pandapower.convert_format import convert_trafo_pst_logic
@@ -848,52 +723,35 @@ def create_transformer3w(
     The trafo parameters are defined through the standard type library.
 
     INPUT:
-        **net** (pandapowerNet) - the net within this transformer should be created
-
-        **hv_bus** (int) - The bus on the high-voltage side on which the transformer will be connected to
-
-        **mv_bus** (int) - The medium voltage bus on which the transformer will be connected to
-
-        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be connected to
-
-        **std_type** (str) - the used standard type from the standard type library
-
-    OPTIONAL:
-        **name** (str, pd.NA) - a custom name for this transformer
-
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
-
-        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", \
-                                           None: no tap changer)*
-
-        **tap_at_star_point** (boolean) - whether tap changer is located at the star point of the 3w-transformer \
-                                          or at the bus
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **index** (int, None) - force a specified ID if it is available. If None, the index one \
-                                higher than the highest already existing index is selected.
-
-        **max_loading_percent** (float) - maximum current loading (only needed for OPF)
-
-        **tap_at_star_point** (bool) - whether tap changer is modelled at star point or at the bus
-
-        **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
-            must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
-            can be used for sanity checks. \
-            The function pandapower.control.create_trafo_characteristic_object can be used to create \
-            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+        net: the net within this transformer should be created
+        hv_bus: The bus on the high-voltage side on which the transformer will be connected to
+        mv_bus: The medium voltage bus on which the transformer will be connected to
+        lv_bus: The bus on the low-voltage side on which the transformer will be connected to
+        std_type: the used standard type from the standard type library
+        name: a custom name for this transformer
+        tap_pos: current tap position of the transformer. Defaults to the medium position (tap_neutral)
+        tap_changer_type: specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
+            changer)*
+        tap_at_star_point: whether tap changer is located at the star point of the 3w-transformer or at the bus
+        in_service: True for in_service or False for out of service
+        index: force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        max_loading_percent: maximum current loading (only needed for OPF)
+        tap_at_star_point: whether tap changer is modelled at star point or at the bus
+        tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
+            dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
+            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
+            The function pandapower.control.create_trafo_characteristic_object can be used to create
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column
             "id_characteristic_spline" to set up the reference to the spline characteristics.
+        id_characteristic_table: references the index of the characteristic from the lookup table
+            net.trafo_characteristic_table
 
-        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
-                                                 net.trafo_characteristic_table
+    Returns:
+        The ID of the created transformer
 
-    OUTPUT:
-        **index** (int) - the unique ID of the created transformer
-
-    EXAMPLE:
-        create_transformer3w(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1", std_type="63/25/38 MVA 110/20/10 kV")
+    Example:
+        >>> create_transformer3w(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1", std_type="63/25/38 MVA 110/20/10 kV")
     """
 
     # Check if bus exist to attach the trafo to
@@ -1006,28 +864,24 @@ def create_transformers3w(
     Additional parameters passed will be added to the transformers dataframe. If keywords are passed that are present
     in the std_type they will override any setting from the standard type.
 
-    :param net: the pandapower network to which the transformers should be added
-    :type net: pandapower.pandapowerNet
-    :param Sequence hv_buses: a Sequence of bus ids that are the high voltage buses for the transformers
-    :param Sequence mv_buses: a Sequence of bus ids that are the medium voltage buses for the transformers
-    :param Sequence lv_buses: a Sequence of bus ids that are the low valtage buses for the transformers
-    :param str std_type: the transformer std_type to get the not specified parameters from
-    :param tap_pos: current tap position of the transformers. Defaults to the medium position (tap_neutral), default nan
-    :type tap_pos: int | Iterable[int] | float
-    :param name: names for the transformers, default None
-    :type name: Iterable[str]
-    :param in_service: Wheather the transforers are in or out of service, default True
-    :type in_service: bool | Itreable[bool]
-    :param index: the index to use for the new elements, default None
-    :type index: Int | Iterable[Int] | None
-    :param max_loading_percent: the maximum loading percentage of the transformer, default nan
-    :type max_loading_percent: float | Iterable[float]
-    :param tap_at_star_point: whether tap changer is modelled at star point or at the bus
-    :param tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular" or None), default None
-    :param tap_dependency_table: True if sanity checks should be performed. See SplineCharacteristics, default False
-    :param id_characteristic_table: id of the SplineCharacteristic, default None
+    Parameters:
+        net: the pandapower network to which the transformers should be added
+        hv_buses: a Sequence of bus ids that are the high voltage buses for the transformers
+        mv_buses: a Sequence of bus ids that are the medium voltage buses for the transformers
+        lv_buses: a Sequence of bus ids that are the low valtage buses for the transformers
+        std_type: the transformer std_type to get the not specified parameters from
+        tap_pos: current tap position of the transformers. Defaults to the medium position (tap_neutral), default nan
+        name: names for the transformers, default None
+        in_service: Wheather the transforers are in or out of service, default True
+        index: the index to use for the new elements, default None
+        max_loading_percent: the maximum loading percentage of the transformer, default nan
+        tap_at_star_point: whether tap changer is modelled at star point or at the bus
+        tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular" or None),
+            default None
+        tap_dependency_table: True if sanity checks should be performed. See SplineCharacteristics, default False
+        id_characteristic_table: id of the SplineCharacteristic, default None
 
-    :example:
+    Example:
         >>> create_transformers3w(
         >>>     net, hv_bus=[0, 1], lv_bus=[2, 3], std_type="63/25/38 MVA 110/20/10 kV", name=["trafo1", "trafo2"]
         >>> )
@@ -1113,108 +967,66 @@ def create_transformer3w_from_parameters(
     Adds a three-winding transformer in table net.trafo3w with the specified parameters.
     The model currently only supports one tap changer per 3w-transformer.
 
-    Input:
-        **net** (pandapowerNet) - the net within this transformer should be created
-
-        **hv_bus** (int) - the bus on the high-voltage side on which the transformer will be connected to
-
-        **mv_bus** (int) - The bus on the middle-voltage side on which the transformer will be connected to
-
-        **lv_bus** (int) - The bus on the low-voltage side on which the transformer will be connected to
-
-        **vn_hv_kv** (float) - rated voltage on high voltage side
-
-        **vn_mv_kv** (float) - rated voltage on medium voltage side
-
-        **vn_lv_kv** (float) - rated voltage on low voltage side
-
-        **sn_hv_mva** (float) - rated apparent power on high voltage side
-
-        **sn_mv_mva** (float) - rated apparent power on medium voltage side
-
-        **sn_lv_mva** (float) - rated apparent power on low voltage side
-
-        **vk_hv_percent** (float) - short circuit voltage from high to medium voltage
-
-        **vk_mv_percent** (float) - short circuit voltage from medium to low voltage
-
-        **vk_lv_percent** (float) - short circuit voltage from high to low voltage
-
-        **vkr_hv_percent** (float) - real part of short circuit voltage from high to medium voltage
-
-        **vkr_mv_percent** (float) - real part of short circuit voltage from medium to low voltage
-
-        **vkr_lv_percent** (float) - real part of short circuit voltage from high to low voltage
-
-        **pfe_kw** (float) - iron losses in kW
-
-        **i0_percent** (float) - open loop losses
-
-    OPTIONAL:
-        **shift_mv_degree** (float, 0) - angle shift to medium voltage side*
-
-        **shift_lv_degree** (float, 0) - angle shift to low voltage side*
-
-        **tap_step_percent** (float) - tap step in percent
-
-        **tap_step_degree** (float) - tap phase shift angle in degrees
-
-        **tap_side** (str, None) - "hv", "mv", "lv"
-
-        **tap_neutral** (int, nan) - default tap position
-
-        **tap_min** (int, nan) - Minimum tap position
-
-        **tap_max** (int, nan) - Maximum tap position
-
-        **tap_pos** (int, nan) - current tap position of the transformer. Defaults to the medium position (tap_neutral)
-
-        **tap_changer_type** (str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", \
-                                           None: no tap changer)
-
-        **tap_at_star_point** (boolean) - Whether tap changer is located at the star point of the 3w-transformer \
-                                          or at the bus
-
-        **name** (str, pd.NA) - name of the 3-winding transformer
-
-        **in_service** (boolean, True) - True for in_service or False for out of service
-
-        **max_loading_percent** (float) - maximum current loading (only needed for OPF)
-
-        **tap_dependency_table** (boolean, False) - True if transformer parameters (voltage ratio, angle, impedance) \
-            must be adjusted dependent on the tap position of the transformer. Requires the additional column \
-            "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
-            can be used for sanity checks. \
-            The function pandapower.control.create_trafo_characteristic_object can be used to create \
-            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+    Parameters:
+        net: the net within this transformer should be created
+        hv_bus: the bus on the high-voltage side on which the transformer will be connected to
+        mv_bus: The bus on the middle-voltage side on which the transformer will be connected to
+        lv_bus: The bus on the low-voltage side on which the transformer will be connected to
+        vn_hv_kv: rated voltage on high voltage side
+        vn_mv_kv: rated voltage on medium voltage side
+        vn_lv_kv: rated voltage on low voltage side
+        sn_hv_mva: rated apparent power on high voltage side
+        sn_mv_mva: rated apparent power on medium voltage side
+        sn_lv_mva: rated apparent power on low voltage side
+        vk_hv_percent: short circuit voltage from high to medium voltage
+        vk_mv_percent: short circuit voltage from medium to low voltage
+        vk_lv_percent: short circuit voltage from high to low voltage
+        vkr_hv_percent: real part of short circuit voltage from high to medium voltage
+        vkr_mv_percent: real part of short circuit voltage from medium to low voltage
+        vkr_lv_percent: real part of short circuit voltage from high to low voltage
+        pfe_kw: iron losses in kW
+        i0_percent: open loop losses
+        shift_mv_degree: angle shift to medium voltage side*
+        shift_lv_degree: angle shift to low voltage side*
+        tap_step_percent: tap step in percent
+        tap_step_degree: tap phase shift angle in degrees
+        tap_side: "hv", "mv", "lv"
+        tap_neutral: default tap position
+        tap_min: Minimum tap position
+        tap_max: Maximum tap position
+        tap_pos: current tap position of the transformer. Defaults to the medium position (tap_neutral)
+        tap_changer_type: specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
+            changer)
+        tap_at_star_point: Whether tap changer is located at the star point of the 3w-transformer or at the bus
+        name: name of the 3-winding transformer
+        in_service: True for in_service or False for out of service
+        max_loading_percent: maximum current loading (only needed for OPF)
+        tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
+            dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
+            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
+            The function pandapower.control.create_trafo_characteristic_object can be used to create
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column
             "id_characteristic_spline" to set up the reference to the spline characteristics.
+        id_characteristic_table: references the index of the characteristic from the lookup table
+            net.trafo_characteristic_table
+        vk0_hv_percent: zero sequence short circuit voltage from high to medium voltage
+        vk0_mv_percent: zero sequence short circuit voltage from medium to low voltage
+        vk0_lv_percent: zero sequence short circuit voltage from high to low voltage
+        vkr0_hv_percent: zero sequence real part of short circuit voltage from high to medium voltage
+        vkr0_mv_percent: zero sequence real part of short circuit voltage from medium to low voltage
+        vkr0_lv_percent: zero sequence real part of short circuit voltage from high to low voltage
+        vector_group: vector group of the 3w-transformer
 
-        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
-                                                 net.trafo_characteristic_table
-
-        **vk0_hv_percent** (float) - zero sequence short circuit voltage from high to medium voltage
-
-        **vk0_mv_percent** (float) - zero sequence short circuit voltage from medium to low voltage
-
-        **vk0_lv_percent** (float) - zero sequence short circuit voltage from high to low voltage
-
-        **vkr0_hv_percent** (float) - zero sequence real part of short circuit voltage from high to medium voltage
-
-        **vkr0_mv_percent** (float) - zero sequence real part of short circuit voltage from medium to low voltage
-
-        **vkr0_lv_percent** (float) - zero sequence real part of short circuit voltage from high to low voltage
-
-        **vector_group** (str) - vector group of the 3w-transformer
-
-    OUTPUT:
-        **trafo_id** - the unique trafo_id of the created 3w-transformer
+    Returns:
+        The ID of the created 3w-transformer
 
     Example:
-        create_transformer3w_from_parameters(net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1", sn_hv_mva=40, \
-                                             sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10, \
-                                             vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, vkr_hv_percent=0.3, \
-                                             vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1, \
-                                             shift_mv_degree=30, shift_lv_degree=30)
+        >>> create_transformer3w_from_parameters(
+        >>>     net, hv_bus=0, mv_bus=1, lv_bus=2, name="trafo1", sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20,
+        >>>     vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10, vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12,
+        >>>     vkr_hv_percent=0.3, vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, i0_percent=0.1,
+        >>>     shift_mv_degree=30, shift_lv_degree=30
+        >>> )
     """
 
     # Check if bus exist to attach the trafo to
@@ -1350,113 +1162,67 @@ def create_transformers3w_from_parameters(  # no index ?
     The model currently only supports one tap changer per 3w-transformer.
 
     Input:
-        **net** (pandapowerNet) - the net within this transformer should be created
-
-        **hv_bus** (list of int) - The bus on the high-voltage side on which the transformer will be connected to
-
-        **mv_bus** (list of int) - The bus on the middle-voltage side on which the transformer will be connected to
-
-        **lv_bus** (list of int) - The bus on the low-voltage side on which the transformer will be connected to
-
-        **vn_hv_kv** (list of float) - rated voltage on high voltage side
-
-        **vn_mv_kv** (list of float) - rated voltage on medium voltage side
-
-        **vn_lv_kv** (list of float) - rated voltage on low voltage side
-
-        **sn_hv_mva** (list of float) - rated apparent power on high voltage side
-
-        **sn_mv_mva** (list of float) - rated apparent power on medium voltage side
-
-        **sn_lv_mva** (list of float) - rated apparent power on low voltage side
-
-        **vk_hv_percent** (list of float) - short circuit voltage from high to medium voltage
-
-        **vk_mv_percent** (list of float) - short circuit voltage from medium to low voltage
-
-        **vk_lv_percent** (list of float) - short circuit voltage from high to low voltage
-
-        **vkr_hv_percent** (list of float) - real part of short circuit voltage from high to medium voltage
-
-        **vkr_mv_percent** (list of float) - real part of short circuit voltage from medium to low voltage
-
-        **vkr_lv_percent** (list of float) - real part of short circuit voltage from high to low voltage
-
-        **pfe_kw** (list of float) - iron losses in kW
-
-        **i0_percent** (list of float) - open loop losses
-
-    OPTIONAL:
-
-        **shift_mv_degree** (list of float, 0) - angle shift to medium voltage side*
-
-        **shift_lv_degree** (list of float, 0) - angle shift to low voltage side*
-
-        **tap_step_percent** (list of float) - tap step in percent
-
-        **tap_step_degree** (list of float) - tap phase shift angle in degrees*
-
-        **tap_side** (list of string, None) - "hv", "mv", "lv"
-
-        **tap_neutral** (list of int, nan) - default tap position
-
-        **tap_min** (list of int, nan) - minimum tap position
-
-        **tap_max** (list of int, nan) - maximum tap position
-
-        **tap_pos** (list of int, nan) - current tap position of the transformer. Defaults to the medium position \
-                                         (tap_neutral)
-
-        **tap_changer_type** (list of str, None) - specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", \
-                                                   "Tabular", None: no tap changer)*
-
-        **tap_at_star_point** (list of boolean) - whether tap changer is located at the star point of the \
-                                                  3w-transformer or at the bus
-
-        **name** (list of str, None) - name of the 3-winding transformer
-
-        **in_service** (list of boolean, True) - True for in_service or False for out of service
-
-        **max_loading_percent** (list of float) - maximum current loading (only needed for OPF)
-
-        **tap_dependency_table** (list of boolean, False) - True if transformer parameters (voltage ratio, angle, \
-            impedance) must be adjusted dependent on the tap position of the transformer. Requires the additional \
-            column "id_characteristic_table". The function pandapower.control.trafo_characteristic_table_diagnostic \
-            can be used for sanity checks. \
-            The function pandapower.control.create_trafo_characteristic_object can be used to create \
-            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column \
+        net: the net within this transformer should be created
+        hv_bus: The bus on the high-voltage side on which the transformer will be connected to
+        mv_bus: The bus on the middle-voltage side on which the transformer will be connected to
+        lv_bus: The bus on the low-voltage side on which the transformer will be connected to
+        vn_hv_kv: rated voltage on high voltage side
+        vn_mv_kv: rated voltage on medium voltage side
+        vn_lv_kv: rated voltage on low voltage side
+        sn_hv_mva: rated apparent power on high voltage side
+        sn_mv_mva: rated apparent power on medium voltage side
+        sn_lv_mva: rated apparent power on low voltage side
+        vk_hv_percent: short circuit voltage from high to medium voltage
+        vk_mv_percent: short circuit voltage from medium to low voltage
+        vk_lv_percent: short circuit voltage from high to low voltage
+        vkr_hv_percent: real part of short circuit voltage from high to medium voltage
+        vkr_mv_percent: real part of short circuit voltage from medium to low voltage
+        vkr_lv_percent: real part of short circuit voltage from high to low voltage
+        pfe_kw: iron losses in kW
+        i0_percent: open loop losses
+        shift_mv_degree: angle shift to medium voltage side*
+        shift_lv_degree: angle shift to low voltage side*
+        tap_step_percent: tap step in percent
+        tap_step_degree: tap phase shift angle in degrees*
+        tap_side: "hv", "mv", "lv"
+        tap_neutral: default tap position
+        tap_min: minimum tap position
+        tap_max: maximum tap position
+        tap_pos: current tap position of the transformer. Defaults to the medium position (tap_neutral)
+        tap_changer_type: specifies the tap changer type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
+            changer)*
+        tap_at_star_point: whether tap changer is located at the star point of the 3w-transformer or at the bus
+        name: name of the 3-winding transformer
+        in_service: True for in_service or False for out of service
+        max_loading_percent: maximum current loading (only needed for OPF)
+        tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
+            dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
+            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
+            The function pandapower.control.create_trafo_characteristic_object can be used to create
+            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column
             "id_characteristic_spline" to set up the reference to the spline characteristics.
+        id_characteristic_table: references the index of the characteristic from the lookup table
+            net.trafo_characteristic_table
+        vk0_hv_percent: zero sequence short circuit voltage from high to medium voltage
+        vk0_mv_percent: zero sequence short circuit voltage from medium to low voltage
+        vk0_lv_percent: zero sequence short circuit voltage from high to low voltage
+        vkr0_hv_percent: zero sequence real part of short circuit voltage from high to medium voltage
+        vkr0_mv_percent: zero sequence real part of short circuit voltage from medium to low voltage
+        vkr0_lv_percent: zero sequence real part of short circuit voltage from high to low voltage
+        vector_group: vector group of the 3w-transformers
 
-        **id_characteristic_table** (list of int, nan) - references the index of the characteristic from the \
-                                                         lookup table net.trafo_characteristic_table
-
-        **vk0_hv_percent** (list of float) - zero sequence short circuit voltage from high to medium voltage
-
-        **vk0_mv_percent** (list of float) - zero sequence short circuit voltage from medium to low voltage
-
-        **vk0_lv_percent** (list of float) - zero sequence short circuit voltage from high to low voltage
-
-        **vkr0_hv_percent** (list of float) - zero sequence real part of short circuit voltage from high to \
-                                              medium voltage
-
-        **vkr0_mv_percent** (list of float) - zero sequence real part of short circuit voltage from medium to \
-                                              low voltage
-
-        **vkr0_lv_percent** (list of float) - zero sequence real part of short circuit voltage from high to low voltage
-
-        **vector_group** (list of str) - vector group of the 3w-transformers
-
-        \\* only considered in load flow if calculate_voltage_angles = True
-
-    OUTPUT:
-        **trafo_id** (list of int) - list of trafo_ids of the created 3w-transformers
+    Returns:
+        list of ids of the created 3w-transformers
 
     Example:
-        create_transformers3w_from_parameters(net, hv_bus=[0, 3], mv_bus=[1, 4], lv_bus=[2, 5], name="trafo1", \
-                                              sn_hv_mva=40, sn_mv_mva=20, sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, \
-                                              vn_lv_kv=10, vk_hv_percent=10,vk_mv_percent=11, vk_lv_percent=12, \
-                                              vkr_hv_percent=0.3, vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30, \
-                                              i0_percent=0.1, shift_mv_degree=30, shift_lv_degree=30)
+        >>> create_transformers3w_from_parameters(
+        >>>     net, hv_bus=[0, 3], mv_bus=[1, 4], lv_bus=[2, 5], name="trafo1", sn_hv_mva=40, sn_mv_mva=20,
+        >>>     sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10, vk_hv_percent=10,vk_mv_percent=11,
+        >>>     vk_lv_percent=12, vkr_hv_percent=0.3, vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30,
+        >>>     i0_percent=0.1, shift_mv_degree=30, shift_lv_degree=30
+        >>> )
+
+    \\* only considered in load flow if calculate_voltage_angles = True
     """
 
     index = _get_multiple_index_with_check(net, "trafo3w", index, len(hv_buses), name="Three winding transformers")

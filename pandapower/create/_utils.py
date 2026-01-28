@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -259,7 +259,7 @@ def _set_value_if_not_nan(
     """
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
-    if dtype == "float":
+    if dtype == "float" and pd.isna(default_val):
         default_val = float("nan")
     if _not_nan(value):
         if not column_exists:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import Any
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def _set_buses_out_of_service(ppc):
-    disco = np.where(ppc["bus"][:, BUS_TYPE] == NONE)[BUS_I]
+    disco = np.nonzero(ppc["bus"][:, BUS_TYPE] == NONE)[BUS_I]
     ppc["bus"][disco, VM] = np.nan
     ppc["bus"][disco, VA] = np.nan
     ppc["bus"][disco, PD] = 0
@@ -32,7 +32,7 @@ def _set_buses_out_of_service(ppc):
 
 
 def _set_dc_buses_out_of_service(ppc):
-    disco = np.where(ppc["bus_dc"][:, DC_BUS_TYPE] == DC_NONE)[DC_BUS_I]
+    disco = np.nonzero(ppc["bus_dc"][:, DC_BUS_TYPE] == DC_NONE)[DC_BUS_I]
     ppc["bus_dc"][disco, DC_VM] = np.nan
     ppc["bus_dc"][disco, DC_PD] = 0
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numbers
 import numpy as np
@@ -21,13 +21,10 @@ class DFData(DataSource):
 
     Please note: The columns should be integers for scalar accessing!
 
-    INPUT:
-        **df** - A pandas DataFrame which holds the time series data
-
-    OPTIONAL:
-
-        **multi** (bool, False) - If True casts columns and indexes to integers.
-        This might be necessary if you read your data from csv.
+    Parameters:
+        df: A pandas DataFrame which holds the time series data
+        multi (bool, False): If True casts columns and indexes to integers. This might be necessary if you read your
+            data from csv.
     """
 
     def __init__(self, df, multi=False):

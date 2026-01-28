@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import uuid
@@ -25,22 +25,16 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     Adds column data to elements, inferring them from the column data of buses they are
     connected to.
 
-    INPUT:
-        **net** (pandapowerNet) - the pandapower net that will be changed
+    Parameters:
+        net (pandapowerNet): the pandapower net that will be changed
+        column (string): name of column that should be copied from the bus table to the element table
+        replace (bool): if True, an existing column in the element table will be overwritten
+        elements (list): list of elements that should get the column values from the bus table
+        branch_bus (list): defines which bus should be considered for branch elements. 'branch_bus' must have the length
+            of 2. One entry must be 'from_bus' or 'to_bus', the other 'hv_bus' or 'lv_bus'
 
-        **column** (string) - name of column that should be copied from the bus table to the element
-        table
-
-        **replace** (boolean) - if True, an existing column in the element table will be overwritten
-
-        **elements** (list) - list of elements that should get the column values from the bus table
-
-        **branch_bus** (list) - defines which bus should be considered for branch elements.
-        'branch_bus' must have the length of 2. One entry must be 'from_bus' or 'to_bus', the
-        other 'hv_bus' or 'lv_bus'
-
-    EXAMPLE:
-        compare to add_zones_to_elements()
+    Example:
+        See :func:`add_zones_to_elements`
     """
     branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
@@ -81,24 +75,19 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
     Adds column data to elements, inferring them from the column data of the elements linked by the
     columns "element" and "element_type" or "et".
 
-    INPUT:
-        **net** (pandapowerNet) - the pandapower net that will be changed
+    Parameters:
+        net (pandapowerNet): the pandapower net that will be changed
+        column (string): name of column that should be copied from the tables of the elements.
+        replace (bool): if True, an existing column will be overwritten
+        elements (list): list of elements that should get the column values from the linked element tables. If None, all
+            elements with the columns "element" and "element_type" or "et" are considered (these are currently
+            "measurement" and "switch").
+        continue_on_missing_column (bool, True): If False, a error will be raised in case of an element table has no
+            column 'column' although this element is refered in 'elements'. E.g. 'measurement' is in 'elements' and in
+            net.measurement is a trafo measurement but in net.trafo there is no column 'name' although column=='name'
+            in this case :func:`continue_on_missing_column` acts.
 
-        **column** (string) - name of column that should be copied from the tables of the elements.
-
-        **replace** (boolean) - if True, an existing column will be overwritten
-
-        **elements** (list) - list of elements that should get the column values from the linked
-        element tables. If None, all elements with the columns "element" and "element_type" or
-        "et" are considered (these are currently "measurement" and "switch").
-
-        **continue_on_missing_column** (Boolean, True) - If False, a error will be raised in case of
-        an element table has no column 'column' although this element is refered in 'elements'.
-        E.g. 'measurement' is in 'elements' and in net.measurement is a trafo measurement but
-        in net.trafo there is no column 'name' although column=='name' - ni this case
-        'continue_on_missing_column' acts.
-
-    EXAMPLE:
+    Example:
         >>> from pandapower.create import create_measurement
         >>> from pandapower import add_column_from_element_to_elements
         >>> from pandapower.networks.cigre_networks import create_cigre_network_mv
@@ -149,10 +138,9 @@ def reindex_buses(net, bus_lookup):
     Changes the index of net.bus and considers the new bus indices in all other pandapower element
     tables.
 
-    INPUT:
-      **net** - pandapower network
-
-      **bus_lookup** (dict) - the keys are the old bus indices, the values the new bus indices
+    Parameters:
+        net: pandapower network
+        bus_lookup (dict): the keys are the old bus indices, the values the new bus indices
     """
     not_fitting_bus_lookup_keys = set(bus_lookup.keys()) - set(net.bus.index)
     if len(not_fitting_bus_lookup_keys):
@@ -202,16 +190,13 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     Creates a continuous bus index starting at 'start' and replaces all
     references of old indices by the new ones.
 
-    INPUT:
-      **net** - pandapower network
+    Parameters:
+        net: pandapower network
+        start: index begins with "start"
+        store_old_index: if True, stores the old index in net.bus["old_index"]
 
-    OPTIONAL:
-      **start** - index begins with "start"
-
-      **store_old_index** - if True, stores the old index in net.bus["old_index"]
-
-    OUTPUT:
-      **bus_lookup** - mapping of old to new index
+    Returns:
+        mapping of old to new index
     """
     net.bus.sort_index(inplace=True)
     if store_old_index:
@@ -241,13 +226,12 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
     lookup : dict[int,int], optional
         lookup to assign new indices to old indices, by default None
 
-    Notes
-    -----
-    Either new_indices or lookup must be given.
-    old_indices can be given to limit the indices to be replaced. In case of given new_indices,
-    both must have the same length.
-    If element_type is "group", be careful to give new_indices without passing old_indices because
-    group indices do not need to be unique.
+    .. note::
+        Either new_indices or lookup must be given.
+        old_indices can be given to limit the indices to be replaced. In case of given new_indices,
+        both must have the same length.
+        If element_type is "group", be careful to give new_indices without passing old_indices because
+        group indices do not need to be unique.
 
     Examples
     --------
@@ -346,18 +330,14 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     Creating a continuous index for all the elements, starting at zero and replaces all references
     of old indices by the new ones.
 
-    INPUT:
-      **net** - pandapower network with unodered indices
-
-    OPTIONAL:
-      **start** - index begins with "start"
-
-      **add_df_to_reindex** - by default all useful pandapower elements for power flow will be
-      selected. Customized DataFrames can also be considered here.
-
-    OUTPUT:
-      **net** - pandapower network with odered and continuous indices
-
+    Parameters:
+        net: pandapower network with unordered indices
+        start: index begins with "start"
+        add_df_to_reindex: by default all useful pandapower elements for power flow will be selected. Customized
+            DataFrames can also be considered here.
+    
+    Returns:
+      net: pandapower network with ordered and continuous indices
     """
     element_types = pp_elements(res_elements=True)
 
@@ -417,15 +397,15 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 def set_data_type_of_columns_to_default(net):
     """
     Overwrites dtype of DataFrame columns of PandapowerNet elements to default dtypes defined in
-    pandapower. The function "convert_format" does that authomatically for nets saved with
+    pandapower. The function "convert_format" does that automatically for nets saved with
     pandapower versions below 1.6. If this is required for versions starting with 1.6, it should be
     done manually with this function.
 
-    INPUT:
-      **net** - pandapower network with unodered indices
+    Parameters:
+        net: pandapower network with unordered indices
 
-    OUTPUT:
-      No output; the net passed as input has pandapower-default dtypes of columns in element tables.
+    Returns:
+        no return value; Sideeffect: the net passed as input has pandapower-default dtypes of columns in element tables.
 
     """
     new_net = create_empty_network()

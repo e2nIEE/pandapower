@@ -313,7 +313,7 @@ def build_ppc_and_Ybus(net):
     net._ppc["internal"]["Ybus"] = Ybus
 
 
-def drop_measurements_and_controllers(net, buses, skip_controller=False):
+def drop_measurements_and_controllers(net, buses):
     """This function drops the measurements of the given buses.
     Also, the related controller parameters will be removed. """
     # --- dropping measurements
@@ -349,8 +349,7 @@ def ensure_origin_id(net, elms=None):
         net[elm].loc[idxs, "origin_id"] = ["%s_%i_%s" % (elm, idx, str(uuid.uuid4())) for idx in idxs]
 
 
-def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
-                                 check_unique_elms_name=True):
+def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id):
     """
     This function drops the ploy_cost/pwl_cost data
     related to the given buses.
@@ -437,17 +436,12 @@ def get_boundary_vp(net_eq, bus_lookups):
     return v_boundary, p_boundary
 
 
-def adaptation_phase_shifter(net, v_boundary, p_boundary):
+def adaptation_phase_shifter(net, v_boundary):
     target_buses = list(v_boundary.bus.values)
     phase_errors = v_boundary.va_degree.values - \
                    net.res_bus.va_degree[target_buses].values
     vm_errors = v_boundary.vm_pu.values - \
                 net.res_bus.vm_pu[target_buses].values
-    # p_errors = p_boundary.p_mw.values - \
-    #     net.res_bus.p_mw[target_buses].values
-    # q_errors = p_boundary.q_mvar.values - \
-    #     net.res_bus.q_mvar[target_buses].values
-    # print(q_errors)
     for idx, lb in enumerate(target_buses):
         if abs(vm_errors[idx]) > 1e-6 and abs(vm_errors[idx]) > 1e-6:
             hb = create_bus(net, net.bus.vn_kv[lb] * (1 - vm_errors[idx]),
@@ -455,7 +449,10 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
             elm_dict = get_connected_elements_dict(net, lb)
             for e, e_list in elm_dict.items():
                 for i in e_list:
-                    name = str(net[e].name[i])
+                    if 'name' in net[e]:
+                        name = str(net[e].name[i])
+                    else:
+                        name = ''
                     if "eq_" not in name and "_integrated_" not in name and \
                             "_separate_" not in name:
                         if e in ["impedance", "line"]:
@@ -476,7 +473,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                             else:
                                 net[e].lv_bus[i] == lb
                         elif e in ["bus", "load", "sgen", "gen", "shunt", "ward", "xward"]:
-                            pass
+                            continue
                         else:
                             net[e].loc[i, 'bus'] = hb
             create_transformer_from_parameters(net, hb, lb, 1e5,
@@ -484,13 +481,8 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                                                net.bus.vn_kv[lb],
                                                vkr_percent=0, vk_percent=100,
                                                pfe_kw=.0, i0_percent=.0,
-                                               # shift_degree=-phase_errors[idx],
                                                tap_step_degree=-phase_errors[idx],
-                                               # tap_phase_shifter=True,
                                                name="phase_shifter_adapter_" + str(lb))
-        # pp.create_load(net, lb, -p_errors[idx], -q_errors[idx],
-        #                name="phase_shifter_adapter_"+str(lb))
-    # runpp_fct(net, calculate_voltage_angles=True)
     return net
 
 
@@ -512,7 +504,3 @@ def replace_motor_by_load(net, all_external_buses):
         net.res_load.loc[li] = p, q
     net.motor = net.motor.drop(motors)
     net.res_motor = net.res_motor.drop(motors)
-
-
-if __name__ == "__main__":
-    pass
