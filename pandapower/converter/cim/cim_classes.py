@@ -497,7 +497,7 @@ class CimParser:
             temp_dir.cleanup()
             del temp_dir, temp_dir_path
             return
-        parser = etree.XMLParser(encoding=encoding, resolve_entities=False)
+        parser = etree.XMLParser(encoding=encoding, resolve_entities=False, remove_comments=True)
         xml_tree = etree.parse(file, parser)
         if profile_name is None:
             prf = self._get_cgmes_profile_from_xml(xml_tree.getroot())
