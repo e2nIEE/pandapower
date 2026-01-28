@@ -285,9 +285,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 
         if mode == "sc":  # or trafo_model == "pi":
             cmax = net._ppc["bus"][lv_buses_ppc, C_MAX]
-            kt = _transformer_correction_factor(
-                trafos, vk_percent, vkr_percent, sn_trafo_mva, cmax
-            )
+            case = net._options["case"]
+            kt = _transformer_correction_factor(trafos, vk_percent, vkr_percent, sn_trafo_mva, cmax, case)
             z0_k *= kt
 
             # different formula must be applied for power station unit transformers:
