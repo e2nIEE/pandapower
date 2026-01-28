@@ -232,7 +232,7 @@ def create_buses(
         raise UserWarning(BUSBAR_WARNING)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
-    
+
     min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()
     max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()
     if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
@@ -302,7 +302,7 @@ def create_buses_dc(
         raise UserWarning(BUSBAR_WARNING)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
-    
+
     min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()
     max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()
     if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
