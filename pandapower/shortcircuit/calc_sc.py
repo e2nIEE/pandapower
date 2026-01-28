@@ -145,7 +145,7 @@ def calc_sc(net, bus=None,
     _add_ppc_options(net, calculate_voltage_angles=False, trafo_model=trafo_model,
                      check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2,
                      init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_q_lims=False,
-                     recycle=None)
+                     enforce_p_lims=False, recycle=None)
     _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, topology=topology,
                     r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
                     branch_results=branch_results, kappa_method=kappa_method, return_all_currents=return_all_currents,

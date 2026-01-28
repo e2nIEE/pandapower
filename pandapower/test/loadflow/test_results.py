@@ -19,7 +19,7 @@ from pandapower.run import runpp
 from pandapower.test.conftest import result_test_network
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.result_test_network_generator import add_test_enforce_qlims, \
-    add_test_gen
+    add_test_gen, add_test_enforce_qlims_sgen, add_test_enforce_plims, add_test_enforce_plims_sgen
 
 # simple example grid for tap dependent impedance tests:
 
@@ -636,9 +636,8 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
     assert isnan(net.res_switch.p_from_mw[2])
 
 
-def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
-    """ Test for enforce_q_lims loadflow option
-    """
+def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
+    """Test for enforce_q_lims loadflow option."""
     net = create_empty_network()
     net = add_test_gen(net)
     runpp(net)
@@ -655,7 +654,7 @@ def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     assert abs(net.res_bus.vm_pu.at[b3] - vm_set_pu) < v_tol
     assert abs(net.res_gen.q_mvar.at[g1] - q) < s_tol
 
-    # test_enforce_qlims
+    # test_enforce_qlims - gen
     net = add_test_enforce_qlims(net)
 
     runpp(net, enforce_q_lims=True)
@@ -666,9 +665,58 @@ def test_enforce_q_lims(v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     g1 = gens[0]
     u2 = 1.00607194
     u3 = 1.00045091
-    assert abs(net.res_bus.vm_pu.at[b2] - u2) < 1e-2
-    assert abs(net.res_bus.vm_pu.at[b3] - u3) < 1e-2
-    assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < 1e-2
+    assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
+    assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < s_tol
+
+    # test enforce_q_lims - sgen
+    net = add_test_enforce_qlims_sgen(net)
+
+    # check sgen with enforce_q_lims=False first
+    runpp(net)
+    buses = net.bus[net.bus.zone == "test_enforce_qlims_sgen"]
+    sgen = [x for x in net.sgen.index if net.sgen.bus[x] in buses.index][0]
+    assert abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.q_mvar.at[sgen]) < s_tol
+
+    # now enforce sgen q limits
+    runpp(net, enforce_q_lims=True)
+    assert abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.q_mvar.at[sgen]) > s_tol
+    assert abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.max_q_mvar.at[sgen]) < s_tol
+
+
+def test_enforce_p_lims(s_tol=5e-3):
+    """Test for enforce_p_lims loadflow option."""
+    net = create_empty_network()
+    net = add_test_gen(net)
+    runpp(net)
+    buses = net.bus[net.bus.zone == "test_gen"]
+    gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+    g1 = gens[0]
+    assert abs(net.res_gen.p_mw.at[g1] - net.gen.p_mw.at[g1]) < s_tol
+
+    # test_enforce_plims - gen
+    net = add_test_enforce_plims(net)
+
+    runpp(net, enforce_p_lims=True)
+    buses = net.bus[net.bus.zone == "test_enforce_plims"]
+    gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+    g1 = gens[0]
+    assert abs(net.res_gen.p_mw.at[g1] - net.gen.p_mw.at[g1]) > s_tol
+    assert abs(net.res_gen.p_mw.at[g1] - net.gen.min_p_mw.at[g1]) < s_tol
+
+    # test enforce_p_lims - sgen
+    net = add_test_enforce_plims_sgen(net)
+
+    # check sgen with enforce_p_lims=False first
+    runpp(net)
+    buses = net.bus[net.bus.zone == "test_enforce_plims_sgen"]
+    sgen = [x for x in net.sgen.index if net.sgen.bus[x] in buses.index][0]
+    assert abs(net.res_sgen.p_mw.at[sgen] - net.sgen.p_mw.at[sgen]) < s_tol
+
+    # now enforce sgen p limits
+    runpp(net, enforce_p_lims=True)
+    assert abs(net.res_sgen.p_mw.at[sgen] - net.sgen.p_mw.at[sgen]) > s_tol
+    assert abs(net.res_sgen.p_mw.at[sgen] - net.sgen.max_p_mw.at[sgen]) < s_tol
 
 
 def test_shunt(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):

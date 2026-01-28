@@ -114,7 +114,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
 
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
+                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
                      enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
                      voltage_depend_loads=voltage_depend_loads, delta=delta,
                      trafo3w_losses=trafo3w_losses)

@@ -99,6 +99,9 @@ More detailed information about TDPF can be found in the tutorials:
 
 .. autofunction:: pandapower.run.runpp
 
+.. note::
+
+    `enforce_q_lims` optional parameter now considers the reactive power limits of sgen elements too!
 
 .. _pgmpowerflow:
 

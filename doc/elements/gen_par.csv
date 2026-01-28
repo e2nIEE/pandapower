@@ -4,21 +4,21 @@ type;string;"| naming conventions:
 | *""sync""* - synchronous generator
 | *""async""* - asynchronous generator
 ";type variable to classify generators
-bus*;integer;;index of connected bus
-p_mw*;float;:math:`\leq` 0;the real power of the generator [MW]
-vm_pu*;float;;voltage set point of the generator [p.u.]
+bus*;integer;:math:`\geq` 0;index of connected bus
+p_mw*;float;:math:`\geq` 0;the real power of the generator [MW]
+vm_pu*;float;:math:`>` 0;voltage set point of the generator [p.u.]
 sn_mva;float;:math:`>` 0;nominal power of the generator [MVA]
-max_q_mvar**;float;;maximum reactive power of the generator [MVAr]
-min_q_mvar**;float;;minimum reactive power of the generator [MVAr]
-scaling*;float;:math:`\leq` 0;scaling factor for the active power
-max_p_mw**;float;;maximum active power
-min_p_mw**;float;;minimum active power
-vn_kv***;float;;rated voltage of the generator
+max_q_mvar**^;float;;maximum reactive power of the generator [MVAr]
+min_q_mvar**^;float;;minimum reactive power of the generator [MVAr]
+scaling*;float;:math:`\geq` 0;scaling factor for the active power
+max_p_mw**^^;float;;maximum active power
+min_p_mw**^^;float;;minimum active power
+vn_kv***;float;:math:`>` 0;rated voltage of the generator
 xdss_pu***;float;:math:`>` 0;subtransient generator reactance in per unit
 rdss_ohm***;float;:math:`>` 0;subtransient generator resistence in ohm
 cos_phi***;float;:math:`\leq` 1;rated generator cosine phi
 in_service*;boolean;True / False;specifies if the generator is in service
-power_station_trafo***;integer;;index of the power station trafo (short-circuit relevant)
-id_q_capability_characteristic;integer;;references the index of the characteristic from the q_capability_characteristic
+power_station_trafo***;integer;:math:`\geq` 0;index of the power station trafo (short-circuit relevant)
+id_q_capability_characteristic;integer;:math:`\geq` 0;references the index of the characteristic from the q_capability_characteristic
 curve_style;string;either "straightLineYValues" or "constantYValue";the style of the generator reactive power capability curve
 reactive_capability_curve;boolean;True / False;True if generator has dependency on q characteristic

@@ -351,7 +351,7 @@ def get_isolated(net):
     _add_ppc_options(net, calculate_voltage_angles=False,
                      trafo_model="t", check_connectivity=False,
                      mode="pf", switch_rx_ratio=2, init_vm_pu="flat",
-                     init_va_degree="flat",
+                     init_va_degree="flat", enforce_p_lims=False,
                      enforce_q_lims=False, recycle=None)
 
     ppc, ppci = _pd2ppc(net)

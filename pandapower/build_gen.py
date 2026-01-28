@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def _build_gen_ppc(net, ppc):
-    '''
+    """
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be floated afterwards.
 
@@ -32,7 +32,7 @@ def _build_gen_ppc(net, ppc):
         **net** -The pandapower format network
 
         **ppc** - The PYPOWER format network to fill in values
-    '''
+    """
 
     mode = net["_options"]["mode"]
     distributed_slack = net["_options"]["distributed_slack"]
@@ -78,7 +78,7 @@ def _init_ppc_gen(net, ppc, nr_gens):
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0])
-    q_lim_default = net._options["p_lim_default"]
+    q_lim_default = net._options["q_lim_default"]
     p_lim_default = net._options["p_lim_default"]
     ppc["gen"][:, PMAX] = p_lim_default
     ppc["gen"][:, PMIN] = -p_lim_default
@@ -211,7 +211,31 @@ def _build_pp_gen(net, ppc, f, t):
     gen_buses = bus_lookup[net["gen"]["bus"].values[gen_is]]
     gen_is_vm = net["gen"]["vm_pu"].values[gen_is]
     ppc["gen"][f:t, GEN_BUS] = gen_buses
-    ppc["gen"][f:t, PG] = (net["gen"]["p_mw"].values[gen_is] * net["gen"]["scaling"].values[gen_is])
+
+    # enforce gen active power limits
+    if net._options["enforce_p_lims"]:
+        min_p = net["gen"]["min_p_mw"] if "min_p_mw" in net["gen"].columns else pd.Series(index=net["gen"].index,
+                                                                                          data=np.nan, dtype=float)
+        max_p = net["gen"]["max_p_mw"] if "max_p_mw" in net["gen"].columns else pd.Series(index=net["gen"].index,
+                                                                                          data=np.nan, dtype=float)
+
+        p_used_full = net["gen"]["p_mw"].clip(lower=min_p, upper=max_p)
+        p_mw = p_used_full.values[gen_is]
+
+        # detect clipping
+        orig_p = net["gen"]["p_mw"].values[gen_is]
+        clipped_mask = ~np.isclose(orig_p, p_mw, equal_nan=True)
+        if np.any(clipped_mask):
+            # emit debug-level log message notifying user of clipping
+            logger.debug(
+                "Active power limits enforced for gen elements at indices %s",
+                net["gen"].index[gen_is][clipped_mask].tolist(),
+            )
+    else:
+        p_mw = net["gen"]["p_mw"].values[gen_is]
+
+    ppc["gen"][f:t, PG] = (p_mw * net["gen"]["scaling"].values[gen_is])
+
     ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is]
     ppc["gen"][f:t, SL_FAC] = net["gen"]["slack_weight"].values[gen_is]
     ppc["gen"][f:t, VG] = gen_is_vm
@@ -222,7 +246,7 @@ def _build_pp_gen(net, ppc, f, t):
         ppc["bus"][gen_buses, VM] = gen_is_vm
 
     add_q_constraints(net, "gen", gen_is, ppc, f, t, delta)
-    add_p_constraints(net, "gen", gen_is, ppc, f, t, delta)
+    add_p_constraints(net, "gen", gen_is, ppc, f, t, delta)  # OPF related
     if mode == "opf":
         # this considers the vm limits for gens
         ppc = _check_gen_vm_limits(net, ppc, gen_buses, gen_is)
@@ -230,7 +254,7 @@ def _build_pp_gen(net, ppc, f, t):
             ppc = _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t)
 
 
-def _build_pp_xward(net, ppc, f, t, update_lookup=True):
+def _build_pp_xward(net, ppc, f, t):
     delta = net["_options"]["delta"]
     q_lim_default = net._options["q_lim_default"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -273,21 +297,51 @@ def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
 
 def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
     tab = net[element]
-    if "min_q_mvar" in tab.columns:
-        if inverted:
-            ppc["gen"][f:t, QMAX] = -tab["min_q_mvar"].values[is_element] + delta
-        else:
-            ppc["gen"][f:t, QMIN] = tab["min_q_mvar"].values[is_element] - delta
-    if "max_q_mvar" in tab.columns:
-        if inverted:
-            ppc["gen"][f:t, QMIN] = -tab["max_q_mvar"].values[is_element] - delta
-        else:
-            ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values[is_element] + delta
+    elem_idx = tab.index[is_element]
+    gen_rows = np.arange(f, t)
 
-    # Add qmin and qmax limit from q_capability_characteristic
-    if "q_capability_characteristic" in net.keys() and net._options["enforce_q_lims"]:
-        _calculate_qmin_qmax_from_q_capability_characteristics(net, element, is_element, ppc, f, t, delta,
-                                                                     inverted)
+    min_max_q_lims = pd.DataFrame(index=elem_idx, columns=["min_q_mvar", "max_q_mvar"], dtype=float)
+    min_max_q_lims[:] = np.nan
+
+    # add qmin and qmax limit from q_capability_characteristic
+    capability_curve_condition = (
+            "q_capability_characteristic" in net.keys()
+            and net._options["enforce_q_lims"]
+            and element in ["gen", "sgen"]
+    )
+    if capability_curve_condition:
+        curve_q = _calculate_qmin_qmax_from_q_capability_characteristics(net, element)
+        if curve_q is not None and not curve_q.empty:
+            min_max_q_lims.update(curve_q[["min_q_mvar", "max_q_mvar"]])
+
+    # fill NaNs with limits taken from min/max_q_mvar columns (do not overwrite capability-curve values)
+    if "min_q_mvar" in tab.columns:
+        min_defaults = tab["min_q_mvar"].reindex(min_max_q_lims.index)
+        min_max_q_lims["min_q_mvar"] = min_max_q_lims["min_q_mvar"].fillna(min_defaults)
+    if "max_q_mvar" in tab.columns:
+        max_defaults = tab["max_q_mvar"].reindex(min_max_q_lims.index)
+        min_max_q_lims["max_q_mvar"] = min_max_q_lims["max_q_mvar"].fillna(max_defaults)
+
+    qmin = min_max_q_lims["min_q_mvar"].to_numpy()
+    qmax = min_max_q_lims["max_q_mvar"].to_numpy()
+
+    # keep only non-NaN limits
+    valid_min = ~np.isnan(qmin)
+    valid_max = ~np.isnan(qmax)
+
+    # populate limits in ppc structure
+    if inverted:
+        qmin_dest_col, qmin_sign, qmin_delta = QMAX, -1.0, +delta
+        qmax_dest_col, qmax_sign, qmax_delta = QMIN, -1.0, -delta
+    else:
+        qmin_dest_col, qmin_sign, qmin_delta = QMIN, +1.0, -delta
+        qmax_dest_col, qmax_sign, qmax_delta = QMAX, +1.0, +delta
+
+    if valid_min.any():
+        ppc["gen"][gen_rows[valid_min], qmin_dest_col] = (qmin_sign * qmin[valid_min] + qmin_delta)
+
+    if valid_max.any():
+        ppc["gen"][gen_rows[valid_max], qmax_dest_col] = (qmax_sign * qmax[valid_max] + qmax_delta)
 
 
 def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
@@ -385,7 +439,7 @@ def _different_values_at_one_bus(buses, values):
     # buses with one or more generators and their index
     unique_bus, index_first_bus = np.unique(buses, return_index=True)
 
-    # voltage setpoint lookup with the voltage of the first occurence of that bus
+    # voltage setpoint lookup with the voltage of the first occurrence of that bus
     first_values = -np.ones(buses.max() + 1)
     first_values[unique_bus] = values[index_first_bus]
 
@@ -461,40 +515,48 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
                                   "please calculate the zones separately.")
 
 
-def _calculate_qmin_qmax_from_q_capability_characteristics(net, element, is_element, ppc, f, t, delta, inverted):
+def _calculate_qmin_qmax_from_q_capability_characteristics(net, element):
+    """
+    For gen/sgen elements with reactive_capability_curve == True, compute min_q_mvar / max_q_mvar from the
+    q_capability_characteristic table at the current p_mw.
+    """
     if element not in ["gen", "sgen"]:
         logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
                        f"of the {element}. Please give gen or sgen as an argument of the function")
-        return
+        return None
 
-    if len(net[element]) == 0:
+    if net[element].empty:
         logger.warning(f"No. of {element} elements is zero.")
-        return
+        return None
 
     # Filter rows with True 'reactive_capability_curve'
     element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
 
-    if len(element_data) > 0:
-        # Extract the relevant data
-        q_table_ids = element_data['id_q_capability_characteristic']
-        p_mw_values = element_data['p_mw']
+    if element_data.empty:
+        logger.warning(f"No {element} elements with reactive_capability_curve == True found.")
+        return None
 
-        # Retrieve the q_max and q_min characteristic functions as vectorized callables
-        q_max_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_max_characteristic']
-        q_min_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_min_characteristic']
+    # Extract the relevant data
+    q_table_ids = element_data['id_q_capability_characteristic']
+    p_mw_values = element_data['p_mw']
 
-        # Vectorized function application using NumPy
-        calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
-        calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
+    # Retrieve the q_max and q_min characteristic functions as vectorized callables
+    q_max_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_max_characteristic']
+    q_min_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_min_characteristic']
 
-        if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
-            logger.warning(f"The reactive_capability_curve of {element} is True, but the relevant "
-                           f"characteristic value is None. So default Q limit value has been used in the load flow.")
+    # Calculate max & min limits from capability curves
+    calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
+    calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
 
-        curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
-        curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
-        sign = (1 - 2 * inverted)
-        ppc["gen"][f:t, [QMIN, QMAX]] = sign * curve_q.values[is_element] - (sign * delta)
-    else:
-        logger.warning(f"One of {element}(s) id characteristic or curve style of {element} is incorrect "
-                       f"or not available even if the q_capability_curve_table is available.")
+    curve_q = pd.DataFrame(
+        index=element_data.index,
+        data={"min_q_mvar": calc_q_min, "max_q_mvar": calc_q_max},
+    )
+
+    if curve_q.isna().any().any():
+        logger.warning(
+            f"Some q capability values for {element} evaluated to NaN. "
+            f"For those elements, default Q limits will still be used."
+        )
+
+    return curve_q
