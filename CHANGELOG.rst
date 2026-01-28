@@ -6,6 +6,10 @@ Change Log
 - [FIXED] cim2pp: prevent crash with comments in xml, by dropping them via library
 - [FIXED] cim2pp: ACLineSegments with invalid terminals no longer cause all valid lines to be discarded
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
+- [FIXED] ucte2pp: voltage setpoints from gens connected to the same busbar are now averaged
+- [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
+- [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
+- [FIXED] ucte2pp: prevent nan values for impedances and transformers for B/G/P_fe/i0
 
 [3.3.2] - 2026-01-13
 -------------------------------
