@@ -9,12 +9,10 @@ import logging
 from operator import itemgetter
 from typing import Iterable, Sequence
 
-from numpy import nan, isnan, any as np_any, bool_, all as np_all, float64
 import numpy.typing as npt
+from numpy import nan, isnan, any as np_any, all as np_all
 
 from pandapower.auxiliary import pandapowerNet
-from pandapower.std_types import load_std_type
-from pandapower.pp_types import Int, LineType
 from pandapower.create._utils import (
     _add_branch_geodata,
     _add_multiple_branch_geodata,
@@ -27,6 +25,8 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.pp_types import Int, LineType
+from pandapower.std_types import load_std_type
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ def create_line(
     if "type" in lineparam:
         entries["type"] = lineparam["type"]
 
-    # if net.line column already has alpha, add it from std_type
+    # only add alpha from std_type if any line already has an alpha # TODO inconsistent behavior: Document this CLEARLY!
     if "alpha" in net.line.columns and "alpha" in lineparam:
         entries["alpha"] = lineparam["alpha"]
 
@@ -146,9 +146,9 @@ def create_line(
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
     _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line", float64)
+        _set_value_if_not_nan(net, index, value, column, "line")
 
     _add_branch_geodata(net, geodata, index)
 
@@ -274,9 +274,9 @@ def create_line_dc(
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
     _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line_dc")
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+        _set_value_if_not_nan(net, index, value, column, "line_dc")
 
     _add_branch_geodata(net, geodata, index, "line_dc")
 
@@ -291,7 +291,7 @@ def create_lines(
     std_type: str | Iterable[str],
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
-    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
+    geodata: Iterable[Iterable[tuple[float, float]]] | Iterable[tuple[float, float]] | None = None,
     df: float | Iterable[float] = 1.0,
     parallel: int | Iterable[int] = 1,
     in_service: bool | Iterable[bool] = True,
@@ -384,7 +384,7 @@ def create_lines(
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent", max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = (
         "wind_speed_m_per_s",
         "wind_angle_degree",
@@ -399,11 +399,9 @@ def create_lines(
     )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value)
 
     _set_multiple_entries(net, "line", index, entries=entries)
-    if "geo" in net.bus.columns:
-        net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
 
     _add_multiple_branch_geodata(net, geodata, index)
 
@@ -509,7 +507,7 @@ def create_lines_dc(
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent", max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = (
         "wind_speed_m_per_s",
         "wind_angle_degree",
@@ -524,7 +522,7 @@ def create_lines_dc(
     )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value)
 
     _set_multiple_entries(net, "line_dc", index, entries=entries)
 
@@ -670,9 +668,9 @@ def create_line_from_parameters(
     _set_value_if_not_nan(net, index, endtemp_degree, "endtemp_degree", "line")
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line", float64)
+        _set_value_if_not_nan(net, index, value, column, "line")
 
     _add_branch_geodata(net, geodata, index)
     return index
@@ -792,9 +790,9 @@ def create_line_dc_from_parameters(
     _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line_dc")
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+        _set_value_if_not_nan(net, index, value, column, "line_dc")
 
     _add_branch_geodata(net, geodata, index, "line_dc")
 
@@ -913,7 +911,7 @@ def create_lines_from_parameters(
     _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = (
         "wind_speed_m_per_s",
         "wind_angle_degree",
@@ -928,7 +926,7 @@ def create_lines_from_parameters(
     )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value)
 
     _set_multiple_entries(net, "line", index, entries=entries)
 
@@ -1032,7 +1030,7 @@ def create_lines_dc_from_parameters(
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = (
         "wind_speed_m_per_s",
         "wind_angle_degree",
@@ -1047,7 +1045,7 @@ def create_lines_dc_from_parameters(
     )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value)
 
     _set_multiple_entries(net, "line_dc", index, entries=entries)
 

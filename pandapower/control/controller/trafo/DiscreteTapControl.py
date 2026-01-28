@@ -130,7 +130,6 @@ class DiscreteTapControl(TrafoController):
         is_nan = np.isnan(vm_pu)
         self.tap_pos = read_from_net(
             net, self.element, self.element_index, "tap_pos", self._read_write_flag)
-
         reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
                                  (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_min) |
                                  (vm_pu > self.vm_upper_pu) & (self.tap_pos == self.tap_max),
@@ -140,3 +139,56 @@ class DiscreteTapControl(TrafoController):
         converged = np.logical_or(reached_limit, np.logical_and(self.vm_lower_pu < vm_pu, vm_pu < self.vm_upper_pu))
 
         return np.all(np.logical_or(converged, is_nan))
+
+    def __eq__(self, other):
+        """
+        Checks if two DiscreteTapControl instances are equal.
+        """
+        """
+            Checks if two DiscreteTapControl instances are equal by comparing all relevant attributes.
+
+            Args:
+                other: Another object to compare with
+
+            Returns:
+                bool: True if controllers are equal, False otherwise
+            """
+        if not isinstance(other, DiscreteTapControl):
+            return False
+
+        # Compare inherited attributes from TrafoController
+        if not (self.element_index == other.element_index and
+                self.side == other.side and
+                self.element == other.element and
+                self.tol == other.tol):
+            return False
+
+        # Compare DiscreteTapControl specific attributes
+        if not (np.isclose(self.vm_lower_pu, other.vm_lower_pu) and
+                np.isclose(self.vm_upper_pu, other.vm_upper_pu) and
+                np.isclose(self.vm_delta_pu, other.vm_delta_pu) and
+                self.hunting_limit == other.hunting_limit):
+            return False
+
+        def compare_attribute(self, other, attr_name):
+            self_value = getattr(self, attr_name, None)
+            other_value = getattr(other, attr_name, None)
+
+            if self_value is None and other_value is None:
+                return True
+            elif self_value is not None and other_value is not None:
+                return np.isclose(self_value, other_value)
+            else:
+                return False
+
+        for ele in ["vm_set_pu", "tap_pos"]:
+            if not compare_attribute(self, other, ele):
+                return False
+
+        # Compare hunting_taps arrays
+        if self._hunting_taps.shape != other._hunting_taps.shape:
+            return False
+        if not np.allclose(self._hunting_taps, other._hunting_taps, equal_nan=True):
+            return False
+
+        return True

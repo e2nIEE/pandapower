@@ -5,6 +5,7 @@ from pandapower.network_schema.tools.validation.group_dependency import (
     create_column_group_dependency_validation_func,
     create_column_dependency_checks_from_metadata,
 )
+from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
 
 _trafo_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
@@ -73,14 +74,14 @@ _trafo_columns = {
         description="Vector Groups ( required for zero sequence model of transformer )",
         metadata={"sc": True, "3ph": True},
     ),
-    "shift_degree": pa.Column(float, description="transformer phase shift angle"),
+    "shift_degree": pa.Column(float, description="transformer phase shift angle"),  # Thomas: optional
     "tap_side": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["hv", "lv"]),
         nullable=True,
         required=False,
         description="defines if tap changer is at the high- or low voltage side",
-    ),
+    ),  # Thomas: null only if no tap_changer_type
     "tap_neutral": pa.Column(float, nullable=True, required=False, description="rated tap position"),
     "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
     "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
@@ -114,7 +115,7 @@ _trafo_columns = {
         metadata={"tdt": True},
     ),
     "max_loading_percent": pa.Column(
-        int,
+        float,
         nullable=True,
         required=False,
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
@@ -220,6 +221,7 @@ trafo_checks += create_column_dependency_checks_from_metadata(
     ],
     _trafo_columns,
 )
+trafo_checks.append(create_lower_than_column_check(first_element="min_angle_degree", second_element="max_angle_degree"))
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,

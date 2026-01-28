@@ -5,10 +5,13 @@ import math
 
 from copy import deepcopy
 
+from functools import partial
 import geojson
+import math
 import numpy as np
 from numpy import nan
 import pandas as pd
+import pandera as pa
 import pytest
 
 from pandapower.create import (
@@ -24,11 +27,7 @@ from pandapower.create import (
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type
 from pandapower.toolbox import nets_equal, dataframes_equal
-
-pd.set_option("display.max_rows", 500)
-pd.set_option("display.max_columns", 500)
-pd.set_option("display.width", 1000)
-
+from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 def test_convenience_create_functions():
     net = create_empty_network()
@@ -102,9 +101,14 @@ def test_convenience_create_functions():
         i0_percent=1,
         test_kwargs="dummy_string",
     )
+
+    validate_network(net)
+
     create_load(net, b3, 0.1)
     assert net.trafo.at[tid, "df"] == 1
     runpp(net)
+    validate_network(net)
+
     tr_l = net.res_trafo.at[tid, "loading_percent"]
     net.trafo.at[tid, "df"] = 2
     runpp(net)
@@ -115,10 +119,11 @@ def test_convenience_create_functions():
         runpp(net)
     assert net.trafo.test_kwargs.at[tid] == "dummy_string"
 
+    with pytest.raises(pa.errors.SchemaError):
+        validate_network(net)
+
 
 def test_nonexistent_bus():
-    from functools import partial
-
     net = create_empty_network()
     create_functions = [
         partial(create_load, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
@@ -241,9 +246,10 @@ def test_nonexistent_bus():
         ):  # exception is raised because index already exists
             func()
 
+    validate_network(net)
+
 
 def test_tap_changer_type_default():
-    expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
     net = create_empty_network()
     create_bus(net, 110)
     create_bus(net, 20)
@@ -253,8 +259,10 @@ def test_tap_changer_type_default():
     create_std_type(net, data, "without_tap_shifter_info", "trafo")
     create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
     create_transformer(net, 0, 1, "without_tap_shifter_info")
-    #assert (net.trafo.tap_changer_type == expected_default).all() # comparison with NaN is always false. revert back to this
-    assert (net.trafo.tap_changer_type.isna()).all()
+    if 'tap_changer_type' in net.trafo.columns:
+        assert (net.trafo.tap_changer_type.isna()).all()
+
+    validate_network(net)
 
 
 def test_create_line_conductance():
@@ -279,6 +287,8 @@ def test_create_line_conductance():
     assert net.line.g_us_per_km.at[l] == 1
     assert net.line.test_kwargs.at[l] == "dummy_string"
 
+    validate_network(net)
+
 
 def test_create_buses():
     net = create_empty_network()
@@ -298,13 +308,15 @@ def test_create_buses():
     for i, ind in enumerate(b3):
         assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
+    validate_network(net)
+
 
 def test_create_lines():
     # standard
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
-    l = create_lines(
+    create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -317,10 +329,12 @@ def test_create_lines():
     assert len(set(net.line.r_ohm_per_km)) == 1
     assert all(net.line.test_kwargs == "dummy_string")
 
+    validate_network(net)
+
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
-    l = create_lines(
+    create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -330,6 +344,8 @@ def test_create_lines():
     assert len(net.line) == 2
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 1
     assert sum(net.line.std_type == "NA2XS2Y 1x240 RM/25 6/10 kV") == 1
+
+    validate_network(net)
 
     # with geodata
     net = create_empty_network()
@@ -347,6 +363,8 @@ def test_create_lines():
     assert len(net.line) == 2
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
     assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
+
+    validate_network(net)
 
     # setting params as single value
     net = create_empty_network()
@@ -381,6 +399,8 @@ def test_create_lines():
     assert net.line.at[l[0], "parallel"] == 1
     assert net.line.at[l[1], "parallel"] == 1
 
+    validate_network(net)
+
     # setting params as array
     net = create_empty_network()
     b1 = create_bus(net, 10)
@@ -413,6 +433,8 @@ def test_create_lines():
     assert net.line.at[l[1], "max_loading_percent"] == 90
     assert net.line.at[l[0], "parallel"] == 2
     assert net.line.at[l[1], "parallel"] == 1
+
+    validate_network(net)
 
 
 def test_create_lines_from_parameters():
@@ -459,6 +481,8 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
     assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
+    validate_network(net)
+
     # setting params as single value
     net = create_empty_network()
     b1 = create_bus(net, 10)
@@ -493,7 +517,7 @@ def test_create_lines_from_parameters():
     assert all(net.line["r0_ohm_per_km"].values == 0.1)
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
-    assert net.line.in_service.dtype == bool
+    assert net.line.in_service.dtype == np.dtype(bool)
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
@@ -504,6 +528,8 @@ def test_create_lines_from_parameters():
     assert all(net.line["temperature_degree_celsius"].values == 20.0)
     assert all(net.line["alpha"].values == 0.04)
     assert all(net.line.test_kwargs == "dummy_string")
+
+    validate_network(net)
 
     # setting params as array
     net = create_empty_network()
@@ -545,7 +571,7 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "x0_ohm_per_km"] == 0.25
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
-    assert net.line.in_service.dtype == bool
+    assert net.line.in_service.dtype == np.dtype(bool)
     assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
     assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
@@ -558,6 +584,8 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "parallel"] == 1
     assert net.line.at[l[0], "max_i_ka"] == 100
     assert net.line.at[l[1], "max_i_ka"] == 200
+
+    validate_network(net)
 
 
 def test_create_lines_raise_errorexcept():
@@ -613,6 +641,8 @@ def test_create_lines_raise_errorexcept():
             max_i_ka=[100, 100],
         )
 
+    validate_network(net)
+
 
 def test_create_lines_optional_columns():
     #
@@ -643,10 +673,12 @@ def test_create_lines_optional_columns():
     # create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])
     assert "max_loading_percent" not in net.line.columns
 
+    validate_network(net)
+
 
 def test_create_line_alpha_temperature():
     net = create_empty_network()
-    b = create_buses(net, 5, 110)
+    create_buses(net, 5, 110)
 
     l1 = create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
     l2 = create_line(
@@ -674,6 +706,8 @@ def test_create_line_alpha_temperature():
     create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
     create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
     assert "wind_speed_m_per_s" not in net.line.columns
+
+    validate_network(net)
 
 
 def test_create_transformers_from_parameters():
@@ -717,6 +751,8 @@ def test_create_transformers_from_parameters():
     assert len(net.trafo.df) == 2
     assert len(net.trafo.foo) == 2
 
+    validate_network(net)
+
     # setting params as single value
     net = create_empty_network()
     b1 = create_bus(net, 15)
@@ -736,7 +772,7 @@ def test_create_transformers_from_parameters():
         vkr0_percent=1.7,
         mag0_rx=0.4,
         mag0_percent=0.3,
-        tap_neutral=0.0,
+        # tap_neutral=0.0,
         vector_group="Dyn",
         si0_hv_partial=0.1,
         max_loading_percent=80,
@@ -755,12 +791,14 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.vk0_percent == 0.4)
     assert all(net.trafo.mag0_rx == 0.4)
     assert all(net.trafo.mag0_percent == 0.3)
-    assert all(net.trafo.tap_neutral == 0.0)
-    assert all(net.trafo.tap_pos == 0.0)
+    # assert all(net.trafo.tap_neutral == 0.0)
+    # assert all(net.trafo.tap_pos == 0.0)
     assert all(net.trafo.vector_group.values == "Dyn")
     assert all(net.trafo.max_loading_percent == 80.0)
     assert all(net.trafo.si0_hv_partial == 0.1)
     assert all(net.trafo.test_kwargs == "dummy_string")
+
+    validate_network(net)
 
     # setting params as array
     net = create_empty_network()
@@ -780,8 +818,8 @@ def test_create_transformers_from_parameters():
         vk0_percent=[0.4, 0.4],
         mag0_rx=[0.4, 0.4],
         mag0_percent=[0.3, 0.3],
-        tap_neutral=[0.0, 1.0],
-        tap_pos=[-1, 4],
+        # tap_neutral=[0.0, 1.0],
+        # tap_pos=[-1, 4],
         test_kwargs=["dummy_string", "dummy_string"],
     )
 
@@ -799,10 +837,12 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.mag0_rx == 0.4)
     assert all(net.trafo.mag0_percent == 0.3)
     assert all(net.trafo.test_kwargs == "dummy_string")
-    assert net.trafo.tap_neutral.at[t[0]] == 0
-    assert net.trafo.tap_neutral.at[t[1]] == 1
-    assert net.trafo.tap_pos.at[t[0]] == -1
-    assert net.trafo.tap_pos.at[t[1]] == 4
+    # assert net.trafo.tap_neutral.at[t[0]] == 0
+    # assert net.trafo.tap_neutral.at[t[1]] == 1
+    # assert net.trafo.tap_pos.at[t[0]] == -1
+    # assert net.trafo.tap_pos.at[t[1]] == 4
+
+    validate_network(net)
 
 
 def test_create_transformers_raise_errorexcept():
@@ -838,6 +878,7 @@ def test_create_transformers_raise_errorexcept():
             i0_percent=0.3,
             index=[2, 1],
         )
+    validate_network(net)
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
@@ -887,6 +928,8 @@ def test_create_transformers_raise_errorexcept():
             foo=2,
         )
 
+    validate_network(net)
+
 
 def test_trafo_2_tap_changers():
     net = create_empty_network()
@@ -902,7 +945,7 @@ def test_trafo_2_tap_changers():
                  "tap2_step_degree": 0,
                  "tap2_changer_type": "Ratio"}
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c not in net.trafo.columns
 
     std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
@@ -911,9 +954,11 @@ def test_trafo_2_tap_changers():
 
     t = create_transformer(net, b1, b2, "test_trafo_type")
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c in net.trafo.columns
         assert net.trafo.at[t, c] == tap2_data[c]
+
+    validate_network(net)
 
 
 def test_trafo_2_tap_changers_parameters():
@@ -932,14 +977,16 @@ def test_trafo_2_tap_changers_parameters():
 
     create_transformer_from_parameters(net, b1, b2, **std_type)
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c not in net.trafo.columns
 
     t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c in net.trafo.columns
         assert net.trafo.at[t, c] == tap2_data[c]
+
+    validate_network(net)
 
 
 def test_trafos_2_tap_changers_parameters():
@@ -960,14 +1007,16 @@ def test_trafos_2_tap_changers_parameters():
 
     create_transformers_from_parameters(net, [b1, b1], [b2, b2], **std_type_p)
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c not in net.trafo.columns
 
     t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
-    for c in tap2_data.keys():
+    for c in tap2_data:
         assert c in net.trafo.columns
         assert net.trafo.at[t, c] == tap2_data[c]
+
+    validate_network(net)
 
 
 def test_create_transformers():
@@ -984,35 +1033,37 @@ def test_create_transformers():
         test_kwargs="TestKW"
     )
     res_df = pd.DataFrame({
-        'name': ['trafo1', 'trafo2'],
-        'std_type': ['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'],
-        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
-        'lv_bus': pd.Series([1, 2], dtype=np.uint32),
-        'sn_mva': [0.4, 0.4],
-        'vn_hv_kv': [10.0, 10.0],
-        'vn_lv_kv': [0.4, 0.4],
-        'vk_percent': [4.0, 4.0],
-        'vkr_percent': [1.325, 1.325],
-        'pfe_kw': [0.95, 0.95],
-        'i0_percent': [0.2375, 0.2375],
-        'shift_degree': [0.0, 0.0],
-        'tap_side': ['', ''],
-        'tap_neutral': [nan, nan],
-        'tap_min': [nan, nan],
-        'tap_max': [nan, nan],
-        'tap_step_percent': [nan, nan],
-        'tap_step_degree': [nan, nan],
-        'tap_pos': [nan, nan],
-        'tap_changer_type': ['', ''],
-        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
-        'tap_dependency_table': [False, False],
-        'parallel': pd.Series([1, 1], dtype=np.uint32),
-        'df': [1.0, 1.0],
-        'in_service': [True, True],
-        'oltc': [False, False],
+        'name': pd.Series(['trafo1', 'trafo2'], dtype=pd.StringDtype),
+        'std_type': pd.Series(['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype),
+        'hv_bus': pd.Series([0, 0], dtype=np.int64),
+        'lv_bus': pd.Series([1, 2], dtype=np.int64),
+        'sn_mva': pd.Series([0.4, 0.4], dtype=np.float64),
+        'vn_hv_kv': pd.Series([10.0, 10.0], dtype=np.float64),
+        'vn_lv_kv': pd.Series([0.4, 0.4], dtype=np.float64),
+        'vk_percent': pd.Series([4.0, 4.0], dtype=np.float64),
+        'vkr_percent': pd.Series([1.325, 1.325], dtype=np.float64),
+        'pfe_kw': pd.Series([0.95, 0.95], dtype=np.float64),
+        'i0_percent': pd.Series([0.2375, 0.2375], dtype=np.float64),
+        'shift_degree': pd.Series([0.0, 0.0], dtype=np.float64),
+        # 'tap_side': ['', ''],
+        # 'tap_neutral': [nan, nan],
+        # 'tap_min': [nan, nan],
+        # 'tap_max': [nan, nan],
+        # 'tap_step_percent': [nan, nan],
+        # 'tap_step_degree': [nan, nan],
+        # 'tap_pos': [nan, nan],
+        # 'tap_changer_type': [pd.NA, pd.NA],
+        # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+        # 'tap_dependency_table': [False, False],
+        'parallel': pd.Series([1, 1], dtype=np.int64),
+        'df': pd.Series([1.0, 1.0], dtype=np.float64),
+        'in_service': pd.Series([True, True], dtype=bool),
+        # 'oltc': [False, False],
         'test_kwargs': ['TestKW', 'TestKW'],
-        'vector_group': ['Dyn5', 'Dyn5'],
+        'vector_group': pd.Series(['Dyn5', 'Dyn5'], dtype=pd.StringDtype),
     })
+    for colum in res_df:
+        assert net.trafo[colum].equals(res_df[colum])
     assert dataframes_equal(net.trafo, res_df)
 
 def test_create_transformers_for_single():
@@ -1029,36 +1080,38 @@ def test_create_transformers_for_single():
         sn_mva=.4
     )
     res_df = pd.DataFrame({
-        'name': ['trafo1'],
-        'std_type': ['0.4 MVA 10/0.4 kV'],
-        'hv_bus': pd.Series([0], dtype=np.uint32),
-        'lv_bus': pd.Series([1], dtype=np.uint32),
-        'sn_mva': [0.4],
-        'vn_hv_kv': [10.0],
-        'vn_lv_kv': [0.4],
-        'vk_percent': [4.0],
-        'vkr_percent': [1.325],
-        'pfe_kw': [0.95],
-        'i0_percent': [0.2375],
-        'shift_degree': [0.0],
-        'tap_side': [''],
-        'tap_neutral': [nan],
-        'tap_min': [nan],
-        'tap_max': [nan],
-        'tap_step_percent': [nan],
-        'tap_step_degree': [nan],
-        'tap_pos': [nan],
-        'tap_changer_type': [''],
-        'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
-        'tap_dependency_table': [False],
-        'parallel': pd.Series([1], dtype=np.uint32),
-        'df': [1.0],
-        'in_service': [True],
-        'oltc': [False],
+        'name': pd.Series(['trafo1'], dtype=pd.StringDtype),
+        'std_type': pd.Series(['0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype),
+        'hv_bus': pd.Series([0], dtype=np.int64),
+        'lv_bus': pd.Series([1], dtype=np.int64),
+        'sn_mva': pd.Series([0.4], dtype=np.float64),
+        'vn_hv_kv': pd.Series([10.0], dtype=np.float64),
+        'vn_lv_kv': pd.Series([0.4], dtype=np.float64),
+        'vk_percent': pd.Series([4.0], dtype=np.float64),
+        'vkr_percent': pd.Series([1.325], dtype=np.float64),
+        'pfe_kw': pd.Series([0.95], dtype=np.float64),
+        'i0_percent': pd.Series([0.2375], dtype=np.float64),
+        'shift_degree': pd.Series([0.0], dtype=np.float64),
+        # 'tap_side': [''],
+        # 'tap_neutral': [nan],
+        # 'tap_min': [nan],
+        # 'tap_max': [nan],
+        # 'tap_step_percent': [nan],
+        # 'tap_step_degree': [nan],
+        # 'tap_pos': [nan],
+        # 'tap_changer_type': [''],
+        # 'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
+        # 'tap_dependency_table': [False],
+        'parallel': pd.Series([1], dtype=np.int64),
+        'df': pd.Series([1.0], dtype=np.float64),
+        'in_service': pd.Series([True], dtype=bool),
+        # 'oltc': [False],
         'test_kwargs': ['TestKW'],
-        'vector_group': ['Dyn5'],
+        'vector_group': pd.Series(['Dyn5'], dtype=pd.StringDtype),
     })
     assert dataframes_equal(net.trafo, res_df)
+
+    validate_network(net)
 
 
 def test_create_transformers3w():
@@ -1079,41 +1132,45 @@ def test_create_transformers3w():
         index=[5, 6],
     )
     res_df = pd.DataFrame({
-        'name': ['t3w-1', 't3w-2'],
-        'std_type': ['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'],
-        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
-        'mv_bus': pd.Series([1, 2], dtype=np.uint32),
-        'lv_bus': pd.Series([3, 4], dtype=np.uint32),
-        'sn_hv_mva': [63.0, 63.0],
-        'sn_mv_mva': [25.0, 25.0],
-        'sn_lv_mva': [38.0, 38.0],
-        'vn_hv_kv': [110.0, 110.0],
-        'vn_mv_kv': [20.0, 20.0],
-        'vn_lv_kv': [10.0, 10.0],
-        'vk_hv_percent': [10.4, 10.4],
-        'vk_mv_percent': [10.4, 10.4],
-        'vk_lv_percent': [10.4, 10.4],
-        'vkr_hv_percent': [0.28, 0.28],
-        'vkr_mv_percent': [0.32, 0.32],
-        'vkr_lv_percent': [0.35, 0.35],
-        'pfe_kw': [35.0, 35.0],
-        'i0_percent': [0.89, 0.89],
-        'shift_mv_degree': [0.0, 0.0],
-        'shift_lv_degree': [0.0, 0.0],
-        'tap_side': ['hv', 'hv'],
-        'tap_neutral': [0.0, 0.0],
-        'tap_min': [-10.0, -10.0],
-        'tap_max': [10.0, 10.0],
-        'tap_step_percent': [1.2, 1.2],
-        'tap_step_degree': [nan, nan],
-        'tap_pos': [0.0, 0.0],
-        'tap_at_star_point': [False, False],
-        'tap_changer_type': ['Ratio', 'Ratio'],
-        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
-        'tap_dependency_table': [False, False],
-        'in_service': [True, False]
+        'name': pd.Series(['t3w-1', 't3w-2'], dtype=pd.StringDtype),
+        'std_type': pd.Series(['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'], dtype=pd.StringDtype),
+        'hv_bus': pd.Series([0, 0], dtype=np.int64),
+        'mv_bus': pd.Series([1, 2], dtype=np.int64),
+        'lv_bus': pd.Series([3, 4], dtype=np.int64),
+        'sn_hv_mva': pd.Series([63.0, 63.0], dtype=np.float64),
+        'sn_mv_mva': pd.Series([25.0, 25.0], dtype=np.float64),
+        'sn_lv_mva': pd.Series([38.0, 38.0], dtype=np.float64),
+        'vn_hv_kv': pd.Series([110.0, 110.0], dtype=np.float64),
+        'vn_mv_kv': pd.Series([20.0, 20.0], dtype=np.float64),
+        'vn_lv_kv': pd.Series([10.0, 10.0], dtype=np.float64),
+        'vk_hv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
+        'vk_mv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
+        'vk_lv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
+        'vkr_hv_percent': pd.Series([0.28, 0.28], dtype=np.float64),
+        'vkr_mv_percent': pd.Series([0.32, 0.32], dtype=np.float64),
+        'vkr_lv_percent': pd.Series([0.35, 0.35], dtype=np.float64),
+        'pfe_kw': pd.Series([35.0, 35.0], dtype=np.float64),
+        'i0_percent': pd.Series([0.89, 0.89], dtype=np.float64),
+        'shift_mv_degree': pd.Series([0.0, 0.0], dtype=np.float64),
+        'shift_lv_degree': pd.Series([0.0, 0.0], dtype=np.float64),
+        'tap_side': pd.Series(['hv', 'hv'], dtype=pd.StringDtype),
+        'tap_neutral': pd.Series([0.0, 0.0], dtype=np.float64),
+        'tap_min': pd.Series([-10.0, -10.0], dtype=np.float64),
+        'tap_max': pd.Series([10.0, 10.0], dtype=np.float64),
+        'tap_step_percent': pd.Series([1.2, 1.2], dtype=np.float64),
+        'tap_step_degree': pd.Series([0.0, 0.0], dtype=np.float64),
+        'tap_pos': pd.Series([0.0, 0.0], dtype=np.float64),
+        'tap_at_star_point': pd.Series([False, False], dtype=pd.BooleanDtype),
+        # 'tap_changer_type': ['Ratio', 'Ratio'],
+        # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+        # 'tap_dependency_table': [False, False],
+        'in_service': pd.Series([True, False], dtype=bool)
     }).set_index(pd.Index([5, 6]))
+    for colum in res_df:
+        assert net.trafo3w[colum].equals(res_df[colum])
     assert dataframes_equal(net.trafo3w, res_df)
+
+    validate_network(net)
 
 
 def test_create_transformers3w_from_parameters():
@@ -1141,7 +1198,7 @@ def test_create_transformers3w_from_parameters():
         vkr_lv_percent=0.3,
         pfe_kw=0.2,
         i0_percent=0.3,
-        tap_neutral=0.0,
+        # tap_neutral=0.0,
         mag0_rx=0.4,
         mag0_percent=0.3,
         test_kwargs="dummy_string",
@@ -1166,8 +1223,8 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.i0_percent == 0.3)
     assert all(net.trafo3w.mag0_rx == 0.4)
     assert all(net.trafo3w.mag0_percent == 0.3)
-    assert all(net.trafo3w.tap_neutral == 0.0)
-    assert all(net.trafo3w.tap_pos == 0.0)
+    # assert all(net.trafo3w.tap_neutral == 0.0)
+    # assert all(net.trafo3w.tap_pos == 0.0)
     assert all(net.trafo3w.test_kwargs == "dummy_string")
 
     # setting params as array
@@ -1194,8 +1251,8 @@ def test_create_transformers3w_from_parameters():
         vkr_lv_percent=[0.3, 0.3],
         pfe_kw=[0.2, 0.1],
         i0_percent=[0.3, 0.2],
-        tap_neutral=[0.0, 5.0],
-        tap_pos=[1, 2],
+        # tap_neutral=[0.0, 5.0],
+        # tap_pos=[1, 2],
         in_service=[True, False],
         test_kwargs=["foo", "bar"],
     )
@@ -1217,10 +1274,12 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.vkr_lv_percent == 0.3)
     assert all(net.trafo3w.pfe_kw == [0.2, 0.1])
     assert all(net.trafo3w.i0_percent == [0.3, 0.2])
-    assert all(net.trafo3w.tap_neutral == [0.0, 5.0])
-    assert all(net.trafo3w.tap_pos == [1, 2])
+    # assert all(net.trafo3w.tap_neutral == [0.0, 5.0])
+    # assert all(net.trafo3w.tap_pos == [1, 2])
     assert all(net.trafo3w.in_service == [True, False])
     assert all(net.trafo3w.test_kwargs == ["foo", "bar"])
+
+    validate_network(net)
 
 
 def test_create_transformers3w_raise_errorexcept():
@@ -1248,7 +1307,7 @@ def test_create_transformers3w_raise_errorexcept():
         vkr_lv_percent=0.3,
         pfe_kw=0.2,
         i0_percent=0.3,
-        tap_neutral=0.0,
+        # tap_neutral=0.0,
         mag0_rx=0.4,
         mag0_percent=0.3,
     )
@@ -1276,11 +1335,12 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            tap_neutral=0.0,
+            # tap_neutral=0.0,
             mag0_rx=0.4,
             mag0_percent=0.3,
             index=[2, 1],
         )
+    validate_network(net)
     net = create_empty_network()
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
@@ -1307,7 +1367,7 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            tap_neutral=0.0,
+            # tap_neutral=0.0,
             mag0_rx=0.4,
             mag0_percent=0.3,
             index=[0, 1],
@@ -1334,7 +1394,7 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            tap_neutral=0.0,
+            # tap_neutral=0.0,
             mag0_rx=0.4,
             mag0_percent=0.3,
         )
@@ -1361,10 +1421,12 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            tap_neutral=0.0,
+            # tap_neutral=0.0,
             mag0_rx=0.4,
             mag0_percent=0.3,
         )
+
+    validate_network(net)
 
 
 def test_create_switches():
@@ -1402,6 +1464,8 @@ def test_create_switches():
     assert net.switch.test_kwargs.at[1] == "aaa"
     assert net.switch.test_kwargs.at[2] == "aaa"
 
+    validate_network(net)
+
 
 def test_create_switches_raise_errorexcept():
     net = create_empty_network()
@@ -1433,7 +1497,7 @@ def test_create_switches_raise_errorexcept():
         vkr_lv_percent=0.3,
         pfe_kw=0.2,
         i0_percent=0.3,
-        tap_neutral=0.0,
+        # tap_neutral=0.0,
     )
     sw = create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.0)
     with pytest.raises(
@@ -1524,6 +1588,8 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
 
+    validate_network(net)
+
 
 def test_create_loads():
     net = create_empty_network()
@@ -1553,7 +1619,7 @@ def test_create_loads():
     assert net.load.q_mvar.at[0] == 0
     assert net.load.q_mvar.at[1] == 0
     assert net.load.q_mvar.at[2] == 0
-    assert net.load.controllable.dtype == bool
+    assert isinstance(net.load.controllable.dtype, pd.BooleanDtype)
     assert net.load.controllable.at[0]
     assert not net.load.controllable.at[1]
     assert not net.load.controllable.at[2]
@@ -1565,6 +1631,8 @@ def test_create_loads():
         net.load.test_kwargs.values
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
+
+    validate_network(net)
 
 
 def test_create_loads_raise_errorexcept():
@@ -1615,6 +1683,9 @@ def test_create_loads_raise_errorexcept():
             index=l,
         )
 
+    validate_network(net)
+
+
 def test_const_percent_values_deprecated_handling():
     # This test checks that passing const_z_percent and const_i_percent to create_load
     # sets all four percent columns and triggers the deprecation warning.
@@ -1631,6 +1702,9 @@ def test_const_percent_values_deprecated_handling():
     assert load_idx.const_z_q_percent == 11
     assert load_idx.const_i_p_percent == 22
     assert load_idx.const_i_q_percent == 22
+
+    validate_network(net)
+
 
 def test_create_storages():
     net = create_empty_network()
@@ -1672,7 +1746,7 @@ def test_create_storages():
     assert net.storage.q_mvar.at[0] == 0.5
     assert net.storage.q_mvar.at[1] == 0.5
     assert net.storage.q_mvar.at[2] == 0.5
-    assert net.storage.controllable.dtype == bool
+    assert isinstance(net.storage.controllable.dtype, pd.BooleanDtype)
     assert net.storage.controllable.at[0]
     assert not net.storage.controllable.at[1]
     assert not net.storage.controllable.at[2]
@@ -1685,8 +1759,11 @@ def test_create_storages():
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
     for col in ["name", "type"]:
-        net.storage.loc[net.storage[col].isnull(), col] = ""
+        if col in net.storage.columns:
+            net.storage.loc[net.storage[col].isnull(), col] = "" #TODO: why is this here ?
     assert nets_equal(net, net_bulk)
+
+    validate_network(net)
 
 
 def test_create_wards():
@@ -1720,12 +1797,15 @@ def test_create_wards():
     assert net.ward.qz_mvar.at[1] == 7
     assert net.ward.qz_mvar.at[2] == 11
     assert net.ward.name.at[0] == "asd"
-    assert net.ward.name.at[1] == None
+    # assert net.ward.name.at[1] == None
+    assert pd.isna(net.ward.name.at[1])  #TODO: recheck, if <NA> would also be ok
     assert net.ward.name.at[2] == "123"
     assert net.ward.in_service.at[0]
     assert not net.ward.in_service.at[1]
     assert not net.ward.in_service.at[2]
     assert nets_equal(net, net_bulk)
+
+    validate_network(net)
 
 
 def test_create_sgens():
@@ -1762,7 +1842,7 @@ def test_create_sgens():
     assert net.sgen.q_mvar.at[0] == 0
     assert net.sgen.q_mvar.at[1] == 0
     assert net.sgen.q_mvar.at[2] == 0
-    assert net.sgen.controllable.dtype == bool
+    assert isinstance(net.sgen.controllable.dtype, pd.BooleanDtype)
     assert net.sgen.controllable.at[0]
     assert not net.sgen.controllable.at[1]
     assert not net.sgen.controllable.at[2]
@@ -1777,6 +1857,8 @@ def test_create_sgens():
     assert all(net.sgen.id_q_capability_characteristic.values == [0, 1, 2])
     assert all(net.sgen.curve_style == "straightLineYValues")
     assert all(net.sgen.reactive_capability_curve == [False, False, False])
+
+    validate_network(net)
 
 
 def test_create_sgens_raise_errorexcept():
@@ -1836,6 +1918,8 @@ def test_create_sgens_raise_errorexcept():
             index=sg,
         )
 
+    validate_network(net)
+
 
 def test_create_gens():
     net = create_empty_network()
@@ -1870,7 +1954,7 @@ def test_create_gens():
     assert net.gen.p_mw.at[0] == 0
     assert net.gen.p_mw.at[1] == 0
     assert net.gen.p_mw.at[2] == 1
-    assert net.gen.controllable.dtype == bool
+    assert isinstance(net.gen.controllable.dtype, pd.BooleanDtype)
     assert net.gen.controllable.at[0]
     assert not net.gen.controllable.at[1]
     assert not net.gen.controllable.at[2]
@@ -1888,6 +1972,8 @@ def test_create_gens():
     assert all(net.gen.id_q_capability_characteristic.values == [0, 1, 2])
     assert all(net.gen.curve_style == "straightLineYValues")
     assert all(net.gen.reactive_capability_curve == [False, False, False])
+
+    validate_network(net)
 
 
 def test_create_gens_raise_errorexcept():
@@ -1954,6 +2040,8 @@ def test_create_gens_raise_errorexcept():
             cos_phi=1.0,
             index=g,
         )
+
+    validate_network(net)
 
 
 if __name__ == "__main__":

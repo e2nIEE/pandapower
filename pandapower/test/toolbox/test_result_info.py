@@ -15,8 +15,7 @@ from pandapower.toolbox import dataframes_equal, res_power_columns
 
 def test_opf_task():
     net = create_empty_network()
-    create_buses(net, 6, [10, 10, 10, 0.4, 7, 7],
-                    min_vm_pu=[0.9, 0.9, 0.88, 0.9, np.nan, np.nan])
+    create_buses(net, 6, [10, 10, 10, 0.4, 7, 7], min_vm_pu=[0.9, 0.9, 0.88, 0.9, np.nan, np.nan])
     idx_ext_grid = 1
     create_ext_grid(net, 0, max_q_mvar=80, min_p_mw=0, index=idx_ext_grid)
     create_gen(net, 1, 10, min_q_mvar=-50, max_q_mvar=-10, min_p_mw=0, max_p_mw=60)
@@ -26,9 +25,9 @@ def test_opf_task():
     create_sgen(net, 1, 8, min_q_mvar=-50, max_q_mvar=-10, controllable=False)
     create_sgen(net, 2, 8)
     create_storage(net, 3, 2, 100, min_q_mvar=-10, max_q_mvar=-50, min_p_mw=0, max_p_mw=60,
-                      controllable=True)
+        controllable=True)
     create_dcline(net, 4, 5, 0.3, 1e-4, 1e-2, 1.01, 1.02, min_q_from_mvar=-10,
-                     min_q_to_mvar=-10)
+        min_q_to_mvar=-10)
     create_line(net, 3, 4, 5, "122-AL1/20-ST1A 10.0", max_loading_percent=50)
     create_transformer(net, 2, 3, "0.25 MVA 10/0.4 kV")
 

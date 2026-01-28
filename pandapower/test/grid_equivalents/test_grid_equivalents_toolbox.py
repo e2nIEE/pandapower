@@ -49,25 +49,29 @@ def boundary_testnet(which):
         # expected_bbr
         expected_bbr = dict()
         expected_bbr["line"] = {create_line_from_parameters(
-            net, net.bus.index[net.bus.name == 9][0], net.bus.index[net.bus.name == 9][1], 1,
-            0, 65, 0, 0.41)}
-        expected_bbr["impedance"] = {create_impedance(net, net.bus.index[net.bus.name == 5][0],
-                                                      net.bus.index[net.bus.name == 5][1], 0, 0.06, 250)}
-        expected_bbr["switch"] = {create_switch(net, net.bus.index[net.bus.name == 7][0],
-                                                net.bus.index[net.bus.name == 7][1], "b")}
+            net, net.bus.index[net.bus.name == '9'][0], net.bus.index[net.bus.name == '9'][1], 1, 0, 65, 0, 0.41
+        )}
+        expected_bbr["impedance"] = {create_impedance(
+            net, net.bus.index[net.bus.name == '5'][0], net.bus.index[net.bus.name == '5'][1], 0, 0.06, 250
+        )}
+        expected_bbr["switch"] = {create_switch(
+            net, net.bus.index[net.bus.name == '7'][0], net.bus.index[net.bus.name == '7'][1], "b"
+        )}
         expected_bbr["trafo"] = {create_transformer_from_parameters(
-            net, net.bus.index[net.bus.name == 8][0], net.bus.index[net.bus.name == 8][1], 250,
-            345, 345, 0, 10, 50, 0)}
+            net, net.bus.index[net.bus.name == '8'][0], net.bus.index[net.bus.name == '8'][1], 250, 345, 345, 0, 10, 50, 0
+        )}
         expected_bbr["trafo3w"] = {create_transformer3w_from_parameters(
-            net, net.bus.index[net.bus.name == 3][0], new_bus, net.bus.index[net.bus.name == 3][1],
-            345, 345, 345, 250, 250, 250, 10, 10, 10, 0, 0, 0, 50, 0)}
+            net, net.bus.index[net.bus.name == '3'][0], new_bus, net.bus.index[net.bus.name == '3'][1], 345, 345, 345, 250, 250, 250, 10, 10, 10, 0, 0, 0, 50, 0
+        )}
 
         # expected_bb
         expected_bb = {key: dict() for key in ["a", "b"]}
-        expected_bb["a"]["internal"] = set(net.bus.index[net.bus.name.isin(
-            [9, 5, 7, 8, 3]) & (net.bus.zone == "a")])
-        expected_bb["a"]["external"] = set(net.bus.index[net.bus.name.isin(
-            [9, 5, 7, 8, 3]) & (net.bus.zone == "b")]) | {new_bus}
+        expected_bb["a"]["internal"] = set(
+            net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "a")]
+        )
+        expected_bb["a"]["external"] = set(
+            net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "b")]
+        ) | {new_bus}
         expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
         expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
 
@@ -108,8 +112,7 @@ def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_b
 
 def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches3():
     net, expected_bb, expected_bbr = boundary_testnet("case9_ab_merged")
-    boundary_buses, boundary_branches = \
-        get_boundaries_by_bus_zone_with_boundary_branches(net)
+    boundary_buses, boundary_branches = get_boundaries_by_bus_zone_with_boundary_branches(net)
 
     # --- check form of boundary_buses
     assert sorted(boundary_buses.keys()) == ["a", "all", "b"]
@@ -121,8 +124,7 @@ def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_b
     in_ext = ["internal", "external"]
     for in_ext1, in_ext2 in zip(in_ext, in_ext[::-1]):
         assert boundary_buses["a"][in_ext1] == expected_bb["a"][in_ext1]
-        assert boundary_buses["b"][in_ext1] - trafo3w_buses == \
-               boundary_buses["a"][in_ext2] - trafo3w_buses
+        assert boundary_buses["b"][in_ext1] - trafo3w_buses == boundary_buses["a"][in_ext2] - trafo3w_buses
 
     # --- check boundary_branches content
     assert boundary_branches["a"] == expected_bbr
@@ -133,19 +135,10 @@ def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_b
 def test_append_set_to_dict():
     keys = [2, 3, 5]
     dict1 = {}
-    dict2 = {2: {},
-             7: "hkj"}
-    dict3 = {2: {"hjk": 6,
-                 3: dict()}}
-    dict4 = {2: {"hjk": 6,
-                 3: {5: set([8, 2])}
-                 }
-             }
-    dict5 = {2: {"hjk": 6,
-                 3: {5: {2, 8}
-                     }
-                 }
-             }
+    dict2 = {2: {}, 7: "hkj"}
+    dict3 = {2: {"hjk": 6, 3: {}}}
+    dict4 = {2: {"hjk": 6, 3: {5: {8, 2}}}}
+    dict5 = {2: {"hjk": 6, 3: {5: {2, 8}}}}
 
     val = {1, 2, 3}
 

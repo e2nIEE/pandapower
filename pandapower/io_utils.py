@@ -284,6 +284,7 @@ def from_dict_of_dfs(dodfs, net=None):
             # convert geodata to geojson
             if item in ["bus", "line"]:
                 if "geo" in table.columns:
+                    table.geo = table.geo.mask(table.geo == '"<NA>"', pd.NA)
                     table.geo = table.geo.apply(
                         lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x
                     )

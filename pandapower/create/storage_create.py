@@ -117,7 +117,7 @@ def create_storage(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "storage")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "storage")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "storage")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "storage", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "storage", default_val=False)
 
     return index
 

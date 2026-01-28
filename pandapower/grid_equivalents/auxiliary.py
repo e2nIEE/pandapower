@@ -176,50 +176,37 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
     """
     #    runpp_fct(net, calculate_voltage_angles=True)
     be_buses = boundary_buses + all_external_buses
-    if ((net.trafo.hv_bus.isin(be_buses)) & (net.trafo.shift_degree != 0)).any() \
-            or ((net.trafo3w.hv_bus.isin(be_buses)) & \
-                ((net.trafo3w.shift_mv_degree != 0) | (net.trafo3w.shift_lv_degree != 0))).any():
+    if (((net.trafo.hv_bus.isin(be_buses)) & (net.trafo.shift_degree != 0)).any() or
+            ((net.trafo3w.hv_bus.isin(be_buses)) & ((net.trafo3w.shift_mv_degree != 0) |
+                                                    (net.trafo3w.shift_lv_degree != 0))).any()):
         existing_shift_degree = True
-        logger.info("Transformers with non-zero shift-degree are existed," +
-                    " they could cause small inaccuracy.")
-    # creata dataframe to collect the current injections of the external area
+        logger.info("Transformers with non-zero shift-degree are existed, they could cause small inaccuracy.")
+    # create dataframe to collect the current injections of the external area
     nb_ext_buses = len(all_external_buses)
     S = pd.DataFrame(np.zeros((nb_ext_buses, 15)), dtype=complex)
-    S.columns = ["ext_bus", "v_m", "v_cpx", "gen_integrated", "gen_separate",
-                 "load_integrated", "load_separate", "sgen_integrated",
-                 "sgen_separate", "sn_load_separate", "sn_load_integrated",
-                 "sn_sgen_separate", "sn_sgen_integrated", "sn_gen_separate",
-                 "sn_gen_integrated"]
+    S.columns = ["ext_bus", "v_m", "v_cpx", "gen_integrated", "gen_separate", "load_integrated", "load_separate",
+                 "sgen_integrated", "sgen_separate", "sn_load_separate", "sn_load_integrated", "sn_sgen_separate",
+                 "sn_sgen_integrated", "sn_gen_separate", "sn_gen_integrated"]
 
     k, ind = 0, 0
-    if slack_as == "gen":
-        elements = set([("load", "res_load", "load_separate", "sn_load_separate", -1),
-                        ("sgen", "res_sgen", "sgen_separate", "sn_sgen_separate", 1),
-                        ("gen", "res_gen", "gen_separate", "sn_gen_separate", 1),
-                        ("ext_grid", "res_ext_grid", "gen_separate", "sn_gen_separate", 1)])
-
-    elif slack_as == "load":
-        elements = set([("load", "res_load", "load_separate", "sn_load_separate", -1),
-                        ("sgen", "res_sgen", "sgen_separate", "sn_sgen_separate", 1),
-                        ("gen", "res_gen", "gen_separate", "sn_gen_separate", 1),
-                        ("ext_grid", "res_ext_grid", "load_separate", "sn_load_separate", 1)])
 
     for i in all_external_buses:
-        for ele, res_ele, power, sn, sign in elements:
+        for ele in ["load", "sgen", "gen", "ext_grid"]:
             if i in net[ele].bus.values and net[ele].in_service[net[ele].bus == i].values.any():
+                res_ele = f"res_{ele}"
+                power = ele if ele != "ext_grid" else slack_as
+                sign = -1 if ele == "load" else 1
                 ind = list(net[ele].index[net[ele].bus == i].values)
                 # act. values --> ref. values:
-                S.loc[k, power] += sum(net[res_ele].p_mw[ind].values * sign) / net.sn_mva + \
-                                   1j * sum(net[res_ele].q_mvar[ind].values *
-                                            sign) / net.sn_mva
-                S.loc[k, sn] = sum(net[ele].sn_mva[ind].values) + \
-                               1j * 0 if ele != "ext_grid" else 1e6 + 1j * 0
-                S[power.replace('_separate', '_integrated')] += S[power][k]
-                S[sn.replace('_separate', '_integrated')] += S[sn][k]
+                S.loc[k, f"{power}_separate"] += (sum(net[res_ele].p_mw[ind].values * sign) / net.sn_mva +
+                                                  sum(net[res_ele].q_mvar[ind].values * sign) / net.sn_mva * 1j)
+                ele_sn_mva = float('nan') if 'sn_mva' not in net[ele].columns else sum(net[ele].loc[ind, 'sn_mva'])
+                S.loc[k, f"sn_{power}_separate"] = ele_sn_mva + 1j * 0 if ele != "ext_grid" else 1e6 + 1j * 0
+                S[f"{power}_integrated"] += S.loc[k, f"{power}_separate"]
+                S[f"sn_{power}_integrated"] += S.loc[k, f"sn_{power}_separate"]
         S.loc[k, 'ext_bus'] = all_external_buses[k]
         S.loc[k, 'v_m'] = net.res_bus.vm_pu[i]
-        S.loc[k, 'v_cpx'] = S.v_m[k] * \
-                            np.exp(1j * net.res_bus.va_degree[i] * np.pi / 180)
+        S.loc[k, 'v_cpx'] = S.v_m[k] * np.exp(1j * net.res_bus.va_degree[i] * np.pi / 180)
         k = k + 1
 
     # create dataframe to calculate the impedance of the ZPBN-network
@@ -232,25 +219,20 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
 
     for elm in ["load", "gen", "sgen"]:
         if existing_shift_degree:
-            Y[elm + "_ground"] = (S[elm + "_separate"].values / S.v_cpx.values).conjugate() / \
-                                 S.v_cpx.values
+            Y[elm + "_ground"] = (S[elm + "_separate"].values / S.v_cpx.values).conjugate() / S.v_cpx.values
         else:
-            Y[elm + "_ground"] = S[elm + "_separate"].values.conjugate() / \
-                                 np.square(S.v_m)
-        I_elm_integrated_total = sum((S[elm + "_separate"].values /
-                                      S.v_cpx.values).conjugate())
+            Y[elm + "_ground"] = S[elm + "_separate"].values.conjugate() / np.square(S.v_m)
+        I_elm_integrated_total = sum((S[elm + "_separate"].values / S.v_cpx.values).conjugate())
         if I_elm_integrated_total == 0:
             Y[elm + "_integrated_total"] = float("nan")
         else:
-            vm_elm_integrated_total = S[elm + "_integrated"][0] / \
-                                      I_elm_integrated_total.conjugate()
+            vm_elm_integrated_total = S[elm + "_integrated"][0] / I_elm_integrated_total.conjugate()
             if existing_shift_degree:
-                Y[elm + "_integrated_total"] = (-S[elm + "_integrated"][0] / \
-                                                vm_elm_integrated_total).conjugate() / \
-                                               vm_elm_integrated_total
+                Y[elm + "_integrated_total"] = ((-S[elm + "_integrated"][0] / vm_elm_integrated_total).conjugate() /
+                                                vm_elm_integrated_total)
             else:
-                Y[elm + "_integrated_total"] = -S[elm + "_integrated"][0].conjugate() / \
-                                               np.square(abs(vm_elm_integrated_total))
+                Y[elm + "_integrated_total"] = (-S[elm + "_integrated"][0].conjugate() /
+                                                np.square(abs(vm_elm_integrated_total)))
         Y[elm + "_separate_total"] = -Y[elm + "_ground"]
         if elm == "gen" and any(S.gen_separate):
             v["gen_integrated_vm_total"] = abs(vm_elm_integrated_total)
@@ -287,8 +269,11 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
     if elms is None:
         elms = ["ext_grid", "bus", "impedance"]
     for elm in elms:
-        target_elm_idx = net[elm].index[net[elm].name.astype(str).str.contains(
-            "assist_" + elm, na=False, regex=False)]
+        if 'name' in net[elm].columns:
+            names = net[elm].name.str.contains("assist_" + elm, na=False, regex=False)
+        else:
+            names = pd.Series(False, index=net[elm].index)
+        target_elm_idx = net[elm].index[names]
         net[elm] = net[elm].drop(target_elm_idx)
         if net["res_" + elm].shape[0]:
             res_target_elm_idx = net["res_" +
@@ -328,7 +313,7 @@ def build_ppc_and_Ybus(net):
     net._ppc["internal"]["Ybus"] = Ybus
 
 
-def drop_measurements_and_controllers(net, buses, skip_controller=False):
+def drop_measurements_and_controllers(net, buses):
     """This function drops the measurements of the given buses.
     Also, the related controller parameters will be removed. """
     # --- dropping measurements
@@ -364,8 +349,7 @@ def ensure_origin_id(net, elms=None):
         net[elm].loc[idxs, "origin_id"] = ["%s_%i_%s" % (elm, idx, str(uuid.uuid4())) for idx in idxs]
 
 
-def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id,
-                                 check_unique_elms_name=True):
+def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id):
     """
     This function drops the ploy_cost/pwl_cost data
     related to the given buses.
@@ -452,17 +436,12 @@ def get_boundary_vp(net_eq, bus_lookups):
     return v_boundary, p_boundary
 
 
-def adaptation_phase_shifter(net, v_boundary, p_boundary):
+def adaptation_phase_shifter(net, v_boundary):
     target_buses = list(v_boundary.bus.values)
     phase_errors = v_boundary.va_degree.values - \
                    net.res_bus.va_degree[target_buses].values
     vm_errors = v_boundary.vm_pu.values - \
                 net.res_bus.vm_pu[target_buses].values
-    # p_errors = p_boundary.p_mw.values - \
-    #     net.res_bus.p_mw[target_buses].values
-    # q_errors = p_boundary.q_mvar.values - \
-    #     net.res_bus.q_mvar[target_buses].values
-    # print(q_errors)
     for idx, lb in enumerate(target_buses):
         if abs(vm_errors[idx]) > 1e-6 and abs(vm_errors[idx]) > 1e-6:
             hb = create_bus(net, net.bus.vn_kv[lb] * (1 - vm_errors[idx]),
@@ -470,7 +449,10 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
             elm_dict = get_connected_elements_dict(net, lb)
             for e, e_list in elm_dict.items():
                 for i in e_list:
-                    name = str(net[e].name[i])
+                    if 'name' in net[e]:
+                        name = str(net[e].name[i])
+                    else:
+                        name = ''
                     if "eq_" not in name and "_integrated_" not in name and \
                             "_separate_" not in name:
                         if e in ["impedance", "line"]:
@@ -491,7 +473,7 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                             else:
                                 net[e].lv_bus[i] == lb
                         elif e in ["bus", "load", "sgen", "gen", "shunt", "ward", "xward"]:
-                            pass
+                            continue
                         else:
                             net[e].loc[i, 'bus'] = hb
             create_transformer_from_parameters(net, hb, lb, 1e5,
@@ -499,13 +481,8 @@ def adaptation_phase_shifter(net, v_boundary, p_boundary):
                                                net.bus.vn_kv[lb],
                                                vkr_percent=0, vk_percent=100,
                                                pfe_kw=.0, i0_percent=.0,
-                                               # shift_degree=-phase_errors[idx],
                                                tap_step_degree=-phase_errors[idx],
-                                               # tap_phase_shifter=True,
                                                name="phase_shifter_adapter_" + str(lb))
-        # pp.create_load(net, lb, -p_errors[idx], -q_errors[idx],
-        #                name="phase_shifter_adapter_"+str(lb))
-    # runpp_fct(net, calculate_voltage_angles=True)
     return net
 
 
@@ -527,7 +504,3 @@ def replace_motor_by_load(net, all_external_buses):
         net.res_load.loc[li] = p, q
     net.motor = net.motor.drop(motors)
     net.res_motor = net.res_motor.drop(motors)
-
-
-if __name__ == "__main__":
-    pass

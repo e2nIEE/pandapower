@@ -219,8 +219,9 @@ def create_trafo_characteristic_object(net):
         del net["trafo_characteristic_spline"]
     # 2-winding transformers
     if (net['trafo_characteristic_table'].index.size > 0 and
-            net['trafo']['id_characteristic_table'].notna().any()):
-        time_start = time.time()
+        'id_characteristic_table' in net.trafo.columns and
+        net['trafo']['id_characteristic_table'].notna().any()
+    ):
         logger.info("Creating tap dependent characteristic objects for 2w-trafos.")
         characteristic_df_temp = net['trafo_characteristic_table'][
             ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']]
@@ -233,14 +234,14 @@ def create_trafo_characteristic_object(net):
             y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
             _create_trafo_characteristics(net, "trafo", [trafo_id], variables_filtered,
                                           x_points, y_points)
-        logger.info(f"Finished creating tap dependent characteristic objects for 2w-trafos in "
-                    f"{time.time() - time_start}.")
+        logger.info("Finished creating tap dependent characteristic objects for 2w-trafos.")
     else:
         logger.info("trafo_characteristic_table has no values for 2w-trafos - no characteristic objects created.")
     # 3-winding transformers
     if (net['trafo_characteristic_table'].index.size > 0 and
-            net['trafo3w']['id_characteristic_table'].notna().any()):
-        time_start = time.time()
+        'id_characteristic_table' in net.trafo3w.columns and
+        net['trafo3w']['id_characteristic_table'].notna().any()
+    ):
         logger.info("Creating tap dependent characteristic objects for 3w-trafos.")
         characteristic_df_temp = net['trafo_characteristic_table'][
                 ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vkr_hv_percent',
@@ -255,8 +256,7 @@ def create_trafo_characteristic_object(net):
             y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
             _create_trafo_characteristics(net, "trafo3w", [trafo_id], variables_filtered,
                                           x_points, y_points)
-        logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos in "
-                    f"{time.time() - time_start}.")
+        logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos.")
     else:
         logger.info("trafo_characteristic_table has no values for 3w-trafos - no characteristic objects created.")
 

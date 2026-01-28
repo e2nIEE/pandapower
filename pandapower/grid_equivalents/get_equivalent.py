@@ -1,6 +1,8 @@
 import time
 from copy import deepcopy
 
+import pandas as pd
+
 from pandapower.create import create_group_from_dict
 from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
     drop_internal_branch_elements, add_ext_grids_to_boundaries, \
@@ -264,10 +266,13 @@ def get_equivalent(
         for elm in ["bus", "gen", "impedance", "load", "sgen", "shunt",
                     "switch", "ward", "xward"]:
             if "ward" in elm:
-                new_idx = net_eq[elm].index[net_eq[elm].name == "network_equivalent"].difference(
-                    net[elm].index[net[elm].name == "network_equivalent"])
+                if "name" in net[elm].columns:
+                    new_idx = net_eq[elm].index[net_eq[elm].name == "network_equivalent"].difference(
+                        net[elm].index[net[elm].name == "network_equivalent"])
+                else:
+                    new_idx = []
             else:
-                names = net_eq[elm].name.astype(str)
+                names = net_eq[elm].name.astype(str) if "name" in net_eq[elm].columns else pd.Series("", index=net_eq[elm].index)
                 if elm in ["bus", "sgen", "gen", "load"]:
                     buses = net_eq.bus.index if elm == "bus" else net_eq[elm].bus
                     new_idx = net_eq[elm].index[names.str.contains("_integrated") |

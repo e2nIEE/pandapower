@@ -42,7 +42,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maxium R/X ratio of short-circuit impedance",
-        metadata={"sc": True},
+        metadata={"sc": True, "3ph": True},
     ),
     "rx_min": pa.Column(
         float,
@@ -50,7 +50,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="minimum R/X ratio of short-circuit impedance",
-        metadata={"sc": True},
+        metadata={"sc": True, "3ph": True},
     ),
     "r0x0_max": pa.Column(
         float,

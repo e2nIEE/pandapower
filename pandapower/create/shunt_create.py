@@ -94,7 +94,7 @@ def create_shunt(
     }
     _set_entries(net, "shunt", index, entries=entries)
 
-    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "shunt", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "shunt")
 
     return index
 

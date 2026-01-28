@@ -787,9 +787,8 @@ def test_replace_pq_elmtype():
     for to_bus in [1, 2]:
         create_line(net, 0, to_bus, 0.6, 'NA2XS2Y 1x95 RM/25 12/20 kV')
     names = ["load 1", "load 2"]
-    types = ["house", "commercial"]
     create_loads(net, [1, 2], 0.8, 0.1, sn_mva=1, min_p_mw=0.5, max_p_mw=1.0, controllable=True,
-                 name=names, scaling=[0.8, 1], type=types)
+                 name=names, scaling=[0.8, 1])
     create_poly_cost(net, 0, "load", 7)
     create_poly_cost(net, 1, "load", 3)
     runpp(net)
@@ -797,12 +796,11 @@ def test_replace_pq_elmtype():
     net_orig = copy.deepcopy(net)
 
     # --- test unset old_indices, cols_to_keep and add_cols_to_keep
-    replace_pq_elmtype(net, "load", "sgen", new_indices=[2, 7], cols_to_keep=["type"],
-                       add_cols_to_keep=["scaling"])  # cols_to_keep is not
-    # default but ["type"] -> min/max p_mw get lost
+    replace_pq_elmtype(
+        net, "load", "sgen", new_indices=[2, 7], cols_to_keep=[], add_cols_to_keep=["scaling"]
+    )
     check_elm_shape(net, {"load": 0, "sgen": 2})
     assert list(net.sgen.index) == [2, 7]
-    assert list(net.sgen.type.values) == types
     assert list(net.sgen.name.values) == names
     assert net.sgen.controllable.astype(bool).all()
     assert "min_p_mw" not in net.sgen.columns
@@ -811,7 +809,7 @@ def test_replace_pq_elmtype():
 
     # --- test set old_indices and add_cols_to_keep for different element types
     net = copy.deepcopy(net_orig)
-    add_cols_to_keep = ["scaling", "type", "sn_mva"]
+    add_cols_to_keep = ["scaling", "sn_mva"]
     replace_pq_elmtype(net, "load", "sgen", old_indices=1, add_cols_to_keep=add_cols_to_keep)
     check_elm_shape(net, {"load": 1, "sgen": 1})
     runpp(net)

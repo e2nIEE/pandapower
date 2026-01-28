@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Any
 
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -140,51 +141,53 @@ def _get_bus_results_3ph(net, bus_pq):
 
 
 def write_voltage_dependend_load_results(net, p, q, b):
-    l = net["load"]
+    load_df = net["load"]
     _is_elements = net["_is_elements"]
 
-    if len(l) > 0:
-        load_is = _is_elements["load"]
-        scaling = l["scaling"].values
-        bus_lookup = net["_pd2ppc_lookups"]["bus"]
-        lidx = bus_lookup[l["bus"].values]
+    if load_df.empty:
+        return p, q, b
+    
+    load_is = _is_elements["load"]
+    scaling = load_df["scaling"].values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    lidx = bus_lookup[load_df["bus"].values]
 
-        voltage_depend_loads = net["_options"]["voltage_depend_loads"]
+    voltage_depend_loads = net["_options"]["voltage_depend_loads"]
 
-        cz_p = l["const_z_p_percent"].values / 100.
-        ci_p = l["const_i_p_percent"].values / 100.
-        cp = 1. - (cz_p + ci_p)
+    cz_p = load_df["const_z_p_percent"].values / 100.
+    ci_p = load_df["const_i_p_percent"].values / 100.
+    cp = 1. - (cz_p + ci_p)
 
-        # constant power
-        pl = l["p_mw"].values * scaling * load_is * cp
-        net["res_load"]["p_mw"] = pl
+    # constant power
+    pl = load_df["p_mw"].values * scaling * load_is * cp
+    net["res_load"]["p_mw"] = pl
+    p = np.hstack([p, pl])
+
+    cz_q = load_df["const_z_q_percent"].values / 100.
+    ci_q = load_df["const_i_q_percent"].values / 100.
+    cq = 1. - (cz_q + ci_q)
+
+    ql = load_df["q_mvar"].values * scaling * load_is * cq
+    net["res_load"]["q_mvar"] = ql
+    q = np.hstack([q, ql])
+
+    b = np.hstack([b, load_df["bus"].values])
+
+    if voltage_depend_loads:
+        # constant impedance and constant current
+        vm_l = net["_ppc"]["bus"][lidx, 7]
+        volt_depend_p = ci_p * vm_l + cz_p * vm_l ** 2
+        pl = load_df["p_mw"].values * scaling * load_is * volt_depend_p
+        net["res_load"]["p_mw"] += pl
         p = np.hstack([p, pl])
 
-        cz_q = l["const_z_q_percent"].values / 100.
-        ci_q = l["const_i_q_percent"].values / 100.
-        cq = 1. - (cz_q + ci_q)
-
-        ql = l["q_mvar"].values * scaling * load_is * cq
-        net["res_load"]["q_mvar"] = ql
+        volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
+        ql = load_df["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
+        net["res_load"]["q_mvar"] += ql
         q = np.hstack([q, ql])
 
-        b = np.hstack([b, l["bus"].values])
-
-        if voltage_depend_loads:
-            # constant impedance and constant current
-            vm_l = net["_ppc"]["bus"][lidx, 7]
-            volt_depend_p = ci_p * vm_l + cz_p * vm_l ** 2
-            pl = l["p_mw"].values * scaling * load_is * volt_depend_p
-            net["res_load"]["p_mw"] += pl
-            p = np.hstack([p, pl])
-
-            volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
-            ql = l["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
-            net["res_load"]["q_mvar"] += ql
-            q = np.hstack([q, ql])
-
-            b = np.hstack([b, l["bus"].values])
-        return p, q, b
+        b = np.hstack([b, load_df["bus"].values])
+    return p, q, b
 
 
 def write_pq_results_to_element(net, ppc, element, suffix=None):

@@ -16,10 +16,18 @@ _bus_dc_columns = {
     "in_service": pa.Column(bool, description="specifies if the dc bus is in service"),
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
     "max_vm_pu": pa.Column(
-        float, description="Maximum dc bus voltage in p.u. - necessary for OPF", metadata={"opf": True}
+        float,
+        nullable=True,
+        required=False,
+        description="Maximum dc bus voltage in p.u. - necessary for OPF",
+        metadata={"opf": True},
     ),
     "min_vm_pu": pa.Column(
-        float, description="Minimum dc bus voltage in p.u. - necessary for OPF", metadata={"opf": True}
+        float,
+        nullable=True,
+        required=False,
+        description="Minimum dc bus voltage in p.u. - necessary for OPF",
+        metadata={"opf": True},
     ),
 }
 bus_dc_schema = pa.DataFrameSchema(

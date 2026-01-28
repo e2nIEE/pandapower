@@ -28,7 +28,7 @@ from pandapower.toolbox.grid_modification import select_subnet, replace_gen_by_s
 def create_test_net():
     net = create_empty_network()
     # buses
-    create_buses(net, 7, 20, zone=[0, 0, 1, 1, 1, 0, 0], name=["bus %i" % i for i in range(7)],
+    create_buses(net, 7, 20, zone=['0', '0', '1', '1', '1', '0', '0'], name=[f"bus {i}" for i in range(7)],
                  min_vm_pu=np.append(np.arange(.9, 0.94, .01), [np.nan, np.nan, np.nan]))
 
     # ext_grid
@@ -101,7 +101,7 @@ def check_elements_amount(net, elms_dict, check_all_pp_elements=True):
     if check_all_pp_elements:
         elms_dict.update({elm: 0 for elm in pp_elements() if elm not in elms_dict.keys()})
     for key, val in elms_dict.items():
-        if not net[key].shape[0] == val:
+        if net[key].shape[0] != val:
             raise ValueError("The net has %i %ss but %i are expected." % (
                 net[key].shape[0], key, int(val)))
 
@@ -161,8 +161,7 @@ def test_cost_consideration():
         boundary_buses = [0, 2]
         internal_buses = [1]
         eq_net1 = get_equivalent(net, "rei", boundary_buses, internal_buses)
-        eq_net2 = get_equivalent(net, "rei", boundary_buses, internal_buses,
-                                 return_internal=False)
+        eq_net2 = get_equivalent(net, "rei", boundary_buses, internal_buses, return_internal=False)
 
         # check elements
         check_elements_amount(eq_net1, {"bus": 6, "load": 3, "sgen": 3, "shunt": 5, "ext_grid": 1,
@@ -218,18 +217,15 @@ def test_basic_usecases():
             check_elements_amount(net1, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
                                          "line": 3, "impedance": 3}, check_all_pp_elements=True)
             check_res_bus(net, net1)
-            assert np.allclose(net1.bus.min_vm_pu.values,
-                               np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
+            assert np.allclose(net1.bus.min_vm_pu.values, np.array([0.9, 0.91, 0.0, 0.0, 0.93]), equal_nan=True)
             check_elements_amount(net2, {"bus": 3, "load": 3, "sgen": 0, "shunt": 3, "ext_grid": 0,
                                          "line": 0, "impedance": 2}, check_all_pp_elements=True)
             check_res_bus(net, net2)
-            assert np.allclose(net2.bus.min_vm_pu.values,
-                               net.bus.min_vm_pu.loc[[2, 4, 3]].values, equal_nan=True)
+            assert np.allclose(net2.bus.min_vm_pu.values, net.bus.min_vm_pu.loc[[2, 4, 3]].values, equal_nan=True)
             check_elements_amount(net3, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
                                          "line": 3, "impedance": 3}, check_all_pp_elements=True)
             check_res_bus(net, net3)
-            assert np.allclose(net1.bus.min_vm_pu.values,
-                               np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
+            assert np.allclose(net1.bus.min_vm_pu.values, np.array([0.9, 0.91, 0.0, 0.0, 0.93]), equal_nan=True)
 
         elif "ward" in eq_type:
             check_elements_amount(net1, {"bus": 4, "load": 2, "sgen": 2, "ext_grid": 1, "line": 3,
@@ -356,7 +352,6 @@ def test_adopt_columns_to_separated_eq_elms():
 
 def test_equivalent_groups():
     net = example_multivoltage()
-    # net.sn_mva = 100
     for elm in pp_elements():
         if net[elm].shape[0] and not net[elm].name.duplicated().any():
             net[elm]["origin_id"] = net[elm].name
@@ -423,7 +418,7 @@ def test_shifter_degree():
     net.trafo3w.at[0, "shift_lv_degree"] = 150
     runpp(net, calculate_voltage_angles=True)
 
-    boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
+    boundary_buses = [net.trafo.hv_bus.values[1]] + list(net.trafo.lv_bus.values) + \
                      list(net.trafo3w.hv_bus.values) + list(net.trafo3w.lv_bus.values)
     i = net.ext_grid.bus.values[0]
 
@@ -488,7 +483,9 @@ def test_characteristic():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
          'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    net.trafo['id_characteristic_table'] = pd.NA
     net.trafo['id_characteristic_table'].at[1] = 0
+    net.trafo['tap_dependency_table'] = pd.NA
     net.trafo['tap_dependency_table'].at[1] = True
     # add spline characteristics for one transformer based on trafo_characteristic_table
     create_trafo_characteristic_object(net)
@@ -538,9 +535,9 @@ def test_controller():
     assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 2]
     for i in net.controller.index:
         assert set(net_eq.controller.object[i].__dict__["element_index"]) - \
-               set(net.controller.object[i].__dict__["element_index"]) == set([])
+               set(net.controller.object[i].__dict__["element_index"]) == set()
         assert set(net_eq.controller.object[i].__dict__["profile_name"]) - \
-               set(net.controller.object[i].__dict__["profile_name"]) == set([])
+               set(net.controller.object[i].__dict__["profile_name"]) == set()
 
     net_eq = get_equivalent(net, "rei", [4, 8], [0],
                             retain_original_internal_indices=True)

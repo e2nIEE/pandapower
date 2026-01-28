@@ -9,9 +9,11 @@ import warnings
 
 import numpy as np
 import pandas as pd
+
 from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterability, \
     log_to_level, plural_s
 from pandapower.std_types import change_std_type
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_switch, create_line_from_parameters, \
     create_impedance, create_empty_network, create_gen, create_ext_grid, \
     create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
@@ -1637,7 +1639,7 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
     # add missing columns to net[new_element_type] which should be kept
     missing_cols_to_keep = existing_cols_to_keep.difference(net[new_element_type].columns)
     for col in missing_cols_to_keep:
-        net[new_element_type][col] = np.nan
+        add_column_to_df(net, new_element_type, col)
 
     # --- create new_element_type
     already_considered_cols = set()

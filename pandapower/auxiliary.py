@@ -467,6 +467,8 @@ def element_types_to_ets(element_types=None):
 def empty_defaults_per_dtype(dtype):
     if is_numeric_dtype(dtype):
         return np.nan
+    elif isinstance(dtype, pd.StringDtype):
+        return pd.NA
     elif is_string_dtype(dtype):
         return ""
     elif is_object_dtype(dtype):
@@ -476,7 +478,7 @@ def empty_defaults_per_dtype(dtype):
 
 
 def _preserve_dtypes(df, dtypes):
-    for item, dtype in list(dtypes.items()):
+    for item, dtype in dtypes.items():
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
                 raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
@@ -725,7 +727,10 @@ def _detect_read_write_flag(net, element, index, variable):
 
 # read functions:
 def _read_from_single_index(net, element, variable, index):
-    return net[element].at[index, variable]
+    if variable in net[element]:
+        return net[element].at[index, variable]
+    else:
+        return pd.NA
 
 
 def _read_from_all_index(net, element, variable):
@@ -1593,15 +1598,41 @@ def _add_dcline_gens(net: pandapowerNet):
             p_max = 0
             p_min = -dctab.max_p_mw
 
-        create_gen(net, bus=dctab.to_bus, p_mw=p_to, vm_pu=dctab.vm_to_pu,
-                   min_p_mw=p_min, max_p_mw=p_max,
-                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
-                   in_service=dctab.in_service)
+        kwargs_to = {
+            'bus': dctab.to_bus,
+            'p_mw': p_to,
+            'vm_pu': dctab.vm_to_pu,
+            'in_service': dctab.in_service
+        }
 
-        create_gen(net, bus=dctab.from_bus, p_mw=p_from, vm_pu=dctab.vm_from_pu,
-                   min_p_mw=-p_max, max_p_mw=-p_min,
-                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
-                   in_service=dctab.in_service)
+        if hasattr(dctab, 'min_p_mw'):
+            kwargs_to['min_p_mw'] = p_min
+        if hasattr(dctab, 'max_p_mw'):
+            kwargs_to['max_p_mw'] = p_max
+        if hasattr(dctab, 'max_q_to_mvar'):
+            kwargs_to['max_q_mvar'] = dctab.max_q_to_mvar
+        if hasattr(dctab, 'min_q_to_mvar'):
+            kwargs_to['min_q_mvar'] = dctab.min_q_to_mvar
+
+        create_gen(net, **kwargs_to)
+
+        kwargs_from = {
+            'bus': dctab.from_bus,
+            'p_mw': p_from,
+            'vm_pu': dctab.vm_from_pu,
+            'in_service': dctab.in_service
+        }
+
+        if hasattr(dctab, 'max_p_mw'):
+            kwargs_from['min_p_mw'] = -p_max
+        if hasattr(dctab, 'min_p_mw'):
+            kwargs_from['max_p_mw'] = -p_min
+        if hasattr(dctab, 'max_q_from_mvar'):
+            kwargs_from['max_q_mvar'] = dctab.max_q_from_mvar
+        if hasattr(dctab, 'min_q_from_mvar'):
+            kwargs_from['min_q_mvar'] = dctab.min_q_from_mvar
+
+        create_gen(net, **kwargs_from)
 
 
 def _add_b2b_vsc(net: pandapowerNet):
@@ -1723,11 +1754,9 @@ def _init_runpp_options(net, algorithm, calculate_voltage_angles, init,
         numba = _check_if_numba_is_installed()
 
     if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_p_percent"].values)
-                or np.any(net["load"]["const_i_p_percent"].values)
-                or np.any(net["load"]["const_z_q_percent"].values)
-                or np.any(net["load"]["const_i_q_percent"].values)):
-            voltage_depend_loads = False
+        cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
+        # if const parameters are not set voltage_depend_loads is deactivated
+        voltage_depend_loads = cols.issubset(net.load.columns) and not net.load[list(cols)].any().any()
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
                                                        distributed_slack, tdpf)

@@ -1684,12 +1684,12 @@ class DeviationFromStdType(DiagnosticFunction[pandapowerNet, dict[str, dict]]):
         """
         check_results: dict[str, dict] = defaultdict(dict)
         for key, std_types in net.std_types.items():
-            if key not in net:
+            if key not in net or "std_type" not in net[key]:
                 continue
             for i, element in net[key].iterrows():
                 std_type = element.std_type
                 if std_type not in std_types:
-                    if std_type is not None:
+                    if pd.notna(std_type):
                         check_results[key][i] = {"std_type_in_lib": False}
                     continue
                 std_type_values = std_types[std_type]

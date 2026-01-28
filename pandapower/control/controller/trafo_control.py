@@ -2,7 +2,7 @@
 
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import pandas as pd
 import numpy as np
 
 from pandapower.auxiliary import read_from_net, _detect_read_write_flag
@@ -102,8 +102,12 @@ class TrafoController(Controller):
 
     def _set_tap_side_coeff(self, net):
         tap_side = read_from_net(net, self.element, self.element_index, 'tap_side', self._read_write_flag)
-        if (len(np.setdiff1d(tap_side, ['hv', 'lv'])) > 0 and self.element == "trafo") or \
-                (len(np.setdiff1d(tap_side, ['hv', 'lv', 'mv'])) > 0 and self.element == "trafo3w"):
+        tap_side_contains_na = pd.isna(tap_side) if pd.api.types.is_scalar(tap_side) else pd.isna(tap_side).any()
+        if (
+                tap_side_contains_na or
+                (len(np.setdiff1d(tap_side, ['hv', 'lv'])) > 0 and self.element == "trafo") or
+                (len(np.setdiff1d(tap_side, ['hv', 'lv', 'mv'])) > 0 and self.element == "trafo3w")
+        ):
             raise ValueError("Trafo tap side (in net.%s) has to be either hv or lv, "
                              "but received: %s for trafo %s" % (self.element, tap_side, self.element_index))
 
@@ -111,7 +115,7 @@ class TrafoController(Controller):
             self.tap_side_coeff = 1 if tap_side == 'hv' else -1
             if self.side == "hv":
                 self.tap_side_coeff *= -1
-            if self.tap_step_percent < 0:
+            if pd.notna(self.tap_step_percent) and self.tap_step_percent < 0:
                 self.tap_side_coeff *= -1
         else:
             self.tap_side_coeff = np.where(tap_side == 'hv', 1, -1)
@@ -156,18 +160,18 @@ class TrafoController(Controller):
 
         self.tap_pos = read_from_net(net, self.element, self.element_index, "tap_pos", self._read_write_flag)
         if self._read_write_flag == "single_index":
-            self.tap_sign = 1 if np.isnan(self.tap_step_degree) else np.sign(np.cos(np.deg2rad(self.tap_step_degree)))
+            self.tap_sign = 1 if pd.isna(self.tap_step_degree) else np.sign(np.cos(np.deg2rad(self.tap_step_degree)))
             if (self.tap_sign == 0) | (np.isnan(self.tap_sign)):
                 self.tap_sign = 1
-            if np.isnan(self.tap_pos):
+            if pd.isna(self.tap_pos):
                 self.tap_pos = self.tap_neutral
         else:
-            self.tap_sign = np.where(np.isnan(self.tap_step_degree), 1,
+            self.tap_sign = np.where(pd.isna(self.tap_step_degree), 1,
                                      np.sign(np.cos(np.deg2rad(self.tap_step_degree))))
             self.tap_sign = np.where((self.tap_sign == 0) | (np.isnan(self.tap_sign)), 1, self.tap_sign)
             self.tap_pos = np.where(np.isnan(self.tap_pos), self.tap_neutral, self.tap_pos)
 
-        if np.any(np.isnan(self.tap_min)) or np.any(np.isnan(self.tap_max)) or np.any(np.isnan(self.tap_step_percent)):
+        if np.any(pd.isna(self.tap_min)) or np.any(pd.isna(self.tap_max)) or np.any(pd.isna(self.tap_step_percent)):
             logger.error("Trafo-Controller has been initialized with NaN values, check "
                          "net.trafo.tap_pos etc. if they are set correctly!")
 
@@ -179,16 +183,14 @@ class TrafoController(Controller):
             net.controller.at[self.index, 'recycle'] = False
             return
         # these variables determine what is re-calculated during a time series run
-        recycle = dict(trafo=True, gen=False, bus_pq=False)
+        recycle = {'trafo': True, 'gen': False, 'bus_pq': False}
         net.controller.at[self.index, 'recycle'] = recycle
 
     # def timestep(self, net):
     #     self.tap_pos = net[self.element].at[self.element_index, "tap_pos"]
 
     def __repr__(self):
-        s = '%s of %s %s' % (self.__class__.__name__, self.element, self.element_index)
-        return s
+        return '%s of %s %s' % (self.__class__.__name__, self.element, self.element_index)
 
     def __str__(self):
-        s = '%s of %s %s' % (self.__class__.__name__, self.element, self.element_index)
-        return s
+        return '%s of %s %s' % (self.__class__.__name__, self.element, self.element_index)

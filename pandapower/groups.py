@@ -931,27 +931,18 @@ def group_res_q_mvar(net, index):
 
 
 def set_group_reference_column(net, index, reference_column, element_type=None):
-    """Set a reference_column to the group of given index. The values in net.group.element get
-    updated.
+    """Set a reference_column to the group of given index. The values in net.group.element get updated.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    index : int
-        Index of the group
-    reference_column : str
-        column in the elemt tables which should be used as reference to link the group members.
-        If no column but the index should be used as the link (is the default), reference_column
-        should be None.
-    element_type : str, optional
-        Type of element which should get a new column to reference. If None, all element types are
-        considered, by default None
+    Parameters:
+        net: pandapower net
+        index: Index of the group
+        reference_column: column in the element tables which should be used as reference to link the group members.
+            If no column but the index should be used as the link (is the default), reference_column should be None.
+        element_type: Type of element which should get a new column to reference. If None, all element types are
+            considered, by default None
 
-    Raises
-    ------
-    ValueError
-        net[element_type][reference_column] has duplicated values.
+    Raises:
+        ValueError: if net[element_type][reference_column] has duplicated values.
     """
     if element_type is None:
         element_type = net.group.loc[[index], "element_type"].tolist()
@@ -960,23 +951,20 @@ def set_group_reference_column(net, index, reference_column, element_type=None):
 
     dupl_elements = list()
     for et in element_type:
-
         if reference_column is None:
             # determine duplicated indices which would corrupt Groups functionality
             if len(set(net[et].index)) != net[et].shape[0]:
                 dupl_elements.append(et)
-
         else:
             # fill nan values in net[et][reference_column] with unique names
             if reference_column not in net[et].columns:
-                net[et][reference_column] = pd.Series([None]*net[et].shape[0], dtype=object)
-            if pd.api.types.is_object_dtype(net[et][reference_column]):
-                idxs = net[et].index[net[et][reference_column].isnull()]
-                net[et].loc[idxs, reference_column] = ["%s_%i_%s" % (et, idx, str(
-                    uuid.uuid4())) for idx in idxs]
+                net[et][reference_column] = pd.Series(None, dtype=object)
+            if net[et][reference_column].isna().any():
+                idxs = net[et].index[net[et][reference_column].isna()]
+                net[et].loc[idxs, reference_column] = [f"{et}_{idx}_{uuid.uuid4()}" for idx in idxs]
 
             # determine duplicated values which would corrupt Groups functionality
-            if (net[et][reference_column].duplicated() | net[et][reference_column].isnull()).any():
+            if (net[et][reference_column].duplicated() | net[et][reference_column].isna()).any():
                 dupl_elements.append(et)
 
         # update net.group[["element_index", "reference_column"]] for element_type == et
@@ -998,11 +986,8 @@ def set_group_reference_column(net, index, reference_column, element_type=None):
 
     if len(dupl_elements):
         if reference_column is None:
-            raise ValueError(f"In net[*].index have duplicated or nan values. "
-                            f"* is placeholder for {dupl_elements}.")
-        else:
-            raise ValueError(f"In net[*].{reference_column} have duplicated or nan values. "
-                            f"* is placeholder for {dupl_elements}.")
+            reference_column = 'index'
+        raise ValueError(f"In tables {dupl_elements} column {reference_column} has duplicate or nan values.")
 
 
 def return_group_as_net(net, index, keep_everything_else=False, verbose=True, **kwargs):
