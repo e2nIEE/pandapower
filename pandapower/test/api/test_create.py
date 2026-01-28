@@ -735,7 +735,7 @@ def test_create_transformers_from_parameters():
         vk0_percent=0.4,
         vkr0_percent=1.7,
         mag0_rx=0.4,
-        mag0_percent=0.3,
+        mag0_percent=30,
         tap_neutral=0.0,
         vector_group="Dyn",
         si0_hv_partial=0.1,
@@ -754,7 +754,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.i0_percent == 0.3)
     assert all(net.trafo.vk0_percent == 0.4)
     assert all(net.trafo.mag0_rx == 0.4)
-    assert all(net.trafo.mag0_percent == 0.3)
+    assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.tap_neutral == 0.0)
     assert all(net.trafo.tap_pos == 0.0)
     assert all(net.trafo.vector_group.values == "Dyn")
@@ -779,7 +779,7 @@ def test_create_transformers_from_parameters():
         i0_percent=[0.3, 0.3],
         vk0_percent=[0.4, 0.4],
         mag0_rx=[0.4, 0.4],
-        mag0_percent=[0.3, 0.3],
+        mag0_percent=[30, 30],
         tap_neutral=[0.0, 1.0],
         tap_pos=[-1, 4],
         test_kwargs=["dummy_string", "dummy_string"],
@@ -797,7 +797,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.i0_percent == 0.3)
     assert all(net.trafo.vk0_percent == 0.4)
     assert all(net.trafo.mag0_rx == 0.4)
-    assert all(net.trafo.mag0_percent == 0.3)
+    assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.test_kwargs == "dummy_string")
     assert net.trafo.tap_neutral.at[t[0]] == 0
     assert net.trafo.tap_neutral.at[t[1]] == 1
@@ -1143,7 +1143,7 @@ def test_create_transformers3w_from_parameters():
         i0_percent=0.3,
         tap_neutral=0.0,
         mag0_rx=0.4,
-        mag0_percent=0.3,
+        mag0_percent=30,
         test_kwargs="dummy_string",
     )
     assert len(net.trafo3w) == 2
@@ -1165,7 +1165,7 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.pfe_kw == 0.2)
     assert all(net.trafo3w.i0_percent == 0.3)
     assert all(net.trafo3w.mag0_rx == 0.4)
-    assert all(net.trafo3w.mag0_percent == 0.3)
+    assert all(net.trafo3w.mag0_percent == 30)
     assert all(net.trafo3w.tap_neutral == 0.0)
     assert all(net.trafo3w.tap_pos == 0.0)
     assert all(net.trafo3w.test_kwargs == "dummy_string")
@@ -1250,7 +1250,7 @@ def test_create_transformers3w_raise_errorexcept():
         i0_percent=0.3,
         tap_neutral=0.0,
         mag0_rx=0.4,
-        mag0_percent=0.3,
+        mag0_percent=30,
     )
 
     with pytest.raises(
@@ -1278,7 +1278,7 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
             index=[2, 1],
         )
     net = create_empty_network()
@@ -1309,7 +1309,7 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
             index=[0, 1],
         )
     with pytest.raises(
@@ -1336,7 +1336,7 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
         )
     with pytest.raises(
             UserWarning,
@@ -1363,7 +1363,7 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
         )
 
 
