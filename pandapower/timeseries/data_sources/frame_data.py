@@ -21,13 +21,10 @@ class DFData(DataSource):
 
     Please note: The columns should be integers for scalar accessing!
 
-    INPUT:
-        **df** - A pandas DataFrame which holds the time series data
-
-    OPTIONAL:
-
-        **multi** (bool, False) - If True casts columns and indexes to integers.
-        This might be necessary if you read your data from csv.
+    Parameters:
+        df: A pandas DataFrame which holds the time series data
+        multi (bool, False): If True casts columns and indexes to integers. This might be necessary if you read your
+            data from csv.
     """
 
     def __init__(self, df, multi=False):

@@ -38,10 +38,11 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     """
     Calculates P/Q values from rated apparent power and cosine(phi) values.
 
-       - s: rated apparent power
-       - cosphi: cosine phi of the
-       - qmode: "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
-       - pmode: "load" for load or "gen" for generation
+    Parameters:
+       s: rated apparent power
+       cosphi: cosine phi of the
+       qmode: "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
+       pmode: "load" for load or "gen" for generation
 
     As all other pandapower functions this function is based on the consumer viewpoint. For active
     power, that means that loads are positive and generation is negative. For reactive power,
