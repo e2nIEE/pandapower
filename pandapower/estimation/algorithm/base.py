@@ -36,22 +36,24 @@ class BaseAlgorithm:
     def check_observability(self, eppci: ExtendedPPCI, z):
         # Check if observability criterion is fulfilled and the state estimation is possible
         num_slacks = sum(~eppci.non_slack_bus_mask)
-        if len(z) < 2 * eppci["bus"].shape[0] - num_slacks:
+        measurements_available = 2 * eppci["bus"].shape[0] - num_slacks
+        if len(z) < measurements_available:
             self.logger.error("System is not observable (cancelling)")
-            self.logger.error("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * eppci["bus"].shape[0] - num_slacks))
-            raise UserWarning("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * eppci["bus"].shape[0] - num_slacks))
+            self.logger.error(f"Measurements available: {len(z)}. Measurements required: {measurements_available}")
+            raise UserWarning(f"Measurements available: {len(z)}. Measurements required: {measurements_available}")
 
     def check_result(self, current_error, cur_it):
         # print output for results
         if current_error <= self.tolerance:
             self.successful = True
-            self.logger.debug("State Estimation successful ({:d} iterations)".format(cur_it))
+            self.logger.debug(
+                f"State Estimation successful ({cur_it:d} iterations)"
+            )
         else:
             self.successful = False
-            self.logger.debug("State Estimation not successful ({:d}/{:d} iterations)".format(cur_it,
-                                                                                              self.max_iterations))
+            self.logger.debug(
+                f"State Estimation not successful ({cur_it:d}/{self.max_iterations:d} iterations)"
+            )
 
     def initialize(self, eppci: ExtendedPPCI):
         # Check observability
@@ -147,10 +149,10 @@ class WLSAlgorithm(BaseAlgorithm):
                                   "Check and change the measurement set.")
                 return False
 
-        # check if the estimation is successfull
+        # check if the estimation is successful
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        if debug_mode: 
+        if debug_mode:
             self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
