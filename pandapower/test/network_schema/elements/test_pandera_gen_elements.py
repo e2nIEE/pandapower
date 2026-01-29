@@ -264,6 +264,7 @@ class TestGenOptionalFields:
             max_vm_pu=1.1,
         )
         net.gen[parameter] = valid_value
+        net.gen["controllable"] = net.gen["controllable"].astype("boolean")
         net.gen["name"] = net.gen["name"].astype("string")
         net.gen["type"] = net.gen["type"].astype("string")
         net.gen["curve_style"] = net.gen["curve_style"].astype("string")

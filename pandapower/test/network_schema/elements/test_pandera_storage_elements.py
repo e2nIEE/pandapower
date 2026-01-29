@@ -129,22 +129,26 @@ class TestStorageOptionalFields:
 
     def test_opf_group_partial_missing_invalid(self):
         """OPF group must be complete if any OPF value is set"""
-        net = create_empty_network()
-        b0 = create_bus(net, 0.4)
 
         # Case 1: only max_p_mw
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
         create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["max_p_mw"] = 1.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 2: only controllable
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
         create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["controllable"] = pd.Series([True], dtype="boolean")
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 3: only min_q_mvar
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
         create_storage(net, bus=b0, p_mw=-0.2, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["min_q_mvar"] = -0.5
         with pytest.raises(pa.errors.SchemaError):

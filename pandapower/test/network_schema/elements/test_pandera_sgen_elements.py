@@ -214,24 +214,29 @@ class TestSgenOptionalFields:
             validate_network(net)
 
     def test_qcc_group_partial_missing_invalid(self):
+        # Only id_q_capability_characteristic
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # Only id_q_capability_characteristic
         net.sgen["id_q_capability_characteristic"] = pd.Series([0], dtype="Int64")
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Only curve_style
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        net.sgen["curve_style"] = pd.Series(["straightLineYValues"], dtype="string")
+        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
+        net.sgen["curve_style"] = pd.Series([pd.NA, "straightLineYValues"], dtype="string")
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Only reactive_capability_curve
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        net.sgen["reactive_capability_curve"] = pd.Series([True], dtype="boolean")
+        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
+        net.sgen["reactive_capability_curve"] = pd.Series([pd.NA, pd.NA, True], dtype="boolean")
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 

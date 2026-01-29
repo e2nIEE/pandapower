@@ -113,7 +113,7 @@ class TestTrafoOptionalFields:
         net.trafo["tap2_changer_type"] = pd.Series(["Ideal"], dtype="string")
 
         # OPF single-column group
-        net.trafo["max_loading_percent"] = 100
+        net.trafo["max_loading_percent"] = 100.0
 
         # Other numerics
         net.trafo["shift_degree"] = 0.0
@@ -179,7 +179,6 @@ class TestTrafoOptionalFields:
         net.trafo["tap_dependency_table"] = pd.Series([pd.NA, True, pd.NA], dtype="boolean")
         net.trafo["id_characteristic_table"] = pd.Series([pd.NA, 1, pd.NA], dtype="Int64")
         net.trafo["std_type"] = pd.Series([pd.NA, pd.NA, pd.NA], dtype="string")
-        # net.trafo["max_loading_percent"] = 80 #TODO no error buut with create there is
         validate_network(net)
 
     def test_tap_group_partial_missing_invalid(self):
@@ -190,13 +189,17 @@ class TestTrafoOptionalFields:
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
-        net.trafo["tap_pos"] = 0.0  # partial -> invalid
+        net.trafo["tap_pos"] = pd.Series([float("nan")], dtype="float")  # partial -> invalid
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+        net = create_empty_network()
+        b_hv = create_bus(net, 110)
+        b_lv = create_bus(net, 10)
+
         # Another partial case
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
-        net.trafo["tap_side"] = pd.Series(["hv"], dtype="string")
+        net.trafo["tap_side"] = pd.Series([pd.NA], dtype="string")
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
@@ -210,6 +213,10 @@ class TestTrafoOptionalFields:
         net.trafo["tap2_pos"] = 0.0  # partial -> invalid
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+        net = create_empty_network()
+        b_hv = create_bus(net, 110)
+        b_lv = create_bus(net, 10)
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
         net.trafo["tap2_side"] = pd.Series(["lv"], dtype="string")
@@ -226,6 +233,10 @@ class TestTrafoOptionalFields:
         net.trafo["tap_dependency_table"] = pd.Series([True], dtype="boolean")
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+        net = create_empty_network()
+        b_hv = create_bus(net, 110)
+        b_lv = create_bus(net, 10)
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
         net.trafo["id_characteristic_table"] = pd.Series([pd.NA, 1], dtype="Int64")
@@ -252,7 +263,7 @@ class TestTrafoOptionalFields:
                 itertools.product(["leakage_reactance_ratio_hv"], [0.0, 0.5, 1.0]),
                 itertools.product(["xn_ohm"], all_allowed_floats),
                 itertools.product(["pt_percent"], all_allowed_floats),
-                itertools.product(["max_loading_percent"], [0, 50, 100]),
+                itertools.product(["max_loading_percent"], positiv_floats_plus_zero),
             )
         ),
     )
@@ -312,7 +323,7 @@ class TestTrafoOptionalFields:
                 itertools.product(["leakage_reactance_ratio_hv"], [*negativ_floats, 1.1, *not_floats_list]),
                 itertools.product(["xn_ohm"], not_floats_list),
                 itertools.product(["pt_percent"], not_floats_list),
-                itertools.product(["max_loading_percent"], [*not_ints_list]),  # TODO int?
+                itertools.product(["max_loading_percent"], [*not_floats_list]),
             )
         ),
     )

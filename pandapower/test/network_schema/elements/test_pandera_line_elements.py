@@ -198,23 +198,29 @@ class TestLineOptionalFields:
 
     def test_tdpf_group_partial_missing_invalid(self):
         """Test: tdpf group must be complete if any tdpf value is set"""
+
+        # Case 1: tdpf flag only -> invalid
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
-
-        # Case 1: tdpf flag only -> invalid
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["tdpf"] = True
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 2: one tdpf param only -> invalid
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["wind_speed_m_per_s"] = 3.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 3: another tdpf param only -> invalid
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["reference_temperature_degree_celsius"] = 20.0
         with pytest.raises(pa.errors.SchemaError):
