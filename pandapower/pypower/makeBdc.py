@@ -93,7 +93,8 @@ def makeBdc(bus: NDArray[float64],
     t = real(branch[:, T_BUS]).astype(int64)       # list of "to" buses
     i = r_[range(nl), range(nl)]                   # double set of row indices
     # connection matrix
-    Cft = sparse((r_[ones(nl), -ones(nl)], (i, r_[f, t])), (nl + nvsc +nl_dc, nb + nb_dc))
+    Cft: csr_matrix | csc_matrix = (
+        sparse((r_[ones(nl), -ones(nl)], (i, r_[f, t])), (nl + nvsc +nl_dc, nb + nb_dc)))
 
     # VSCs
     # build connection matrix Cft = Cf - Ct for VSC and AC - DC buses
@@ -111,7 +112,7 @@ def makeBdc(bus: NDArray[float64],
     Cft += sparse((r_[ones(nl_dc), -ones(nl_dc)], (i_dc, r_[f_dc, t_dc])), (nl + nvsc + nl_dc, nb + nb_dc))
 
     # build Bf such that Bf * Va is the vector of real branch powers injected at each branch's "from" bus
-    Bf = sparse((r_[b, -b], (i, r_[f, t])), (nl + nvsc + nl_dc, nb + nb_dc))
+    Bf: csr_matrix | csc_matrix = sparse((r_[b, -b], (i, r_[f, t])), (nl + nvsc + nl_dc, nb + nb_dc))
     # VSC
     Bf += sparse((r_[b_vsc, -b_vsc], (i_vsc, r_[f_vsc, t_vsc])), (nl + nvsc + nl_dc, nb + nb_dc))
     # DC line
