@@ -19,21 +19,17 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
     """
     Saves a pandapower Network to an html file.
 
-    INPUT:
-        **net** (dict) - The pandapower format network
+    Parameters:
+        net (ADict): The pandapower format network
+        filename (string): The absolute or relative path to the input file.
+        respect_switches (boolean, True):
+         
+            - True: open line switches are being considered (no edge between nodes)
+            - False: open line switches are being ignored
 
-        **filename** (string) - The absolute or relative path to the input file.
-
-    OPTIONAL:
-        **respect_switches** (boolean, True) - True: open line switches are being considered (no edge between nodes)
-                                               False: open line switches are being ignored
-
-        **include_lines** (boolean, True) - determines, whether lines get converted to edges
-
-        **include_trafos** (boolean, True) - determines, whether trafos get converted to edges
-
-        **show_tables** (boolean, True) - shows pandapower element tables
-
+        include_lines (bool, True): determines, whether lines get converted to edges
+        include_trafos (bool, True): determines, whether trafos get converted to edges
+        show_tables (bool, True): shows pandapower element tables
     """
     if not filename.endswith(".html"):
         raise Exception("Please use .html to save pandapower networks!")

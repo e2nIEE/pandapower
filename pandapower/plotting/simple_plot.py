@@ -34,66 +34,41 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         Plots a pandapower network as simple as possible. If no geodata is available, artificial
         geodata is generated. For advanced plotting see the tutorial
 
-        INPUT:
-            **net** - The pandapower format network.
+        Parameters:
+            net: The pandapower format network.
+            respect_switches (bool, False) Respect switches if artificial geodata is created. This Flag is ignored if
+                plot_line_switches is True
+            line_width (float, 1.0): width of lines
+            bus_size (float, 1.0): Relative size of buses to plot. The value bus_size is multiplied with
+                mean_distance_between_buses, which equals the distance between the max geocoord and the min divided by
+                200. mean_distance_between_buses = sum((net.bus.geo.max() - net.bus.geo.min()) / 200)
+            ext_grid_size (float, 1.0): Relative size of ext_grids to plot. See bus sizes for details. Note: ext_grids
+                are plotted as rectangles
+            trafo_size (float, 1.0): Relative size of trafos to plot.
+            plot_loads (bool, False): Flag to decide whether load symbols should be drawn.
+            plot_gens (bool, False): Flag to decide whether gen symbols should be drawn.
+            plot_sgens (bool, False): Flag to decide whether sgen symbols should be drawn.
+            load_size (float, 1.0): Relative size of loads to plot.
+            sgen_size (float, 1.0): Relative size of sgens to plot.
+            switch_size (float, 2.0): Relative size of switches to plot. See bus size for details
+            switch_distance (float, 1.0): Relative distance of the switch to its corresponding bus. See bus size for
+                details
+            plot_line_switches (bool, False): Flag if line switches are plotted
+            scale_size (bool, True): Flag if bus_size, ext_grid_size, bus_size- and distance will be scaled with respect
+                to grid mean distances
+            bus_color (String, colors[0]): Bus Color. Init as first value of color palette. Usually colors[0] = "b".
+            line_color (String, 'grey'): Line Color. Init is grey
+            dcline_color (String, 'c'): Line Color. Init is cyan
+            trafo_color (String, 'k'): Trafo Color. Init is black
+            ext_grid_color (String, 'y'): External Grid Color. Init is yellow
+            switch_color (String, 'k'): Switch Color. Init is black
+            library (String, "igraph"): library name to create generic coordinates (case of missing geodata). "igraph"
+                to use igraph package or "networkx" to use networkx package.
+            show_plot (bool, True): Shows plot at the end of plotting
+            ax (object, None): matplotlib axis to plot to
 
-        OPTIONAL:
-            **respect_switches** (bool, False) - Respect switches if artificial geodata is created.
-                                                This Flag is ignored if plot_line_switches is True
-
-            **line_width** (float, 1.0) - width of lines
-
-            **bus_size** (float, 1.0) - Relative size of buses to plot.
-                                        The value bus_size is multiplied with mean_distance_between_buses, which equals
-                                        the distance between the max geocoord and the min divided by 200.
-                                        mean_distance_between_buses = sum((net.bus.geo.max() - net.bus.geo.min()) / 200)
-
-            **ext_grid_size** (float, 1.0) - Relative size of ext_grids to plot. See bus sizes for details.
-                                                Note: ext_grids are plotted as rectangles
-
-            **trafo_size** (float, 1.0) - Relative size of trafos to plot.
-
-            **plot_loads** (bool, False) - Flag to decide whether load symbols should be drawn.
-
-            **plot_gens** (bool, False) - Flag to decide whether gen symbols should be drawn.
-
-            **plot_sgens** (bool, False) - Flag to decide whether sgen symbols should be drawn.
-
-            **load_size** (float, 1.0) - Relative size of loads to plot.
-
-            **sgen_size** (float, 1.0) - Relative size of sgens to plot.
-
-            **switch_size** (float, 2.0) - Relative size of switches to plot. See bus size for details
-
-            **switch_distance** (float, 1.0) - Relative distance of the switch to its corresponding \
-                                               bus. See bus size for details
-
-            **plot_line_switches** (bool, False) - Flag if line switches are plotted
-
-            **scale_size** (bool, True) - Flag if bus_size, ext_grid_size, bus_size- and distance \
-                                          will be scaled with respect to grid mean distances
-
-            **bus_color** (String, colors[0]) - Bus Color. Init as first value of color palette. Usually colors[0] = "b".
-
-            **line_color** (String, 'grey') - Line Color. Init is grey
-
-            **dcline_color** (String, 'c') - Line Color. Init is cyan
-
-            **trafo_color** (String, 'k') - Trafo Color. Init is black
-
-            **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
-
-            **switch_color** (String, 'k') - Switch Color. Init is black
-
-            **library** (String, "igraph") - library name to create generic coordinates (case of
-                                                missing geodata). "igraph" to use igraph package or "networkx" to use networkx package.
-
-            **show_plot** (bool, True) - Shows plot at the end of plotting
-
-            **ax** (object, None) - matplotlib axis to plot to
-
-        OUTPUT:
-            **ax** - axes of figure
+        Returns:
+            axes of figure
     """
     try:
         if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):

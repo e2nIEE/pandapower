@@ -339,19 +339,14 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
     **Controllers**. Optionally other functions than the pp power flow can be called by setting the run function in
     kwargs
 
-    INPUT:
-        **net** - The pandapower format network
-
-    OPTIONAL:
-        **time_steps** (list or tuple, None) - time_steps to calculate as list or tuple (start, stop)
-        if None, all time steps from provided data source are simulated
-
-        **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
-
-        **verbose** (bool, True) - prints progress bar or if logger.level == Debug it prints debug messages
-
-        **kwargs** - Keyword arguments for run_control and run If "run" is in kwargs the default call to runpp()
-        is replaced by the function kwargs["run"]
+    Parameters:
+        net: The pandapower format network
+        time_steps (list or tuple, None): time_steps to calculate as list or tuple (start, stop)
+            if None, all time steps from provided data source are simulated
+        continue_on_divergence (bool, False): If True time series calculation continues in case of errors.
+        verbose (bool, True): prints progress bar or if logger.level == Debug it prints debug messages
+    Keyword Arguments:
+        run (Callable): for run_control and run the default call to runpp() is replaced by the function passed
     """
 
     ts_variables = init_time_series(net, time_steps, continue_on_divergence, verbose, **kwargs)

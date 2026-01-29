@@ -34,6 +34,7 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as version_str
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
 import scipy as sp
@@ -1209,6 +1210,11 @@ def _add_options(net, options):
     net._options.update(options)
 
 
+def get_b2b_vsc_names(elements: npt.NDArray):
+    # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
+    return np.char.add(np.char.add('b2b_', np.repeat(elements, 2).astype(str)), np.tile(['+', '-'], len(elements)))
+
+
 def _clean_up(net, res=True):
     # mode = net.__internal_options["mode"]
 
@@ -1241,10 +1247,7 @@ def _clean_up(net, res=True):
 
     if len(net["b2b_vsc"]) > 0:
         # remove vsc's which were only created for the b2b_vsc's
-        indices = net.b2b_vsc.index.values
-        # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
-        naming_scheme = 'b2b_' + np.repeat(indices, 2).astype(str) + np.tile(['+', '-'], len(indices))
-        vsc_idx = net.vsc[net.vsc['name'].isin(naming_scheme)]
+        vsc_idx = net.vsc[net.vsc['name'].isin(get_b2b_vsc_names(net.b2b_vsc.index.to_numpy()))]
         # drop the vsc's
         net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
 
@@ -1253,9 +1256,10 @@ def _set_isolated_buses_out_of_service(net, ppc):
     # set disconnected buses out of service
     # first check if buses are connected to branches
     # I don't know why this dance with [X, :][:, [Y, Z]] (instead of [X, [Y, Z]]) is necessary:
-    disco = np.setxor1d(ppc["bus"][:, BUS_I].astype(np.int64),
-                        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, :][:, [F_BUS, T_BUS]].real.astype(
-                            np.int64).flatten())
+    disco = np.setxor1d(
+        ppc["bus"][:, BUS_I].astype(np.int64),
+        ppc["branch"][ppc["branch"][:, BR_STATUS] == 1, :][:, [F_BUS, T_BUS]].real.astype(np.int64).flatten()
+    )
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses = np.setdiff1d(disco, ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I].real.astype(np.int64))
