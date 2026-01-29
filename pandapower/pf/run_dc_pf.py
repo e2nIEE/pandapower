@@ -40,6 +40,7 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
             np.array_equal(ppci['internal']['branch'][:, TAP], ppci["branch"][:, TAP]):
         baseMVA = ppci['baseMVA']
         bus = ppci['bus']
+        bus_dc = ppci['bus_dc']
         gen = ppci['gen']
         branch = ppci['branch']
         branch_dc = ppci['branch_dc']
