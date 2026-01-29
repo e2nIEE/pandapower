@@ -15,6 +15,7 @@ from pandapower.pypower.idx_brch_dc import DC_PF, DC_PT, DC_IF, DC_IT
 from pandapower.pypower.idx_bus import VA, GS
 from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_PD, DC_REF
 from pandapower.pypower.idx_gen import PG, GEN_BUS
+from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS
 from pandapower.pypower.idx_vsc import (VSC_BUS, VSC_BUS_DC, VSC_MODE_DC, VSC_MODE_DC_P, VSC_VALUE_DC, VSC_MODE_AC,
                                         VSC_MODE_AC_SL, VSC_Q, VSC_P, VSC_P_DC)
 from pandapower.pypower.dcpf import dcpf
@@ -94,7 +95,7 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
     # compute complex bus power injections [generation - load]
     # adjusted for phase shifters and real shunts
     Pbus = np.real(makeSbus(baseMVA, bus, gen)) - bus[:, GS] / baseMVA
-    # append zeros for the DC nodes
+    # add dc nodes respecting loads
     Pbus = np.concatenate([Pbus, -bus_dc[:, DC_PD]])
     # select VSCs with mode DC p and not mode AC slack
     vsc_with_p = vsc[(vsc[:, VSC_MODE_DC] == VSC_MODE_DC_P) & (vsc[:, VSC_MODE_AC] != VSC_MODE_AC_SL)]
@@ -113,10 +114,10 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
     Pbus[dc_bus] -= value_dc
     Pbus -= Pbusinj
 
-    # add dc buses respecting loads
-    pq_with_dc = np.concatenate([pq, bus_dc[bus_dc[:, DC_BUS_TYPE] != DC_REF, DC_BUS_I] + bus.shape[0]]).astype(int64)
-    # add dc slacks
-    ref_with_dc = np.concatenate([ref, bus_dc[bus_dc[:, DC_BUS_TYPE] == DC_REF, DC_BUS_I] + bus.shape[0]]).astype(int64)
+    # add dc nodes except nodes with source_dc attached
+    pq_with_dc = np.concatenate([pq, bus_dc[~np.isin(bus_dc[:, DC_BUS_I], ppci['source_dc'][:, SOURCE_DC_BUS]), DC_BUS_I] + bus.shape[0]]).astype(int64)
+    # add dc slacks (nodes with source_dc attached)
+    ref_with_dc = np.concatenate([ref, bus_dc[np.isin(bus_dc[:, DC_BUS_I], ppci['source_dc'][:, SOURCE_DC_BUS]), DC_BUS_I] + bus.shape[0]]).astype(int64)
 
     # "run" the power flow
     Va = dcpf(B, Pbus, va0, ref_with_dc, pv, pq_with_dc)
