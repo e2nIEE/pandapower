@@ -124,12 +124,10 @@ class BinarySearchControl(Controller):
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
 
-        self.output_adjustable = np.array([False if not distribution else service
-                                            for distribution, service in zip(self.output_values_distribution,
-                                                                            self.output_element_in_service)],
-                                            dtype=np.bool)
+        self.output_adjustable = np.array([False if not distribution else service for distribution, service in zip(
+                self.output_values_distribution, self.output_element_in_service
+        )], dtype=bool)
 
-        n = len(self.output_element_index)
         self.set_point = set_point
         self.voltage_ctrl = voltage_ctrl
         self.bus_idx = bus_idx
@@ -183,10 +181,10 @@ class BinarySearchControl(Controller):
     def initialize_control(self, net):
         self.output_values = read_from_net(net, self.output_element, self.output_element_index,
                                            self.output_variable, self.write_flag)
-        self.output_adjustable = np.array([False if not distribution else service
-                                            for distribution, service in zip(self.output_values_distribution,
-                                                                            self.output_element_in_service)],
-                                            dtype=np.bool)
+        self.output_adjustable = np.array([
+            False if not distribution else service for distribution, service in zip(
+                self.output_values_distribution, self.output_element_in_service
+            )], dtype=bool)
 
     def is_converged(self, net):
         """
@@ -250,8 +248,9 @@ class BinarySearchControl(Controller):
                 return self.converged
             else:
                 # adapt output adjustable depending on in_service
-                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable in zip(
+                    self.output_element_in_service, self.output_adjustable
+                )], dtype=bool)
 
                 # normalize the values distribution
                 self._normalize_distribution_in_service()
@@ -268,8 +267,9 @@ class BinarySearchControl(Controller):
                 return self.converged
             else:
                 # adapt output adjustable depending on in_service
-                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable in zip(
+                    self.output_element_in_service, self.output_adjustable
+                )], dtype=bool)
 
                 # normalize the values distribution
                 self._normalize_distribution_in_service()
@@ -386,18 +386,22 @@ class BinarySearchControl(Controller):
                     # check if limit is reached
                     self._update_min_max_q_mvar(net)
 
-                    reached_min_qmvar = x<self.output_min_q_mvar
-                    reached_max_qmvar = x>self.output_max_q_mvar
+                    reached_min_qmvar = x < self.output_min_q_mvar
+                    reached_max_qmvar = x > self.output_max_q_mvar
 
+                    self.output_values_old = self.output_values
                     if reached_min_qmvar or reached_max_qmvar:
-                        logging.info('Station %s controlled by %s reached a reactive power limit.' % (self.output_element_index, self.name))
-                        self.output_adjustable = np.array([False], dtype=np.bool)
+                        logging.info(
+                            f"Station {self.output_element_index} controlled by {self.name} reached a reactive power "
+                            f"limit."
+                        )
+                        self.output_adjustable = np.array([False], dtype=bool)
                         if reached_min_qmvar:
-                            self.output_values_old, self.output_values = self.output_values, self.output_min_q_mvar
+                            self.output_values = self.output_min_q_mvar
                         elif reached_max_qmvar:
-                            self.output_values_old, self.output_values = self.output_values, self.output_max_q_mvar
+                            self.output_values = self.output_max_q_mvar
                     else:
-                        self.output_values_old, self.output_values = self.output_values, x
+                        self.output_values = x
             else:
                 self.output_values_old, self.output_values = self.output_values, x
 

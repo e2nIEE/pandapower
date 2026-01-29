@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import logging
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -448,6 +448,7 @@ def test_cigre_network_with_slack_init():
     test_cigre_network(init='slack')
 
 
+@pytest.mark.skipif(np.__version__.startswith('1.'), reason="Known unfixed issues. Won't fix.")
 def test_cigre_with_bad_data():
     np.random.seed(123456)
     net = create_cigre_network_mv(with_der=False)
@@ -472,6 +473,7 @@ def test_cigre_with_bad_data():
 
     # 4. Do chi2-test
     bad_data_detected = chi2_analysis(net, init='slack')
+    assert bad_data_detected
 
     # 5. Perform rn_max_test
     success_rn_max = remove_bad_data(net, init='slack')
@@ -939,6 +941,12 @@ def _compare_pf_and_se_results(net):
     assert (np.allclose(net.res_trafo_est.p_hv_mw.values, net.res_trafo.p_hv_mw.values, 1e-6))
     assert (np.allclose(net.res_trafo_est.q_hv_mvar.values, net.res_trafo.q_hv_mvar.values, 1e-6))
 
+
+@pytest.mark.skipif(not np.__version__.startswith("1."), reason="Test only for numpy 1.X")
+def test_numpy1_warning():
+    with pytest.raises(UserWarning, match="numpy 1.x should not be used with estimate"):
+        estimate(create_empty_network())
+    
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
