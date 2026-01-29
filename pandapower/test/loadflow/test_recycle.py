@@ -179,7 +179,8 @@ def test_recycle_dc_trafo_shift(recycle_net):
     create_transformer(net, 3, b4, std_type="0.4 MVA 10/0.4 kV")
     net["trafo"].at[0, "tap_pos"] = 0
     net["trafo"].at[0, "tap_step_percent"] = 1
-    net["trafo"].at[0, "tap_step_degree"] = 30
+    # FIXME: incorrect modelling, tap_step_percent and tap_step_degree should not exist at the same time
+    # net["trafo"].at[0, "tap_step_degree"] = 30
     net2 = copy.deepcopy(net)
     pl = 1.2
     ql = 0.0
