@@ -13,6 +13,7 @@ from numpy import pi, zeros, real, bincount, int64
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, SHIFT, TAP
 from pandapower.pypower.idx_brch_dc import DC_PF, DC_PT, DC_IF, DC_IT
 from pandapower.pypower.idx_bus import VA, GS
+from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_PD, DC_REF
 from pandapower.pypower.idx_gen import PG, GEN_BUS
 from pandapower.pypower.idx_vsc import (VSC_BUS, VSC_BUS_DC, VSC_MODE_DC, VSC_MODE_DC_P, VSC_VALUE_DC, VSC_MODE_AC,
                                         VSC_MODE_AC_SL, VSC_Q, VSC_P, VSC_P_DC)
@@ -70,10 +71,11 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
         ppci['internal']['pv'] = pv
         ppci['internal']['pq'] = pq
         ppci['internal']['ref_gens'] = ref_gens
+        bus_dc = ppci["bus_dc"]
         branch_dc = ppci["branch_dc"]
 
         # build B matrices and phase shift injections
-        B, Bf, Pbusinj, Pfinj, Cft = makeBdc(bus, branch, ppci["bus_dc"], branch_dc, vsc)
+        B, Bf, Pbusinj, Pfinj, Cft = makeBdc(bus, branch, bus_dc, branch_dc, vsc)
 
         # updates Bbus matrix
         ppci['internal']['Bbus'] = B
@@ -86,13 +88,13 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
     # initial state
     va0 = bus[:, VA] * (pi / 180.)
     # append zeros for the DC nodes
-    va0 = np.concatenate([va0, np.zeros(ppci["bus_dc"].shape[0])])
+    va0 = np.concatenate([va0, np.zeros(bus_dc.shape[0])])
 
     # compute complex bus power injections [generation - load]
     # adjusted for phase shifters and real shunts
     Pbus = np.real(makeSbus(baseMVA, bus, gen)) - bus[:, GS] / baseMVA
     # append zeros for the DC nodes
-    Pbus = np.concatenate([Pbus, np.zeros(ppci["bus_dc"].shape[0])])
+    Pbus = np.concatenate([Pbus, -bus_dc[:, DC_PD]])
     # select VSCs with mode DC p and not mode AC slack
     vsc_with_p = vsc[(vsc[:, VSC_MODE_DC] == VSC_MODE_DC_P) & (vsc[:, VSC_MODE_AC] != VSC_MODE_AC_SL)]
     ac_bus = vsc_with_p[:, VSC_BUS].astype(int64)
@@ -110,9 +112,13 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
     Pbus[dc_bus] -= value_dc
     Pbus -= Pbusinj
 
-    pq_with_dc = np.concatenate([pq, np.arange(bus.shape[0], bus.shape[0] + ppci["bus_dc"].shape[0])])
+    # add dc buses respecting loads
+    pq_with_dc = np.concatenate([pq, bus_dc[bus_dc[:, DC_BUS_TYPE] != DC_REF, DC_BUS_I] + bus.shape[0]]).astype(int64)
+    # add dc slacks
+    ref_with_dc = np.concatenate([ref, bus_dc[bus_dc[:, DC_BUS_TYPE] == DC_REF, DC_BUS_I] + bus.shape[0]]).astype(int64)
+
     # "run" the power flow
-    Va = dcpf(B, Pbus, va0, ref, pv, pq_with_dc)
+    Va = dcpf(B, Pbus, va0, ref_with_dc, pv, pq_with_dc)
     ppci['internal']["V"] = Va
 
     # update data matrices with solution
