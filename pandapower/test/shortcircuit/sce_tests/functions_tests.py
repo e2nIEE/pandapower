@@ -143,7 +143,7 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
             fl_buses = fault_location_buses
 
         parametrize_values_vector_wp25 += list(product(
-            [net_name[10:]], faults[2:], cases, values, lv_tol_percents, vector_groups,
+            [net_name[10:]], faults, cases, values, lv_tol_percents, vector_groups,
             fl_buses, is_branch_test, grounding_types
         ))
 
@@ -157,7 +157,7 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
 
         base_wp25 += list(product(
             [net_name[10:]],
-            faults[2:],
+            faults,
             cases,
             values,
             lv_tol_percents,
@@ -693,6 +693,58 @@ expected_fail_list = [
     "1_four_bus_radial_1ph_grid_MP-LG-max-(0, 0)-10-3-True",
     "1_four_bus_radial_1ph_grid_MP-LG-max-(0, 0)-10-1-True",
     "1_four_bus_radial_1ph_grid_MP-LG-max-(0, 0)-10-0-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-min-(0, 0)-6-0-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-min-(0, 0)-10-0-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-min-(0, 0)-6-1-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-min-(0, 0)-10-1-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-min-(0, 0)-6-3-True",
+    "1_four_bus_radial_1ph_grid_MP-LG-min-(0, 0)-10-3-True",
+    "1_four_bus_radial_1ph_grid_MP-LLG-min-(0, 0)-6-0-True",
+    "1_four_bus_radial_1ph_grid_MP-LLG-min-(0, 0)-10-0-True",
+    "1_four_bus_radial_1ph_grid_MP-LLG-min-(0, 0)-6-1-True",
+    "1_four_bus_radial_1ph_grid_MP-LLG-min-(0, 0)-10-1-True",
+    "2_four_bus_radial_2ph_grid_MP-LG-min-(0, 0)-6-0-True",
+    "2_four_bus_radial_2ph_grid_MP-LG-min-(0, 0)-10-0-True",
+    "2_four_bus_radial_2ph_grid_MP-LG-min-(0, 0)-6-1-True",
+    "2_four_bus_radial_2ph_grid_MP-LG-min-(0, 0)-10-1-True",
+    "2_four_bus_radial_2ph_grid_MP-LLG-min-(0, 0)-6-1-True",
+    "2_four_bus_radial_2ph_grid_MP-LLG-min-(0, 0)-10-1-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-min-(0, 0)-6-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-min-(0, 0)-10-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-min-(0, 0)-6-4-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-min-(0, 0)-10-4-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-min-(5, 5)-6-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LG-min-(5, 5)-10-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LLG-min-(0, 0)-6-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LLG-min-(0, 0)-10-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LLG-min-(5, 5)-6-2-True",
+    "4_five_bus_radial_grid_1ph_yyn_MP-LLG-min-(5, 5)-10-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-min-(0, 0)-6-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-min-(0, 0)-10-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-min-(0, 0)-6-4-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-min-(0, 0)-10-4-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-min-(5, 5)-6-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LG-min-(5, 5)-10-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LLG-min-(0, 0)-6-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LLG-min-(0, 0)-10-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LLG-min-(5, 5)-6-2-True",
+    "5_five_bus_radial_grid_1ph_ynyn_MP-LLG-min-(5, 5)-10-2-True",
+    "6_five_bus_radial_grid_1ph_dd_MP-LG-min-(0, 0)-6-4-False",
+    "6_five_bus_radial_grid_1ph_dd_MP-LG-min-(0, 0)-10-4-False",
+    "6_five_bus_radial_grid_1ph_dd_MP-LG-min-(5, 5)-6-4-False",
+    "6_five_bus_radial_grid_1ph_dd_MP-LG-min-(5, 5)-10-4-False",
+    "7_eight_bus_radial_grid_1ph_ynyn_MP-LG-min-(0, 0)-6-2-True",
+    "7_eight_bus_radial_grid_1ph_ynyn_MP-LG-min-(0, 0)-10-2-True",
+    "7_eight_bus_radial_grid_1ph_ynyn_MP-LG-min-(0, 0)-6-4-True",
+    "7_eight_bus_radial_grid_1ph_ynyn_MP-LG-min-(0, 0)-10-4-True",
+    "7_eight_bus_radial_grid_1ph_ynyn_MP-LG-min-(5, 5)-6-2-True",
+    "7_eight_bus_radial_grid_1ph_ynyn_MP-LG-min-(5, 5)-10-2-True",
+    "7_eight_bus_radial_grid_1ph_ynyn_MP-LG-min-(5, 5)-6-4-True",
+    "7_eight_bus_radial_grid_1ph_ynyn_MP-LG-min-(5, 5)-10-4-True",
+    "10_eight_bus_radial_grid_2ph_dd_MP-LG-min-(0, 0)-6-6-False",
+    "10_eight_bus_radial_grid_2ph_dd_MP-LG-min-(0, 0)-10-6-False",
+    "10_eight_bus_radial_grid_2ph_dd_MP-LG-min-(5, 5)-6-6-False",
+    "10_eight_bus_radial_grid_2ph_dd_MP-LG-min-(5, 5)-10-6-False"
 ]
 
 def compose_and_validate_key(net_name, fault, case, fault_values, lv_tol_percent, fault_location_bus, is_branch):
