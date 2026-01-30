@@ -624,7 +624,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
             if f'tap{t}_dependency_table' in trafo_df:
                 tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table", na_replacement=False)
             else:
-                tap_dependency_table = np.array([False])
+                tap_dependency_table = np.array([False] * len(trafo_df))
             tap_table = np.logical_and(tap_dependency_table, tap_changer_type is not None)
             tap_no_table = np.logical_and(~tap_dependency_table, tap_changer_type is not None)
             if any(tap_table):
@@ -697,7 +697,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
                 if tap_complex.any():
                     trafo_shift[tap_complex] += _get_trafo_shift(trafo_df, t, tap_complex, direction, vn, False)
 
-    return vnh, vnl, trafo_shift
+    return vnh, vnl, trafo_shift #TODO: fix get vnh vnl form return value not through side effect
 
 
 def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
@@ -734,7 +734,7 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
     else:
         degree_is_set = False
 
-    if (degree_is_set & percent_is_set).any():
+    if (degree_is_set & percent_is_set).any() and ideal:
         raise UserWarning(
             "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
 
@@ -748,7 +748,7 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
 
     # complex tap changer
     tap_steps = tap_step_percent * tap_diff / 100
-    tap_angles = np.nan_to_num(tap_step_percent, nan=0)
+    tap_angles = np.nan_to_num(tap_step_degree, nan=0)
     u1 = vn[mask]
     du = u1 * np.nan_to_num(tap_steps, nan=0)
     vn[mask] = np.sqrt((u1 + du * _cos(tap_angles)) ** 2 + (du * _sin(tap_angles)) ** 2)
