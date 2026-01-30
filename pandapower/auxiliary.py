@@ -1042,7 +1042,7 @@ def _select_is_elements_numba(net, isolated_nodes=None, isolated_nodes_dc=None, 
             # if element_table has both bus and bus_dc e.g. "vsc":
             is_elements[element_table] = is_elements.get(element_table, True) & element_in_service
 
-    if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"]:
+    if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"] and "vsc" in net["_pd2ppc_lookups"]["aux"]:
         # reasoning: it can be that there are isolated DC buses. But they are only discovered
         # after the connectivity check. Afterwards, the connected VSC elements are set out of service
         # But after this happens, the VSC element auxiliary buses must be set out of service, too
@@ -1835,7 +1835,7 @@ def _init_rundcpp_options(net, trafo_model, trafo_loading, recycle, check_connec
                           switch_rx_ratio, trafo3w_losses, **kwargs):
     ac = False
     numba = True
-    mode = "pf"
+    mode = "dc"
     init = 'flat'
 
     numba = _check_if_numba_is_installed()
