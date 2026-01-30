@@ -183,7 +183,7 @@ def init_element(net, element, suffix=None):
 
 
 def get_relevant_elements(mode="pf"):
-    if mode == "pf" or mode == "opf":
+    if mode == "pf" or mode == "opf" or mode == "dc":
         return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen", "source_dc",
