@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -13,7 +13,7 @@ from pandapower.opf.run_pandamodels import _runpm
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
-          pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
+          pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
           delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
           pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """
@@ -49,43 +49,31 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
 
     How these costs are combined into a cost function depends on the cost_function parameter.
 
-    INPUT:
-        **net** - The pandapower format network
-
-    OPTIONAL:
-        **julia_file** (str, None) - path to a custom julia optimization file
-
-        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels data structure
-
-        **correct_pm_network_data** (bool, True) - checks if network data is correct. If not tries to correct it
-
-        **silence** (bool, True) - Suppresses information and warning messages output by PowerModels
-
-        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
-
-        **pm_solver** (str, "ipopt") - The "main" power models solver
-
-        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
-
-        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
-
-        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface. To be set as a dict like {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
-
-        **pm_log_level** (int, 0) - solver log level in power models
-
-        **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be deleted after optimization.
-
-        **pm_file_path** (str, None) - Specifiy the filename, under which the .json file for powermodels is stored. If you want to keep the file after optimization, you should also set delete_buffer_file to False!
-
-        **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with matpower's
+    Parameters:
+        net: The pandapower format network
+        julia_file (str, None): path to a custom julia optimization file
+        pp_to_pm_callback (function, None): callback function to add data to the PowerModels data structure
+        correct_pm_network_data (bool, True): checks if network data is correct. If not tries to correct it
+        silence (bool, True): Suppresses information and warning messages output by PowerModels
+        pm_model (str, "ACPPowerModel"): The PowerModels.jl model to use
+        pm_solver (str, "ipopt"): The "main" power models solver
+        pm_mip_solver (str, "highs"): The mixed integer solver (when "main" solver == juniper)
+        pm_nl_solver (str, "ipopt"): The nonlinear solver (when "main" solver == juniper)
+        pm_time_limits (Dict, None): Time limits in seconds for power models interface. To be set as a dict like
+            {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
+        pm_log_level (int, 0): solver log level in power models
+        delete_buffer_file (Bool, True): If True, the .json file used by powermodels will be deleted after optimization.
+        pm_file_path (str, None): Specify the filename, under which the .json file for powermodels is stored. If you
+            want to keep the file after optimization, you should also set delete_buffer_file to False!
+        opf_flow_lim (str, "I"): Quantity to limit for branch flow constraints, in line with matpower's
                 "opf.flowlim" parameter:
 
                     "S" - apparent power flow (limit in MVA),
                     "I" - current magnitude (limit in MVA at 1 p.u. voltage)
 
-        **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
+        pm_tol (float, 1e-8): default desired convergence tolerance for solver to use.
 
-        **pdm_dev_mode** (bool, False) - If True, the develope mode of PdM is called.
+        pdm_dev_mode (bool, False): If True, the develop mode of PdM is called.
     """
     ac = True if "DC" not in pm_model else False
     net._options = {}
@@ -151,7 +139,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                pm_model="ACPPowerModel", pm_solver="juniper", correct_pm_network_data=True, silence=True,
-               pm_nl_solver="ipopt", pm_mip_solver="cbc", pm_time_limits=None, pm_log_level=0,
+               pm_nl_solver="ipopt", pm_mip_solver="highs", pm_time_limits=None, pm_log_level=0,
                delete_buffer_file=True, pm_file_path=None, opf_flow_lim="S", pm_tol=1e-8,
                pdm_dev_mode=False, **kwargs):
     """
@@ -185,7 +173,7 @@ def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_a
 def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
               trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
               pm_model="DCPPowerModel", pm_solver="juniper", pm_nl_solver="ipopt",
-              pm_mip_solver="cbc", correct_pm_network_data=True, silence=True, pm_time_limits=None,
+              pm_mip_solver="highs", correct_pm_network_data=True, silence=True, pm_time_limits=None,
               pm_log_level=0, delete_buffer_file=True, pm_file_path=None, opf_flow_lim="S", pm_tol=1e-8,
               pdm_dev_mode=False, **kwargs):
     """
@@ -213,7 +201,7 @@ def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_an
 def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       n_timesteps=24, time_elapsed=1., correct_pm_network_data=True, silence=True,
-                      pm_solver="juniper", pm_mip_solver="cbc", pm_nl_solver="ipopt",
+                      pm_solver="juniper", pm_mip_solver="highs", pm_nl_solver="ipopt",
                       pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
                       opf_flow_lim="S", charge_efficiency=1., discharge_efficiency=1.,
                       standby_loss=1e-8, p_loss=1e-8, q_loss=1e-8, pm_tol=1e-4, pdm_dev_mode=False,
@@ -234,7 +222,7 @@ def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angle
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=add_storage_opf_settings, julia_file="run_powermodels_multi_storage",
                      correct_pm_network_data=correct_pm_network_data, silence=silence, pm_model=pm_model,
-                     pm_solver=pm_solver, pm_time_limits=pm_time_limits,
+                     pm_solver=pm_solver, pm_time_limits=pm_time_limits, pm_mip_solver=pm_mip_solver, pm_nl_solver=pm_nl_solver,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol, pdm_dev_mode=pdm_dev_mode)
 
     net._options["n_time_steps"] = to_time_step - from_time_step
@@ -401,7 +389,7 @@ def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 def runpm_pf(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
              trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
              correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
-             pm_mip_solver="cbc", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
+             pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
              delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
              pdm_dev_mode=False, **kwargs):  # pragma: no cover
     """

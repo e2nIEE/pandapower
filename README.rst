@@ -64,7 +64,7 @@ Getting Started:
 
 If you are interested in the latest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
 
-.. image:: https://simbench.de/wp-content/uploads/2019/01/logo.png
+.. image:: https://simbench.de/wp-content/uploads/2025/11/logo.png
    :target: https://www.simbench.net
    :alt: SimBench_logo
 

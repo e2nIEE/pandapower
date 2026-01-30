@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -74,10 +74,7 @@ def create_test_network():
 def create_test_network2():
     """Creates a simple pandapower test network
     """
-    net = from_pickle(os.path.join(pp_dir, "test", "loadflow", "testgrid.p"))
-    #    net = pp.file_io.from_pickle("testgrid.p")
-
-    return net
+    return from_pickle(os.path.join(pp_dir, "test", "loadflow", "testgrid.p"))
 
 
 def add_grid_connection(net, vn_kv=20., zone=None):
