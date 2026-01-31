@@ -1009,9 +1009,9 @@ def test_create_transformers():
         'parallel': pd.Series([1, 1], dtype=np.uint32),
         'df': [1.0, 1.0],
         'in_service': [True, True],
-        'vector_group': ['Dyn5', 'Dyn5'],
         'oltc': [False, False],
         'test_kwargs': ['TestKW', 'TestKW'],
+        'vector_group': ['Dyn5', 'Dyn5'],
     })
     assert dataframes_equal(net.trafo, res_df)
 
@@ -1055,8 +1055,8 @@ def test_create_transformers_for_single():
         'df': [1.0],
         'in_service': [True],
         'oltc': [False],
-        'vector_group': ['Dyn5'],
         'test_kwargs': ['TestKW'],
+        'vector_group': ['Dyn5'],
     })
     assert dataframes_equal(net.trafo, res_df)
 
