@@ -118,6 +118,7 @@ def create_transformer(
         **kwargs,
     }
     ti = load_std_type(net, std_type, "trafo")
+
     updates = {
         "sn_mva": ti["sn_mva"],
         "vn_hv_kv": ti["vn_hv_kv"],
@@ -129,9 +130,6 @@ def create_transformer(
         "parallel": parallel,
         "df": df,
         "shift_degree": ti.get("shift_degree", 0),
-        "tap_side": ti.get("tap_side", None),
-        "tap_changer_type": ti.get("tap_changer_type", None),
-        "vector_group": ti.get("vector_group", None)
     }
     for zero_param in ["vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", "si0_hv_partial", "vector_group"]:
         if zero_param in ti:
@@ -429,8 +427,6 @@ def create_transformer_from_parameters(
         "tap_step_degree": tap_step_degree,
         "parallel": parallel,
         "df": df,
-        "tap_changer_type": tap_changer_type,
-        "vector_group": vector_group,
         **kwargs,
     }
 
@@ -655,8 +651,6 @@ def create_transformers_from_parameters(  # index missing ?
         "parallel": parallel,
         "df": df,
         "tap_dependency_table": tap_dependency_table,
-        "tap_changer_type": tap_changer_type,
-        "vector_group": vector_group,
         **kwargs,
     }
 
