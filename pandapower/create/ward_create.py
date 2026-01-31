@@ -114,8 +114,8 @@ def create_wards(
         "in_service": in_service,
         **kwargs,
     }
-    defaults_to_fill = [("name", None)]
-    _set_multiple_entries(net, "ward", index, entries=entries, defaults_to_fill=defaults_to_fill)
+
+    _set_multiple_entries(net, "ward", index, entries=entries)
 
     return index
 
