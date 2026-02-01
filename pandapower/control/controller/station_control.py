@@ -428,7 +428,7 @@ class BinarySearchControl(Controller):
                 self.control_modus = ControlModusEnum.v_ctrl  # catching old implementation
                 logger.warning(
                     f"Deprecated Control Modus in Controller {self.index}, using V_ctrl from available types\n")
-            elif (isinstance(self.control_modus, bool) and self.control_modus == False) or (type(self.control_modus) == bool and self.control_modus == True
+            elif (isinstance(self.control_modus, bool) and self.control_modus == False) or (isinstance(self.control_modus, bool) and self.control_modus == True
                                                                                         and self.input_element_index is None):
                 if self.control_modus is True:
                     logger.warning(f'Deprecated Control Modus in Controller {self.index}, attempted to use "V_ctrl" but '
@@ -792,11 +792,11 @@ class DroopControl(Controller):
                         "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead.")
                     self._deprecation_warned = True
         ###atching old implementation
-        if type(self.control_modus) == bool and self.control_modus == True:
+        if isinstance(self.control_modus, bool) and self.control_modus == True:
             self.control_modus = ControlModusEnum.v_ctrl_q_droop
             logger.warning(f"Deprecated Control Modus in Controller {self.index}, using V_ctrl with Q droop from available types"
                          f" 'Q_ctrl' or 'V_ctrl'\n")
-        elif type(self.control_modus) == bool and self.control_modus == False:
+        elif isinstance(self.control_modus, bool) and self.control_modus == False:
             self.control_modus = ControlModusEnum.q_ctrl_v_droop
             logger.warning(f"Deprecated Control Modus in Controller {self.index}, using Q_ctrl with V droop from available types"
                          f" 'Q_ctrl' or 'V_ctrl'\n")
@@ -820,7 +820,7 @@ class DroopControl(Controller):
         if (self.control_modus in ControlModusEnum.v_modes() and not
                     isinstance(getattr(self, 'vm_set_pu', None), numbers.Number)):#catching missing voltage set point
             logger.warning(f"vm_set_pu must be a number, not "
-                   f"{type(isinstance(getattr(self, 'vm_set_pu', None), numbers.Number))} in Controller {self.index}, "
+                   f"{isinstance(getattr(self, 'vm_set_pu', None), numbers.Number)} in Controller {self.index}, "
                    f"using 1 as new setpoint")
             self.vm_set_pu = getattr(net.controller.object[self.controller_idx], "set_point", 1)
         #checking if Droop and BS Controller have the same control_modus
