@@ -96,6 +96,8 @@ tutorials = [
     "igraph",
     "plotly~=6.3",
     "power-grid-model-io~=1.2",
+    "ortools~=9.14",
+    "numba~=0.61"
 ]
 
 typing = [
