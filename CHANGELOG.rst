@@ -8,6 +8,8 @@ Change Log
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
 - [ADDED] rundcpp: Added DC elements to DC powerflow
 - [ADDED] python: support for version 3.14 added to the test pipelines
+- [ADDED] Station Controller support for power factor control and tangens control
+- [CHANGED] attribute voltage_ctrl in Station Controller to control_modus to select new control modi. Changed the type from boolean to enum class
 
 [3.3.2] - 2026-01-13
 -------------------------------

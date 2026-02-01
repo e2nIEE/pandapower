@@ -175,11 +175,11 @@ class BinarySearchControl(Controller):
                         f"'voltage_ctrl' in Controller {self.index} is deprecated. "
                         "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead.")
                     self._deprecation_warned = True
-        if type(control_modus) == bool and control_modus == True: #Only functions written out!?!
+        if isinstance(control_modus,bool) and control_modus == True: #Only functions written out!?!
             self.control_modus = ControlModusEnum.v_ctrl
             logger.warning(f"Deprecated Controller control_modus for Controller {self.index}, using 'V_ctrl' from available"
                          f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
-        elif type(control_modus) == bool and control_modus == False: #Only functions written out!?!
+        elif isinstance(control_modus, bool) and control_modus == False: #Only functions written out!?!
             self.control_modus = ControlModusEnum.q_ctrl
             logger.warning(f"Deprecated Controller control_modus for Controller {self.index}, using Q_ctrl from available"
                          f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
@@ -327,7 +327,7 @@ class BinarySearchControl(Controller):
             if len(self.output_element_in_service) <= 1:
                 logger.warning(
                     f'Reactive Power Distribution for one output element cannot be modified. The active {self.output_element}'
-                    f' at index {str(np.array(self.output_element_index))}'
+                    f' at index {np.array(self.output_element_index)}'
                     f' will provide 100% of the reactive power in Controller {self.index}.\n')
             else:
                 logger.warning(
@@ -424,11 +424,11 @@ class BinarySearchControl(Controller):
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
             ###catching deprecated modi from old imports
-            if type(self.control_modus) == bool and self.control_modus == True and self.input_element_index is not None:
+            if isinstance(self.control_modus, bool) and self.control_modus == True and self.input_element_index is not None:
                 self.control_modus = ControlModusEnum.v_ctrl  # catching old implementation
                 logger.warning(
                     f"Deprecated Control Modus in Controller {self.index}, using V_ctrl from available types\n")
-            elif (type(self.control_modus) == bool and self.control_modus == False) or (type(self.control_modus) == bool and self.control_modus == True
+            elif (isinstance(self.control_modus, bool) and self.control_modus == False) or (type(self.control_modus) == bool and self.control_modus == True
                                                                                         and self.input_element_index is None):
                 if self.control_modus is True:
                     logger.warning(f'Deprecated Control Modus in Controller {self.index}, attempted to use "V_ctrl" but '
