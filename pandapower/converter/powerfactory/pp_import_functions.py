@@ -2129,10 +2129,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         pstac = item.c_pstac  # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop and pstac.i_ctrl == 0:
-                av_mode = 'constv'#'constq'
+                av_mode = 'constq'#'constq'
             else:
                 if pstac.i_ctrl == 0:
-                    av_mode = 'constv'#'constq'
+                    av_mode = 'constq'#'constq'
                 elif pstac.i_ctrl == 1:
                     av_mode = 'constq'
                 elif pstac.i_ctrl == 2:
@@ -2149,10 +2149,6 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 try:
                     params.vm_pu = item.GetAttribute('m:u:bus1')
                 except AttributeError:
-                    print("Exception vm_pu not available! Outserv: ")
-                    print(item.GetFullName())
-                    print(item.outserv)
-                    print(pstac.outserv)
                     if not pstac.uset_mode:
                         params.vm_pu = pstac.usetp
                     else:
@@ -2409,11 +2405,11 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
-                av_mode = 'constv'#'constq'
+                av_mode = 'constq'#'constq'
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
-                    av_mode = 'constv'#'constq'
+                    av_mode = 'constq'#'constq'
                 elif i_ctrl == 1:
                     av_mode = 'constq'
                 elif i_ctrl == 2:
@@ -2429,10 +2425,6 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                 try:
                     vm_pu = item.GetAttribute('m:u:bus1')
                 except AttributeError:
-                    print("Exception vm_pu not available! Outserv: ")
-                    print(item.GetFullName())
-                    print(item.outserv)
-                    print(pstac.outserv)
                     if not pstac.uset_mode:
                         vm_pu = pstac.usetp
                     else:
@@ -3964,7 +3956,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
         elif s.av_mode == "constq":
             gt = "sgen"
         elif s.av_mode == "constv":
-            gt = "sgen"
+            gt = "gen"
         else:
             gt = "other"
         gen_types.append(gt)
@@ -4062,7 +4054,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
     top_all = create_nxgraph(net, respect_switches=False, include_lines=True, include_trafos=True,
                              include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
                              calc_branch_impedances=False, branch_impedance_unit='ohm')
-    if control_mode == 1 or item.i_droop: #droop control
+    if control_mode >= 1 or item.i_droop: #droop control
         #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
         q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  #item.p_cub if other mode and droop?
         if q_control_cubicle is None:
@@ -4184,10 +4176,10 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                     net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
                     variable.append("q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar")
                     res_element_table = "res_switch"
-            else:
-                logger.error(
-                    f"{item}: only line, impedance, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
-                return
+        else:
+            logger.error(
+                f"{item}: only line, impedance, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
+            return
     #elif control_mode == 0:
     else:
         res_element_table = "res_bus"
@@ -4221,7 +4213,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             has_path = has_path or nx.has_path(top, input_busses[n], output_busses[m])
     if not has_path and control_mode != 0 and not item.i_droop:
         if control_mode ==1: control_modus = "Q"
-        elif control_mode == 2: control_modus = 'Power Factor'
+        elif control_mode == 2: control_modus = 'Power_factor'
         else: control_modus = 'tangens'
         logger.error(f'no path found, skipping {control_modus} controller')
         return
@@ -4274,7 +4266,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                                input_inverted=input_inverted,
                                input_element_index=bus,
                                set_point=v_setpoint_pu,
-                               control_mode='V_ctrl',
+                               control_modus='V_ctrl',
                                damping_factor=0.9,
                                tol=1e-6,
                                machines=[machine_obj.loc_name for machine_obj in item.psym])
@@ -4366,7 +4358,8 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 input_variable=variable,
                 input_element_index=res_element_index,
                 set_point=item.pfsetp,
-                control_modus=control_modus, tol=1e-6
+                control_modus=control_modus, tol=1e-6,
+                name = item.loc_name
             )
     elif control_mode== 3:#tan(phi)_control
         if item.iQorient != 0:
