@@ -336,7 +336,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
         with:
-          python-version: "3.13"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           uv sync --extra test --extra tutorials
@@ -351,14 +351,14 @@ jobs:
           uv run pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
-    needs: build
+    # needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
         with:
-          python-version: "3.13"
+          python-version: "3.12"
       - name: Install dependencies
         run: |
           uv sync --extra test --extra tutorials
