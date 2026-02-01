@@ -3964,7 +3964,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
         elif s.av_mode == "constq":
             gt = "sgen"
         elif s.av_mode == "constv":
-            gt = "gen"
+            gt = "sgen"
         else:
             gt = "other"
         gen_types.append(gt)
@@ -3985,7 +3985,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
         else:
             if control_mode == 0: #V_ctrl
                 for i in range(len(gen_types)):
-                    gen_types[i] = "gen"
+                    gen_types[i] = "sgen"
             elif control_mode == 1: #Q_ctrl
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
