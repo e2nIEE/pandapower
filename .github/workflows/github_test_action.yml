@@ -347,7 +347,7 @@ jobs:
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          uv run pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
     needs: build
@@ -368,7 +368,7 @@ jobs:
           python -m pip list
       - name: Test with pytest
         run: |
-          pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          uv run pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
 
   docs_check:
     needs: build
