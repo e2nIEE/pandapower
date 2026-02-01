@@ -365,8 +365,9 @@ class BinarySearchControl(Controller):
                 return self.converged
             else:
                 # adapt output adjustable depending on in_service
-                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable in zip(
+                    self.output_element_in_service, self.output_adjustable
+                )], dtype=bool)
 
                 # normalize the values distribution
                 self._normalize_distribution_in_service()
@@ -411,8 +412,9 @@ class BinarySearchControl(Controller):
                 return self.converged
             else:
                 # adapt output adjustable depending on in_service
-                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable in zip(
+                    self.output_element_in_service, self.output_adjustable
+                )], dtype=bool)
 
                 # normalize the values distribution
                 self._normalize_distribution_in_service()
@@ -626,18 +628,22 @@ class BinarySearchControl(Controller):
                     # check if limit is reached
                     self._update_min_max_q_mvar(net)
 
-                    reached_min_qmvar = x<self.output_min_q_mvar
-                    reached_max_qmvar = x>self.output_max_q_mvar
+                    reached_min_qmvar = x < self.output_min_q_mvar
+                    reached_max_qmvar = x > self.output_max_q_mvar
 
+                    self.output_values_old = self.output_values
                     if reached_min_qmvar or reached_max_qmvar:
-                        logging.info('Station %s controlled by %s reached a reactive power limit.' % (self.output_element_index, self.name))
-                        self.output_adjustable = np.array([False], dtype=np.bool)
+                        logging.info(
+                            f"Station {self.output_element_index} controlled by {self.name} reached a reactive power "
+                            f"limit."
+                        )
+                        self.output_adjustable = np.array([False], dtype=bool)
                         if reached_min_qmvar:
-                            self.output_values_old, self.output_values = self.output_values, self.output_min_q_mvar
+                            self.output_values = self.output_min_q_mvar
                         elif reached_max_qmvar:
-                            self.output_values_old, self.output_values = self.output_values, self.output_max_q_mvar
+                            self.output_values = self.output_max_q_mvar
                     else:
-                        self.output_values_old, self.output_values = self.output_values, x
+                        self.output_values = x
             else:
                 self.output_values_old, self.output_values = self.output_values, x
         ### write new set of Q values to output elements###
@@ -907,23 +913,15 @@ class VDroopControl_local(Controller):
     a binary search controller (bsc). The linked binary search controller is specified using the controller index,
     which refers to the linked bsc.
 
-    INPUT:
-        **self**
-
-        **net** - A pandapower grid.
-
-        **q_droop_var** - Droop Value in Mvar/p.u.
-
-        **vm_set_pu_bsc** - Initial voltage set point.
-
-        **controller_idx** - Index of linked Binary< search control (if present).
-
-        **tol=1e-6** - Tolerance criteria of controller convergence.
-
-        **vm_set_lb=None** - Lower band border of dead band
-
-        **vm_set_ub=None** - Upper band border of dead band
-       """
+    Parameters:
+        net: A pandapower grid.
+        q_droop_var: Droop Value in Mvar/p.u.
+        vm_set_pu_bsc: Initial voltage set point.
+        controller_idx: Index of linked Binary< search control (if present).
+        tol: Tolerance criteria of controller convergence.
+        vm_set_lb: Lower band border of dead band
+        vm_set_ub: Upper band border of dead band
+    """
 
     def __init__(self, net, q_droop_mvar, controller_idx, bus_idx, tol=1e-6, in_service=True, order=-1, level=0,
                  name="", drop_same_existing_ctrl=False, matching_params=None, q_set_mvar=None, vm_set_pu_bsc=None,

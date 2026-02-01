@@ -19,22 +19,19 @@ def create_empty_network(
     name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True
 ) -> pandapowerNet:
     """
-    This function initializes the pandapower datastructure.
+    This function initializes the pandapower data structure.
 
-    OPTIONAL:
-        **f_hz** (float, 50.) - power system frequency in hertz
+    Parameters:
+        f_hz: power system frequency in hertz
+        name: name for the network
+        sn_mva: reference apparent power for per unit system
+        add_stdtypes: Includes standard types to net
 
-        **name** (string, None) - name for the network
+    Returns:
+        net: pandapower attrdict with empty tables
 
-        **sn_mva** (float, 1) - reference apparent power for per unit system
-
-        **add_stdtypes** (boolean, True) - Includes standard types to net
-
-    OUTPUT:
-        **net** (attrdict) - PANDAPOWER attrdict with empty tables:
-
-    EXAMPLE:
-        net = create_empty_network()
+    Example:
+        >>> net = create_empty_network()
 
     """
     network_structure_dict = get_structure_dict()

@@ -21,17 +21,16 @@ def to_mpc(net, filename=None, **kwargs):
     This function converts a pandapower net to a matpower case files (.mat) version 2.
     Note: python is 0-based while Matlab is 1-based.
 
-    INPUT:
-        **net** - The pandapower net.
+    Parameters:
+        net: The pandapower net.
+        filename (str, None): File path + name of the mat file which will be created. If None the mpc will only be
+            returned
 
-    OPTIONAL:
-        **filename** (str, None) - File path + name of the mat file which will be created. If None
-            the mpc will only be returned
-
-        ****kwargs** - please look at to_ppc() documentation
+    Keyword Arguments:
+        any: are passed to :func:`to_ppc`
 
     EXAMPLE:
-        >>> from pandapower.converter import to_mpc
+        >>> from pandapower.converter.matpower import to_mpc
         >>> from pandapower.networks.power_system_test_cases import case9
         >>>
         >>> net = case9()
