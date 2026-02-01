@@ -130,7 +130,7 @@ class BinarySearchControl(Controller):
         else:
             self.output_element_index = []
             self.output_element_index.append(output_element_index)
-            self.output_element_index = self.output_element_index
+            self.output_element_index = output_element_index
         if isinstance(output_element_in_service, bool):
             self.output_element_in_service = [output_element_in_service]
         else:

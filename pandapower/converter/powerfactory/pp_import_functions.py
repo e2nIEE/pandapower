@@ -4048,12 +4048,12 @@ def create_stactrl(net, item, top, top_all, **kwargs):
     # Create nx graph for further usage
     # top is needed to check connectivity between inpout and output elements, therefore respect switches
     # top_all is the full topology to identify the sign of measurements, that is why respect_switches = False
-    top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
-                         include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                         calc_branch_impedances=False, branch_impedance_unit='ohm')
-    top_all = create_nxgraph(net, respect_switches=False, include_lines=True, include_trafos=True,
-                             include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                             calc_branch_impedances=False, branch_impedance_unit='ohm')
+    #top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
+    #                     include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
+    #                     calc_branch_impedances=False, branch_impedance_unit='ohm')
+    #top_all = create_nxgraph(net, respect_switches=False, include_lines=True, include_trafos=True,
+    #                         include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
+    #                         calc_branch_impedances=False, branch_impedance_unit='ohm')
     if control_mode >= 1 or item.i_droop: #droop control
         #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
         q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  #item.p_cub if other mode and droop?
