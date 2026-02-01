@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   build:
+    needs: tutorial_tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -328,7 +329,7 @@ jobs:
         uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
 
   tutorial_tests:
-    needs: build
+    # needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
