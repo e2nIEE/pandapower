@@ -41,7 +41,7 @@ dependencies = [
     "pandas~=2.3",
     "networkx~=3.4",
     "scipy<1.17",
-    "numpy>=1.26",
+    "numpy>=1.26,<2.4",
     "packaging~=25.0",
     "tqdm~=4.67",
     "deepdiff~=8.6",
@@ -70,7 +70,8 @@ docs = [
     "sphinx_rtd_theme~=3.0",
     "sphinx-pyproject~=0.3",
     "sphinxcontrib-imagesvg~=0.1",
-    "pandapower[converter]"
+    "pandapower[converter]",
+    "geopandas~=1.1"
 ]
 plotting = ["plotly~=6.3", "matplotlib~=3.10", "igraph", "geopandas~=1.1"]
 test = ["pytest~=8.4", "pytest-xdist~=3.8", "nbmake~=1.5"]
