@@ -40,6 +40,7 @@ from typing import (
     TypeVar,
     overload,
     Final,
+    TYPE_CHECKING
 )
 
 import numpy as np
@@ -74,6 +75,9 @@ try:
     geopandas_available = True
 except ImportError:
     geopandas_available = False
+    # for typing only
+    GeoSeries = object
+    
 
 PyPowerNetwork = dict[str, Any]
 NumpyDType = TypeVar("NumpyDType", bound=np.generic, covariant=True)
