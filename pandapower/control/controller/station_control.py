@@ -539,7 +539,7 @@ class BinarySearchControl(Controller):
                 if self.output_values_distribution[i]==0 or not self.output_element_in_service[i] :
                     self.output_values[i] = 0
                 else:
-                    continue
+                    continueall_diffs2 = validate_pf_conversion(net2, max_iteration=1000, max_iter=400)
         else:#second step
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
@@ -987,6 +987,7 @@ class VDroopControl_local(Controller):
 class ControlModusEnum(Enum):
     v_ctrl = "V_ctrl"
     v_ctrl_q_droop = "V_ctrl_Q_droop"
+    v_ctrl_q_droop_local = "V_ctrl_Q_droop_local"
     q_ctrl = "Q_ctrl"
     q_ctrl_v_droop = "Q_ctrl_V_droop"
     PF_ctrl = "PF_ctrl"
@@ -1007,6 +1008,7 @@ class ControlModusEnum(Enum):
         return {
             cls.v_ctrl,
             cls.v_ctrl_q_droop,
+            cls.v_ctrl_q_droop_local,
         }
 
     @classmethod
@@ -1019,5 +1021,6 @@ class ControlModusEnum(Enum):
     def droop_modes(cls):
         return {
             cls.v_ctrl_q_droop,
+            cls.v_ctrl_q_droop_local,
             cls.q_ctrl_v_droop,
         }

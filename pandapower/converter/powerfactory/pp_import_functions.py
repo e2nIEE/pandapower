@@ -2170,7 +2170,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                                               output_values_distribution=[1],
                                               input_element="res_gen", input_variable="q_mvar",
                                               input_inverted=[False], input_element_index=[next_index],
-                                              set_point=item.usetp, voltage_ctrl=True, bus_idx=bus, tol=1e-5)
+                                              set_point=item.usetp, control_modus = "V_ctrl_Q_droop_local", bus_idx=bus, tol=1e-5)
                     VDroopControl_local(net, name=item.loc_name + "_ctrl", q_droop_mvar=item.sgn * 100 / ddroop,
                                         q_set_mvar=item.qgini, vm_set_pu_bsc=item.usetp, bus_idx=bus,
                                         controller_idx=bsc.index)
