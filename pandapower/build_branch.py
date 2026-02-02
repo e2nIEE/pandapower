@@ -476,13 +476,11 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         else:
             g, b = 0, 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
-            bus_lookup = net._pd2ppc_lookups["bus"]
-            cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
-            # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
-            # kt is only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
             if not net._options.get("use_pre_fault_voltage", False):
-                kt = _transformer_correction_factor(
-                    trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
+                bus_lookup = net._pd2ppc_lookups["bus"]
+                cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
+                case = net._options["case"]
+                kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax, case)
                 r *= kt
                 x *= kt
     else:
@@ -1322,7 +1320,7 @@ def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
     return r_correction_for_temperature
 
 
-def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
+def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax, case):
     """
         2W-Transformer impedance correction factor in short circuit calculations,
         based on the IEC 60909-0:2016 standard.
@@ -1331,6 +1329,7 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
             vkr: real-part of transformer short-circuit voltage, percent
             sn: transformer rating, kVA
             cmax: voltage factor to account for maximum worst-case currents, based on the lv side
+            case: short-circuit calculation case (str, "min"/"max")
 
         Returns:
             kt: transformer impedance correction factor for short-circuit calculations
@@ -1339,7 +1338,12 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
     ----------
     trafo_df
 
-        """
+    """
+
+    # The transformer correction factor shall only be applied in the max case according to
+    # norm IEC 60909-0:2016 section 6.3.3
+    if case != "max":
+        return np.ones(len(trafo_df))
 
     if "power_station_unit" in trafo_df.columns:
         power_station_unit = trafo_df.power_station_unit.fillna(False).values.astype(bool)
@@ -1371,6 +1375,7 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
     loss_side = t3.loss_side.values if "loss_side" in t3.columns else np.full(len(t3),
                                                                               net._options["trafo3w_losses"].lower())
     nr_trafos = len(net["trafo3w"])
+
     if sequence == 1:
         if 'tap_dependency_table' in t3:
             mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
@@ -1383,7 +1388,8 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
         if mode != "sc":
             raise NotImplementedError(
                 "0 seq impedance calculation only implemented for short-circuit calculation!")
-        _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2,)
+        case = net._options.get("case", 'max')
+        _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2, case=case)
     else:
         raise UserWarning("Unsupported sequence for trafo3w convertion")
     _calculate_3w_tap_changers(t3, trafo2, sides)
@@ -1417,8 +1423,7 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers(
-        t3, t2, mode, characteristic=None, net=None):
+def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characteristic=None, net=None):
     if "tap_dependency_table" in t3:
         tap_dependency_table = get_trafo_values(t3, "tap_dependency_table")
         tap_dependency_table = np.array(
@@ -1445,7 +1450,8 @@ def _calculate_sc_voltages_of_equivalent_transformers(
     vk_2w_delta = z_br_to_bus_vector(vk_3w, sn)
     vkr_2w_delta = z_br_to_bus_vector(vkr_3w, sn)
     if mode == "sc":
-        kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
+        case = net._options.get("case", 'max')
+        kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, case)
         vk_2w_delta *= kt
         vkr_2w_delta *= kt
     vki_2w_delta = np.sqrt(vk_2w_delta ** 2 - vkr_2w_delta ** 2)
@@ -1459,7 +1465,7 @@ def _calculate_sc_voltages_of_equivalent_transformers(
     t2["sn_mva"] = {"hv": sn[0, :], "mv": sn[1, :], "lv": sn[2, :]}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
+def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2, case):
     vk_3w = np.stack([t3.vk_hv_percent.values, t3.vk_mv_percent.values, t3.vk_lv_percent.values])
     vkr_3w = np.stack([t3.vkr_hv_percent.values, t3.vkr_mv_percent.values, t3.vkr_lv_percent.values])
     vk0_3w = np.stack([t3.vk0_hv_percent.values, t3.vk0_mv_percent.values, t3.vk0_lv_percent.values])
@@ -1470,7 +1476,7 @@ def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
     vkr0_2w_delta = z_br_to_bus_vector(vkr0_3w, sn)
 
     # Only for "sc", calculated with positive sequence value
-    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
+    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, case)
     vk0_2w_delta *= kt
     vkr0_2w_delta *= kt
 
@@ -1523,8 +1529,7 @@ def _calculate_3w_tap_changers(t3, t2, sides):
 
         # t3 trafos with tap changer at star points
         if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)):
-            t = (tap_arrays["tap_step_percent"][side][mask_star_point] *
-                 np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point])))
+            t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point]))
             tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
             tap_neutral = tap_arrays["tap_neutral"][side][mask_star_point]
             t_corrected = 100 * t / (100 + (t * (tap_pos-tap_neutral)))
