@@ -37,7 +37,6 @@ from typing import (
     Iterable,
     Literal,
     Type,
-    TYPE_CHECKING,
     TypeVar,
     overload,
 )
@@ -46,6 +45,7 @@ import numpy as np
 from numpy.typing import NDArray
 import pandas as pd
 from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
+import pandera.typing as pdt
 import scipy as sp
 from geojson import loads, GeoJSON
 from packaging.version import Version
@@ -74,9 +74,8 @@ try:
 except ImportError:
     geopandas_available = False
 
-if TYPE_CHECKING:
-    PyPowerNetwork = dict[str, Any]
-    NumpyDType = TypeVar("NumpyDType", bound=np.generic, covariant=True)
+PyPowerNetwork = dict[str, Any]
+NumpyDType = TypeVar("NumpyDType", bound=np.generic, covariant=True)
 
 logger = logging.getLogger(__name__)
 
@@ -518,12 +517,12 @@ class GeoAccessor:
     NaN entrys are dropped using the accessor!
     """
 
-    def __init__(self, pandas_obj: "pd.Series[str]") -> None:
+    def __init__(self, pandas_obj: "pdt.Series[str]") -> None:
         self._validate(pandas_obj)
         self._obj = pandas_obj
 
     @staticmethod
-    def _validate(obj: "pd.Series[str]") -> None:
+    def _validate(obj: "pdt.Series[str]") -> None:
         try:
             if not obj.dropna().apply(loads).apply(isinstance, args=(GeoJSON,)).all():
                 raise AttributeError("Can only use .geojson accessor with geojson string values!")
@@ -548,21 +547,21 @@ class GeoAccessor:
         return self._obj.dropna().apply(loads).apply(self._extract_coords)
 
     @property
-    def as_geo_obj(self) -> pd.Series[GeoJSON]:
+    def as_geo_obj(self) -> pdt.Series[GeoJSON]:
         """
         Loads the GeoJSON objects.
         """
         return self._obj.dropna().apply(loads)
 
     @property
-    def type(self) -> pd.Series[str]:
+    def type(self) -> pdt.Series[str]:
         """
         Extracts the geometry type of the GeoJSON string.
         """
         return self._obj.dropna().apply(loads).apply(lambda x: str(x["type"]))
 
     @property
-    def as_shapely_obj(self) -> pd.Series[GeoJSON]:
+    def as_shapely_obj(self) -> pdt.Series:
         """
         Converts the GeoJSON strings to shapely geometrys.
         """
@@ -601,7 +600,7 @@ ElementType = Literal["bus", "line", "trafo", "trafo3w", "impedance"]
 
 
 @overload
-def ets_to_element_types(ets: None = None) -> pd.Series[ElementType]: ...
+def ets_to_element_types(ets: None = None) -> pdt.Series[ElementType]: ...
 
 
 @overload
@@ -614,7 +613,7 @@ def ets_to_element_types(ets: list[EtType]) -> list[ElementType]: ...
 
 def ets_to_element_types(
     ets: EtType | list[EtType] | None = None
-) -> pd.Series[ElementType] | ElementType | list[ElementType]:
+) -> pdt.Series[ElementType] | ElementType | list[ElementType]:
     ser = pd.Series(["bus", "line", "trafo", "trafo3w", "impedance"],
                     index=["b", "l", "t", "t3", "i"])
     if ets is None:
@@ -626,7 +625,7 @@ def ets_to_element_types(
 
 
 @overload
-def element_types_to_ets(element_types: None = None) -> pd.Series[EtType]: ...
+def element_types_to_ets(element_types: None = None) -> pdt.Series[EtType]: ...
 
 
 @overload
@@ -637,7 +636,7 @@ def element_types_to_ets(element_types: ElementType) -> EtType: ...
 def element_types_to_ets(element_types: list[ElementType]) -> list[EtType]: ...
 
 
-def element_types_to_ets(element_types: ElementType | list[ElementType] | None = None) -> pd.Series[EtType] | EtType | list[EtType]:
+def element_types_to_ets(element_types: ElementType | list[ElementType] | None = None) -> pdt.Series[EtType] | EtType | list[EtType]:
     ser1 = ets_to_element_types()
     ser2 = pd.Series(ser1.index, index=list(ser1))
     if element_types is None:
@@ -659,7 +658,7 @@ def empty_defaults_per_dtype(dtype: np.dtype[Any]) -> Any:
         raise NotImplementedError(f"{dtype=} is not implemented in _empty_defaults()")
 
 
-def _preserve_dtypes(df: pd.DataFrame, dtypes: pd.Series[np.dtype[Any]]) -> None:
+def _preserve_dtypes(df: pd.DataFrame, dtypes: pdt.Series[np.dtype[Any]]) -> None:
     for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
