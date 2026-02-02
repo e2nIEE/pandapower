@@ -142,6 +142,7 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
     
     # SQL query to execute    
     columns = [psql.Identifier(c) for c in sql_columns]
+    query = psql.SQL("INSERT INTO {tbl}({fields}) VALUES({placeholders})").format(
         fields=psql.SQL(',').join(columns),
         tbl=psql.Identifier(*table_name.split('.')),
         placeholders=psql.SQL(',').join(psql.Placeholder() * len(sql_columns)))
