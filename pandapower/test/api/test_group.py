@@ -10,15 +10,21 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from pandapower import create_group_from_dict, create_group, set_group_out_of_service, set_group_in_service, \
-    group_element_lists, attach_to_group, detach_from_group, compare_group_elements, runpp, group_res_p_mw, \
-    group_res_power_per_bus, group_res_q_mvar, to_json, from_json_string, count_group_elements, isin_group, \
-    element_associated_groups, create_empty_network, create_buses, create_lines, create_ext_grid, create_loads, \
-    create_switches, elements_connected_to_group, group_element_index, groups_equal, set_group_reference_column, \
-    remove_not_existing_group_members, ensure_lists_in_group_element_column, check_unique_group_rows, drop_lines, \
-    drop_trafos, drop_buses, drop_elements_simple, drop_group_and_elements, return_group_as_net
+from pandapower.create import (
+    create_group, create_group_from_dict, create_empty_network, create_buses, create_lines, create_ext_grid,
+    create_loads, create_switches
+)
+from pandapower.file_io import to_json, from_json_string
+from pandapower.groups import (
+    set_group_out_of_service, set_group_in_service, group_element_lists, attach_to_group, detach_from_group,
+    compare_group_elements, group_res_p_mw, group_res_power_per_bus, group_res_q_mvar, count_group_elements, isin_group,
+    element_associated_groups, elements_connected_to_group, group_element_index, groups_equal,
+    set_group_reference_column, remove_not_existing_group_members, ensure_lists_in_group_element_column,
+    check_unique_group_rows, drop_group_and_elements, return_group_as_net
+)
 from pandapower.networks import case24_ieee_rts, create_cigre_network_mv
-from pandapower.toolbox import pp_elements, dataframes_equal
+from pandapower.run import runpp
+from pandapower.toolbox import pp_elements, dataframes_equal, drop_lines, drop_trafos, drop_buses, drop_elements_simple
 
 
 def typed_list(iterable, dtype):

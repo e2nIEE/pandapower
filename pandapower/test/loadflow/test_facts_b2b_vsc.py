@@ -3,10 +3,10 @@ import copy
 import numpy as np
 import pytest
 
-from pandapower import create_line_dc_from_parameters
-from pandapower.create import create_buses, create_bus, create_empty_network, create_line_from_parameters, \
-    create_load, create_ext_grid, create_bus_dc, create_b2b_vsc, create_line_dc, create_vsc, create_source_dc, \
-    create_load_dc
+from pandapower.create import (
+    create_buses, create_bus, create_empty_network, create_line_from_parameters, create_load, create_ext_grid,
+    create_bus_dc, create_b2b_vsc, create_line_dc, create_source_dc, create_load_dc, create_line_dc_from_parameters
+)
 
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
