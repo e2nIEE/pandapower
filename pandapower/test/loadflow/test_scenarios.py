@@ -156,7 +156,7 @@ def test_ext_grid_gen_order_in_ppc():
     net = create_empty_network()
 
     for b in range(6):
-        create_bus(net, vn_kv=1., name=b)
+        create_bus(net, vn_kv=1., name=str(b))
 
     for l_bus in range(0, 5, 2):
         create_line(net, from_bus=l_bus, to_bus=l_bus + 1, length_km=1,
