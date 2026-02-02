@@ -7,8 +7,10 @@
 import numpy as np
 import pytest
 
-from pandapower import create_empty_network, create_bus, create_ext_grid, create_transformer, create_line, create_load, \
-    create_gen, create_sgen
+from pandapower.create import (
+    create_empty_network, create_bus, create_ext_grid, create_transformer, create_line, create_load, create_gen,
+    create_sgen
+)
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 
 
