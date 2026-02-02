@@ -14,6 +14,7 @@ try:
     import psycopg2
     import psycopg2.extras
     import psycopg2.errors
+    import psycopg2.sql as psql
 
     PSYCOPG2_INSTALLED = True
 except ImportError:
@@ -138,9 +139,13 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
     if timestamp:
         add_timestamp_column(conn, cursor, table_name)
 
-    # SQL query to execute
-    columns = ['"%s"' % c for c in sql_columns]
-    query = f"INSERT INTO {table_name}({','.join(columns)}) VALUES({placeholders})"
+    
+    # SQL query to execute    
+    columns = [psql.Identifier(c) for c in sql_columns]
+        fields=psql.SQL(',').join(columns),
+        tbl=psql.Identifier(*table_name.split('.')),
+        placeholders=psql.SQL(',').join(psql.Placeholder() * len(sql_columns)))
+    
     # batch_size = 1000
     # for chunk in tqdm(chunked(tuples, batch_size)):
     #     cursor.executemany(query, chunk)
