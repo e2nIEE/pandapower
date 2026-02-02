@@ -13,6 +13,7 @@ from pandapower.auxiliary import get_indices
 from pandapower.create import create_empty_network
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
+from pandapower.network_structure import get_structure_dict
 
 import logging
 
@@ -320,8 +321,16 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         if element_type == "trafo_characteristic_table":
             net["trafo_characteristic_table"]["id_characteristic"] = (
                 net["trafo_characteristic_table"]["id_characteristic"].map(lookup))
+            if "id_characteristic_table" not in net["trafo"]:
+                net["trafo"]["id_characteristic_table"] = (
+                    pd.Series(data=[pd.NA] * net["trafo"].shape[0],
+                              dtype=get_structure_dict(required_only=False)['trafo']['id_characteristic_table']))
             net["trafo"]["id_characteristic_table"] = (
                 net["trafo"]["id_characteristic_table"].map(lookup))
+            if "id_characteristic_table" not in net["trafo3w"]:
+                net["trafo3w"]["id_characteristic_table"] = (
+                    pd.Series(data=[pd.NA] * net["trafo3w"].shape[0],
+                              dtype=get_structure_dict(required_only=False)['trafo3w']['id_characteristic_table']))
             net["trafo3w"]["id_characteristic_table"] = (
                 net["trafo3w"]["id_characteristic_table"].map(lookup))
 
