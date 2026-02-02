@@ -124,10 +124,13 @@ exclude = [
 addopts = [
     "--strict-markers",
     "--maxfail=1",  # stop after the first failure / error / timeout
-    "--timeout=300",  # per‑test timeout in seconds (requires pytest-timeout)
+    "--timeout=30", "--timeout-method=thread",  # per‑test timeout in seconds (requires pytest-timeout)
 ]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
+]
+filterwarnings = [
+    "ignore:the matrix subclass:PendingDeprecationWarning"
 ]
 
 [tool.coverage.run]
