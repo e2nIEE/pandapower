@@ -1,6 +1,7 @@
 import pytest
 from copy import deepcopy
 import logging
+from itertools import product
 
 from pandapower.grid_equivalents.get_equivalent import get_equivalent
 from pandapower.run import runpp
@@ -9,7 +10,8 @@ from pandapower.create import create_switch
 from pandapower.networks.power_system_test_cases import case9, case30, case39, case118
 
 
-def test_networks():
+@pytest.mark.parametrize("eq_type, sn_mva", list(product(["xward", "rei", "ward"], [1.0, 23.0, 89.0])))
+def test_networks(eq_type, sn_mva):
     epsilon = 1e-4
     """
     Attention:
@@ -22,140 +24,136 @@ def test_networks():
     if tolerance_mva = 1e-6, we should here give a bigger value, e.g. epsilon = 1e-5
 
     """
+    net = case9()
+    net.sn_mva = sn_mva
+    runpp(net)
+    logging.debug('test with case9:')
 
-    for eq_type in ["xward", "rei", "ward"]:
-        # case9
-        for sn_mva in [1.0, 23.0, 89.0]:
-            net = case9()
-            net.sn_mva = sn_mva
-            runpp(net)
-            logging.debug('test with case9:')
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[3], internal_buses=[0], return_internal=True)
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[3], internal_buses=[0], return_internal=True)
-            assert max_error < epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[4, 8], internal_buses=[0], return_internal=True)
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[4, 8], internal_buses=[0], return_internal=True)
-            assert max_error < epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[4, 8], internal_buses=[0], return_internal=True,
+        buses_out_of_service=[6])
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[4, 8], internal_buses=[0], return_internal=True,
-                buses_out_of_service=[6])
-            assert max_error < epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[3, 4], internal_buses=[0], return_internal=True,
+        switch_changes=[['l', 5, 4]])
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[3, 4], internal_buses=[0], return_internal=True,
-                switch_changes=[['l', 5, 4]])
-            assert max_error < epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[3, 8], internal_buses=[], return_internal=False)
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[3, 8], internal_buses=[], return_internal=False)
-            assert max_error < epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[4, 6], internal_buses=[0], return_internal=True,
+        switch_changes=[["b", 4, 8]])
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[4, 6], internal_buses=[0], return_internal=True,
-                switch_changes=[["b", 4, 8]])
-            assert max_error < epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[3, 4, 6], internal_buses=[1], return_internal=False)
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[3, 4, 6], internal_buses=[1], return_internal=False)
-            assert max_error < epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[3, 5], internal_buses=[2, 4, 0], return_internal=True)
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[3, 5], internal_buses=[2, 4, 0], return_internal=True)
-            assert max_error < epsilon
+    # case30
+    logging.debug('test with case30:')
+    net = case30()
+    net.sn_mva = sn_mva
+    runpp(net)
 
-            # case30
-            logging.debug('test with case30:')
-            net = case30()
-            net.sn_mva = sn_mva
-            runpp(net)
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True,
+        buses_out_of_service=[9])
+    assert max_error < epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True,
-                buses_out_of_service=[9])
-            assert max_error < epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[1, 2], internal_buses=[0], return_internal=True)
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[1, 2], internal_buses=[0], return_internal=True)
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[3, 9, 22], internal_buses=[0], return_internal=True,
+        switch_changes=[['b', 11, 19]])
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[3, 9, 22], internal_buses=[0], return_internal=True,
-                switch_changes=[['b', 11, 19]])
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[21, 22, 26], internal_buses=[0, 20], return_internal=True,
+        switch_changes=[['b', 22, 18], ['l', 21, 30]])
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[21, 22, 26], internal_buses=[0, 20], return_internal=True,
-                switch_changes=[['b', 22, 18], ['l', 21, 30]])
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[3, 16, 19, 22], internal_buses=[0, 20],
+        return_internal=True)
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[3, 16, 19, 22], internal_buses=[0, 20],
-                return_internal=True)
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[5, 16, 18, 23, 27], internal_buses=[0, 24],
+        return_internal=True, buses_out_of_service=[9, 28])
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[5, 16, 18, 23, 27], internal_buses=[0, 24],
-                return_internal=True, buses_out_of_service=[9, 28])
-            assert max_error <= epsilon
+    # case39
+    logging.debug('test with case39:')
+    net = case39()
+    net.sn_mva = sn_mva
+    runpp(net)
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[1, 7], internal_buses=[0], return_internal=False,
+        buses_out_of_service=[4, 8], switch_changes=[['b', 2, 25]])
+    assert max_error <= epsilon
 
-            # case39
-            logging.debug('test with case39:')
-            net = case39()
-            net.sn_mva = sn_mva
-            runpp(net)
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[1, 7], internal_buses=[0], return_internal=False,
-                buses_out_of_service=[4, 8], switch_changes=[['b', 2, 25]])
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[15, 25], internal_buses=[30], return_internal=True,
+        switch_changes=[['t', 11, 4], ['t', 11, 3]])
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[15, 25], internal_buses=[30], return_internal=True,
-                switch_changes=[['t', 11, 4], ['t', 11, 3]])
-            assert max_error <= epsilon
+    # case118
+    logging.debug('case118:')
+    net = case118()
+    net.sn_mva = sn_mva
+    runpp(net)
+    va_degree = eq_type != "xward"
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[7], internal_buses=[0], return_internal=True,
+        va_degree=va_degree)
+    assert max_error <= epsilon
 
-            # case118
-            logging.debug('case118:')
-            net = case118()
-            net.sn_mva = sn_mva
-            runpp(net)
-            va_degree = eq_type != "xward"
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[7], internal_buses=[0], return_internal=True,
-                va_degree=va_degree)
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[0], return_internal=True,
+        va_degree=va_degree)
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[0], return_internal=True,
-                va_degree=va_degree)
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[68], return_internal=True,
+        va_degree=va_degree)
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[68], return_internal=True,
-                va_degree=va_degree)
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[18, 22, 37, 64], internal_buses=[68],
+        return_internal=True, buses_out_of_service=[32], va_degree=va_degree)
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[18, 22, 37, 64], internal_buses=[68],
-                return_internal=True, buses_out_of_service=[32], va_degree=va_degree)
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[18, 20, 25, 26, 29, 31], internal_buses=[68],
+        return_internal=True, va_degree=va_degree)
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[18, 20, 25, 26, 29, 31], internal_buses=[68],
-                return_internal=True, va_degree=va_degree)
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[70, 69, 67, 48, 44], internal_buses=[68],
+        return_internal=True, va_degree=va_degree)
+    assert max_error <= epsilon
 
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[70, 69, 67, 48, 44], internal_buses=[68],
-                return_internal=True, va_degree=va_degree)
-            assert max_error <= epsilon
-
-            max_error, related_values = get_max_error(
-                net, eq_type, boundary_buses=[39, 42, 48, 65, 69, 70], internal_buses=[68],
-                return_internal=True, va_degree=va_degree)
-            assert max_error <= epsilon
+    max_error, related_values = get_max_error(
+        net, eq_type, boundary_buses=[39, 42, 48, 65, 69, 70], internal_buses=[68],
+        return_internal=True, va_degree=va_degree)
+    assert max_error <= epsilon
 
 
 def get_max_error(net, eq_type, boundary_buses, internal_buses, return_internal,
