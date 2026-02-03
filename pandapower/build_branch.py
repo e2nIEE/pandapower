@@ -398,15 +398,19 @@ def _calc_trafo_parameter(net, ppc, sequence=1):
         branch[f:t, RATE_A] = 0. if net["_options"]["mode"] == "opf" else 100.
 
 
-def get_trafo_values(trafo_df: pd.DataFrame, column: str, na_replacement: Any = pd.NA) -> Optional[NDArray]:
+def get_trafo_values(trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA) -> Optional[NDArray]:
     """
     Get values from dataframe.
 
     :param trafo_df: The DataFrame from which to get the column
-    :param column: The column name to get.
-    :param na_replacement: Element to replace pd.NA with.
+    :param column: column name to get.
+    :param na_replacement: Element to replace pd.NA with. (only pandas.DataFrame)
     :return:
     """
+    if isinstance(trafo_df, dict):
+        if column not in trafo_df:
+            return None
+        return trafo_df[column]
     if column not in trafo_df.columns:
         return None
     if na_replacement is not pd.NA:
@@ -788,8 +792,8 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
         ), None
     
     # FIXME: tap_step_percent needs to be set
-    if not degree_is_set or not percent_is_set:
-        raise UserWarning("EIther tap_step_percent or tap_step_degree is not set")
+    # if (degree_is_set & percent_is_set).any():
+    #     raise UserWarning("Either tap_step_percent or tap_step_degree is not set")
     # complex tap changer
     tap_steps = tap_step_percent * tap_diff / 100
     tap_angles = np.nan_to_num(tap_step_degree, nan=0)
@@ -799,6 +803,7 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
     return _arctan(direction * du * _sin(tap_angles) / (u1 + du * _cos(tap_angles))), _vn_modified
 
 
+# FIXME: sideeffect: overwrites data in trafo_df with data from trafo_characterisitc_table
 def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2W"):
     if trafotype == "2W":
         vk_variables = ("vk_percent", "vkr_percent")
@@ -928,6 +933,9 @@ def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, character
     return np.where(relevant_idx, custom_func_vec(relevant_idx, tap_pos, vk_characteristic), value)
 
 
+# FIXME: beahavior differs depending on trafo_df type dict or pandas.DataFrame. This should be changed!
+#  use test: loadflow/test_runpp.py::test_tap_table_order and change output of _trafo_df_from_trafo3w to DataFrame to
+#  trigger issue
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None,
                              trafo_characteristic_table=None):
     """
@@ -1434,7 +1442,7 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> pd.DataFrame:
+def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
     trafo2: dict[str, dict] = {}
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
@@ -1487,7 +1495,7 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> pd.DataFram
         side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
     if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
-    return pd.DataFrame({var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()})
+    return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
 
 def _calculate_sc_voltages_of_equivalent_transformers(
