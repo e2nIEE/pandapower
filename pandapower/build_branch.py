@@ -29,6 +29,7 @@ from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
+
 def _build_branch_ppc(net, ppc, sequence=1):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
@@ -678,9 +679,11 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     mask_ideal = (tap_ideal & (tap_side == side))
                     mask_complex = (tap_complex & (tap_side == side))
                     if mask_ideal.any():
-                        trafo_shift[mask_ideal] += _get_trafo_shift(trafo_df, t, mask_ideal, direction)
+                        trafo_shift[mask_ideal] += _get_trafo_shift(trafo_df, t, mask_ideal, direction)[0]
                     if mask_complex.any():
-                        trafo_shift[mask_complex] += _get_trafo_shift(trafo_df, t, mask_complex, direction, vn, False)
+                        shift, _vn_mask_complex = _get_trafo_shift(trafo_df, t, mask_complex, direction, vn, False)
+                        vn[mask_complex] = _vn_mask_complex
+                        trafo_shift[mask_complex] += shift
         elif f'tap{t}_phase_shifter' in trafo_df:
             warnings.warn(DeprecationWarning(
                 f"tap{t}_phase_shifter was removed with pandapower 3.0 and replaced by "
@@ -691,16 +694,54 @@ def _calc_tap_from_dataframe(net, trafo_df):
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                 tap_ideal = (tap_phase_shifter & (tap_side == side)).fillna(False)
                 tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & ~tap_ideal
-                tap_complex = tap_complex.fillna(False)
+                #tap_complex = tap_complex.fillna(False)
                 if tap_ideal.any():
-                    trafo_shift[tap_ideal] += _get_trafo_shift(trafo_df, t, tap_ideal, direction)
+                    trafo_shift[tap_ideal] += _get_trafo_shift(trafo_df, t, tap_ideal, direction)[0]
                 if tap_complex.any():
-                    trafo_shift[tap_complex] += _get_trafo_shift(trafo_df, t, tap_complex, direction, vn, False)
+                    shift, _vn_tap_complex = _get_trafo_shift(trafo_df, t, tap_complex, direction, vn, False)
+                    vn[tap_complex] = _vn_tap_complex
+                    trafo_shift[tap_complex] += shift
 
     return vnh, vnl, trafo_shift
 
 
 def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
+    """
+    Calculate the phase shift angle for transformer tap changers.
+
+    This function computes the phase shift introduced by transformer tap changers,
+    handling both ideal and complex tap changer models. For ideal tap changers,
+    it can handle either degree-based or percent-based tap steps. For complex
+    tap changers, it performs more detailed voltage magnitude and angle calculations.
+
+    Parameters:
+        trafo_df (pandas.DataFrame): DataFrame containing transformer data with tap changer information
+        tap (str): Tap identifier (e.g., 'tap1', 'tap2') to determine which tap parameters to use
+        mask (array-like): Boolean mask to select specific transformers from the DataFrame
+        direction (int): Direction multiplier for the phase shift calculation (+1 or -1)
+        vn (array-like, optional): Nominal voltage values for complex tap changer calculations.
+                                  Required when ideal=False. Defaults to None.
+        ideal (bool, optional): Whether to use ideal tap changer model (True) or complex model (False).
+                               Defaults to True.
+
+    Returns:
+        tuple: A tuple containing:
+            - shift_angles (numpy.ndarray): Calculated phase shift angles in degrees
+            - vn_modified (numpy.ndarray or None): Modified voltage values for complex tap changers,
+                                                  None for ideal tap changers
+
+    Raises:
+        UserWarning: If vn is not provided when ideal=False
+        UserWarning: If both tap_step_degree and tap_step_percent are set for ideal tap changers
+
+    Notes:
+        For ideal tap changers:
+        - If tap_step_degree is set: shift = direction * tap_diff * tap_step_degree
+        - If tap_step_percent is set: shift = direction * 2 * arcsin(tap_diff * tap_step_percent / 100 / 2)
+        
+        For complex tap changers:
+        - Performs detailed voltage triangle calculations considering both magnitude and angle changes
+    """
     def _cos(x):
         return np.cos(np.deg2rad(x))
 
@@ -734,25 +775,28 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
     else:
         degree_is_set = False
 
-    if (degree_is_set & percent_is_set).any():
-        raise UserWarning(
-            "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
-
     # ideal tap changer
     if ideal:
+        if (degree_is_set & percent_is_set).any():
+            raise UserWarning(
+                "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
+        
         return np.where(
             degree_is_set,
             (direction * tap_diff * tap_step_degree),
             (direction * 2 * _arcsin(tap_diff * tap_step_percent / 100 / 2))
-        )
-
+        ), None
+    
+    # FIXME: tap_step_percent needs to be set
+    if not degree_is_set or not percent_is_set:
+        raise UserWarning("EIther tap_step_percent or tap_step_degree is not set")
     # complex tap changer
     tap_steps = tap_step_percent * tap_diff / 100
-    tap_angles = np.nan_to_num(tap_step_percent, nan=0)
+    tap_angles = np.nan_to_num(tap_step_degree, nan=0)
     u1 = vn[mask]
     du = u1 * np.nan_to_num(tap_steps, nan=0)
-    vn[mask] = np.sqrt((u1 + du * _cos(tap_angles)) ** 2 + (du * _sin(tap_angles)) ** 2)
-    return _arctan(direction * du * _sin(tap_angles) / (u1 + du * _cos(tap_angles)))
+    _vn_modified = np.sqrt((u1 + du * _cos(tap_angles)) ** 2 + (du * _sin(tap_angles)) ** 2)
+    return _arctan(direction * du * _sin(tap_angles) / (u1 + du * _cos(tap_angles))), _vn_modified
 
 
 def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2W"):
