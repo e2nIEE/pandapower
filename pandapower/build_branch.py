@@ -771,12 +771,14 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
         tap_step_percent = tap_step_percent[mask]
         percent_is_set = np.nan_to_num(tap_step_percent, nan=0) != 0
     else:
+        tap_step_percent = float('nan')
         percent_is_set = False
 
     if tap_step_degree is not None:
         tap_step_degree = tap_step_degree[mask]
         degree_is_set = np.nan_to_num(tap_step_degree, nan=0) != 0
     else:
+        tap_step_degree = float('nan')
         degree_is_set = False
 
     # ideal tap changer
@@ -791,9 +793,6 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
             (direction * 2 * _arcsin(tap_diff * tap_step_percent / 100 / 2))
         ), None
     
-    # FIXME: tap_step_percent needs to be set
-    # if (degree_is_set & percent_is_set).any():
-    #     raise UserWarning("Either tap_step_percent or tap_step_degree is not set")
     # complex tap changer
     tap_steps = tap_step_percent * tap_diff / 100
     tap_angles = np.nan_to_num(tap_step_degree, nan=0)
@@ -1599,7 +1598,7 @@ def _calculate_3w_tap_changers(t3, t2, sides):
             if var in t3:
                 tap_arrays[var][side][tap_mask] = t3[var].values[tap_mask]
             else:
-                tap_arrays[var][side][tap_mask] = np.array([float("nan")]*len(tap_mask))
+                tap_arrays[var][side][tap_mask] = np.array([float("nan")]*tap_mask.sum())
 
         # t3 trafos with tap changer at terminals
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
