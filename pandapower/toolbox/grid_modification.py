@@ -1310,7 +1310,11 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
     for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(), gen_indices):
         p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
             ext_grid.Index, "p_mw"]
-        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
+        if "name" in ext_grid:
+            name = ext_grid.name
+        else:
+            name = ""
+        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=name,
                          in_service=ext_grid.in_service, controllable=True, index=index)
         new_idx.append(idx)
     net.gen.loc[new_idx, "slack"] = slack

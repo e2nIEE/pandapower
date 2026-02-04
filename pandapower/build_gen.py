@@ -472,6 +472,8 @@ def _calculate_qmin_qmax_from_q_capability_characteristics(net, element, is_elem
         return
 
     # Filter rows with True 'reactive_capability_curve'
+    if 'reactive_capability_curve' not in net[element]:
+        net[element]['reactive_capability_curve'] = pd.NA
     element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
 
     if len(element_data) > 0:

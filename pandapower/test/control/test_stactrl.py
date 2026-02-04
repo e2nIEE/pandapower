@@ -18,6 +18,7 @@ from pandapower.control.util.auxiliary import create_q_capability_characteristic
 from numpy import linspace, float64
 
 from pandas import DataFrame
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +183,8 @@ def test_qlimits_with_capability_curve():
                 'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
                 'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
                 'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
-
+            if 'id_q_capability_characteristic' not in net.sgen:
+                net.sgen['id_q_capability_characteristic'] = pd.NA
             net.sgen.id_q_capability_characteristic.at[0] = 0
             net.sgen['curve_style'] = "straightLineYValues"
             create_q_capability_characteristics_object(net)

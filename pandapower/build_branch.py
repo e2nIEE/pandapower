@@ -29,6 +29,7 @@ from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 
+
 def _build_branch_ppc(net, ppc, sequence=1):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
@@ -409,7 +410,10 @@ def get_trafo_values(trafo_df: pd.DataFrame | dict, column: str, na_replacement:
     if isinstance(trafo_df, dict):
         if column not in trafo_df:
             return None
-        return trafo_df[column]
+        col = trafo_df[column]
+        if na_replacement is not pd.NA:
+            col = np.where(pd.isna(col), na_replacement, col)
+        return col
     if column not in trafo_df.columns:
         return None
     if na_replacement is not pd.NA:
@@ -622,11 +626,12 @@ def _calc_tap_from_dataframe(net, trafo_df):
         tap_side = get_trafo_values(trafo_df, f"tap{t}_side", na_replacement=None)
         tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent")
 
-        tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type", na_replacement=None)
+        tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type", na_replacement="")
         if tap_changer_type is not None:
             # tap_changer_type is only in dataframe starting from pp Version 3.0, older version use different logic
             if f'tap{t}_dependency_table' in trafo_df:
-                tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table", na_replacement=False)
+                tap_dependency_table = get_trafo_values(
+                    trafo_df, "tap_dependency_table", na_replacement=False).astype(bool)
             else:
                 tap_dependency_table = np.array([False])
             tap_table = np.logical_and(tap_dependency_table, tap_changer_type is not None)
@@ -648,7 +653,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     filtered_df = net.trafo_characteristic_table.merge(filter_df[filter_df['mask']],
                                                                        on=['id_characteristic', 'step'])
 
-                    cleaned_id_characteristic = id_characteristic_table[(~pd.isna(id_characteristic_table)) & mask]
+                    cleaned_id_characteristic = id_characteristic_table[~pd.isna(id_characteristic_table) & mask]
 
                     voltage_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['voltage_ratio']))
                     shift_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['angle_deg']))
@@ -770,12 +775,14 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
         tap_step_percent = tap_step_percent[mask]
         percent_is_set = np.nan_to_num(tap_step_percent, nan=0) != 0
     else:
+        tap_step_percent = float('nan')
         percent_is_set = False
 
     if tap_step_degree is not None:
         tap_step_degree = tap_step_degree[mask]
         degree_is_set = np.nan_to_num(tap_step_degree, nan=0) != 0
     else:
+        tap_step_degree = float('nan')
         degree_is_set = False
 
     # ideal tap changer
@@ -1441,7 +1448,7 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> pd.DataFrame:
+def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
     trafo2: dict[str, dict] = {}
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
@@ -1494,7 +1501,7 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> pd.DataFram
         side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
     if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
-    return pd.DataFrame({var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()})
+    return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
 
 def _calculate_sc_voltages_of_equivalent_transformers(
@@ -1593,14 +1600,12 @@ def _calculate_3w_tap_changers(t3, t2, sides):
     at_star_point = t3.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
     for side in sides:
-        if 'tap_side' not in t3:
-            t3['tap_side'] = pd.NA
-        tap_mask = (t3.tap_side.array == side).fillna(False)
+        tap_mask = (t3.tap_side.fillna("") == side).to_numpy()
         for var in tap_variables:
             if var in t3:
                 tap_arrays[var][side][tap_mask] = t3[var].values[tap_mask]
             else:
-                tap_arrays[var][side][tap_mask] = np.array([float("nan")]*len(tap_mask))
+                tap_arrays[var][side][tap_mask] = np.array([float("nan")]*tap_mask.sum())
 
         # t3 trafos with tap changer at terminals
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"

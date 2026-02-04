@@ -669,9 +669,7 @@ def _preserve_dtypes(df: pd.DataFrame, dtypes: pdt.Series[np.dtype[Any]]) -> Non
     for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
-                raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
-                                  f"NaN are casted to True by default, which can lead to errors. "
-                                  f"Replace NaN values with True or False first.")
+                df[item] = df[item].fillna(pd.NA).astype('boolean')
             try:
                 df[item] = df[item].astype(dtype)
             except ValueError:
