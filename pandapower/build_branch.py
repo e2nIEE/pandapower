@@ -397,15 +397,19 @@ def _calc_trafo_parameter(net, ppc, sequence=1):
         branch[f:t, RATE_A] = 0. if net["_options"]["mode"] == "opf" else 100.
 
 
-def get_trafo_values(trafo_df: pd.DataFrame, column: str, na_replacement: Any = pd.NA) -> Optional[NDArray]:
+def get_trafo_values(trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA) -> Optional[NDArray]:
     """
     Get values from dataframe.
 
     :param trafo_df: The DataFrame from which to get the column
-    :param column: The column name to get.
-    :param na_replacement: Element to replace pd.NA with.
+    :param column: column name to get.
+    :param na_replacement: Element to replace pd.NA with. (only pandas.DataFrame)
     :return:
     """
+    if isinstance(trafo_df, dict):
+        if column not in trafo_df:
+            return None
+        return trafo_df[column]
     if column not in trafo_df.columns:
         return None
     if na_replacement is not pd.NA:
@@ -624,7 +628,7 @@ def _calc_tap_from_dataframe(net, trafo_df):
             if f'tap{t}_dependency_table' in trafo_df:
                 tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table", na_replacement=False)
             else:
-                tap_dependency_table = np.array([False] * len(trafo_df))
+                tap_dependency_table = np.array([False])
             tap_table = np.logical_and(tap_dependency_table, tap_changer_type is not None)
             tap_no_table = np.logical_and(~tap_dependency_table, tap_changer_type is not None)
             if any(tap_table):
@@ -678,9 +682,11 @@ def _calc_tap_from_dataframe(net, trafo_df):
                     mask_ideal = (tap_ideal & (tap_side == side))
                     mask_complex = (tap_complex & (tap_side == side))
                     if mask_ideal.any():
-                        trafo_shift[mask_ideal] += _get_trafo_shift(trafo_df, t, mask_ideal, direction)
+                        trafo_shift[mask_ideal] += _get_trafo_shift(trafo_df, t, mask_ideal, direction)[0]
                     if mask_complex.any():
-                        trafo_shift[mask_complex] += _get_trafo_shift(trafo_df, t, mask_complex, direction, vn, False)
+                        shift, _vn_mask_complex = _get_trafo_shift(trafo_df, t, mask_complex, direction, vn, False)
+                        vn[mask_complex] = _vn_mask_complex
+                        trafo_shift[mask_complex] += shift
         elif f'tap{t}_phase_shifter' in trafo_df:
             warnings.warn(DeprecationWarning(
                 f"tap{t}_phase_shifter was removed with pandapower 3.0 and replaced by "
@@ -691,16 +697,54 @@ def _calc_tap_from_dataframe(net, trafo_df):
             for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
                 tap_ideal = (tap_phase_shifter & (tap_side == side)).fillna(False)
                 tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & ~tap_ideal
-                tap_complex = tap_complex.fillna(False)
+                #tap_complex = tap_complex.fillna(False)
                 if tap_ideal.any():
-                    trafo_shift[tap_ideal] += _get_trafo_shift(trafo_df, t, tap_ideal, direction)
+                    trafo_shift[tap_ideal] += _get_trafo_shift(trafo_df, t, tap_ideal, direction)[0]
                 if tap_complex.any():
-                    trafo_shift[tap_complex] += _get_trafo_shift(trafo_df, t, tap_complex, direction, vn, False)
+                    shift, _vn_tap_complex = _get_trafo_shift(trafo_df, t, tap_complex, direction, vn, False)
+                    vn[tap_complex] = _vn_tap_complex
+                    trafo_shift[tap_complex] += shift
 
-    return vnh, vnl, trafo_shift #TODO: fix get vnh vnl form return value not through side effect
+    return vnh, vnl, trafo_shift
 
 
 def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
+    """
+    Calculate the phase shift angle for transformer tap changers.
+
+    This function computes the phase shift introduced by transformer tap changers,
+    handling both ideal and complex tap changer models. For ideal tap changers,
+    it can handle either degree-based or percent-based tap steps. For complex
+    tap changers, it performs more detailed voltage magnitude and angle calculations.
+
+    Parameters:
+        trafo_df (pandas.DataFrame): DataFrame containing transformer data with tap changer information
+        tap (str): Tap identifier (e.g., 'tap1', 'tap2') to determine which tap parameters to use
+        mask (array-like): Boolean mask to select specific transformers from the DataFrame
+        direction (int): Direction multiplier for the phase shift calculation (+1 or -1)
+        vn (array-like, optional): Nominal voltage values for complex tap changer calculations.
+                                  Required when ideal=False. Defaults to None.
+        ideal (bool, optional): Whether to use ideal tap changer model (True) or complex model (False).
+                               Defaults to True.
+
+    Returns:
+        tuple: A tuple containing:
+            - shift_angles (numpy.ndarray): Calculated phase shift angles in degrees
+            - vn_modified (numpy.ndarray or None): Modified voltage values for complex tap changers,
+                                                  None for ideal tap changers
+
+    Raises:
+        UserWarning: If vn is not provided when ideal=False
+        UserWarning: If both tap_step_degree and tap_step_percent are set for ideal tap changers
+
+    Notes:
+        For ideal tap changers:
+        - If tap_step_degree is set: shift = direction * tap_diff * tap_step_degree
+        - If tap_step_percent is set: shift = direction * 2 * arcsin(tap_diff * tap_step_percent / 100 / 2)
+
+        For complex tap changers:
+        - Performs detailed voltage triangle calculations considering both magnitude and angle changes
+    """
     def _cos(x):
         return np.cos(np.deg2rad(x))
 
@@ -734,27 +778,31 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
     else:
         degree_is_set = False
 
-    if (degree_is_set & percent_is_set).any() and ideal:
-        raise UserWarning(
-            "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
-
     # ideal tap changer
     if ideal:
+        if (degree_is_set & percent_is_set).any():
+            raise UserWarning(
+                "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
+
         return np.where(
             degree_is_set,
             (direction * tap_diff * tap_step_degree),
             (direction * 2 * _arcsin(tap_diff * tap_step_percent / 100 / 2))
-        )
+        ), None
 
+    # FIXME: tap_step_percent needs to be set
+    # if (degree_is_set & percent_is_set).any():
+    #     raise UserWarning("Either tap_step_percent or tap_step_degree is not set")
     # complex tap changer
     tap_steps = tap_step_percent * tap_diff / 100
     tap_angles = np.nan_to_num(tap_step_degree, nan=0)
     u1 = vn[mask]
     du = u1 * np.nan_to_num(tap_steps, nan=0)
-    vn[mask] = np.sqrt((u1 + du * _cos(tap_angles)) ** 2 + (du * _sin(tap_angles)) ** 2)
-    return _arctan(direction * du * _sin(tap_angles) / (u1 + du * _cos(tap_angles)))
+    _vn_modified = np.sqrt((u1 + du * _cos(tap_angles)) ** 2 + (du * _sin(tap_angles)) ** 2)
+    return _arctan(direction * du * _sin(tap_angles) / (u1 + du * _cos(tap_angles))), _vn_modified
 
 
+# FIXME: sideeffect: overwrites data in trafo_df with data from trafo_characterisitc_table
 def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2W"):
     if trafotype == "2W":
         vk_variables = ("vk_percent", "vkr_percent")
@@ -884,6 +932,9 @@ def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, character
     return np.where(relevant_idx, custom_func_vec(relevant_idx, tap_pos, vk_characteristic), value)
 
 
+# FIXME: beahavior differs depending on trafo_df type dict or pandas.DataFrame. This should be changed!
+#  use test: loadflow/test_runpp.py::test_tap_table_order and change output of _trafo_df_from_trafo3w to DataFrame to
+#  trigger issue
 def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None,
                              trafo_characteristic_table=None):
     """
@@ -1547,9 +1598,9 @@ def _calculate_3w_tap_changers(t3, t2, sides):
         tap_mask = (t3.tap_side.array == side).fillna(False)
         for var in tap_variables:
             if var in t3:
-                tap_arrays[var][side][tap_mask] = t3[var].array[tap_mask]
+                tap_arrays[var][side][tap_mask] = t3[var].values[tap_mask]
             else:
-                tap_arrays[var][side][tap_mask] = np.full(sum(tap_mask), float('nan'), dtype=float)
+                tap_arrays[var][side][tap_mask] = np.array([float("nan")]*len(tap_mask))
 
         # t3 trafos with tap changer at terminals
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
