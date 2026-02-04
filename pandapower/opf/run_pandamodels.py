@@ -3,10 +3,7 @@ from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.optimal_powerflow import OPFNotConverged
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -54,22 +51,15 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False, 
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
 
     try:
-        import julia
-        from julia import Main
-        from julia import Pkg
-        from julia import Base
+        from juliacall import Main # type: ignore
+        from juliacall import Base # type: ignore
+        from juliacall import Pkg # type: ignore
     except ImportError:
         raise ImportError(
             "Please install pyjulia properly to run pandapower with PandaModels.jl.")
-        
-    try:
-        julia.Julia()
-    except:
-        raise UserWarning(
-            "Could not connect to julia, please check that Julia is installed and pyjulia is correctly configured")
-              
+
     if not Base.find_package("PandaModels"):
-        logger.info("PandaModels.jl is not installed in julia. It is added now!")
+        logger.info("PandaModels.jl is missing, adding.")
         Pkg.Registry.update()
         Pkg.add("PandaModels")  
         
@@ -90,13 +80,12 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         Pkg.resolve()
         Pkg.activate("PandaModels")
 
-    try:
-        Main.using("PandaModels")
-    except ImportError:
-        raise ImportError("cannot use PandaModels")
 
+    Main.seval("global buffer_file")
     Main.buffer_file = buffer_file
-    result_pm = Main.eval(julia_file + "(buffer_file)")
+
+    seval_str = f'using PandaModels; PandaModels.{julia_file}(buffer_file)'
+    result_pm = Main.seval(seval_str)
 
     # if dev_mode:
     #     Pkg.activate()

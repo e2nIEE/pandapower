@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -14,11 +14,9 @@ from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_bus import bus_cols
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 std_logger = logging.getLogger(__name__)
+std_logger.setLevel(logging.DEBUG)
 
 __all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm", "IRWLSAlgorithm"]
 
@@ -38,22 +36,24 @@ class BaseAlgorithm:
     def check_observability(self, eppci: ExtendedPPCI, z):
         # Check if observability criterion is fulfilled and the state estimation is possible
         num_slacks = sum(~eppci.non_slack_bus_mask)
-        if len(z) < 2 * eppci["bus"].shape[0] - num_slacks:
+        measurements_available = 2 * eppci["bus"].shape[0] - num_slacks
+        if len(z) < measurements_available:
             self.logger.error("System is not observable (cancelling)")
-            self.logger.error("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * eppci["bus"].shape[0] - 1))
-            raise UserWarning("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * eppci["bus"].shape[0] - 1))
+            self.logger.error(f"Measurements available: {len(z)}. Measurements required: {measurements_available}")
+            raise UserWarning(f"Measurements available: {len(z)}. Measurements required: {measurements_available}")
 
     def check_result(self, current_error, cur_it):
         # print output for results
         if current_error <= self.tolerance:
             self.successful = True
-            self.logger.debug("State Estimation successful ({:d} iterations)".format(cur_it))
+            self.logger.debug(
+                f"State Estimation successful ({cur_it:d} iterations)"
+            )
         else:
             self.successful = False
-            self.logger.debug("State Estimation not successful ({:d}/{:d} iterations)".format(cur_it,
-                                                                                              self.max_iterations))
+            self.logger.debug(
+                f"State Estimation not successful ({cur_it:d}/{self.max_iterations:d} iterations)"
+            )
 
     def initialize(self, eppci: ExtendedPPCI):
         # Check observability
@@ -78,9 +78,8 @@ class WLSAlgorithm(BaseAlgorithm):
         self.hx = None
         self.iterations = None
         self.obj_func = None
-        logging.basicConfig(level=logging.DEBUG)
 
-    def estimate(self, eppci: ExtendedPPCI, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, debug_mode=False, **kwargs):
         self.initialize(eppci)
         # matrix calculation object
         sem = BaseAlgebra(eppci)
@@ -88,7 +87,9 @@ class WLSAlgorithm(BaseAlgorithm):
         current_error, cur_it = 100., 0
         # invert covariance matrix
         eppci.r_cov[eppci.r_cov<(10**(-5))] = 10**(-5)
-        r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
+        r_weight = 1 / eppci.r_cov ** 2
+        len_r = np.arange(len(r_weight))
+        r_inv = csr_matrix((r_weight, (len_r, len_r)))
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
             # self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
@@ -110,11 +111,12 @@ class WLSAlgorithm(BaseAlgorithm):
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
-                norm_G = norm(G_m, np.inf)
-                norm_invG = norm(inv(G_m), np.inf)
-                cond = norm_G*norm_invG
-                if cond > 10**18:
-                    self.logger.warning("WARNING: Gain matrix is ill-conditioned: {:.2E}".format(cond))
+                if debug_mode:
+                    norm_G = norm(G_m, np.inf)
+                    norm_invG = norm(inv(G_m), np.inf)
+                    cond = norm_G*norm_invG
+                    if cond > 10**18:
+                        self.logger.warning("WARNING: Gain matrix is ill-conditioned: {:.2E}".format(cond))
 
                 # state vector difference d_E
                 # d_E = G_m^-1 * (H' * R^-1 * r)
@@ -130,10 +132,10 @@ class WLSAlgorithm(BaseAlgorithm):
                 E += d_E.ravel()
                 eppci.update_E(E)
 
-                # log data 
-                # obj_func = (r.T*r_inv*r)[0,0]
-                # self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                # self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                if debug_mode:
+                    obj_func = (r.T*r_inv*r)[0,0]
+                    self.logger.debug("Current delta_x: {:.7f}".format(current_error))
+                    self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
 
                 # Restore full weighting matrix with current measurements
                 if cur_it == 0 and eppci.any_i_meas:
@@ -147,10 +149,11 @@ class WLSAlgorithm(BaseAlgorithm):
                                   "Check and change the measurement set.")
                 return False
 
-        # check if the estimation is successfull
+        # check if the estimation is successful
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        # self.obj_func = obj_func
+        if debug_mode:
+            self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
             self.R_inv = r_inv.toarray()
@@ -181,7 +184,9 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
         sem = BaseAlgebraZeroInjConstraints(eppci)
 
         current_error, cur_it = 100., 0
-        r_inv = csr_matrix((np.diagflat(1 / eppci.r_cov) ** 2))
+        r_weight = 1 / eppci.r_cov ** 2
+        len_r = np.arange(len(r_weight))
+        r_inv = csr_matrix((r_weight, (len_r, len_r)))
         E = eppci.E
         # update the E matrix
         E_ext = np.r_[eppci.E, new_states]
@@ -287,9 +292,8 @@ class AFWLSAlgorithm(BaseAlgorithm):
         self.hx = None
         self.iterations = None
         self.obj_func = None
-        logging.basicConfig(level=logging.DEBUG)
 
-    def estimate(self, eppci: ExtendedPPCI, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, debug_mode=False, **kwargs):
         self.initialize(eppci)
         # matrix calculation object
         sem = BaseAlgebra(eppci)
@@ -297,7 +301,9 @@ class AFWLSAlgorithm(BaseAlgorithm):
         current_error, cur_it = 100., 0
         # invert covariance matrix
         eppci.r_cov[eppci.r_cov<(10**(-5))] = 10**(-5)
-        r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
+        r_weight = 1 / eppci.r_cov ** 2
+        len_r = np.arange(len(r_weight))
+        r_inv = csr_matrix((r_weight, (len_r, len_r)))
         E = eppci.E
         num_clusters = len(self.eppci["clusters"])
         while current_error > self.tolerance and cur_it < self.max_iterations:
@@ -317,11 +323,12 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 # gain matrix G_m
                 G_m = H.T * (r_inv * H)
-                norm_G = norm(G_m, np.inf)
-                norm_invG = norm(inv(G_m), np.inf)
-                cond = norm_G*norm_invG
-                if cond > 10**18:
-                    self.logger.warning("WARNING: Gain matrix is ill-conditioned: {:.2E}".format(cond))
+                if debug_mode: 
+                    norm_G = norm(G_m, np.inf)
+                    norm_invG = norm(inv(G_m), np.inf)
+                    cond = norm_G*norm_invG
+                    if cond > 10**18:
+                        self.logger.warning("WARNING: Gain matrix is ill-conditioned: {:.2E}".format(cond))
 
                 # state vector difference d_E
                 d_E = spsolve(G_m, H.T * (r_inv * r))
@@ -331,9 +338,10 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 # log data 
                 current_error = np.max(np.abs(d_E))
-                # obj_func = (r.T*r_inv*r)[0,0]
-                # self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                # self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                if debug_mode:
+                    obj_func = (r.T*r_inv*r)[0,0]
+                    self.logger.debug("Current delta_x: {:.7f}".format(current_error))
+                    self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
 
                 # Restore full weighting matrix
                 if cur_it == 0 and eppci.any_i_meas:
@@ -350,13 +358,9 @@ class AFWLSAlgorithm(BaseAlgorithm):
         # check if the estimation is successfull
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        # self.obj_func = obj_func
+        if debug_mode:
+            self.obj_func = obj_func
         if self.successful:
-            # store variables required for chi^2 and r_N_max test:
-            self.R_inv = r_inv.toarray()
-            self.Gm = G_m.toarray()
-            self.r = r.toarray()
-            self.H = H.toarray()
             # split voltage and allocation factor variables
             E1 = E[:-num_clusters]
             E2 = E[-num_clusters:]

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -13,26 +13,17 @@ class DiscreteTapControl(TrafoController):
     """
     Trafo Controller with local tap changer voltage control.
 
-    INPUT:
-        **net** (attrdict) - Pandapower struct
-
-        **element_index** (int) - ID of the trafo that is controlled
-
-        **vm_lower_pu** (float) - Lower voltage limit in pu
-
-        **vm_upper_pu** (float) - Upper voltage limit in pu
-
-    OPTIONAL:
-
-        **side** (string, "lv") - Side of the transformer where the voltage is controlled (hv or lv)
-
-        **element** (string, "trafo") - Trafo type ("trafo" or "trafo3w")
-
-        **tol** (float, 0.001) - Voltage tolerance band at bus in Percent (default: 1% = 0.01pu)
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
+    Parameters:
+        net (ADict): Pandapower struct
+        element_index (int): ID of the trafo that is controlled
+        vm_lower_pu (float): Lower voltage limit in pu
+        vm_upper_pu (float): Upper voltage limit in pu
+        side (string, "lv"): Side of the transformer where the voltage is controlled (hv or lv)
+        element (string, "trafo"): Trafo type ("trafo" or "trafo3w")
+        tol (float, 0.001): Voltage tolerance band at bus in Percent (default: 1% = 0.01pu)
+        in_service (bool, True): Indicates if the controller is currently in_service
+        drop_same_existing_ctrl (bool, False): Indicates if already existing controllers of the same type and with the
+            same matching parameters (e.g. at same element) should be dropped
     """
 
     def __init__(self, net, element_index, vm_lower_pu, vm_upper_pu, side="lv", element="trafo",
@@ -65,12 +56,10 @@ class DiscreteTapControl(TrafoController):
 
         >>> c = DiscreteTapControl.from_tap_step_percent(net, element_index, vm_set_pu)
 
-        INPUT:
-            **net** (attrdict) - Pandapower struct
-
-            **element_index** (int) - ID of the trafo that is controlled
-
-            **vm_set_pu** (float) - Voltage setpoint in pu
+        Parameters:
+            net (ADict): Pandapower struct
+            element_index (int): ID of the trafo that is controlled
+            vm_set_pu (float): Voltage setpoint in pu
         """
         self = cls(net, element_index=element_index, vm_lower_pu=None, vm_upper_pu=None, side=side,
                    element=element, tol=tol,

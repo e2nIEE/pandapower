@@ -5,10 +5,7 @@ from pandapower.create import create_bus, create_empty_network, create_buses, cr
     create_ext_grid, create_dcline, create_load, create_gen, create_sgen
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

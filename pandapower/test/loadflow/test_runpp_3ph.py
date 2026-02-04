@@ -8,27 +8,32 @@ import os
 
 import numpy as np
 import pytest
+import copy
 
+from pandapower.networks import create_cigre_network_mv
 from pandapower import pp_dir
 from pandapower import replace_line_by_impedance
 from pandapower.auxiliary import get_free_id
 from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_asymmetric_load, \
     create_line_from_parameters, create_load, create_transformer_from_parameters, create_sgen, create_asymmetric_sgen, \
-    create_shunt
+    create_shunt, create_gen, create_switch
 from pandapower.file_io import from_json
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type, add_zero_impedance_parameters
-from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks
+from pandapower.test.consistency_checks import runpp_3ph_with_consistency_checks, runpp_with_consistency_checks, \
+    trafo_currents_consistent_3ph
 from pandapower.test.loadflow.PF_Results import get_PF_Results
 from pandapower.toolbox import dataframes_equal
+from pandapower.test.conftest import result_test_network
+from pandapower.test.helper_functions import add_grid_connection
+from pandapower.test.loadflow.test_runpp import get_isolated
 
 
 @pytest.fixture
 def net():
     v_base = 110  # 110kV Base Voltage
     k_va_base = 100  # 100 MVA
-    #    I_base = (kVA_base/V_base) * 1e-3           # in kA
     net = create_empty_network(sn_mva=k_va_base)
     create_bus(net, vn_kv=v_base, index=1)
     create_bus(net, vn_kv=v_base, index=5)
@@ -443,17 +448,10 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
                                p_c_mw=0.0032, q_c_mvar=0.0013, type='wye')
         create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
                                p_c_mw=0.027, q_c_mvar=0.0043, type='delta')
-
-    elif case == "wye":
+    elif case == "wye" or case == "delta":
         # Unsymmetric Heavy Load
         create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
                                p_c_mw=0.027, q_c_mvar=0.0043, type=case)
-    elif case == "delta":
-        create_asymmetric_load(net, b3, p_a_mw=0.0300, q_a_mvar=0.0048, p_b_mw=0.0280, q_b_mvar=0.0036,
-                               p_c_mw=0.027, q_c_mvar=0.0043, type=case)
-
-
-#    add_zero_impedance_parameters(net) Not required here since added through parameters
 
 
 def test_trafo_asym():
@@ -466,6 +464,42 @@ def test_trafo_asym():
         assert net['converged']
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
+def _test_trafo_shifts(net, rtol):
+    # Dyn
+    for clock in [-30, 30, 150, 210, -150]:
+        net.trafo.vector_group = "Dyn"
+        net.trafo.shift_degree = clock
+        runpp_3ph_with_consistency_checks(net)
+        trafo_currents_consistent_3ph(net, rtol)
+
+    # YNyn
+    for clock in [0, 180, -180]:
+        net['trafo'].vector_group = "YNyn"
+        net['trafo'].shift_degree = clock
+        runpp_3ph_with_consistency_checks(net)
+        trafo_currents_consistent_3ph(net, rtol)
+
+def test_trafo_asym_currents__high_neg_seq():
+    """
+    Tests trafo currents consistency in asymmetric load flow.
+    In order to verify current consistency between HT and LT side, we need to make
+    shunt admittance zero, so that no load currents do not disturb HT side currents.
+    For this reason, pfe_kw = 0, i0_percent = 0, mag0_percent = BIG_NUMBER.
+    """
+    net = create_empty_network()
+    add_zero_impedance_parameters(net)
+    create_bus(net, 11, "source")
+    create_bus(net, 11, "HT")
+    create_bus(net, 0.4, "LT")
+    create_ext_grid(net, bus=0, vm_pu=1.0, s_sc_max_mva=9.99e20, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    create_line_from_parameters(net, 0, 1, 1, 0.2, 0.33, 0, max_i_ka=10, r0_ohm_per_km=0.2, x0_ohm_per_km=0.33,
+                                   c0_nf_per_km=0, g0_gs_per_km=0)
+    create_transformer_from_parameters(net=net, hv_bus=1, lv_bus=2, sn_mva=10, vn_hv_kv=11, vn_lv_kv=0.415,
+                                          vkr_percent=0, vk_percent=4, pfe_kw=0, i0_percent=0,
+                                          shift_degree=-30, vector_group="Dyn",
+                                          vk0_percent=4, vkr0_percent=0, mag0_percent=1e20, mag0_rx=0, si0_hv_partial=50)
+    create_asymmetric_load(net, 2, 1.6, 0.44019238, 0.95980762, 0.8, 0.86961524, -0.16961524)
+    _test_trafo_shifts(net, rtol=1e-9)
 
 def test_2trafos():
     net = create_empty_network()
@@ -548,7 +582,7 @@ def test_3ph_with_impedance():
     net.line.g_nf_per_km = 0.
     net.line["c0_nf_per_km"] = 0.
     net.line["g0_us_per_km"] = 0.
-    net_imp = net.deepcopy()
+    net_imp = copy.deepcopy(net)
     replace_line_by_impedance(net_imp, net.line.index, 100)
     runpp_3ph(net)
     runpp_3ph(net_imp)
@@ -581,6 +615,114 @@ def test_shunt_3ph():
           -0.3300249368894127, -0.3300249368948133, -0.3300249368894127, -0.3300249368948133, -0.3300249368894127,
           -0.3300249368948134]]))
     assert np.max(np.abs(line_power_pp - line_power_expected)) < 1e-5
+
+
+@pytest.mark.xfail
+def test_3ph_enforce_q_lims(result_test_network):
+    v_tol = 1e-6
+    s_tol = 5e-3
+
+    net = result_test_network
+    buses = net.bus[net.bus.zone == "test_enforce_qlims"]
+    gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+    b2 = buses.index[1]
+    b3 = buses.index[2]
+    g1 = gens[0]
+
+    # enforce reactive power limits
+    runpp_3ph(net, enforce_q_lims=True)
+
+    # powerfactory results
+    u2 = 1.00607194
+    u3 = 1.00045091
+
+    assert abs(net.res_bus.vm_pu.at[b2] - u2) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
+    assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < s_tol
+
+
+@pytest.mark.xfail
+def test_recycle_pq():
+    net = create_empty_network()
+    _, b2, _ = add_grid_connection(net)
+    pl = 1.2
+    ql = 1.1
+    ps = 0.5
+    u_set = 1.0
+
+    b3 = create_bus(net, vn_kv=0.4)
+    create_bus(net, vn_kv=0.4, in_service=False)
+    create_line_from_parameters(
+        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    )
+    create_load(net, b3, p_mw=pl, q_mvar=ql)
+    create_gen(net, b2, p_mw=ps, vm_pu=u_set)
+    pl = 1.2
+    ql = 0.0
+    net["load"].at[0, "q_mvar"] = ql
+    runpp_3ph(net, recycle={"trafo": False, "gen": False, "bus_pq": True})
+    assert np.allclose(net.res_load.at[0, "p_mw"], pl)
+    assert np.allclose(net.res_load.at[0, "q_mvar"], ql)
+    pl = 0.8
+    ql = 0.55
+    net.load.at[0, "p_mw"] = pl
+    net["load"].at[0, "q_mvar"] = ql
+    runpp_3ph(net, recycle={"bus_pq": True, "trafo": False, "gen": False})
+    assert np.allclose(net.res_load.p_mw.iloc[0], pl)
+    assert np.allclose(net.res_load.q_mvar.iloc[0], ql)
+
+
+@pytest.mark.xfail
+def test_connectivity_check_island_without_pv_bus():
+    # Network with islands without pv bus -> all buses in island should be set out of service
+    net = create_cigre_network_mv(with_der=False)
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
+    assert len(iso_buses) == 0
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)
+
+    isolated_bus1 = create_bus(net, vn_kv=20.0, name="isolated Bus1")
+    isolated_bus2 = create_bus(net, vn_kv=20.0, name="isolated Bus2")
+    create_line(
+        net, isolated_bus2, isolated_bus1, length_km=1, std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine"
+    )
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
+    assert len(iso_buses) == 2
+    assert np.isclose(iso_p, 0)
+    assert np.isclose(iso_q, 0)
+
+    create_load(net, isolated_bus1, p_mw=0.2, q_mvar=0.02)
+    create_sgen(net, isolated_bus2, p_mw=0.15, q_mvar=0.01)
+
+    # with pytest.warns(UserWarning):
+    iso_buses, iso_p, iso_q, *_ = get_isolated(net)
+    assert len(iso_buses) == 2
+    assert np.isclose(iso_p, 350)
+    assert np.isclose(iso_q, 30)
+    # with pytest.warns(UserWarning):
+    runpp_3ph(net, check_connectivity=True)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("numba", [True, False])
+def test_z_switch(numba):
+    net = create_empty_network()
+    for i in range(3):
+        create_bus(net, vn_kv=0.4)
+        create_load(net, i, p_mw=0.1)
+    create_ext_grid(net, 0, vm_pu=1.0)
+    create_line_from_parameters(
+        net, 0, 1, 1, r_ohm_per_km=0.1 / np.sqrt(2), x_ohm_per_km=0.1 / np.sqrt(2), c_nf_per_km=0, max_i_ka=0.2
+    )
+    create_switch(net, 0, 2, et="b", z_ohm=0.1)
+
+    runpp_3ph(net, numba=numba, switch_rx_ratio=1)
+    assert pytest.approx(net.res_bus.vm_pu.at[1], abs=1e-9) == net.res_bus.vm_pu.at[2]
+
+    net_zero_z_switch = copy.deepcopy(net)
+    net_zero_z_switch.switch.z_ohm = 0
+    runpp(net_zero_z_switch, numba=numba, switch_rx_ratio=1)
+    assert pytest.approx(net_zero_z_switch.res_bus.vm_pu.at[0], abs=1e-9) == net_zero_z_switch.res_bus.vm_pu.at[2]
 
 
 if __name__ == "__main__":

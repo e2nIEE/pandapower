@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 import pytest
 
-from pandapower import create_empty_network, create_bus, create_ext_grid, create_transformer, create_line, create_load, \
-    create_gen, create_sgen
+from pandapower.create import (
+    create_empty_network, create_bus, create_ext_grid, create_transformer, create_line, create_load, create_gen,
+    create_sgen
+)
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 
 
@@ -35,11 +37,11 @@ def simple_network():
     return net
 
 
-
 @pytest.fixture(scope="session")
 def result_test_network():
     from pandapower import runpp
 
+    # gets the last element of the generator
     for net in result_test_network_generator():
         pass
     runpp(net, trafo_model="t", trafo_loading="current")

@@ -5,10 +5,7 @@ import tkinter as tk
 from tkinter.filedialog import askdirectory
 import pandas
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
@@ -83,7 +80,8 @@ def exit_gracefully(app, input_panel, msg, is_err):
     else:
         logger.info('Execution finished: %s' % msg)
     echo_on(app)
-    input_panel.destroy()
+    if input_panel is not None:
+        input_panel.destroy()
     # del(app)
     # quit()
     sys.exit(1 if is_err else 0)

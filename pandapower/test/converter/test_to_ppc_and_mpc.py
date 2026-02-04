@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 import pytest
 
-from pandapower.converter import to_ppc, to_mpc
+from pandapower.converter.matpower import to_ppc, to_mpc
 from pandapower.networks import case4gs, case6ww, case30, case39
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.powerflow import LoadflowNotConverged

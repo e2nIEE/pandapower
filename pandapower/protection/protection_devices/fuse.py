@@ -15,36 +15,25 @@ class Fuse(ProtectionDevice):
     """
     Fuse used in circuit protection
 
-    INPUT:
-        **net** (attrdict) - pandapower net
-
-        **switch_index** (int) - index of the switch that the fuse acts upon
-
-    OPTIONAL:
-
-        **fuse_type** (str, "none") - string of the fuse type to be used. If it is in the standard library, it will
-        automatically generate the characteristic curve. Otherwise, it has no effect.
-        Example: fuse_type = "Siemens NH-1-100"
-
-        **rated_i_a** (float, 0) - the rated current of the fuse in amps
-
-        **characteristic_index** (int, 0) - index of the corresponding characteristic curve. Automatically generated
-        when characteristic curve is created.
-
-        **in_service** (bool, True) - indicates if fuse is currently in service and should be included in protection
-        computations
-
-        **overwrite** (bool, False) - indicates if fuse should replace already existing protection device acting upon
-        switch
-
-        **curve_select** (int, 0) - specifies which curve should be used as characteristic curve. This only has an
-        effect for fuses that contain two different melting curves (t_min and t_total). For fuses that only have one
-        characteristic curve (t_avg), curve_select has no effect.
-
-        **z_ohm** (float, 0.0001) - gives the resistance of the fuse in ohms. This is used in calculations for bus-bus
-        switches
-
-        **name** (str, None) - name of the fuse. For example, name = "Line 2 Fuse"
+    Parameters:
+        net (ADict): pandapower net
+        switch_index (int): index of the switch that the fuse acts upon
+        fuse_type (str, "none"): string of the fuse type to be used. If it is in the standard library, it will
+            automatically generate the characteristic curve. Otherwise, it has no effect.
+            Example: fuse_type = "Siemens NH-1-100"
+        rated_i_a (float, 0): the rated current of the fuse in amp
+        characteristic_index (int, 0): index of the corresponding characteristic curve. Automatically generated
+            when characteristic curve is created.
+        in_service (bool, True): indicates if fuse is currently in service and should be included in protection
+            computations
+        overwrite (bool, False): indicates if fuse should replace already existing protection device acting upon
+            switch
+        curve_select (int, 0): specifies which curve should be used as characteristic curve. This only has an effect for
+            fuses that contain two different melting curves (t_min and t_total). For fuses that only have one
+            characteristic curve (t_avg), curve_select has no effect.
+        z_ohm (float, 0.0001): gives the resistance of the fuse in ohms. This is used in calculations for bus-bus
+            switches
+        name (str, None): name of the fuse. For example, name = "Line 2 Fuse"
     """
 
     def __init__(self, net, switch_index, fuse_type="none", rated_i_a=0, characteristic_index=None, in_service=True,

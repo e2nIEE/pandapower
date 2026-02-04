@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -345,7 +345,7 @@ def test_volt_dep_load_at_inactive_bus():
 
     # create bus elements
     create_ext_grid(net, bus=bus1, vm_pu=1.02, name="Grid Connection")
-    create_load(net, bus=4, p_mw=0.1, q_mvar=0.05, name="Load3", const_i_percent=100)
+    create_load(net, bus=4, p_mw=0.1, q_mvar=0.05, name="Load3", const_i_p_percent=100)
     create_load(net, bus=5, p_mw=0.1, q_mvar=0.05, name="Load4")
 
     # create branch elements

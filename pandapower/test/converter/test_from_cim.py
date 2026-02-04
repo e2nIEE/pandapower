@@ -8,7 +8,8 @@ import pandas as pd
 
 from pandapower.test import test_path
 
-from pandapower.converter.cim.cim2pp.from_cim import from_cim
+from pandapower.converter.cim.cim2pp.from_cim import from_cim, from_cim_dict
+from pandapower.converter.cim.cim_classes import CimParser
 from pandapower.run import runpp
 
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
@@ -787,6 +788,7 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert element_0['tapchanger_id'].item() == '_fe25f43a-7341-446e-a71a-8ab7119ba806'
     assert element_0['vector_group'].item() == 'Yyy'
     assert isinstance(element_0['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_0['vk0_hv_percent'].item())
     assert math.isnan(element_0['vk0_mv_percent'].item())
     assert math.isnan(element_0['vk0_lv_percent'].item())
@@ -795,6 +797,15 @@ def test_fullgrid_trafo3w(fullgrid_v2):
     assert math.isnan(element_0['vkr0_lv_percent'].item())
     assert not element_0['power_station_unit'].item()
     assert element_0['tap_dependency_table'].item()
+    assert element_0['CurrentLimit.value_hv'].item() == pytest.approx(844.38, abs=0.000001)
+    assert element_0['CurrentLimit.value_mv'].item() == pytest.approx(1535.22, abs=0.000001)
+    assert element_0['CurrentLimit.value_lv'].item() == pytest.approx(16083.36, abs=0.000001)
+    assert element_0['OperationalLimitType.limitType_hv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.limitType_mv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_0['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_mv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
 
 def test_fullgrid_trafo3w_spline(fullgrid_v2_spline):
@@ -847,12 +858,19 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert element_0['tapchanger_id'].item() == '_f6b6428b-d201-4170-89f3-4f630c662b7c'
     assert element_0['vector_group'].item() == 'YNyn'
     assert isinstance(element_0['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_0['vk0_percent'].item())
     assert math.isnan(element_0['vkr0_percent'].item())
     assert math.isnan(element_0['xn_ohm'].item())
     assert not element_0['power_station_unit'].item()
     assert not element_0['oltc'].item()
     assert element_0['tap_dependency_table'].item()
+    assert element_0['CurrentLimit.value_hv'].item() == pytest.approx(413.9, abs=0.000001)
+    assert element_0['CurrentLimit.value_lv'].item() == pytest.approx(734.9, abs=0.000001)
+    assert element_0['OperationalLimitType.limitType_hv'].item() == 'patl'
+    assert element_0['OperationalLimitType.limitType_lv'].item() == 'patl'
+    assert element_0['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(20.0, abs=0.000001)
+    assert element_0['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(20.0, abs=0.000001)
 
     element_1 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_99f55ee9-2c75-3340-9539-b835ec8c5994']
     assert element_1['name'].item() == 'BE-TR2_6'
@@ -887,12 +905,19 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert math.isnan(element_1['tapchanger_id'].item())
     assert element_1['vector_group'].item() == 'Yy'
     assert isinstance(element_1['id_characteristic_table'].item(), np.int64)
+    assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
     assert math.isnan(element_1['vk0_percent'].item())
     assert math.isnan(element_1['vkr0_percent'].item())
     assert math.isnan(element_1['xn_ohm'].item())
     assert not element_1['power_station_unit'].item()
     assert not element_1['oltc'].item()
     assert element_1['tap_dependency_table'].item()
+    assert element_1['CurrentLimit.value_hv'].item() == pytest.approx(844.38, abs=0.000001)
+    assert element_1['CurrentLimit.value_lv'].item() == pytest.approx(3070.44, abs=0.000001)
+    assert element_1['OperationalLimitType.limitType_hv'].item() == 'patlt'
+    assert element_1['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_1['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_1['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
     element_2 = fullgrid_v2.trafo[fullgrid_v2.trafo['origin_id'] == '_ff3a91ec-2286-a64c-a046-d62bc0163ffe']
     assert element_2['tap_step_degree'].item() == pytest.approx(1.990, abs=0.000001)
@@ -900,6 +925,12 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert element_2['tap_changer_type'].item() == "Ideal"
     assert pd.isna(element_2['id_characteristic_table'].item())
     assert not element_2['tap_dependency_table'].item()
+    assert element_2['CurrentLimit.value_hv'].item() == pytest.approx(938.2, abs=0.000001)
+    assert element_2['CurrentLimit.value_lv'].item() == pytest.approx(3070.44, abs=0.000001)
+    assert element_2['OperationalLimitType.limitType_hv'].item() == 'patl'
+    assert element_2['OperationalLimitType.limitType_lv'].item() == 'patlt'
+    assert element_2['OperationalLimitType.acceptableDuration_hv'].item() == pytest.approx(10.0, abs=0.000001)
+    assert element_2['OperationalLimitType.acceptableDuration_lv'].item() == pytest.approx(10.0, abs=0.000001)
 
 
 def test_fullgrid_trafo_spline(fullgrid_v2_spline):
@@ -934,7 +965,7 @@ def test_fullgrid_switch(fullgrid_v2):
     assert element_0['closed'].item()
     assert element_0['name'].item() == 'BE_DSC_5'
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_0['in_ka'].item())
+    assert element_0['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert 'Disconnector' == element_0['origin_class'].item()
     assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
@@ -1008,8 +1039,10 @@ def test_fullgrid_load(fullgrid_v2):
     assert fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35'
     assert element_0['p_mw'].item() == pytest.approx(0.010, abs=0.000001)
     assert element_0['q_mvar'].item() == pytest.approx(0.010, abs=0.000001)
-    assert element_0['const_z_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_i_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['const_z_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['const_i_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['const_z_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['const_i_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
     assert math.isnan(element_0['sn_mva'].item())
     assert element_0['scaling'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_0['in_service'].item()
@@ -1099,9 +1132,20 @@ def test_fullgrid_gen(fullgrid_v2):
     assert math.isnan(element_0['xdss_pu'].item())
     assert element_0['cos_phi'].item() == pytest.approx(0.850, abs=0.000001)
     assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_0['reactive_capability_curve'].item()
+    assert element_0['id_q_capability_characteristic'].item() == 0
+    assert element_0['curve_style'].item() == 'straightLineYValues'
 
     element_1 = fullgrid_v2.gen[fullgrid_v2.gen['origin_id'] == '_3a3b27be-b18b-4385-b557-6735d733baf0']
     assert element_1['vm_pu'].item() == pytest.approx(1.050, abs=0.000001)
+
+
+def test_full_grid_q_capability_table(fullgrid_v2):
+    capa_df = pd.DataFrame({'id_q_capability_curve': {0: 0, 1: 0, 2: 0},
+                            'p_mw': {0: -100.0, 1: 0.0, 2: 100.0},
+                            'q_min_mvar': {0: -200.0, 1: -300.0, 2: -200.0},
+                            'q_max_mvar': {0: 200.0, 1: 300.0, 2: 200.0}})
+    pd.testing.assert_frame_equal(fullgrid_v2['q_capability_curve_table'], capa_df, atol=1e-5)
 
 
 def test_fullgrid_ext_grid(fullgrid_v2):
@@ -1334,7 +1378,7 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_0['closed'].item()
     assert element_0['name'].item() == 'BE_DSC_5'
     assert element_0['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_0['in_ka'].item())
+    assert element_0['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert element_0['origin_class'].item() == 'Disconnector'
     assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
@@ -1348,11 +1392,169 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_1['closed'].item()
     assert element_1['name'].item() == 'BE_LB_1'
     assert element_1['z_ohm'].item() == pytest.approx(0.0, abs=0.000001)
-    assert math.isnan(element_1['in_ka'].item())
+    assert element_1['in_ka'].item() == pytest.approx(0.09999, abs=0.000001)
     assert element_1['origin_class'].item() == 'LoadBreakSwitch'
     assert element_1['terminal_bus'].item() == '_1c134839-5bad-124e-93a4-b11663025232'
     assert element_1['terminal_element'].item() == '_ea6bb748-b513-0947-a59b-abd50155dad2'
     assert element_1['description'].item() == 'BE_LB_1'
+
+
+def test_acline_segment_with_only_rdf_id_should_not_empty_all_lines():
+    """
+    Test that an ACLineSegment with only rdf:id set (no other attributes, no terminals)
+    does not cause all valid lines to be removed from the resulting net.line dataframe.
+
+    This is a regression test for a bug where the converter empties the entire
+    net.line dataframe when any ACLineSegment has missing terminals, instead of
+    just skipping the problematic segment.
+
+    The bug is in _prepare_ac_line_segments_cim16() which sets:
+        ac_line_segments = ac_line_segments[0:0]
+    when ANY ACLineSegment doesn't have exactly 2 terminals, instead of just
+    removing the problematic segments.
+    """
+    # Create CimParser and get an empty cim data structure
+    cim_parser = CimParser(cgmes_version='2.4.15')
+    cim = cim_parser.get_cim_data_structure()
+
+    # Create base voltage
+    cim['eq']['BaseVoltage'] = pd.DataFrame({
+        'rdfId': ['_bv1'],
+        'name': ['110kV'],
+        'nominalVoltage': [110.0]
+    })
+
+    # Create substation and voltage level
+    cim['eq']['GeographicalRegion'] = pd.DataFrame({
+        'rdfId': ['_geo1'],
+        'name': ['Region1']
+    })
+    cim['eq']['SubGeographicalRegion'] = pd.DataFrame({
+        'rdfId': ['_subgeo1'],
+        'name': ['SubRegion1'],
+        'Region': ['_geo1']
+    })
+    cim['eq']['Substation'] = pd.DataFrame({
+        'rdfId': ['_sub1'],
+        'name': ['Substation1'],
+        'Region': ['_subgeo1']
+    })
+    cim['eq']['VoltageLevel'] = pd.DataFrame({
+        'rdfId': ['_vl1'],
+        'name': ['VL1'],
+        'shortName': ['VL1'],
+        'BaseVoltage': ['_bv1'],
+        'Substation': ['_sub1']
+    })
+
+    # Create connectivity nodes (buses)
+    cim['eq']['ConnectivityNode'] = pd.DataFrame({
+        'rdfId': ['_cn1', '_cn2'],
+        'name': ['CN1', 'CN2'],
+        'description': ['Node 1', 'Node 2'],
+        'ConnectivityNodeContainer': ['_vl1', '_vl1']
+    })
+
+    # Create topological nodes
+    cim['tp']['TopologicalNode'] = pd.DataFrame({
+        'rdfId': ['_tn1', '_tn2'],
+        'name': ['TN1', 'TN2'],
+        'description': ['TopNode 1', 'TopNode 2'],
+        'ConnectivityNodeContainer': ['_vl1', '_vl1'],
+        'BaseVoltage': ['_bv1', '_bv1']
+    })
+    cim['tp']['ConnectivityNode'] = pd.DataFrame({
+        'rdfId': ['_cn1', '_cn2'],
+        'TopologicalNode': ['_tn1', '_tn2']
+    })
+
+    # Create one valid ACLineSegment with all required attributes
+    valid_line_id = '_valid_line'
+    # Create one ACLineSegment with only rdf:id (this is the problematic element)
+    invalid_line_id = '_invalid_line_only_rdf_id'
+
+    cim['eq']['ACLineSegment'] = pd.DataFrame({
+        'rdfId': [valid_line_id, invalid_line_id],
+        'name': ['ValidLine', np.nan],
+        'description': ['A valid line', np.nan],
+        'length': [10.0, np.nan],
+        'r': [0.1, np.nan],
+        'x': [0.4, np.nan],
+        'bch': [1e-6, np.nan],
+        'gch': [0.0, np.nan],
+        'r0': [0.3, np.nan],
+        'x0': [1.2, np.nan],
+        'b0ch': [0.5e-6, np.nan],
+        'g0ch': [0.0, np.nan],
+        'shortCircuitEndTemperature': [80.0, np.nan],
+        'BaseVoltage': ['_bv1', np.nan],
+        'EquipmentContainer': ['_vl1', np.nan]
+    })
+
+    # Create terminals ONLY for the valid line (the invalid line has no terminals)
+    cim['eq']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term1', '_term2'],
+        'name': ['Terminal1', 'Terminal2'],
+        'ConnectivityNode': ['_cn1', '_cn2'],
+        'ConductingEquipment': [valid_line_id, valid_line_id],
+        'sequenceNumber': [1, 2]
+    })
+    cim['ssh']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term1', '_term2'],
+        'connected': [True, True]
+    })
+    cim['tp']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term1', '_term2'],
+        'TopologicalNode': ['_tn1', '_tn2']
+    })
+
+    # Create empty operational limit sets and current limits (required by converter)
+    cim['eq']['OperationalLimitSet'] = pd.DataFrame({
+        'rdfId': pd.Series([], dtype='object'),
+        'name': pd.Series([], dtype='object'),
+        'Terminal': pd.Series([], dtype='object')
+    })
+    cim['eq']['CurrentLimit'] = pd.DataFrame({
+        'rdfId': pd.Series([], dtype='object'),
+        'name': pd.Series([], dtype='object'),
+        'OperationalLimitSet': pd.Series([], dtype='object'),
+        'OperationalLimitType': pd.Series([], dtype='object'),
+        'value': pd.Series([], dtype='float64')
+    })
+
+    # Set the cim dict and prepare
+    cim_parser.set_cim_dict(cim)
+    cim_parser.prepare_cim_net()
+    cim_parser.set_cim_data_types()
+
+    # Convert to pandapower - this should NOT raise an exception
+    # and should produce a net with the valid line preserved
+    try:
+        net = from_cim_dict(cim_parser, ignore_errors=True)
+    except Exception as e:
+        # If we get here, the conversion crashed - which is also a bug manifestation
+        pytest.fail(
+            f"Conversion crashed with exception: {e}\n"
+            "This is caused by the bug where all ACLineSegments are removed when any "
+            "single ACLineSegment has invalid terminals, leaving an empty dataframe "
+            "that causes downstream processing errors."
+        )
+
+    # The valid line SHOULD be present in net.line
+    # This assertion will FAIL with the current bug because the entire net.line
+    # dataframe is empty when any ACLineSegment has missing terminals
+    assert len(net.line) >= 1, (
+        f"Expected at least 1 line in net.line, but got {len(net.line)}. "
+        "An ACLineSegment with only rdf:id set should not cause all valid lines to be removed."
+    )
+
+    # Verify the valid line was converted
+    valid_lines = net.line[net.line['origin_id'] == valid_line_id]
+    assert len(valid_lines) == 1, (
+        f"Expected the valid ACLineSegment '{valid_line_id}' to be converted, "
+        f"but it was not found in net.line."
+    )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -4,3 +4,5 @@ from pandapower.plotting.plotly.vlevel_plotly import *
 from pandapower.plotting.plotly.pf_res_plotly import *
 from pandapower.plotting.plotly.get_colors import *
 from pandapower.plotting.plotly.mapbox_plot import *
+from pandapower.plotting.plotly.layers_plotly import *
+from pandapower.plotting.plotly.draw_layers import *

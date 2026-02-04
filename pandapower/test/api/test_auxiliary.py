@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -34,7 +34,7 @@ from pandapower.control import (
     create_trafo_characteristic_object,
 )
 from pandapower.control.util.auxiliary import (create_shunt_characteristic_object, _create_trafo_characteristics,
-                                               create_q_capability_curve_characteristics_object)
+                                               create_q_capability_characteristics_object, get_min_max_q_mvar_from_characteristics_object)
 
 
 class MemoryLeakDemo:
@@ -98,8 +98,8 @@ def test_get_indices():
 
 def test_net_deepcopy():
     net = example_simple()
-    net.line.at[0, 'geo'] = geojson.LineString([(0., 1.), (1., 2.)])
-    net.bus.at[0, 'geo'] = geojson.Point((0., 1.))
+    net.line.at[0, 'geo'] = geojson.dumps(geojson.LineString([(0., 1.), (1., 2.)]))
+    net.bus.at[0, 'geo'] = geojson.dumps(geojson.Point((0., 1.)))
 
     ContinuousTapControl(net, element_index=0, vm_set_pu=1)
     ds = DFData(pd.DataFrame(data=[[0, 1, 2], [3, 4, 5]]))
@@ -113,9 +113,9 @@ def test_net_deepcopy():
 
     if GEOPANDAS_INSTALLED:
         for tab in ('bus', 'line'):
-            net[f'{tab}_geodata'] = gpd.GeoDataFrame(net[tab].geo.dropna().apply(
-                lambda x: x["coordinates"]), geometry=net[tab].geo.dropna())
-        net1 = net.deepcopy()
+            net[f'{tab}_geodata'] = gpd.GeoDataFrame(net[tab].geo.dropna().apply(geojson.loads).apply(
+                lambda x: x["coordinates"] if x is not None else x), geometry=net[tab].geo.dropna().apply(geojson.loads))
+        net1 = copy.deepcopy(net)
         assert isinstance(net1.line_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata, gpd.GeoDataFrame)
         assert isinstance(net1.bus_geodata.geometry.iat[0], shapely.geometry.Point)
@@ -366,60 +366,92 @@ def test_creation_of_shunt_characteristics():
     assert np.isclose(net.shunt_characteristic_spline.loc[0, "p_mw_characteristic"](5), 10)
 
 
-def test_creation_of_q_capability_curve_characteristics():
+def test_creation_of_q_capability_characteristics():
     net = example_multivoltage()
     net["q_capability_curve_table"] = pd.DataFrame(
         {'id_q_capability_curve': [0, 0, 0, 0, 0], 'p_mw': [0.0, 50.0, 100.0, 125.0, 125.0],
          'q_min_mvar': [-100.0, -75.0, -50.0, -25.0, -10], 'q_max_mvar': [150.0, 125.0, 75, 50.0, 10.0]})
-    net.gen.id_q_capability_curve_characteristic.at[0] = 0
+    net.gen.id_q_capability_characteristic.at[0] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
-    # Add q_capability_curve_characteristic for one gen based on q_capability_curve_table
-    create_q_capability_curve_characteristics_object(net)
-    assert "q_capability_curve_characteristic" in net
-    assert len(net.q_capability_curve_characteristic) == 1
-    assert net.gen.id_q_capability_curve_characteristic.dtype == pd.Int64Dtype()
-    assert isinstance(net.gen.id_q_capability_curve_characteristic.at[0], np.int64)
-    assert pd.notna(net.gen.id_q_capability_curve_characteristic.at[0])
-    assert all(col in net.q_capability_curve_characteristic.columns for col in ["q_max_characteristic",
+    # Add q_capability_characteristic for one gen based on q_capability_curve_table
+    create_q_capability_characteristics_object(net)
+    assert "q_capability_characteristic" in net
+    assert len(net.q_capability_characteristic) == 1
+    assert net.gen.id_q_capability_characteristic.dtype == pd.Int64Dtype()
+    assert isinstance(net.gen.id_q_capability_characteristic.at[0], np.int64)
+    assert pd.notna(net.gen.id_q_capability_characteristic.at[0])
+    assert all(col in net.q_capability_characteristic.columns for col in ["q_max_characteristic",
                                                                                 "q_min_characteristic"])
-    assert isinstance(net.q_capability_curve_characteristic.loc
-                      [net.gen.id_q_capability_curve_characteristic.at[0], 'q_max_characteristic'],
+    assert isinstance(net.q_capability_characteristic.loc
+                      [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'],
                       Characteristic)
-    assert isclose(net.q_capability_curve_characteristic.at
-                   [net.gen.id_q_capability_curve_characteristic.at[0], 'q_max_characteristic'](-2).item(), 150,
+    assert isclose(net.q_capability_characteristic.at
+                   [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'](-2).item(), 150,
                    rel_tol=1e-9)
-    assert pd.notna(net.q_capability_curve_characteristic.at
-                    [net.gen.id_q_capability_curve_characteristic.at[0], 'q_min_characteristic'])
+    assert pd.notna(net.q_capability_characteristic.at
+                    [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'])
 
-    # Create q_capability_curve_characteristic again for the same gen based on the updated q_capability_curve_table
+    # Create q_capability_characteristic again for the same gen based on the updated q_capability_curve_table
     new_rows = pd.DataFrame(
         {'id_q_capability_curve': [1, 1, 1, 1, 1], 'p_mw': [0.0, 30.0, 50.0, 70.0, 130],
          'q_min_mvar': [-29.0, -27, -26.0, -25.0, -20.0], 'q_max_mvar': [141.0, 141.0, 137.0, 134.0, 128.0]})
     net["q_capability_curve_table"] = pd.concat([net["q_capability_curve_table"], new_rows], ignore_index=True)
-    net.gen.id_q_capability_curve_characteristic.at[0] = 1
-    create_q_capability_curve_characteristics_object(net)
-    assert len(net.q_capability_curve_characteristic) == 2
-    assert net.gen.at[0, "id_q_capability_curve_characteristic"] == 1
-    assert isinstance(net.q_capability_curve_characteristic.loc
-                      [net.gen.id_q_capability_curve_characteristic.at[0], 'q_max_characteristic'],
+    net.gen.id_q_capability_characteristic.at[0] = 1
+    create_q_capability_characteristics_object(net)
+    assert len(net.q_capability_characteristic) == 2
+    assert net.gen.at[0, "id_q_capability_characteristic"] == 1
+    assert isinstance(net.q_capability_characteristic.loc
+                      [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'],
                       Characteristic)
 
-    assert isinstance(net.q_capability_curve_characteristic.loc
-                      [net.gen.id_q_capability_curve_characteristic.at[0], 'q_min_characteristic'],
+    assert isinstance(net.q_capability_characteristic.loc
+                      [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'],
                       Characteristic)
 
-    assert isclose(net.q_capability_curve_characteristic.at[
-                       net.gen.id_q_capability_curve_characteristic.at[0], 'q_max_characteristic'](130).item(), 128.0,
+    assert isclose(net.q_capability_characteristic.at[
+                       net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'](130).item(), 128.0,
                    rel_tol=1e-9)
-    assert isclose(net.q_capability_curve_characteristic.at[
-                       net.gen.id_q_capability_curve_characteristic.at[0], 'q_max_characteristic'](0).item(), 141.0,
+    assert isclose(net.q_capability_characteristic.at[
+                       net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'](0).item(), 141.0,
                    rel_tol=1e-9)
-    assert pd.notna(net.q_capability_curve_characteristic.loc
-                    [net.gen.id_q_capability_curve_characteristic.at[0], 'q_max_characteristic'])
-    assert pd.notna(net.q_capability_curve_characteristic.loc
-                    [net.gen.id_q_capability_curve_characteristic.at[0], 'q_min_characteristic'])
+    assert pd.notna(net.q_capability_characteristic.loc
+                    [net.gen.id_q_capability_characteristic.at[0], 'q_max_characteristic'])
+    assert pd.notna(net.q_capability_characteristic.loc
+                    [net.gen.id_q_capability_characteristic.at[0], 'q_min_characteristic'])
 
+def test_get_min_max_q_capability():
+    net = example_multivoltage()
+    sgen_indices_with_char = [1, 2]
+    # create q characteristics table
+    p_mw = [-2.0, -1.0, 0.0, 0.5, 2.0, -5.0, 0.5, 4.0]
+    q_min_mvar = [-0.5, -0.3, -0.2, -0.3, -0.5, -0.25, -0.35, -0.45]
+    q_max_mvar = [0.6, 0.4, 0.25, 0.4, 0.56, 0.25, 0.35, 0.55]
+    net["q_capability_curve_table"] = pd.DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0, 1, 1, 1],
+         'p_mw': p_mw,
+         'q_min_mvar': q_min_mvar,
+         'q_max_mvar': q_max_mvar})
+
+    net.sgen.loc[sgen_indices_with_char, 'id_q_capability_characteristic'] = [0, 1]
+    net.sgen.loc[sgen_indices_with_char, 'curve_style'] = "straightLineYValues"
+    create_q_capability_characteristics_object(net)
+
+    p_mw_sgen1 = p_mw[:5]
+    p_mw_sgen2 = p_mw[5:]
+    q_min_mvar_sgen1 = q_min_mvar[:5]
+    q_min_mvar_sgen2 = q_min_mvar[5:]
+    q_max_mvar_sgen1 = q_max_mvar[:5]
+    q_max_mvar_sgen2 = q_max_mvar[5:]
+
+    for i, p1 in enumerate(p_mw_sgen1):
+        for j, p2 in enumerate(p_mw_sgen2):
+            net.sgen.loc[sgen_indices_with_char, 'p_mw'] = [p1, p2]
+            qmin, qmax = get_min_max_q_mvar_from_characteristics_object(net, 'sgen', sgen_indices_with_char)
+            assert qmin[1] == q_min_mvar_sgen1[i]
+            assert qmin[2] == q_min_mvar_sgen2[j]
+            assert qmax[1] == q_max_mvar_sgen1[i]
+            assert qmax[2] == q_max_mvar_sgen2[j]
 
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):

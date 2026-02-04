@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.control.controller.characteristic_control import CharacteristicControl
@@ -9,21 +9,16 @@ from pandapower.control.util.characteristic import Characteristic
 
 class VmSetTapControl(CharacteristicControl):
     """
-    Controller that adjusts the setpoint of a local tap changer voltage control based on a load flow result (e.g. p_lv_mw, i_lv_ka etc.)
-    according to a defined characteristic.
+    Controller that adjusts the setpoint of a local tap changer voltage control based on a load flow result
+    (e.g. p_lv_mw, i_lv_ka etc.) according to a defined characteristic.
 
-    INPUT:
-        **net** (attrdict) - Pandapower net
-
-        **cid** (int) - ID of the tap changer controller, an attribute of which is controlled
-
-        **variable** (float) - Variable from the result table that is used for the characteristic
-
-    OPTIONAL:
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
+    Parameters:
+        net (ADict): Pandapower net
+        cid (int): ID of the tap changer controller, an attribute of which is controlled
+        variable (float): Variable from the result table that is used for the characteristic
+        in_service (bool, True): Indicates if the controller is currently in_service
+        drop_same_existing_ctrl (bool, False): Indicates if already existing controllers of the same type and with the
+            same matching parameters (e.g. at same element) should be dropped
     """
 
     def __init__(self, net, controller_index, characteristic_index, variable='p_hv_mw', tol=1e-3, in_service=True,

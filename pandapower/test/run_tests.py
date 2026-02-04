@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -15,10 +15,7 @@ import pytest
 from pandapower import pp_dir
 from pandapower.test import tutorials_path
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 test_dir = os.path.abspath(os.path.join(pp_dir, "test"))
 
 logger = logging.getLogger()

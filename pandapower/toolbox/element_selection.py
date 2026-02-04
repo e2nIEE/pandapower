@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import gc
@@ -13,10 +13,7 @@ from packaging.version import Version
 from pandapower._version import __version__
 from pandapower.auxiliary import ets_to_element_types
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -25,20 +22,17 @@ def get_element_index(net, element_type, name, exact_match=True):
     """
     Returns the element(s) identified by a name or regex and its element-table.
 
-    INPUT:
-      **net** - pandapower network
+    Parameters:
+        net: pandapower network
+        element_type: Table to get indices from ("line", "bus", "trafo" etc.)
+        name: Name of the element to match.
+        exact_match (bool, True):
+      
+            - True: Expects exactly one match, raises UserWarning otherwise.
+            - False: returns all indices containing the name
 
-      **element_type** - Table to get indices from ("line", "bus", "trafo" etc.)
-
-      **name** - Name of the element to match.
-
-    OPTIONAL:
-      **exact_match** (boolean, True) -
-          True: Expects exactly one match, raises UserWarning otherwise.
-          False: returns all indices containing the name
-
-    OUTPUT:
-      **index** - The index (or indices in case of exact_match=False) of matching element(s).
+    Returns:
+        The index (or indices in case of exact_match=False) of matching element(s).
     """
     if exact_match:
         idx = net[element_type][net[element_type]["name"] == name].index
@@ -139,29 +133,24 @@ def next_bus(net, bus, element_id, et='line', **kwargs):
 
 def get_connected_elements(net, element_type, buses, respect_switches=True, respect_in_service=False):
     """
-     Returns elements connected to a given buses.
+    Returns elements connected to a given buses.
 
-     INPUT:
-        **net** (pandapowerNet)
-
-        **element_type** (string, name of the element table)
-
-        **buses** (single integer or iterable of ints)
-
-     OPTIONAL:
-        **respect_switches** (boolean, True)
+    Parameters:
+        net (pandapowerNet):
+        element_type (string, name of the element table):
+        buses (single integer or iterable of ints):
+        respect_switches (bool, True):
 
             - True: open switches will be respected
             - False: open switches will be ignored
 
-        **respect_in_service** (boolean, False)
-
+        respect_in_service (bool, False):
+        
             - True: in_service status of connected lines will be respected
             - False: in_service status will be ignored
 
-     OUTPUT:
-        **connected_elements** (set) - Returns connected elements.
-
+    Returns:
+        set: Returns connected elements.
     """
 
     if not hasattr(buses, "__iter__"):
@@ -222,40 +211,31 @@ def get_connected_elements(net, element_type, buses, respect_switches=True, resp
 def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect_switches=True,
                         respect_in_service=False):
     """
-     Returns buses connected to given buses. The source buses will NOT be returned.
+    Returns buses connected to given buses. The source buses will NOT be returned.
 
-     INPUT:
-        **net** (pandapowerNet)
-
-        **buses** (single integer or iterable of ints)
-
-     OPTIONAL:
-        **respect_switches** (boolean, True)
+    Parameters:
+        net (pandapowerNet):
+        buses (single integer or iterable of ints):
+        respect_switches (bool, True):
 
             - True: open switches will be respected
             - False: open switches will be ignored
 
-        **respect_in_service** (boolean, False)
+        respect_in_service (bool, False):
 
             - True: in_service status of connected buses will be respected
             - False: in_service status will be ignored
 
-        **consider** (iterable, ("l", "s", "t", "t3", "i")) - Determines, which types of
-        connections will be considered.
+        consider (iterable, ("l", "s", "t", "t3", "i")): Determines, which types of connections will be considered.
 
-            l: lines
+            - l: lines
+            - s: switches
+            - t: trafos
+            - t3: trafo3ws
+            - i: impedances
 
-            s: switches
-
-            t: trafos
-
-            t3: trafo3ws
-
-            i: impedances
-
-     OUTPUT:
-        **cl** (set) - Returns connected buses.
-
+    Returns:
+        set: Returns connected buses.
     """
     if not hasattr(buses, "__iter__"):
         buses = [buses]
@@ -346,38 +326,27 @@ def get_connected_buses(net, buses, consider=("l", "s", "t", "t3", "i"), respect
 
 def get_connected_buses_at_element(net, element_index, element_type, respect_in_service=False):
     """
-     Returns buses connected to a given branch element. In case of a bus switch, two buses
-     will be returned, else one.
+    Returns buses connected to a given branch element. In case of a bus switch, two buses will be returned, else one.
 
-     INPUT:
-        **net** (pandapowerNet)
+    Parameters:
+        net (pandapowerNet):
+        element_index (integer):
+        element_type (string): Type of the source element:
 
-        **element_index** (integer)
-
-        **element_type** (string) - Type of the source element:
-
-            l, line: line
-
-            s, switch: switch
-
-            t, trafo: trafo
-
-            t3, trafo3w: trafo3w
-
-            i, impedance: impedance
-
-     OPTIONAL:
-        **respect_in_service** (boolean, False)
-
-        True: in_service status of connected buses will be respected
-
-        False: in_service status will be ignored
-
-     OUTPUT:
-        **cl** (set) - Returns connected switches.
-
+            - l, line
+            - s, switch
+            - t, trafo
+            - t3, trafo3w
+            - i, impedance
+        
+        respect_in_service (bool, False):
+        
+            - True: in_service status of connected buses will be respected
+            - False: in_service status will be ignored
+        
+    Returns:
+        set: Returns connected switches.
     """
-
     cb = set()
     if element_type == 'l' or element_type == 'line':
         cb.add(net.line.from_bus.at[element_index])
@@ -407,13 +376,12 @@ def get_connected_buses_at_switches(net, switches):
     """
     Returns a set of buses connected to given switches.
 
-    INPUT:
-        **net** (pandapowerNet)
+    Parameters:
+        net (pandapowerNet):
+        switches (single integer or iterable of ints):
 
-        **switches** (single integer or iterable of ints)
-
-    OUTPUT:
-       **buses** (set) - Returns connected buses
+    Returns:
+       set: Returns connected buses
     """
     if not hasattr(switches, "__iter__"):
         switches = [switches]
@@ -437,30 +405,24 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
     """
     Returns switches connected to given buses.
 
-    INPUT:
-        **net** (pandapowerNet)
+    Parameters:
+        net (pandapowerNet):
+        buses (single integer or iterable of ints):
+        consider (iterable, ("l", "s", "t", "t3)): Determines, which types of connections will be considered.
+            
+            - al: lines
+            - b: bus-bus-switches
+            - t: transformers
+            - t3: 3W transformers
+            - i: impedance
 
-        **buses** (single integer or iterable of ints)
-
-    OPTIONAL:
-        **consider** (iterable, ("l", "s", "t", "t3)) -  Determines, which types of connections
-                                                      will be considered.
-                                                      l: lines
-                                                      b: bus-bus-switches
-                                                      t: transformers
-                                                      t3: 3W transformers
-                                                      i: impedance
-
-        **status** (string, ("all", "closed", "open")) -  Determines, which switches will
-                                                            be considered
-
-        **include_element_connections** (bool, False) - If True, also the other bus of the connected
-        element, e.g. the other line ending, is included
-
-    OUTPUT:
-       **cl** (set) - Returns connected switches.
+        status (string, ("all", "closed", "open")): Determines, which switches will be considered
+        include_element_connections (bool, False): If True, also the other bus of the connected element, e.g. the other
+            line ending, is included
+        
+    Returns:
+       set: Returns connected switches.
     """
-
     if not hasattr(buses, "__iter__"):
         buses = [buses]
 
@@ -501,7 +463,8 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
 def get_connected_elements_dict(
         net, buses, respect_switches=True, respect_in_service=False, include_empty_lists=False,
         element_types=None, **kwargs):
-    """Returns a dict of lists of connected elements.
+    """
+    Returns a dict of lists of connected elements.
 
     Parameters
     ----------
@@ -536,7 +499,7 @@ def get_connected_elements_dict(
             cost_tables=False,
             res_elements=False)
 
-    connected = dict()
+    connected = {}
     for et in element_types:
         if et == "bus":
             conn = get_connected_buses(net, buses, respect_switches=respect_switches,
@@ -562,7 +525,7 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     if "switch" in branch_dict:
         branch_dict["switch"].append("element")
 
-    found = {et: set() for et in branch_dict.keys()}
+    found = {et: set() for et in branch_dict}
     for et, bus_types in branch_dict.items():
         for bus1 in bus_types:
             for bus2 in bus_types:
@@ -583,7 +546,7 @@ def get_gc_objects_dict():
     type
     """
     objs = gc.get_objects()
-    nums_by_types = dict()
+    nums_by_types = {}
 
     for obj in objs:
         _type = type(obj)
@@ -621,7 +584,7 @@ def false_elm_links_loop(net, element_types=None):
     does not exist in the net.
     This function is an outer loop for get_false_links() applications.
     """
-    false_links = dict()
+    false_links = {}
     element_types = element_types if element_types is not None else pp_elements(
         bus=False, cost_tables=True)
     bebd = branch_element_bus_dict(include_switch=True)
@@ -629,7 +592,7 @@ def false_elm_links_loop(net, element_types=None):
         if net[element_type].shape[0]:
             fl = pd.Index([])
             # --- define col and target_element_type
-            if element_type in bebd.keys():
+            if element_type in bebd:
                 for col in bebd[element_type]:
                     fl = fl.union(false_elm_links(net, element_type, col, "bus"))
             elif element_type in {"poly_cost", "pwl_cost"}:
@@ -655,8 +618,8 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
         pp_elms |= {"bus"}
         if res_elements:
             pp_elms |= {"res_bus"}
-    pp_elms |= set([el[0] for el in element_bus_tuples(
-        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)])
+    pp_elms |= {el[0] for el in element_bus_tuples(
+        bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)}
     if other_elements:
         pp_elms |= {"measurement"}
     if cost_tables:
@@ -679,9 +642,9 @@ def branch_element_bus_dict(include_switch=False, sort=None):
         logger.debug(msg)
 
     ebts = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False)
-    bebd = dict()
+    bebd = {}
     for et, bus in ebts:
-        if et in bebd.keys():
+        if et in bebd:
             bebd[et].append(bus)
         else:
             bebd[et] = [bus]
@@ -703,7 +666,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     if Version(__version__) < Version('2.13'):
         logger.debug("element_bus_tuples() returns a list of tuples instead of a set of tuples "
                      "since pp.version >= 2.12.")
-    ebts = list()
+    ebts = []
     if bus_elements:
         ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                  ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),

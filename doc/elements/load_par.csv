@@ -3,8 +3,10 @@ name;string;;name of the load
 bus *;integer;;index of connected bus
 p_mw*;float;:math:`\geq 0`;active power of the load [MW]
 q_mvar*;float;;reactive power of the load [MVar]
-const_z_percent*;float;:math:`[0,100]`;percentage of p_mw and q_mvar that is associated to constant impedance load at rated voltage [:math:`\%`]
-const_i_percent*;float;:math:`[0,100]`;percentage of p_mw and q_mvar that is associated to constant current load at rated voltage [:math:`\%`]
+const_z_p_percent*;float;:math:`[0,100]`;percentage of p_mw that is associated to constant impedance load at rated voltage [:math:`\%`]
+const_i_p_percent*;float;:math:`[0,100]`;percentage of p_mw that is associated to constant current load at rated voltage [:math:`\%`]
+const_z_q_percent*;float;:math:`[0,100]`;percentage of q_mvar that is associated to constant impedance load at rated voltage [:math:`\%`]
+const_i_q_percent*;float;:math:`[0,100]`;percentage of q_mvar that is associated to constant current load at rated voltage [:math:`\%`]
 sn_mva;float;:math:`>0`;rated power of the load [kVA]
 scaling *;float;:math:`\geq 0`;scaling factor for active and reactive power
 in_service*;boolean;True / False;specifies if the load is in service.
