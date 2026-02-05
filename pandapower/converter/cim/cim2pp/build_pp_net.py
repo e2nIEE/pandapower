@@ -30,7 +30,10 @@ class CimConverter:
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.kwargs = kwargs
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
-        self.net: pandapowerNet = pandapowerNet(name="CimConverter")
+        name = self.cim_parser.file_names.get("eq", "CimConverter")
+        if name.endswith("_eq"):
+            name = name[:-3]
+        self.net: pandapowerNet = pandapowerNet(name=name)
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
