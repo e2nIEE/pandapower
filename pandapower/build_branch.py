@@ -1600,6 +1600,8 @@ def _calculate_3w_tap_changers(t3, t2, sides):
     at_star_point = t3.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
     for side in sides:
+        if 'tap_side' not in t3:
+            t3['tap_side'] = pd.NA
         tap_mask = (t3.tap_side.fillna("") == side).to_numpy()
         for var in tap_variables:
             if var in t3:
