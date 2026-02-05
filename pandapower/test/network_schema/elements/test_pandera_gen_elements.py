@@ -4,8 +4,7 @@ import pandera as pa
 import pytest
 import numpy as np
 
-from pandapower import create_asymmetric_sgen
-from pandapower.create import create_empty_network, create_bus, create_gen
+from pandapower.create import create_empty_network, create_bus, create_gen, create_asymmetric_sgen
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (

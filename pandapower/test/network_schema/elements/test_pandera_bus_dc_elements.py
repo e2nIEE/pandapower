@@ -6,8 +6,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower import create_bus_dc
-from pandapower.create import create_empty_network
+from pandapower.create import create_empty_network, create_bus_dc
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
     strings,

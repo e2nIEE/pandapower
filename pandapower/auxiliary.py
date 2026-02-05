@@ -1941,10 +1941,11 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
         p_mw = np.abs(dctab.p_mw)
         p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw  # type: ignore[operator]
 
+        max_p_mw: float
         if 'max_p_mw' in dctab:
-            max_p_mw: float = dctab.max_p_mw  # type: ignore[assignment]
+            max_p_mw = dctab.max_p_mw  # type: ignore[assignment]
         else:
-            max_p_mw: float = float('nan')
+            max_p_mw = float('nan')
         p_min: float
         p_max: float
         if np.sign(dctab.p_mw) > 0:

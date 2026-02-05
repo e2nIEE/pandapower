@@ -4,8 +4,7 @@ import itertools
 import pandera as pa
 import pytest
 
-from pandapower import create_ext_grid
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_empty_network, create_bus, create_ext_grid
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
