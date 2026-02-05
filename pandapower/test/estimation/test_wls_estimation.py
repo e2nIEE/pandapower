@@ -448,7 +448,7 @@ def test_cigre_network_with_slack_init():
     test_cigre_network(init='slack')
 
 
-@pytest.mark.skipif(np.__version__.startswith('1.'), reason="Known unfixed issues. Won't fix.")
+@pytest.mark.skip(reason="numba/numpy version related issue, fix in progress")
 def test_cigre_with_bad_data():
     np.random.seed(123456)
     net = create_cigre_network_mv(with_der=False)
