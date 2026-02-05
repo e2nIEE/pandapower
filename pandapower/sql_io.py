@@ -381,7 +381,7 @@ def from_sqlite(filename):
     with sqlite3.connect(filename) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        dodfs = dict()
+        dodfs = {}
         for t, in cursor.fetchall():
             table = pd.read_sql_query("SELECT * FROM '%s'" % t, conn, index_col="index")
             table.index.name = None

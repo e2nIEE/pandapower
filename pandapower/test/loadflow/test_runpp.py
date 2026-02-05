@@ -134,7 +134,7 @@ def test_overwrite_default_args_with_user_options():
 
 def test_runpp_init():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     tidx = create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
     net.trafo.at[tidx, "shift_degree"] = 70
@@ -148,7 +148,7 @@ def test_runpp_init():
 
 def test_runpp_init_auxiliary_buses():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    _, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
     tidx = create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV')
@@ -321,7 +321,7 @@ def test_switch_z_ohm_different(z_switch_net_4bus_parallel, z_switch_net_4bus, n
 
 def test_two_open_switches():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    b1, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=20.)
     l2 = create_test_line(net, b2, b3)
     create_test_line(net, b3, b1)
@@ -353,7 +353,7 @@ def get_isolated(net):
                      init_va_degree="flat",
                      enforce_q_lims=False, recycle=None)
 
-    ppc, ppci = _pd2ppc(net)
+    ppc, _ = _pd2ppc(net)
     return _check_connectivity(ppc)
 
 
@@ -398,27 +398,16 @@ def test_connectivity_check_island_with_one_pv_bus():
     isolated_bus1 = create_bus(net, vn_kv=20., name="isolated Bus1")
     isolated_bus2 = create_bus(net, vn_kv=20., name="isolated Bus2")
     isolated_gen = create_bus(net, vn_kv=20., name="isolated Gen")
-    isolated_pv_bus = create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
+    _ = create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
     create_line(net, isolated_bus2, isolated_bus1, length_km=1,
                 std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine")
     create_line(net, isolated_gen, isolated_bus1, length_km=1,
                 std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLineToGen")
-    # with pytest.warns(UserWarning):
     iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
-    # assert len(iso_buses) == 0
-    # assert np.isclose(iso_p, 0)
-    # assert np.isclose(iso_q, 0)
-    #
     # create_load(net, isolated_bus1, p_mw=0.200., q_mvar=0.020)
     # create_sgen(net, isolated_bus2, p_mw=0.0150., q_mvar=-0.010)
-    #
-    # iso_buses, iso_p, iso_q = get_isolated(net)
-    # assert len(iso_buses) == 0
-    # assert np.isclose(iso_p, 0)
-    # assert np.isclose(iso_q, 0)
 
-    # with pytest.warns(UserWarning):
     runpp_with_consistency_checks(net, check_connectivity=True)
 
 
@@ -453,7 +442,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
 
 def test_isolated_in_service_bus_at_oos_line():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b = create_bus(net, vn_kv=135)
     l = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
     net.line.loc[l, "in_service"] = False
@@ -473,7 +462,7 @@ def test_isolated_in_service_line():
 def test_makeYbus():
     # tests if makeYbus fails for nets where every bus is connected to each other
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
 
     # number of buses to create
     n_bus = 20
@@ -930,7 +919,7 @@ def test_get_internal():
     Ybus = ppc["internal"]["Ybus"]
 
     _, ppci = _pd2ppc(net)
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
+    _, _, _, _, _, _, _, _, ref, pv, pq, _, _, _, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
     dist_slack = False
@@ -1384,7 +1373,7 @@ def test_results_for_line_temperature():
 
 def test_tap_dependent_impedance():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
@@ -1451,7 +1440,7 @@ def test_tap_dependent_impedance():
 
 def test_tap_table_order():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     b4 = create_bus(net, vn_kv=0.4)
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")

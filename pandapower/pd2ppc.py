@@ -45,14 +45,6 @@ def _pd2ppc_recycle(net, sequence, recycle):
         # update pq values in bus
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
 
-    # if "trafo" in recycle and recycle["trafo"]:
-    #     # update trafo in branch and Ybus
-    #     lookup = net._pd2ppc_lookups["branch"]
-    #     if "trafo" in lookup:
-    #         _calc_trafo_parameter(net, ppc)
-    #     if "trafo3w" in lookup:
-    #         _calc_trafo3w_parameter(net, ppc)
-
     if "gen" in recycle and recycle["gen"]:
         # updates the ppc["gen"] part
         _build_gen_ppc(net, ppc)

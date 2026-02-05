@@ -136,6 +136,10 @@ def test_trafo_characteristic_table_diagnostic():
          'vkr_percent': [1.3, 1.4, 1.44, 1.5, 1.6], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     # populate id_characteristic_table parameter
+    if 'id_characteristic_table' not in net.trafo:
+        net.trafo['id_characteristic_table'] = pd.NA
+    if 'tap_dependency_table' not in net.trafo:
+        net.trafo['tap_dependency_table'] = pd.NA
     net.trafo['id_characteristic_table'].at[0] = 0
     net.trafo['tap_dependency_table'].at[0] = False
     with pytest.warns(UserWarning):

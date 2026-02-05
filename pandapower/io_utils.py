@@ -762,12 +762,12 @@ def pp_hook(
         omit_modules=None
 ):
     try:
-        if not omit_tables is None:
+        if omit_tables is not None:
             for ot in omit_tables:
                 if ot in d:
                     d[ot].drop(d[ot].index, inplace=True)
         if '_module' in d and '_class' in d:
-            if not omit_modules is None:
+            if omit_modules is not None:
                 for om in omit_modules:
                     if om in d['_module']:
                         return

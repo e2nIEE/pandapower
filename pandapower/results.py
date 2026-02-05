@@ -131,7 +131,7 @@ def verify_results(net, mode="pf"):
     elements = get_relevant_elements(mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
-        res_element, res_empty_element = get_result_tables(element, suffix)
+        res_element, _ = get_result_tables(element, suffix)
 
         index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
         if not index_equal:

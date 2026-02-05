@@ -494,7 +494,7 @@ class pandapowerNet(ADict):
         """
         par = []
         res = []
-        for et in list(self.keys()):
+        for et in self.keys():
             if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
                 n_rows = self[et].shape[0]
                 if 'res_' in et:
@@ -666,7 +666,7 @@ def empty_defaults_per_dtype(dtype: np.dtype[Any]) -> Any:
 
 
 def _preserve_dtypes(df: pd.DataFrame, dtypes: pdt.Series[np.dtype[Any]]) -> None:
-    for item, dtype in list(dtypes.items()):
+    for item, dtype in dtypes.items():
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
                 df[item] = df[item].fillna(pd.NA).astype('boolean')
@@ -1321,11 +1321,10 @@ def _select_is_elements_numba(
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
-    #    mode = net["_options"]["mode"]
     elements_ac = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
                    "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
     elements_dc = ["vsc", "load_dc", "source_dc"]
-    is_elements = dict()
+    is_elements = {}
     for element_table_list, bus_table, bis in zip((elements_ac, elements_dc), ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
         for element_table in element_table_list:
             num_elements = len(net[element_table].index)
@@ -1408,8 +1407,6 @@ def _add_ppc_options(
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
-    # if recycle is None:
-    #     recycle = dict(trafo=False, bus_pq=False, bfsw=False)
 
     init_results = (isinstance(init_vm_pu, str) and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
@@ -1547,13 +1544,11 @@ def _add_sc_options(
 
 
 def _add_options(net: pandapowerNet, options: dict[str, Any]) -> None:
-    # double_parameters = set(net.__internal_options.keys()) & set(options.keys())
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
         raise UserWarning(
             "Parameters always have to be unique! The following parameters where specified " +
             "twice: %s" % double_parameters)
-    # net.__internal_options.update(options)
     net._options.update(options)
 
 
@@ -2337,7 +2332,6 @@ def _init_rundcopp_options(
     # scipy spsolve options in NR power flow
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
-    # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
