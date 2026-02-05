@@ -18,9 +18,10 @@ MeasurementElementType = Literal["bus", "line", "trafo", "trafow3", "load", "gen
                                  "ext_grid"]
 PWLPowerType = Literal["p", "q"]
 SwitchElementType = Literal[
-    "b",  # bus
-    "l",  # line
-    "t",  # transformer
+    "b",   # bus
+    "l",   # line
+    "t",   # transformer
+    "t3",  # 3 winding transformer
 ]
 SwitchType = Literal[
     "LS",  # load switch

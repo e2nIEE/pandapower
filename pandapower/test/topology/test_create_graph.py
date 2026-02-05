@@ -69,7 +69,7 @@ def test_line(library):
 
 @pytest.mark.parametrize("library", libraries)
 def test_trafo(library):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo")
     add_test_trafo(net)
 
     trafo, open_loop_trafo, oos_trafo = net.trafo.index

@@ -9,6 +9,9 @@ import copy
 import numpy as np
 import pytest
 
+from pandapower import create_bus_dc, create_vsc
+from pandapower.create.line_create import create_line_from_parameters, create_line_dc_from_parameters
+
 from pandapower.auxiliary import LoadflowNotConverged
 from pandapower.create import (
     create_bus, create_transformer, create_transformer3w, create_load, create_xward, create_switch, create_ext_grid
@@ -136,7 +139,7 @@ def test_dc_after_ac():
 
 
 def test_dc_vsc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_dc_vsc")
     b1 = create_bus(net, name="AC_B1", vn_kv=380)
     b2 = create_bus(net, name="AC_B2", vn_kv=380)
     b3 = create_bus(net, name="AC_B3", vn_kv=380)
@@ -202,7 +205,7 @@ def test_dc_vsc():
 
 
 def test_dc_vsc_p():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_dc_vsc_p")
     b1 = create_bus(net, name="AC_B1", vn_kv=380)
     b2 = create_bus(net, name="AC_B2", vn_kv=380)
     b3 = create_bus(net, name="AC_B3", vn_kv=380)
@@ -285,7 +288,7 @@ def test_dc_vsc_p():
 
 
 def test_dc_vsc_oos():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_dc_vsc_oos")
     b1 = create_bus(net, name="AC_B1", vn_kv=380)
     b2 = create_bus(net, name="AC_B2", vn_kv=380)
     b3 = create_bus(net, name="AC_B3", vn_kv=380)
