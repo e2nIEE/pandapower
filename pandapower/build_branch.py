@@ -819,13 +819,13 @@ def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2
     else:
         raise UserWarning("Unknown trafotype")
 
-    tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")
+    tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table", na_replacement=float("nan"))
     tap_dependency_table = np.array(
         [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
     if np.any(np.isnan(tap_dependency_table)):
         raise UserWarning("tap_dependent_impedance has NaN values, but must be of type "
                           "bool and set to True or False")
-    tap_pos = get_trafo_values(trafo_df, "tap_pos")
+    tap_pos = get_trafo_values(trafo_df, "tap_pos", na_replacement=float("nan"))
 
     vals = ()
 
@@ -950,7 +950,7 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
     """
     parallel = get_trafo_values(trafo_df, "parallel")
     if sequence == 1:
-        tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
+        tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table", na_replacement=float("nan"))
         if tap_dependency is not None:
             tap_dependency = np.array(
                 [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency])
