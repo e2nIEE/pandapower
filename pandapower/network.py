@@ -35,6 +35,7 @@ import pandas as pd
 
 from pandapower.network_structure import get_structure_dict
 from pandapower.std_types import add_basic_std_types
+from pandapower.pp_types import StandardTypesDict
 
 logger = logging.getLogger(__name__)
 
@@ -233,22 +234,28 @@ class pandapowerNet(ADict):
     """
     @overload
     def __init__(
-            self, name: str, f_hz: float = 50., sn_mva: float = 1., add_stdtypes: bool = True, custom_data: dict = None
+            self,
+            name: str,
+            f_hz: float = 50.,
+            sn_mva: float = 1.,
+            add_stdtypes: bool = True,
+            custom_data: dict | None = None
     ) -> None: ...
     
     @overload
     @deprecated("Calling pandapowerNet to copy a network is no longer supported. Use copy.deepcopy(net) instead.")
-    def __init__(self, net: "pandapowerNet") -> None: ...
+    def __init__(self, *, net: "pandapowerNet | dict") -> None: ...
     
     
     def __init__(
             self,
-            net: "pandapowerNet" = None,
-            name: str = None,
+            name: str | None = None,
             f_hz: float = 50.,
             sn_mva: float = 1.,
             add_stdtypes: bool = True,
-            custom_data: dict = None,
+            custom_data: dict | None = None,
+            *,
+            net: "pandapowerNet | dict | None" = None,
             **kwargs
     ) -> None:
         # TODO: remove once deprecations are removed
@@ -297,7 +304,7 @@ class pandapowerNet(ADict):
             if add_stdtypes:
                 add_basic_std_types(self)  # TODO: Test this
             else:
-                self.std_types = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}  # TODO: this should not be set here. a function to return the empty std_types would be sensible
+                self.std_types: StandardTypesDict = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
             # reset res_… objects:
             for suffix in [None, "est", "sc", "3ph"]:
                 elements = []
@@ -329,7 +336,7 @@ class pandapowerNet(ADict):
                         )
                 if "res_cost" in self.keys():
                     del self["res_cost"]
-            self.user_pf_options = {}
+            self.user_pf_options: dict = {}
             
 
     @staticmethod

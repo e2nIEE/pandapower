@@ -143,7 +143,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         ], sort=False)
     ]
 
-    return pandapowerNet(p2)
+    return pandapowerNet(net=p2)
 
 
 def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):

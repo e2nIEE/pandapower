@@ -44,14 +44,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-try:
-    from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
+from pandapower.auxiliary import _check_if_numba_is_installed
 
-    numba_installed = True
-except ImportError:
-    def makeYbus_numba():
-        pass
-    numba_installed = False
+numba_installed = _check_if_numba_is_installed()
+if numba_installed:
+    from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
 
 
 def test_minimal_net(**kwargs):

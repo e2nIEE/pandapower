@@ -10,6 +10,8 @@ from typing import Literal, cast, get_args, TYPE_CHECKING
 
 import pandas as pd
 
+from pandapower.pp_types import StandardTypesDictKeys
+
 if TYPE_CHECKING:
     from pandapower.network import pandapowerNet
 
@@ -42,7 +44,7 @@ def create_std_type(
         net: 'pandapowerNet',
         data: dict,
         name: str,
-        element: str = "line",
+        element: StandardTypesDictKeys = "line",
         overwrite=True,
         check_required=True):
     """
@@ -121,6 +123,7 @@ def create_std_types(net, data, element="line", overwrite=True, check_required=T
             - "line_dc"
             - "trafo"
             - "trafo3w"
+            - "fuse"
             
         overwrite: whether overwriteing existing standard type is allowed
         check_required: check if required standard type parameters are present

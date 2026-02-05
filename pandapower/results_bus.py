@@ -190,7 +190,7 @@ def write_voltage_dependend_load_results(net, p, q, b):
 # TODO: many tests fail if this function fails, yet i could not find tests for it
 def write_pq_results_to_element(
         net: pandapowerNet, ppc: pd.DataFrame, element, suffix=None
-) -> None:
+) -> pandapowerNet:
     """
     get p_mw and q_mvar for a specific pq element ("load", "sgen"...).
     This function basically writes values element table to res_element table

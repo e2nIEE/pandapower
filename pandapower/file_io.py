@@ -158,7 +158,7 @@ def from_pickle(filename, convert=True):
         >>> net2 = from_pickle("example2.p") #relative path
     """
 
-    net = pandapowerNet(get_raw_data_from_pickle(filename))
+    net = pandapowerNet(net=get_raw_data_from_pickle(filename))
     transform_net_with_df_and_geo(net, ["bus_geodata"], ["line_geodata"])
 
     if convert:
