@@ -421,7 +421,10 @@ def get_trafo_values(trafo_df: pd.DataFrame | dict, column: str, na_replacement:
         return None
     if na_replacement is not pd.NA:
         # astype(object) is required to allow float('nan') as a replacement
-        return trafo_df[column].astype(object).replace({pd.NA: na_replacement}).to_numpy()
+        series = trafo_df[column].astype(object)
+        mask = pd.isna(series)
+        series[mask] = na_replacement
+        return series.infer_objects().to_numpy()
     else:
         return trafo_df[column].to_numpy()
 
