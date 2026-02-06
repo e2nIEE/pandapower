@@ -546,12 +546,12 @@ def test_create_lines_from_parameters():
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.in_service.dtype == bool
-    assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
+    assert net.line.at[l[0], "in_service"]
+    assert not net.line.at[l[1], "in_service"]
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "max_loading_percent"] == 80
     assert net.line.at[l[1], "max_loading_percent"] == 90
     assert net.line.at[l[0], "parallel"] == 2
@@ -1115,9 +1115,7 @@ def test_create_transformers3w():
     }).set_index(pd.Index([5, 6]))
     assert dataframes_equal(net.trafo3w, res_df)
 
-
-def test_create_transformers3w_from_parameters():
-    # setting params as single value
+def net_transformer3w_from_parameters(**kwargs):
     net = create_empty_network()
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
@@ -1144,8 +1142,13 @@ def test_create_transformers3w_from_parameters():
         tap_neutral=0.0,
         mag0_rx=0.4,
         mag0_percent=30,
-        test_kwargs="dummy_string",
+        **kwargs,
     )
+    return net, b1, b2, b3
+
+def test_create_transformers3w_from_parameters():
+    # setting params as single value
+    net, _, _ , _= net_transformer3w_from_parameters(test_kwargs="dummy_string")
     assert len(net.trafo3w) == 2
     assert all(net.trafo3w.hv_bus == 0)
     assert all(net.trafo3w.lv_bus == 1)
@@ -1225,34 +1228,7 @@ def test_create_transformers3w_from_parameters():
 
 def test_create_transformers3w_raise_errorexcept():
     # standard
-    net = create_empty_network()
-    b1 = create_bus(net, 15)
-    b2 = create_bus(net, 0.4)
-    b3 = create_bus(net, 0.9)
-    create_transformers3w_from_parameters(
-        net,
-        hv_buses=[b1, b1],
-        mv_buses=[b3, b3],
-        lv_buses=[b2, b2],
-        vn_hv_kv=15.0,
-        vn_mv_kv=0.9,
-        vn_lv_kv=0.45,
-        sn_hv_mva=0.6,
-        sn_mv_mva=0.5,
-        sn_lv_mva=0.4,
-        vk_hv_percent=1.0,
-        vk_mv_percent=1.0,
-        vk_lv_percent=1.0,
-        vkr_hv_percent=0.3,
-        vkr_mv_percent=0.3,
-        vkr_lv_percent=0.3,
-        pfe_kw=0.2,
-        i0_percent=0.3,
-        tap_neutral=0.0,
-        mag0_rx=0.4,
-        mag0_percent=30,
-    )
-
+    net, b1, b2, b3 = net_transformer3w_from_parameters()
     with pytest.raises(
             UserWarning,
             match=r"Three winding transformers with indexes \[1\] already exist.",
