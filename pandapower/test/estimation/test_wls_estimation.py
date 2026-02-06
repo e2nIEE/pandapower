@@ -448,16 +448,16 @@ def test_cigre_network_with_slack_init():
     test_cigre_network(init='slack')
 
 
-@pytest.mark.skip(reason="numba/numpy version related issue, fix in progress")
 def test_cigre_with_bad_data():
-    np.random.seed(123456)
     net = create_cigre_network_mv(with_der=False)
-    net.load.q_mvar = net.load["p_mw"].apply(lambda p: p * np.tan(np.arccos(np.random.choice([0.95, 0.9, 0.97]))))
+    net.load.q_mvar = net.load["p_mw"].apply(lambda p: p * np.tan(np.arccos(0.9)))
     runpp(net)
 
     for bus, row in net.res_bus.iterrows():
-        if bus == 2:
-            continue
+        # numerical instability in the output of runpp caused by numba installation status will make this test fail if
+        # no measurements are provided for bus 2! See #2867
+        # if bus == 2:
+        #     continue
         if bus != 6:
             create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)  # skip our bad data measurement
         create_measurement(net, "p", "bus", row.p_mw * r(), max(0.001, abs(0.03 * row.p_mw)), bus)
