@@ -731,7 +731,7 @@ def _sum_by_group(
 ) -> tuple[NDArray[np.int64], NDArray[np.float64], NDArray[np.float64]]:
     order: NDArray[np.int64] = np.argsort(bus)
     bus = bus[order]
-    index: NDArray[np.bool] = np.ones(len(bus), 'bool')
+    index: NDArray[bool] = np.ones(len(bus), 'bool')
     index[:-1] = bus[1:] != bus[:-1]
     bus = bus[index]
     first_val = first_val[order]
@@ -1058,8 +1058,8 @@ def _write_to_object_attribute(
 
 
 def _set_isolated_nodes_out_of_service(
-    ppc: PyPowerNetwork, bus_not_reachable: NDArray[np.bool], dc: bool = False
-) -> tuple[NDArray[np.bool], int, int, PyPowerNetwork]:
+    ppc: PyPowerNetwork, bus_not_reachable: NDArray[bool], dc: bool = False
+) -> tuple[NDArray[bool], int, int, PyPowerNetwork]:
     isolated_nodes = np.nonzero(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
         logger.debug("There are isolated buses in the network! (%i nodes in the PPC)" % len(isolated_nodes))
@@ -1080,7 +1080,7 @@ def _set_isolated_nodes_out_of_service(
     return isolated_nodes, pus, qus, ppc
 
 
-def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[np.bool], int, int]:
+def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int]:
     """
     Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are
     in net.
@@ -1120,7 +1120,7 @@ def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[np.bool], int,
     return isolated_nodes, pus, qus
 
 
-def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[np.bool], int, int, NDArray[np.bool], int, int]:
+def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, NDArray[bool], int, int]:
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
     :param ppc: pypower case file
@@ -1228,14 +1228,14 @@ def _subnetworks(ppc: PyPowerNetwork) -> list[list[int]]:
 
 
 def _python_set_elements_oos(
-    ti: NDArray[np.int64], tis: NDArray[np.bool], bis: NDArray[np.bool], lis: NDArray[np.bool]
+    ti: NDArray[np.int64], tis: NDArray[bool], bis: NDArray[bool], lis: NDArray[bool]
 ) -> None:  # pragma: no cover
     for i in range(len(ti)):
         if tis[i] and bis[ti[i]]:
             lis[i] = True
 
 
-def _python_set_isolated_buses_oos(bus_in_service: NDArray[np.bool], ppc_bus_isolated: NDArray[np.bool],
+def _python_set_isolated_buses_oos(bus_in_service: NDArray[bool], ppc_bus_isolated: NDArray[bool],
                                    bus_lookup: NDArray[np.int64]):  # pragma: no cover
     for k in range(len(bus_in_service)):
         if ppc_bus_isolated[bus_lookup[k]]:
@@ -1923,7 +1923,7 @@ def SVabc_from_SV012(
     S012: NDArray[NumpyDType],
     V012: NDArray[NumpyDType],
     n_res: int | None = None,
-    idx: NDArray[np.bool] | None = None,
+    idx: NDArray[bool] | None = None,
 ) -> tuple[NDArray[NumpyDType], NDArray[NumpyDType]]:
     if n_res is None:
         n_res = S012.shape[1]
