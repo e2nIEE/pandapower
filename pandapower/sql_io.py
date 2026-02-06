@@ -139,7 +139,7 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
         add_timestamp_column(conn, cursor, table_name)
 
     # SQL query to execute
-    columns = [psql.Identifier(c) for c in sql_columns]
+    columns = [psql.Identifier(c.replace('%', '%%')) for c in sql_columns]
     query = psql.SQL("INSERT INTO {tbl}({fields}) VALUES({placeholders})").format(
         tbl=psql.Identifier(*table_name.split('.')),
         fields=psql.SQL(',').join(columns),
@@ -305,7 +305,7 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
     """
     Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
     are created if they do not exist.
-    JSON serialization (e.g. for controller objects) is not implemented yet.
+    TODO: JSON serialization (e.g. for controller objects) is not implemented yet.
 
     Parameters
     ----------
