@@ -112,8 +112,7 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
 
     # Create a list of tuples from the dataframe values
     if len(id_columns.keys()) > 0:
-        tuples = [(*tuple(x), *id_columns.values())
-                  for x in table[table_columns].itertuples(index=tuples_index)]
+        tuples = [(*tuple(x), *id_columns.values()) for x in table[table_columns].itertuples(index=tuples_index)]
     else:
         tuples = [tuple(x) for x in table[table_columns].itertuples(index=tuples_index)]
     # Replace pd.NA values with None for conversion to postgres NULL
@@ -139,13 +138,13 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
     if timestamp:
         add_timestamp_column(conn, cursor, table_name)
 
-    
-    # SQL query to execute    
+    # SQL query to execute
     columns = [psql.Identifier(c) for c in sql_columns]
     query = psql.SQL("INSERT INTO {tbl}({fields}) VALUES({placeholders})").format(
-        fields=psql.SQL(',').join(columns),
         tbl=psql.Identifier(*table_name.split('.')),
-        placeholders=psql.SQL(',').join(psql.Placeholder() * len(sql_columns)))
+        fields=psql.SQL(',').join(columns),
+        placeholders=psql.SQL(',').join(psql.Placeholder() * len(sql_columns))
+    )
     
     # batch_size = 1000
     # for chunk in tqdm(chunked(tuples, batch_size)):
