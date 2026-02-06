@@ -338,7 +338,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          uv sync --extra test --extra tutorials
+          uv sync --all-extras
           # ./.install_julia.sh 1.10.4
           # uv run python ./.install_pycall.py
       - name: List all installed packages
@@ -360,7 +360,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          uv sync --extra test --extra tutorials
+          uv sync --all-extras
           # ./.install_julia.sh 1.10.4
           # uv run python ./.install_pycall.py
       - name: List all installed packages
