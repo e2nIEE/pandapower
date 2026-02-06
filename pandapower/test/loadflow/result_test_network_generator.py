@@ -472,16 +472,3 @@ def add_test_two_open_switches_on_deactive_line(net):
     create_switch(net, b3, l2, et="l", closed=False)
     net.last_added_case = "test_two_open_switches_on_deactive_line"
     return net
-
-
-if __name__ == '__main__':
-    from pandapower.test.consistency_checks import runpp_with_consistency_checks
-    from pandapower import LoadflowNotConverged
-
-    for net in result_test_network_generator():
-        try:
-            runpp_with_consistency_checks(net, enforce_q_lims=True, numba=True)
-        except (AssertionError):
-            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
-        except(LoadflowNotConverged):
-            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)

@@ -50,7 +50,7 @@ def simple_test_net():
 
 
 def create_rand_data_source(net, n_timesteps=10):
-    profiles = dict()
+    profiles = {}
     elements = ["load", "sgen"]
     for el in elements:
         element = net[el]
@@ -196,7 +196,7 @@ def test_timeseries_results(simple_test_net):
     # This test compares output writer results with input
     # test net
     net = simple_test_net
-    net.user_pf_options = dict()
+    net.user_pf_options = {}
 
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
