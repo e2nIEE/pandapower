@@ -15,13 +15,15 @@ from pandapower.network import pandapowerNet
 
 
 class UCTE2pandapower:
-    def __init__(self, slack_as_gen: bool = True):
+    def __init__(self, slack_as_gen: bool = True, name: str | None = None):
         """
         Convert UCTE data to pandapower.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.u_d: dict = {}
         self.net = self._create_empty_network()
+        if name is not None:
+            self.net.name = name
         self.net.bus["node_name"] = ""
         self.slack_as_gen = slack_as_gen
 
@@ -42,7 +44,7 @@ class UCTE2pandapower:
             "line": {"amica_name": str},
             "bus": {"ucte_country": str},
         }
-        net: pandapowerNet = pandapowerNet(name="")
+        net: pandapowerNet = pandapowerNet(name="UCTE Converter")
         for pp_element in new_columns.keys():
             for col, dtype in new_columns[pp_element].items():
                 net[pp_element][col] = pd.Series(dtype=dtype)
