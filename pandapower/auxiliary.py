@@ -75,8 +75,6 @@ try:
     geopandas_available = True
 except ImportError:
     geopandas_available = False
-    # for typing only
-    GeoSeries = object
     
 
 PyPowerNetwork = dict[str, Any]
@@ -573,7 +571,7 @@ class GeoAccessor:
         return self._obj.dropna().apply(from_geojson)
 
     @property
-    def as_geoseries(self) -> GeoSeries:
+    def as_geoseries(self) -> "GeoSeries":
         """
         Converts the PandasSeries to a GeoSeries with shapely geometrys.
         """
