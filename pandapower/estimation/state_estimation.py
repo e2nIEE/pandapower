@@ -133,8 +133,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start, delta_start = _initialize_voltage(net, init)
-    return wls_se.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
-                                    chi2_prob_false)
+    return wls_se.perform_chi2_test(v_start, delta_start, calculate_voltage_angles, chi2_prob_false)
 
 
 class StateEstimation:
