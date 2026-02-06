@@ -466,7 +466,7 @@ def test_unconstrained_line():
 
 def test_trafo3w_loading():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    _, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
     tidx = create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV',
@@ -569,7 +569,6 @@ def test_opf_varying_max_line_loading():
     vm_max = 1.5
     vm_min = 0.5
     max_trafo_loading = 800
-    max_line_loading = 13
 
     # create net
     net = create_empty_network()
@@ -906,7 +905,7 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     assert np.allclose(net.res_bus.at[1, "p_mw"], -0.02)
     # assert limit of controllable == True gen
     assert 0.9 < net.res_bus.at[3, "vm_pu"] < 1.1
-    assert not net.res_bus.at[3, "vm_pu"] == 1.02
+    assert net.res_bus.at[3, "vm_pu"] != 1.02
 
 
 def test_gen_p_vm_fixed(four_bus_net):
