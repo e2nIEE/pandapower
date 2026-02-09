@@ -17,7 +17,6 @@ def test_networks_case9(eq_type, sn_mva):
     Attention:
 
     the epsilon value depends on the "tolerance_mva" by the power flow calculation.
-    (please confirm the tolerance_mva-value in the function "try_runpp" of "get_equivalent.py")
 
     if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
     if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
@@ -28,38 +27,43 @@ def test_networks_case9(eq_type, sn_mva):
     logging.debug('test with case9:')
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[3], internal_buses=[0], return_internal=True)
+        net, eq_type, boundary_buses=[3], internal_buses=[0], return_internal=True
+    )
     assert max_error < epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[4, 8], internal_buses=[0], return_internal=True)
+        net, eq_type, boundary_buses=[4, 8], internal_buses=[0], return_internal=True
+    )
     assert max_error < epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[4, 8], internal_buses=[0], return_internal=True,
-        buses_out_of_service=[6])
+        net, eq_type, boundary_buses=[4, 8], internal_buses=[0], return_internal=True, buses_out_of_service=[6]
+    )
     assert max_error < epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[3, 4], internal_buses=[0], return_internal=True,
-        switch_changes=[['l', 5, 4]])
+        net, eq_type, boundary_buses=[3, 4], internal_buses=[0], return_internal=True, switch_changes=[['l', 5, 4]]
+    )
     assert max_error < epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[3, 8], internal_buses=[], return_internal=False)
+        net, eq_type, boundary_buses=[3, 8], internal_buses=[], return_internal=False
+    )
     assert max_error < epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[4, 6], internal_buses=[0], return_internal=True,
-        switch_changes=[["b", 4, 8]])
+        net, eq_type, boundary_buses=[4, 6], internal_buses=[0], return_internal=True, switch_changes=[["b", 4, 8]]
+    )
     assert max_error < epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[3, 4, 6], internal_buses=[1], return_internal=False)
+        net, eq_type, boundary_buses=[3, 4, 6], internal_buses=[1], return_internal=False
+    )
     assert max_error < epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[3, 5], internal_buses=[2, 4, 0], return_internal=True)
+        net, eq_type, boundary_buses=[3, 5], internal_buses=[2, 4, 0], return_internal=True
+    )
     assert max_error < epsilon
 
 
@@ -70,7 +74,6 @@ def test_networks_case30(eq_type, sn_mva):
     Attention:
 
     the epsilon value depends on the "tolerance_mva" by the power flow calculation.
-    (please confirm the tolerance_mva-value in the function "try_runpp" of "get_equivalent.py")
 
     if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
     if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
@@ -82,12 +85,13 @@ def test_networks_case30(eq_type, sn_mva):
     runpp(net)
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True,
-        buses_out_of_service=[9])
+        net, eq_type, boundary_buses=[8], internal_buses=[0], return_internal=True, buses_out_of_service=[9]
+    )
     assert max_error < epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[1, 2], internal_buses=[0], return_internal=True)
+        net, eq_type, boundary_buses=[1, 2], internal_buses=[0], return_internal=True
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
@@ -101,13 +105,14 @@ def test_networks_case30(eq_type, sn_mva):
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[3, 16, 19, 22], internal_buses=[0, 20],
-        return_internal=True)
+        net, eq_type, boundary_buses=[3, 16, 19, 22], internal_buses=[0, 20], return_internal=True
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[5, 16, 18, 23, 27], internal_buses=[0, 24],
-        return_internal=True, buses_out_of_service=[9, 28])
+        net, eq_type, boundary_buses=[5, 16, 18, 23, 27], internal_buses=[0, 24], return_internal=True,
+        buses_out_of_service=[9, 28]
+    )
     assert max_error <= epsilon
 
 
@@ -118,7 +123,6 @@ def test_networks_case39(eq_type, sn_mva):
     Attention:
 
     the epsilon value depends on the "tolerance_mva" by the power flow calculation.
-    (please confirm the tolerance_mva-value in the function "try_runpp" of "get_equivalent.py")
 
     if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
     if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
@@ -129,13 +133,15 @@ def test_networks_case39(eq_type, sn_mva):
     net.sn_mva = sn_mva
     runpp(net)
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[1, 7], internal_buses=[0], return_internal=False,
-        buses_out_of_service=[4, 8], switch_changes=[['b', 2, 25]])
+        net, eq_type, boundary_buses=[1, 7], internal_buses=[0], return_internal=False, buses_out_of_service=[4, 8],
+        switch_changes=[['b', 2, 25]]
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
         net, eq_type, boundary_buses=[15, 25], internal_buses=[30], return_internal=True,
-        switch_changes=[['t', 11, 4], ['t', 11, 3]])
+        switch_changes=[['t', 11, 4], ['t', 11, 3]]
+    )
     assert max_error <= epsilon
 
 
@@ -146,7 +152,6 @@ def test_networks_case118(eq_type, sn_mva):
     Attention:
 
     the epsilon value depends on the "tolerance_mva" by the power flow calculation.
-    (please confirm the tolerance_mva-value in the function "try_runpp" of "get_equivalent.py")
 
     if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
     if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
@@ -158,38 +163,42 @@ def test_networks_case118(eq_type, sn_mva):
     runpp(net)
     va_degree = eq_type != "xward"
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[7], internal_buses=[0], return_internal=True,
-        va_degree=va_degree)
+        net, eq_type, boundary_buses=[7], internal_buses=[0], return_internal=True, va_degree=va_degree
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[0], return_internal=True,
-        va_degree=va_degree)
+        net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[0], return_internal=True, va_degree=va_degree
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[68], return_internal=True,
-        va_degree=va_degree)
+        net, eq_type, boundary_buses=[4, 14, 15], internal_buses=[68], return_internal=True, va_degree=va_degree
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[18, 22, 37, 64], internal_buses=[68],
-        return_internal=True, buses_out_of_service=[32], va_degree=va_degree)
+        net, eq_type, boundary_buses=[18, 22, 37, 64], internal_buses=[68], return_internal=True,
+        buses_out_of_service=[32], va_degree=va_degree
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[18, 20, 25, 26, 29, 31], internal_buses=[68],
-        return_internal=True, va_degree=va_degree)
+        net, eq_type, boundary_buses=[18, 20, 25, 26, 29, 31], internal_buses=[68], return_internal=True,
+        va_degree=va_degree
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[70, 69, 67, 48, 44], internal_buses=[68],
-        return_internal=True, va_degree=va_degree)
+        net, eq_type, boundary_buses=[70, 69, 67, 48, 44], internal_buses=[68], return_internal=True,
+        va_degree=va_degree
+    )
     assert max_error <= epsilon
 
     max_error, related_values = get_max_error(
-        net, eq_type, boundary_buses=[39, 42, 48, 65, 69, 70], internal_buses=[68],
-        return_internal=True, va_degree=va_degree)
+        net, eq_type, boundary_buses=[39, 42, 48, 65, 69, 70], internal_buses=[68], return_internal=True,
+        va_degree=va_degree
+    )
     assert max_error <= epsilon
 
 
