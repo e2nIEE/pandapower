@@ -132,6 +132,11 @@ markers = [
 filterwarnings = [
     "ignore:the matrix subclass:PendingDeprecationWarning"
 ]
+# For debug use:
+#log_cli = 1
+#log_cli_level = "WARN"
+#log_file = "./pytest.log"
+#log_file_level = "WARN"
 
 [tool.coverage.run]
 omit = [
