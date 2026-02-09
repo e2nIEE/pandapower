@@ -11,12 +11,12 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pandapower import pp_dir, create_vsc_bipolar
+from pandapower import pp_dir
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.create import (
     create_impedance, create_shunts, create_buses, create_gens, create_bus, create_empty_network,
     create_line_from_parameters, create_gen, create_load, create_ext_grid, create_vsc, create_line_dc_from_parameters,
-    create_buses_dc, create_bus_dc, create_line_dc, create_lines_from_parameters, create_lines_dc
+    create_buses_dc, create_bus_dc, create_line_dc, create_lines_from_parameters, create_lines_dc, create_vsc_bipolar
 )
 
 from pandapower.file_io import from_json
