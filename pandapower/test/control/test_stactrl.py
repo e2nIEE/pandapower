@@ -199,17 +199,8 @@ def test_qlimits_with_capability_curve():
             runpp(net, run_control=True, enforce_q_lims=True)
             assert -0.1 <= net.res_sgen.loc[0, 'q_mvar'] <= 0.1
 
-    net = simple_test_net() # test once more when there is no reactive power capability curve
-    net["q_capability_curve_table"] = DataFrame(
-        {'id_q_capability_curve': [0, 0, 0, 0, 0],
-        'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
-        'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
-        'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
-
-    net.sgen.at[0, "id_q_capability_characteristic"] = 0
-    net.sgen['curve_style'] = "straightLineYValues"
-    create_q_capability_characteristics_object(net)
-    net.sgen.drop(columns=['reactive_capability_curve'], inplace=True)
+    # test once more when there is no reactive power capability curve
+    net = simple_test_net()
     BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                         output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                         output_element_in_service=[True], output_values_distribution=[1],
