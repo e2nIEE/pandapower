@@ -221,7 +221,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                 "Magnetizing impedance to vk0 ratio needs to be specified for transformer "
                 'modelling  \n Try : net.trafo["mag0_percent"] = 100'
             )
-        mag0_ratio = trafos.mag0_percent.values.astype(float)
+        mag0_ratio = trafos.mag0_percent.values.astype(float) * 1e-2
         if "mag0_rx" not in trafos:
             raise ValueError(
                 "Magnetizing impedance R/X ratio needs to be specified for transformer "

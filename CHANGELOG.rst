@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] setup: remove extra dependencies from `all` set.
+- [ADDED] setup: add `dev` set for all dependencies required for development.
 - [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
 - [CHANGED] runpp: expanded enforce_q_lims functionality to consider max & min q limits for sgen elements (from either net.sgen.min/max_q_mvar parameters or reactive power capability curves)
 - [FIXED] cim2pp: prevent crash with comments in xml, by dropping them via library
@@ -22,6 +24,7 @@ Change Log
 
 [3.3.0] - 2025-12-15
 -------------------------------
+- [FIXED] `mag0_percent` is treated as a percent instead of ratio, consistent with its name.
 - [ADDED] network_structure, load_create, sgen_create: seperate nominal mva attributes for each phase `sn_a_mva`, `sn_b_mva`, `sn_c_mva`. While existing total nominal mva `sn_mva` is also retained.
 - [FIXED] julia implementation, now using juliacall
 - [CHANGED] diagnostics restructured for better extensibility
