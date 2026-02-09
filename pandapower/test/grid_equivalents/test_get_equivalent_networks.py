@@ -10,9 +10,7 @@ from pandapower.create import create_switch
 from pandapower.networks.power_system_test_cases import case9, case30, case39, case118
 
 
-@pytest.mark.parametrize(
-    "eq_type, sn_mva, boundary_buses, internal_buses",
-    list(product(["xward", "rei", "ward"], [1.0, 23.0, 89.0])))
+@pytest.mark.parametrize("eq_type, sn_mva", list(product(["xward", "rei", "ward"], [1.0, 23.0, 89.0])))
 def test_networks_case9(eq_type, sn_mva):
     epsilon = 1e-4
     """
