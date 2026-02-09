@@ -206,7 +206,7 @@ def runpp_3ph(
             - transformer equivalent models
             - "t" - transformer is modeled as equivalent with the T-model.
             - "pi" - This is not recommended, since it is less exact than the T-model.
-                So, for three phase load flow, its not implemented
+                So, for three phase load flow, it's not implemented
 
 
         **trafo_loading** (str, "current") - mode of calculation for
@@ -235,12 +235,11 @@ def runpp_3ph(
 
             Note: enforce_q_lims only works if algorithm="nr"!
 
-
         **check_connectivity** (bool, True) - Perform an extra connectivity
         test after the conversion from pandapower to PYPOWER.
 
             If True, an extra connectivity test based on SciPy Compressed
-            Sparse Graph Routines is perfomed. If check finds unsupplied buses,
+            Sparse Graph Routines is performed. If check finds unsupplied buses,
             they are set out of service in the ppc
 
         **voltage_depend_loads** (bool, True)
@@ -393,6 +392,7 @@ def runpp_3ph(
         switch_rx_ratio=switch_rx_ratio,
         init_vm_pu=init,
         init_va_degree=init,
+        enforce_p_lims=False,
         enforce_q_lims=enforce_q_lims,
         recycle=None,
         voltage_depend_loads=False,
