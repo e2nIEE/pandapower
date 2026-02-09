@@ -187,18 +187,74 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     com_ldf = app.GetFromStudyCase('ComLdf')
 
     study = app.GetActiveStudyCase()
+    prj = app.GetActiveProject()
     triggers = study.GetContents('*.SetTrigger', 1)
+
+    gens = app.GetCalcRelevantObjects('*.ElmGenstat')
+    loads = app.GetCalcRelevantObjects('*.ElmLod')
+    loads_mv = app.GetCalcRelevantObjects('*.ElmLodmv')
+    cha_scalars = prj.GetContents('*.ChaScalar', 1)
+
+    # set scaling factors (from characteristic) to loads and sgens if missing
+    for gen in gens:
+        if "Spannungs" in gen.loc_name or "Regler" in gen.loc_name:
+            continue
+        if gen.GetContents():
+            if gen.GetContents()[0].typ_id is None:
+                for cha_scalar in cha_scalars:
+                    if cha_scalar.loc_name == "Globaler_Faktor_PE":
+                        gen.GetContents()[0].typ_id = cha_scalar
+    for load in loads_mv:
+        if load.GetContents():
+            if load.GetContents()[0].typ_id is None:
+                for cha_scalar in cha_scalars:
+                    if cha_scalar.loc_name == "Globaler_Faktor_PL":
+                        load.GetContents()[0].typ_id = cha_scalar
+
     if activate_loadcase == 'Starklastfall':
+        for load in loads:
+            load.outserv = 0
+        com_ldf.iopt_at = 1  # run load flow with controllers
+        for gen in gens:
+            if "Spannungs" in gen.loc_name or "Regler" in gen.loc_name:
+                gen.outserv = 1
         for t in triggers:
             if t.triggerName == "Globaler_Faktor_PE":
                 t.ftrigger = 0.0
+            elif t.triggerName == "Pre. Kraftwerk-Globaler_Faktor_PE":
+                t.ftrigger = 0.0
             elif t.triggerName == "Globaler_Faktor_PL":
                 t.ftrigger = 1.0
+            elif t.triggerName == "Pre. Kraftwerk-Globaler_Faktor_PL":
+                t.ftrigger = 1.0
+            elif t.triggerName == "Neue Kundenanschlüsse":
+                t.ftrigger = 1.0
+            elif t.triggerName == "Globaler_Faktor_QL":
+                t.ftrigger = 1.0
+            elif t.triggerName == "Neu Kunden":
+                t.ftrigger = 1.0
+
     elif activate_loadcase == 'Einspeisefall':
+        for load in loads:
+            load.outserv = 1
+        com_ldf.iopt_at = 0  # run load flow without controllers
+        for gen in gens:
+            if "Spannungs" in gen.loc_name or "Regler" in gen.loc_name:
+                gen.outserv = 0
         for t in triggers:
             if t.triggerName == "Globaler_Faktor_PE":
                 t.ftrigger = 1.0
+            elif t.triggerName == "Pre. Kraftwerk-Globaler_Faktor_PE":
+                t.ftrigger = 1.0
             elif t.triggerName == "Globaler_Faktor_PL":
+                t.ftrigger = 0.0
+            elif t.triggerName == "Pre. Kraftwerk-Globaler_Faktor_PL":
+                t.ftrigger = 0.0
+            elif t.triggerName == "Neue Kundenanschlüsse":
+                t.ftrigger = 0.0
+            elif t.triggerName == "Globaler_Faktor_QL":
+                t.ftrigger = 0.0
+            elif t.triggerName == "Neu Kunden":
                 t.ftrigger = 0.0
 
 
