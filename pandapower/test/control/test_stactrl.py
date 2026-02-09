@@ -113,6 +113,7 @@ def test_qctrl_droop():
     assert (abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
                 net.controller.object[1].q_set_mvar_bsc + (net.res_bus.loc[1, "vm_pu"] - 0.995) * 40)) < tol)
 
+
 def test_qlimits_qctrl():
     net = simple_test_net()
     tol = 1e-6
@@ -140,6 +141,7 @@ def test_qlimits_qctrl():
                                    voltage_ctrl=False, tol=1e-6)
     runpp(net, run_control=True, enforce_q_lims=True)
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.5) < tol)
+
 
 def test_qlimits_voltctrl():
     net = simple_test_net()
@@ -169,6 +171,7 @@ def test_qlimits_voltctrl():
     net.sgen.min_q_mvar = -0.8 # tests change of min_q_mvar afterwards
     runpp(net, run_control=True, enforce_q_lims=True)
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.8) < tol)
+
 
 def test_qlimits_with_capability_curve():
     for v in linspace(start=0.98, stop=1.02, num=5, dtype=float64):
@@ -214,7 +217,6 @@ def test_qlimits_with_capability_curve():
                         set_point=0.98, voltage_ctrl=True, tol=tol)
     runpp(net, run_control=True, enforce_q_lims=True)
     assert abs(net.res_sgen.loc[0, 'q_mvar'] + 6.7373132) < tol
-
 
 
 def test_stactrl_pf_import():
