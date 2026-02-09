@@ -141,7 +141,8 @@ def create_sgen(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_, default_val=False)
+    if controllable is not None:
+        _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", dtype=bool_, default_val=False)
 
     _set_value_if_not_nan(
         net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "sgen", dtype="Int64"
@@ -267,9 +268,10 @@ def create_sgens(
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(
-        net, "sgen", entries, index, "controllable", controllable, dtype=bool_, default_val=False
-    )
+    if controllable is not None:
+        _add_to_entries_if_not_nan(
+            net, "sgen", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+        )
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
     if np.isfinite(kappa):
         _add_to_entries_if_not_nan(
