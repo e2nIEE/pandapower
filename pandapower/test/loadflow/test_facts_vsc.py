@@ -11,7 +11,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pandapower import pp_dir
+from pandapower import pp_dir, create_vsc_bipolar
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.create import (
     create_impedance, create_shunts, create_buses, create_gens, create_bus, create_empty_network,
@@ -177,6 +177,34 @@ def test_vsc_hvdc():
                control_mode_ac="vm_pu", control_value_ac=1.,
                control_mode_dc="vm_pu", control_value_dc=1.02)
     create_vsc(net, 2, 1, 0.1, 5, 0.15,
+               control_mode_ac="vm_pu", control_value_ac=1.,
+               control_mode_dc="p_mw", control_value_dc=5)
+
+    runpp(net)
+    runpp_with_consistency_checks(net)
+
+
+def test_vsc_bipolar_hvdc():
+    net = create_empty_network()
+    # AC part
+    create_buses(net, 4, 380, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
+    create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    create_ext_grid(net, 0)
+    create_load(net, 3, 100, 0)
+
+    # DC part
+    A = create_bus_dc(net, 380, 'A', geodata=(120, 10))
+    B = create_bus_dc(net, 380, 'B', geodata=(120, -10))
+    C = create_bus_dc(net, 380, 'C', geodata=(180, 10))
+    D = create_bus_dc(net, 380, 'D', geodata=(180, -10))
+
+    create_line_dc_from_parameters(net, A, C, 100, 0.1, 1)
+    create_line_dc_from_parameters(net, B, D, 100, 0.1, 1)
+
+    create_vsc_bipolar(net, 1, A, B, 0.1, 5, 0.15,
+               control_mode="Vdc_Qac", control_value_1=1., control_value_2=1.)
+    create_vsc_bipolar(net, 2, C, D, 0.1, 5, 0.15,
                control_mode_ac="vm_pu", control_value_ac=1.,
                control_mode_dc="p_mw", control_value_dc=5)
 
