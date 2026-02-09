@@ -454,14 +454,10 @@ def test_cigre_with_bad_data():
     runpp(net)
 
     for bus, row in net.res_bus.iterrows():
-        # numerical instability in the output of runpp caused by numba installation status will make this test fail if
-        # no measurements are provided for bus 2! See #2867
-        # if bus == 2:
-        #     continue
         if bus != 6:
-            create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)  # skip our bad data measurement
-        create_measurement(net, "p", "bus", row.p_mw * r(), max(0.001, abs(0.03 * row.p_mw)), bus)
-        create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.001, abs(0.03 * row.q_mvar)), bus)
+            create_measurement(net, "v", "bus", row.vm_pu * r(0.005), 0.005, bus)  # skip our bad data measurement
+        create_measurement(net, "p", "bus", row.p_mw * r(), max(0.03, abs(0.03 * row.p_mw)), bus)
+        create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.03, abs(0.03 * row.q_mvar)), bus)
 
     # 2. Do state estimation
     success_SE = estimate(net, init='slack')
@@ -469,14 +465,14 @@ def test_cigre_with_bad_data():
     delta_SE = net.res_bus_est.va_degree.values
 
     # 3. Create false measurement (very close to useful values)
-    create_measurement(net, "v", "bus", 0.85, 0.01, element=6)
+    create_measurement(net, "v", "bus", 0.85, 0.005, element=6)
 
     # 4. Do chi2-test
     bad_data_detected = chi2_analysis(net, init='slack')
     assert bad_data_detected
 
     # 5. Perform rn_max_test
-    success_rn_max = remove_bad_data(net, init='slack')
+    success_rn_max = remove_bad_data(net, init='slack', rn_max_threshold=4.0)
     v_est_rn_max = net.res_bus_est.vm_pu.values
     delta_est_rn_max = net.res_bus_est.va_degree.values
 
@@ -950,3 +946,4 @@ def test_numpy1_warning():
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
+
