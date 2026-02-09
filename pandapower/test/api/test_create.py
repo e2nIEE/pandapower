@@ -1753,6 +1753,38 @@ def test_create_sgens():
     assert all(net.sgen.id_q_capability_characteristic.values == [0, 1, 2])
     assert all(net.sgen.curve_style == "straightLineYValues")
     assert all(net.sgen.reactive_capability_curve == [False, False, False])
+    
+
+def test_create_sgen_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.sgen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_sgen(net, b1, 50)
+    # controllable column should not exist
+    assert 'controllable' not in net.sgen.columns
+    s2 = create_sgen(net, b1, 50, controllable=True)
+    # controllable should be created with default value False
+    assert not net.sgen.loc[s1, 'controllable']
+    assert net.sgen.loc[s2, 'controllable']
+    
+
+def test_create_sgens_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.sgen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_sgens(net, [b1], 50)[0]
+    # controllable column should not exist
+    assert 'controllable' not in net.sgen.columns
+    s2 = create_sgens(net, [b1], 50, controllable=True)[0]
+    # controllable should be created with default value False
+    assert not net.sgen.loc[s1, 'controllable']
+    assert net.sgen.loc[s2, 'controllable']
 
 
 def test_create_sgens_raise_errorexcept():
@@ -1865,6 +1897,37 @@ def test_create_gens():
     assert all(net.gen.curve_style == "straightLineYValues")
     assert all(net.gen.reactive_capability_curve == [False, False, False])
 
+
+def test_create_gen_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.gen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_gen(net, b1, 50)
+    # controllable column should not exist
+    assert 'controllable' not in net.gen.columns
+    s2 = create_gen(net, b1, 50, controllable=False)
+    # controllable should be created with default value True
+    assert net.gen.loc[s1, 'controllable']
+    assert not net.gen.loc[s2, 'controllable']
+
+
+def test_create_gens_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.gen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_gens(net, [b1], 50)[0]
+    # controllable column should not exist
+    assert 'controllable' not in net.gen.columns
+    s2 = create_gens(net, [b1], 50, controllable=False)[0]
+    # controllable should be created with default value True
+    assert net.gen.loc[s1, 'controllable']
+    assert not net.gen.loc[s2, 'controllable']
 
 def test_create_gens_raise_errorexcept():
     net = create_empty_network()
