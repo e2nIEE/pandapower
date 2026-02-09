@@ -420,7 +420,7 @@ def get_structure_dict() -> dict:
             "controllable": "bool",
             "type": dtype(object),
         },
-        "b2b_vsc": {
+        "vsc_stacked": {
             "name": dtype(object),
             "bus": "u4",
             "bus_dc_plus": "u4",
@@ -436,7 +436,7 @@ def get_structure_dict() -> dict:
             "controllable": "bool",
             "in_service": "bool",
         },
-        "_empty_res_b2b_vsc": {
+        "_empty_res_vsc_stacked": {
             "p_mw": "f8",
             "q_mvar": "f8",
             "p_dc_mw_p": "f8",

@@ -1157,7 +1157,7 @@ def test_simple_2vsc_hvdc2():
     runpp_with_consistency_checks(net)
 
 
-def test_b2b_vsc_1():
+def test_vsc_stacked_1():
     net = create_empty_network()
     # AC part
     create_buses(net, 3, 110)
@@ -1182,7 +1182,7 @@ def test_b2b_vsc_1():
     assert np.isclose(net.res_vsc.at[1, 'p_dc_mw'], net.vsc.at[1, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
-def test_multiple_b2b_vsc_1():
+def test_multiple_vsc_stacked_1():
     net = create_empty_network()
     # AC part
     create_buses(net, 5, 110)
@@ -1223,7 +1223,7 @@ def test_multiple_b2b_vsc_1():
     assert np.isclose(net.res_vsc.at[3, 'p_dc_mw'], net.vsc.at[3, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
-def test_tres_amigas_b2b_vsc_1():
+def test_tres_amigas_vsc_stacked_1():
     net = create_empty_network()
     # AC part
     create_buses(net, 5, 110)
@@ -1256,7 +1256,7 @@ def test_tres_amigas_b2b_vsc_1():
     assert np.isclose(net.res_vsc.at[2, 'p_dc_mw'], net.vsc.at[2, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
-def test_tres_amigas_b2b_vsc_2():
+def test_tres_amigas_vsc_stacked_2():
     net = create_empty_network()
     # AC part
     create_buses(net, 5, 110)
@@ -1289,7 +1289,7 @@ def test_tres_amigas_b2b_vsc_2():
     assert np.isclose(net.res_vsc.at[2, 'p_dc_mw'], net.vsc.at[2, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
-def test_b2b_vsc_2():
+def test_vsc_stacked_2():
     net = create_empty_network()
     # AC part
     create_buses(net, 4, 110)
@@ -1313,7 +1313,7 @@ def test_b2b_vsc_2():
     assert net.res_ext_grid.p_mw.at[0] > 10
 
 
-def test_b2b_vsc_2a():
+def test_vsc_stacked_2a():
     net = create_empty_network()
     # AC part
     create_buses(net, 4, 110)
@@ -1336,7 +1336,7 @@ def test_b2b_vsc_2a():
     assert net.res_ext_grid.p_mw.at[0] > 10
 
 
-def test_b2b_vsc_3():
+def test_vsc_stacked_3():
     net = create_empty_network()
     # AC part
     create_buses(net, 4, 110)
@@ -1361,7 +1361,7 @@ def test_b2b_vsc_3():
 
 
 @pytest.mark.xfail
-def test_b2b_vsc_4():
+def test_vsc_stacked_4():
     """
     For reasons I do not understand, this test fails on the github server, but runs locally.
     """
@@ -1389,7 +1389,7 @@ def test_b2b_vsc_4():
     runpp_with_consistency_checks(net)
 
 
-def test_b2b_vsc_5():
+def test_vsc_stacked_5():
     net = create_empty_network()
     # AC part
     create_buses(net, 5, 110)
@@ -1415,7 +1415,7 @@ def test_b2b_vsc_5():
     runpp_with_consistency_checks(net, max_iteration=1000)
 
 
-def test_b2b_vsc_6():
+def test_vsc_stacked_6():
     net = create_empty_network()
     # AC part
     create_buses(net, 3, 110)
@@ -1437,7 +1437,7 @@ def test_b2b_vsc_6():
     runpp_with_consistency_checks(net)
 
 
-def test_b2b_vsc_7():
+def test_vsc_stacked_7():
     net = create_empty_network()
     # AC part
     create_buses(net, 2, 110)

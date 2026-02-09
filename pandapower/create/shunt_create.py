@@ -319,7 +319,7 @@ def create_ssc(
     return index
 
 
-def create_b2b_vsc(
+def create_vsc_stacked(
     net: pandapowerNet,
     bus: Int,
     bus_dc_plus: Int,
@@ -372,7 +372,7 @@ def create_b2b_vsc(
     _check_element(net, bus_dc_plus, "bus_dc")
     _check_element(net, bus_dc_minus, "bus_dc")
 
-    index = _get_index_with_check(net, "b2b_vsc", index)
+    index = _get_index_with_check(net, "vsc_stacked", index)
 
     entries = {
         "name": name,
@@ -391,7 +391,7 @@ def create_b2b_vsc(
         "in_service": in_service,
         **kwargs,
     }
-    _set_entries(net, "b2b_vsc", index, entries=entries)
+    _set_entries(net, "vsc_stacked", index, entries=entries)
 
     return index
 
