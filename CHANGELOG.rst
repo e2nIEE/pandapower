@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] setup: remove extra dependencies from `all` set.
+- [ADDED] setup: add `dev` set for all dependencies required for development.
 - [FIXED] cim2pp: prevent crash with comments in xml, by dropping them via library
 - [FIXED] cim2pp: ACLineSegments with invalid terminals no longer cause all valid lines to be discarded
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
