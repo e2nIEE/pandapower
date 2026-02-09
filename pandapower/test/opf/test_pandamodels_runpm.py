@@ -189,7 +189,7 @@ def test_pm_dc_powerflow_tap():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_compare_pwl_and_poly(net_3w_trafo_opf):
-    net = net_3w_trafo_opf
+    net = deepcopy(net_3w_trafo_opf)
     net.ext_grid.loc[:, "min_p_mw"] = -999.
     net.ext_grid.loc[:, "max_p_mw"] = 999.
     net.ext_grid.loc[:, "max_q_mvar"] = 999.

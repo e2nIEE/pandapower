@@ -36,7 +36,7 @@ def typed_list(iterable, dtype):
         return [str(it) for it in iterable]
 
 
-@pytest.fixture(scope="session", params=[
+@pytest.fixture(scope="module", params=[
     (None, int),
     ("name", str)
 ])

@@ -47,7 +47,7 @@ def create_net():
     b1 = create_bus(net, vn_kv=vn_kv)
     create_ext_grid(net, b1, vm_pu=1.01)
     b2 = create_bus(net, vn_kv=vn_kv)
-    _ = create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+    create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
                                      c_nf_per_km=300, max_i_ka=.2, df=.8)
     for _ in range(2):
         add_trafo_connection(net, b2)

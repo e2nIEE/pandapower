@@ -206,7 +206,7 @@ def test_tdpf_frank():
     assert np.allclose(ref2.pctloading_TDPF, line_loading, rtol=0, atol=0.025)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def calc_a0_a1_a2_tau_for_simple_test_grid():
     net = simple_test_grid()
     r_ref = net.line.r_ohm_per_km.values / 1e3
