@@ -54,7 +54,7 @@ def _get_xward_result(net):
     internal_results = np.array([])
     ppc = net._ppc
 
-    ft = net._pd2ppc_lookups.get('branch', dict()).get('xward', [])
+    ft = net._pd2ppc_lookups.get('branch', {}).get('xward', [])
     if len(ft) > 0:
         f, t = ft
         p_impedance = ppc['branch'][f:t, PF].real
@@ -386,7 +386,6 @@ def test_case9():
     """
     tol_mw = 1e-6
     net = case9()
-    # net = case9_simplified()
 
     # set slack_weight (distributed slack participation factor)
     net.ext_grid['slack_weight'] = 1 / 3
@@ -416,7 +415,7 @@ def test_case9():
     assert np.allclose(gen_diff, p_target_gen, atol=tol_mw)
 
     # check balance of power
-    injected_p_mw, consumed_p_mw, xward_p_mw = _get_injection_consumption(net)
+    _, consumed_p_mw, xward_p_mw = _get_injection_consumption(net)
     assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw - xward_p_mw) < 1e-6
 
     # check the distribution formula of the slack power difference

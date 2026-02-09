@@ -33,8 +33,8 @@ except (ImportError, RuntimeError, UnsupportedPythonError) as e:
 def test_pp_to_pm_conversion(net_3w_trafo_opf):
     # tests if the conversion to power models works
     net = net_3w_trafo_opf
-    pm_S = convert_pp_to_pm(net)
-    pm_I = convert_pp_to_pm(net, opf_flow_lim="I")
+    convert_pp_to_pm(net)
+    convert_pp_to_pm(net, opf_flow_lim="I")
 
 
 def test_pm_to_pp_conversion(simple_opf_test_net):

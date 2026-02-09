@@ -5,6 +5,7 @@
 
 import os
 import numpy as np
+import pytest
 
 from pandapower import pp_dir
 from pandapower.toolbox.comparison import nets_equal
@@ -54,5 +55,4 @@ def test_from_jao_with_testfile():
 
 
 if __name__ == '__main__':
-    test_from_jao_with_testfile()
-    # pytest.main([__file__, "-xs"])
+    pytest.main([__file__, "-xs"])

@@ -360,9 +360,9 @@ def test_without_ext_grid():
 def test_multiple_ext_grids():
     net = create_empty_network()
     # generate three ext grids
-    b11, b12, l11 = add_grid_connection(net, vn_kv=110.)
-    b21, b22, l21 = add_grid_connection(net, vn_kv=110.)
-    b31, b32, l31 = add_grid_connection(net, vn_kv=110.)
+    _, b12, _ = add_grid_connection(net, vn_kv=110.)
+    _, b22, _ = add_grid_connection(net, vn_kv=110.)
+    _, b32, _ = add_grid_connection(net, vn_kv=110.)
     # connect them
     create_test_line(net, b12, b22)
     create_test_line(net, b22, b32)
@@ -388,7 +388,7 @@ def test_multiple_ext_grids():
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_voltage_angles():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    b1, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
     b5 = create_bus(net, vn_kv=10., in_service=False)

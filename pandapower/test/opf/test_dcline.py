@@ -53,7 +53,6 @@ def test_dcline_reverse(dcline_net):
     net.dcline.p_mw = -200.
     runpp(net)
     assert allclose(net.res_ext_grid.p_mw, [-196.358, 1008.311], atol=1e-3)
-    pass
 
 
 @pytest.mark.xfail(reason="numerical issue with OPF convergence. The failure seems to depend on the"
