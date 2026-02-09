@@ -1554,9 +1554,9 @@ def _add_options(net: pandapowerNet, options: dict[str, Any]) -> None:
     net._options.update(options)
 
 
-def get_b2b_vsc_names(elements: NDArray):
-    # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
-    return np.char.add(np.char.add('b2b_', np.repeat(elements, 2).astype(str)), np.tile(['+', '-'], len(elements)))
+def get_vsc_stacked_names(elements: NDArray):
+    # naming scheme is stacked_0+, stacked_0-, stacked_1+, stacked_1-, ...
+    return np.char.add(np.char.add('stacked_', np.repeat(elements, 2).astype(str)), np.tile(['+', '-'], len(elements)))
 
 
 def _clean_up(net: pandapowerNet, res: bool = True) -> None:
@@ -1589,9 +1589,9 @@ def _clean_up(net: pandapowerNet, res: bool = True) -> None:
         if res:
             net.res_gen = net.res_gen.drop(dc_gens)
 
-    if len(net["b2b_vsc"]) > 0:
-        # remove vsc's which were only created for the b2b_vsc's
-        vsc_idx = net.vsc[net.vsc['name'].isin(get_b2b_vsc_names(net.b2b_vsc.index.to_numpy()))]
+    if len(net["vsc_stacked"]) > 0:
+        # remove vsc's which were only created for the vsc_stacked's
+        vsc_idx = net.vsc[net.vsc['name'].isin(get_vsc_stacked_names(net.vsc_stacked.index.to_numpy()))]
         # drop the vsc's
         net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
 
@@ -1968,22 +1968,22 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
                    in_service=dctab.in_service)
 
 
-def _add_b2b_vsc(net: pandapowerNet):
+def _add_vsc_stacked(net: pandapowerNet):
     from pandapower.create import create_vsc
-    for i, b2b_vsc in net.b2b_vsc.iterrows():
-        ac_bus = b2b_vsc.bus
-        bus_dc_plus = b2b_vsc.bus_dc_plus
-        bus_dc_minus = b2b_vsc.bus_dc_minus
-        control_mode_ac = b2b_vsc.control_mode_ac
-        control_mode_dc = b2b_vsc.control_mode_dc
-        control_value_ac = b2b_vsc.control_value_ac
-        control_value_dc = b2b_vsc.control_value_dc
-        r_ohm = b2b_vsc.r_ohm
-        x_ohm = b2b_vsc.x_ohm
-        r_dc_ohm = b2b_vsc.r_dc_ohm
-        pl_dc_mw = b2b_vsc.pl_dc_mw
+    for i, vsc_stacked in net.vsc_stacked.iterrows():
+        ac_bus = vsc_stacked.bus
+        bus_dc_plus = vsc_stacked.bus_dc_plus
+        bus_dc_minus = vsc_stacked.bus_dc_minus
+        control_mode_ac = vsc_stacked.control_mode_ac
+        control_mode_dc = vsc_stacked.control_mode_dc
+        control_value_ac = vsc_stacked.control_value_ac
+        control_value_dc = vsc_stacked.control_value_dc
+        r_ohm = vsc_stacked.r_ohm
+        x_ohm = vsc_stacked.x_ohm
+        r_dc_ohm = vsc_stacked.r_dc_ohm
+        pl_dc_mw = vsc_stacked.pl_dc_mw
         # idx = int(i)
-        name = "b2b_" + str(b2b_vsc.name)
+        name = "stacked_" + str(vsc_stacked.name)
 
         # TODO: currently not working. If in voltage control mode, the voltage is split equally between the VSCs
         ref_bus = None
@@ -2019,8 +2019,8 @@ def _add_auxiliary_elements(net: pandapowerNet):
     if len(net.dcline) > 0:
         _add_dcline_gens(net)
 
-    if len(net.b2b_vsc) > 0:
-        _add_b2b_vsc(net)
+    if len(net.vsc_stacked) > 0:
+        _add_vsc_stacked(net)
 
 
 def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
@@ -2125,7 +2125,7 @@ def _init_runpp_options(
                              "fdbx": 30}
     with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or \
                  net.ssc.in_service.any() or net.vsc.in_service.any() or \
-                 net.b2b_vsc.in_service.any()
+                 net.vsc_stacked.in_service.any() or net.vsc_bipolar.in_service.any()
 
     if with_facts and algorithm != "nr":
         if algorithm != 'nr':
