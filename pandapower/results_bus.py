@@ -232,9 +232,6 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     element_in_service = _is_elements[element]
 
     # P result in mw to element
-<<<<<<< pandas_3.0
-    net[res_].loc[:, "p_mw"] = el_data[p_mw].values * scaling * element_in_service
-=======
     if element == "sgen" and net._options["enforce_p_lims"]:
         min_p = el_data["min_p_mw"] if "min_p_mw" in el_data.columns else pd.Series(index=el_data.index, data=np.nan,
                                                                                     dtype=float)
@@ -255,9 +252,8 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
     else:
         p_src = el_data[p_mw].values
 
-    net[res_]["p_mw"].values[:] = p_src * scaling * element_in_service
+    net[res_].loc[:, "p_mw"] = p_src * scaling * element_in_service
 
->>>>>>> develop
     if is_controllable:
         net[res_].loc[controlled_elements, "p_mw"] = ppc["gen"][gen_idx, PG] * gen_sign
 
@@ -267,9 +263,6 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
 
     if ac:
         # Q result in mvar to element
-<<<<<<< pandas_3.0
-        net[res_].loc[:, "q_mvar"] = el_data[q_mvar].values * scaling * element_in_service
-=======
         if element == "sgen" and net._options["enforce_q_lims"]:
             if "min_q_mvar" in el_data.columns:
                 min_q = el_data["min_q_mvar"].copy()
@@ -294,9 +287,8 @@ def write_pq_results_to_element(net, ppc, element, suffix=None):
         else:
             q_src = el_data[q_mvar].values
 
-        net[res_]["q_mvar"].values[:] = q_src * scaling * element_in_service
+        net[res_].loc[:, "q_mvar"] = q_src * scaling * element_in_service
 
->>>>>>> develop
         if is_controllable:
             net[res_].loc[controlled_elements, "q_mvar"] = ppc["gen"][gen_idx, QG] * gen_sign
     else:
