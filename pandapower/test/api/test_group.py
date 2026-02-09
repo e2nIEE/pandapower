@@ -35,12 +35,12 @@ def typed_list(iterable, dtype):
     else:
         return [str(it) for it in iterable]
 
-
+@pytest.fixture(scope="session")
 def nets_to_test_group():
-    nets = list()
+    nets = []
     reference_columns = [None, "name"]
     types = [int, str]
-    idxs = list()
+    idxs = []
     for reference_column, type_ in zip(reference_columns, types):
         net = case24_ieee_rts()
         for elm in pp_elements():
@@ -57,8 +57,9 @@ def nets_to_test_group():
     return nets, types, reference_columns, idxs
 
 
-def test_group_create():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_group_create(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
 
         # --- test definition of groups
         assert idxs[0] == 0
@@ -85,16 +86,17 @@ def test_group_create():
             pass
 
 
-def test_group_element_index():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_group_element_index(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
         # ! group_element_index()
         assert all(group_element_index(net, 0, "gen") == pd.Index([0, 1], dtype=np.int64))
         assert all(group_element_index(net, 0, "sgen") == pd.Index([2, 3], dtype=np.int64))
         assert all(group_element_index(net, 0, "dcline") == pd.Index([], dtype=np.int64))
 
 
-def test_groups_equal():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_groups_equal(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         idx_new = create_group(net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)],
                                name='Group of transformers', reference_columns=rc)
 
@@ -102,8 +104,9 @@ def test_groups_equal():
         assert groups_equal(net, 3, idx_new)
 
 
-def test_set_group_reference_column():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_set_group_reference_column(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         idx_new = create_group(net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)],
                                name='Group of transformers', reference_columns=rc)
         assert groups_equal(net, 3, idx_new)  # ensure that we have an equal group idx_new to
@@ -117,8 +120,9 @@ def test_set_group_reference_column():
         assert groups_equal(net, 3, idx_new)
 
 
-def test_compare_group_elements():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_compare_group_elements(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         ok = create_group(net, "trafo", [net.trafo.loc[:2].index], name='xxx')
         fail1 = create_group(net, ["trafo", "bus"], [net.trafo.loc[:2].index, [0]], name='xxx')
         fail2 = create_group(net, ["trafo"], [net.trafo.index[1:3]], name='xxx')
@@ -132,8 +136,8 @@ def test_compare_group_elements():
         assert compare_group_elements(net, 3, ok)
 
 
-def test_ensure_lists_in_group_element_column():
-    net = nets_to_test_group()[0][0]
+def test_ensure_lists_in_group_element_column(nets_to_test_group):
+    net = deepcopy(nets_to_test_group[0][0])
 
     no_nans = [1, 1]
     vals = [[np.nan, pd.Index([2, 3]), {0, 1, 2}],
@@ -156,8 +160,9 @@ def test_ensure_lists_in_group_element_column():
                 assert isinstance(netc.group.element_index.iat[i], list)
 
 
-def test_remove_not_existing_group_members():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_remove_not_existing_group_members(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         # ! remove_not_existing_group_members()
         assert set(net.group.loc[0].element_type.tolist()) == {"gen", "sgen"}
 
@@ -250,8 +255,9 @@ def test_drop_element():
     assert "sgen" not in net.group.element_type.values
 
 
-def test_drop_and_return():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_drop_and_return(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
 
         # ! drop_elements_and_group & ! return_group_as_net
         for keep_everything_else in [False, True]:
@@ -281,8 +287,9 @@ def test_drop_and_return():
                 assert net3[elm].shape[0] >= 0
 
 
-def test_set_out_of_service():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_set_out_of_service(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         # ! set_out_of_service
         assert net.trafo.in_service.all()
         set_group_out_of_service(net, 3)
@@ -291,8 +298,9 @@ def test_set_out_of_service():
         assert net.trafo.in_service.all()
 
 
-def test_attach_to_group():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_attach_to_group(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
 
         # ! group_element_lists() and ! attach_to_group()
         et0, elm0, rc0 = group_element_lists(net, 0)
@@ -315,8 +323,9 @@ def test_attach_to_group():
         assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element_index"]) == 4
 
 
-def test_detach_and_compare():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_detach_and_compare(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         # detach_from_group() & compare_group_elements()
 
         # copy group 3
@@ -337,8 +346,9 @@ def test_detach_and_compare():
         assert group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
 
 
-def test_res_power():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_res_power(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         et0, elm0, rc0 = group_element_lists(net, 0)
         attach_to_group(net, 3, et0, elm0, reference_columns=rc0)
 
@@ -387,8 +397,9 @@ def test_group_io():
     pdt.assert_frame_equal(net.group.loc[[gr2]], net2.group.loc[[gr2]])
 
 
-def test_count_group_elements():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_count_group_elements(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         pdt.assert_series_equal(
             count_group_elements(net, idxs[0]),
             pd.Series({"gen": 2, "sgen": 2}, dtype=np.int64))
@@ -397,8 +408,9 @@ def test_count_group_elements():
             pd.Series({"trafo": 3}, dtype=np.int64))
 
 
-def test_isin():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_isin(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         assert np.all(np.array([False, True, True, False]) == \
                       isin_group(net, "sgen", [0, 2, 3, 4]))
         assert isin_group(net, "gen", 0)
@@ -406,8 +418,9 @@ def test_isin():
         assert not isin_group(net, "gen", 6)
 
 
-def test_element_associated_groups():
-    for net, type_, rc, idxs in zip(*nets_to_test_group()):
+def test_element_associated_groups(nets_to_test_group):
+    for net, type_, rc, idxs in zip(*nets_to_test_group):
+        net = deepcopy(net)
         assert element_associated_groups(net, "gen", [0, 1, 2, 3]) == \
                {0: [0], 1: [0], 2: [], 3: []}
         assert element_associated_groups(net, "gen", [0, 1, 2, 3], return_empties=False) == \
