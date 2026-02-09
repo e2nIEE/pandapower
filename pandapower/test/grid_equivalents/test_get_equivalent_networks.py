@@ -10,23 +10,23 @@ from pandapower.create import create_switch
 from pandapower.networks.power_system_test_cases import case9, case30, case39, case118
 
 
-@pytest.mark.parametrize("eq_type, sn_mva", list(product(["xward", "rei", "ward"], [1.0, 23.0, 89.0])))
-def test_networks(eq_type, sn_mva):
+@pytest.mark.parametrize(
+    "eq_type, sn_mva, boundary_buses, internal_buses",
+    list(product(["xward", "rei", "ward"], [1.0, 23.0, 89.0])))
+def test_networks_case9(eq_type, sn_mva):
     epsilon = 1e-4
     """
     Attention:
 
     the epsilon value depends on the "tolerance_mva" by the power flow calculation.
-    (please confirm the tolerance_mva-value in the function "try_runpp" of
-    "get_equivalent.py")
+    (please confirm the tolerance_mva-value in the function "try_runpp" of "get_equivalent.py")
 
-    if tolerance_mva = 1e-8, this test mit epsilon=1e-6 should work.
-    if tolerance_mva = 1e-6, we should here give a bigger value, e.g. epsilon = 1e-5
-
+    if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
+    if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
     """
+    
     net = case9()
     net.sn_mva = sn_mva
-    runpp(net)
     logging.debug('test with case9:')
 
     max_error, related_values = get_max_error(
@@ -64,6 +64,19 @@ def test_networks(eq_type, sn_mva):
         net, eq_type, boundary_buses=[3, 5], internal_buses=[2, 4, 0], return_internal=True)
     assert max_error < epsilon
 
+
+@pytest.mark.parametrize("eq_type, sn_mva", list(product(["xward", "rei", "ward"], [1.0, 23.0, 89.0])))
+def test_networks_case30(eq_type, sn_mva):
+    epsilon = 1e-4
+    """
+    Attention:
+
+    the epsilon value depends on the "tolerance_mva" by the power flow calculation.
+    (please confirm the tolerance_mva-value in the function "try_runpp" of "get_equivalent.py")
+
+    if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
+    if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
+    """
     # case30
     logging.debug('test with case30:')
     net = case30()
@@ -99,6 +112,19 @@ def test_networks(eq_type, sn_mva):
         return_internal=True, buses_out_of_service=[9, 28])
     assert max_error <= epsilon
 
+
+@pytest.mark.parametrize("eq_type, sn_mva", list(product(["xward", "rei", "ward"], [1.0, 23.0, 89.0])))
+def test_networks_case39(eq_type, sn_mva):
+    epsilon = 1e-4
+    """
+    Attention:
+
+    the epsilon value depends on the "tolerance_mva" by the power flow calculation.
+    (please confirm the tolerance_mva-value in the function "try_runpp" of "get_equivalent.py")
+
+    if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
+    if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
+    """
     # case39
     logging.debug('test with case39:')
     net = case39()
@@ -114,6 +140,19 @@ def test_networks(eq_type, sn_mva):
         switch_changes=[['t', 11, 4], ['t', 11, 3]])
     assert max_error <= epsilon
 
+
+@pytest.mark.parametrize("eq_type, sn_mva", list(product(["xward", "rei", "ward"], [1.0, 23.0, 89.0])))
+def test_networks_case118(eq_type, sn_mva):
+    epsilon = 1e-4
+    """
+    Attention:
+
+    the epsilon value depends on the "tolerance_mva" by the power flow calculation.
+    (please confirm the tolerance_mva-value in the function "try_runpp" of "get_equivalent.py")
+
+    if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
+    if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
+    """
     # case118
     logging.debug('case118:')
     net = case118()
