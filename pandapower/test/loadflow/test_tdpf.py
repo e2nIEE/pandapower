@@ -9,8 +9,6 @@ import pandas as pd
 import pytest
 import copy
 
-from Demos.win32ts_logoff_disconnected import session
-
 from pandapower import pp_dir
 from pandapower.create import create_empty_network, create_bus, create_line, create_load, create_ext_grid, \
     create_buses, create_sgen, create_gen, create_gens, create_line_from_parameters
