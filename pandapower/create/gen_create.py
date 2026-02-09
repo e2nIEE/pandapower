@@ -140,8 +140,7 @@ def create_gen(
     _set_entries(net, "gen", index, True, entries=entries)
 
     # OPF limits
-    if controllable is not None:
-        _set_value_if_not_nan(net, index, controllable, "controllable", "gen", dtype=bool_, default_val=True)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "gen", dtype=bool_, default_val=True)
 
     # id for q capability curve table
     _set_value_if_not_nan(
@@ -315,8 +314,7 @@ def create_gens(
     )
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo", power_station_trafo, dtype="Int64")
-    if controllable is not None:
-        _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_, default_val=True)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, dtype=bool_, default_val=True)
     defaults_to_fill = [("controllable", True), ("reactive_capability_curve", False), ("curve_style", None)]
 
     _set_multiple_entries(net, "gen", index, defaults_to_fill=defaults_to_fill, entries=entries)
