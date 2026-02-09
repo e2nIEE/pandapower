@@ -8,6 +8,7 @@ Change Log
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
 - [ADDED] rundcpp: Added DC elements to DC powerflow
 - [ADDED] python: support for version 3.14 added to the test pipelines
+- [FIXED] renamed b2b_vsc to vsc_stacked
 
 [3.3.2] - 2026-01-13
 -------------------------------
