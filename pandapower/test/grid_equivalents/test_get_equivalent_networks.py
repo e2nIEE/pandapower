@@ -28,23 +28,23 @@ test_data = [
     (case9, [4, 6], [0], True, {"switch_changes": [["b", 4, 8]]}),
     (case9, [3, 4, 6], [1], False, {}),
     (case9, [3, 5], [2, 4, 0], True, {}),
-    
+
     (case30, [8], [0], True, {"buses_out_of_service": [9]}),
     (case30, [1, 2], [0], True, {}),
     (case30, [3, 9, 22], [0], True, {"switch_changes": [['b', 11, 19]]}),
     (case30, [21, 22, 26], [0, 20], True, {"switch_changes": [['b', 22, 18], ['l', 21, 30]]}),
     (case30, [3, 16, 19, 22], [0, 20], True, {}),
     (case30, [5, 16, 18, 23, 27], [0, 24], True, {"buses_out_of_service": [9, 28]}),
-    
+
     (case39, [1, 7], [0], False, {"buses_out_of_service": [4, 8], "switch_changes": [['b', 2, 25]]}),
     (case39, [15, 25], [30], True, {"switch_changes": [['t', 11, 4], ['t', 11, 3]]}),
-    
+
     (case118, [7], [0], True, {}),
     (case118, [4, 14, 15], [0], True, {}),
     (case118, [4, 14, 15], [68], True, {}),
     (case118, [18, 22, 37, 64], [68], True, {"buses_out_of_service": [32]}),
     (case118, [18, 20, 25, 26, 29, 31], [68], True, {}),
-    (case118, [70, 69, 67, 48, 44], [68], True, {}),
+    (case118, [70, 69, 67, 48, 44], [68], True, {}),  # This set takes >30s in the pipeline
     (case118, [39, 42, 48, 65, 69, 70], [68], True, {})
 ]
 
