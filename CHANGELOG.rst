@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+
+[3.4.0] - 2026-02-09
+-------------------------------
 - [CHANGED] setup: remove extra dependencies from `all` set.
 - [ADDED] setup: add `dev` set for all dependencies required for development.
 - [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
