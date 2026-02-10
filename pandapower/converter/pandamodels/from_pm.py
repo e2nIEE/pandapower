@@ -156,7 +156,7 @@ def read_ots_results(net: pandapowerNet):
             net[res].loc[:, "in_service"] = net[res].loc[:, "in_service"].values
         branch_status = ppc["branch"][f:t, BR_STATUS].real
 
-        net[res]["in_service"].values[:] = branch_status
+        net[res].loc[:, "in_service"] = branch_status
 
 
 def read_tnep_results(net: pandapowerNet):
