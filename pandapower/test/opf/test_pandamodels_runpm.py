@@ -739,25 +739,20 @@ def test_runpm_ploss_loading():
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+@pytest.mark.parametrize("net_func", [
+    case5,
+    case9,
+    case14,
+    case30,
+    case39,
+    case57,
+    case118,
+    case145,
+    case300,
+])
 @pytest.mark.parametrize('cpnd', [True, False])
-def test_convergence_dc_opf(cpnd):
-    net = case5()
-    runpm_dc_opf(net, correct_pm_network_data=cpnd)
-    net = case9()
-    runpm_dc_opf(net, correct_pm_network_data=cpnd)
-    net = case14()
-    runpm_dc_opf(net, correct_pm_network_data=cpnd)
-    net = case30()
-    runpm_dc_opf(net, correct_pm_network_data=cpnd)
-    net = case39()
-    runpm_dc_opf(net, correct_pm_network_data=cpnd)
-    net = case57()
-    runpm_dc_opf(net, correct_pm_network_data=cpnd)
-    net = case118()
-    runpm_dc_opf(net, correct_pm_network_data=cpnd)
-    net = case145()
-    runpm_dc_opf(net, correct_pm_network_data=cpnd)
-    net = case300()
+def test_convergence_dc_opf(net_func, cpnd):
+    net = net_func()
     runpm_dc_opf(net, correct_pm_network_data=cpnd)
 
 

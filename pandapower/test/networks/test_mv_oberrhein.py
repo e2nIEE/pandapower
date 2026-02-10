@@ -10,15 +10,9 @@ from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.run import runpp
 
 
-@pytest.mark.parametrize(
-    "scenarios, include_substations, separation_by_sub",
-    [
-        (scenarios, include_substations, separation_by_sub)
-        for scenarios in ["load", "generation"]
-        for include_substations in [False, True]
-        for separation_by_sub in [False, True]
-    ],
-)
+@pytest.mark.parametrize("scenarios", ["load", "generation"])
+@pytest.mark.parametrize("include_substations", [False, True])
+@pytest.mark.parametrize("separation_by_sub", [False, True])
 def test_mv_oberrhein(scenarios, include_substations, separation_by_sub):
     net = mv_oberrhein(scenario=scenarios, include_substations=include_substations)
     runpp(net)
@@ -30,18 +24,18 @@ def test_mv_oberrhein(scenarios, include_substations, separation_by_sub):
         assert net.sgen.scaling.mean() > 0.6
         assert net.load.scaling.mean() < 0.2
 
-    if include_substations is False:
-        assert len(net.bus) == 179
-        assert len(net.trafo) == 2
-    elif include_substations is True:
+    if include_substations:
         assert len(net.bus) == 320
         assert len(net.trafo) == 143
+    else:
+        assert len(net.bus) == 179
+        assert len(net.trafo) == 2
 
     assert len(net.line) == 181
     assert len(net.switch) == 322
     assert net.converged
 
-    if separation_by_sub is True:
+    if separation_by_sub:
         net0, net1 = mv_oberrhein(
             scenario=scenarios, include_substations=include_substations, separation_by_sub=separation_by_sub
         )

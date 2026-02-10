@@ -8,18 +8,18 @@ from pandapower.create import create_switch
 
 from pandapower.networks.power_system_test_cases import case9, case30, case39, case118
 
-epsilon = 1e-4
 """
-    Attention:
+Attention:
 
-    the epsilon value depends on the "tolerance_mva" by the power flow calculation.
-    (please confirm the tolerance_mva-value in the function "try_runpp" of
-    "get_equivalent.py")
+the epsilon value depends on the "tolerance_mva" by the power flow calculation.
+(please confirm the tolerance_mva-value in the function "try_runpp" of
+"get_equivalent.py")
 
-    if tolerance_mva = 1e-8, this test mit epsilon=1e-6 should work.
-    if tolerance_mva = 1e-6, we should here give a bigger value, e.g. epsilon = 1e-5
+if tolerance_mva = 1e-8, this test mit epsilon=1e-6 should work.
+if tolerance_mva = 1e-6, we should here give a bigger value, e.g. epsilon = 1e-5
 
-    """
+"""
+epsilon = 1e-4
 eq_types = ["xward", "rei", "ward"]
 sn_mva_values = [1.0, 23.0, 89.0]
 
