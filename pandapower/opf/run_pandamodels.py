@@ -48,15 +48,13 @@ def _runpm(net, delete_buffer_file=True, pm_file_path=None, pdm_dev_mode=False, 
     except Exception as e:
         raise e
 
-def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
 
+def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     try:
-        from juliacall import Main # type: ignore
-        from juliacall import Base # type: ignore
-        from juliacall import Pkg # type: ignore
+        from juliacall import Main, Base, Pkg  # type: ignore
     except ImportError:
         raise ImportError(
-            "Please install pyjulia properly to run pandapower with PandaModels.jl.")
+            "Please install juliacall properly to run pandapower with PandaModels.jl.")
 
     if not Base.find_package("PandaModels"):
         logger.info("PandaModels.jl is missing, adding.")

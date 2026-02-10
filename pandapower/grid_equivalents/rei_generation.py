@@ -112,7 +112,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
 def adapt_impedance_params(Z, sign=1, adaption=1e-15):
     """
     In some extreme cases, the created admittance matrix of the
-    zpbn network is singular. The routine is unsolvalbe with it.
+    zpbn network is singular. The routine is unsolvable with it.
     In response, an impedance adaption is created and added.
     """
     rft_pu = Z.real + sign * adaption
@@ -149,7 +149,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
         **tolerance_mva** (float, 1e-3) - loadflow termination
             condition referring to P / Q mismatch of node power
-            in MVA. The loalflow hier is to get the admittance
+            in MVA. The loadflow hier is to get the admittance
             matrix of the zpbn network
 
     OUTPUT:
@@ -401,8 +401,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                               (df.et == elm)]
                             if len(pc_idx) > 1:
                                 logger.debug("Attention! There are at least two " + elm + "s connected to a " +
-                                             "common bus. The " + elm + "s with commen bus are modeled as an " +
-                                             "aggreated " + elm + " during the equivalencing. " +
+                                             "common bus. The " + elm + "s with common bus are modeled as an " +
+                                             "aggregated " + elm + " during the equivalencing. " +
                                              "The " + cost_elm + " data of the first " + elm + " is used as the " +
                                              cost_elm + " data of the aggregated " + elm + ". " +
                                              "It is NOT correct at present.")
