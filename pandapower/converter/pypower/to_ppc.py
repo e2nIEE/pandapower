@@ -41,10 +41,8 @@ def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=
             as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
         check_connectivity (bool, True): Perform an extra connectivity test after the
             conversion from pandapower to PYPOWER
-
             If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is
             perfomed. If the check finds unsupplied buses, they are set out of service in the ppc
-
         voltage_depend_loads (bool, False): consideration of voltage-dependent loads.
             If False, net.load.const_z_p_percent, net.load.const_i_p_percent,
             net.load.const_z_q_percent and net.load.const_i_q_percentare not considered, i.e.
@@ -69,7 +67,6 @@ def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=
         >>> from pandapower.networks.power_system_test_cases import case9
         >>> net = case9()
         >>> ppc = to_ppc(net)
-
     """
     if (not (net["poly_cost"].empty and net["pwl_cost"].empty) and
         mode is None) or mode == "opf":
@@ -92,7 +89,7 @@ def to_ppc(net, calculate_voltage_angles=True, trafo_model="t", switch_rx_ratio=
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
-                     init_va_degree=init, enforce_q_lims=True,
+                     init_va_degree=init, enforce_q_lims=True, enforce_p_lims=False,
                      recycle=None, voltage_depend_loads=voltage_depend_loads)
 
     if net["_options"]["voltage_depend_loads"] and not (

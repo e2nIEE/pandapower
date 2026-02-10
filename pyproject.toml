@@ -81,6 +81,7 @@ converter = ["matpowercaseframes~=1.1", "lxml~=6.0"]
 pgm = ["power-grid-model-io~=1.2"]
 control = ["shapely~=2.1"]
 pandamodels = ["juliacall~=0.9"]
+tutorials = ["juliacall~=0.9", "seaborn", "jupyter", "notebook"]
 
 typing = [
     "mypy~=1.18",
@@ -94,7 +95,8 @@ typing = [
     "pandera[mypy]~=0.26.1"
 ]
 
-all = ["pandapower[docs,plotting,test,performance,fileio,converter,pgm,control,typing]"]
+all = ["pandapower[plotting,performance,fileio,converter,pgm,control]"]
+dev = ["pandapower[all,docs,test,typing,pandamodels,tutorials]"]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 

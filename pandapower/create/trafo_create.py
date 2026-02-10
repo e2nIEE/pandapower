@@ -66,7 +66,8 @@ def create_transformer(
             
             - vk0_percent (float): zero sequence relative short-circuit voltage
             - vkr0_percent (float): real part of zero sequence relative short-circuit voltage
-            - mag0_percent (float): ratio between magnetizing and short circuit impedance (zero sequence) z_mag0 / z0
+            - mag0_percent (float): ratio between magnetizing and short circuit impedance (zero sequence) as a percent
+                                   (z_mag0 / z0) * 100 %
             - mag0_rx (float): zero sequence magnetizing r/x ratio
             - si0_hv_partial (float): zero sequence short circuit impedance distribution in hv side
 
@@ -334,7 +335,8 @@ def create_transformer_from_parameters(
         vector_group: vector group of the transformer HV side is Uppercase letters and LV side is lower case
         vk0_percent: zero sequence relative short-circuit voltage
         vkr0_percent: real part of zero sequence relative short-circuit voltage
-        mag0_percent: zero sequence magnetizing impedance/ vk0
+        mag0_percent: ratio between magnetizing and short circuit impedance (zero sequence) as a percent
+                                   (z_mag0 / z0) * 100 %
         mag0_rx: zero sequence magnetizing R/X ratio
         si0_hv_partial: Distribution of zero sequence leakage impedance's for HV side
         in_service: True for in_service or False for out of service
@@ -565,7 +567,8 @@ def create_transformers_from_parameters(  # index missing ?
         vector_group: Vector group of the transformer HV side is Uppercase letters and LV side is lower case
         vk0_percent: zero sequence relative short-circuit voltage
         vkr0_percent: real part of zero sequence relative short-circuit voltage
-        mag0_percent: zero sequence magnetizing impedance/ vk0
+        mag0_percent: ratio between magnetizing and short circuit impedance (zero sequence) as a percent
+                                   (z_mag0 / z0) * 100 %
         mag0_rx: zero sequence magnetizing R/X ratio
         si0_hv_partial: distribution of zero sequence leakage impedance's for HV side
         in_service: True for in_service or False for out of service
