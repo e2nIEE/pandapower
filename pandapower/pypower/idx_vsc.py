@@ -41,6 +41,8 @@ columns 0-12 must be included in the input matrix (vsc in ppc dict)
 VSC_MODE_AC_V = 0
 VSC_MODE_AC_Q = 1
 VSC_MODE_AC_SL = 2
+VSC_MODE_AC_P = 3
+VSC_MODE_AC_PHI = 4
 
 # define DC modes
 VSC_MODE_DC_V = 0 # constant voltage regulation on dc bus aka dc slack

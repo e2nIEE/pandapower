@@ -319,7 +319,7 @@ def create_ssc(
     return index
 
 
-def create_b2b_vsc(
+def create_vsc_stacked(
     net: pandapowerNet,
     bus: Int,
     bus_dc_plus: Int,
@@ -372,7 +372,7 @@ def create_b2b_vsc(
     _check_element(net, bus_dc_plus, "bus_dc")
     _check_element(net, bus_dc_minus, "bus_dc")
 
-    index = _get_index_with_check(net, "b2b_vsc", index)
+    index = _get_index_with_check(net, "vsc_stacked", index)
 
     entries = {
         "name": name,
@@ -391,12 +391,12 @@ def create_b2b_vsc(
         "in_service": in_service,
         **kwargs,
     }
-    _set_entries(net, "b2b_vsc", index, entries=entries)
+    _set_entries(net, "vsc_stacked", index, entries=entries)
 
     return index
 
 
-def create_bi_vsc(
+def create_vsc_bipolar(
     net: pandapowerNet,
     bus: Int,
     bus_dc_plus: Int,
@@ -405,10 +405,9 @@ def create_bi_vsc(
     x_ohm: float,
     r_dc_ohm: float,
     pl_dc_mw: float = 0.0,
-    control_mode_ac: str = "vm_pu",
-    control_value_ac: float = 1.0,
-    control_mode_dc: str = "p_mw",
-    control_value_dc: float = 0.0,
+    control_mode: str = "Vac_phi",
+    control_value_1: float = 1.0,
+    control_value_2: float = 0.0,
     name: str | None = None,
     controllable: bool = True,
     in_service: bool = True,
@@ -430,10 +429,9 @@ def create_bi_vsc(
         x_ohm: reactance of the coupling transformer component of VSC
         r_dc_ohm: resistance of the internal dc resistance component of VSC
         pl_dc_mw: no-load losses of the VSC on the DC side for the shunt R representing the no load losses
-        control_mode_ac: the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
-        control_value_ac: the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
-        control_mode_dc: the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
-        control_value_dc: the value of the controlled parameter at the dc bus in "p.u." or "MW"
+        control_mode: the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+        control_value_1: the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+        control_value_2: the value of the controlled parameter at the dc bus in "p.u." or "MW"
         name: element name
         controllable: whether the element is considered as actively controlling or as a fixed voltage source connected
             via shunt impedance
@@ -449,7 +447,7 @@ def create_bi_vsc(
     _check_element(net, bus_dc_plus, "bus_dc")
     _check_element(net, bus_dc_minus, "bus_dc")
 
-    index = _get_index_with_check(net, "bi_vsc", index)
+    index = _get_index_with_check(net, "vsc_bipolar", index)
 
     entries = {
         "name": name,
@@ -460,15 +458,14 @@ def create_bi_vsc(
         "x_ohm": x_ohm,
         "r_dc_ohm": r_dc_ohm,
         "pl_dc_mw": pl_dc_mw,
-        "control_mode_ac": control_mode_ac,
-        "control_value_ac": control_value_ac,
-        "control_mode_dc": control_mode_dc,
-        "control_value_dc": control_value_dc,
+        "control_mode": control_mode,
+        "control_value_1": control_value_1,
+        "control_value_2": control_value_2,
         "controllable": controllable,
         "in_service": in_service,
         **kwargs,
     }
-    _set_entries(net, "bi_vsc", index, entries=entries)
+    _set_entries(net, "vsc_bipolar", index, entries=entries)
 
     return index
 

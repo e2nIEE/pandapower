@@ -402,10 +402,13 @@ def get_trafo_values(trafo_df: pd.DataFrame | dict, column: str, na_replacement:
     """
     Get values from dataframe.
 
-    :param trafo_df: The DataFrame from which to get the column
-    :param column: column name to get.
-    :param na_replacement: Element to replace pd.NA with. (only pandas.DataFrame)
-    :return:
+    Parameters:
+        trafo_df: The DataFrame from which to get the column
+        column: column name to get.
+        na_replacement: Element to replace pd.NA with.
+
+    Returns:
+        None if column not found in trafo_df or NDArray of the column where pd.NA is replaced by na_replacement.
     """
     if isinstance(trafo_df, dict):
         if column not in trafo_df:
@@ -418,7 +421,10 @@ def get_trafo_values(trafo_df: pd.DataFrame | dict, column: str, na_replacement:
         return None
     if na_replacement is not pd.NA:
         # astype(object) is required to allow float('nan') as a replacement
-        return trafo_df[column].astype(object).replace({pd.NA: na_replacement}).to_numpy()
+        series = trafo_df[column].astype(object)
+        mask = pd.isna(series)
+        series[mask] = na_replacement
+        return series.infer_objects().to_numpy()
     else:
         return trafo_df[column].to_numpy()
 
@@ -479,16 +485,16 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
                 mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence,
                 trafo_characteristic_table=net.trafo_characteristic_table)
         else:
-            r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
-                                            sequence=sequence)
+            r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
     else:
         warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
                                          "unsupported net data. tap_dependency_table was introduced with "
                                          "pandapower 3.0 and replaced spline characteristics. Spline "
                                          "characteristics will still work, but they are deprecated and will be "
                                          "removed in future releases."))
-        r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
-                                        sequence=sequence, characteristic=net.get("characteristic"))
+        r, x = _calc_r_x_from_dataframe(
+            mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence, characteristic=net.get("characteristic")
+        )
 
     if mode == "sc":
         if net._options.get("use_pre_fault_voltage", False):
@@ -623,8 +629,8 @@ def _calc_tap_from_dataframe(net, trafo_df):
         tap_pos = get_trafo_values(trafo_df, f"tap{t}_pos")
         if tap_pos is None:
             continue
-        tap_side = get_trafo_values(trafo_df, f"tap{t}_side", na_replacement=None)
-        tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent")
+        tap_side = get_trafo_values(trafo_df, f"tap{t}_side", na_replacement='')
+        tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent", na_replacement=float('nan'))
 
         tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type", na_replacement="")
         if tap_changer_type is not None:
@@ -797,9 +803,6 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
             (direction * 2 * _arcsin(tap_diff * tap_step_percent / 100 / 2))
         ), None
 
-    # FIXME: tap_step_percent needs to be set
-    # if (degree_is_set & percent_is_set).any():
-    #     raise UserWarning("Either tap_step_percent or tap_step_degree is not set")
     # complex tap changer
     tap_steps = tap_step_percent * tap_diff / 100
     tap_angles = np.nan_to_num(tap_step_degree, nan=0)

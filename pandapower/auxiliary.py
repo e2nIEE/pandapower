@@ -573,7 +573,7 @@ class GeoAccessor:
         return self._obj.dropna().apply(from_geojson)
 
     @property
-    def as_geoseries(self) -> GeoSeries:
+    def as_geoseries(self) -> "GeoSeries":
         """
         Converts the PandasSeries to a GeoSeries with shapely geometrys.
         """
@@ -731,7 +731,7 @@ def _sum_by_group(
 ) -> tuple[NDArray[np.int64], NDArray[np.float64], NDArray[np.float64]]:
     order: NDArray[np.int64] = np.argsort(bus)
     bus = bus[order]
-    index: NDArray[np.bool] = np.ones(len(bus), 'bool')
+    index: NDArray[bool] = np.ones(len(bus), 'bool')
     index[:-1] = bus[1:] != bus[:-1]
     bus = bus[index]
     first_val = first_val[order]
@@ -1061,8 +1061,8 @@ def _write_to_object_attribute(
 
 
 def _set_isolated_nodes_out_of_service(
-    ppc: PyPowerNetwork, bus_not_reachable: NDArray[np.bool], dc: bool = False
-) -> tuple[NDArray[np.bool], int, int, PyPowerNetwork]:
+    ppc: PyPowerNetwork, bus_not_reachable: NDArray[bool], dc: bool = False
+) -> tuple[NDArray[bool], int, int, PyPowerNetwork]:
     isolated_nodes = np.nonzero(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
         logger.debug("There are isolated buses in the network! (%i nodes in the PPC)" % len(isolated_nodes))
@@ -1083,7 +1083,7 @@ def _set_isolated_nodes_out_of_service(
     return isolated_nodes, pus, qus, ppc
 
 
-def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[np.bool], int, int]:
+def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int]:
     """
     Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are
     in net.
@@ -1123,7 +1123,7 @@ def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[np.bool], int,
     return isolated_nodes, pus, qus
 
 
-def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[np.bool], int, int, NDArray[np.bool], int, int]:
+def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, NDArray[bool], int, int]:
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
     :param ppc: pypower case file
@@ -1231,14 +1231,14 @@ def _subnetworks(ppc: PyPowerNetwork) -> list[list[int]]:
 
 
 def _python_set_elements_oos(
-    ti: NDArray[np.int64], tis: NDArray[np.bool], bis: NDArray[np.bool], lis: NDArray[np.bool]
+    ti: NDArray[np.int64], tis: NDArray[bool], bis: NDArray[bool], lis: NDArray[bool]
 ) -> None:  # pragma: no cover
     for i in range(len(ti)):
         if tis[i] and bis[ti[i]]:
             lis[i] = True
 
 
-def _python_set_isolated_buses_oos(bus_in_service: NDArray[np.bool], ppc_bus_isolated: NDArray[np.bool],
+def _python_set_isolated_buses_oos(bus_in_service: NDArray[bool], ppc_bus_isolated: NDArray[bool],
                                    bus_lookup: NDArray[np.int64]):  # pragma: no cover
     for k in range(len(bus_in_service)):
         if ppc_bus_isolated[bus_lookup[k]]:
@@ -1388,6 +1388,7 @@ def _add_ppc_options(
     check_connectivity: bool,
     mode: Literal["opf", "pf", "pf_3ph", "sc", "nx", "se", "dc"],
     switch_rx_ratio: int,
+    enforce_p_lims: bool,
     enforce_q_lims: bool,
     recycle: dict[str, bool] | None,
     delta: float = 1e-10,
@@ -1417,6 +1418,7 @@ def _add_ppc_options(
         "check_connectivity": check_connectivity,
         "mode": mode,
         "switch_rx_ratio": switch_rx_ratio,
+        "enforce_p_lims": enforce_p_lims,
         "enforce_q_lims": enforce_q_lims,
         "recycle": recycle,
         "voltage_depend_loads": voltage_depend_loads,
@@ -1552,9 +1554,9 @@ def _add_options(net: pandapowerNet, options: dict[str, Any]) -> None:
     net._options.update(options)
 
 
-def get_b2b_vsc_names(elements: NDArray):
-    # naming scheme is b2b_0+, b2b_0-, b2b_1+, b2b_1-, ...
-    return np.char.add(np.char.add('b2b_', np.repeat(elements, 2).astype(str)), np.tile(['+', '-'], len(elements)))
+def get_vsc_stacked_names(elements: NDArray):
+    # naming scheme is stacked_0+, stacked_0-, stacked_1+, stacked_1-, ...
+    return np.char.add(np.char.add('stacked_', np.repeat(elements, 2).astype(str)), np.tile(['+', '-'], len(elements)))
 
 
 def _clean_up(net: pandapowerNet, res: bool = True) -> None:
@@ -1587,9 +1589,9 @@ def _clean_up(net: pandapowerNet, res: bool = True) -> None:
         if res:
             net.res_gen = net.res_gen.drop(dc_gens)
 
-    if len(net["b2b_vsc"]) > 0:
-        # remove vsc's which were only created for the b2b_vsc's
-        vsc_idx = net.vsc[net.vsc['name'].isin(get_b2b_vsc_names(net.b2b_vsc.index.to_numpy()))]
+    if len(net["vsc_stacked"]) > 0:
+        # remove vsc's which were only created for the vsc_stacked's
+        vsc_idx = net.vsc[net.vsc['name'].isin(get_vsc_stacked_names(net.vsc_stacked.index.to_numpy()))]
         # drop the vsc's
         net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
 
@@ -1921,7 +1923,7 @@ def SVabc_from_SV012(
     S012: NDArray[NumpyDType],
     V012: NDArray[NumpyDType],
     n_res: int | None = None,
-    idx: NDArray[np.bool] | None = None,
+    idx: NDArray[bool] | None = None,
 ) -> tuple[NDArray[NumpyDType], NDArray[NumpyDType]]:
     if n_res is None:
         n_res = S012.shape[1]
@@ -1996,22 +1998,22 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
         create_gen(net, **kwargs_from)
 
 
-def _add_b2b_vsc(net: pandapowerNet):
+def _add_vsc_stacked(net: pandapowerNet):
     from pandapower.create import create_vsc
-    for i, b2b_vsc in net.b2b_vsc.iterrows():
-        ac_bus = b2b_vsc.bus
-        bus_dc_plus = b2b_vsc.bus_dc_plus
-        bus_dc_minus = b2b_vsc.bus_dc_minus
-        control_mode_ac = b2b_vsc.control_mode_ac
-        control_mode_dc = b2b_vsc.control_mode_dc
-        control_value_ac = b2b_vsc.control_value_ac
-        control_value_dc = b2b_vsc.control_value_dc
-        r_ohm = b2b_vsc.r_ohm
-        x_ohm = b2b_vsc.x_ohm
-        r_dc_ohm = b2b_vsc.r_dc_ohm
-        pl_dc_mw = b2b_vsc.pl_dc_mw
+    for i, vsc_stacked in net.vsc_stacked.iterrows():
+        ac_bus = vsc_stacked.bus
+        bus_dc_plus = vsc_stacked.bus_dc_plus
+        bus_dc_minus = vsc_stacked.bus_dc_minus
+        control_mode_ac = vsc_stacked.control_mode_ac
+        control_mode_dc = vsc_stacked.control_mode_dc
+        control_value_ac = vsc_stacked.control_value_ac
+        control_value_dc = vsc_stacked.control_value_dc
+        r_ohm = vsc_stacked.r_ohm
+        x_ohm = vsc_stacked.x_ohm
+        r_dc_ohm = vsc_stacked.r_dc_ohm
+        pl_dc_mw = vsc_stacked.pl_dc_mw
         # idx = int(i)
-        name = "b2b_" + str(b2b_vsc.name)
+        name = "stacked_" + str(vsc_stacked.name)
 
         # TODO: currently not working. If in voltage control mode, the voltage is split equally between the VSCs
         ref_bus = None
@@ -2047,8 +2049,8 @@ def _add_auxiliary_elements(net: pandapowerNet):
     if len(net.dcline) > 0:
         _add_dcline_gens(net)
 
-    if len(net.b2b_vsc) > 0:
-        _add_b2b_vsc(net)
+    if len(net.vsc_stacked) > 0:
+        _add_vsc_stacked(net)
 
 
 def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
@@ -2072,6 +2074,7 @@ def _init_runpp_options(
     tolerance_mva: float,
     trafo_model: Literal["t", "pi"],
     trafo_loading: Literal["current", "power"],
+    enforce_p_lims: bool,
     enforce_q_lims: bool,
     check_connectivity: bool,
     voltage_depend_loads: bool,
@@ -2121,7 +2124,7 @@ def _init_runpp_options(
     tdpf_update_r_theta = overrule_options.get("tdpf_update_r_theta", tdpf_update_r_theta)
     tdpf_delay_s = overrule_options.get("tdpf_delay_s", tdpf_delay_s)
     # the other parameters do not need to be collected manually:
-    # tolerance_mva, trafo_model, trafo_loading, enforce_q_lims, check_connectivity, consider_line_temperature
+    # tolerance_mva, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
 
     # check if numba is available and the corresponding flag
     if numba:
@@ -2150,7 +2153,7 @@ def _init_runpp_options(
                              "fdbx": 30}
     with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or \
                  net.ssc.in_service.any() or net.vsc.in_service.any() or \
-                 net.b2b_vsc.in_service.any()
+                 net.vsc_stacked.in_service.any() or net.vsc_bipolar.in_service.any()
 
     if with_facts and algorithm != "nr":
         if algorithm != 'nr':
@@ -2218,8 +2221,8 @@ def _init_runpp_options(
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=_vm_pu,
-                     init_va_degree=_va_deg, enforce_q_lims=enforce_q_lims, recycle=recycle,
-                     voltage_depend_loads=voltage_depend_loads, delta=delta_q,
+                     init_va_degree=_va_deg, enforce_p_lims=enforce_p_lims, enforce_q_lims=enforce_q_lims,
+                     recycle=recycle, voltage_depend_loads=voltage_depend_loads, delta=delta_q,
                      trafo3w_losses=trafo3w_losses,
                      neglect_open_switch_branches=neglect_open_switch_branches,
                      consider_line_temperature=consider_line_temperature,
@@ -2237,7 +2240,7 @@ def _init_nx_options(net: pandapowerNet) -> None:
     _add_ppc_options(net, calculate_voltage_angles=False,
                      trafo_model="t", check_connectivity=False,
                      mode="nx", switch_rx_ratio=2, init_vm_pu='flat', init_va_degree="flat",
-                     enforce_q_lims=False, recycle=None,
+                     enforce_p_lims=False, enforce_q_lims=False, recycle=None,
                      voltage_depend_loads=False, delta=0, trafo3w_losses="hv")
 
 
@@ -2258,6 +2261,7 @@ def _init_rundcpp_options(
 
     # the following parameters have no effect if ac = False
     calculate_voltage_angles: bool = True
+    enforce_p_lims: bool = False
     enforce_q_lims: bool = False
     algorithm = None
     max_iteration = None
@@ -2267,7 +2271,7 @@ def _init_rundcpp_options(
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
-                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     init_va_degree=init, enforce_p_lims=enforce_p_lims, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=0, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
@@ -2292,6 +2296,7 @@ def _init_runopp_options(
     ac: bool = True
     trafo_model: Final = "t"
     trafo_loading: Final = 'current'
+    enforce_p_lims: bool = True
     enforce_q_lims: bool = True
     recycle = None
     only_v_results: bool = False
@@ -2304,7 +2309,7 @@ def _init_runopp_options(
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
-                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     init_va_degree=init, enforce_p_lims=enforce_p_lims, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=kwargs.get("voltage_depend_loads", False),
                      delta=delta, trafo3w_losses=trafo3w_losses,
                      consider_line_temperature=consider_line_temperature)
@@ -2327,6 +2332,7 @@ def _init_rundcopp_options(
     trafo_model: Final = "t"
     trafo_loading: Final = 'current'
     calculate_voltage_angles: bool = True
+    enforce_p_lims: bool = True
     enforce_q_lims: bool = True
     recycle = None
     only_v_results: bool = False
@@ -2337,7 +2343,7 @@ def _init_rundcopp_options(
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode=mode, switch_rx_ratio=switch_rx_ratio, init_vm_pu=init,
-                     init_va_degree=init, enforce_q_lims=enforce_q_lims, recycle=recycle,
+                     init_va_degree=init, enforce_p_lims=enforce_p_lims, enforce_q_lims=enforce_q_lims, recycle=recycle,
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading=trafo_loading, init=init, ac=ac,
                      only_v_results=only_v_results,
@@ -2364,7 +2370,7 @@ def _init_runse_options(
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="se", switch_rx_ratio=switch_rx_ratio, init_vm_pu=v_start,
-                     init_va_degree=delta_start, enforce_q_lims=False, recycle=None,
+                     init_va_degree=delta_start, enforce_q_lims=False, enforce_p_lims=False, recycle=None,
                      voltage_depend_loads=False, trafo3w_losses=trafo3w_losses)
     _add_pf_options(net, tolerance_mva=1e-8, trafo_loading="power",
                     numba=True, ac=True, algorithm="nr", max_iteration="auto",

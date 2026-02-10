@@ -49,7 +49,7 @@ _trafo_columns = {
         pa.Check.ge(0),
         nullable=True,
         required=False,
-        description="z_mag0 / z0 ratio between magnetizing and short circuit impedance (zero sequence)",
+        description="z_mag0 / z0 ratio between magnetizing and short circuit impedance (zero sequence) as a percent",
         metadata={"sc": True, "3ph": True},
     ),
     "mag0_rx": pa.Column(

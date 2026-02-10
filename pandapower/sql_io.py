@@ -14,6 +14,7 @@ try:
     import psycopg2
     import psycopg2.extras
     import psycopg2.errors
+    import psycopg2.sql as psql
 
     PSYCOPG2_INSTALLED = True
 except ImportError:
@@ -111,8 +112,7 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
 
     # Create a list of tuples from the dataframe values
     if len(id_columns.keys()) > 0:
-        tuples = [(*tuple(x), *id_columns.values())
-                  for x in table[table_columns].itertuples(index=tuples_index)]
+        tuples = [(*tuple(x), *id_columns.values()) for x in table[table_columns].itertuples(index=tuples_index)]
     else:
         tuples = [tuple(x) for x in table[table_columns].itertuples(index=tuples_index)]
     # Replace pd.NA values with None for conversion to postgres NULL
@@ -139,8 +139,13 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
         add_timestamp_column(conn, cursor, table_name)
 
     # SQL query to execute
-    columns = ['"%s"' % c for c in sql_columns]
-    query = f"INSERT INTO {table_name}({','.join(columns)}) VALUES({placeholders})"
+    columns = [psql.Identifier(c.replace('%', '%%')) for c in sql_columns]
+    query = psql.SQL("INSERT INTO {tbl}({fields}) VALUES({placeholders})").format(
+        tbl=psql.Identifier(*table_name.split('.')),
+        fields=psql.SQL(',').join(columns),
+        placeholders=psql.SQL(',').join(psql.Placeholder() * len(sql_columns))
+    )
+    
     # batch_size = 1000
     # for chunk in tqdm(chunked(tuples, batch_size)):
     #     cursor.executemany(query, chunk)
@@ -300,7 +305,7 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
     """
     Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
     are created if they do not exist.
-    JSON serialization (e.g. for controller objects) is not implemented yet.
+    TODO: JSON serialization (e.g. for controller objects) is not implemented yet.
 
     Parameters
     ----------

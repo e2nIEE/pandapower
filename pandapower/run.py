@@ -37,11 +37,11 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     :param net: pandaPower network
     :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e. g. tolerance_mva = 1e-3
+    :param kwargs: load flow options, e.g. tolerance_mva = 1e-3
     :return: None
     """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
-                           'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_q_lims',
+                           'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_p_lims', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
                            'trafo3w_losses', 'init', 'init_vm_pu', 'init_va_degree', 'init_results',
                            'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
@@ -67,7 +67,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
 def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
-          trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
+          trafo_loading="current", enforce_p_lims=False, enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, consider_line_temperature=False,
           run_control=False, distributed_slack=False, tdpf=False, tdpf_delay_s=None, **kwargs):
     """
@@ -106,7 +106,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
                 solution for the AC loadflow. Note that the DC loadflow only calculates voltage angles at PQ and PV
                 buses, voltage magnitudes are still flat started.
             - "results": voltage vector of last loadflow from net.res_bus is used as initial solution. This can be
-                useful to accelerate convergence in iterative loadflows like time series calculations.
+                useful to accelerate convergence in iterative load flows like time series calculations.
 
             Considering the voltage angles might lead to non-convergence of the power flow in flat start.
             That is why in "auto" mode, init defaults to "dc" if calculate_voltage_angles is True or "flat" otherwise
@@ -127,7 +127,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
             - "t" - transformer is modeled as equivalent with the T-model.
             - "pi" - transformer is modeled as equivalent PI-model. This is not recommended, since it is less exact than
-                the T-model. It is only recommended for valdiation with other software that uses the pi-model.
+                the T-model. It is only recommended for validation with other software that uses the pi-model.
 
         trafo_loading (str, "current"): mode of calculation for transformer loading
             Transformer loading can be calculated relative to the rated current or the rated power. In both cases the
@@ -139,15 +139,19 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             - "power" - transformer loading is given as ratio of apparent power flow to the rated apparent power of the
                 transformer.
 
+        enforce_p_lims (bool, False): respect generator active power limits
+            If True, the active power limits in net.gen.max_p_mw/min_p_mw and net.sgen.max_p_mw/min_p_mw
+            are respected in the loadflow.
         enforce_q_lims (bool, False): respect generator reactive power limits
-            If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar are respected in the
-            loadflow. This is done by running a second loadflow if reactive power limits are
-            violated at any generator, so that the runtime for the loadflow will increase if reactive
-            power has to be curtailed.
-            Note: enforce_q_lims only works if algorithm="nr"!
+            If True, the reactive power limits in net.gen.max_q_mvar/min_q_mvar and net.sgen.max_q_mvar/min_q_mvar
+            are respected in the loadflow. If generator reactive power capability curves are defined, the corresponding
+            min & max q limits overwrite (internally) the default values coming from the max/min_q_mvar parameters.
+            Regarding gen elements, this is done by running a second loadflow if reactive power limits are violated
+            at any generator, so that the runtime for the loadflow will increase if reactive power has to be curtailed.
+            Note: enforce_q_lims only works for gen elements if algorithm="nr"!
         check_connectivity (bool, True): Perform an extra connectivity test after the conversion from pandapower to
             PYPOWER
-            If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is performed.
             If check finds unsupplied buses, they are set out of service in the ppc
         voltage_depend_loads (bool, True): consideration of voltage-dependent loads.
             If False, net.load.const_z_p_percent, net.load.const_i_p_percent, 
@@ -164,7 +168,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             the TDPF parameters in net.line table.
         tdpf_delay_s (float, None): TDPF parameter, specifies the time delay in s to consider thermal inertia of
             conductors.
-
 
     Keyword Args:
         lightsim2grid ((bool,str), "auto"): whether to use the package lightsim2grid for power
@@ -208,7 +211,6 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
 
         neglect_open_switch_branches (bool, False): If True no auxiliary buses are created for branches when switches are opened at the branch. Instead branches are set out of service
         tdpf_update_r_theta (bool, True): TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
-
     """
 
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
@@ -228,7 +230,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         _init_runpp_options(net, algorithm=algorithm,
                             calculate_voltage_angles=calculate_voltage_angles,
                             init=init, max_iteration=max_iteration, tolerance_mva=tolerance_mva,
-                            trafo_model=trafo_model, trafo_loading=trafo_loading,
+                            trafo_model=trafo_model, trafo_loading=trafo_loading, enforce_p_lims=enforce_p_lims,
                             enforce_q_lims=enforce_q_lims, check_connectivity=check_connectivity,
                             voltage_depend_loads=voltage_depend_loads,
                             consider_line_temperature=consider_line_temperature,
@@ -361,7 +363,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
         check_connectivity (bool, False): Perform an extra connectivity test after the conversion from pandapower to
             PYPOWER
 
-            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed.
+            If true, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is performed.
             If check finds unsupplied buses, they are put out of service in the PYPOWER matrix
         switch_rx_ratio (float, 2): rx_ratio of bus-bus-switches. If the impedance of switches defined in
             net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Closed
@@ -369,7 +371,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
             according to net.switch.z_ohm and switch_rx_ratio.
         trafo3w_losses (str, "hv"): defines where open loop losses of three-winding transformers are considered. Valid
             options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
-        
+
     Keyword Arguments:
         options to use for PYPOWER.runpf
     """
@@ -438,7 +440,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
                 warnings are suppressed, too.
             init (str, "flat"): init of starting opf vector. Options are "flat", "pf" or "results"
                 Starting solution vector (x0) for opf calculations is determined by this flag. Options are:
-                
+
                 - "flat" (default)
                     starting vector is (upper bound - lower bound) / 2
                 - "pf"
@@ -447,7 +449,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
                     calculations)
                 - "results"
                     voltage magnitude vector is taken from result table
-                
+
             delta (float, 1e-10): power tolerance
             trafo3w_losses (str, "hv"): defines where open loop losses of three-winding transformers are considered.
                 Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
@@ -455,13 +457,13 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
                 If True, net.line must contain a column "temperature_degree_celsius". The temperature dependency
                 coefficient alpha must be provided in the net.line.alpha column, otherwise the default value of 0.004
                 is used
-                
+
         Keyword Arguments:
             OPF_VIOLATION (5e-6): constraint violation tolerance
             PDIPM_COSTTOL (1e-6): optimality tolerance
             PDIPM_GRADTOL (1e-6): gradient tolerance
             PDIPM_COMPTOL (1e-6): complementarity condition (inequality) tolerance
-            PDIPM_FEASTOL: (set to OPF_VIOLATION if not specified) feasibiliy (equality) tolerance
+            PDIPM_FEASTOL: (set to OPF_VIOLATION if not specified) feasibility (equality) tolerance
             PDIPM_MAX_IT (150): maximum number of iterations
             SCPDIPM_RED_IT (20): maximum number of step size reductions per iteration
     """
