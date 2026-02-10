@@ -1,11 +1,9 @@
-# test_pandera_b2b_vsc_elements.py
-
 import itertools
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_b2b_vsc
+from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_vsc_stacked
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -21,8 +19,8 @@ from pandapower.test.network_schema.elements.helper import (
 )
 
 
-class TestB2BVSCRequiredFields:
-    """Tests for required b2b_vsc fields"""
+class TestVSCSTACKEDRequiredFields:
+    """Tests for required vsc_stacked fields"""
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
@@ -54,7 +52,7 @@ class TestB2BVSCRequiredFields:
         create_bus_dc(net, vn_kv=110.0)  # index 1
         create_bus_dc(net, vn_kv=110.0, index=42)
 
-        create_b2b_vsc(
+        create_vsc_stacked(
             net,
             bus=0,
             bus_dc_plus=0,
@@ -72,7 +70,7 @@ class TestB2BVSCRequiredFields:
             name="test",
         )
 
-        net.b2b_vsc[parameter] = valid_value
+        net.vsc_stacked[parameter] = valid_value
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -103,7 +101,7 @@ class TestB2BVSCRequiredFields:
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
         create_bus_dc(net, vn_kv=110.0, index=42)
-        create_b2b_vsc(
+        create_vsc_stacked(
             net,
             bus=0,
             bus_dc_plus=0,
@@ -120,13 +118,13 @@ class TestB2BVSCRequiredFields:
             in_service=True,
         )
 
-        net.b2b_vsc[parameter] = invalid_value
+        net.vsc_stacked[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
 
-class TestB2BVSCOptionalFields:
-    """Tests for optional b2b_vsc fields"""
+class TestVSCSTACKEDOptionalFields:
+    """Tests for optional vsc_stacked fields"""
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
@@ -142,7 +140,7 @@ class TestB2BVSCOptionalFields:
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
-        create_b2b_vsc(
+        create_vsc_stacked(
             net,
             bus=b0,
             bus_dc_plus=0,
@@ -160,7 +158,7 @@ class TestB2BVSCOptionalFields:
             name="initial",
         )
 
-        net.b2b_vsc[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
+        net.vsc_stacked[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -177,7 +175,7 @@ class TestB2BVSCOptionalFields:
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
-        create_b2b_vsc(
+        create_vsc_stacked(
             net,
             bus=b0,
             bus_dc_plus=0,
@@ -194,12 +192,12 @@ class TestB2BVSCOptionalFields:
             in_service=True,
         )
 
-        net.b2b_vsc[parameter] = invalid_value
+        net.vsc_stacked[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
 
-class TestB2BVSCSchemaForeignKey:
+class TestVSCSTACKEDSchemaForeignKey:
     """Tests for foreign key constraints"""
 
     def test_invalid_bus_index(self):
@@ -208,7 +206,7 @@ class TestB2BVSCSchemaForeignKey:
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
-        create_b2b_vsc(
+        create_vsc_stacked(
             net,
             bus=b0,
             bus_dc_plus=0,
@@ -225,7 +223,7 @@ class TestB2BVSCSchemaForeignKey:
             in_service=True,
         )
 
-        net.b2b_vsc["bus"] = 9999
+        net.vsc_stacked["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
@@ -235,7 +233,7 @@ class TestB2BVSCSchemaForeignKey:
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
-        create_b2b_vsc(
+        create_vsc_stacked(
             net,
             bus=b0,
             bus_dc_plus=0,
@@ -252,7 +250,7 @@ class TestB2BVSCSchemaForeignKey:
             in_service=True,
         )
 
-        net.b2b_vsc["bus_dc_plus"] = 9999
+        net.vsc_stacked["bus_dc_plus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
@@ -262,7 +260,7 @@ class TestB2BVSCSchemaForeignKey:
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
-        create_b2b_vsc(
+        create_vsc_stacked(
             net,
             bus=b0,
             bus_dc_plus=0,
@@ -279,20 +277,20 @@ class TestB2BVSCSchemaForeignKey:
             in_service=True,
         )
 
-        net.b2b_vsc["bus_dc_minus"] = 9999
+        net.vsc_stacked["bus_dc_minus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
 
-class TestB2BVSCResults:
-    """Tests for b2b_vsc results after calculations"""
+class TestVCSSTACKEDResults:
+    """Tests for vsc_stacked results after calculations"""
 
     @pytest.mark.skip(reason="Not yet implemented")
-    def test_b2b_vsc_result_totals(self):
+    def test_vsc_stacked_result_totals(self):
         """Test: aggregated p_mw / q_mvar results are consistent"""
         pass
 
     @pytest.mark.skip(reason="Not yet implemented")
-    def test_b2b_vsc_internal_results(self):
+    def test_vsc_stacked_internal_results(self):
         """Test: internal vm/va and dc quantities are within expected ranges"""
         pass
