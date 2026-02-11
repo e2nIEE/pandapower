@@ -112,7 +112,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
 def adapt_impedance_params(Z, sign=1, adaption=1e-15):
     """
     In some extreme cases, the created admittance matrix of the
-    zpbn network is singular. The routine is unsolvalbe with it.
+    zpbn network is singular. The routine is unsolvable with it.
     In response, an impedance adaption is created and added.
     """
     rft_pu = Z.real + sign * adaption
@@ -139,8 +139,23 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         tolerance_mva: loadflow termination condition referring to P / Q mismatch of node power in MVA.
             The loadflow hier is to get the admittance matrix of the zpbn network
 
-    Returns:
-        zero power balance networks
+    OPTIONAL:
+        **load_separate** (bool, False) - flag if all the loads
+            are reserved integrally
+
+        **sgen_separate** (bool, True) - flag if all the DER are
+            reserved separately
+
+        **gen_separate** (bool, True) - flag if all the gens are
+            reserved separately
+
+        **tolerance_mva** (float, 1e-3) - loadflow termination
+            condition referring to P / Q mismatch of node power
+            in MVA. The loadflow hier is to get the admittance
+            matrix of the zpbn network
+
+    OUTPUT:
+        **net_zpbn** - zero power balance networks
     """
 
     net_internal, net_external = _get_internal_and_external_nets(
@@ -172,7 +187,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             Z.drop([elm + "_ground", elm + "_separate_total", elm + "_integrated_total"], axis=1,
                    inplace=True)
             continue
-            
+
         if separate:
             Z = Z.drop([elm + "_integrated_total"], axis=1)
 
@@ -215,7 +230,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
             g_buses += list(new_g_buses)
             t_buses += list(new_t_buses)
             continue
-            
+
         Z = Z.drop([elm + "_separate_total"], axis=1)
         vn_kv = net_zpbn.bus.vn_kv[all_external_buses].values[0]
         new_g_bus = create_bus(net_zpbn, vn_kv, name=elm + "_integrated-ground ")
@@ -372,32 +387,33 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 for idx in net_zpbn[elm].index:
                     if net_zpbn[elm].bus[idx] in boundary_buses:
                         continue
-                    pc_idx = df.index[df.et == elm]
-                    if net_zpbn[elm].name.str.contains("integrated").any() and len(pc_idx):
-                        logger.debug(
-                            f"Attention! After equivalencing, {elm}s are modeled as an aggregated {elm}. "
-                            f"The {cost_elm} data of the first original {elm} is used as the {cost_elm} data of "
-                            f"the aggregated {elm}. It is NOT correct at present."
-                        )
-                        df.element[pc_idx[0]] = net_zpbn[elm].index[
-                            net_zpbn[elm].name.str.contains("integrated", na=False)
-                        ][0]
-                        df = df.drop(pc_idx[1:])
-                    elif len(pc_idx):
-                        related_bus = int(str(net_zpbn[elm].name[idx]).split("_")[-1])
-                        pc_idx = df.index[(df.bus == related_bus) & (df.et == elm)]
-                        if len(pc_idx) > 1:
-                            logger.debug(
-                                f"Attention! There are at least two {elm}s connected to a common bus. The {elm}s "
-                                f"with common bus are modeled as an aggregated {elm} during the equivalencing. "
-                                f"The {cost_elm} data of the first {elm} is used as the {cost_elm} data of the "
-                                f"aggregated {elm}. It is NOT correct at present."
-                            )
-                            pc_idx = df.index[(df.bus == related_bus) & (df.et == elm)]
-                            df.element[pc_idx[0]] = idx
+                    else:
+                        pc_idx = df.index[df.et == elm]
+                        if net_zpbn[elm].name.str.contains("integrated").any() and len(pc_idx):
+                            logger.debug("Attention! After equivalencing, " + elm + "s are modeled as " +
+                                         "an aggregated " + elm + ". The " + cost_elm + " data of the first " +
+                                         "original " + elm + " is used as the " + cost_elm + " data of the " +
+                                         "aggregated " + elm + ". It is NOT correct at present.")
+                            df.element[pc_idx[0]] = net_zpbn[elm].index[net_zpbn[elm].name.str.contains(
+                                "integrated", na=False)][0]
                             df = df.drop(pc_idx[1:])
-                        elif len(pc_idx) == 1:
-                            df.loc[pc_idx[0], 'element'] = idx
+                        elif len(pc_idx):
+                            related_bus = int(str(net_zpbn[elm].name[idx]).split("_")[-1])
+                            pc_idx = df.index[(df.bus == related_bus) &
+                                              (df.et == elm)]
+                            if len(pc_idx) > 1:
+                                logger.debug("Attention! There are at least two " + elm + "s connected to a " +
+                                             "common bus. The " + elm + "s with common bus are modeled as an " +
+                                             "aggregated " + elm + " during the equivalencing. " +
+                                             "The " + cost_elm + " data of the first " + elm + " is used as the " +
+                                             cost_elm + " data of the aggregated " + elm + ". " +
+                                             "It is NOT correct at present.")
+                                pc_idx = df.index[(df.bus == related_bus) &
+                                                  (df.et == elm)]
+                                df.element[pc_idx[0]] = idx
+                                df = df.drop(pc_idx[1:])
+                            elif len(pc_idx) == 1:
+                                df.loc[pc_idx[0], 'element'] = idx
             net_zpbn[cost_elm] = df
 
     drop_and_edit_cost_functions(net_zpbn, [], False, True)

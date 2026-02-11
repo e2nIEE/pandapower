@@ -188,7 +188,7 @@ def test_qlimits_with_capability_curve():
                 'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
             if 'id_q_capability_characteristic' not in net.sgen:
                 net.sgen['id_q_capability_characteristic'] = pd.NA
-            net.sgen.id_q_capability_characteristic.at[0] = 0
+            net.sgen.at[0, "id_q_capability_characteristic"] = 0
             net.sgen['curve_style'] = "straightLineYValues"
             create_q_capability_characteristics_object(net)
 

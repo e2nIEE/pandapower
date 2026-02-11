@@ -137,15 +137,15 @@ def test_trafo_characteristic_table_diagnostic():
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     # populate id_characteristic_table parameter
     if 'id_characteristic_table' not in net.trafo:
-        net.trafo['id_characteristic_table'] = pd.NA
+        net.trafo.at[0, 'id_characteristic_table'] = pd.NA
     if 'tap_dependency_table' not in net.trafo:
-        net.trafo['tap_dependency_table'] = pd.NA
+        net.trafo.at[0, 'tap_dependency_table'] = pd.NA
     net.trafo['id_characteristic_table'].at[0] = 0
     net.trafo['tap_dependency_table'].at[0] = False
     with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     # populate tap_dependency_table parameter
-    net.trafo['tap_dependency_table'].at[0] = True
+    net.trafo.at[0, 'tap_dependency_table'] = True
     assert trafo_characteristic_table_diagnostic(net) is True
 
     # add trafo_characteristic_table with missing parameter values
@@ -158,7 +158,7 @@ def test_trafo_characteristic_table_diagnostic():
         trafo_characteristic_table_diagnostic(net)
 
     # let's make some invalid configurations
-    net.trafo.at[0, "tap_dependency_table"] = 0
+    net.trafo.at[0, "tap_dependency_table"] = False
     with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     net.trafo.at[0, "tap_dependency_table"] = True
@@ -188,12 +188,12 @@ def test_shunt_characteristic_table_diagnostic():
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
          'p_mw': [1, 1.5, 3, 4.5, 5]})
     # populate id_characteristic_table parameter
-    net.shunt['id_characteristic_table'].at[0] = 0
-    net.shunt['step_dependency_table'].at[0] = False
+    net.shunt.at[0, 'id_characteristic_table'] = 0
+    net.shunt.at[0, 'step_dependency_table'] = False
     with pytest.warns(UserWarning):
         shunt_characteristic_table_diagnostic(net)
     # populate step_dependency_table parameter
-    net.shunt['step_dependency_table'].at[0] = True
+    net.shunt.at[0, 'step_dependency_table'] = True
     assert shunt_characteristic_table_diagnostic(net) is True
 
     # add shunt_characteristic_table with missing parameter values
@@ -204,7 +204,7 @@ def test_shunt_characteristic_table_diagnostic():
         shunt_characteristic_table_diagnostic(net)
 
     # let's make some invalid configurations
-    net.shunt.at[0, "step_dependency_table"] = 0
+    net.shunt.at[0, "step_dependency_table"] = False
     with pytest.warns(UserWarning):
         shunt_characteristic_table_diagnostic(net)
     net.shunt.at[0, "step_dependency_table"] = True

@@ -224,9 +224,9 @@ def test_create_trafo_characteristics():
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     add_column_to_df(net, "trafo", "id_characteristic_table")
     add_column_to_df(net, "trafo", 'tap_dependency_table')
-    net.trafo['id_characteristic_table'].at[1] = 0
-    net.trafo['tap_dependency_table'].at[0] = False
-    net.trafo['tap_dependency_table'].at[1] = True
+    net.trafo.at[1, 'id_characteristic_table'] = 0
+    net.trafo.at[0, 'tap_dependency_table'] = False
+    net.trafo.at[1, 'tap_dependency_table'] = True
     # add spline characteristics for one transformer based on trafo_characteristic_table
     create_trafo_characteristic_object(net)
     assert "trafo_characteristic_spline" in net
@@ -253,8 +253,8 @@ def test_create_trafo_characteristics():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
          'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327]})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
-    net.trafo['id_characteristic_table'].at[0] = 1
-    net.trafo['tap_dependency_table'].at[0] = True
+    net.trafo.at[0, 'id_characteristic_table'] = 1
+    net.trafo.at[0, 'tap_dependency_table'] = True
     create_trafo_characteristic_object(net)
     assert len(net.trafo_characteristic_spline) == 2
     assert net.trafo.at[0, 'id_characteristic_spline'] == 1
@@ -283,8 +283,8 @@ def test_create_trafo_characteristics():
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
     add_column_to_df(net, "trafo3w", 'id_characteristic_table')
     add_column_to_df(net, "trafo3w", 'tap_dependency_table')
-    net.trafo3w['id_characteristic_table'].at[0] = 2
-    net.trafo3w['tap_dependency_table'].at[0] = True
+    net.trafo3w.at[0, 'id_characteristic_table'] = 2
+    net.trafo3w.at[0, 'tap_dependency_table'] = True
     # create spline characteristics again including a 3-winding transformer
     create_trafo_characteristic_object(net)
     assert len(net.trafo_characteristic_spline) == 3
@@ -342,8 +342,9 @@ def test_creation_of_shunt_characteristics():
     net["shunt_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
          'p_mw': [1, 1.5, 3, 4.5, 5]})
-    net.shunt.step_dependency_table.at[0] = True
-    net.shunt.id_characteristic_table.at[0] = 0
+    net.shunt.at[0, "step_dependency_table"] = True
+    net.shunt.at[0, "id_characteristic_table"] = 0
+
 
     create_shunt_characteristic_object(net)
 
@@ -358,7 +359,7 @@ def test_creation_of_shunt_characteristics():
     net["shunt_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [1, 1, 1, 1, 1], 'step': [1, 2, 3, 4, 5], 'q_mvar': [25, 55, 75, 120, 125],
          'p_mw': [6, 6.5, 7, 8.5, 10]})
-    net.shunt.id_characteristic_table.at[0] = 1
+    net.shunt.at[0, "id_characteristic_table"] = 1
 
     create_shunt_characteristic_object(net)
 
@@ -376,7 +377,7 @@ def test_creation_of_q_capability_characteristics():
         {'id_q_capability_curve': [0, 0, 0, 0, 0], 'p_mw': [0.0, 50.0, 100.0, 125.0, 125.0],
          'q_min_mvar': [-100.0, -75.0, -50.0, -25.0, -10], 'q_max_mvar': [150.0, 125.0, 75, 50.0, 10.0]})
     add_column_to_df(net, "gen", "id_q_capability_characteristic")
-    net.gen.id_q_capability_characteristic.at[0] = 0
+    net.gen.at[0, "id_q_capability_characteristic"] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
     # Add q_capability_characteristic for one gen based on q_capability_curve_table
@@ -402,7 +403,7 @@ def test_creation_of_q_capability_characteristics():
         {'id_q_capability_curve': [1, 1, 1, 1, 1], 'p_mw': [0.0, 30.0, 50.0, 70.0, 130],
          'q_min_mvar': [-29.0, -27, -26.0, -25.0, -20.0], 'q_max_mvar': [141.0, 141.0, 137.0, 134.0, 128.0]})
     net["q_capability_curve_table"] = pd.concat([net["q_capability_curve_table"], new_rows], ignore_index=True)
-    net.gen.id_q_capability_characteristic.at[0] = 1
+    net.gen.at[0, "id_q_capability_characteristic"] = 1
     create_q_capability_characteristics_object(net)
     assert len(net.q_capability_characteristic) == 2
     assert net.gen.at[0, "id_q_capability_characteristic"] == 1

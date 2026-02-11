@@ -484,9 +484,9 @@ def test_characteristic():
          'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     net.trafo['id_characteristic_table'] = pd.NA
-    net.trafo['id_characteristic_table'].at[1] = 0
+    net.trafo.at[1, 'id_characteristic_table'] = 0
     net.trafo['tap_dependency_table'] = pd.NA
-    net.trafo['tap_dependency_table'].at[1] = True
+    net.trafo.at[1, 'tap_dependency_table'] = True
     # add spline characteristics for one transformer based on trafo_characteristic_table
     create_trafo_characteristic_object(net)
     runpp(net)
