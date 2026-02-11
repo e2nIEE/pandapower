@@ -112,8 +112,8 @@ def get_structure_dict(required_only: bool = True) -> dict:
             "act_param_val": "f8",
             "trip_melt_time_s": "f8",
         },  # TODO: what is this ?
-        "_empty_res_b2b_vsc": get_dtypes(res_vsc_stacked_schema),
-        "_empty_res_bi_vsc": get_dtypes(res_vsc_bipolar_schema),
+        "_empty_res_vsc_stacked": get_dtypes(res_vsc_stacked_schema),
+        "_empty_res_vsc_bipolar": get_dtypes(res_vsc_bipolar_schema),
         # internal
         "_ppc": None,
         "_ppc0": None,

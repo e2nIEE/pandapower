@@ -1,5 +1,3 @@
-# test_pandera_bi_vsc_elements.py
-
 import itertools
 import pandas as pd
 import pandera as pa
@@ -21,7 +19,7 @@ from pandapower.test.network_schema.elements.helper import (
 )
 
 
-def _create_valid_bi_vsc_row(required=True, bus=0, bus_dc_plus=0, bus_dc_minus=1):
+def _create_valid_vsc_bipolar_row(required=True, bus=0, bus_dc_plus=0, bus_dc_minus=1):
     df = {
         "bus": bus,
         "bus_dc_plus": bus_dc_plus,
@@ -43,7 +41,7 @@ def _create_valid_bi_vsc_row(required=True, bus=0, bus_dc_plus=0, bus_dc_minus=1
 
 
 class TestBiVSCRequiredFields:
-    """Tests for required bi_vsc fields"""
+    """Tests for required vsc_bipolar fields"""
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
@@ -75,10 +73,10 @@ class TestBiVSCRequiredFields:
         create_bus_dc(net, vn_kv=110.0)  # index 1
         create_bus_dc(net, vn_kv=110.0, index=42)
 
-        # Create a valid bi_vsc element
-        row = _create_valid_bi_vsc_row(bus=0, bus_dc_plus=0, bus_dc_minus=1)
-        net.bi_vsc = pd.DataFrame([row])
-        net.bi_vsc[parameter] = valid_value
+        # Create a valid vsc_bipolar element
+        row = _create_valid_vsc_bipolar_row(bus=0, bus_dc_plus=0, bus_dc_minus=1)
+        net.vsc_bipolar = pd.DataFrame([row])
+        net.vsc_bipolar[parameter] = valid_value
 
         validate_network(net)
 
@@ -110,15 +108,15 @@ class TestBiVSCRequiredFields:
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
 
-        row = _create_valid_bi_vsc_row(bus=0, bus_dc_plus=0, bus_dc_minus=1)
-        net.bi_vsc = pd.DataFrame([row])
-        net.bi_vsc[parameter] = invalid_value
+        row = _create_valid_vsc_bipolar_row(bus=0, bus_dc_plus=0, bus_dc_minus=1)
+        net.vsc_bipolar = pd.DataFrame([row])
+        net.vsc_bipolar[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
 
 class TestBiVSCOptionalFields:
-    """Tests for optional bi_vsc fields"""
+    """Tests for optional vsc_bipolar fields"""
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
@@ -135,10 +133,10 @@ class TestBiVSCOptionalFields:
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
 
-        row = _create_valid_bi_vsc_row(required=False, bus=b0, bus_dc_plus=0, bus_dc_minus=1)
-        net.bi_vsc = pd.DataFrame([row])
-        net.bi_vsc[parameter] = valid_value
-        net.bi_vsc["name"] = net.bi_vsc["name"].astype("string")
+        row = _create_valid_vsc_bipolar_row(required=False, bus=b0, bus_dc_plus=0, bus_dc_minus=1)
+        net.vsc_bipolar = pd.DataFrame([row])
+        net.vsc_bipolar[parameter] = valid_value
+        net.vsc_bipolar["name"] = net.vsc_bipolar["name"].astype("string")
 
         validate_network(net)
 
@@ -157,9 +155,9 @@ class TestBiVSCOptionalFields:
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
 
-        row = _create_valid_bi_vsc_row(required=False, bus=b0, bus_dc_plus=0, bus_dc_minus=1)
-        net.bi_vsc = pd.DataFrame([row])
-        net.bi_vsc[parameter] = invalid_value
+        row = _create_valid_vsc_bipolar_row(required=False, bus=b0, bus_dc_plus=0, bus_dc_minus=1)
+        net.vsc_bipolar = pd.DataFrame([row])
+        net.vsc_bipolar[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
@@ -178,24 +176,24 @@ class TestBiVSCForeignKey:
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
 
-        row = _create_valid_bi_vsc_row(bus=b0, bus_dc_plus=0, bus_dc_minus=1)
-        net.bi_vsc = pd.DataFrame([row])
+        row = _create_valid_vsc_bipolar_row(bus=b0, bus_dc_plus=0, bus_dc_minus=1)
+        net.vsc_bipolar = pd.DataFrame([row])
 
-        net.bi_vsc[fk_field] = 9999  # invalid references
+        net.vsc_bipolar[fk_field] = 9999  # invalid references
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
 
 class TestBiVSCResults:
-    """Tests for bi_vsc results after calculations"""
+    """Tests for vsc_bipolar results after calculations"""
 
     @pytest.mark.skip(reason="Not yet implemented")
-    def test_bi_vsc_result_totals(self):
+    def test_vsc_bipolar_result_totals(self):
         """Test: aggregated p_mw / q_mvar / dc results are consistent"""
         pass
 
     @pytest.mark.skip(reason="Not yet implemented")
-    def test_bi_vsc_ac_dc_results(self):
+    def test_vsc_bipolar_ac_dc_results(self):
         """Test: AC and DC side results contain valid values"""
         pass
