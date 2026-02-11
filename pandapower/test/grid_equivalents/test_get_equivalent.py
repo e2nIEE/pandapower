@@ -8,6 +8,7 @@ import pytest
 from pandapower import pp_dir
 from pandapower.control import ConstControl
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_poly_cost, create_line, \
     create_load, create_sgen, create_pwl_cost, create_bus, create_switch, create_motor
 from pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
@@ -483,9 +484,9 @@ def test_characteristic():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
          'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
-    net.trafo['id_characteristic_table'] = pd.NA
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
     net.trafo.at[1, 'id_characteristic_table'] = 0
-    net.trafo['tap_dependency_table'] = pd.NA
     net.trafo.at[1, 'tap_dependency_table'] = True
     # add spline characteristics for one transformer based on trafo_characteristic_table
     create_trafo_characteristic_object(net)

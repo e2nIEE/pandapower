@@ -14,6 +14,7 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
     create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
     create_line_from_parameters, create_line, create_impedance, create_storage, create_buses, \
@@ -1395,11 +1396,8 @@ def test_tap_dependent_impedance():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5],
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
-    if 'id_characteristic_table' not in net.trafo:
-        net.trafo['id_characteristic_table'] = pd.NA
-    net.trafo.at[0, 'id_characteristic_table'] = 0
-    if 'tap_dependency_table' not in net.trafo:
-        net.trafo['tap_dependency_table'] = pd.NA
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
     net.trafo.at[0, 'tap_dependency_table'] = True
     net.trafo.at[1, 'tap_dependency_table'] = False
 
@@ -1410,10 +1408,8 @@ def test_tap_dependent_impedance():
          'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_lv_percent': [1, 1, 1, 1, 1],
          'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
-    if 'id_characteristic_table' not in net.trafo3w:
-        net.trafo3w['id_characteristic_table'] = pd.NA
-    if 'tap_dependency_table' not in net.trafo3w:
-        net.trafo3w['tap_dependency_table'] = pd.NA
+    add_column_to_df(net, "trafo3w", "id_characteristic_table")
+    add_column_to_df(net, "trafo33w", 'tap_dependency_table')
     net.trafo3w.at[0, 'id_characteristic_table'] = 1
     net.trafo3w.at[0, 'tap_dependency_table'] = True
 
@@ -1462,10 +1458,8 @@ def test_tap_table_order():
          'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05], 'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
          'vk_mv_percent': [1, 1, 1, 1, 1], 'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
          'vk_lv_percent': [1, 1, 1, 1, 1], 'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
-    if 'id_characteristic_table' not in net.trafo3w:
-        net.trafo3w['id_characteristic_table'] = pd.NA
-    if 'tap_dependency_table' not in net.trafo3w:
-        net.trafo3w['tap_dependency_table'] = pd.NA
+    add_column_to_df(net, "trafo3w", "id_characteristic_table")
+    add_column_to_df(net, "trafo3w", 'tap_dependency_table')
     net.trafo3w.at[0, 'id_characteristic_table'] = 0
     net.trafo3w.at[0, 'tap_dependency_table'] = True
 
@@ -1476,10 +1470,8 @@ def test_tap_table_order():
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48, 1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
-    if 'id_characteristic_table' not in net.trafo:
-        net.trafo['id_characteristic_table'] = pd.NA
-    if 'tap_dependency_table' not in net.trafo:
-        net.trafo['tap_dependency_table'] = pd.NA
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
     net.trafo.at[0, 'id_characteristic_table'] = 2
     net.trafo.at[1, 'id_characteristic_table'] = 1
     net.trafo.at[0, 'tap_dependency_table'] = True
@@ -1682,9 +1674,7 @@ def test_q_capability_curve():
                         0, -265.01001, -134.00999, -0.01000],
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 30, 40,
                         134.0099, 0.01]})
-
-    if 'id_q_capability_characteristic' not in net.gen:
-        net.gen["id_q_capability_characteristic"] = pd.NA
+    add_column_to_df(net, "gen", "id_q_capability_characteristic")
     net.gen.at[0, "id_q_capability_characteristic"] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
@@ -1733,8 +1723,7 @@ def test_q_capability_curve_for_sgen():
                         -265.01001, -134.00999, -0.01000],
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 218.0099945068,
                         134.0099, 0.01]})
-    if 'id_q_capability_characteristic' not in net.sgen:
-        net.sgen["id_q_capability_characteristic"] = pd.NA
+    add_column_to_df(net, "sgen", "id_q_capability_characteristic")
     net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)

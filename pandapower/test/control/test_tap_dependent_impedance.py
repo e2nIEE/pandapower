@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 import numpy as np
 
+from pandapower.create._utils import add_column_to_df
 from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance, \
     trafo_characteristic_table_diagnostic
 from pandapower.control.util.diagnostic import shunt_characteristic_table_diagnostic
@@ -136,10 +137,8 @@ def test_trafo_characteristic_table_diagnostic():
          'vkr_percent': [1.3, 1.4, 1.44, 1.5, 1.6], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     # populate id_characteristic_table parameter
-    if 'id_characteristic_table' not in net.trafo:
-        net.trafo.at[0, 'id_characteristic_table'] = pd.NA
-    if 'tap_dependency_table' not in net.trafo:
-        net.trafo.at[0, 'tap_dependency_table'] = pd.NA
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
     net.trafo['id_characteristic_table'].at[0] = 0
     net.trafo['tap_dependency_table'].at[0] = False
     with pytest.warns(UserWarning):

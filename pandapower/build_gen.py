@@ -7,6 +7,7 @@
 import numpy as np
 import pandas as pd
 
+from pandapower.create._utils import add_column_to_df
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.bustypes import bustypes_dc
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
@@ -530,8 +531,7 @@ def _calculate_qmin_qmax_from_q_capability_characteristics(net, element):
         return None
 
     # Filter rows with True 'reactive_capability_curve'
-    if 'reactive_capability_curve' not in net[element]:
-        net[element]['reactive_capability_curve'] = pd.NA
+    add_column_to_df(net, element, 'reactive_capability_curve')
     element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
 
     if element_data.empty:

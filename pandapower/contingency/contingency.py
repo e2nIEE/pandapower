@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import warnings
 from packaging.version import Version
-
+from pandapower.create._utils import add_column_to_df
 import logging
 
 logger = logging.getLogger(__name__)
@@ -164,11 +164,8 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
                           "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt.")
-    if "min_q_mvar" not in net["gen"].columns:
-        net["gen"]["min_q_mvar"] = float("nan")
-    if "max_q_mvar" not in net["gen"].columns:
-        net["gen"]["max_q_mvar"] = float("nan")
-
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", 'max_q_mvar')
     # check for continuous bus index starting with 0:
     n_bus = len(net.bus)
     last_bus = net.bus.index[-1]
