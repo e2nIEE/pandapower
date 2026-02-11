@@ -79,7 +79,7 @@ def test_opf_data_check_basic():
 def test_opf_data_check_vm_lim_val(par):
     # no error due to missing voltage limits expected
     net = _opf_net()
-    net.bus[par].at[0] = nan
+    net.bus.at[0, par] = nan
     assert _run_check(net)
 
 
@@ -95,7 +95,7 @@ def test_opf_data_check_vm_lim_col(par):
 def test_opf_data_check_dcline_lim_val(par):
     # no error due to missing dcline constraint values expected
     net = _opf_net()
-    net.dcline[par].at[0] = nan
+    net.dcline.at[0, par] = nan
     assert _run_check(net)
 
 
@@ -114,7 +114,7 @@ def test_opf_data_check_dcline_lim_col(par):
 def test_opf_data_check_lim_val(elm, par):
     # no error due to missing (load, gen, sgen) constraint values expected
     net = _opf_net()
-    net[elm][par].at[0] = nan
+    net[elm].at[0, par] = nan
     assert _run_check(net)
 
 

@@ -192,23 +192,23 @@ def test_cosphi_of_p_timeseries():
 
     # Run timeseries
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_ue.index] = True
+    net.controller.at[DER_ue.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_ue = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_ue2.index] = True
+    net.controller.at[DER_ue2.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_ue2 = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_oe.index] = True
+    net.controller.at[DER_oe.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_oe = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_no_q.index] = True
+    net.controller.at[DER_no_q.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_no_q2.index] = True
+    net.controller.at[DER_no_q2.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q2 = deepcopy(ow.output)
 

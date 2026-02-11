@@ -107,7 +107,7 @@ def test_case9_not_in_matpower():
 def test_to_and_from_ppc():
     net9 = case9()
     net24 = case24_ieee_rts()
-    net24.trafo.tap_side.iat[1] = "hv"
+    net24.trafo.iat[1, net24.trafo.columns.get_loc("tap_side")] = "hv"
 
     for i, net in enumerate([net24, net9]):
 
