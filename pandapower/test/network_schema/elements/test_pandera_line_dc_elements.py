@@ -5,7 +5,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus_dc, create_line_dc
+from pandapower.create import create_empty_network, create_bus_dc, create_line_dc_from_parameters, create_line_dc
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -56,11 +56,11 @@ class TestLineDcRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus_dc(net, 0.4)          # index 0
-        create_bus_dc(net, 0.4)          # index 1
+        create_bus_dc(net, 0.4)  # index 0
+        create_bus_dc(net, 0.4)  # index 1
         create_bus_dc(net, 0.4, index=42)
 
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
             from_bus_dc=0,
             to_bus_dc=1,
@@ -94,13 +94,13 @@ class TestLineDcRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus_dc(net, 0.4)          # index 0
-        create_bus_dc(net, 0.4)          # index 1
+        create_bus_dc(net, 0.4)  # index 0
+        create_bus_dc(net, 0.4)  # index 1
 
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=0,
-            to_bus=1,
+            from_bus_dc=0,
+            to_bus_dc=1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -125,8 +125,8 @@ class TestLineDcOptionalFields:
 
         create_line_dc(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -135,7 +135,7 @@ class TestLineDcOptionalFields:
             df=0.5,
             in_service=True,
             name="Line DC A",
-            std_type="custom_dc_type",
+            std_type="95-CU",
             type="ol",
             geo='{"type":"LineString","coordinates":[]}',
         )
@@ -167,10 +167,10 @@ class TestLineDcOptionalFields:
         b1 = create_bus_dc(net, 0.4)
 
         # Line 1: string fields
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -182,10 +182,10 @@ class TestLineDcOptionalFields:
             type="ol",
         )
         # Line 2: max_loading_percent only
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -193,14 +193,14 @@ class TestLineDcOptionalFields:
             parallel=1,
             df=0.5,
             in_service=True,
+            max_loading_percent=80.0,
         )
-        net.line_dc["max_loading_percent"].iat[1] = 80.0
 
         # Line 3: alpha/temperature only
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -208,19 +208,14 @@ class TestLineDcOptionalFields:
             parallel=1,
             df=0.5,
             in_service=True,
+            alpha=0.003,
+            temperature_degree_celsius=30.0,
         )
-        net.line_dc["alpha"].iat[2] = 0.003
-        net.line_dc["temperature_degree_celsius"].iat[2] = 30.0
 
         # Allow pd.NA in strings
-        net.line_dc["name"] = net.line_dc["name"].astype("string")
-        net.line_dc["std_type"] = net.line_dc["std_type"].astype("string")
-        net.line_dc["type"] = net.line_dc["type"].astype("string")
-        net.line_dc["geo"] = net.line_dc["geo"].astype("string")
-
-        net.line_dc["name"].iat[0] = pd.NA
-        net.line_dc["std_type"].iat[1] = pd.NA
-        net.line_dc["geo"].iat[2] = pd.NA
+        net.line_dc["std_type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype)
+        net.line_dc["type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype)
+        net.line_dc["geo"] = pd.Series(data=pd.NA, dtype=pd.StringDtype)
 
         validate_network(net)
 
@@ -231,10 +226,10 @@ class TestLineDcOptionalFields:
         b1 = create_bus_dc(net, 0.4)
 
         # Case 1: tdpf flag only -> invalid
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -248,10 +243,10 @@ class TestLineDcOptionalFields:
             validate_network(net)
 
         # Case 2: one tdpf param only -> invalid
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -265,10 +260,10 @@ class TestLineDcOptionalFields:
             validate_network(net)
 
         # Case 3: another tdpf param only -> invalid
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -312,10 +307,10 @@ class TestLineDcOptionalFields:
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -378,10 +373,10 @@ class TestLineDcOptionalFields:
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,
@@ -418,10 +413,10 @@ class TestLineDcForeignKey:
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
             length_km=1.0,
             r_ohm_per_km=0.1,
             g_us_per_km=0.0,

@@ -1,4 +1,3 @@
-
 import itertools
 import pandas as pd
 import pandera as pa
@@ -47,8 +46,8 @@ class TestLoadRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
         create_load(net, bus=0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
@@ -71,8 +70,8 @@ class TestLoadRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
 
         create_load(net, bus=0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.load[parameter] = invalid_value
@@ -139,7 +138,6 @@ class TestLoadOptionalFields:
         net.load["controllable"] = pd.Series([pd.NA, True, False], dtype="boolean")
 
         validate_network(net)
-        
 
     @pytest.mark.parametrize(
         "parameter,valid_value",

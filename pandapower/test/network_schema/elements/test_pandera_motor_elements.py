@@ -20,14 +20,14 @@ from pandapower.test.network_schema.elements.helper import (
     not_ints_list,
     positiv_floats_plus_zero,
     negativ_floats,
-    zero_float
+    zero_float,
 )
 
 # Ranges from schema
 
-ratio_valid = [0.0, 0.5, 1.0]            # for cos_phi, cos_phi_n
+ratio_valid = [0.0, 0.5, 1.0]  # for cos_phi, cos_phi_n
 ratio_invalid = [-0.1, 1.1]
-percent_valid = [0.0, 50.0, 100.0]       # for efficiency_percent, efficiency_n_percent, loading_percent
+percent_valid = [0.0, 50.0, 100.0]  # for efficiency_percent, efficiency_n_percent, loading_percent
 percent_invalid = [-0.1, 100.1]
 
 
@@ -55,8 +55,8 @@ class TestMotorRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         net = create_empty_network()
-        create_bus(net, 0.4)           # 0
-        create_bus(net, 0.4)           # 1
+        create_bus(net, 0.4)  # 0
+        create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
 
         create_motor(

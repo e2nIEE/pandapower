@@ -6,8 +6,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower import create_xward
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_empty_network, create_bus, create_xward
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -47,8 +46,8 @@ class TestXWardRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
         create_xward(

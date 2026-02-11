@@ -75,17 +75,10 @@ class TestBusOptionalFields:
         """Test: Buses with some optional fields is valid"""
         net = create_empty_network()
         create_bus(net, 0.4, zone="nowhere")
-        create_bus(net, 0.4, max_vm_pu=1)  # TODO: create method has 0.0 as default
-        create_bus(net, 0.4, min_vm_pu=0.9)  # TODO: create method has 0.0 as default
+        create_bus(net, 0.4, max_vm_pu=1)
+        create_bus(net, 0.4, min_vm_pu=0.9)
         create_bus(net, 0.4, geodata=(1, 2))
         create_bus(net, 0.4, type="x")
-
-        net.bus["min_vm_pu"].at[0] = float(np.nan)
-        net.bus["min_vm_pu"].at[1] = float(np.nan)
-        net.bus["min_vm_pu"].at[3] = float(np.nan)
-        net.bus["min_vm_pu"].at[4] = float(np.nan)
-        net.bus["max_vm_pu"].at[0] = float(np.nan)
-        net.bus["max_vm_pu"].at[3] = float(np.nan)
 
         validate_network(net)
 

@@ -429,7 +429,7 @@ def make_nw(net, bushv, tap_ps, case, vector_group):
                                        tap_step_percent=2.5,
                                        tap_changer_type="Ratio",
                                        vk0_percent=6, vkr0_percent=0.78125,
-                                       mag0_percent=100, mag0_rx=0.,
+                                       mag0_percent=10000, mag0_rx=0.,
                                        si0_hv_partial=0.9, vector_group=vector_group,
                                        parallel=1, tap_pos=tap_ps,
                                        index=get_free_id(net.trafo) + 1)
@@ -497,7 +497,7 @@ def test_trafo_asym_currents__high_neg_seq():
     create_transformer_from_parameters(net=net, hv_bus=1, lv_bus=2, sn_mva=10, vn_hv_kv=11, vn_lv_kv=0.415,
                                           vkr_percent=0, vk_percent=4, pfe_kw=0, i0_percent=0,
                                           shift_degree=-30, vector_group="Dyn",
-                                          vk0_percent=4, vkr0_percent=0, mag0_percent=1e20, mag0_rx=0, si0_hv_partial=50)
+                                          vk0_percent=4, vkr0_percent=0, mag0_percent=1e22, mag0_rx=0, si0_hv_partial=50)
     create_asymmetric_load(net, 2, 1.6, 0.44019238, 0.95980762, 0.8, 0.86961524, -0.16961524)
     _test_trafo_shifts(net, rtol=1e-9)
 

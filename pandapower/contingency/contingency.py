@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import warnings
 from packaging.version import Version
-
+from pandapower.create._utils import add_column_to_df
 import logging
 
 logger = logging.getLogger(__name__)
@@ -164,6 +164,8 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
                           "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt.")
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", 'max_q_mvar')
     # check for continuous bus index starting with 0:
     n_bus = len(net.bus)
     last_bus = net.bus.index[-1]

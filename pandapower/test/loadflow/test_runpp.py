@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,6 +14,7 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
     create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
     create_line_from_parameters, create_line, create_impedance, create_storage, create_buses, \
@@ -36,6 +37,10 @@ from pandapower.test.loadflow.result_test_network_generator import add_test_xwar
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
 from pandapower.toolbox import nets_equal, drop_elements
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
@@ -130,7 +135,7 @@ def test_overwrite_default_args_with_user_options():
 
 def test_runpp_init():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     tidx = create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
     net.trafo.at[tidx, "shift_degree"] = 70
@@ -144,7 +149,7 @@ def test_runpp_init():
 
 def test_runpp_init_auxiliary_buses():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    _, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
     tidx = create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV')
@@ -317,7 +322,7 @@ def test_switch_z_ohm_different(z_switch_net_4bus_parallel, z_switch_net_4bus, n
 
 def test_two_open_switches():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    b1, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=20.)
     l2 = create_test_line(net, b2, b3)
     create_test_line(net, b3, b1)
@@ -346,10 +351,10 @@ def get_isolated(net):
     _add_ppc_options(net, calculate_voltage_angles=False,
                      trafo_model="t", check_connectivity=False,
                      mode="pf", switch_rx_ratio=2, init_vm_pu="flat",
-                     init_va_degree="flat",
+                     init_va_degree="flat", enforce_p_lims=False,
                      enforce_q_lims=False, recycle=None)
 
-    ppc, ppci = _pd2ppc(net)
+    ppc, _ = _pd2ppc(net)
     return _check_connectivity(ppc)
 
 
@@ -394,27 +399,16 @@ def test_connectivity_check_island_with_one_pv_bus():
     isolated_bus1 = create_bus(net, vn_kv=20., name="isolated Bus1")
     isolated_bus2 = create_bus(net, vn_kv=20., name="isolated Bus2")
     isolated_gen = create_bus(net, vn_kv=20., name="isolated Gen")
-    isolated_pv_bus = create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
+    _ = create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
     create_line(net, isolated_bus2, isolated_bus1, length_km=1,
                 std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine")
     create_line(net, isolated_gen, isolated_bus1, length_km=1,
                 std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLineToGen")
-    # with pytest.warns(UserWarning):
     iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
-    # assert len(iso_buses) == 0
-    # assert np.isclose(iso_p, 0)
-    # assert np.isclose(iso_q, 0)
-    #
     # create_load(net, isolated_bus1, p_mw=0.200., q_mvar=0.020)
     # create_sgen(net, isolated_bus2, p_mw=0.0150., q_mvar=-0.010)
-    #
-    # iso_buses, iso_p, iso_q = get_isolated(net)
-    # assert len(iso_buses) == 0
-    # assert np.isclose(iso_p, 0)
-    # assert np.isclose(iso_q, 0)
 
-    # with pytest.warns(UserWarning):
     runpp_with_consistency_checks(net, check_connectivity=True)
 
 
@@ -449,7 +443,7 @@ def test_connectivity_check_island_with_multiple_pv_buses():
 
 def test_isolated_in_service_bus_at_oos_line():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b = create_bus(net, vn_kv=135)
     l = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
     net.line.loc[l, "in_service"] = False
@@ -469,7 +463,7 @@ def test_isolated_in_service_line():
 def test_makeYbus():
     # tests if makeYbus fails for nets where every bus is connected to each other
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
 
     # number of buses to create
     n_bus = 20
@@ -823,10 +817,10 @@ def test_zip_loads_mixed_voltage_dependencies():
                                                                              const_z_p_percent, const_z_q_percent, 
                                                                              res_load_p_mw, res_load_q_mvar, 
                                                                              res_bus_vm_pu):
-        net.load.const_i_p_percent.at[0] = c_i_p
-        net.load.const_i_q_percent.at[0] = c_i_q
-        net.load.const_z_p_percent.at[0] = c_z_p
-        net.load.const_z_q_percent.at[0] = c_z_q
+        net.load.at[0, "const_i_p_percent"] = c_i_p
+        net.load.at[0, "const_i_q_percent"] = c_i_q
+        net.load.at[0, "const_z_p_percent"] = c_z_p
+        net.load.at[0, "const_z_q_percent"] = c_z_q
 
         runpp(net, tolerance_mva=1e-6)
         
@@ -843,20 +837,20 @@ def test_invalid_zip_percentage_sum():
     err_msg = "const_z_p_percent + const_i_p_percent need to be less or equal to 100%! The same applies to const_z_q_percent + const_i_q_percent!"
 
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        net.load.const_z_p_percent.at[0] = 60
-        net.load.const_i_p_percent.at[0] = 50
-        net.load.const_z_q_percent.at[0] = 30
-        net.load.const_i_q_percent.at[0] = 20
+        net.load.at[0, "const_z_p_percent"] = 60
+        net.load.at[0, "const_i_p_percent"] = 50
+        net.load.at[0, "const_z_q_percent"] = 30
+        net.load.at[0, "const_i_q_percent"] = 20
         runpp(net, voltage_depend_loads=True)
 
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        net.load.const_z_q_percent.at[0] = 60
-        net.load.const_i_q_percent.at[0] = 50 
+        net.load.at[0, "const_z_q_percent"] = 60
+        net.load.at[0, "const_i_q_percent"] = 50
         runpp(net, voltage_depend_loads=True)
     
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        net.load.const_z_p_percent.at[0] = 30
-        net.load.const_i_p_percent.at[0] = 20 
+        net.load.at[0, "const_z_p_percent"] = 30
+        net.load.at[0, "const_i_p_percent"] = 20
         runpp(net, voltage_depend_loads=True)
 
 def test_xward_buses():
@@ -926,7 +920,7 @@ def test_get_internal():
     Ybus = ppc["internal"]["Ybus"]
 
     _, ppci = _pd2ppc(net)
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V0, _ = _get_pf_variables_from_ppci(ppci)
+    _, _, _, _, _, _, _, _, ref, pv, pq, _, _, _, _ = _get_pf_variables_from_ppci(ppci)
 
     pvpq = np.r_[pv, pq]
     dist_slack = False
@@ -1380,7 +1374,7 @@ def test_results_for_line_temperature():
 
 def test_tap_dependent_impedance():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
@@ -1402,9 +1396,10 @@ def test_tap_dependent_impedance():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5],
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
-    net.trafo['id_characteristic_table'].at[0] = 0
-    net.trafo['tap_dependency_table'].at[0] = True
-    net.trafo['tap_dependency_table'].at[1] = False
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
+    net.trafo.at[0, 'tap_dependency_table'] = True
+    net.trafo.at[1, 'tap_dependency_table'] = False
 
     new_rows = pd.DataFrame(
         {'id_characteristic': [1, 1, 1, 1, 1], 'step': [-2, -1, 0, 1, 2], 'voltage_ratio': [1, 1, 1, 1, 1],
@@ -1413,8 +1408,10 @@ def test_tap_dependent_impedance():
          'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_lv_percent': [1, 1, 1, 1, 1],
          'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
-    net.trafo3w['id_characteristic_table'].at[0] = 1
-    net.trafo3w['tap_dependency_table'].at[0] = True
+    add_column_to_df(net, "trafo3w", "id_characteristic_table")
+    add_column_to_df(net, "trafo33w", 'tap_dependency_table')
+    net.trafo3w.at[0, 'id_characteristic_table'] = 1
+    net.trafo3w.at[0, 'tap_dependency_table'] = True
 
     runpp(net)
     runpp(net_backup)
@@ -1439,7 +1436,7 @@ def test_tap_dependent_impedance():
 
 def test_tap_table_order():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     b4 = create_bus(net, vn_kv=0.4)
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
@@ -1461,8 +1458,10 @@ def test_tap_table_order():
          'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05], 'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
          'vk_mv_percent': [1, 1, 1, 1, 1], 'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
          'vk_lv_percent': [1, 1, 1, 1, 1], 'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
-    net.trafo3w['id_characteristic_table'].at[0] = 0
-    net.trafo3w['tap_dependency_table'].at[0] = True
+    add_column_to_df(net, "trafo3w", "id_characteristic_table")
+    add_column_to_df(net, "trafo3w", 'tap_dependency_table')
+    net.trafo3w.at[0, 'id_characteristic_table'] = 0
+    net.trafo3w.at[0, 'tap_dependency_table'] = True
 
     new_rows = pd.DataFrame(
         {'id_characteristic': [1, 1, 1, 1, 1, 2, 2, 2, 2, 2], 'step': [-2, -1, 0, 1, 2, -2, -1, 0, 1, 2],
@@ -1471,22 +1470,24 @@ def test_tap_table_order():
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48, 1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
-    net.trafo['id_characteristic_table'].at[0] = 2
-    net.trafo['id_characteristic_table'].at[1] = 1
-    net.trafo['tap_dependency_table'].at[0] = True
-    net.trafo['tap_dependency_table'].at[1] = True
-    net.trafo['tap_pos'].at[0] = -2
-    net.trafo['tap_pos'].at[1] = 2
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
+    net.trafo.at[0, 'id_characteristic_table'] = 2
+    net.trafo.at[1, 'id_characteristic_table'] = 1
+    net.trafo.at[0, 'tap_dependency_table'] = True
+    net.trafo.at[1, 'tap_dependency_table'] = True
+    net.trafo.at[0, 'tap_pos'] = -2
+    net.trafo.at[1, 'tap_pos'] = 2
 
     runpp(net)
 
     tol = 0.001
 
     assert net.converged == True
-    assert np.isclose(net.res_bus.loc[4, 'va_degree'], -1 * (150 - 2 + 0.03717), 0, tol, False)
-    assert np.isclose(net.res_bus.loc[5, 'va_degree'], -1 * (150 - 0 + 0.03810), 0, tol, False)
-    assert np.isclose(net.res_bus.loc[4, 'vm_pu'], 1.03144595, tol, False)
-    assert np.isclose(net.res_bus.loc[5, 'vm_pu'], 0.96268165, tol, False)
+    assert np.isclose(net.res_bus.at[4, 'va_degree'], -1 * (150 - 2 + 0.03717), 0, tol, False)
+    assert np.isclose(net.res_bus.at[5, 'va_degree'], -1 * (150 - 0 + 0.03810), 0, tol, False)
+    assert np.isclose(net.res_bus.at[4, 'vm_pu'], 1.03144595, tol, False)
+    assert np.isclose(net.res_bus.at[5, 'vm_pu'], 0.96268165, tol, False)
 
 def test_shunt_step_dependency_warning():
     net = simple_test_net_shunt_control()
@@ -1494,8 +1495,8 @@ def test_shunt_step_dependency_warning():
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -50, -75, -100, -125],
          'p_mw': [0, 0, 0, 0, 0]})
     create_shunt(net, bus=0, q_mvar=-10, p_mw=20, step=1, max_step=5)
-    net.shunt.step_dependency_table.at[0] = True
-    net.shunt.step.at[0] = 1
+    net.shunt.at[0, "step_dependency_table"] = True
+    net.shunt.at[0, "step"] = 1
 
     with pytest.raises(UserWarning):
         runpp(net)
@@ -1673,8 +1674,8 @@ def test_q_capability_curve():
                         0, -265.01001, -134.00999, -0.01000],
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 30, 40,
                         134.0099, 0.01]})
-
-    net.gen.id_q_capability_characteristic.at[0] = 0
+    add_column_to_df(net, "gen", "id_q_capability_characteristic")
+    net.gen.at[0, "id_q_capability_characteristic"] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
     # Add q_capability_characteristic for one gen based on q_capability_curve_table
@@ -1698,24 +1699,22 @@ def test_q_capability_curve_for_sgen():
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 255
     assert net.res_sgen.q_mvar.loc[0] > -255
-    print("------------general limit------------------")
-    #print("test_opf_sgen_voltage")
-    print("res_sgen:\n%s" % net.res_sgen)
-    print("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info("------------general limit------------------")
+    logger.info("res_sgen:\n%s" % net.res_sgen)
+    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
 
-    print("------------given maximum limit------------------\n")
+    logger.info("------------given maximum limit------------------\n")
     net.sgen.loc[0,"max_q_mvar"] = 261.01001
     net.sgen.loc[0, "min_q_mvar"] = -323.01001
     runopp(net, init='pf', calculate_voltage_angles=False)
-    #print("test_opf_sgen_voltage")
-    print("res_sgen:\n%s" % net.res_sgen)
-    print("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info("res_sgen:\n%s" % net.res_sgen)
+    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
     assert max(net.res_bus.vm_pu) < 1.02
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 261.01001
     assert net.res_sgen.q_mvar.loc[0] > -323.01001
 
-    print("------------curve limit------------------\n")
+    logger.info("------------curve limit------------------\n")
     # create q characteristics table
     net["q_capability_curve_table"] = pd.DataFrame(
         {'id_q_capability_curve': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -1724,15 +1723,14 @@ def test_q_capability_curve_for_sgen():
                         -265.01001, -134.00999, -0.01000],
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 218.0099945068,
                         134.0099, 0.01]})
-
-    net.sgen.id_q_capability_characteristic.at[0] = 0
+    add_column_to_df(net, "sgen", "id_q_capability_characteristic")
+    net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)
 
     runopp(net, init='pf', calculate_voltage_angles=False)
-    #print("test_opf_sgen_voltage")
-    print("res_sgen:\n%s" % net.res_sgen)
-    print("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info("res_sgen:\n%s" % net.res_sgen)
+    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
     assert max(net.res_bus.vm_pu) < 1.02
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 218.0099945068

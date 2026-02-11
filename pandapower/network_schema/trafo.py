@@ -49,7 +49,7 @@ _trafo_columns = {
         pa.Check.ge(0),
         nullable=True,
         required=False,
-        description="z_mag0 / z0 ratio between magnetizing and short circuit impedance (zero sequence)",
+        description="z_mag0 / z0 ratio between magnetizing and short circuit impedance (zero sequence) as a percent",
         metadata={"sc": True, "3ph": True},
     ),
     "mag0_rx": pa.Column(
@@ -115,7 +115,7 @@ _trafo_columns = {
         metadata={"tdt": True},
     ),
     "max_loading_percent": pa.Column(
-        int,
+        float,
         nullable=True,
         required=False,
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",

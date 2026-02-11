@@ -6,8 +6,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower import create_svc
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_empty_network, create_bus, create_svc
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -175,14 +174,6 @@ class TestSvcOptionalFields:
             in_service=True,
             max_angle_degree=175.0,
         )
-
-        # Allow nulls; keep check from firing by having NaNs
-        net.svc["name"] = net.svc["name"].astype("string")
-        net.svc.loc[0, "min_angle_degree"] = float(np.nan)
-        net.svc.loc[0, "max_angle_degree"] = float(np.nan)
-        net.svc.loc[1, "max_angle_degree"] = float(np.nan)
-        net.svc.loc[2, "min_angle_degree"] = float(np.nan)
-
         validate_network(net)
 
     @pytest.mark.parametrize(

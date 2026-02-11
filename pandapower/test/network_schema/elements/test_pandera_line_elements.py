@@ -67,11 +67,11 @@ class TestLineRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)  # ensure FK-positive for 42
 
-        create_line(net, from_bus=0, to_bus=1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=0, to_bus=1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
 
         net.line[parameter] = valid_value
         validate_network(net)
@@ -97,10 +97,10 @@ class TestLineRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
 
-        create_line(net, from_bus=0, to_bus=1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=0, to_bus=1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
 
         net.line[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
@@ -116,11 +116,10 @@ class TestLineOptionalFields:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
 
         # Optional text fields
         net.line["name"] = pd.Series(["Line A"], dtype="string")
-        net.line["std_type"] = pd.Series(["custom_type"], dtype="string")
         net.line["type"] = pd.Series(["ol"], dtype="string")
         net.line["geo"] = pd.Series(['{"type":"LineString","coordinates":[]}'], dtype="string")
 
@@ -160,12 +159,36 @@ class TestLineOptionalFields:
         b1 = create_bus(net, 0.4)
 
         # Line 1: name/type/alpha
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, name='test', alpha=0.0)
+        create_line(
+            net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, name="test", alpha=0.0, std_type=STD_TYPE
+        )
         # Line 2: max_loading_percent only (opf)
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, name='test', alpha=0.0, max_loading_percent=80.0)
+        create_line(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            length_km=1.0,
+            in_service=True,
+            name="test",
+            alpha=0.0,
+            max_loading_percent=80.0,
+            std_type=STD_TYPE,
+        )
         # Line 3: zero-sequence params only
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, name='test', alpha=0.0,
-                    r0_ohm_per_km=0.1, x0_ohm_per_km=0.2, c0_nf_per_km=1.0, g0_us_per_km=0.0)
+        create_line(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            length_km=1.0,
+            in_service=True,
+            name="test",
+            alpha=0.0,
+            r0_ohm_per_km=0.1,
+            x0_ohm_per_km=0.2,
+            c0_nf_per_km=1.0,
+            g0_us_per_km=0.0,
+            std_type=STD_TYPE,
+        )
 
         net.line["name"].iat[0] = pd.NA
         net.line["std_type"].iat[1] = pd.NA
@@ -175,28 +198,34 @@ class TestLineOptionalFields:
 
     def test_tdpf_group_partial_missing_invalid(self):
         """Test: tdpf group must be complete if any tdpf value is set"""
+
+        # Case 1: tdpf flag only -> invalid
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
-
-        # Case 1: tdpf flag only -> invalid
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["tdpf"] = True
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 2: one tdpf param only -> invalid
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["wind_speed_m_per_s"] = 3.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
         # Case 3: another tdpf param only -> invalid
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["reference_temperature_degree_celsius"] = 20.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
-        #TODO sc, 3ph not beeing checked in line.py
+        # TODO sc, 3ph not beeing checked in line.py
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
@@ -234,7 +263,7 @@ class TestLineOptionalFields:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
 
         # Satisfy tdpf group to avoid dependency failures when setting tdpf-related columns
         net.line["tdpf"] = pd.Series([True], dtype="boolean")
@@ -295,7 +324,7 @@ class TestLineOptionalFields:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
 
         # Provide complete tdpf group so only the target parameter triggers failure
         net.line["tdpf"] = pd.Series([True], dtype="boolean")
@@ -325,7 +354,7 @@ class TestLineForeignKey:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True)
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
 
         net.line["from_bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):

@@ -30,109 +30,80 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_equivalent(net, eq_type, boundary_buses, internal_buses,
-                   return_internal=True, show_computing_time=False,
-                   ward_type="ward_injection", adapt_va_degree=False,
-                   calculate_voltage_angles=True,
-                   allow_net_change_for_convergence=False,
-                   runpp_fct=_runpp_except_voltage_angles, **kwargs):
+def get_equivalent(
+    net, eq_type, boundary_buses, internal_buses, return_internal=True, show_computing_time=False,
+    ward_type="ward_injection", adapt_va_degree=False, calculate_voltage_angles=True,
+    allow_net_change_for_convergence=False, runpp_fct=_runpp_except_voltage_angles, **kwargs
+):
     """
     This function calculates and implements the rei or ward/xward network
     equivalents.
 
-    ATTENTION:
+    .. attention::
 
         - Power flow results in the given pandapower net are mandatory.
 
     Known REI equivalents problems:
 
-        - shift_degree != 0 of trafos and trafo3ws lead to errors or wrong results
+    - shift_degree != 0 of trafos and trafo3ws lead to errors or wrong results
+    - despite 'adapt_va_degree', va_degree at the slack bus showed deviations within large grids
+    - with large, real grids small deviations in the power flow results occured, in small grids the results fit \
+        perfectly
 
-        - despite 'adapt_va_degree', va_degree at the slack bus showed deviations within large grids
-
-        - with large, real grids small deviations in the power flow results occured, in small grids \
-            the results fit perfectly
-
-    INPUT:
-        **net** - The pandapower network including power flow results will not be changed during this function.
-
-        **eq_type** (string) - type of the eqvalent network
-
+    Parameters:
+        net: The pandapower network including power flow results will not be changed during this function.
+        eq_type (string): type of the eqvalent network
+        
             The following methods are available:
 
-                - "rei": The idea of rei equivalent is to aggregate the power \
-                        and current injection of the external buses to one or \
-                        more fictitious radial, equivalent and independent \
-                        (rei) nodes. There are three types of the rei-node in \
-                        this routine, i.e. the reserved load, the reserved sgen \
-                        and the reserved gen (also ext_grid). According to the \
-                        demand, these elements (load, sgen and gen) are \
-                        considered in the function "_create_net_zpbn" \
-                        integrated or separately.
+            - "rei": The idea of rei equivalent is to aggregate the power and current injection of the external buses \
+                to one or more fictitious radial, equivalent and independent (rei) nodes. There are three types of the \
+                rei-node in this routine, i.e. the reserved load, the reserved sgen and the reserved gen \
+                (also ext_grid). According to the demand, these elements (load, sgen and gen) are considered in the \
+                function "_create_net_zpbn" integrated or separately.
+            - "ward": The ward-type equivalent represents the external network with some equivalent impedance, shunts \
+                and power injections at boundary buses. The equivalent power injections represent the power of the \
+                elements (load, sgen and gen), which are removed by the equivalent calculation.
+            - "xward": The xward equivalent is an extended variation of the ward equivalent. Addition to the \
+                ward-representation, a fictitious PV node (generator) is added with zero active power injection at \
+                every boundary bus. The voltage of the PV node is set according to the boundary bus voltage.
 
-                - "ward": The ward-type equivalent represents the external \
-                        network with some equivalent impedance, shunts and \
-                        power injections at boundary buses. The equivalent \
-                        power injections represent the power of the elements \
-                        (load, sgen and gen), which are removed by the \
-                        equivalent calculation.
+            ward/xward has two methods to develop an equivalent circuits, i.e. the injection method and the admittance
+            method. In the admittance method, all the bus power injections in the external networks are converted into
+            shunt admittance before network equivalent. That is the only difference between these two methods. With the
+            help of the function "adapt_net", these methods are configurable.
 
-                - "xward": The xward equivalent is an extended variation of \
-                        the ward equivalent. Addition to the \
-                        ward-representation, a fictitious PV node (generator) \
-                        is added with zero active power injection at every \
-                        boundary bus. The voltage of the PV node is set \
-                        according to the boundary bus voltage.
+        boundary_buses (iterable): list of boundary bus indices, by which the original network are divided into two
+            networks, i.e. an internal network and an external network.
+        internal_buses (iterable): list of bus indices, which are within the internal network. The program will add
+            buses which are connected to this list of internal buses without passing boundary buses. If 'internal_buses'
+            is an empty list or None, the whole grid is treated as external network.
+        return_internal (bool, True): Reservation of the internal network
+             
+             If True, the internal network is reserved in the final equivalent network; otherwise only the external
+             network is the output.
 
-                ward/xward has two mothods to develop an equivalent circuits, \
-                i.e. the injection method and the admittance method. In the \
-                admittance method, all the bus power injections in the external \
-                networks are converted into shunt admittance before network \
-                equivalent. That is the only difference between these two \
-                methods. With the help of the function "adapt_net", these \
-                methods are configurable.
+        show_computing_time (bool, False): show computing time of each step
+        ward_type (str, "ward_injection"): Type of ward and xward
 
-        **boundary_buses** (iterable) - list of boundary bus indices, by which \
-            the original network are divided into two networks, i.e. an \
-            internal network and an external network.
+            ward and xward proposed two mothods called the Ward Injection method and the Ward Admittance method to
+            develop equivalent circuits. The only difference between these methods is that in the Ward Admittance
+            method, all bus power in the external networks are converted into shunt admittances before network
+            equivalent.
 
-        **internal_buses** (iterable) - list of bus indices, which are within \
-            the internal network. The program will add buses which are \
-            connected to this list of internal buses without passing boundary \
-            buses. If 'internal_buses' is an empty list or None, the whole \
-            grid is treated as external network.
+        adapt_va_degree (bool, None): if True, in add_ext_grids_to_boundaries(), the va_degree of the additional
+            ext_grids (if needed) at the boundary buses will be increased or decreased to values that minimize the
+            difference to the given res_bus.va_degree values.
+        allow_net_change_for_convergence (bool, False): if the net doesn't converge at the first internal power flow,
+            which is in add_ext_grids_to_boundaries(), and this parameter is True, the code tests if changes to unusual
+            impedance values solve the divergence issue.
+        calculate_voltage_angles (bool, True): parameter passed to internal runpp() runs.
 
-    OPTIONAL:
-        **return_internal** (bool, True) - Reservation of the internal network
+    Keyword Arguments:
+        key word arguments, such as sgen_separate, load_separate, gen_separate, group_name.
 
-             If True, the internal network is reserved in the final equivalent \
-             network; otherwise only the external network is the output.
-
-        **show_computing_time** (bool, False) - show computing time of each step
-
-        **ward_type** (str, "ward_injection") - Type of ward and xward
-
-            ward and xward proposed two mothods called the Ward Injection \
-            method and the Ward Admittance method to develop equivalent \
-            circuits. The only difference between these methods is that in \
-            the Ward Admittance method, all bus power in the external networks \
-            are converted into shunt admittances before network equivalent.
-
-        **adapt_va_degree** (bool, None) - if True, in add_ext_grids_to_boundaries(), the va_degree \
-            of the additional ext_grids (if needed) at the boundary buses will be increased or \
-            decreased to values that minimize the difference to the given res_bus.va_degree values.
-
-        **allow_net_change_for_convergence** (bool, False) - if the net doesn't converge at the \
-            first internal power flow, which is in add_ext_grids_to_boundaries(), and this parameter is \
-            True, the code tests if changes to unusual impedance values solve the divergence issue.
-
-        **calculate_voltage_angles** (bool, True) - parameter passed to internal runpp() runs.
-
-        ****kwargs** - key word arguments, such as sgen_separate, load_separate, gen_separate, \
-        group_name.
-
-    OUTPUT:
-         **net_eq** - The equivalent network in pandapower format
+    Returns:
+         The equivalent network in pandapower format
 
     """
 

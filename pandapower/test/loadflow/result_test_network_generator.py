@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import copy
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.auxiliary import get_free_id
@@ -10,36 +10,6 @@ from pandapower.create import create_empty_network, create_load, create_bus, cre
     create_line_from_parameters, create_transformer3w_from_parameters, create_impedance, create_shunt, \
     create_shunt_as_capacitor
 from pandapower.test.helper_functions import add_grid_connection, create_test_line
-
-
-def result_test_network_generator2(net, sn_mva=1, skip_test_impedance=False):
-    """ This is a generator for the result_test_network
-        It is structured like this so it can be tested for consistency at
-        different stages of adding elements
-    """
-    yield add_test_trafo(net)
-    #    yield add_test_line(net)
-    yield add_test_load_sgen(net)
-    yield add_test_load_sgen_split(net)
-    yield add_test_ext_grid(net)
-    yield add_test_trafo(net)
-    yield add_test_single_load_single_eg(net)
-    yield add_test_ward(net)
-    yield add_test_ward_split(net)
-    yield add_test_xward(net)
-    yield add_test_xward_combination(net)
-    yield add_test_gen(net)
-    yield add_test_ext_grid_gen_switch(net)
-    yield add_test_enforce_qlims(net)
-    yield add_test_trafo3w(net)
-    if not skip_test_impedance:
-        yield add_test_impedance(net)
-    yield add_test_bus_bus_switch(net)
-    yield add_test_oos_bus_with_is_element(net)
-    yield add_test_shunt(net)
-    yield add_test_shunt_split(net)
-    yield add_test_two_open_switches_on_deactive_line(net)
-
 
 def result_test_network_generator(sn_mva=1, skip_test_impedance=False):
     """ This is a generator for the result_test_network
@@ -101,23 +71,14 @@ def result_test_network_generator_dcpp(sn_mva=1):
     yield add_test_line(net)
     yield add_test_load_sgen(net)
     yield add_test_load_sgen_split(net)
-    # yield add_test_ext_grid(net)
-    # yield add_test_trafo(net)
     yield add_test_single_load_single_eg(net)
     yield add_test_ward(net)
     yield add_test_ward_split(net)
     yield add_test_xward(net)
     yield add_test_xward_combination(net)
-    # yield add_test_gen(net)
-    # yield add_test_ext_grid_gen_switch(net)
-    # yield add_test_enforce_qlims(net)
-    # yield add_test_trafo3w(net)
-    # yield add_test_impedance(net)
     yield add_test_bus_bus_switch(net)
-    # yield add_test_oos_bus_with_is_element(net)
     yield add_test_shunt(net)
     yield add_test_shunt_split(net)
-    # yield add_test_two_open_switches_on_deactive_line(net)
 
 
 def add_test_line(net):
@@ -134,7 +95,7 @@ def add_test_line(net):
 
 
 def add_test_ext_grid(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_ext_grid")
+    _, b2, _ = add_grid_connection(net, zone="test_ext_grid")
     b3 = create_bus(net, vn_kv=20., zone="test_ext_grid")
     create_test_line(net, b2, b3)
     create_ext_grid(net, b3, vm_pu=1.02, va_degree=3.)
@@ -161,7 +122,7 @@ def add_test_ext_grid_gen_switch(net):
 
 
 def add_test_load_sgen(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_load_sgen")
+    _, b2, _ = add_grid_connection(net, zone="test_load_sgen")
     pl = 1.2
     ql = 1.1
     ps = 0.50
@@ -179,13 +140,13 @@ def add_test_load_sgen(net):
 
 
 def add_test_load_sgen_split(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_load_sgen_split")
+    _, b2, _ = add_grid_connection(net, zone="test_load_sgen_split")
     nr = 2
     pl = 1.2
     ql = 1.1
     ps = 0.5
     qs = -0.1
-    for _ in list(range(nr)):
+    for _ in range(nr):
         create_load(net, b2, p_mw=pl, q_mvar=ql, scaling=1. / nr)
         create_sgen(net, b2, p_mw=ps, q_mvar=qs, scaling=1. / nr)
     net.last_added_case = "test_load_sgen_split"
@@ -193,7 +154,7 @@ def add_test_load_sgen_split(net):
 
 
 def add_test_trafo(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_trafo")
+    _, b2, _ = add_grid_connection(net, zone="test_trafo")
     b3 = create_bus(net, vn_kv=0.4, zone="test_trafo")
     create_transformer_from_parameters(net, b2, b3, vk_percent=5., vkr_percent=2.,
                                        i0_percent=.4, pfe_kw=2., sn_mva=0.4, vn_hv_kv=22,
@@ -223,7 +184,7 @@ def add_test_single_load_single_eg(net):
 
 
 def add_test_ward(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_ward")
+    _, b2, _ = add_grid_connection(net, zone="test_ward")
 
     pz = 1.2
     qz = 1.1
@@ -244,7 +205,7 @@ def add_test_ward_split(net):
     qz = 1.1
     ps = 0.5
     qs = 0.2
-    b1, b2, ln = add_grid_connection(net, zone="test_ward_split")
+    _, b2, _ = add_grid_connection(net, zone="test_ward_split")
     create_ward(net, b2, pz_mw=pz / 2, qz_mvar=qz / 2, ps_mw=ps / 2, qs_mvar=qs / 2)
     create_ward(net, b2, pz_mw=pz / 2, qz_mvar=qz / 2, ps_mw=ps / 2, qs_mvar=qs / 2)
     net.last_added_case = "test_ward_split"
@@ -252,8 +213,7 @@ def add_test_ward_split(net):
 
 
 def add_test_xward(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_xward")
-
+    _, b2, _ = add_grid_connection(net, zone="test_xward")
     pz = 1.200
     qz = 1.100
     ps = 0.500
@@ -273,7 +233,7 @@ def add_test_xward(net):
 
 
 def add_test_xward_combination(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_xward_combination")
+    _, b2, _ = add_grid_connection(net, zone="test_xward_combination")
 
     pz = 1.200
     qz = 1.100
@@ -296,7 +256,7 @@ def add_test_xward_combination(net):
 
 
 def add_test_gen(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_gen")
+    _, b2, _ = add_grid_connection(net, zone="test_gen")
     pl = 1.200
     ql = 1.100
     ps = 0.500
@@ -308,7 +268,7 @@ def add_test_gen(net):
 
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_gen(net, b3, p_mw=ps, vm_pu=vm_set_pu)
-    # adding out of serivce gens should not change the result
+    # adding out of service gens should not change the result
     create_gen(net, b2, p_mw=ps, vm_pu=vm_set_pu, in_service=False, index=get_free_id(net.gen) + 1)
 
     net.last_added_case = "test_gen"
@@ -316,7 +276,7 @@ def add_test_gen(net):
 
 
 def add_test_enforce_qlims(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_enforce_qlims")
+    _, b2, _ = add_grid_connection(net, zone="test_enforce_qlims")
     pl = 1.200
     ql = 1.100
     ps = 0.500
@@ -334,8 +294,62 @@ def add_test_enforce_qlims(net):
     return net
 
 
+def add_test_enforce_plims(net):
+    _, b2, _ = add_grid_connection(net, zone="test_enforce_plims")
+    pl = 1.200
+    ql = 1.100
+    ps = 0.200
+    pmin = 0.500
+    vm_set_pu = 1.0
+
+    b3 = create_bus(net, zone="test_enforce_plims", vn_kv=.4)
+    create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                c_nf_per_km=300, max_i_ka=.2, df=.8)
+    create_load(net, b3, p_mw=pl, q_mvar=ql)
+    create_gen(net, b3, p_mw=ps, vm_pu=vm_set_pu, min_p_mw=pmin)
+
+    net.last_added_case = "test_enforce_plims"
+    return net
+
+
+def add_test_enforce_qlims_sgen(net):
+    _, b2, _ = add_grid_connection(net, zone="test_enforce_qlims_sgen")
+    pl = 1.200
+    ql = 1.100
+    ps = 0.500
+    qs = 0.500
+    qmax = 0.200
+
+    b3 = create_bus(net, zone="test_enforce_qlims_sgen", vn_kv=.4)
+    create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                c_nf_per_km=300, max_i_ka=.2, df=.8)
+    create_load(net, b3, p_mw=pl, q_mvar=ql)
+    create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_q_mvar=qmax)
+
+    net.last_added_case = "test_enforce_qlims_sgen"
+    return net
+
+
+def add_test_enforce_plims_sgen(net):
+    _, b2, _ = add_grid_connection(net, zone="test_enforce_plims_sgen")
+    pl = 1.200
+    ql = 1.100
+    ps = 0.500
+    qs = 0.500
+    pmax = 0.200
+
+    b3 = create_bus(net, zone="test_enforce_plims_sgen", vn_kv=.4)
+    create_line_from_parameters(net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+                                c_nf_per_km=300, max_i_ka=.2, df=.8)
+    create_load(net, b3, p_mw=pl, q_mvar=ql)
+    create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_p_mw=pmax)
+
+    net.last_added_case = "test_enforce_plims_sgen"
+    return net
+
+
 def add_test_trafo3w(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_trafo3w")
+    _, b2, _ = add_grid_connection(net, zone="test_trafo3w")
     b3 = create_bus(net, vn_kv=0.6, zone="test_trafo3w")
     create_load(net, b3, p_mw=0.2, q_mvar=0)
     b4 = create_bus(net, vn_kv=0.4, zone="test_trafo3w")
@@ -363,7 +377,7 @@ def add_test_trafo3w(net):
 
 
 def add_test_impedance(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_impedance")
+    _, b2, _ = add_grid_connection(net, zone="test_impedance")
     b3 = create_bus(net, vn_kv=220., zone="test_impedance")
     rij = 0.02
     xij = 0.01
@@ -384,7 +398,7 @@ def add_test_impedance(net):
 
 
 def add_test_bus_bus_switch(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_bus_bus_switch")
+    _, b2, _ = add_grid_connection(net, zone="test_bus_bus_switch")
     b3 = create_bus(net, vn_kv=20., zone="test_bus_bus_switch")
     create_switch(net, b2, b3, et="b")
 
@@ -421,7 +435,7 @@ def add_test_bus_bus_switch(net):
 
 
 def add_test_oos_bus_with_is_element(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_oos_bus_with_is_element")
+    _, b2, _ = add_grid_connection(net, zone="test_oos_bus_with_is_element")
 
     pl = 1.200
     ql = 1.100
@@ -462,7 +476,7 @@ def add_test_oos_bus_with_is_element(net):
 
 
 def add_test_shunt(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_shunt")
+    _, b2, _ = add_grid_connection(net, zone="test_shunt")
     pz = 0.12
     qz = -1.2
     # one shunt at a bus
@@ -474,7 +488,7 @@ def add_test_shunt(net):
 
 
 def add_test_shunt_split(net):
-    b1, b2, ln = add_grid_connection(net, zone="test_shunt_split")
+    _, b2, _ = add_grid_connection(net, zone="test_shunt_split")
     pz = 0.120
     qz = -1.200
     # one shunt at a bus
@@ -485,7 +499,7 @@ def add_test_shunt_split(net):
 
 
 def add_test_two_open_switches_on_deactive_line(net):
-    b1, b2, l1 = add_grid_connection(net, zone="two_open_switches_on_deactive_line")
+    b1, b2, _ = add_grid_connection(net, zone="two_open_switches_on_deactive_line")
     b3 = create_bus(net, vn_kv=20., zone="two_open_switches_on_deactive_line")
     l2 = create_test_line(net, b2, b3, in_service=False)
     create_test_line(net, b3, b1)

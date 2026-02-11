@@ -38,8 +38,8 @@ class TestSourceDcRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Valid required values are accepted"""
         net = create_empty_network()
-        create_bus_dc(net, 0.4)          # index 0
-        create_bus_dc(net, 0.4)          # index 1
+        create_bus_dc(net, 0.4)  # index 0
+        create_bus_dc(net, 0.4)  # index 1
         create_bus_dc(net, 0.4, index=42)
 
         create_source_dc(net, bus_dc=0, vm_pu=1.0, in_service=True)
@@ -59,8 +59,8 @@ class TestSourceDcRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Invalid required values are rejected"""
         net = create_empty_network()
-        create_bus_dc(net, 0.4)          # 0
-        create_bus_dc(net, 0.4)          # 1
+        create_bus_dc(net, 0.4)  # 0
+        create_bus_dc(net, 0.4)  # 1
 
         create_source_dc(net, bus_dc=0, vm_pu=1.0, in_service=True)
         net.source_dc[parameter] = invalid_value

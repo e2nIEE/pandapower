@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from __future__ import annotations
 import logging
@@ -497,7 +497,7 @@ class CimParser:
             temp_dir.cleanup()
             del temp_dir, temp_dir_path
             return
-        parser = etree.XMLParser(encoding=encoding, resolve_entities=False)
+        parser = etree.XMLParser(encoding=encoding, resolve_entities=False, remove_comments=True)
         xml_tree = etree.parse(file, parser)
         if profile_name is None:
             prf = self._get_cgmes_profile_from_xml(xml_tree.getroot())

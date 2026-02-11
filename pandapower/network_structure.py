@@ -68,8 +68,8 @@ def get_structure_dict(required_only: bool = True) -> dict:
         },
         "source_dc": get_dtypes(source_dc_schema, required_only),
         "load_dc": get_dtypes(load_dc_schema, required_only),
-        "b2b_vsc": get_dtypes(b2b_vsc_schema, required_only),
-        "bi_vsc": get_dtypes(bi_vsc_schema, required_only),
+        "vsc_stacked": get_dtypes(vsc_stacked_schema, required_only),
+        "vsc_bipolar": get_dtypes(vsc_bipolar_schema, required_only),
         # result tables
         "_empty_res_bus": get_dtypes(res_bus_schema),
         "_empty_res_bus_dc": get_dtypes(res_bus_dc_schema),
@@ -112,8 +112,8 @@ def get_structure_dict(required_only: bool = True) -> dict:
             "act_param_val": "f8",
             "trip_melt_time_s": "f8",
         },  # TODO: what is this ?
-        "_empty_res_b2b_vsc": get_dtypes(res_b2b_vsc_schema),
-        "_empty_res_bi_vsc": get_dtypes(res_bi_vsc_schema),
+        "_empty_res_vsc_stacked": get_dtypes(res_vsc_stacked_schema),
+        "_empty_res_vsc_bipolar": get_dtypes(res_vsc_bipolar_schema),
         # internal
         "_ppc": None,
         "_ppc0": None,

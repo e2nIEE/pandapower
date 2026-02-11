@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import sys
@@ -974,7 +974,6 @@ def create_weighted_marker_trace(
 
     Returns:
         dict for the plotly trace
-
     """
     # filter for relevant elements:
     elm_ids = (
@@ -1056,11 +1055,10 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
     The default reference marker is of average size of all weighted markers, rounded to the next 5,
     and comes with a string with the respective reference value and unit.
 
-    INPUT:
+    Parameters:
         net (pandapowerNet): the pandapower net of the plot
         weighted_trace (dict): weighted plotly trace
         down_shift (int): shift to align different scales below each other (prop. to y-offset)
-
     """
     marker = weighted_trace["marker"]
     scale_info = weighted_trace["meta"]
@@ -1121,17 +1119,12 @@ def draw_traces(
     **kwargs,
 ):
     """
-    plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`,
-    :func:`create_trafo_trace`)
-    to PLOTLY (see https://plot.ly/python/)
+    plots all the traces to PLOTLY (see https://plot.ly/python/)
 
-    INPUT:
-        **traces** - list of dicts which correspond to plotly traces
-        generated using: `create_bus_trace`, `create_line_trace`, `create_trafo_trace`
-
-    OPTIONAL:
+    Parameters:
+        traces: list of dicts which correspond to plotly traces generated using:
+            :func:`create_bus_trace`, :func:`create_line_trace`, :func:`create_trafo_trace`
         on_map (bool, False): enables using mapLibre plot in plotly
-
         map_style (str, 'basic'): enables using mapLibre plot in plotly
 
             - 'basic'
@@ -1150,20 +1143,15 @@ def draw_traces(
             - 'streets'
 
         showlegend (bool, 'True'): enables legend display
-
         figsize (float, 1): aspectratio is multiplied by it in order to get final image size
-
-        aspectratio (tuple, 'auto'): when 'auto' it preserves original aspect ratio of the
-        network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
-
-        filename (str, "temp-plot.html"): plots to a html file called filename. If None,
-        no file will be created, just a plotly.Figure object will be returned
-
+        aspectratio (tuple, 'auto'): when 'auto' it preserves original aspect ratio of the network geodata any custom
+            aspectration can be given as a tuple, e.g. (1.2, 1)
+        filename (str, "temp-plot.html"): plots to a html file called filename. If None, no file will be created, just a
+            plotly.Figure object will be returned
         auto_open (bool, 'True'): automatically open plot in browser
 
-    OUTPUT:
-        figure (graph_objs._figure.Figure): figure object
-
+    Returns:
+        graph_objs._figure.Figure: figure object
     """
     if not PLOTLY_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")

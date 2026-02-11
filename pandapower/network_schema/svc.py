@@ -25,14 +25,12 @@ svc_schema = pa.DataFrameSchema(
         "min_angle_degree": pa.Column(
             float,
             pa.Check.ge(90),
-            nullable=True,
             required=False,
             description="minimum value of the thyristor_firing_angle_degree",
         ),
         "max_angle_degree": pa.Column(
             float,
             pa.Check.le(180),
-            nullable=True,
             required=False,
             description="maximum value of the thyristor_firing_angle_degree",
         ),

@@ -4,7 +4,6 @@ import copy
 from typing import List, Tuple
 
 from matplotlib.collections import PatchCollection
-from typing_extensions import deprecated
 
 import geojson
 import math
@@ -17,6 +16,7 @@ import logging as log
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.topology.create_graph import create_nxgraph
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_bus, create_line_from_parameters
 from pandapower.plotting.collections import create_annotation_collection, create_line_collection, \
     create_bus_collection, create_line_switch_collection, draw_collections, create_trafo_collection, \
@@ -25,8 +25,6 @@ from pandapower.toolbox.grid_modification import fuse_buses
 from pandapower.toolbox.element_selection import get_connected_buses_at_element, get_connected_elements, next_bus
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
-
-import warnings
 
 logger = log.getLogger(__name__)
 
@@ -44,9 +42,6 @@ try:
 except ImportError:
     MPLCURSORS_INSTALLED = False
     logger.info('could not import mplcursors')
-
-warnings.filterwarnings('ignore')
-
 
 def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> List[Tuple[float, float]]:
     try:
@@ -93,12 +88,15 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     # sim bench grids
     if 's_sc_max_mva' not in net.ext_grid:
         print('input s_sc_max_mva or taking 1000')
+        add_column_to_df(net, "ext_grid", "s_sc_max_mva")
         net.ext_grid['s_sc_max_mva'] = 1000
     if 'rx_max' not in net.ext_grid:
         print('input rx_max or taking 0.1')
+        add_column_to_df(net, "ext_grid", "rx_max")
         net.ext_grid['rx_max'] = 0.1
     if 'k' not in net.sgen and len(net.sgen) != 0:
         print('input  Ratio of nominal current to short circuit current- k or  taking k=1')
+        add_column_to_df(net, "sgen", "k")
         net.sgen['k'] = 1
 
     # set new lines
@@ -125,12 +123,12 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
             net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
-    net.bus.loc[max_idx_bus + 1, 'geo'] = None
+    net.bus.at[max_idx_bus + 1, 'geo'] = None
 
     x1, y1 = _get_coords_from_bus_idx(net, aux_line.from_bus)[0]
     x2, y2 = _get_coords_from_bus_idx(net, aux_line.to_bus)[0]
 
-    net.bus.geo.at[max_idx_bus + 1] = geojson.dumps(
+    net.bus.at[max_idx_bus + 1, "geo"] = geojson.dumps(
         geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True)
     return net
 

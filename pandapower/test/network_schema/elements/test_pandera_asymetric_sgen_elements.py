@@ -1,12 +1,10 @@
-
 # test_asymmetric_sgen.py
 
 import itertools
 import pandera as pa
 import pytest
 
-from pandapower import create_asymmetric_sgen
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_empty_network, create_bus, create_asymmetric_sgen
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -49,8 +47,8 @@ class TestAsymmetricSgenRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
         create_asymmetric_sgen(
@@ -93,8 +91,8 @@ class TestAsymmetricSgenRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
 
         create_asymmetric_sgen(
             net,
@@ -191,8 +189,8 @@ class TestAsymmetricSgenOptionalFields:
             current_source=True,
             sn_mva=15.0,
         )
-        net.asymmetric_sgen['type'].at[0] = None
-        net.asymmetric_sgen['type'].at[2] = None
+        net.asymmetric_sgen["type"].at[0] = None
+        net.asymmetric_sgen["type"].at[2] = None
 
         validate_network(net)
 
@@ -200,8 +198,8 @@ class TestAsymmetricSgenOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(['name'], strings),
-                #itertools.product(["type"], [pd.NA, "PV", "WP", "CHP"]),
+                itertools.product(["name"], strings),
+                # itertools.product(["type"], [pd.NA, "PV", "WP", "CHP"]),
                 itertools.product(["sn_mva"], positiv_floats),
             )
         ),
@@ -223,7 +221,7 @@ class TestAsymmetricSgenOptionalFields:
             scaling=1.0,
             in_service=True,
             current_source=False,
-            **{parameter: valid_value}
+            **{parameter: valid_value},
         )
         validate_network(net)
 

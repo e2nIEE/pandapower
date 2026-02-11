@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -106,7 +106,7 @@ def test_pypower_cases():
 def test_to_and_from_ppc():
     net9 = case9()
     net24 = case24_ieee_rts()
-    net24.trafo.tap_side.iat[1] = "hv"
+    net24.trafo.iat[1, net24.trafo.columns.get_loc("tap_side")] = "hv"
 
     for i, net in enumerate([net24, net9]):
 

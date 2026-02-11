@@ -1,4 +1,3 @@
-
 # test_dcline.py
 
 import itertools
@@ -7,8 +6,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower import create_dcline
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_empty_network, create_bus, create_dcline
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -133,7 +131,6 @@ class TestDclineOptionalFields:
         )
         validate_network(net)
 
-
     def test_optional_fields_with_nulls(self):
         """Test: dcline with optional fields including nulls is valid"""
         net = create_empty_network()
@@ -169,7 +166,6 @@ class TestDclineOptionalFields:
             max_q_to_mvar=40.0,
         )
         validate_network(net)
-
 
     @pytest.mark.parametrize(
         "parameter,valid_value",

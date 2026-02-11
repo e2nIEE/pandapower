@@ -6,8 +6,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower import create_vsc
-from pandapower.create import create_empty_network, create_bus, create_bus_dc
+from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_vsc
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
     strings,
@@ -57,12 +56,12 @@ class TestVscRequiredFields:
         """Test: valid required values are accepted"""
         net = create_empty_network()
         # AC buses
-        create_bus(net, vn_kv=110.0)      # index 0
-        create_bus(net, vn_kv=20.0)       # index 1
+        create_bus(net, vn_kv=110.0)  # index 0
+        create_bus(net, vn_kv=20.0)  # index 1
         create_bus(net, vn_kv=0.4, index=42)
         # DC buses
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)     # index 0
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)     # index 1
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 1
         create_bus_dc(net, vm_pu=1.0, index=42, vn_kv=110.0)
 
         create_vsc(
@@ -108,11 +107,11 @@ class TestVscRequiredFields:
         """Test: invalid required values are rejected"""
         net = create_empty_network()
         # AC buses
-        create_bus(net, vn_kv=110.0)      # index 0
-        create_bus(net, vn_kv=20.0)       # index 1
+        create_bus(net, vn_kv=110.0)  # index 0
+        create_bus(net, vn_kv=20.0)  # index 1
         # DC buses
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)     # index 0
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)     # index 1
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 1
 
         create_vsc(
             net,
@@ -141,8 +140,8 @@ class TestVscOptionalFields:
     def test_all_optional_fields_valid(self):
         """Test: VSC with optional 'name' set is valid"""
         net = create_empty_network()
-        create_bus(net, vn_kv=110.0)      # AC
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)     # DC
+        create_bus(net, vn_kv=110.0)  # AC
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # DC
 
         create_vsc(
             net,
@@ -167,10 +166,10 @@ class TestVscOptionalFields:
         """Test: VSC with optional 'name' including nulls is valid"""
         net = create_empty_network()
         # AC/DC buses
-        create_bus(net, vn_kv=20.0)       # 0
-        create_bus(net, vn_kv=10.0)       # 1
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)     # 0
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)     # 1
+        create_bus(net, vn_kv=20.0)  # 0
+        create_bus(net, vn_kv=10.0)  # 1
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # 0
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # 1
 
         create_vsc(
             net,

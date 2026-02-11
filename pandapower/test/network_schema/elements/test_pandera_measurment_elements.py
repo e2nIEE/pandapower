@@ -1,4 +1,3 @@
-
 import itertools
 import pandas as pd
 import pandera as pa
@@ -47,8 +46,8 @@ class TestMeasurementRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
         net.measurement = pd.DataFrame(
@@ -89,8 +88,8 @@ class TestMeasurementRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # index 0
-        create_bus(net, 0.4)          # index 1
+        create_bus(net, 0.4)  # index 0
+        create_bus(net, 0.4)  # index 1
 
         net.measurement = pd.DataFrame(
             {
@@ -140,8 +139,8 @@ class TestMeasurementOptionalFields:
     def test_optional_bus_valid_values(self, valid_bus):
         """Test: optional 'bus' column accepts valid values and FK passes if index exists"""
         net = create_empty_network()
-        create_bus(net, 0.4)          # 0
-        create_bus(net, 0.4)          # 1
+        create_bus(net, 0.4)  # 0
+        create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
 
         net.measurement = pd.DataFrame(

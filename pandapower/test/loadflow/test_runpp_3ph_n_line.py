@@ -7,8 +7,9 @@ Tests 3 phase power flow algorithm
 import numpy as np
 import pytest
 
-from pandapower import create_empty_network, create_bus, create_ext_grid, create_asymmetric_load, \
-    create_line_from_parameters
+from pandapower.create import (
+    create_empty_network, create_bus, create_ext_grid, create_asymmetric_load, create_line_from_parameters
+)
 from pandapower.pf.runpp_3ph import runpp_3ph
 
 

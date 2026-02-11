@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numpy import nan_to_num, array, allclose, int64, concatenate
@@ -40,7 +40,7 @@ def _powerflow(net, **kwargs):
     _add_auxiliary_elements(net)  # create gen elements for start and end buses of dcline
 
     if not ac or net["_options"]["init_results"]:
-        verify_results(net)
+        verify_results(net, mode='pf' if ac else 'dc')
     else:
         init_results(net)
 
@@ -143,7 +143,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
         if pq.shape[0] == 0 and pv.shape[0] == 0 and not options['distributed_slack'] \
                 and len(ppci["svc"]) == 0 and len(ppci["tcsc"]) == 0 and len(ppci["ssc"]) == 0 and len(ppci["vsc"]) == 0:
             # ommission not correct if distributed slack is used or facts devices are present
-            result = _bypass_pf_and_set_results(ppci, options)
+            result = _bypass_pf_and_set_results(ppci)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)
         elif algorithm in ['nr', 'iwamoto_nr']:
@@ -181,9 +181,9 @@ def _ppci_to_net(result, net):
     _clean_up(net)
 
 
-def _bypass_pf_and_set_results(ppci, options):
+def _bypass_pf_and_set_results(ppci):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, _, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, _, _, *_, _, ref_gens = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:, VM]
     bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens)
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch

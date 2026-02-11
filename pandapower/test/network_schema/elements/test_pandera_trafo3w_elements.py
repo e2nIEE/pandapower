@@ -52,33 +52,37 @@ class TestTrafo3wRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 110.0)        # index 0 (HV)
-        create_bus(net, 20.0)         # index 1 (MV)
-        create_bus(net, 10.0)         # index 2 (LV)
+        create_bus(net, 110.0)  # index 0 (HV)
+        create_bus(net, 20.0)  # index 1 (MV)
+        create_bus(net, 10.0)  # index 2 (LV)
         create_bus(net, 0.4, index=42)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0,
-            "mv_bus": 1,
-            "lv_bus": 2,
-            "vn_hv_kv": 110.0,
-            "vn_mv_kv": 20.0,
-            "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0,
-            "sn_mv_mva": 25.0,
-            "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0,
-            "vk_mv_percent": 8.0,
-            "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5,
-            "vkr_mv_percent": 0.4,
-            "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0,
-            "i0_percent": 0.1,
-            "shift_mv_degree": 0.0,
-            "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
         if parameter in {"vk_hv_percent", "vk_mv_percent", "vk_lv_percent"}:
             net.trafo3w["vkr_hv_percent"] = 0.0
             net.trafo3w["vkr_mv_percent"] = 0.0
@@ -93,10 +97,22 @@ class TestTrafo3wRequiredFields:
             itertools.chain(
                 itertools.product(["hv_bus", "mv_bus", "lv_bus"], [*negativ_ints, *not_ints_list]),
                 itertools.product(
-                    ["vn_hv_kv", "vn_mv_kv", "vn_lv_kv", "sn_hv_mva", "sn_mv_mva", "sn_lv_mva", "vk_hv_percent", "vk_mv_percent", "vk_lv_percent"],
+                    [
+                        "vn_hv_kv",
+                        "vn_mv_kv",
+                        "vn_lv_kv",
+                        "sn_hv_mva",
+                        "sn_mv_mva",
+                        "sn_lv_mva",
+                        "vk_hv_percent",
+                        "vk_mv_percent",
+                        "vk_lv_percent",
+                    ],
                     [*negativ_floats_plus_zero, *not_floats_list],
                 ),
-                itertools.product(["vkr_hv_percent", "vkr_mv_percent", "vkr_lv_percent"], [*negativ_floats, *not_floats_list]),
+                itertools.product(
+                    ["vkr_hv_percent", "vkr_mv_percent", "vkr_lv_percent"], [*negativ_floats, *not_floats_list]
+                ),
                 itertools.product(["pfe_kw", "i0_percent", "shift_mv_degree", "shift_lv_degree"], not_floats_list),
                 itertools.product(["in_service"], not_boolean_list),
             )
@@ -105,32 +121,36 @@ class TestTrafo3wRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 110.0)        # index 0 (HV)
-        create_bus(net, 20.0)         # index 1 (MV)
-        create_bus(net, 10.0)         # index 2 (LV)
+        create_bus(net, 110.0)  # index 0 (HV)
+        create_bus(net, 20.0)  # index 1 (MV)
+        create_bus(net, 10.0)  # index 2 (LV)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0,
-            "mv_bus": 1,
-            "lv_bus": 2,
-            "vn_hv_kv": 110.0,
-            "vn_mv_kv": 20.0,
-            "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0,
-            "sn_mv_mva": 25.0,
-            "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0,
-            "vk_mv_percent": 8.0,
-            "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5,
-            "vkr_mv_percent": 0.4,
-            "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0,
-            "i0_percent": 0.1,
-            "shift_mv_degree": 0.0,
-            "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         # Neutralize vkr<vk to focus on target validation
         net.trafo3w["vkr_hv_percent"] = 0.0
@@ -147,15 +167,32 @@ class TestTrafo3wRequiredFields:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 1.0, "vkr_mv_percent": 0.5, "vkr_lv_percent": 0.1,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 1.0,
+                    "vkr_mv_percent": 0.5,
+                    "vkr_lv_percent": 0.1,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
         validate_network(net)
 
     def test_vkr_greater_than_vk_fails(self):
@@ -164,15 +201,32 @@ class TestTrafo3wRequiredFields:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 12.0, "vkr_mv_percent": 0.5, "vkr_lv_percent": 0.1,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 12.0,
+                    "vkr_mv_percent": 0.5,
+                    "vkr_lv_percent": 0.1,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
@@ -186,15 +240,32 @@ class TestTrafo3wOptionalFields:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         # Optional strings
         net.trafo3w["name"] = pd.Series(["T1"], dtype="string")
@@ -227,15 +298,32 @@ class TestTrafo3wOptionalFields:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         # Tap group -> all nulls, so group not triggered
         net.trafo3w["tap_side"] = pd.Series([pd.NA], dtype="string")
@@ -284,15 +372,32 @@ class TestTrafo3wOptionalFields:
         create_bus(net, 10.0)
         create_bus(net, 0.4, index=42)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         # For TDT: ensure the counterpart exists when one is set
         if parameter == "tap_dependency_table":
@@ -342,15 +447,32 @@ class TestTrafo3wOptionalFields:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         # Satisfy groups so only target parameter triggers failure
         net.trafo3w["tap_pos"] = 1.0
@@ -373,15 +495,32 @@ class TestTrafo3wDependencies:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         net.trafo3w["tap_side"] = pd.Series(["mv"], dtype="string")
         net.trafo3w["tap_neutral"] = 0.0
@@ -396,15 +535,32 @@ class TestTrafo3wDependencies:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         net.trafo3w["tap_side"] = pd.Series(["lv"], dtype="string")
         net.trafo3w["tap_pos"] = 2.0
@@ -417,15 +573,32 @@ class TestTrafo3wDependencies:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         net.trafo3w["tap_dependency_table"] = pd.Series([True], dtype="boolean")
         net.trafo3w["id_characteristic_table"] = pd.Series([pd.NA], dtype="Int64")
@@ -438,15 +611,32 @@ class TestTrafo3wDependencies:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         net.trafo3w["tap_dependency_table"] = pd.Series([True], dtype="boolean")
         net.trafo3w["id_characteristic_table"] = pd.Series([0], dtype="Int64")
@@ -458,15 +648,32 @@ class TestTrafo3wDependencies:
         create_bus(net, 20.0)
         create_bus(net, 10.0)
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 0, "mv_bus": 1, "lv_bus": 2,
-            "vn_hv_kv": 110.0, "vn_mv_kv": 20.0, "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0, "sn_mv_mva": 25.0, "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0, "vk_mv_percent": 8.0, "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5, "vkr_mv_percent": 0.4, "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0, "i0_percent": 0.1, "shift_mv_degree": 0.0, "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 0,
+                    "mv_bus": 1,
+                    "lv_bus": 2,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         net.trafo3w["hv_bus"] = 9999  # FK violation
         with pytest.raises(pa.errors.SchemaError):

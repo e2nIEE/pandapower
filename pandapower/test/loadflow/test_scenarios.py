@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -156,7 +156,7 @@ def test_ext_grid_gen_order_in_ppc():
     net = create_empty_network()
 
     for b in range(6):
-        create_bus(net, vn_kv=1., name=b)
+        create_bus(net, vn_kv=1., name=str(b))
 
     for l_bus in range(0, 5, 2):
         create_line(net, from_bus=l_bus, to_bus=l_bus + 1, length_km=1,

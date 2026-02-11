@@ -48,8 +48,9 @@ def _many_tcsc_test_net():
 
 def compare_tcsc_impedance(net, net_ref, idx_tcsc, idx_impedance):
     backup_q = net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"].copy()
-    net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] += net_ref.res_impedance.loc[
-        net_ref.impedance.query("name=='ssc'").index, "q_from_mvar"].values
+    if "name" in net_ref.impedance.columns:
+        net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] += net_ref.res_impedance.loc[
+            net_ref.impedance.query("name=='ssc'").index, "q_from_mvar"].values
     bus_idx = net.bus.index.values
     for col in ("vm_pu", "va_degree", "p_mw", "q_mvar"):
         assert np.allclose(net.res_bus[col], net_ref.res_bus.loc[bus_idx, col], rtol=0, atol=1e-6)

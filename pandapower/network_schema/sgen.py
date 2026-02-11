@@ -67,6 +67,7 @@ _sgen_columns = {
     ),
     "reactive_capability_curve": pa.Column(
         pd.BooleanDtype,
+        nullable=True,
         required=False,
         description="True if static generator has dependency on q characteristic",
         metadata={"qcc": True},

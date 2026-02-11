@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+import logging
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -449,18 +449,15 @@ def test_cigre_network_with_slack_init():
 
 
 def test_cigre_with_bad_data():
-    np.random.seed(123456)
     net = create_cigre_network_mv(with_der=False)
-    net.load.q_mvar = net.load["p_mw"].apply(lambda p: p * np.tan(np.arccos(np.random.choice([0.95, 0.9, 0.97]))))
+    net.load.q_mvar = net.load["p_mw"].apply(lambda p: p * np.tan(np.arccos(0.9)))
     runpp(net)
 
     for bus, row in net.res_bus.iterrows():
-        if bus == 2:
-            continue
         if bus != 6:
-            create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)  # skip our bad data measurement
-        create_measurement(net, "p", "bus", row.p_mw * r(), max(0.001, abs(0.03 * row.p_mw)), bus)
-        create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.001, abs(0.03 * row.q_mvar)), bus)
+            create_measurement(net, "v", "bus", row.vm_pu * r(0.005), 0.005, bus)  # skip our bad data measurement
+        create_measurement(net, "p", "bus", row.p_mw * r(), max(0.03, abs(0.03 * row.p_mw)), bus)
+        create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.03, abs(0.03 * row.q_mvar)), bus)
 
     # 2. Do state estimation
     success_SE = estimate(net, init='slack')
@@ -468,13 +465,14 @@ def test_cigre_with_bad_data():
     delta_SE = net.res_bus_est.va_degree.values
 
     # 3. Create false measurement (very close to useful values)
-    create_measurement(net, "v", "bus", 0.85, 0.01, element=6)
+    create_measurement(net, "v", "bus", 0.85, 0.005, element=6)
 
     # 4. Do chi2-test
     bad_data_detected = chi2_analysis(net, init='slack')
+    assert bad_data_detected
 
     # 5. Perform rn_max_test
-    success_rn_max = remove_bad_data(net, init='slack')
+    success_rn_max = remove_bad_data(net, init='slack', rn_max_threshold=4.0)
     v_est_rn_max = net.res_bus_est.vm_pu.values
     delta_est_rn_max = net.res_bus_est.va_degree.values
 
@@ -901,7 +899,7 @@ def test_net_unobserved_island():
 
 def test_net_oos_line():
     net = case9()
-    net.line.in_service.iat[4] = False
+    net.line.iat[4, net.line.columns.get_loc("in_service")] = False
     runpp(net)
 
     for line_ix in net.line.index:
@@ -940,5 +938,12 @@ def _compare_pf_and_se_results(net):
     assert (np.allclose(net.res_trafo_est.q_hv_mvar.values, net.res_trafo.q_hv_mvar.values, 1e-6))
 
 
+@pytest.mark.skipif(not np.__version__.startswith("1."), reason="Test only for numpy 1.X")
+def test_numpy1_warning():
+    with pytest.raises(UserWarning, match="numpy 1.x should not be used with estimate"):
+        estimate(create_empty_network())
+    
+
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
+

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 and Energy System Technology (IEE), Kassel. All rights reserved.
 
 """
@@ -221,7 +221,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                 "Magnetizing impedance to vk0 ratio needs to be specified for transformer "
                 'modelling  \n Try : net.trafo["mag0_percent"] = 100'
             )
-        mag0_ratio = trafos.mag0_percent.values.astype(float)
+        mag0_ratio = trafos.mag0_percent.values.astype(float) * 1e-2
         if "mag0_rx" not in trafos:
             raise ValueError(
                 "Magnetizing impedance R/X ratio needs to be specified for transformer "
@@ -367,7 +367,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             if trafo_model == "pi":
                 y = 1 / (z0_mag + z0_k).astype(complex)  # pi model
             else:
-                # y = (YAB_AN + YBN).astype(complex)  # T model
                 y = (YAB + YAB_BN + YBN).astype(complex)  # T model
             y_asym = y * in_service.values * 2
 
@@ -433,7 +432,6 @@ def _add_gen_sc_impedance_zero(net, ppc):
     eg_buses_ppc = bus_lookup[eg_buses]
 
     y0_gen = 1 / (1e3 + 1e3 * 1j)
-    # buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_gen.real, y0_gen.imag)
     ppc["bus"][eg_buses_ppc, GS] += y0_gen.real
     ppc["bus"][eg_buses_ppc, BS] += y0_gen.imag
 
@@ -461,13 +459,13 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         )
     else:
         c = 1.1
-    if not "s_sc_%s_mva" % case in eg:
+    if "s_sc_%s_mva" % case not in eg:
         raise ValueError(
             "short circuit apparent power s_sc_%s_mva needs to be specified for " % case
             + "external grid"
         )
     s_sc = eg["s_sc_%s_mva" % case].values
-    if not "rx_%s" % case in eg:
+    if "rx_%s" % case not in eg:
         raise ValueError(
             "short circuit R/X rate rx_%s needs to be specified for external grid"
             % case
