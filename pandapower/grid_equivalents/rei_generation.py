@@ -536,8 +536,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
 
     net_external = deepcopy(net)
     if "group" in net_external:
-        #net_external.group = net_external.group.drop(net_external.group.index)
-        del net_external["group"]
+        net_external.group = net_external.group[:0]  # clear dataframe
     drop_and_edit_cost_functions(net_external, all_internal_buses, True, True)
     drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     drop_buses(net_external, all_internal_buses)
