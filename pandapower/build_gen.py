@@ -7,7 +7,6 @@
 import numpy as np
 import pandas as pd
 
-from pandapower.create._utils import add_column_to_df
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.bustypes import bustypes_dc
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
@@ -521,6 +520,8 @@ def _calculate_qmin_qmax_from_q_capability_characteristics(net, element):
     For gen/sgen elements with reactive_capability_curve == True, compute min_q_mvar / max_q_mvar from the
     q_capability_characteristic table at the current p_mw.
     """
+    from pandapower.create._utils import add_column_to_df
+
     if element not in ["gen", "sgen"]:
         logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
                        f"of the {element}. Please give gen or sgen as an argument of the function")
