@@ -16,7 +16,6 @@ from pandapower.networks.kerber_networks import _create_branched_loads_network, 
 
 # I.  Kerber Landnetz mit extremen Netzstrahlen (Freileitung):
 def kb_extrem_landnetz_freileitung(n_lines=26, l_lines_in_km=0.012, std_type="NFA2X 4x70",
-                                   # trafotype="0.4 MVA 10/0.4 kV Yyn6 4 ASEA"
                                    trafotype="0.25 MVA 10/0.4 kV", p_load_mw=0.008,
                                    q_load_mvar=0, v_os=10.):
     pd_net = _create_branch_network(num_lines=[n_lines], len_lines=[l_lines_in_km],
@@ -27,7 +26,6 @@ def kb_extrem_landnetz_freileitung(n_lines=26, l_lines_in_km=0.012, std_type="NF
 
 # I.  Kerber Landnetz mit extremen Netzstrahlen (Kabel):
 def kb_extrem_landnetz_kabel(n_branch_1=26, l_lines_1_in_km=0.026, std_type="NAYY 4x150",
-                             # trafotype="0.4 MVA 10/0.4 kV Yyn6 4 ASEA"
                              trafotype="0.25 MVA 10/0.4 kV", p_load_mw=.008,
                              q_load_mvar=0., length_branchout_line_1=0.018,
                              length_branchout_line_2=0.033, std_type_branchout_line="NAYY 4x50",
@@ -100,7 +98,6 @@ def kb_extrem_dorfnetz(std_type="NAYY 4x150", trafotype="0.4 MVA 10/0.4 kV",
 
 # II. Kerber Dorfnetz mit extremen Netzstrahlen und hoch ausgelastetem Transformator:
 def kb_extrem_dorfnetz_trafo(std_type="NAYY 4x150", trafotype="0.25 MVA 10/0.4 kV",
-                             # trafotype="0.4 MVA 10/0.4 kV Yyn6 4 ASEA",
                              p_load_mw=0.006, q_load_mvar=0., length_branchout_line_1=0.015,
                              length_branchout_line_2=0.031, std_type_branchout_line="NAYY 4x50",
                              v_os=10.):

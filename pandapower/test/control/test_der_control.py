@@ -262,7 +262,7 @@ def test_cosphi_of_p_timeseries():
 
 def test_QModels_with_2Dim_timeseries():
     def define_outputwriters(nets):
-        ows = list()
+        ows = []
         for net in nets:
             ow = OutputWriter(net)
             ow.log_variable("res_sgen", "p_mw")

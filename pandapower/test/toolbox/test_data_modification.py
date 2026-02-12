@@ -20,6 +20,7 @@ from pandapower.toolbox.data_modification import reindex_elements, reindex_buses
     add_column_from_element_to_elements, create_continuous_bus_index, create_continuous_elements_index, \
     set_scaling_by_type
 from pandapower.toolbox.element_selection import pp_elements
+from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
 
 def test_add_column_from_node_to_elements():
@@ -178,7 +179,6 @@ def test_reindex_elements():
 
 
 def test_continuous_element_numbering():
-    from pandapower.estimation.util import add_virtual_meas_from_loadflow
     net = example_multivoltage()
 
     # Add noises to index with some large number
