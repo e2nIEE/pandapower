@@ -45,7 +45,7 @@ def test_opf_data_check_vm_lim_val():
     # no error due to missing voltage limits expected
     for par in ["min_vm_pu", "max_vm_pu"]:
         net = _opf_net()
-        net.bus[par].at[0] = nan
+        net.bus.at[0, par] = nan
         assert _run_check(net)
 
 
@@ -61,7 +61,7 @@ def test_opf_data_check_dcline_lim_val():
     # no error due to missing dcline constraint values expected
     for par in ['max_p_mw', 'min_q_from_mvar', 'min_q_to_mvar', 'max_q_from_mvar', 'max_q_to_mvar']:
         net = _opf_net()
-        net.dcline[par].at[0] = nan
+        net.dcline.at[0, par] = nan
         assert _run_check(net)
 
 
@@ -78,7 +78,7 @@ def test_opf_data_check_lim_val():
     for elm in ['load', 'gen', 'sgen']:
         for par in ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']:
             net = _opf_net()
-            net[elm][par].at[0] = nan
+            net[elm].at[0, par] = nan
             assert _run_check(net)
 
 

@@ -44,7 +44,7 @@ def create_sgen(
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
-    controllable: bool | float = nan,
+    controllable: bool | None = None,
     k: float = nan,
     rx: float = nan,
     id_q_capability_characteristic: int | None = None,
@@ -187,7 +187,7 @@ def create_sgens(
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
-    controllable: bool | Iterable[bool | float] | float = nan,  # TODO: do not think this should ever be float
+    controllable: bool | Iterable[bool] | None = None,
     k: float | Iterable[float] = nan,
     rx: float = nan,
     id_q_capability_characteristic: Int | Iterable[Int] | None = None,
