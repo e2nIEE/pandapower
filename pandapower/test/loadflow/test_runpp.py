@@ -186,7 +186,7 @@ def test_result_iter(result_test_networks):
 def bus_bus_net():
     net = create_empty_network()
     add_grid_connection(net)
-    for _u in range(4):
+    for _ in range(4):
         create_bus(net, vn_kv=.4)
     create_load(net, 5, p_mw=0.01)
     create_switch(net, 3, 6, et="b")
@@ -399,7 +399,7 @@ def test_connectivity_check_island_with_one_pv_bus():
     isolated_bus1 = create_bus(net, vn_kv=20., name="isolated Bus1")
     isolated_bus2 = create_bus(net, vn_kv=20., name="isolated Bus2")
     isolated_gen = create_bus(net, vn_kv=20., name="isolated Gen")
-    _ = create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
+    create_gen(net, isolated_gen, p_mw=0.35, vm_pu=1.0, name="isolated PV bus")
     create_line(net, isolated_bus2, isolated_bus1, length_km=1,
                 std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine")
     create_line(net, isolated_gen, isolated_bus1, length_km=1,

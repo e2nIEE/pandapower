@@ -7,6 +7,7 @@
 import numpy as np
 import pytest
 
+from copy import deepcopy
 from pandapower.auxiliary import OPFNotConverged
 from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network, create_bus, create_gen, create_ext_grid, create_load, \
@@ -42,7 +43,7 @@ def simplest_grid():
     return net
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def net_3w_trafo_opf():
     net = create_empty_network()
 
@@ -82,7 +83,7 @@ def net_3w_trafo_opf():
     return net
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def simple_opf_test_net():
     net = create_empty_network()
     create_bus(net, vn_kv=10.)
@@ -466,7 +467,7 @@ def test_unconstrained_line():
 
 def test_trafo3w_loading():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    _, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
     tidx = create_transformer3w(net, b2, b3, b4, std_type='63/25/38 MVA 110/20/10 kV',
@@ -487,7 +488,7 @@ def test_trafo3w_loading():
 
 
 def test_dcopf_poly(simple_opf_test_net):
-    net = simple_opf_test_net
+    net = deepcopy(simple_opf_test_net)
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
     rundcopp(net, verbose=False)
@@ -500,7 +501,7 @@ def test_dcopf_poly(simple_opf_test_net):
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 def test_dcopf_poly_verbose_true(simple_opf_test_net):
-    net = simple_opf_test_net
+    net = deepcopy(simple_opf_test_net)
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
     rundcopp(net, verbose=True)
@@ -513,7 +514,7 @@ def test_dcopf_poly_verbose_true(simple_opf_test_net):
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 def test_opf_poly(simple_opf_test_net):
-    net = simple_opf_test_net
+    net = deepcopy(simple_opf_test_net)
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     # run OPF
     for init in ["pf", "flat"]:
@@ -529,7 +530,7 @@ def test_opf_poly(simple_opf_test_net):
 
 def test_opf_pwl(simple_opf_test_net):
     # create net
-    net = simple_opf_test_net
+    net = deepcopy(simple_opf_test_net)
     create_pwl_cost(net, 0, "gen", [[0, 100, 100], [100, 200, 100]])
     # run OPF
     for init in ["pf", "flat"]:
@@ -546,7 +547,7 @@ def test_opf_pwl(simple_opf_test_net):
 
 def test_dcopf_pwl(simple_opf_test_net):
     # create net
-    net = simple_opf_test_net
+    net = deepcopy(simple_opf_test_net)
     create_pwl_cost(net, 0, "gen", [[0, 100, 100], [100, 200, 100]])
     create_pwl_cost(net, 0, "ext_grid", [[0, 100, 0], [100, 200, 0]])
     # run OPF
@@ -569,7 +570,6 @@ def test_opf_varying_max_line_loading():
     vm_max = 1.5
     vm_min = 0.5
     max_trafo_loading = 800
-    max_line_loading = 13
 
     # create net
     net = create_empty_network()
@@ -767,7 +767,7 @@ def test_in_service_controllables():
 
 def test_no_controllables(simple_opf_test_net):
     # was ist das problwem an diesem fall und wie fange ich es ab?
-    net = simple_opf_test_net
+    net = deepcopy(simple_opf_test_net)
     net.gen.controllable = False
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-2)
     create_poly_cost(net, 0, "load", cp1_eur_per_mw=1)
@@ -854,7 +854,7 @@ def test_line_temperature():
     assert "r_ohm_per_km" not in net.res_line.columns
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def four_bus_net():
     net = simple_four_bus_system()
     net.sgen = net.sgen.drop(index=1)
@@ -865,7 +865,7 @@ def four_bus_net():
 def test_three_slacks_vm_setpoint(four_bus_net):
     # tests a net with three slacks in one area. Two of them will be converted to gens, since
     # only one is allowed per area. The others should have vmin / vmax set as their vm_pu setpoint
-    net = four_bus_net
+    net = deepcopy(four_bus_net)
     # create two additional slacks with different voltage setpoints
     create_ext_grid(net, 1, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
     create_ext_grid(net, 3, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.)
@@ -879,7 +879,7 @@ def test_three_slacks_vm_setpoint(four_bus_net):
 def test_only_gen_slack_vm_setpoint(four_bus_net):
     # tests a net with only gens of which one of them is a a slack
     # The  vmin / vmax vm_pu setpoint should be correct
-    net = four_bus_net
+    net = deepcopy(four_bus_net)
     net.ext_grid = net.ext_grid.drop(index=net.ext_grid.index)
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
@@ -906,12 +906,12 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     assert np.allclose(net.res_bus.at[1, "p_mw"], -0.02)
     # assert limit of controllable == True gen
     assert 0.9 < net.res_bus.at[3, "vm_pu"] < 1.1
-    assert not net.res_bus.at[3, "vm_pu"] == 1.02
+    assert net.res_bus.at[3, "vm_pu"] != 1.02
 
 
 def test_gen_p_vm_fixed(four_bus_net):
     # tests if gen max_vm_pu and min_vm_pu are correctly enforced
-    net = four_bus_net
+    net = deepcopy(four_bus_net)
     min_vm_pu, max_vm_pu = .95, 1.05
     min_p_mw, max_p_mw = 0., 1.
     p_mw, vm_pu = 0.02, 1.01
@@ -927,7 +927,7 @@ def test_gen_p_vm_fixed(four_bus_net):
 
 def test_gen_p_vm_limits(four_bus_net):
     # tests if gen max_vm_pu and min_vm_pu are correctly enforced
-    net = four_bus_net
+    net = deepcopy(four_bus_net)
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
     min_vm_pu, max_vm_pu = .99, 1.005
@@ -945,7 +945,7 @@ def test_gen_p_vm_limits(four_bus_net):
 
 def test_gen_violated_p_vm_limits(four_bus_net):
     # tests if gen max_vm_pu and min_vm_pu are correctly enforced
-    net = four_bus_net
+    net = deepcopy(four_bus_net)
     min_vm_pu, max_vm_pu = .98, 1.007  # gen limits are out of bus limits
     net.bus.loc[:, "min_vm_pu"] = min_vm_pu
     net.bus.loc[:, "max_vm_pu"] = max_vm_pu

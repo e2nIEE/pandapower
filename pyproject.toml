@@ -74,7 +74,7 @@ docs = [
     "geopandas~=1.1"
 ]
 plotting = ["plotly~=6.3", "matplotlib~=3.10", "igraph", "geopandas~=1.1"]
-test = ["pytest~=9.0", "pytest-xdist~=3.8", "nbmake~=1.5", "pytest-timeout"]
+test = ["pytest~=9.0", "nbmake~=1.5", "pytest-timeout", "pytest-split"]
 performance = ["ortools~=9.14", "numba~=0.61", "lightsim2grid~=0.12.2"]
 fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=46.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.0"]
 converter = ["matpowercaseframes~=1.1", "lxml~=6.0"]
@@ -127,6 +127,7 @@ addopts = [
     "--strict-markers",
     "--maxfail=1",  # stop after the first failure / error / timeout
     "--timeout=60", "--timeout-method=thread",  # per‑test timeout in seconds (requires pytest-timeout)
+    "--timeout=60", # "--timeout-method=thread",  # per‑test timeout in seconds (requires pytest-timeout)
 ]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"

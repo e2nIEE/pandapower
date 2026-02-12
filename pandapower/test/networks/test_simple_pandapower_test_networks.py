@@ -6,8 +6,12 @@
 
 import pytest
 
-from pandapower.networks.simple_pandapower_test_networks import panda_four_load_branch, four_loads_with_branches_out, \
-    simple_four_bus_system, simple_mv_open_ring_net
+from pandapower.networks.simple_pandapower_test_networks import (
+    panda_four_load_branch,
+    four_loads_with_branches_out,
+    simple_four_bus_system,
+    simple_mv_open_ring_net,
+)
 from pandapower.run import runpp
 
 
@@ -56,5 +60,5 @@ def test_simple_mv_open_ring_net():
     assert net.converged
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

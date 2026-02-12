@@ -48,7 +48,7 @@ def test_2bus():
     target_delta = np.array([[0.0, 3.11356604]])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-6) or not (np.nanmax(abs(diff_delta)) < 1e-6):
+    if np.nanmax(abs(diff_v)) >= 1e-6 or np.nanmax(abs(diff_delta)) >= 1e-6:
         raise AssertionError("Estimation failed!")
 
 
@@ -86,8 +86,7 @@ def test_3bus():
     target_delta = np.array([0., 0.8677, 3.1381])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
@@ -141,8 +140,7 @@ def test_3bus_with_bad_data():
 
     assert bad_data_detected
     assert success_rn_max
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
 
@@ -160,7 +158,7 @@ def test_3bus_with_out_of_service_bus():
     create_bus(net, name="bus1", vn_kv=1.)
     create_bus(net, name="bus2", vn_kv=1.)
     create_bus(net, name="bus3", vn_kv=1.)
-    create_bus(net, name="bus4", vn_kv=1., in_service=0)  # out-of-service bus test
+    create_bus(net, name="bus4", vn_kv=1., in_service=False)  # out-of-service bus test
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                 max_i_ka=1)
@@ -192,8 +190,7 @@ def test_3bus_with_out_of_service_bus():
     target_delta = np.array([[0., -1.2475, -2.7457, np.nan]])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
 
@@ -256,8 +253,7 @@ def test_3bus_with_transformer():
     diff_v = net.res_bus.vm_pu.values - v_result
     diff_delta = net.res_bus.va_degree.values - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 6e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 8e-4):
+    if np.nanmax(abs(diff_v)) >= 6e-4 or np.nanmax(abs(diff_delta)) >= 8e-4:
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
@@ -606,8 +602,8 @@ def test_network_with_trafo3w_pq():
     if not estimate(net):
         raise AssertionError("Estimation failed!")
 
-    if not (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006) or \
-            not (np.nanmax(np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)) < 0.006):
+    if np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) >= 0.006 or \
+            np.nanmax(np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)) >= 0.006:
         raise AssertionError("Estimation failed")
 
     # Try estimate with results initialization

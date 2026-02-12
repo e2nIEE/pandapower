@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import copy
+from copy import deepcopy
 import json
 import os
 
@@ -32,9 +32,9 @@ except (ImportError, RuntimeError, UnsupportedPythonError) as e:
 
 def test_pp_to_pm_conversion(net_3w_trafo_opf):
     # tests if the conversion to power models works
-    net = net_3w_trafo_opf
-    pm_S = convert_pp_to_pm(net)
-    pm_I = convert_pp_to_pm(net, opf_flow_lim="I")
+    net = deepcopy(net_3w_trafo_opf)
+    convert_pp_to_pm(net)
+    convert_pp_to_pm(net, opf_flow_lim="I")
 
 
 def test_pm_to_pp_conversion(simple_opf_test_net):
@@ -46,8 +46,8 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
 
     # get pandapower opf results
     runopp(net, delta=1e-13)
-    va_degree = copy.deepcopy(net.res_bus.va_degree)
-    vm_pu = copy.deepcopy(net.res_bus.vm_pu)
+    va_degree = deepcopy(net.res_bus.va_degree)
+    vm_pu = deepcopy(net.res_bus.vm_pu)
 
     # get previously calculated power models results
     pm_res_file = os.path.join(os.path.abspath(os.path.dirname(test.__file__)),
@@ -63,7 +63,7 @@ def test_pm_to_pp_conversion(simple_opf_test_net):
 
 
 def test_obj_factors(net_3w_trafo_opf):
-    net = net_3w_trafo_opf
+    net = deepcopy(net_3w_trafo_opf)
     net["obj_factors"] = [0.9, 0.1]
     pm = convert_pp_to_pm(net)
     assert pm["user_defined_params"]["obj_factors"]["fac_1"] == 0.9
