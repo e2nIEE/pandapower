@@ -36,7 +36,7 @@ def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computin
         dtype=np.float64)
     k = 0
     for i in range(nb_b_buses_ppc):
-        for j in range(i, nb_b_buses_ppc):
+        for j in range(i+1, nb_b_buses_ppc):
             if np.abs(params[i, j]) > 1e-10:
                 impedance_parameter.loc[k, 'from_bus'] = b_buses_pd[i]
                 impedance_parameter.loc[k, 'to_bus'] = b_buses_pd[j]

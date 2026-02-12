@@ -61,11 +61,7 @@ def test_contingency_parallel(get_net):
     net = copy.deepcopy(get_net)
     nminus1_cases = {"line": {"index": net.line.index.values}}
 
-    start = time.time()
     res = run_contingency_parallel(net, nminus1_cases, n_procs=4)
-    parallel_time = time.time() - start
-
-    # print(f"Parallel time with 4 processes: {parallel_time}")
 
     element_limits = get_element_limits(net)
     check_elements_within_limits(element_limits, res, True)

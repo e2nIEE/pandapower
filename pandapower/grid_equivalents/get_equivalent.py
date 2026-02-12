@@ -199,33 +199,38 @@ def get_equivalent(
 
         if eq_type == "ward":
             # --- calculate equivalent impedance and wards
-            ward_parameter_no_power, impedance_parameter = \
-                _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computing_time)
+            ward_parameter_no_power, impedance_parameter = _calculate_ward_and_impedance_parameters(
+                Ybus_eq, bus_lookups, show_computing_time
+            )
 
             # --- replace external network by equivalent elements
-            _replace_external_area_by_wards(net_external, bus_lookups,
-                                            ward_parameter_no_power,
-                                            impedance_parameter,
-                                            ext_buses_with_xward,
-                                            show_computing_time,
-                                            calc_volt_angles=calculate_voltage_angles,
-                                            runpp_fct=runpp_fct)
+            _replace_external_area_by_wards(
+                net_external,
+                bus_lookups,
+                ward_parameter_no_power,
+                impedance_parameter,
+                ext_buses_with_xward,
+                show_computing_time,
+                calc_volt_angles=calculate_voltage_angles,
+                runpp_fct=runpp_fct
+            )
         else:  # eq_type == "xward"
             # --- calculate equivalent impedance and xwards
-            xward_parameter_no_power, impedance_parameter = \
-                _calculate_xward_and_impedance_parameters(net_external,
-                                                          Ybus_eq,
-                                                          bus_lookups,
-                                                          show_computing_time)
+            xward_parameter_no_power, impedance_parameter = _calculate_xward_and_impedance_parameters(
+                net_external, Ybus_eq, bus_lookups, show_computing_time
+            )
 
             # --- replace external network by equivalent elements
-            _replace_external_area_by_xwards(net_external, bus_lookups,
-                                             xward_parameter_no_power,
-                                             impedance_parameter,
-                                             ext_buses_with_xward,
-                                             show_computing_time,
-                                             calc_volt_angles=calculate_voltage_angles,
-                                             runpp_fct=runpp_fct)
+            _replace_external_area_by_xwards(
+                net_external,
+                bus_lookups,
+                xward_parameter_no_power,
+                impedance_parameter,
+                ext_buses_with_xward,
+                show_computing_time,
+                calc_volt_angles=calculate_voltage_angles,
+                runpp_fct=runpp_fct
+            )
         net_eq = net_external
     else:
         raise NotImplementedError(f"The {eq_type=} is unknown.")
