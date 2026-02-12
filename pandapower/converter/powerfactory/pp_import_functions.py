@@ -2571,7 +2571,7 @@ def create_trafo_type(net, item):
         "vector_group": item.vecgrp[:-1],
         "vk0_percent": item.uk0tr,
         "vkr0_percent": item.ur0tr,
-        "mag0_percent": item.zx0hl_n,
+        "mag0_percent": item.zx0hl_n * 1e-2,
         "mag0_rx": item.rtox0_n,
         "si0_hv_partial": item.zx0hl_h,
         "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
@@ -2751,7 +2751,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             vector_group=pf_type.vecgrp[:-1],
             vk0_percent=pf_type.uk0tr,
             vkr0_percent=pf_type.ur0tr,
-            mag0_percent=pf_type.zx0hl_n,
+            mag0_percent=pf_type.zx0hl_n * 1e-2,
             mag0_rx=pf_type.rtox0_n,
             si0_hv_partial=pf_type.zx0hl_h,
             shift_degree=pf_type.nt2ag * 30,
