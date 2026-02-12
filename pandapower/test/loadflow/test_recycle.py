@@ -23,7 +23,7 @@ from pandapower.toolbox.comparison import nets_equal
 @pytest.fixture
 def recycle_net():
     net = create_empty_network()
-    b1, b2, ln = add_grid_connection(net)
+    _, b2, _ = add_grid_connection(net)
     pl = 1.2
     ql = 1.1
     ps = 0.5

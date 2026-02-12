@@ -108,8 +108,8 @@ def test_net_deepcopy():
 
     net1 = copy.deepcopy(net)
 
-    assert not net1.controller.object.at[1].data_source is ds
-    assert not net1.controller.object.at[1].data_source.df is ds.df
+    assert net1.controller.object.at[1].data_source is not ds
+    assert net1.controller.object.at[1].data_source.df is not ds.df
 
     if GEOPANDAS_INSTALLED:
         for tab in ('bus', 'line'):
@@ -207,7 +207,7 @@ def test_memory_leak_dict():
     types_dict1 = get_gc_objects_dict()
     num = 3
     for _ in range(num):
-        d = dict()
+        d = {}
         MemoryLeakDemoDict(d)
 
     gc.collect()

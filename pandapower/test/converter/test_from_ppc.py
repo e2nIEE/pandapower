@@ -74,26 +74,27 @@ def test_validate_from_ppc_simple_against_target():
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
-def test_ppc_testgrids():
+@pytest.mark.parametrize('case_name', ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6',
+                  'case14', 'case57'])
+def test_ppc_testgrids(case_name):
     # check ppc_testgrids
-    case_names = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6',
-                  'case14', 'case57']
-    for case_name in case_names:
-        ppc = get_testgrids('ppc_testgrids', case_name+'.json')
-        net = from_ppc(ppc, f_hz=60)
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
-        logger.info(f'{case_name} has been checked successfully.')
+    ppc = get_testgrids('ppc_testgrids', case_name+'.json')
+    net = from_ppc(ppc, f_hz=60)
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+    logger.info(f'{case_name} has been checked successfully.')
 
 
 @pytest.mark.slow
-def test_pypower_cases():
+@pytest.mark.parametrize('case_name', ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39', 'case118']) # 'case300'
+def test_pypower_cases(case_name):
     # check pypower cases
-    case_names = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39', 'case118'] # 'case300'
-    for case_name in case_names:
-        ppc = get_testgrids('pypower_cases', case_name+'.json')
-        net = from_ppc(ppc, f_hz=60)
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
-        logger.info(f'{case_name} has been checked successfully.')
+    ppc = get_testgrids('pypower_cases', case_name+'.json')
+    net = from_ppc(ppc, f_hz=60)
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+    logger.info(f'{case_name} has been checked successfully.')
+
+
+def test_case9_not_in_matpower():
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-3,

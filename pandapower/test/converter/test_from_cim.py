@@ -15,7 +15,7 @@ from pandapower.run import runpp
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mini_sc_mod():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -23,7 +23,7 @@ def mini_sc_mod():
 
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mini_sc():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -32,7 +32,7 @@ def mini_sc():
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mirco_sc():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -41,7 +41,7 @@ def mirco_sc():
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v2():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -51,7 +51,7 @@ def fullgrid_v2():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v2_spline():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -65,7 +65,7 @@ def fullgrid_v2_spline():
     return net
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v3():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -74,7 +74,7 @@ def fullgrid_v3():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def smallgrid_GL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -84,7 +84,7 @@ def smallgrid_GL():
     return from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def smallgrid_DL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -94,7 +94,7 @@ def smallgrid_DL():
     return from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def realgrid():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -103,7 +103,7 @@ def realgrid():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def SimBench_1_HVMVmixed_1_105_0_sw_modified():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -112,7 +112,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
     return from_cim(file_list=cgmes_files, run_powerflow=True)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def Simbench_1_EHV_mixed__2_no_sw():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -121,7 +121,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
     return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def example_multivoltage():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -132,7 +132,7 @@ def example_multivoltage():
     return net
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -141,7 +141,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_node_breaker():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 

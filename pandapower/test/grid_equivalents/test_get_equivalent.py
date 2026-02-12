@@ -101,7 +101,7 @@ def check_elements_amount(net, elms_dict, check_all_pp_elements=True):
     if check_all_pp_elements:
         elms_dict.update({elm: 0 for elm in pp_elements() if elm not in elms_dict.keys()})
     for key, val in elms_dict.items():
-        if not net[key].shape[0] == val:
+        if net[key].shape[0] != val:
             raise ValueError("The net has %i %ss but %i are expected." % (
                 net[key].shape[0], key, int(val)))
 
@@ -204,43 +204,42 @@ def test_cost_consideration():
                               columns=["element"]).values)
 
 
-def test_basic_usecases():
+@pytest.mark.parametrize("eq_type", ["rei", "ward", "xward"])
+def test_basic_usecases(eq_type):
     """
     This test checks basic use cases of network equivalents for resulting elements amount and the
     validity of net.res_bus.
     """
     net = create_test_net()
-    eq_types = ["rei", "ward", "xward"]
-    for eq_type in eq_types:
-        net1, net2, net3 = run_basic_usecases(eq_type)
+    net1, net2, net3 = run_basic_usecases(eq_type)
 
-        if eq_type == "rei":
-            check_elements_amount(net1, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
-                                         "line": 3, "impedance": 3}, check_all_pp_elements=True)
-            check_res_bus(net, net1)
-            assert np.allclose(net1.bus.min_vm_pu.values,
-                               np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
-            check_elements_amount(net2, {"bus": 3, "load": 3, "sgen": 0, "shunt": 3, "ext_grid": 0,
-                                         "line": 0, "impedance": 2}, check_all_pp_elements=True)
-            check_res_bus(net, net2)
-            assert np.allclose(net2.bus.min_vm_pu.values,
-                               net.bus.min_vm_pu.loc[[2, 4, 3]].values, equal_nan=True)
-            check_elements_amount(net3, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
-                                         "line": 3, "impedance": 3}, check_all_pp_elements=True)
-            check_res_bus(net, net3)
-            assert np.allclose(net1.bus.min_vm_pu.values,
-                               np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
+    if eq_type == "rei":
+        check_elements_amount(net1, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
+                                     "line": 3, "impedance": 3}, check_all_pp_elements=True)
+        check_res_bus(net, net1)
+        assert np.allclose(net1.bus.min_vm_pu.values,
+                           np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
+        check_elements_amount(net2, {"bus": 3, "load": 3, "sgen": 0, "shunt": 3, "ext_grid": 0,
+                                     "line": 0, "impedance": 2}, check_all_pp_elements=True)
+        check_res_bus(net, net2)
+        assert np.allclose(net2.bus.min_vm_pu.values,
+                           net.bus.min_vm_pu.loc[[2, 4, 3]].values, equal_nan=True)
+        check_elements_amount(net3, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
+                                     "line": 3, "impedance": 3}, check_all_pp_elements=True)
+        check_res_bus(net, net3)
+        assert np.allclose(net1.bus.min_vm_pu.values,
+                           np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
 
-        elif "ward" in eq_type:
-            check_elements_amount(net1, {"bus": 4, "load": 2, "sgen": 2, "ext_grid": 1, "line": 3,
-                                         eq_type: 2, "impedance": 1}, check_all_pp_elements=True)
-            check_res_bus(net, net1)
-            check_elements_amount(net2, {"bus": 2, "load": 2, "sgen": 0, "ext_grid": 0, "line": 0,
-                                         eq_type: 2, "impedance": 1}, check_all_pp_elements=True)
-            check_res_bus(net, net2)
-            check_elements_amount(net3, {"bus": 4, "load": 2, "sgen": 2, "ext_grid": 1, "line": 3,
-                                         eq_type: 2, "impedance": 1}, check_all_pp_elements=True)
-            check_res_bus(net, net3)
+    elif "ward" in eq_type:
+        check_elements_amount(net1, {"bus": 4, "load": 2, "sgen": 2, "ext_grid": 1, "line": 3,
+                                     eq_type: 2, "impedance": 1}, check_all_pp_elements=True)
+        check_res_bus(net, net1)
+        check_elements_amount(net2, {"bus": 2, "load": 2, "sgen": 0, "ext_grid": 0, "line": 0,
+                                     eq_type: 2, "impedance": 1}, check_all_pp_elements=True)
+        check_res_bus(net, net2)
+        check_elements_amount(net3, {"bus": 4, "load": 2, "sgen": 2, "ext_grid": 1, "line": 3,
+                                     eq_type: 2, "impedance": 1}, check_all_pp_elements=True)
+        check_res_bus(net, net3)
 
 
 def test_case9_with_slack_generator_in_external_net():
@@ -423,7 +422,7 @@ def test_shifter_degree():
     net.trafo3w.at[0, "shift_lv_degree"] = 150
     runpp(net, calculate_voltage_angles=True)
 
-    boundary_buses = list([net.trafo.hv_bus.values[1]]) + list(net.trafo.lv_bus.values) + \
+    boundary_buses = [net.trafo.hv_bus.values[1]] + list(net.trafo.lv_bus.values) + \
                      list(net.trafo3w.hv_bus.values) + list(net.trafo3w.lv_bus.values)
     i = net.ext_grid.bus.values[0]
 
@@ -538,9 +537,9 @@ def test_controller():
     assert net_eq.controller.object[0].__dict__["matching_params"]["element_index"] == [0, 2]
     for i in net.controller.index:
         assert set(net_eq.controller.object[i].__dict__["element_index"]) - \
-               set(net.controller.object[i].__dict__["element_index"]) == set([])
+               set(net.controller.object[i].__dict__["element_index"]) == set()
         assert set(net_eq.controller.object[i].__dict__["profile_name"]) - \
-               set(net.controller.object[i].__dict__["profile_name"]) == set([])
+               set(net.controller.object[i].__dict__["profile_name"]) == set()
 
     net_eq = get_equivalent(net, "rei", [4, 8], [0],
                             retain_original_internal_indices=True)

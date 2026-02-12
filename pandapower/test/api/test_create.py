@@ -646,7 +646,7 @@ def test_create_lines_optional_columns():
 
 def test_create_line_alpha_temperature():
     net = create_empty_network()
-    b = create_buses(net, 5, 110)
+    create_buses(net, 5, 110)
 
     l1 = create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
     l2 = create_line(

@@ -47,9 +47,9 @@ def create_net():
     b1 = create_bus(net, vn_kv=vn_kv)
     create_ext_grid(net, b1, vm_pu=1.01)
     b2 = create_bus(net, vn_kv=vn_kv)
-    l1 = create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
+    create_line_from_parameters(net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12,
                                      c_nf_per_km=300, max_i_ka=.2, df=.8)
-    for i in range(2):
+    for _ in range(2):
         add_trafo_connection(net, b2)
 
     return net
@@ -244,8 +244,6 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
 
 
 def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
-    # from pandapower.test.loadflow.test_results import *
-
     net = create_empty_network()
     create_bus(net, 110)
     create_bus(net, 20)
@@ -563,9 +561,6 @@ def test_trafo3w_tap_neutral_not_zero(tap_pos, tap_side, tap_step_degree):
 
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
     net = result_test_network
-    buses = net.bus[net.bus.zone == "test_impedance"]
-    impedances = [
-        x for x in net.impedance.index if net.impedance.from_bus[x] in buses.index]
     runpp_with_consistency_checks(net)
     buses = net.bus[net.bus.zone == "test_impedance"]
     impedances = [x for x in net.impedance.index if net.impedance.from_bus[x] in buses.index]
@@ -643,7 +638,6 @@ def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
     runpp(net)
     buses = net.bus[net.bus.zone == "test_gen"]
     gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
-    #    b1=buses.index[0]
     b2 = buses.index[1]
     b3 = buses.index[2]
     g1 = gens[0]
