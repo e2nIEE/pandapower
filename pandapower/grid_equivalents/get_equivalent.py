@@ -179,7 +179,7 @@ def get_equivalent(
         if ward_type == "ward_admittance":
             create_passive_external_net_for_ward_admittance(
                 net, all_external_buses, boundary_buses, runpp_fct=runpp_fct, **kwargs)
-        
+
         net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
             calc_volt_angles=calculate_voltage_angles, runpp_fct=runpp_fct)
