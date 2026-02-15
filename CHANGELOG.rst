@@ -6,6 +6,7 @@ Change Log
 
 [3.4.0] - 2026-02-09
 -------------------------------
+- [FIXED] `mag0_percent` is treated as a percent instead of ratio, consistent with its name.
 - [CHANGED] setup: remove extra dependencies from `all` set.
 - [ADDED] setup: add `dev` set for all dependencies required for development.
 - [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
@@ -27,7 +28,6 @@ Change Log
 
 [3.3.0] - 2025-12-15
 -------------------------------
-- [FIXED] `mag0_percent` is treated as a percent instead of ratio, consistent with its name.
 - [ADDED] network_structure, load_create, sgen_create: seperate nominal mva attributes for each phase `sn_a_mva`, `sn_b_mva`, `sn_c_mva`. While existing total nominal mva `sn_mva` is also retained.
 - [FIXED] julia implementation, now using juliacall
 - [CHANGED] diagnostics restructured for better extensibility
