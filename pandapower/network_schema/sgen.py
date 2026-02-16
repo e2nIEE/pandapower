@@ -29,8 +29,7 @@ _sgen_columns = {
         float, nullable=True, required=False, description="minimum reactive power [MVAr]", metadata={"opf": True}
     ),
     "controllable": pa.Column(
-        pd.BooleanDtype,
-        nullable=True,
+        bool,
         required=False,
         description="states if sgen is controllable or not, sgen will not be used as a flexibility if it is not controllable",
     ),

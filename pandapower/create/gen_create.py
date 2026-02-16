@@ -141,7 +141,7 @@ def create_gen(
     _set_entries(net, "gen", index, True, entries=entries)
 
     # OPF limits
-    _set_value_if_not_nan(net, index, controllable, "controllable", "gen", default_val=True)
+    _set_value_if_not_nan(net, index, controllable, "controllable", "gen", default_val=False)
 
     # id for q capability curve table
     _set_value_if_not_nan(net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "gen")

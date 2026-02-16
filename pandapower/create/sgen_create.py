@@ -141,7 +141,7 @@ def create_sgen(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen")
+    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", default_val=False)
 
     _set_value_if_not_nan(
         net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "sgen"
@@ -292,7 +292,7 @@ def create_sgens(
             f"unknown sgen generator_type '{generator_type}'! "
             f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'"
         )
-    _set_multiple_entries(net, "sgen", index, entries=entries)
+    _set_multiple_entries(net, "sgen", index, entries=entries, defaults_to_fill=[("controllable", False)])
 
     return index
 

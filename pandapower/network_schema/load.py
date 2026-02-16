@@ -57,8 +57,7 @@ _load_columns = {
         metadata={"3ph": True},
     ),
     "controllable": pa.Column(
-        pd.BooleanDtype,
-        nullable=True,
+        bool,
         required=False,
         description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
     ),

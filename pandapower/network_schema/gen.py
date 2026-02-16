@@ -105,7 +105,7 @@ _gen_columns = {
     ),
     "slack": pa.Column(bool, description="use the gen as slack"),
     "controllable": pa.Column(
-        pd.BooleanDtype, nullable=True, required=False, description="allow control for opf", metadata={"opf": True}
+        bool, required=False, description="allow control for opf", metadata={"opf": True}
     ),
     "pg_percent": pa.Column(
         float,
