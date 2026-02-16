@@ -49,7 +49,12 @@ positiv_floats_plus_zero: list[float | np.float64] = [*positiv_floats, *zero_flo
 negativ_floats: list[float | np.float64] = [-1.0, np.float64(-1.0)]
 negativ_floats_plus_zero: list[float | np.float64] = [*negativ_floats, *zero_float]
 all_allowed_floats: list[float | np.float64] = [*zero_float, *positiv_floats, *negativ_floats]
-not_allowed_floats: list[float | np.float64 | np.float32 | np.float16] = [np.float32(1.0), np.float16(1.0), float("inf"), float("-inf")]
+not_allowed_floats: list[float | np.float64 | np.float32 | np.float16] = [
+    np.float32(1.0),
+    np.float16(1.0),
+    float("inf"),
+    float("-inf"),
+]
 all_floats: list[float | np.float64 | np.float32 | np.float16] = [*all_allowed_floats, *not_allowed_floats]
 
 not_boolean_list = [*others, *strings, *all_ints, *all_floats]

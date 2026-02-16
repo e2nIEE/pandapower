@@ -531,7 +531,7 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
         net_internal = None
     else:
         net_internal = deepcopy(net)
-        drop_measurements_and_controllers(net_internal, all_external_buses, True)
+        drop_measurements_and_controllers(net_internal, all_external_buses)
         drop_and_edit_cost_functions(net_internal, all_external_buses + boundary_buses, True, True)
         drop_buses(net_internal, all_external_buses)
 

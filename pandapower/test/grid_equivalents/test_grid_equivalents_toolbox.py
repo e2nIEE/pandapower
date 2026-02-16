@@ -48,16 +48,16 @@ def boundary_testnet(which):
         expected_bbr = {
             "line": {
                 create_line_from_parameters(
-                    net, net.bus.index[net.bus.name == '9'][0], net.bus.index[net.bus.name == 9][1], 1, 0, 65, 0, 0.41
+                    net, net.bus.index[net.bus.name == '9'][0], net.bus.index[net.bus.name == '9'][1], 1, 0, 65, 0, 0.41
                 )
             },
             "impedance": {
                 create_impedance(
-                    net, net.bus.index[net.bus.name == '5'][0], net.bus.index[net.bus.name == 5][1], 0, 0.06, 250
+                    net, net.bus.index[net.bus.name == '5'][0], net.bus.index[net.bus.name == '5'][1], 0, 0.06, 250
                 )
             },
             "switch": {
-                create_switch(net, net.bus.index[net.bus.name == '7'][0], net.bus.index[net.bus.name == 7][1], "b")
+                create_switch(net, net.bus.index[net.bus.name == '7'][0], net.bus.index[net.bus.name == '7'][1], "b")
             },
             "trafo": {
                 create_transformer_from_parameters(

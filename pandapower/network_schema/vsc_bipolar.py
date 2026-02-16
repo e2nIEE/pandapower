@@ -17,7 +17,9 @@ vsc_bipolar_schema = pa.DataFrameSchema(
             description="no-load losses of the VSC on the DC side for the shunt R representing the no load losses",
         ),
         "control_mode": pa.Column(
-            str, description="the control mode of the ac side of the VSC. Can be 'Vac_phi', 'Vdc_phi', 'Vdc_Q', 'Pac_Vac', 'Pac_Qac' or 'Vdc_Vac'"
+            str,
+            pa.Check.isin(["Vac_phi", "Vdc_phi", "Vdc_Q", "Pac_Vac", "Pac_Qac", "Vdc_Vac"]),
+            description="the control mode of the ac side of the VSC. Must be 'Vac_phi', 'Vdc_phi', 'Vdc_Q', 'Pac_Vac', 'Pac_Qac' or 'Vdc_Vac'",
         ),
         "control_value_1": pa.Column(
             float, description="The first controlled parameter, for example voltage magnitude or phase"

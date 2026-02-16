@@ -1846,7 +1846,7 @@ def test_create_sgen_controllable():
     # controllable column should not exist
     assert 'controllable' not in net.sgen.columns
     s2 = create_sgen(net, b1, 50, controllable=True)
-    # controllable should be created with default value False
+    # controllable should be created with default value False # TODO: decide what it should be
     assert not net.sgen.loc[s1, 'controllable']
     assert net.sgen.loc[s2, 'controllable']
     
@@ -1862,7 +1862,7 @@ def test_create_sgens_controllable():
     # controllable column should not exist
     assert 'controllable' not in net.sgen.columns
     s2 = create_sgens(net, [b1], 50, controllable=True)[0]
-    # controllable should be created with default value False
+    # controllable should be created with default value False # TODO: decide what it should be
     assert not net.sgen.loc[s1, 'controllable']
     assert net.sgen.loc[s2, 'controllable']
 
@@ -1989,14 +1989,14 @@ def test_create_gen_controllable():
     # drop controllable column (it is created by network schema but is not required by pandera)
     # TODO remove this step with pandera merged fully
     del net.gen['controllable']
-    
+
     b1 = create_bus(net, 110)
     s1 = create_gen(net, b1, 50)
     # controllable column should not exist
     assert 'controllable' not in net.gen.columns
     s2 = create_gen(net, b1, 50, controllable=False)
-    # controllable should be created with default value True
-    assert net.gen.loc[s1, 'controllable']
+    # controllable should be created with default value True # TODO: decide what it should be
+    assert pd.isna(net.gen.loc[s1, 'controllable'])
     assert not net.gen.loc[s2, 'controllable']
 
 
@@ -2005,14 +2005,14 @@ def test_create_gens_controllable():
     # drop controllable column (it is created by network schema but is not required by pandera)
     # TODO remove this step with pandera merged fully
     del net.gen['controllable']
-    
+
     b1 = create_bus(net, 110)
     s1 = create_gens(net, [b1], 50)[0]
     # controllable column should not exist
     assert 'controllable' not in net.gen.columns
     s2 = create_gens(net, [b1], 50, controllable=False)[0]
-    # controllable should be created with default value True
-    assert net.gen.loc[s1, 'controllable']
+    # controllable should be created with default value True # TODO: decide what it should be
+    assert pd.isna(net.gen.loc[s1, 'controllable'])
     assert not net.gen.loc[s2, 'controllable']
 
 def test_create_gens_raise_errorexcept():

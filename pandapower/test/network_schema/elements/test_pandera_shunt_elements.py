@@ -39,7 +39,7 @@ class TestShuntRequiredFields:
                 itertools.product(["p_mw"], positiv_floats_plus_zero),
                 itertools.product(["q_mvar"], all_allowed_floats),
                 itertools.product(["vn_kv"], positiv_floats),
-                itertools.product(["step"], positiv_ints),
+                itertools.product(["step"], positiv_floats),
                 itertools.product(["in_service"], bools),
                 itertools.product(["id_characteristic_table"], [pd.NA, *positiv_ints_plus_zero]),
             )
@@ -71,7 +71,7 @@ class TestShuntRequiredFields:
                 itertools.product(["p_mw"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["q_mvar"], not_floats_list),
                 itertools.product(["vn_kv"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["step"], [*negativ_ints_plus_zero, *not_ints_list]),
+                itertools.product(["step"], [*negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(["in_service"], not_boolean_list),
                 itertools.product(["id_characteristic_table"], not_ints_list),
             )
@@ -80,16 +80,18 @@ class TestShuntRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = create_empty_network()
-        create_bus(net, 0.4)  # 0
+        b0 = create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
-
-        create_shunt(net, bus=0, q_mvar=0.0, p_mw=0.0, in_service=True)
-        net.shunt["p_mw"] = 0.0
-        net.shunt["q_mvar"] = 0.0
-        net.shunt["vn_kv"] = 0.4
-        net.shunt["step"] = 1
-        net.shunt["in_service"] = True
-        net.shunt["id_characteristic_table"] = pd.Series([0], dtype="Int64")
+        create_shunt(
+            net,
+            bus=b0,
+            q_mvar=0.0,
+            p_mw=0.0,
+            in_service=True,
+            vn_kv=0.4,
+            step=1.0,
+            id_characteristic_table=0,
+        )
 
         if parameter == "id_characteristic_table":
             # If invalid_value is an int, keep Int64 dtype to trigger 'ge(0)' check;
@@ -113,12 +115,16 @@ class TestShuntOptionalFields:
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         create_bus(net, 0.4)
-
-        create_shunt(net, bus=b0, q_mvar=0.2, p_mw=0.0, in_service=True)
-        # Required fields
-        net.shunt["vn_kv"] = 0.4
-        net.shunt["step"] = 2
-        net.shunt["id_characteristic_table"] = pd.Series([0], dtype="Int64")
+        create_shunt(
+            net,
+            bus=b0,
+            q_mvar=0.0,
+            p_mw=0.0,
+            in_service=True,
+            vn_kv=0.4,
+            step=2.0,
+            id_characteristic_table=0,
+        )
         # Optional fields
         net.shunt["name"] = pd.Series(["Shunt A"], dtype=pd.StringDtype())
         net.shunt["max_step"] = pd.Series([3], dtype="Int64")
@@ -133,16 +139,22 @@ class TestShuntOptionalFields:
         b0 = create_bus(net, 0.4)
 
         # Row 1: name only
-        create_shunt(net, bus=b0, q_mvar=0.0, p_mw=0.0, in_service=True)
-        net.shunt["vn_kv"].iat[0] = 0.4
-        net.shunt["step"].iat[0] = 1
-        net.shunt["id_characteristic_table"] = pd.Series([0], dtype="Int64")
+        create_shunt(
+            net,
+            bus=b0,
+            q_mvar=0.0,
+            p_mw=0.0,
+            in_service=True,
+            vn_kv=0.4,
+            step=1.0,
+            id_characteristic_table=0,
+        )
         net.shunt["name"] = pd.Series(["alpha"], dtype=pd.StringDtype())
 
         # Row 2: max_step with NA name and NA step_dependency_table
         create_shunt(net, bus=b0, q_mvar=0.1, p_mw=0.0, in_service=False)
         net.shunt["vn_kv"].iat[1] = 0.4
-        net.shunt["step"].iat[1] = 2
+        net.shunt["step"].iat[1] = 2.0
         net.shunt["id_characteristic_table"].iat[1] = pd.NA
         net.shunt["name"].iat[1] = pd.NA
         # max_step present; ensure step <= max_step
@@ -170,21 +182,26 @@ class TestShuntOptionalFields:
         """Test: valid optional values are accepted"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
+        create_shunt(
+            net,
+            bus=b0,
+            q_mvar=0.0,
+            p_mw=0.0,
+            in_service=True,
+            vn_kv=0.4,
+            step=1.0,
+            id_characteristic_table=0,
+        )
 
-        create_shunt(net, bus=b0, q_mvar=0.0, p_mw=0.0, in_service=True)
-        # Required fields
-        net.shunt["vn_kv"] = 0.4
-        net.shunt["step"] = 1
-        net.shunt["id_characteristic_table"] = pd.Series([0], dtype="Int64")
+        from pandapower.create._utils import add_column_to_df
+        add_column_to_df(net, "shunt", parameter)
 
-        if parameter == "name":
-            net.shunt[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
-        elif parameter == "max_step":
-            net.shunt[parameter] = pd.Series([valid_value], dtype="Int64")
+        if parameter == "max_step":
             # Ensure step <= max_step
-            net.shunt["step"] = min(int(net.shunt["step"].iat[0]), int(valid_value))
-        elif parameter == "step_dependency_table":
-            net.shunt[parameter] = pd.Series([valid_value], dtype=pd.BooleanDtype())
+            net.shunt["step"].at[0] = min(int(net.shunt["step"].iat[0]), int(valid_value))
+        else:
+            net.shunt[parameter].at[0] = valid_value
+
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -201,18 +218,17 @@ class TestShuntOptionalFields:
         """Test: invalid optional values are rejected"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
-
-        create_shunt(net, bus=b0, q_mvar=0.0, p_mw=0.0, in_service=True)
-        net.shunt["vn_kv"] = 0.4
-        net.shunt["step"] = 1
-        net.shunt["id_characteristic_table"] = pd.Series([0], dtype="Int64")
-
-        if parameter == "name":
-            net.shunt[parameter] = invalid_value
-        elif parameter == "max_step":
-            net.shunt[parameter] = invalid_value
-        elif parameter == "step_dependency_table":
-            net.shunt[parameter] = invalid_value
+        create_shunt(
+            net,
+            bus=b0,
+            q_mvar=0.0,
+            p_mw=0.0,
+            in_service=True,
+            vn_kv=0.4,
+            step=1.0,
+            id_characteristic_table=0,
+        )
+        net.shunt[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
@@ -221,24 +237,35 @@ class TestShuntOptionalFields:
         """Test: 'step' <= 'max_step' passes"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
-
-        create_shunt(net, bus=b0, q_mvar=0.0, p_mw=0.0, in_service=True)
-        net.shunt["vn_kv"] = 0.4
-        net.shunt["step"] = 2
+        create_shunt(
+            net,
+            bus=b0,
+            q_mvar=0.0,
+            p_mw=0.0,
+            in_service=True,
+            vn_kv=0.4,
+            step=2.0,
+            id_characteristic_table=0,
+        )
         net.shunt["max_step"] = pd.Series([3], dtype="Int64")
-        net.shunt["id_characteristic_table"] = pd.Series([0], dtype="Int64")
+
         validate_network(net)
 
     def test_step_greater_than_max_fails(self):
         """Test: 'step' > 'max_step' fails"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
-
-        create_shunt(net, bus=b0, q_mvar=0.0, p_mw=0.0, in_service=True)
-        net.shunt["vn_kv"] = 0.4
-        net.shunt["step"] = 5
+        create_shunt(
+            net,
+            bus=b0,
+            q_mvar=0.0,
+            p_mw=0.0,
+            in_service=True,
+            vn_kv=0.4,
+            step=5.0,
+            id_characteristic_table=0,
+        )
         net.shunt["max_step"] = pd.Series([3], dtype="Int64")
-        net.shunt["id_characteristic_table"] = pd.Series([0], dtype="Int64")
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
@@ -251,11 +278,16 @@ class TestShuntForeignKey:
         """Test: bus must reference an existing bus index"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
-
-        create_shunt(net, bus=b0, q_mvar=0.0, p_mw=0.0, in_service=True)
-        net.shunt["vn_kv"] = 0.4
-        net.shunt["step"] = 1
-        net.shunt["id_characteristic_table"] = pd.Series([0], dtype="Int64")
+        create_shunt(
+            net,
+            bus=b0,
+            q_mvar=0.0,
+            p_mw=0.0,
+            in_service=True,
+            vn_kv=0.4,
+            step=1.0,
+            id_characteristic_table=0,
+        )
 
         net.shunt["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):

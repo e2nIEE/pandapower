@@ -131,11 +131,23 @@ class TestDclineOptionalFields:
         )
         validate_network(net)
 
+    # TODO failing on dependending columns
     def test_optional_fields_with_nulls(self):
         """Test: dcline with optional fields including nulls is valid"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
+        create_dcline(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            p_mw=10.0,
+            loss_percent=1.0,
+            loss_mw=0.1,
+            vm_from_pu=1.02,
+            vm_to_pu=1.01,
+            in_service=True,
+        )
         create_dcline(
             net,
             from_bus=b0,
@@ -167,6 +179,7 @@ class TestDclineOptionalFields:
         )
         validate_network(net)
 
+    # TODO failing on dependending columns
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
