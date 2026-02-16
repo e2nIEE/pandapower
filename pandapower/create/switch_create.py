@@ -139,7 +139,7 @@ def create_switches(
     buses: Sequence,
     elements: Sequence,
     et: SwitchElementType | Sequence[str],
-    closed: bool = True,
+    closed: bool | Iterable[bool] = True,
     type: SwitchType | None = None,
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,

@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import io
 import logging
 import tempfile
 
@@ -53,7 +54,7 @@ def simple_test_net():
 
 
 def create_rand_data_source(net, n_timesteps=10):
-    profiles = dict()
+    profiles = {}
     elements = ["load", "sgen"]
     for el in elements:
         element = net[el]
@@ -173,7 +174,6 @@ def test_const_control_write_to_object_attribute(simple_test_net):
 def test_false_alarm_trafos(simple_test_net):
     net = simple_test_net
 
-    import io
     s = io.StringIO()
     h = logging.StreamHandler(stream=s)
     diagnostic_logger.addHandler(h)
@@ -199,7 +199,7 @@ def test_timeseries_results(simple_test_net):
     # This test compares output writer results with input
     # test net
     net = simple_test_net
-    net.user_pf_options = dict()
+    net.user_pf_options = {}
 
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
@@ -237,7 +237,7 @@ def test_timeseries_var_func(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 5
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
 
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
@@ -275,7 +275,7 @@ def test_timeseries_var_func(simple_test_net):
 def test_time_steps(simple_test_net):
     net = simple_test_net
     n_timesteps = 11
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
@@ -294,7 +294,7 @@ def test_output_dump_after_time(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 100
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
 
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
@@ -315,7 +315,7 @@ def test_output_dump_after_time(simple_test_net):
 
 def test_pf_options(simple_test_net):
     net = simple_test_net
-    profiles, ds = create_data_source()
+    _, ds = create_data_source()
     time_steps = range(0, 3)
     ow = setup_output_writer(net, time_steps)
 
@@ -330,7 +330,7 @@ def test_pf_options(simple_test_net):
 
 def test_user_pf_options(simple_test_net):
     net = simple_test_net
-    profiles, ds = create_data_source()
+    _, ds = create_data_source()
     time_steps = range(0, 3)
     ow = setup_output_writer(net, time_steps)
 
@@ -351,7 +351,7 @@ def test_user_pf_options(simple_test_net):
 
 def test_user_pf_options_init_run(simple_test_net):
     net = simple_test_net
-    profiles, ds = create_data_source()
+    _, ds = create_data_source()
     time_steps = range(0, 3)
     ow = setup_output_writer(net, time_steps)
 
@@ -369,7 +369,7 @@ def test_user_pf_options_init_run(simple_test_net):
 
 def test_user_pf_options_recycle_manual(simple_test_net):
     net = simple_test_net
-    profiles, ds = create_data_source()
+    _, ds = create_data_source()
     time_steps = range(0, 3)
     ow = setup_output_writer(net, time_steps)
 

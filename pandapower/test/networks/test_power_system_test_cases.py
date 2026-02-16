@@ -6,10 +6,36 @@
 
 import pytest
 
-from pandapower.networks.power_system_test_cases import case4gs, case5, case6ww, case9, case14, case24_ieee_rts, \
-    case30, case_ieee30, case33bw, case39, case57, case89pegase, case118, case145, case_illinois200, case300, \
-    case1354pegase, case1888rte, case2848rte, case2869pegase, case3120sp, case6470rte, case6495rte, case6515rte, \
-    case9241pegase, GBnetwork, GBreducednetwork, iceland  # missing test for case11_iwamoto
+from pandapower.networks.power_system_test_cases import (
+    case4gs,
+    case5,
+    case6ww,
+    case9,
+    case14,
+    case24_ieee_rts,
+    case30,
+    case_ieee30,
+    case33bw,
+    case39,
+    case57,
+    case89pegase,
+    case118,
+    case145,
+    case_illinois200,
+    case300,
+    case1354pegase,
+    case1888rte,
+    case2848rte,
+    case2869pegase,
+    case3120sp,
+    case6470rte,
+    case6495rte,
+    case6515rte,
+    case9241pegase,
+    GBnetwork,
+    GBreducednetwork,
+    iceland,
+)  # missing test for case11_iwamoto
 from pandapower.run import runpp
 import numpy as np
 
@@ -32,8 +58,8 @@ def _compare_arrays(arr1, arr2, tolerance=0.1):
 def compare_arrays(arr1, arr2, atol=0.1):
     is_equal, where = _compare_arrays(arr1, arr2, atol)
     if not is_equal:
-        name = ''
-        if 'name' in dir(arr1):
+        name = ""
+        if "name" in dir(arr1):
             name = arr1.name
         raise ValueError(f"In {name}, the following elements are not equal: {where}")
 
@@ -206,7 +232,7 @@ def test_case1888rte_changed_slack():
 
     ref_bus_idx = [1233, 1854]
     net = case1888rte(ref_bus_idx=ref_bus_idx)
-    runpp(net, trafo_model='pi')
+    runpp(net, trafo_model="pi")
     assert list(net.ext_grid.bus.sort_values()) == ref_bus_idx
     assert net.converged
 
@@ -281,5 +307,5 @@ def test_iceland():
     _ppc_element_test(net, 189, 206, 35, True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

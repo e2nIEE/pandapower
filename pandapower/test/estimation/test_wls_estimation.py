@@ -51,7 +51,7 @@ def test_2bus():
     target_delta = np.array([[0.0, 3.11356604]])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-6) or not (np.nanmax(abs(diff_delta)) < 1e-6):
+    if np.nanmax(abs(diff_v)) >= 1e-6 or np.nanmax(abs(diff_delta)) >= 1e-6:
         raise AssertionError("Estimation failed!")
 
 
@@ -89,8 +89,7 @@ def test_3bus():
     target_delta = np.array([0., 0.8677, 3.1381])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
@@ -144,8 +143,7 @@ def test_3bus_with_bad_data():
 
     assert bad_data_detected
     assert success_rn_max
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
 
@@ -163,7 +161,7 @@ def test_3bus_with_out_of_service_bus():
     create_bus(net, name="bus1", vn_kv=1.)
     create_bus(net, name="bus2", vn_kv=1.)
     create_bus(net, name="bus3", vn_kv=1.)
-    create_bus(net, name="bus4", vn_kv=1., in_service=0)  # out-of-service bus test
+    create_bus(net, name="bus4", vn_kv=1., in_service=False)  # out-of-service bus test
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                 max_i_ka=1)
@@ -195,8 +193,7 @@ def test_3bus_with_out_of_service_bus():
     target_delta = np.array([[0., -1.2475, -2.7457, np.nan]])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
 
@@ -259,8 +256,7 @@ def test_3bus_with_transformer():
     diff_v = net.res_bus.vm_pu.values - v_result
     diff_delta = net.res_bus.va_degree.values - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 6e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 8e-4):
+    if np.nanmax(abs(diff_v)) >= 6e-4 or np.nanmax(abs(diff_delta)) >= 8e-4:
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
@@ -457,14 +453,10 @@ def test_cigre_with_bad_data():
     runpp(net)
 
     for bus, row in net.res_bus.iterrows():
-        # numerical instability in the output of runpp caused by numba installation status will make this test fail if
-        # no measurements are provided for bus 2! See #2867
-        # if bus == 2:
-        #     continue
         if bus != 6:
-            create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)  # skip our bad data measurement
-        create_measurement(net, "p", "bus", row.p_mw * r(), max(0.001, abs(0.03 * row.p_mw)), bus)
-        create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.001, abs(0.03 * row.q_mvar)), bus)
+            create_measurement(net, "v", "bus", row.vm_pu * r(0.005), 0.005, bus)  # skip our bad data measurement
+        create_measurement(net, "p", "bus", row.p_mw * r(), max(0.03, abs(0.03 * row.p_mw)), bus)
+        create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.03, abs(0.03 * row.q_mvar)), bus)
 
     # 2. Do state estimation
     success_SE = estimate(net, init='slack')
@@ -472,14 +464,14 @@ def test_cigre_with_bad_data():
     delta_SE = net.res_bus_est.va_degree.values
 
     # 3. Create false measurement (very close to useful values)
-    create_measurement(net, "v", "bus", 0.85, 0.01, element=6)
+    create_measurement(net, "v", "bus", 0.85, 0.005, element=6)
 
     # 4. Do chi2-test
     bad_data_detected = chi2_analysis(net, init='slack')
     assert bad_data_detected
 
     # 5. Perform rn_max_test
-    success_rn_max = remove_bad_data(net, init='slack')
+    success_rn_max = remove_bad_data(net, init='slack', rn_max_threshold=4.0)
     v_est_rn_max = net.res_bus_est.vm_pu.values
     delta_est_rn_max = net.res_bus_est.va_degree.values
 
@@ -613,8 +605,8 @@ def test_network_with_trafo3w_pq():
     if not estimate(net):
         raise AssertionError("Estimation failed!")
 
-    if not (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006) or \
-            not (np.nanmax(np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)) < 0.006):
+    if np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) >= 0.006 or \
+            np.nanmax(np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)) >= 0.006:
         raise AssertionError("Estimation failed")
 
     # Try estimate with results initialization
@@ -906,7 +898,7 @@ def test_net_unobserved_island():
 
 def test_net_oos_line():
     net = case9()
-    net.line.in_service.iat[4] = False
+    net.line.iat[4, net.line.columns.get_loc("in_service")] = False
     runpp(net)
 
     for line_ix in net.line.index:
@@ -947,3 +939,4 @@ def _compare_pf_and_se_results(net):
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
+

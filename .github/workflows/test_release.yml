@@ -55,4 +55,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }}
+          uv run pytest --splits 2 --group ${{ matrix.group }}

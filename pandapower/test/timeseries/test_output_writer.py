@@ -77,7 +77,7 @@ def test_output_writer_with_timesteps_set(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 10
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
@@ -94,7 +94,7 @@ def test_output_writer_with_timesteps_set(simple_test_net):
 def test_output_writer_without_timesteps_set(simple_test_net):
     net = simple_test_net
     n_timesteps = 5
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
@@ -113,7 +113,7 @@ def test_output_writer_without_timesteps_set_repeat(simple_test_net):
     # the same outputwriter should be able to run repeated time series
 
     time_steps_to_check = [8, 5, 10]
-    profiles, ds = create_data_source(max(time_steps_to_check))
+    _, ds = create_data_source(max(time_steps_to_check))
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
@@ -133,7 +133,7 @@ def test_output_writer_short_data_source(simple_test_net):
     # outputwriter should fail if data source is shorter than time steps
 
     n_timesteps = 10
-    profiles, ds = create_data_source(5)
+    _, ds = create_data_source(5)
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
@@ -151,7 +151,7 @@ def test_default_output_writer(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 5
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
 
@@ -168,7 +168,7 @@ def test_output_writer_eval_simple(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 1
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
@@ -183,7 +183,7 @@ def test_output_writer_multiple_index_definition(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 1
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
     time_steps = range(0, n_timesteps)
@@ -229,7 +229,7 @@ def test_store_and_load(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 2
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
     dirname = tempfile.gettempdir()
@@ -256,7 +256,7 @@ def test_store_and_load(simple_test_net):
 def test_ppc_log(simple_test_net):
     net = simple_test_net
     n_timesteps = 5
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
@@ -264,7 +264,7 @@ def test_ppc_log(simple_test_net):
 
     time_steps = range(0, n_timesteps)
     ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json",
-                      log_variables=list())
+                      log_variables=[])
     ow.log_variable('ppc_bus', 'vm')
     ow.log_variable('ppc_bus', 'va')
     runpp(net, only_v_results=True, recycle={"bus_pq": True, "gen": False, "trafo": False})

@@ -116,6 +116,7 @@ def test_qctrl_droop(simple_test_net):
     assert (abs(net.controller.object[0].input_sign[0] * net.res_line.loc[0, "q_from_mvar"] - (
                 net.controller.object[1].q_set_mvar_bsc + (net.res_bus.loc[1, "vm_pu"] - 0.995) * 40)) < tol)
 
+
 def test_qlimits_qctrl(simple_test_net):
     net = copy.deepcopy(simple_test_net)
     tol = 1e-6
@@ -174,32 +175,31 @@ def test_qlimits_voltctrl(simple_test_net):
     runpp(net, run_control=True, enforce_q_lims=True)
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.8) < tol)
 
+@pytest.mark.parametrize("v", linspace(start=0.98, stop=1.02, num=5, dtype=float64))
+@pytest.mark.parametrize("p", linspace(start=-2.5, stop=2.5, num=10, dtype=float64))
+def test_qlimits_with_capability_curve(simple_test_net, v, p):
+    net = copy.deepcopy(simple_test_net)
+    create_sgen(net, 2, p_mw=0., sn_mva=0, name="sgen2")
+    tol = 1e-6
+    # create q characteristics table
+    net["q_capability_curve_table"] = DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0],
+        'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
+        'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
+        'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
 
-def test_qlimits_with_capability_curve(simple_test_net):
-    for v in linspace(start=0.98, stop=1.02, num=5, dtype=float64):
-        for p in linspace(start=-2.5, stop=2.5, num=10, dtype=float64):
-            net = copy.deepcopy(simple_test_net)
-            create_sgen(net, 2, p_mw=0., sn_mva=0, name="sgen2")
-            tol = 1e-6
-            # create q characteristics table
-            net["q_capability_curve_table"] = DataFrame(
-                {'id_q_capability_curve': [0, 0, 0, 0, 0],
-                'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
-                'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
-                'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
+    net.sgen.at[0, "id_q_capability_characteristic"] = 0
+    net.sgen['curve_style'] = "straightLineYValues"
+    create_q_capability_characteristics_object(net)
 
-            net.sgen.id_q_capability_characteristic.at[0] = 0
-            net.sgen['curve_style'] = "straightLineYValues"
-            create_q_capability_characteristics_object(net)
-
-            BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
-                                output_element="sgen", output_variable="q_mvar", output_element_index=[0],
-                                output_element_in_service=[True], output_values_distribution=[1],
-                                input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
-                                set_point=v, voltage_ctrl=True, tol=tol)
-            net.sgen.loc[0, 'p_mw'] = p
-            runpp(net, run_control=True, enforce_q_lims=True)
-            assert -0.1 <= net.res_sgen.loc[0, 'q_mvar'] <= 0.1
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
+                        output_element="sgen", output_variable="q_mvar", output_element_index=[0],
+                        output_element_in_service=[True], output_values_distribution=[1],
+                        input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
+                        set_point=v, voltage_ctrl=True, tol=tol)
+    net.sgen.loc[0, 'p_mw'] = p
+    runpp(net, run_control=True, enforce_q_lims=True)
+    assert -0.1 <= net.res_sgen.loc[0, 'q_mvar'] <= 0.1
 
     # test once more when there is no reactive power capability curve
     net = copy.deepcopy(simple_test_net)
@@ -209,10 +209,10 @@ def test_qlimits_with_capability_curve(simple_test_net):
         'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
         'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
 
-    net.sgen.id_q_capability_characteristic.at[0] = 0
-    net.sgen['curve_style'] = "straightLineYValues"
-    create_q_capability_characteristics_object(net)
-    net.sgen.drop(columns=['reactive_capability_curve'], inplace=True)
+def test_qlimits_with_capability_curve_no_reactive_power():
+    # test once more when there is no reactive power capability curve
+    net = simple_test_net()
+    tol = 1e-6
     BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                         output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                         output_element_in_service=[True], output_values_distribution=[1],
@@ -220,7 +220,6 @@ def test_qlimits_with_capability_curve(simple_test_net):
                         set_point=0.98, voltage_ctrl=True, tol=tol)
     runpp(net, run_control=True, enforce_q_lims=True)
     assert abs(net.res_sgen.loc[0, 'q_mvar'] + 6.7373132) < tol
-
 
 
 def test_stactrl_pf_import():
