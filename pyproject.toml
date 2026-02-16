@@ -126,7 +126,6 @@ exclude = [
 addopts = [
     "--strict-markers",
     "--maxfail=1",  # stop after the first failure / error / timeout
-    "--timeout=60", "--timeout-method=thread",  # per‑test timeout in seconds (requires pytest-timeout)
     "--timeout=60", # "--timeout-method=thread",  # per‑test timeout in seconds (requires pytest-timeout)
 ]
 markers = [
