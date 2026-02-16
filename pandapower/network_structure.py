@@ -436,20 +436,6 @@ def get_structure_dict() -> dict:
             "controllable": "bool",
             "in_service": "bool",
         },
-        "_empty_res_vsc_stacked": {
-            "p_mw": "f8",
-            "q_mvar": "f8",
-            "p_dc_mw_p": "f8",
-            "p_dc_mw_m": "f8",
-            "vm_internal_pu": "f8",
-            "vm_internal_degree": "f8",
-            "vm_pu": "f8",
-            "va_degree": "f8",
-            "vm_internal_dc_pu_p": "f8",
-            "vm_internal_dc_pu_m": "f8",
-            "vm_dc_pu_p": "f8",
-            "vm_dc_pu_m": "f8",
-        },
         "vsc_bipolar": {
             "name": dtype(object),
             "bus": "u4",
@@ -465,6 +451,21 @@ def get_structure_dict() -> dict:
             "controllable": "bool",
             "in_service": "bool",
         },
+        # result tables
+        "_empty_res_vsc_stacked": {
+            "p_mw": "f8",
+            "q_mvar": "f8",
+            "p_dc_mw_p": "f8",
+            "p_dc_mw_m": "f8",
+            "vm_internal_pu": "f8",
+            "vm_internal_degree": "f8",
+            "vm_pu": "f8",
+            "va_degree": "f8",
+            "vm_internal_dc_pu_p": "f8",
+            "vm_internal_dc_pu_m": "f8",
+            "vm_dc_pu_p": "f8",
+            "vm_dc_pu_m": "f8",
+        },
         "_empty_res_vsc_bipolar": {
             "p_mw": "f8",
             "q_mvar": "f8",
@@ -479,7 +480,6 @@ def get_structure_dict() -> dict:
             "vm_dc_pu_p": "f8",
             "vm_dc_pu_m": "f8",
         },
-        # result tables
         "_empty_res_bus": {
             "vm_pu": "f8",
             "va_degree": "f8",
@@ -818,6 +818,8 @@ def get_structure_dict() -> dict:
         "f_hz": 50.0,
         "sn_mva": 1,
     }
+
+
 def get_std_type_structure_dict() -> dict:
     """
     This function returns the structure dict of the std_types
