@@ -539,7 +539,7 @@ class BinarySearchControl(Controller):
                 if self.output_values_distribution[i]==0 or not self.output_element_in_service[i] :
                     self.output_values[i] = 0
                 else:
-                    continueall_diffs2 = validate_pf_conversion(net2, max_iteration=1000, max_iter=400)
+                    continue
         else:#second step
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
@@ -923,7 +923,7 @@ class VDroopControl_local(Controller):
         vm_set_ub: Upper band border of dead band
     """
 
-    def __init__(self, net, q_droop_mvar, controller_idx, bus_idx, tol=1e-6, in_service=True, order=-1, level=0,
+    def __init__(self, net, q_droop_mvar, controller_idx, bus_idx, control_modus = None, tol=1e-6, in_service=True, order=-1, level=0,
                  name="", drop_same_existing_ctrl=False, matching_params=None, q_set_mvar=None, vm_set_pu_bsc=None,
                  vm_set_lb=None, vm_set_ub=None, **kwargs):
         super().__init__(net, in_service=in_service, order=order, level=level,
@@ -945,6 +945,12 @@ class VDroopControl_local(Controller):
         self.ub_voltage = vm_set_ub
         self.controller_idx = controller_idx
         self.bus_idx = bus_idx
+        self.control_modus = control_modus
+        try:
+            self.control_modus = ControlModusEnum(self.control_modus)
+        except ValueError:
+            logger.warning(f"Control_modus {self.control_modus} not recognized, using 'V_ctrl_Q_droop_local' \n")
+            self.control_modus = ControlModusEnum.v_ctrl_q_droop_local
         self.tol = tol
         self.applied = False
         gen_idx = net.controller.at[self.controller_idx, "object"].input_element_index[0]
