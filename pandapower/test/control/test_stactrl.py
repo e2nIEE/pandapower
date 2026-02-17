@@ -208,17 +208,16 @@ def test_qlimits_with_capability_curve(v, p):
     net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)
-
-            BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
-                                output_element="sgen", output_variable="q_mvar", output_element_index=[0],
-                                output_element_in_service=[True], output_values_distribution=[1],
-                                input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
-                                set_point=v, voltage_ctrl=True, tol=tol)
-            net.sgen.loc[0, 'p_mw'] = p
-            runpp(net, run_control=True, enforce_q_lims=True)
-            assert -0.1 <= net.res_sgen.loc[0, 'q_mvar'] <= 0.1
-            assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
-            assert(all(net.controller.object[i].converged == True for i in net.controller.index))
+    BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
+                        output_element="sgen", output_variable="q_mvar", output_element_index=[0],
+                        output_element_in_service=[True], output_values_distribution=[1],
+                        input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
+                        set_point=v, voltage_ctrl=True, tol=tol)
+    net.sgen.loc[0, 'p_mw'] = p
+    runpp(net, run_control=True, enforce_q_lims=True)
+    assert -0.1 <= net.res_sgen.loc[0, 'q_mvar'] <= 0.1
+    assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
+    assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
 
 def test_qlimits_with_capability_curve_no_reactive_power():
