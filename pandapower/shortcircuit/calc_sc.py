@@ -125,16 +125,18 @@ def calc_sc(net, bus=None,
     if branch_results:
         logger.warning("Branch results are in beta mode and might not always be reliable, "
                        "especially for transformers")
-
+    
+    init_vm_pu: Literal["results", "flat"]
+    init_va_degree: Literal["results", "flat"]
     if use_pre_fault_voltage:
-        init_vm_pu: Literal["results"] = "results"
-        init_va_degree: Literal["results"] = "results"
+        init_vm_pu = "results"
+        init_va_degree = "results"
         trafo_model = net._options["trafo_model"]  # trafo model for SC must match the trafo model for PF calculation
         if not isinstance(bus, Number) and len(net.sgen.query("in_service")) > 0:
             raise NotImplementedError("Short-circuit with Type C method and sgen is only implemented for a single bus")
     else:
-        init_vm_pu: Literal["flat"] = "flat"
-        init_va_degree: Literal["flat"] = "flat"
+        init_vm_pu = "flat"
+        init_va_degree = "flat"
         trafo_model = "pi"
 
     # Convert bus to numpy array
