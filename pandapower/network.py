@@ -260,7 +260,13 @@ class pandapowerNet(ADict):
     ) -> None:
         # TODO: remove once deprecations are removed
         if net is not None:
-            if name is not None or f_hz != 50. or sn_mva != 1. or not add_stdtypes or custom_data is not None:
+            if (
+                    name is not None or
+                    not np.isclose(f_hz, 50., rtol=1e-12, atol=1e-12) or
+                    not np.isclose(sn_mva, 1., rtol=1e-12, atol=1e-12) or
+                    not add_stdtypes or
+                    custom_data is not None
+            ):
                 raise AttributeError(
                     'Passing net and other attributes is not supported. Do not pass a net to pandapowerNet()'
                 )
