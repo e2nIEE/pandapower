@@ -111,7 +111,7 @@ class TestLoadOptionalFields:
         net.load["const_i_q_percent"] = 40.0
 
         # nullable boolean
-        net.load["controllable"] = pd.Series([True], dtype="boolean")
+        net.load["controllable"] = pd.Series([True], dtype=bool)
 
         # ensure string dtypes for string columns
         net.load["name"] = net.load["name"].astype("string")
@@ -135,7 +135,7 @@ class TestLoadOptionalFields:
         net.load["zone"] = pd.Series(["Z1", pd.NA, "Z3"], dtype="string")
         net.load["type"] = pd.Series([pd.NA, "delta", pd.NA], dtype="string")
         net.load["sn_mva"] = [None, 2.0, None]
-        net.load["controllable"] = pd.Series([pd.NA, True, False], dtype="boolean")
+        net.load["controllable"] = pd.Series([pd.NA, True, False], dtype=bool)
 
         validate_network(net)
 
@@ -175,7 +175,7 @@ class TestLoadOptionalFields:
         if parameter in {"name", "type", "zone"}:
             net.load[parameter] = pd.Series([valid_value], dtype="string")
         elif parameter == "controllable":
-            net.load[parameter] = pd.Series([valid_value], dtype="boolean")
+            net.load[parameter] = pd.Series([valid_value], dtype=bool)
         else:
             net.load[parameter] = valid_value
 

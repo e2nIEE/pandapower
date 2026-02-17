@@ -102,7 +102,7 @@ class TestStorageOptionalFields:
         net.storage["min_p_mw"] = -1.5
         net.storage["max_q_mvar"] = 0.8
         net.storage["min_q_mvar"] = -0.8
-        net.storage["controllable"] = pd.Series([True], dtype="boolean")
+        net.storage["controllable"] = pd.Series([True], dtype=bool)
 
         validate_network(net)
 
@@ -183,12 +183,12 @@ class TestStorageOptionalFields:
         net.storage["min_p_mw"] = -1.0
         net.storage["max_q_mvar"] = 0.6
         net.storage["min_q_mvar"] = -0.6
-        net.storage["controllable"] = pd.Series([True], dtype="boolean")
+        net.storage["controllable"] = pd.Series([True], dtype=bool)
 
         if parameter in {"name", "type"}:
             net.storage[parameter] = pd.Series([valid_value], dtype="string")
         elif parameter == "controllable":
-            net.storage[parameter] = pd.Series([valid_value], dtype="boolean")
+            net.storage[parameter] = pd.Series([valid_value], dtype=bool)
         else:
             net.storage[parameter] = valid_value
 
