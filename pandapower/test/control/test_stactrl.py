@@ -209,9 +209,10 @@ def test_qlimits_with_capability_curve(simple_test_net, v, p):
         'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
         'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
 
-def test_qlimits_with_capability_curve_no_reactive_power():
+
+def test_qlimits_with_capability_curve_no_reactive_power(simple_test_net):
     # test once more when there is no reactive power capability curve
-    net = simple_test_net()
+    net = copy.deepcopy(simple_test_net)
     tol = 1e-6
     BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                         output_element="sgen", output_variable="q_mvar", output_element_index=[0],

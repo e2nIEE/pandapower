@@ -185,7 +185,7 @@ def test_vsc_hvdc():
 
 
 def test_vsc_bipolar_hvdc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_vsc_bipolar_hvdc")
     # AC part
     create_buses(net, 4, 380, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)

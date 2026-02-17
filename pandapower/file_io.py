@@ -373,13 +373,12 @@ def from_json_string(
             for key in elements_to_deserialize:
                 net[key] = json.loads(net[key], cls=PPJSONDecoder)
         else:
-            if (('version' not in net.keys()) or (net['version'] != net_dummy.version)) and \
-                    not convert:
+            if (('version' not in net.keys()) or (net['version'] != net_dummy.version)) and not convert:
                 raise UserWarning(
-                    'The version of your net %s you are trying to load differs from the actual '
-                    'pandapower version %s. Before you can load only distinct tables, convert '
-                    'and save your net first or set convert to True!'
-                    % (net['version'], net_dummy.version))
+                    f"The version of your net {net['version']} you are trying to load differs from the actual "
+                    f"pandapower version {net_dummy.version}. Before you can load only distinct tables, convert and "
+                    f"save your net first or set convert to True!"
+                )
             for key in net.keys():
                 if key in elements_to_deserialize:
                     net[key] = json.loads(net[key], cls=PPJSONDecoder)

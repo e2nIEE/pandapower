@@ -267,9 +267,7 @@ def _add_nominal_power(net):
 def _add_missing_tables(net):
     net_new = pandapowerNet(name='')
     for key in net_new.keys():
-        if key.startswith("_empty_res"):
-            net[key] = net_new[key]
-        elif key not in net.keys():
+        if key.startswith("_empty_res") or key not in net.keys():
             net[key] = net_new[key]
 
 

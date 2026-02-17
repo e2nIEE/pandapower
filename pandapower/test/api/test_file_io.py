@@ -143,11 +143,10 @@ def test_json_basic(net_in, tmp_path):
 
 
 def test_json_controller_none():
-    try:
-        from_json(os.path.join(pp_dir, 'test', 'test_files',
-                               'controller_containing_NoneNan.json'), convert=False)
-    except:
-        raise (UserWarning("empty net with controller containing Nan/None can't be loaded"))
+    """
+    empty net with controller containing Nan/None can't be loaded
+    """
+    from_json(os.path.join(pp_dir, 'test', 'test_files', 'controller_containing_NoneNan.json'), convert=False)
 
 
 def test_json(net_in, tmp_path):
@@ -435,8 +434,7 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
     net = mv_oberrhein()
     filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     to_json(net, filename)
-    net_select = from_json(filename, elements_to_deserialize=['bus', 'load'],
-                           keep_serialized_elements=False)
+    net_select = from_json(filename, elements_to_deserialize=['bus', 'load'], keep_serialized_elements=False)
     for key, item in net_select.items():
         if key in ['bus', 'load']:
             assert isinstance(item, pd.DataFrame)

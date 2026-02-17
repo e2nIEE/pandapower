@@ -1758,7 +1758,7 @@ def test_create_sgens():
     
 
 def test_create_sgen_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgen_controllable")
     # drop controllable column (it is created by network schema but is not required by pandera)
     # TODO remove this step with pandera merged fully
     del net.sgen['controllable']
@@ -1774,7 +1774,7 @@ def test_create_sgen_controllable():
     
 
 def test_create_sgens_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgens_controllable")
     # drop controllable column (it is created by network schema but is not required by pandera)
     # TODO remove this step with pandera merged fully
     del net.sgen['controllable']
@@ -1901,7 +1901,7 @@ def test_create_gens():
 
 
 def test_create_gen_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gen_controllable")
     # drop controllable column (it is created by network schema but is not required by pandera)
     # TODO remove this step with pandera merged fully
     del net.gen['controllable']
@@ -1917,7 +1917,7 @@ def test_create_gen_controllable():
 
 
 def test_create_gens_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gens_controllable")
     # drop controllable column (it is created by network schema but is not required by pandera)
     # TODO remove this step with pandera merged fully
     del net.gen['controllable']

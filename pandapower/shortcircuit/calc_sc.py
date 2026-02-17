@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numbers import Number
+from typing import Final, Literal
 
 import numpy as np
 from scipy.sparse.linalg import factorized
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def calc_sc(net, bus=None,
             fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
-            ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
+            ith=False, tk_s=1., kappa_method: Literal["B", "C"] = "C", r_fault_ohm=0., x_fault_ohm=0.,
             branch_results=False, check_connectivity=True, return_all_currents=False,
             inverse_y=True, use_pre_fault_voltage=False):
     """
@@ -126,12 +127,14 @@ def calc_sc(net, bus=None,
                        "especially for transformers")
 
     if use_pre_fault_voltage:
-        init_vm_pu = init_va_degree = "results"
+        init_vm_pu: Literal["results"] = "results"
+        init_va_degree: Literal["results"] = "results"
         trafo_model = net._options["trafo_model"]  # trafo model for SC must match the trafo model for PF calculation
         if not isinstance(bus, Number) and len(net.sgen.query("in_service")) > 0:
             raise NotImplementedError("Short-circuit with Type C method and sgen is only implemented for a single bus")
     else:
-        init_vm_pu = init_va_degree = "flat"
+        init_vm_pu: Literal["flat"] = "flat"
+        init_va_degree: Literal["flat"] = "flat"
         trafo_model = "pi"
 
     # Convert bus to numpy array
@@ -144,7 +147,8 @@ def calc_sc(net, bus=None,
     net["_options"] = {}
     _add_ppc_options(
         net, calculate_voltage_angles=False, trafo_model=trafo_model, check_connectivity=check_connectivity, mode="sc",
-        switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_q_lims=False, recycle=None
+        switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
+        enforce_q_lims=False, recycle=None
     )
     _add_sc_options(
         net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, topology=topology,
@@ -159,7 +163,7 @@ def calc_sc(net, bus=None,
     elif fault == "1ph":
         _calc_sc_1ph(net, bus)
     else:
-        raise ValueError("Invalid fault %s" % fault)
+        raise ValueError(f"Invalid fault {fault}")
 
 
 def _calc_current(net, ppci_orig, bus):

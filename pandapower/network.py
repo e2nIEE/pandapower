@@ -323,7 +323,7 @@ class pandapowerNet(ADict):
                             "bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid", "load",
                             "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline",
                             "asymmetric_load", "asymmetric_sgen", "source_dc", "switch", "tcsc", "svc", "ssc", "vsc",
-                            "b2b_vsc"
+                            "vsc_stacked", "vsc_bipolar"
                         ]
                 for element in elements:  # FIXME: is this related to @heckstrahler removing res_ if empty?
                     res_element = f"res_{element}" if suffix is None else f"res_{element}_{suffix}"

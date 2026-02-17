@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -182,7 +183,7 @@ def init_element(net, element, suffix=None):
         empty_res_element(net, element, suffix)
 
 
-def get_relevant_elements(mode="pf"):
+def get_relevant_elements(mode: Literal["pf", "opf", "dc", "sc", "se", "pf_3ph"] = "pf") -> list[str]:
     if mode == "pf" or mode == "opf" or mode == "dc":
         return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
                 "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
@@ -195,6 +196,7 @@ def get_relevant_elements(mode="pf"):
     elif mode == "pf_3ph":
         return ["bus", "line", "trafo", "ext_grid", "shunt",
                 "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]
+    return []
 
 
 def init_results(net, mode="pf"):
