@@ -466,7 +466,7 @@ def element_associated_groups(net, element_type, element_index, return_empties=T
     index = list(set(net.group.index))
     ensure_lists_in_group_element_column(net, drop_empty_lines=drop_empty_lines)
     gr_et = net.group.loc[net.group.element_type == element_type]
-    associated = pd.Series(dict.fromkeys(element_index, list()))
+    associated = pd.Series(dict.fromkeys(element_index, []))
     for idx in gr_et.index:
         ass = pd.Index(element_index).intersection(group_element_index(net, idx, element_type))
         associated.loc[ass] = associated.loc[ass].apply(lambda x: x + [idx])
@@ -785,9 +785,9 @@ def set_value_to_group(net, index, value, column, replace=True, append_column=Tr
 
 def _sum_powers(net, index, formula_character, unit):
     power = 0.
-    missing_res_idx = list()
-    no_power_column_found = list()
-    no_res_table_found = list()
+    missing_res_idx = []
+    no_power_column_found = []
+    no_res_table_found = []
     for et in net.group.loc[[index], "element_type"].tolist():
         if et in ["switch", "measurement", "bus", "bus_geodata", "line_geodata"]:
             continue
@@ -853,7 +853,7 @@ def group_res_power_per_bus(net, index):
     pq_sums = pd.DataFrame({'p_mw': float(), 'q_mvar': float()}, index=[])
     bra_ets = pp_elements(bus=False, bus_elements=False, other_elements=False)
     bra_ebd = branch_element_bus_dict()
-    missing_res_idx = list()
+    missing_res_idx = []
 
     for et in net.group.loc[[index], "element_type"].tolist():
         if et in ["switch", "measurement", "bus", "bus_geodata", "line_geodata"]:
@@ -958,7 +958,7 @@ def set_group_reference_column(net, index, reference_column, element_type=None):
     else:
         element_type = ensure_iterability(element_type)
 
-    dupl_elements = list()
+    dupl_elements = []
     for et in element_type:
 
         if reference_column is None:

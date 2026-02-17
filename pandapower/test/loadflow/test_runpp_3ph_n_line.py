@@ -17,24 +17,24 @@ from pandapower.pf.runpp_3ph import runpp_3ph
 def net():
     v_base = 20  # 20kV Base Voltage
     mva_base = 100  # 100 MVA
-    Net = create_empty_network(sn_mva=mva_base)
+    net = create_empty_network(sn_mva=mva_base)
 
-    bus0 = create_bus(Net, vn_kv=v_base, name="Bus 0")
+    bus0 = create_bus(net, vn_kv=v_base, name="Bus 0")
 
-    create_ext_grid(Net, bus=bus0, vm_pu=1.0, name="Grid Connection", s_sc_max_mva=5000,
+    create_ext_grid(net, bus=bus0, vm_pu=1.0, name="Grid Connection", s_sc_max_mva=5000,
                     rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
 
-    bus1 = create_bus(Net, name="Bus1", vn_kv=20, type="b")
+    bus1 = create_bus(net, name="Bus1", vn_kv=20, type="b")
 
     # add_zero_impedance_parameters(Net)
 
-    create_asymmetric_load(Net, bus1, p_a_mw=0.3, q_a_mvar=0.003, p_b_mw=0.2, q_b_mvar=0.002,
+    create_asymmetric_load(net, bus1, p_a_mw=0.3, q_a_mvar=0.003, p_b_mw=0.2, q_b_mvar=0.002,
                            p_c_mw=0.1, q_c_mvar=0.001, scaling=1.0, in_service=True, type='wye')
 
-    create_line_from_parameters(Net, from_bus=bus0, to_bus=bus1, length_km=2.0, r0_ohm_per_km=.789,
+    create_line_from_parameters(net, from_bus=bus0, to_bus=bus1, length_km=2.0, r0_ohm_per_km=.789,
                                 x0_ohm_per_km=0.306, c0_nf_per_km=272.9, max_i_ka=0.496,
                                 r_ohm_per_km=0.184, x_ohm_per_km=0.1900664, c_nf_per_km=273)
-    return Net
+    return net
 
 
 def test_check_it(net):

@@ -126,6 +126,7 @@ def test_qctrl_droop():
     assert(getattr(net.controller.at[1, 'object'].control_modus, 'value', None) == 'Q_ctrl_V_droop')   # test correct control_modus
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
+
 def test_qlimits_qctrl():
     net = simple_test_net()
     tol = 1e-6
@@ -154,7 +155,8 @@ def test_qlimits_qctrl():
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl')
     assert(abs(net.res_sgen.loc[0, "q_mvar"] + 0.5) < tol)
-    
+
+
 
 def test_qlimits_voltctrl():
     net = simple_test_net()
@@ -188,8 +190,9 @@ def test_qlimits_voltctrl():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
-
-def test_qlimits_with_capability_curve():
+@pytest.mark.parametrize("v", linspace(start=0.98, stop=1.02, num=5, dtype=float64))
+@pytest.mark.parametrize("p", linspace(start=-2.5, stop=2.5, num=10, dtype=float64))
+def test_qlimits_with_capability_curve(v, p):
     tol = 1e-6
     for v in linspace(start=0.98, stop=1.02, num=5, dtype=float64):
         for p in linspace(start=-2.5, stop=2.5, num=10, dtype=float64):
@@ -202,9 +205,9 @@ def test_qlimits_with_capability_curve():
                 'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
                 'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
 
-            net.sgen.id_q_capability_characteristic.at[0] = 0
-            net.sgen['curve_style'] = "straightLineYValues"
-            create_q_capability_characteristics_object(net)
+    net.sgen.at[0, "id_q_capability_characteristic"] = 0
+    net.sgen['curve_style'] = "straightLineYValues"
+    create_q_capability_characteristics_object(net)
 
             BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                                 output_element="sgen", output_variable="q_mvar", output_element_index=[0],
@@ -217,17 +220,11 @@ def test_qlimits_with_capability_curve():
             assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
             assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
-    net = simple_test_net() # test once more when there is no reactive power capability curve
-    net["q_capability_curve_table"] = DataFrame(
-        {'id_q_capability_curve': [0, 0, 0, 0, 0],
-        'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
-        'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
-        'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
 
-    net.sgen.id_q_capability_characteristic.at[0] = 0
-    net.sgen['curve_style'] = "straightLineYValues"
-    create_q_capability_characteristics_object(net)
-    net.sgen.drop(columns=['reactive_capability_curve'], inplace=True)
+def test_qlimits_with_capability_curve_no_reactive_power():
+    # test once more when there is no reactive power capability curve
+    net = simple_test_net()
+    tol = 1e-6
     BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                         output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                         output_element_in_service=[True], output_values_distribution=[1],
@@ -237,7 +234,6 @@ def test_qlimits_with_capability_curve():
     assert(abs(net.res_sgen.loc[0, 'q_mvar'] + 6.7373132) < tol)
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
-    
 
 
 def test_stactrl_pf_import():

@@ -27,7 +27,7 @@ if graph_tool_available:
 def test_line(library):
     net = create_empty_network()
     add_test_line(net)
-    line, open_loop_line, oos_line = net.line.index
+    line, open_loop_line, _ = net.line.index
     f, t = net.line.from_bus.at[line], net.line.to_bus.at[line]
 
     # check that oos lines are neglected and switches are respected
@@ -59,7 +59,6 @@ def test_line(library):
     assert par["path"] == 1
 
     mg = create_nxgraph(net, calc_branch_impedances=True, branch_impedance_unit="pu", library=library)
-    line_tab = net.line.loc[line]
     par = mg.get_edge_data(f, t, key=("line", line))
     runpp(net)
     f, t = net._pd2ppc_lookups["branch"]["line"]
@@ -72,7 +71,7 @@ def test_trafo(library):
     net = create_empty_network()
     add_test_trafo(net)
 
-    trafo, open_loop_trafo, oos_trafo = net.trafo.index
+    trafo, open_loop_trafo, _ = net.trafo.index
     f, t = net.trafo.hv_bus.at[trafo], net.trafo.lv_bus.at[trafo]
     # check that oos trafos are neglected and switches are respected
     mg = create_nxgraph(net, library=library)
@@ -183,7 +182,7 @@ def test_impedance(library):
     net = create_empty_network()
     add_test_impedance(net)
 
-    impedance, oos_impedance = net.impedance.index
+    impedance, _ = net.impedance.index
     f, t = net.impedance.from_bus.at[impedance], net.impedance.to_bus.at[impedance]
     # check that oos impedances are neglected and switches are respected
     mg = create_nxgraph(net, library=library)
