@@ -212,8 +212,7 @@ def create_storages(
     _add_to_entries_if_not_nan(
         net, "storage", entries, index, "controllable", controllable, default_val=False
     )
-    defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, entries=entries)
+    _set_multiple_entries(net, "storage", index, defaults_to_fill=[("controllable", False)], entries=entries)
 
     return index

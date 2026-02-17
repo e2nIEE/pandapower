@@ -135,7 +135,6 @@ class TestLoadOptionalFields:
         net.load["zone"] = pd.Series(["Z1", pd.NA, "Z3"], dtype="string")
         net.load["type"] = pd.Series([pd.NA, "delta", pd.NA], dtype="string")
         net.load["sn_mva"] = [None, 2.0, None]
-        net.load["controllable"] = pd.Series([pd.NA, True, False], dtype=bool)
 
         validate_network(net)
 

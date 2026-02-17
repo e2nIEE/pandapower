@@ -192,7 +192,7 @@ def create_gens(
     id_q_capability_characteristic: Int | Iterable[Int] | None = pd.NA,
     reactive_capability_curve: bool | Iterable[bool] | None = None,
     curve_style: str | Iterable[str] | None = pd.NA,
-    controllable: bool | float | Iterable[bool | float] | None = pd.NA,
+    controllable: bool | float | Iterable[bool | float] | None = None,
     vn_kv: float | Iterable[float] = pd.NA,
     xdss_pu: float | Iterable[float] = pd.NA,
     rdss_ohm: float | Iterable[float] = pd.NA,
@@ -313,8 +313,8 @@ def create_gens(
         )
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo", power_station_trafo)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, default_val=False)
 
-    _set_multiple_entries(net, "gen", index, entries=entries)
+    _set_multiple_entries(net, "gen", index, defaults_to_fill=[("controllable", False)], entries=entries)
 
     return index

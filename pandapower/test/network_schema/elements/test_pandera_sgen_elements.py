@@ -87,7 +87,7 @@ class TestSgenOptionalFields:
         # String/boolean optionals
         net.sgen["name"] = pd.Series(["SGen A"], dtype="string")
         net.sgen["type"] = pd.Series(["PV"], dtype="string")
-        net.sgen["controllable"] = pd.Series([True], dtype="boolean")
+        net.sgen["controllable"] = pd.Series([True], dtype=bool)
 
         # OPF group (complete)
         net.sgen["max_p_mw"] = 2.0
@@ -147,7 +147,6 @@ class TestSgenOptionalFields:
 
         # Row 3: other optionals without triggering groups
         create_sgen(net, bus=b0, p_mw=2.0, q_mvar=-0.2, scaling=1.1, in_service=False, sn_mva=2.0)
-        net.sgen["controllable"] = pd.Series([pd.NA, True, False], dtype="boolean")
         net.sgen["name"] = pd.Series(["alpha", pd.NA, "gamma"], dtype="string")
 
         validate_network(net)
@@ -194,8 +193,8 @@ class TestSgenOptionalFields:
 
         if parameter in {"name", "type", "curve_style", "generator_type"}:
             net.sgen[parameter] = pd.Series([valid_value], dtype="string")
-        elif parameter in {"controllable", "current_source", "reactive_capability_curve"}:
-            net.sgen[parameter] = pd.Series([valid_value], dtype="boolean")
+        elif parameter in {"current_source", "reactive_capability_curve"}:
+            net.sgen[parameter] = pd.Series([valid_value], dtype=pd.BooleanDtype)
         elif parameter == "id_q_capability_characteristic":
             net.sgen[parameter] = pd.Series([valid_value], dtype="Int64")
         else:

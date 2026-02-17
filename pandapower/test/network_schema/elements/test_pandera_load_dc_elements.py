@@ -95,7 +95,7 @@ class TestLoadDcOptionalFields:
         net.load_dc["name"] = net.load_dc["name"].astype("string")
         net.load_dc["type"] = net.load_dc["type"].astype("string")
         net.load_dc["zone"] = net.load_dc["zone"].astype("string")
-        net.load_dc["controllable"] = net.load_dc["controllable"].astype("boolean")
+        net.load_dc["controllable"] = net.load_dc["controllable"].astype(bool)
 
         validate_network(net)
 
@@ -115,7 +115,6 @@ class TestLoadDcOptionalFields:
         net.load_dc["name"] = pd.Series([pd.NA, "L2", "L3"], dtype="string")
         net.load_dc["type"] = pd.Series([pd.NA, "prosumer", pd.NA], dtype="string")
         net.load_dc["zone"] = pd.Series(["Z1", "Z2", pd.NA], dtype="string")
-        net.load_dc["controllable"] = pd.Series([pd.NA, True, False], dtype="boolean")
 
         validate_network(net)
 
@@ -138,8 +137,6 @@ class TestLoadDcOptionalFields:
 
         if parameter in {"name", "type", "zone"}:
             net.load_dc[parameter] = pd.Series([valid_value], dtype="string")
-        elif parameter == "controllable":
-            net.load_dc[parameter] = pd.Series([valid_value], dtype="boolean")
         validate_network(net)
 
     @pytest.mark.parametrize(

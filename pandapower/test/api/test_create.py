@@ -1595,7 +1595,7 @@ def test_create_loads():
     assert net.load.q_mvar.at[0] == 0
     assert net.load.q_mvar.at[1] == 0
     assert net.load.q_mvar.at[2] == 0
-    assert isinstance(net.load.controllable.dtype, pd.BooleanDtype)
+    assert isinstance(net.load.controllable.dtype, np.dtypes.BoolDType)
     assert net.load.controllable.at[0]
     assert not net.load.controllable.at[1]
     assert not net.load.controllable.at[2]
@@ -1722,7 +1722,7 @@ def test_create_storages():
     assert net.storage.q_mvar.at[0] == 0.5
     assert net.storage.q_mvar.at[1] == 0.5
     assert net.storage.q_mvar.at[2] == 0.5
-    assert isinstance(net.storage.controllable.dtype, pd.BooleanDtype)
+    assert isinstance(net.storage.controllable.dtype, np.dtypes.BoolDType)
     assert net.storage.controllable.at[0]
     assert not net.storage.controllable.at[1]
     assert not net.storage.controllable.at[2]
@@ -1818,7 +1818,7 @@ def test_create_sgens():
     assert net.sgen.q_mvar.at[0] == 0
     assert net.sgen.q_mvar.at[1] == 0
     assert net.sgen.q_mvar.at[2] == 0
-    assert isinstance(net.sgen.controllable.dtype, pd.BooleanDtype)
+    assert isinstance(net.sgen.controllable.dtype, np.dtypes.BoolDType)
     assert net.sgen.controllable.at[0]
     assert not net.sgen.controllable.at[1]
     assert not net.sgen.controllable.at[2]
@@ -1956,7 +1956,7 @@ def test_create_gens():
     assert net.gen.p_mw.at[0] == 0
     assert net.gen.p_mw.at[1] == 0
     assert net.gen.p_mw.at[2] == 1
-    assert isinstance(net.gen.controllable.dtype, pd.BooleanDtype)
+    assert isinstance(net.gen.controllable.dtype, np.dtypes.BoolDType)
     assert net.gen.controllable.at[0]
     assert not net.gen.controllable.at[1]
     assert not net.gen.controllable.at[2]
@@ -1993,9 +1993,6 @@ def test_create_gen_controllable():
 
 def test_create_gens_controllable():
     net = create_empty_network()
-    # drop controllable column (it is created by network schema but is not required by pandera)
-    # TODO remove this step with pandera merged fully
-    del net.gen['controllable']
 
     b1 = create_bus(net, 110)
     s1 = create_gens(net, [b1], 50)[0]
