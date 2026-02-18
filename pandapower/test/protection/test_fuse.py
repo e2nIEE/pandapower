@@ -299,7 +299,7 @@ def fuse_test_net3():
 def test_fuse_fault_oc_scenario():
     net = fuse_test_net4()
     print(net.switch)
-    assert net.switch.type.at[0] == "fuse"
+    assert net.switch.at[0, "type"] == "fuse"
 
     # assign fuses to switches
     fuse_list = ['HV 25A', 'Siemens NH-2-400', 'Siemens NH-2-250', 'Siemens NH-2-224', 'Siemens NH-2-200',

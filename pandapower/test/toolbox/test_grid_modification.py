@@ -48,35 +48,35 @@ def __create_trafo3w(net, bus_sl, service: bool = True):
     create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
                                          3, 3, 3, 1, 1, 1, 5, 1)
 
-def test_drop_inactive_elements():
-    for service in (False, True):
-        net = create_empty_network()
-        bus_sl = create_bus(net, vn_kv=.4, in_service=service)
-        __create_trafo3w(net, bus_sl, service=service)
-        # drop them
-        drop_inactive_elements(net)
+@pytest.mark.parametrize('service', [True, False])
+def test_drop_inactive_elements(service):
+    net = create_empty_network()
+    bus_sl = create_bus(net, vn_kv=.4, in_service=service)
+    __create_trafo3w(net, bus_sl, service=service)
+    # drop them
+    drop_inactive_elements(net)
 
-        sum_of_elements = 0
-        for element, table in net.items():
-            # skip this one since we expect items here
-            if element.startswith("_") or not isinstance(table, pd.DataFrame):
+    sum_of_elements = 0
+    for element, table in net.items():
+        # skip this one since we expect items here
+        if element.startswith("_") or not isinstance(table, pd.DataFrame):
+            continue
+        try:
+            if service and (element == 'ext_grid' or (element == 'bus' and len(net.bus) == 1)):
+                # if service==True, the 1 ext_grid and its bus are not dropped
                 continue
-            try:
-                if service and (element == 'ext_grid' or (element == 'bus' and len(net.bus) == 1)):
-                    # if service==True, the 1 ext_grid and its bus are not dropped
-                    continue
-                if len(table) > 0:
-                    sum_of_elements += len(table)
-                    # print(element)
-            except TypeError:
-                # _ppc is initialized with None and clashes when checking
-                continue
+            if len(table) > 0:
+                sum_of_elements += len(table)
+                # print(element)
+        except TypeError:
+            # _ppc is initialized with None and clashes when checking
+            continue
 
-        assert sum_of_elements == 0
-        if service:
-            assert len(net.ext_grid) == 1
-            assert len(net.bus) == 1
-            assert bus_sl in net.bus.index.values
+    assert sum_of_elements == 0
+    if service:
+        assert len(net.ext_grid) == 1
+        assert len(net.bus) == 1
+        assert bus_sl in net.bus.index.values
 
     net = create_empty_network()
 
@@ -697,83 +697,83 @@ def test_impedance_line_replacement():
     assert np.allclose(net3.res_impedance[cols].values, net2.res_line[cols].values)
 
 
-def test_replace_ext_grid_gen():
-    for i in range(2):
-        net = example_simple()
-        net.ext_grid["uuid"] = "test"
-        runpp(net, calculate_voltage_angles="auto")
-        assert list(net.res_ext_grid.index.values) == [0]
-        create_group(net, ["line", "ext_grid"], [[0], [0]])
+@pytest.mark.parametrize('i', [0, 1])
+def test_replace_ext_grid_gen(i):
+    net = example_simple()
+    net.ext_grid["uuid"] = "test"
+    runpp(net, calculate_voltage_angles="auto")
+    assert list(net.res_ext_grid.index.values) == [0]
+    create_group(net, ["line", "ext_grid"], [[0], [0]])
 
-        # replace_ext_grid_by_gen
-        if i == 0:
-            replace_ext_grid_by_gen(net, 0, gen_indices=[4], add_cols_to_keep=["uuid"])
-        elif i == 1:
-            replace_ext_grid_by_gen(net, [0], gen_indices=[4], cols_to_keep=["uuid", "max_p_mw"])
-        assert not net.ext_grid.shape[0]
-        assert not net.res_ext_grid.shape[0]
-        assert np.allclose(net.gen.vm_pu.values, [1.03, 1.02])
-        assert net.res_gen.p_mw.dropna().shape[0] == 2
-        assert np.allclose(net.gen.index.values, [0, 4])
-        assert net.gen.loc[4, "uuid"] == "test"
-        assert net.group.element_type.tolist() == ["line", "gen"]
-        assert net.group.element_index.iat[1] == [4]
+    # replace_ext_grid_by_gen
+    if i == 0:
+        replace_ext_grid_by_gen(net, 0, gen_indices=[4], add_cols_to_keep=["uuid"])
+    elif i == 1:
+        replace_ext_grid_by_gen(net, [0], gen_indices=[4], cols_to_keep=["uuid", "max_p_mw"])
+    assert not net.ext_grid.shape[0]
+    assert not net.res_ext_grid.shape[0]
+    assert np.allclose(net.gen.vm_pu.values, [1.03, 1.02])
+    assert net.res_gen.p_mw.dropna().shape[0] == 2
+    assert np.allclose(net.gen.index.values, [0, 4])
+    assert net.gen.loc[4, "uuid"] == "test"
+    assert net.group.element_type.tolist() == ["line", "gen"]
+    assert net.group.element_index.iat[1] == [4]
 
-        # replace_gen_by_ext_grid
-        if i == 0:
-            replace_gen_by_ext_grid(net)
-        elif i == 1:
-            replace_gen_by_ext_grid(net, [0, 4], ext_grid_indices=[2, 3])
-            assert np.allclose(net.ext_grid.index.values, [2, 3])
-        assert not net.gen.shape[0]
-        assert not net.res_gen.shape[0]
-        assert net.ext_grid.va_degree.dropna().shape[0] == 2
-        assert any(np.isclose(net.ext_grid.va_degree.values, 0))
-        assert net.res_ext_grid.p_mw.dropna().shape[0] == 2
+    # replace_gen_by_ext_grid
+    if i == 0:
+        replace_gen_by_ext_grid(net)
+    elif i == 1:
+        replace_gen_by_ext_grid(net, [0, 4], ext_grid_indices=[2, 3])
+        assert np.allclose(net.ext_grid.index.values, [2, 3])
+    assert not net.gen.shape[0]
+    assert not net.res_gen.shape[0]
+    assert net.ext_grid.va_degree.dropna().shape[0] == 2
+    assert any(np.isclose(net.ext_grid.va_degree.values, 0))
+    assert net.res_ext_grid.p_mw.dropna().shape[0] == 2
 
 
-def test_replace_gen_sgen():
-    for i in range(2):
-        net = case9()
-        vm_set = [1.03, 1.02]
-        net.gen["vm_pu"] = vm_set
-        net.gen["slack_weight"] = 1
-        runpp(net)
-        assert list(net.res_gen.index.values) == [0, 1]
+@pytest.mark.parametrize('i', [0, 1])
+def test_replace_gen_sgen(i):
+    net = case9()
+    vm_set = [1.03, 1.02]
+    net.gen["vm_pu"] = vm_set
+    net.gen["slack_weight"] = 1
+    runpp(net)
+    assert list(net.res_gen.index.values) == [0, 1]
 
-        # replace_gen_by_sgen
-        if i == 0:
-            replace_gen_by_sgen(net)
-        elif i == 1:
-            replace_gen_by_sgen(net, [0, 1], sgen_indices=[4, 1], cols_to_keep=[
-                "max_p_mw"], add_cols_to_keep=["slack_weight"])  # min_p_mw is not in cols_to_keep
-            assert np.allclose(net.sgen.index.values, [4, 1])
-            assert np.allclose(net.sgen.slack_weight.values, 1)
-            assert "max_p_mw" in net.sgen.columns
-            assert "min_p_mw" not in net.sgen.columns
-        assert not net.gen.shape[0]
-        assert not net.res_gen.shape[0]
-        assert not np.allclose(net.sgen.q_mvar.values, 0)
-        assert net.res_gen.shape[0] == 0
-        runpp(net)
-        assert np.allclose(net.res_bus.loc[net.sgen.bus, "vm_pu"].values, vm_set)
+    # replace_gen_by_sgen
+    if i == 0:
+        replace_gen_by_sgen(net)
+    elif i == 1:
+        replace_gen_by_sgen(net, [0, 1], sgen_indices=[4, 1], cols_to_keep=[
+            "max_p_mw"], add_cols_to_keep=["slack_weight"])  # min_p_mw is not in cols_to_keep
+        assert np.allclose(net.sgen.index.values, [4, 1])
+        assert np.allclose(net.sgen.slack_weight.values, 1)
+        assert "max_p_mw" in net.sgen.columns
+        assert "min_p_mw" not in net.sgen.columns
+    assert not net.gen.shape[0]
+    assert not net.res_gen.shape[0]
+    assert not np.allclose(net.sgen.q_mvar.values, 0)
+    assert net.res_gen.shape[0] == 0
+    runpp(net)
+    assert np.allclose(net.res_bus.loc[net.sgen.bus, "vm_pu"].values, vm_set)
 
-        # replace_sgen_by_gen
-        net2 = copy.deepcopy(net)
-        if i == 0:
-            replace_sgen_by_gen(net2, [1])
-        elif i == 1:
-            replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["slack_weight"])
-            assert np.allclose(net2.gen.index.values, [2])
-            assert np.allclose(net2.gen.slack_weight.values, 1)
-        assert net2.gen.shape[0] == 1
-        assert net2.res_gen.shape[0] == 1
-        assert net2.gen.shape[0] == 1
-        assert net2.res_gen.shape[0] == 1
+    # replace_sgen_by_gen
+    net2 = copy.deepcopy(net)
+    if i == 0:
+        replace_sgen_by_gen(net2, [1])
+    elif i == 1:
+        replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["slack_weight"])
+        assert np.allclose(net2.gen.index.values, [2])
+        assert np.allclose(net2.gen.slack_weight.values, 1)
+    assert net2.gen.shape[0] == 1
+    assert net2.res_gen.shape[0] == 1
+    assert net2.gen.shape[0] == 1
+    assert net2.res_gen.shape[0] == 1
 
-        if i == 0:
-            replace_sgen_by_gen(net, 1)
-            assert nets_equal(net, net2)
+    if i == 0:
+        replace_sgen_by_gen(net, 1)
+        assert nets_equal(net, net2)
 
 
 def test_replace_pq_elmtype():

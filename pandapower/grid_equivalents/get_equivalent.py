@@ -2,24 +2,24 @@ import time
 from copy import deepcopy
 
 from pandapower.create import create_group_from_dict
-from pandapower.grid_equivalents.auxiliary import drop_assist_elms_by_creating_ext_net, \
-    drop_internal_branch_elements, add_ext_grids_to_boundaries, \
-    _ensure_unique_boundary_bus_names, match_cost_functions_and_eq_net, \
-    _check_network, _runpp_except_voltage_angles
-from pandapower.grid_equivalents.rei_generation import _create_net_zpbn, \
-    _get_internal_and_external_nets, _calculate_equivalent_Ybus, \
-    _create_bus_lookups, _calclate_equivalent_element_params, \
-    _replace_ext_area_by_impedances_and_shunts
-from pandapower.grid_equivalents.ward_generation import \
-    _calculate_ward_and_impedance_parameters, \
-    _calculate_xward_and_impedance_parameters, \
-    create_passive_external_net_for_ward_admittance, \
-    _replace_external_area_by_wards, _replace_external_area_by_xwards
+from pandapower.grid_equivalents.auxiliary import (
+    drop_assist_elms_by_creating_ext_net, drop_internal_branch_elements, add_ext_grids_to_boundaries,
+    _ensure_unique_boundary_bus_names, match_cost_functions_and_eq_net, _check_network, _runpp_except_voltage_angles
+)
+from pandapower.grid_equivalents.rei_generation import (
+    _create_net_zpbn, _get_internal_and_external_nets, _calculate_equivalent_Ybus, _create_bus_lookups,
+    _calclate_equivalent_element_params, _replace_ext_area_by_impedances_and_shunts
+)
+from pandapower.grid_equivalents.ward_generation import (
+    _calculate_ward_and_impedance_parameters, _calculate_xward_and_impedance_parameters,
+    create_passive_external_net_for_ward_admittance, _replace_external_area_by_wards, _replace_external_area_by_xwards
+)
 from pandapower.groups import isin_group, set_group_reference_column
-from pandapower.run import runpp
 from pandapower.toolbox.data_modification import reindex_buses
-from pandapower.toolbox.grid_modification import replace_ward_by_internal_elements, replace_xward_by_internal_elements, \
-    drop_buses, drop_elements_at_buses, merge_nets, fuse_buses
+from pandapower.toolbox.grid_modification import (
+    replace_ward_by_internal_elements, replace_xward_by_internal_elements, drop_buses, drop_elements_at_buses,
+    merge_nets, fuse_buses
+)
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_component, connected_components
 
@@ -142,11 +142,6 @@ def get_equivalent(
         logger.debug("xward elements of the external network are replaced by internal elements.")
         replace_xward_by_internal_elements(net, xwards=ext_buses_with_xward.index)
 
-    # --- switch from ward injection to ward addmittance if requested
-    if eq_type in ["ward", "xward"] and ward_type == "ward_admittance":
-        create_passive_external_net_for_ward_admittance(
-            net, all_external_buses, boundary_buses, runpp_fct=runpp_fct, **kwargs)
-
     # --- rei calculations
     if eq_type == "rei":
         # --- create zero power balance network
@@ -180,6 +175,11 @@ def get_equivalent(
 
     # --- ward and xward calculations
     elif eq_type in ["ward", "xward"]:
+        # --- switch from ward injection to ward addmittance if requested
+        if ward_type == "ward_admittance":
+            create_passive_external_net_for_ward_admittance(
+                net, all_external_buses, boundary_buses, runpp_fct=runpp_fct, **kwargs)
+
         net_internal, net_external = _get_internal_and_external_nets(
             net, boundary_buses, all_internal_buses, all_external_buses,
             calc_volt_angles=calculate_voltage_angles, runpp_fct=runpp_fct)
@@ -199,34 +199,38 @@ def get_equivalent(
 
         if eq_type == "ward":
             # --- calculate equivalent impedance and wards
-            ward_parameter_no_power, impedance_parameter = \
-                _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups,
-                                                         show_computing_time)
+            ward_parameter_no_power, impedance_parameter = _calculate_ward_and_impedance_parameters(
+                Ybus_eq, bus_lookups, show_computing_time
+            )
 
             # --- replace external network by equivalent elements
-            _replace_external_area_by_wards(net_external, bus_lookups,
-                                            ward_parameter_no_power,
-                                            impedance_parameter,
-                                            ext_buses_with_xward,
-                                            show_computing_time,
-                                            calc_volt_angles=calculate_voltage_angles,
-                                            runpp_fct=runpp_fct)
+            _replace_external_area_by_wards(
+                net_external,
+                bus_lookups,
+                ward_parameter_no_power,
+                impedance_parameter,
+                ext_buses_with_xward,
+                show_computing_time,
+                calc_volt_angles=calculate_voltage_angles,
+                runpp_fct=runpp_fct
+            )
         else:  # eq_type == "xward"
             # --- calculate equivalent impedance and xwards
-            xward_parameter_no_power, impedance_parameter = \
-                _calculate_xward_and_impedance_parameters(net_external,
-                                                          Ybus_eq,
-                                                          bus_lookups,
-                                                          show_computing_time)
+            xward_parameter_no_power, impedance_parameter = _calculate_xward_and_impedance_parameters(
+                net_external, Ybus_eq, bus_lookups, show_computing_time
+            )
 
             # --- replace external network by equivalent elements
-            _replace_external_area_by_xwards(net_external, bus_lookups,
-                                             xward_parameter_no_power,
-                                             impedance_parameter,
-                                             ext_buses_with_xward,
-                                             show_computing_time,
-                                             calc_volt_angles=calculate_voltage_angles,
-                                             runpp_fct=runpp_fct)
+            _replace_external_area_by_xwards(
+                net_external,
+                bus_lookups,
+                xward_parameter_no_power,
+                impedance_parameter,
+                ext_buses_with_xward,
+                show_computing_time,
+                calc_volt_angles=calculate_voltage_angles,
+                runpp_fct=runpp_fct
+            )
         net_eq = net_external
     else:
         raise NotImplementedError(f"The {eq_type=} is unknown.")

@@ -12,11 +12,12 @@ from pandapower.toolbox.grid_modification import drop_buses
 logger = logging.getLogger(__name__)
 
 
-def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computing_time, power_eq=0):
-    """calculates the wards and equivalente impedance to represente the
-    external network"""
+def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computing_time):
+    """
+    calculates the wards and equivalent impedance to represent the external network
+    """
     t_start = time.perf_counter()
-    # --- calculate ward paramter
+    # --- calculate ward parameter
     b_buses_ppc = bus_lookups["bus_lookup_ppc"]["b_area_buses"]
     b_buses_pd = bus_lookups["bus_lookup_pd"]["b_area_buses"]
     nb_b_buses_ppc = len(b_buses_ppc)
@@ -27,7 +28,7 @@ def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computin
     ward_parameter["shunt"] = Ybus_eq.sum(axis=1)[-nb_b_buses_ppc:]
     ward_parameter["power_eq"] = 0 + 1j * 0  # power_eq.power_eq.values
 
-    # --- calculate impedance paramter
+    # --- calculate impedance parameter
     params = Ybus_eq[-nb_b_buses_ppc:, -nb_b_buses_ppc:]
     nl = nb_b_buses_ppc * (nb_b_buses_ppc - 1) // 2
     impedance_parameter = pd.DataFrame(
@@ -35,41 +36,39 @@ def _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, show_computin
         dtype=np.float64)
     k = 0
     for i in range(nb_b_buses_ppc):
-        for j in range(nb_b_buses_ppc):
-            if j > i:
-                if np.abs(params[i, j]) > 1e-10:
-                    impedance_parameter.loc[k, 'from_bus'] = b_buses_pd[i]
-                    impedance_parameter.loc[k, 'to_bus'] = b_buses_pd[j]
-                    impedance_parameter.loc[k, 'rft_pu'] = (-1 / params[i, j]).real
-                    impedance_parameter.loc[k, 'xft_pu'] = (-1 / params[i, j]).imag
-                    impedance_parameter.loc[k, 'rtf_pu'] = (-1 / params[j, i]).real
-                    impedance_parameter.loc[k, 'xtf_pu'] = (-1 / params[j, i]).imag
-                    k += 1
-                else:
-                    impedance_parameter = impedance_parameter[:-1]
+        for j in range(i+1, nb_b_buses_ppc):
+            if np.abs(params[i, j]) > 1e-10:
+                impedance_parameter.loc[k, 'from_bus'] = b_buses_pd[i]
+                impedance_parameter.loc[k, 'to_bus'] = b_buses_pd[j]
+                impedance_parameter.loc[k, 'rft_pu'] = (-1 / params[i, j]).real
+                impedance_parameter.loc[k, 'xft_pu'] = (-1 / params[i, j]).imag
+                impedance_parameter.loc[k, 'rtf_pu'] = (-1 / params[j, i]).real
+                impedance_parameter.loc[k, 'xtf_pu'] = (-1 / params[j, i]).imag
+                k += 1
+            else:
+                impedance_parameter = impedance_parameter[:-1]
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("\"calculate_ward_and_impedance_parameters\" finished in %s seconds:" % round((
-                t_end - t_start), 2))
+        logger.info(f'"calculate_ward_and_impedance_parameters" finished in {t_end-t_start:02f} seconds.')
     return ward_parameter, impedance_parameter
 
 
-def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups,
-                                              show_computing_time, power_eq=0):
-    """calculates the xwards and the equivalent impedance"""
+def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups, show_computing_time):
+    """
+    calculates the xward and the equivalent impedance
+    """
     t_start = time.perf_counter()
     xward_parameter, impedance_parameter = \
         _calculate_ward_and_impedance_parameters(Ybus_eq, bus_lookups, False)
     xward_parameter["r_ohm"] = 0
-    xward_parameter["x_ohm"] = -1 / xward_parameter.shunt.values.imag / \
-                               net_external.sn_mva * net_external.bus.vn_kv[xward_parameter.bus_pd].values ** 2  #/2
-    # np.square(net_external.bus.vn_kv[xward_parameter.bus_pd.values].values) / \
-    # net_external.sn_mva/2
+    xward_parameter["x_ohm"] = (
+            -1 / xward_parameter.shunt.values.imag /
+            net_external.sn_mva * net_external.bus.vn_kv[xward_parameter.bus_pd].values ** 2  #/2
+    )
     xward_parameter["vm_pu"] = net_external.res_bus.vm_pu[xward_parameter.bus_pd.values].values
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("\"calculate_xward_and_impedance_parameters\" finished in %s seconds:" % round((
-                t_end - t_start), 2))
+        logger.info(f'"calculate_xward_and_impedance_parameters" finished in {t_end-t_start:02f} seconds.')
     return xward_parameter, impedance_parameter
 
 
