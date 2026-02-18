@@ -42,6 +42,7 @@ class UCTE2pandapower:
                 "tap2_side": structure_dict['trafo']["tap2_side"],
                 "tap2_changer_type": structure_dict['trafo']["tap2_changer_type"],
                 "name": structure_dict['trafo']["name"],
+                "df": structure_dict['trafo']["df"],
                 "amica_name": str,
             },
             "line": {
