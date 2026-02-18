@@ -91,12 +91,6 @@ class TestLoadDcOptionalFields:
             controllable=True,
         )
 
-        # enforce extension dtypes where needed
-        net.load_dc["name"] = net.load_dc["name"].astype("string")
-        net.load_dc["type"] = net.load_dc["type"].astype("string")
-        net.load_dc["zone"] = net.load_dc["zone"].astype("string")
-        net.load_dc["controllable"] = net.load_dc["controllable"].astype(bool)
-
         validate_network(net)
 
     def test_optional_fields_with_nulls(self):

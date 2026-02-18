@@ -352,7 +352,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                         net_zpbn[elm].loc[elm_idx, "voltLvl"] = net_zpbn.bus.voltLvl[boundary_buses].max()
                     for col in other_cols_bool:
                         col_values = elm_org.loc[elm_org.bus == bus, col]
-                        net_zpbn[elm].loc[elm_idx, col] = col_values.any()
+                        net_zpbn[elm].loc[elm_idx, col] = float('nan') if col_values.isna().any() else col_values.any()
 
                     all_str_values = list(zip(*elm_org[list(other_cols_str)][elm_org.bus == bus].values[::-1]))
                     for asv, colid in zip(all_str_values, other_cols_str):
