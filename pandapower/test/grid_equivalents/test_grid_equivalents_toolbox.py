@@ -28,8 +28,8 @@ def case9_27() -> tuple[pandapowerNet, dict, dict]:
     expected_bbr = {"line": {2, 7}}
     expected_bb = {
         "all": {4, 5, 7, 8},
-        0: {"all": {4, 5, 7, 8}, "internal": {4, 8}, "external": {5, 7}, 1: {5, 7}},
-        1: {"all": {4, 5, 7, 8}, "internal": {5, 7}, "external": {4, 8}, 0: {4, 8}},
+        '0': {"all": {4, 5, 7, 8}, "internal": {4, 8}, "external": {5, 7}, '1': {5, 7}},
+        '1': {"all": {4, 5, 7, 8}, "internal": {5, 7}, "external": {4, 8}, '0': {4, 8}},
     }
     net = convert_format(net)
     runpp(net)
@@ -127,7 +127,7 @@ def case9_ab_merged() -> tuple[pandapowerNet, dict, dict]:
 def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches1():
     net, expected_bb, expected_bbr = case9_27()
     set_bus_zone_by_boundary_branches(net, expected_bbr)
-    assert all(net.bus.zone.values == np.array([0, 1, 1, 0, 0, 1, 1, 1, 0]))
+    assert all(net.bus.zone.values == np.array(['0', '1', '1', '0', '0', '1', '1', '1', '0']))
 
     boundary_buses, boundary_branches = get_boundaries_by_bus_zone_with_boundary_branches(net)
 
@@ -137,7 +137,7 @@ def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_b
     # --- test against set_bus_zone_by_boundary_branches()
     bb_in = {"line": {2, 4, 7}}
     set_bus_zone_by_boundary_branches(net, bb_in)
-    assert all(net.bus.zone.values == np.array([0, 1, 2, 0, 0, 2, 1, 1, 0]))
+    assert all(net.bus.zone.values == np.array(['0', '1', '2', '0', '0', '2', '1', '1', '0']))
 
 
 def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches2():

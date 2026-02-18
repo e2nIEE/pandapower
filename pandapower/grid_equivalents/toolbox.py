@@ -82,9 +82,9 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
             for i, set_ in enumerate(ccl):
                 if set_.intersection(areas[-1]):
                     areas[-1] |= ccl.pop(i)
-
+    
     for i, area in enumerate(areas):
-        net.bus.loc[list(area), "zone"] = i
+        net.bus.loc[list(area), "zone"] = str(i)
 
 
 def get_boundaries_by_bus_zone_with_boundary_branches(net):
@@ -156,11 +156,9 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
         branch_dict[elm] += [bus]
 
     zones = net.bus.zone.unique()
-    boundary_branches = {zone if net.bus.zone.dtype == object else zone.item():
-                             dict() for zone in zones}
-    boundary_branches["all"] = dict()
-    boundary_buses = {zone if net.bus.zone.dtype == object else zone.item():
-                          {"all": set(), "internal": set(), "external": set()} for zone in zones}
+    boundary_branches = {zone: {} for zone in zones}
+    boundary_branches["all"] = {}
+    boundary_buses = {zone: {"all": set(), "internal": set(), "external": set()} for zone in zones}
     boundary_buses["all"] = set()
 
     for elm, buses in branch_dict.items():
