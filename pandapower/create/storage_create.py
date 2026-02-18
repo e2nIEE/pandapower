@@ -210,7 +210,7 @@ def create_storages(
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_q_mvar", max_q_mvar)
     _add_to_entries_if_not_nan(
-        net, "storage", entries, index, "controllable", controllable, default_val=False
+        net, "storage", entries, index, "controllable", controllable
     )
 
     _set_multiple_entries(net, "storage", index, defaults_to_fill=[("controllable", False)], entries=entries)

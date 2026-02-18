@@ -10,7 +10,7 @@ import warnings
 from typing import Iterable, Any
 
 import pandas as pd
-from numpy import nan, isnan, arange, isin, any as np_any, all as np_all, float64, intersect1d, unique as uni, c_
+from numpy import isnan, arange, isin, any as np_any, all as np_all, intersect1d, unique as uni, c_
 import numpy.typing as npt
 from pandas import isnull
 from pandas.api.types import is_object_dtype
@@ -25,8 +25,7 @@ from pandapower.auxiliary import (
 )
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import Int
-from pandapower.network_structure import get_structure_dict
-
+from pandapower.network_structure import get_structure_dict, get_column_info
 
 logger = logging.getLogger(__name__)
 
@@ -251,14 +250,16 @@ def _set_value_if_not_nan(
         value: value to be set
         column: name of column
         element_type: element_type type, e.g. "gen"
-        default_val: default value to be set if the column exists and value is nan and if the column does not
-            exist and the value is not nan, by default nan
+        default_val: default value to be set for this column (if not passed, attempt to take from pandera)
 
     See Also:
         _add_to_entries_if_not_nan
     """
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
+    col_info = get_column_info(element_type, column)
+    if col_info is not None and pd.isna(default_val) and not col_info['nullable'] and col_info['default'] is not None:
+        default_val = col_info['default']
     if dtype == "float" and pd.isna(default_val):
         default_val = float("nan")
     if _not_nan(value):
@@ -290,6 +291,9 @@ def _add_to_entries_if_not_nan(
     """
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
+    col_info = get_column_info(element_type, column)
+    if col_info is not None and pd.isna(default_val) and not col_info['nullable'] and col_info['default'] is not None:
+        default_val = col_info['default']
     if _not_nan(values):
         entries[column] = pd.Series(values, index=index)
         if _not_nan(default_val):
@@ -409,10 +413,8 @@ def _set_multiple_entries(
         for col, val in defaults_to_fill:
             if col in dd.columns and col not in net[table].columns:
                 net[table][col] = val
-                try:
+                if col in dtype_dict:
                     net[table][col] = net[table][col].astype(dtype_dict[col])
-                except KeyError:
-                    pass
 
     # set correct dtypes
     for col in dd.columns:

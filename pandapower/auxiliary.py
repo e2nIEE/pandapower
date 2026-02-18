@@ -88,6 +88,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
+# FIXME: Remove this!
 def log_to_level(
     msg: str,
     passed_logger: logging.Logger,
@@ -112,6 +113,7 @@ def version_check(
     level: Literal["error", "warning", "info", "debug", "UserWarning"] = "UserWarning",
     ignore_not_installed: bool = False
 ) -> None:
+    # FIXME: version should NEVER be defined in code!
     minimum_version = {'plotly': "3.1.1",
                        'numba': "0.25",
                        }

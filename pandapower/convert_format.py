@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
 
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -10,11 +11,12 @@ import geojson
 from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
-from pandapower.create import create_empty_network, create_poly_cost
-from pandapower.results import reset_results
-from pandapower.control import TrafoController, BinarySearchControl, DroopControl
-from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
 from pandapower.auxiliary import pandapowerNet
+from pandapower.control import TrafoController, BinarySearchControl, DroopControl
+from pandapower.create import create_empty_network, create_poly_cost
+from pandapower.network_structure import get_structure_dict
+from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
+from pandapower.results import reset_results
 
 import logging
 
@@ -139,30 +141,25 @@ def _restore_index_names(net):
 
 def correct_dtypes(net, error):
     """
-    Corrects all dtypes of pp element tables if possible. If not and error is True, an Error is
-    raised.
+    Corrects all dtypes of pp element tables if possible. If not and error is True, an Error is raised.
     """
-    empty_net = create_empty_network()
-    not_corrected = []
-    failed = {}
-    for key, table in empty_net.items():
+    structure_dict = get_structure_dict(required_only=False)
+    failed = defaultdict(list)
+    for key, table in net.items():
         if isinstance(table, pd.DataFrame):
-            if key in net.keys() and isinstance(net[key], pd.DataFrame):
-                cols = table.columns.intersection(net[key].columns)
-                diff_cols = cols[~(table.dtypes.loc[cols] == net[key].dtypes.loc[cols])]
-                for col in diff_cols:
+            for col in table.columns:
+                if key not in structure_dict:
+                    # skip unknown/custom dataframes
+                    continue
+                required_dtype = structure_dict[key].get(col, 'Unknown')
+                if required_dtype == 'Unknown':
+                    # skip custom columns
+                    continue
+                if table[col].dtype != required_dtype:
                     try:
-                        net[key][col] = net[key][col].astype(table[col].dtype)
+                        table[col] = table[col].astype(required_dtype)
                     except ValueError:
-                        if key not in failed.keys():
-                            failed[key] = [col]
-                        else:
-                            failed[key].append(col)
-            else:
-                not_corrected.append(key)
-    if not_corrected:
-        logger.warning("These keys were not corrected since they miss or are no dataframes: " + str(
-            not_corrected))
+                        failed[key].append(col)
     if failed:
         msg = "These dtypes could not be corrected: " + str(failed)
         if error:

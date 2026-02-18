@@ -1,41 +1,101 @@
 from numpy import dtype
+from pandera import DataFrameSchema
 
 from pandapower._version import __version__, __format_version__
 from pandapower.network_schema.tools.helper import get_dtypes
-from pandapower.network_schema import *
+from pandapower.network_schema import *  # noqa: F403
+
+
+def get_table_schema() -> dict[str, DataFrameSchema]:
+    # ruff: noqa: F405
+    return {
+        "bus": bus_schema,
+        "bus_dc": bus_dc_schema,
+        "load": load_schema,
+        "sgen": sgen_schema,
+        "motor": motor_schema,
+        "asymmetric_load": asymmetric_load_schema,
+        "asymmetric_sgen": asymmetric_sgen_schema,
+        "storage": storage_schema,
+        "gen": gen_schema,
+        "switch": switch_schema,
+        "shunt": shunt_schema,
+        "svc": svc_schema,
+        "ssc": ssc_schema,
+        "vsc": vsc_schema,
+        "ext_grid": ext_grid_schema,
+        "line": line_schema,
+        "line_dc": line_dc_schema,
+        "trafo": trafo_schema,
+        "trafo3w": trafo3w_schema,
+        "impedance": impedance_schema,
+        "tcsc": tcsc_schema,
+        "dcline": dcline_schema,
+        "ward": ward_schema,
+        "xward": xward_schema,
+        "measurement": measurement_schema,
+        "source_dc": source_dc_schema,
+        "load_dc": load_dc_schema,
+        "vsc_stacked": vsc_stacked_schema,
+        "vsc_bipolar": vsc_bipolar_schema,
+        # result tables
+        "_empty_res_bus": res_bus_schema,
+        "_empty_res_bus_dc": res_bus_dc_schema,
+        "_empty_res_ext_grid": res_ext_grid_schema,
+        "_empty_res_line": res_line_schema,
+        "_empty_res_line_dc": res_line_dc_schema,
+        "_empty_res_trafo": res_trafo_schema,
+        "_empty_res_load": res_load_schema,
+        "_empty_res_load_3ph": res_load_schema,
+        "_empty_res_asymmetric_load": res_asymmetric_load_schema,
+        "_empty_res_asymmetric_sgen": res_asymmetric_sgen_schema,
+        "_empty_res_motor": res_motor_schema,
+        "_empty_res_sgen": res_sgen_schema,
+        "_empty_res_sgen_3ph": res_sgen_schema,
+        "_empty_res_shunt": res_shunt_schema,
+        "_empty_res_svc": res_svc_schema,
+        "_empty_res_ssc": res_ssc_schema,
+        "_empty_res_vsc": res_vsc_schema,
+        "_empty_res_switch": res_switch_schema,
+        "_empty_res_impedance": res_impedance_schema,
+        "_empty_res_tcsc": res_tcsc_schema,
+        "_empty_res_dcline": res_dcline_schema,
+        "_empty_res_source_dc": res_source_dc_schema,
+        "_empty_res_load_dc": res_load_dc_schema,
+        "_empty_res_ward": res_ward_schema,
+        "_empty_res_xward": res_xward_schema,
+        "_empty_res_trafo_3ph": res_trafo_3ph_schema,
+        "_empty_res_trafo3w": res_trafo3w_schema,
+        "_empty_res_bus_3ph": res_bus_3ph_schema,
+        "_empty_res_ext_grid_3ph": res_ext_grid_3ph_schema,
+        "_empty_res_line_3ph": res_line_3ph_schema,
+        "_empty_res_asymmetric_load_3ph": res_asymmetric_load_3ph_schema,
+        "_empty_res_asymmetric_sgen_3ph": res_asymmetric_sgen_3ph_schema,
+        "_empty_res_storage": res_storage_schema,
+        "_empty_res_storage_3ph": res_storage_3ph_schema,
+        "_empty_res_gen": res_gen_schema,
+        "_empty_res_vsc_stacked": res_vsc_stacked_schema,
+        "_empty_res_vsc_bipolar": res_vsc_bipolar_schema
+    }
+    # ruff: enable
+
+
+def get_column_info(table: str, column: str) -> dict[str, str | bool] | None:
+    schema = get_table_schema().get(table, None)
+    if schema is None:
+        return schema
+    column = schema.columns.get(column, None)
+    if column is None:
+        return column
+    return column.__dict__
 
 
 def get_structure_dict(required_only: bool = True) -> dict:
     """
     This function returns the structure dict of the network
     """
-    return {
-        # structure data
-        "bus": get_dtypes(bus_schema, required_only),
-        "bus_dc": get_dtypes(bus_dc_schema, required_only),
-        "load": get_dtypes(load_schema, required_only),
-        "sgen": get_dtypes(sgen_schema, required_only),
-        "motor": get_dtypes(motor_schema, required_only),
-        "asymmetric_load": get_dtypes(asymmetric_load_schema, required_only),
-        "asymmetric_sgen": get_dtypes(asymmetric_sgen_schema, required_only),
-        "storage": get_dtypes(storage_schema, required_only),
-        "gen": get_dtypes(gen_schema, required_only),
-        "switch": get_dtypes(switch_schema, required_only),
-        "shunt": get_dtypes(shunt_schema, required_only),
-        "svc": get_dtypes(svc_schema, required_only),
-        "ssc": get_dtypes(ssc_schema, required_only),
-        "vsc": get_dtypes(vsc_schema, required_only),
-        "ext_grid": get_dtypes(ext_grid_schema, required_only),
-        "line": get_dtypes(line_schema, required_only),
-        "line_dc": get_dtypes(line_dc_schema, required_only),
-        "trafo": get_dtypes(trafo_schema, required_only),
-        "trafo3w": get_dtypes(trafo3w_schema, required_only),
-        "impedance": get_dtypes(impedance_schema, required_only),
-        "tcsc": get_dtypes(tcsc_schema, required_only),
-        "dcline": get_dtypes(dcline_schema, required_only),
-        "ward": get_dtypes(ward_schema, required_only),
-        "xward": get_dtypes(xward_schema, required_only),
-        "measurement": get_dtypes(measurement_schema, required_only),
+    dtypes_dict = {key: get_dtypes(val, required_only) for key, val in get_table_schema().items()}
+    dtypes_dict.update({
         "pwl_cost": {  # TODO: not a datastructure or element?
             "power_type": dtype(object),
             "element": "u4",
@@ -66,44 +126,7 @@ def get_structure_dict(required_only: bool = True) -> dict:
             "element_index": dtype(object),
             "reference_column": dtype(object),
         },
-        "source_dc": get_dtypes(source_dc_schema, required_only),
-        "load_dc": get_dtypes(load_dc_schema, required_only),
-        "vsc_stacked": get_dtypes(vsc_stacked_schema, required_only),
-        "vsc_bipolar": get_dtypes(vsc_bipolar_schema, required_only),
         # result tables
-        "_empty_res_bus": get_dtypes(res_bus_schema),
-        "_empty_res_bus_dc": get_dtypes(res_bus_dc_schema),
-        "_empty_res_ext_grid": get_dtypes(res_ext_grid_schema),
-        "_empty_res_line": get_dtypes(res_line_schema),
-        "_empty_res_line_dc": get_dtypes(res_line_dc_schema),
-        "_empty_res_trafo": get_dtypes(res_trafo_schema),
-        "_empty_res_load": get_dtypes(res_load_schema),
-        "_empty_res_asymmetric_load": get_dtypes(res_asymmetric_load_schema),
-        "_empty_res_asymmetric_sgen": get_dtypes(res_asymmetric_sgen_schema),
-        "_empty_res_motor": get_dtypes(res_motor_schema),
-        "_empty_res_sgen": get_dtypes(res_sgen_schema),
-        "_empty_res_shunt": get_dtypes(res_shunt_schema),
-        "_empty_res_svc": get_dtypes(res_svc_schema),
-        "_empty_res_ssc": get_dtypes(res_ssc_schema),
-        "_empty_res_vsc": get_dtypes(res_vsc_schema),
-        "_empty_res_switch": get_dtypes(res_switch_schema),
-        "_empty_res_impedance": get_dtypes(res_impedance_schema),
-        "_empty_res_tcsc": get_dtypes(res_tcsc_schema),
-        "_empty_res_dcline": get_dtypes(res_dcline_schema),
-        "_empty_res_source_dc": get_dtypes(res_source_dc_schema),
-        "_empty_res_load_dc": get_dtypes(res_load_dc_schema),
-        "_empty_res_ward": get_dtypes(res_ward_schema),
-        "_empty_res_xward": get_dtypes(res_xward_schema),
-        "_empty_res_trafo_3ph": get_dtypes(res_trafo_3ph_schema),
-        "_empty_res_trafo3w": get_dtypes(res_trafo3w_schema),
-        "_empty_res_bus_3ph": get_dtypes(res_bus_3ph_schema),
-        "_empty_res_ext_grid_3ph": get_dtypes(res_ext_grid_3ph_schema),
-        "_empty_res_line_3ph": get_dtypes(res_line_3ph_schema),
-        "_empty_res_asymmetric_load_3ph": get_dtypes(res_asymmetric_load_3ph_schema),
-        "_empty_res_asymmetric_sgen_3ph": get_dtypes(res_asymmetric_sgen_3ph_schema),
-        "_empty_res_storage": get_dtypes(res_storage_schema),
-        "_empty_res_storage_3ph": get_dtypes(res_storage_3ph_schema),
-        "_empty_res_gen": get_dtypes(res_gen_schema),
         "_empty_res_protection": {
             "switch_id": "f8",
             "prot_type": dtype(object),
@@ -112,8 +135,6 @@ def get_structure_dict(required_only: bool = True) -> dict:
             "act_param_val": "f8",
             "trip_melt_time_s": "f8",
         },  # TODO: what is this ?
-        "_empty_res_vsc_stacked": get_dtypes(res_vsc_stacked_schema),
-        "_empty_res_vsc_bipolar": get_dtypes(res_vsc_bipolar_schema),
         # internal
         "_ppc": None,
         "_ppc0": None,
@@ -137,7 +158,8 @@ def get_structure_dict(required_only: bool = True) -> dict:
         "name": "",
         "f_hz": 50.0,
         "sn_mva": 1,
-    }
+    })
+    return dtypes_dict
 
 
 def get_std_type_structure_dict() -> dict:
