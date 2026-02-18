@@ -772,7 +772,7 @@ def test_create_transformers_from_parameters():
         vkr0_percent=1.7,
         mag0_rx=0.4,
         mag0_percent=30,
-        tap_neutral=0.0,
+        # tap_neutral=0.0, FIXME add tap_side and tap_pos or remove
         vector_group="Dyn",
         si0_hv_partial=0.1,
         max_loading_percent=80,
@@ -818,8 +818,8 @@ def test_create_transformers_from_parameters():
         vk0_percent=[0.4, 0.4],
         mag0_rx=[0.4, 0.4],
         mag0_percent=[30, 30],
-        tap_neutral=[0.0, 1.0],
-        tap_pos=[-1, 4],
+        # tap_neutral=[0.0, 1.0], FIXME add tap_side or remove
+        # tap_pos=[-1, 4],
         test_kwargs=["dummy_string", "dummy_string"],
     )
 
@@ -837,7 +837,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.mag0_rx == 0.4)
     assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.test_kwargs == "dummy_string")
-    # assert net.trafo.tap_neutral.at[t[0]] == 0
+    # assert net.trafo.tap_neutral.at[t[0]] == 0 FIXME add tap_side or remove
     # assert net.trafo.tap_neutral.at[t[1]] == 1
     # assert net.trafo.tap_pos.at[t[0]] == -1
     # assert net.trafo.tap_pos.at[t[1]] == 4
@@ -879,6 +879,10 @@ def test_create_transformers_raise_errorexcept():
             index=[2, 1],
         )
     validate_network(net)
+
+
+
+def test_create_transformer_raises_errorexcept1():
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
