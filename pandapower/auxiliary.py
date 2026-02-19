@@ -2138,8 +2138,7 @@ def _init_runpp_options(
                  net.vsc_stacked.in_service.any() or net.vsc_bipolar.in_service.any()
 
     if with_facts and algorithm != "nr":
-        if algorithm != 'nr':
-            raise NotImplementedError('FACTS devices only implemented for Newton Raphson algorithm.')
+        raise NotImplementedError('FACTS devices only implemented for Newton Raphson algorithm.')
 
     if max_iteration == "auto":
         # tdpf is an option rather than algorithm; svc need more iterations to converge
@@ -2344,10 +2343,6 @@ def _init_runse_options(
     switch_rx_ratio: int = 2,
     **kwargs: Any,
 ) -> None:
-    check_connectivity = kwargs.get("check_connectivity", True)
-    trafo_model = kwargs.get("trafo_model", "t")
-    trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
-    switch_rx_ratio = kwargs.get("switch_rx_ratio", 2)
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,

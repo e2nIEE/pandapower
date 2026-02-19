@@ -64,7 +64,6 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
             result = opf(ppci, ppopt)
     else:
         result = opf(ppci, ppopt)
-#    net["_ppc_opf"] = result
 
     if verbose:
         ppopt['OUT_ALL'] = 1
@@ -79,14 +78,12 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
     mode = net["_options"]["mode"]
     result = _copy_results_ppci_to_ppc(result, ppc, mode=mode)
 
-#    net["_ppc_opf"] = result
     net["OPF_converged"] = True
     _extract_results(net, result)
     _clean_up(net)
 
 
 def _add_dcline_constraints(om, net):
-    # from numpy import hstack, diag, eye, zeros
     ppc = om.get_ppc()
     ndc = net.dcline.in_service.sum()  # number of in-service DC lines
     if ndc > 0:
@@ -113,7 +110,6 @@ def _add_dcline_constraints(om, net):
 
 
 def _run_pf_before_opf(net, ppci):
-    # net._options["numba"] = True
     net._options["tolerance_mva"] = 1e-8
     net._options["max_iteration"] = 10
     net._options["algorithm"] = "nr"

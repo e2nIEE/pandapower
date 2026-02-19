@@ -49,7 +49,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
                            'tdpf', 'tdpf_delay_s', 'tdpf_update_r_theta']
 
     if overwrite or 'user_pf_options' not in net.keys():
-        net['user_pf_options'] = dict()
+        net['user_pf_options'] = {}
 
     net.user_pf_options.update({key: val for key, val in kwargs.items()
                                 if key in standard_parameters})
@@ -534,7 +534,7 @@ def _passed_runpp_parameters(local_parameters):
     if "user_pf_options" not in net.keys() or len(net.user_pf_options) == 0:
         return None
     # default_parameters contains the parameters that are specified for the runpp function by default in its definition
-    args, varargs, keywords, defaults, *_ = inspect.getfullargspec(runpp)
+    args, _, _, defaults, *_ = inspect.getfullargspec(runpp)
     default_parameters = dict(zip(args[1:], defaults))
 
     # we want to also include the parameters that are optional (passed in "kwargs")!

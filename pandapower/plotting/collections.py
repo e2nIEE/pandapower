@@ -237,7 +237,7 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
     # prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(coords, picker=picker, **kwargs)
     lc.indices = np.array(indices)
-    lc.info = infos if infos is not None else list()
+    lc.info = infos if infos is not None else []
     return lc
 
 
@@ -410,11 +410,7 @@ def create_bus_collection(
     Returns:
         patch collection
     """
-    if bus_table == "bus":
-        dc = False
-    elif bus_table == "bus_dc":
-        dc = True
-    else:
+    if bus_table != "bus" and bus_table != "bus_dc":
         raise NotImplementedError(f"bus table {bus_table} not implemented!")
 
     if not MATPLOTLIB_INSTALLED:
@@ -422,8 +418,6 @@ def create_bus_collection(
     buses = get_index_array(buses, net[bus_table].index)
     if len(buses) == 0:
         return None
-    # if bus_geodata is None:
-    #     bus_geodata = net["bus_geodata"] if not dc else net["bus_dc_geodata"]
 
     if any(net[bus_table].loc[buses].geo.isna()):
         raise AttributeError('net.bus.geo contains NaN values, consider dropping them beforehand.')
@@ -923,11 +917,9 @@ def create_vsc_collection(net, vscs=None, picker=False, size=None, infofunc=None
     vscs = get_index_array(vscs, net.vsc.index)
 
     if bus_geodata is None:
-        # bus_geodata = net["bus_geodata"]
         bus_geodata = net.bus.geo.dropna()
 
     if bus_dc_geodata is None:
-        # bus_dc_geodata = net["bus_dc_geodata"]
         bus_dc_geodata = net.bus_dc.geo.dropna()
 
     in_geodata = (net.vsc.bus.loc[vscs].isin(bus_geodata.index) &
@@ -996,11 +988,9 @@ def create_vsc_connection_collection(net, vscs=None, bus_geodata=None, bus_dc_ge
     vscs = get_index_array(vscs, net.vsc.index)
 
     if bus_geodata is None:
-        # bus_geodata = net["bus_geodata"]
         bus_geodata = net.bus.geo.dropna()
 
     if bus_dc_geodata is None:
-        bus_dc_geodata = net["bus_dc_geodata"]
         bus_dc_geodata = net.bus_dc.geo.dropna()
 
     in_geodata = (net.vsc.bus.loc[vscs].isin(bus_geodata.index) &

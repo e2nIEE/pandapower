@@ -123,7 +123,6 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
     sql_column_types = [index_type,
                         *[match_sql_type(t) for t in table[table_columns].dtypes.astype(str).values],
                         *[match_sql_type(np.result_type(type(v)).name) for v in id_columns.values()]]
-    placeholders = ",".join(['%s'] * len(sql_columns))
 
     # check if all columns already exist and if not, add more columns
     existing_columns = get_sql_table_columns(cursor, table_name)
@@ -386,7 +385,7 @@ def from_sqlite(filename):
     with sqlite3.connect(filename) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        dodfs = dict()
+        dodfs = {}
         for t, in cursor.fetchall():
             table = pd.read_sql_query("SELECT * FROM '%s'" % t, conn, index_col="index")
             table.index.name = None
