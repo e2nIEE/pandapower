@@ -11,6 +11,7 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 
+from pandapower.network_structure import get_structure_dict
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 
@@ -29,19 +30,25 @@ class UCTE2pandapower:
     @staticmethod
     def _create_empty_network() -> pandapowerNet:
         net: pandapowerNet = create_empty_network()
+        structure_dict = get_structure_dict(required_only=False)
         new_columns: dict[str, dict] = {
             "trafo": {
-                "tap2_min": int,
-                "tap2_max": int,
-                "tap2_neutral": int,
-                "tap2_pos": int,
-                "tap2_step_percent": float,
-                "tap2_step_degree": float,
-                "tap2_side": str,
-                "tap2_changer_type": str,
+                "tap2_min": structure_dict['trafo']["tap2_min"],
+                "tap2_max": structure_dict['trafo']["tap2_max"],
+                "tap2_neutral": structure_dict['trafo']["tap2_neutral"],
+                "tap2_pos": structure_dict['trafo']["tap2_pos"],
+                "tap2_step_percent": structure_dict['trafo']["tap2_step_percent"],
+                "tap2_step_degree": structure_dict['trafo']["tap2_step_degree"],
+                "tap2_side": structure_dict['trafo']["tap2_side"],
+                "tap2_changer_type": structure_dict['trafo']["tap2_changer_type"],
+                "name": structure_dict['trafo']["name"],
+                "df": structure_dict['trafo']["df"],
                 "amica_name": str,
             },
-            "line": {"amica_name": str},
+            "line": {
+                "name": structure_dict['line']["name"],
+                "amica_name": str
+            },
             "bus": {"ucte_country": str},
         }
         for pp_element in new_columns.keys():
@@ -53,7 +60,7 @@ class UCTE2pandapower:
         self.logger.info("Converting UCTE data to a pandapower network.")
         time_start = time.time()
         # create a temporary copy from the origin input data
-        self.u_d = dict()
+        self.u_d = {}
         for ucte_element, items in ucte_dict.items():
             self.u_d[ucte_element] = items.copy()
         # first reset the index to get indices for pandapower
@@ -285,7 +292,7 @@ class UCTE2pandapower:
             return  # Acceleration
         # lines = self.u_d['L']
         # create the in_service column from the UCTE status
-        in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
+        in_service_map = {0: True, 1: True, 2: True, 7: False, 8: False, 9: False}
         lines["in_service"] = lines["status"].map(in_service_map)
         # i in A to i in kA
         lines["max_i_ka"] = lines["i"] / 1e3
@@ -326,7 +333,7 @@ class UCTE2pandapower:
         impedances = pd.concat([impedances, trafos_to_impedances])
 
         # create the in_service column from the UCTE status
-        in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
+        in_service_map = {0: True, 1: True, 2: True, 7: False, 8: False, 9: False}
         impedances["in_service"] = impedances["status"].map(in_service_map)
         # Convert ohm/km to per unit (pu)
         impedances["sn_mva"] = 10000  # same as PowerFactory
@@ -412,7 +419,7 @@ class UCTE2pandapower:
         switches = self.u_d["L"].loc[lines_rxb_zero | switches_by_status, :]
 
         # create the in_service column from the UCTE status
-        in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
+        in_service_map = {0: True, 1: True, 2: True, 7: False, 8: False, 9: False}
         switches["closed"] = switches["status"].map(in_service_map)
         self._set_column_to_type(switches, "from_bus", int)
         switches["type"] = "LS"
@@ -435,7 +442,7 @@ class UCTE2pandapower:
             self.logger.info("Finished converting the transformers (no transformers existing).")
             return
         # create the in_service column from the UCTE status
-        status_map = dict({0: True, 1: True, 8: False, 9: False})
+        status_map = {0: True, 1: True, 8: False, 9: False}
         trafos["in_service"] = trafos["status"].map(status_map)
         # use same value as in powerfactory for replacing s equals zero values
         trafos.loc[trafos.s == 0, "s"] = 1001
