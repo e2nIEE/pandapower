@@ -180,7 +180,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
-    _, bus, gen, branch, _, _, _, _, ref, _, _, _, *_, _, ref_gens = _get_pf_variables_from_ppci(ppci)
+    _, bus, gen, branch, _, _, _, _, ref, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
     bus_backup_p_q = bus[:, [PD, QD]].copy()
     gen_backup_p = gen[:, PG].copy()
 

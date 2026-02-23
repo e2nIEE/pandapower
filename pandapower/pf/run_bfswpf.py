@@ -367,9 +367,9 @@ def _run_bfswpf(ppci, options, **kwargs):
     """
     time_start = perf_counter()  # starting pf calculation timing
 
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, _, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
-    _, _, _, calculate_voltage_angles, numba = _get_options(options)
+    *_, calculate_voltage_angles, numba = _get_options(options)
 
     numba, makeYbus = _import_numba_extensions_if_flag_is_true(numba)
 
@@ -401,7 +401,7 @@ def _run_bfswpf(ppci, options, **kwargs):
     if any_trafo_shift:
         branch_noshift = branch.copy()
         branch_noshift[:, SHIFT] = 0
-        Ybus_noshift, _, _ = makeYbus(baseMVA, bus, branch_noshift)
+        Ybus_noshift, *_ = makeYbus(baseMVA, bus, branch_noshift)
     else:
         Ybus_noshift = Ybus.copy()
 
