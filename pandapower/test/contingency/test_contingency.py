@@ -333,9 +333,10 @@ def test_lightsim2grid_phase_shifters():
     bus_res = net.res_bus.copy()
     if "tap_phase_shifter" in net.trafo.columns:
         _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
-    if ("tap_changer_type" in net.trafo.columns) or ("tap_changer_type" in net.trafo3w.columns):
+    if "tap_changer_type" in net.trafo.columns:
         if np.any(net.trafo.tap_changer_type == "Ideal"):
             _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
+    if "tap_changer_type" in net.trafo3w.columns:
         if np.any(net.trafo3w.tap_changer_type == "Ideal"):
             _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
     runpp(net)
