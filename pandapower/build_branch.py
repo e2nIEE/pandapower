@@ -517,10 +517,10 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     if trafo_model == "pi":
         return r, x, g, b, 0, 0  # g_asym and b_asym are 0 here
     elif trafo_model == "t":
-        r_ratio = get_trafo_values(trafo_df, "leakage_resistance_ratio_hv")
+        r_ratio = get_trafo_values(trafo_df, "leakage_resistance_ratio_hv", na_replacement=0.5)
         if r_ratio is None:
             r_ratio = np.full_like(r, fill_value=0.5, dtype=np.float64)
-        x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv")
+        x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv", na_replacement=0.5)
         if x_ratio is None:
             x_ratio = np.full_like(r, fill_value=0.5, dtype=np.float64)
 

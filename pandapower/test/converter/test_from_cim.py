@@ -109,7 +109,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return from_cim(file_list=cgmes_files, run_powerflow=True)
+    return from_cim(file_list=cgmes_files, run_powerflow=True, ignore_errors=False)
 
 
 @pytest.fixture(scope="module")
@@ -118,7 +118,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
     cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
 
-    return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
+    return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True, ignore_errors=False)
 
 
 @pytest.fixture(scope="module")
@@ -1304,7 +1304,7 @@ def test_fullgrid_bus(fullgrid_v2):
 
     element_2 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_99b219f3-4593-428b-a4da-124a54630178']
     assert element_2['zone'].item() == 'PP_Brussels'
-    assert math.isnan(element_2['geo'].item())
+    assert pd.isna(element_2['geo'].item())
     assert element_2['cim_topnode'].item() == '_99b219f3-4593-428b-a4da-124a54630178'
     assert element_2['ConnectivityNodeContainer_id'].item() == '_b10b171b-3bc5-4849-bb1f-61ed9ea1ec7c'
     assert element_2['Substation_id'].item() == '_37e14a0f-5e34-4647-a062-8bfd9305fa9d'
@@ -1352,7 +1352,7 @@ def test_fullgrid_NB_bus(fullgrid_node_breaker):
 
     element_2 = fullgrid_node_breaker.bus[fullgrid_node_breaker.bus['origin_id'] == '_c38adab3-5168-4004-a83d-28d890dedd36']
     assert element_2['zone'].item() == 'HVDC 1'
-    assert math.isnan(element_2['geo'].item())
+    assert pd.isna(element_2['geo'].item())
     assert element_2['cim_topnode'].item() == '_b01fe92f-68ab-4123-ae45-f22d3e8daad1'
     assert element_2['ConnectivityNodeContainer_id'].item() == '_c68f0a24-46cb-42aa-b91d-0b49b8310cc9'
     assert element_2['Substation_id'].item() == '_9df6213f-c5dc-477c-aab4-74721f7d1fdb'
