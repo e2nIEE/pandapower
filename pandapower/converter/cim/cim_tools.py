@@ -144,7 +144,12 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
             np_type = np.sctypeDict.get(np_type)
             for field in fields:
                 if override or field not in net[pp_type].columns:
-                    net[pp_type][field] = pd.Series([], dtype=np_type)
+                    # FIXME: The else below has been added since all keys in structure dict are added as string dtype which causes issues.
+                    #  remove the `list(structure_dict[<type>].keys()) + ` sections from the fill dicts and add them properly or add a separate loop for them
+                    if field not in struct_dict[pp_type]:
+                        net[pp_type][field] = pd.Series([], dtype=np_type)
+                    else:
+                        net[pp_type][field] = pd.Series([], dtype=struct_dict[pp_type][field])
 
     # some special items
     if override:

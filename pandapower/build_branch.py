@@ -11,7 +11,7 @@ import warnings
 from typing import Any, Optional
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 import pandas as pd
 
 from pandapower.auxiliary import get_values, pandapowerNet
@@ -756,16 +756,16 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
         For complex tap changers:
         - Performs detailed voltage triangle calculations considering both magnitude and angle changes
     """
-    def _cos(x):
+    def _cos(x: ArrayLike) -> ArrayLike:
         return np.cos(np.deg2rad(x))
 
-    def _sin(x):
+    def _sin(x: ArrayLike) -> ArrayLike:
         return np.sin(np.deg2rad(x))
 
-    def _arcsin(x):
+    def _arcsin(x: ArrayLike) -> ArrayLike:
         return np.rad2deg(np.arcsin(x))
 
-    def _arctan(x):
+    def _arctan(x: ArrayLike) -> ArrayLike:
         return np.rad2deg(np.arctan(x))
 
     if vn is None and not ideal:
@@ -812,7 +812,7 @@ def _get_trafo_shift(trafo_df, tap, mask, direction, vn=None, ideal=True):
     return _arctan(direction * du * _sin(tap_angles) / (u1 + du * _cos(tap_angles))), _vn_modified
 
 
-# FIXME: sideeffect: overwrites data in trafo_df with data from trafo_characterisitc_table
+# FIXME: sideeffect: overwrites data in trafo_df with data from trafo_characteristic_table
 def _get_vk_values_from_table(trafo_df, trafo_characteristic_table, trafotype="2W"):
     if trafotype == "2W":
         vk_variables = ("vk_percent", "vkr_percent")
