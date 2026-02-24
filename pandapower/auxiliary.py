@@ -2125,7 +2125,7 @@ def _init_runpp_options(
     lightsim2grid = kwargs.get("lightsim2grid", "auto")
 
     # for all the parameters from 'overrule_options' we need to collect them
-    # if they are used for any of the chjecks below:
+    # if they are used for any of the checks below:
     algorithm = overrule_options.get("algorithm", algorithm)
     calculate_voltage_angles = overrule_options.get("calculate_voltage_angles", calculate_voltage_angles)
     init = overrule_options.get("init", init)
