@@ -11,7 +11,7 @@ from scipy.sparse.linalg import inv as inv_sparse
 from scipy.linalg import inv
 
 from pandapower.pd2ppc_zero import BIG_NUMBER
-from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
+from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV, R_EQUIV_OHM, X_EQUIV_OHM
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _clean_up
 
@@ -24,28 +24,24 @@ except ImportError:
 def _calc_rx(net, ppci, bus_idx, sequence):
     # Vectorized for multiple bus
     fault = net._options["fault"]
-    r_fault = net["_options"]["r_fault_ohm"]
-    x_fault = net["_options"]["x_fault_ohm"]
-    if r_fault > 0 or x_fault > 0:
-        base_r = np.square(ppci["bus"][bus_idx, BASE_KV]) / ppci["baseMVA"]
-        fault_impedance = (r_fault + x_fault * 1j) / base_r
-    else:
-        fault_impedance = 0 + 0j
-    net._options["fault_impedance"] = fault_impedance
-
-    if net["_options"]["inverse_y"]:
-        Zbus = ppci["internal"]["Zbus"]
-        if (fault == "LL"):
-            if (sequence == 1) or (sequence == 2):
-                z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance/2
-            else:
-                z_equiv = np.diag(Zbus)[bus_idx]
+    z_fault_pu = net["_options"]["z_fault_pu"]
+    
+    Zbus = ppci["internal"]["Zbus"]
+    if (fault == "LL"):
+        if (sequence == 1) or (sequence == 2):
+            z_equiv = np.diag(Zbus)[bus_idx] + z_fault_pu/2
         else:
-            z_equiv = np.diag(Zbus)[bus_idx] + fault_impedance
-    else: 
-        z_equiv = _calc_zbus_diag(net, ppci, bus_idx) + fault_impedance
+            z_equiv = np.diag(Zbus)[bus_idx]
+    else:
+        z_equiv = np.diag(Zbus)[bus_idx] + z_fault_pu
+
     ppci["bus"][bus_idx, R_EQUIV] = z_equiv.real
     ppci["bus"][bus_idx, X_EQUIV] = z_equiv.imag
+
+    # For validation, should correspond to PF result
+    baseZ = ppci["bus"][bus_idx, BASE_KV] ** 2 / ppci["baseMVA"]
+    ppci["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci['bus'][bus_idx, R_EQUIV]
+    ppci["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci['bus'][bus_idx, X_EQUIV]
 
 
 def _calc_ybus(ppci):

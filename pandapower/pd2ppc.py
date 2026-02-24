@@ -17,7 +17,7 @@ from pandapower.opf.make_objective import _make_objective
 from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_F_BUS, DC_T_BUS, DC_BR_STATUS
-from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE, REF
+from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE, REF, BASE_KV
 from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_B2B
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
@@ -148,6 +148,8 @@ def _pd2ppc(net, sequence=None, **kwargs):
     # generate ppc['bus'] and the bus lookup
     _build_bus_ppc(net, ppc, sequence=sequence)
     _build_bus_dc_ppc(net, ppc)
+    
+    # generate ppc["branch"]
     if sequence == 0:
         from pandapower.pd2ppc_zero import _add_ext_grid_sc_impedance_zero, _build_branch_ppc_zero
         # Adds external grid impedance for 3ph and sc calculations in ppc0
@@ -155,10 +157,14 @@ def _pd2ppc(net, sequence=None, **kwargs):
         # Calculates ppc0 branch impedances from branch elements
         _build_branch_ppc_zero(net, ppc)
     else:
+        if mode == "sc":
+            # Adds external grid impedance for 3ph and sc calculations in ppc
+            _add_ext_grid_sc_impedance(net, ppc)
         # Calculates ppc1/ppc2 branch impedances from branch elements
         _build_branch_ppc(net, ppc)
     _build_branch_dc_ppc(net, ppc)
 
+    # integrate facts devices into pcc structures
     _build_tcsc_ppc(net, ppc, mode)
     _build_svc_ppc(net, ppc, mode)
     _build_ssc_ppc(net, ppc, mode)
@@ -166,12 +172,8 @@ def _pd2ppc(net, sequence=None, **kwargs):
 
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
-        _add_ext_grid_sc_impedance(net, ppc)
         # Generator impedance are seperately added in sc module
         _add_motor_impedances_ppc(net, ppc)
-        # if net._options.get("use_pre_fault_voltage", False):
-        #    _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
-
     else:
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
         # adds P and Q for shunts, wards and xwards (to PQ nodes)
@@ -444,6 +446,7 @@ def _ppc2ppci(ppc, net, ppci=None):
                                              & net.gen["slack"].values]
         ref_gens = np.append(ref_gens, net._pd2ppc_lookups["gen"][slack_gens])
     ppci["internal"]["ref_gens"] = ref_gens.astype(np.int64)
+    ppci["internal"]["baseI"] = ppci["baseMVA"] / (ppci["bus"][:, BASE_KV] * np.sqrt(3))
     return ppci
 
 

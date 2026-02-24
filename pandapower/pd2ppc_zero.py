@@ -453,33 +453,36 @@ def _add_gen_sc_impedance_zero(net, ppc):
     r0_ohm = gen.r0_ohm.values  # Zero-sequence resistance of generators
     x0_ohm = gen.x0_ohm.values  # Zero-sequence reactance of generators
     vn_gen = gen.vn_kv.values  # Nominal voltage of the generators
-    xdss_pu = gen.xdss_pu.values  # Subtransient reactance in per unit, only necessary for kg-factor
-    cmax = ppc["bus"][gen_buses_ppc, C_MAX]  # c-factor according to IEC standard
-
-    # Calculate generator active power as a percentage and ensure no NaNs are present
-    pg_percent = np.nan_to_num(gen.pg_percent.values)
-
-    # Calculate sine of the power factor angle based on the cosine value
-    sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values ** 2, 0, None))
 
     # Base impedance calculation for the generators
-    gen_base_z_ohm = vn_net ** 2
+    # NOTE: in principle there should be here a division for net.sn_mva. This is not done 
+    # because, for some reason, makeYbus_numba then divides the gs and bs values by 
+    # net.sn_mva (see makeYbus_numba.py line 150)
+    gen_base_z_ohm = vn_net ** 2 # / net.sn_mva
     z_gen = (r0_ohm + x0_ohm * 1j)  # Complex impedance of the generator
     z_gen_pu = z_gen / gen_base_z_ohm  # Impedance in per unit system
 
     # Calculate the admittance (inverse of impedance) in per unit
-    y0_gen = 1 / z_gen_pu
+    y_gen_pu = 1 / z_gen_pu
 
     # Calculate the correction factor based on network and generator parameters according to IEC standard
-    kg = vn_net / (vn_gen * (1 + pg_percent / 100)) * cmax / (1 + xdss_pu * sin_phi_gen)
-
-    # If the case is "min", set kg to 1 (as per IEC standard)
     if case == "min":
         kg = 1
+    else:
+        pg_percent = np.nan_to_num(gen.pg_percent.values)  # generator active power as a percentage and ensure no NaNs are present
+        sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values ** 2, 0, None))  # sine of the power factor angle based on the cosine value
+        xdss_pu = gen.xdss_pu.values  # Subtransient reactance in per unit, only necessary for kg-factor
+        cmax = ppc["bus"][gen_buses_ppc, C_MAX]  # c-factor according to IEC standard
+        kg = vn_net / (vn_gen * (1 + pg_percent / 100)) * cmax / (1 + xdss_pu * sin_phi_gen)
 
-    # Update the bus entries in ppc for conductance (GS) and susceptance (BS)
-    ppc["bus"][gen_buses_ppc, GS] += y0_gen.real / kg  # Update real part (conductance)
-    ppc["bus"][gen_buses_ppc, BS] += y0_gen.imag / kg  # Update imaginary part (susceptance)
+    # Aggregate admittance contributions from generators to the bus
+    buses, gs, bs = _sum_by_group(gen_buses_ppc, y_gen_pu.real / kg, y_gen_pu.imag / kg)
+    ppc["bus"][buses, GS] += gs  # Update real part (conductance)
+    ppc["bus"][buses, BS] += bs  # Update imaginary part (susceptance)
+
+    # Store generator-specific admittance values
+    ppc["bus"][buses, GS_GEN] = gs
+    ppc["bus"][buses, BS_GEN] = bs
 
 
 def _add_ext_grid_sc_impedance_zero(net, ppc):
@@ -504,15 +507,15 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case +
                          "external grid")
-    s_sc = eg["s_sc_%s_mva" % case].values
+    s_sc_pu = eg["s_sc_%s_mva" % case].values / ppc['baseMVA']
     if not "rx_%s" % case in eg:
         raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" %
                          case)
     rx = eg["rx_%s" % case].values
 
-    z_grid = c / s_sc
+    z_grid = c / s_sc_pu
     if mode == 'pf_3ph':
-        z_grid = c / (s_sc/3)
+        z_grid = c / (s_sc_pu/3)
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
@@ -524,8 +527,11 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     y0_grid = 1 / (r0_grid + x0_grid*1j)
 
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
-    ppc["bus"][buses, GS] = gs
-    ppc["bus"][buses, BS] = bs
+    # NOTE: the multiplication for sn_mva in principle does not make any sense. 
+    # It is there because, for some reason, makeYbus_numba then divides the gs and bs values by 
+    # net.sn_mva (see makeYbus_numba.py line 150)
+    ppc["bus"][buses, GS] = gs * ppc['baseMVA']
+    ppc["bus"][buses, BS] = bs * ppc['baseMVA']
 
 
 def _add_line_sc_impedance_zero(net, ppc):

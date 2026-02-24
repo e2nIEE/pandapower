@@ -544,14 +544,14 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
     eg_buses = bus_lookup[net.ext_grid.bus.values[net._is_elements["ext_grid"]]]
     ppc["bus"][eg_buses, BUS_TYPE] = REF
     ppc["internal"]["ac_slack_buses"] = set(eg_buses)  # needed later in _select_is_elements_numba
-    if mode == "sc":
-        gen_slacks = net._is_elements["gen"]  # generators are slacks for short-circuit calculation
-    else:
-        gen_slacks = net._is_elements["gen"] & net.gen["slack"].values
-    if gen_slacks.any():
-        slack_buses = net.gen["bus"].values[gen_slacks]
-        ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
-        ppc["internal"]["ac_slack_buses"] |= set(bus_lookup[slack_buses])  # needed later in _select_is_elements_numba
+    # if mode == "sc":
+    #     gen_slacks = net._is_elements["gen"]  # generators are slacks for short-circuit calculation
+    # else:
+    #     gen_slacks = net._is_elements["gen"] & net.gen["slack"].values
+    # if gen_slacks.any():
+    #     slack_buses = net.gen["bus"].values[gen_slacks]
+    #     ppc["bus"][bus_lookup[slack_buses], BUS_TYPE] = REF
+    #     ppc["internal"]["ac_slack_buses"] |= set(bus_lookup[slack_buses])  # needed later in _select_is_elements_numba
     ppc["internal"]["ac_slack_buses"] = list(ppc["internal"]["ac_slack_buses"])
 
 def set_reference_buses_dc(net, ppc, bus_lookup, mode):
@@ -929,15 +929,15 @@ def _add_ext_grid_sc_impedance(net, ppc):
     if not "s_sc_%s_mva" % case in eg:
         raise ValueError(("short circuit apparent power s_sc_%s_mva needs to be specified for "
                           "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000") % case)
-    s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
+    s_sc_pu = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
     if not "rx_%s" % case in eg:
         raise ValueError(("short circuit R/X rate rx_%s needs to be specified for external grid \n"
                           " Try: net.ext_grid['rx_max'] = 0.1") % case)
     rx = eg["rx_%s" % case].values
 
-    z_grid = c / s_sc
+    z_grid = c / s_sc_pu
     if mode == 'pf_3ph':
-        z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power
+        z_grid = c / (s_sc_pu/3)  # 3 phase power divided to get 1 ph power
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
     eg["r"] = r_grid
@@ -945,6 +945,9 @@ def _add_ext_grid_sc_impedance(net, ppc):
 
     y_grid = 1 / (r_grid + x_grid * 1j)
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
+    # NOTE: the multiplication for sn_mva in principle does not make any sense. 
+    # It is there because, for some reason, makeYbus_numba then divides the gs and bs values by 
+    # net.sn_mva (see makeYbus_numba.py line 150)
     if mode == "sc":
         ppc["bus"][buses, GS] += gs * ppc['baseMVA']
         ppc["bus"][buses, BS] += bs * ppc['baseMVA']
@@ -977,6 +980,9 @@ def _add_motor_impedances_ppc(net, ppc):
 
     s_motor = p_mech / (efficiency/100 * cos_phi)
     z_motor_ohm = 1 / lrc * vn_kv**2 / s_motor
+    # NOTE: in principle there should be here a product for net.sn_mva. This is not done 
+    # because, for some reason, makeYbus_numba then divides the gs and bs values by 
+    # net.sn_mva (see makeYbus_numba.py line 150)
     z_motor_pu = z_motor_ohm / vn_net**2
 
     x_motor_pu = z_motor_pu / np.sqrt(rx ** 2 + 1)

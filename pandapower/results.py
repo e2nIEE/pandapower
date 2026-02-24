@@ -152,7 +152,7 @@ def get_relevant_elements(mode="pf"):
                 "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
                 "switch", "tcsc", "svc", "ssc", "vsc"]
     elif mode == "sc":
-        return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
+        return ["bus", "line", "trafo", "trafo3w", "switch", "impedance", "ext_grid", "gen", "sgen", "load", "motor", "shunt"]
     elif mode == "se":
         return ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"]
     elif mode == "pf_3ph":

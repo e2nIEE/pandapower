@@ -28,14 +28,10 @@ def _get_is_ppci_bus(net, bus):
     return ppci_bus
 
 
-def _init_ppc(net, sequence=1):
+def _create_ppc(net, sequence=1):
     _check_sc_data_integrity(net)
     _add_auxiliary_elements(net)
     ppc, _ = _pd2ppc(net)
-
-    # Init the required columns to nan
-    ppc["bus"][:, [K_G, K_SG, V_G, PS_TRAFO_IX, GS_P, BS_P, GS_GEN, BS_GEN]] = np.nan
-    ppc["branch"][:, [K_T, K_ST]] = np.nan
 
     # Add parameter K into ppc
     _add_kt(net, ppc)
@@ -114,7 +110,10 @@ def _add_sgen_sc_z(net, ppc):
         sgen_buses_ppc = net["_pd2ppc_lookups"]["bus"][sgen_buses]
 
         vn_net = net.bus.loc[sgen_buses, "vn_kv"].values
-        base_z_ohm = vn_net ** 2 # / net.sn_mva  # by logic it must by divided by sn_mva, but why is it wrong?
+        # NOTE: in principle there should be here a division for net.sn_mva. This is not done 
+        # because, for some reason, makeYbus_numba then divides the gs and bs values by 
+        # net.sn_mva (see makeYbus_numba.py line 150)
+        base_z_ohm = vn_net ** 2 # by logic it must by divided by sn_mva
 
         z_wd_ohm = np.sqrt(2) * sgen_wd.kappa * net.bus.loc[sgen_buses, "vn_kv"].values / (np.sqrt(3) * sgen_wd.max_ik_ka)
         z_wd_complex_ohm = (sgen_wd.rx + 1j) * z_wd_ohm / (np.sqrt(1+sgen_wd.rx**2))
@@ -122,8 +121,8 @@ def _add_sgen_sc_z(net, ppc):
         y_wd_pu = 1 / z_wd_complex_pu.values
 
         bus_idx, sgen_gs, sgen_bs = _sum_by_group(sgen_buses_ppc, y_wd_pu.real, y_wd_pu.imag)
-        ppc['bus'][bus_idx, GS] = sgen_gs
-        ppc['bus'][bus_idx, BS] = sgen_bs
+        ppc['bus'][bus_idx, GS] += sgen_gs
+        ppc['bus'][bus_idx, BS] += sgen_bs
 
         # add kappa for peak current
         ppc['bus'][sgen_buses_ppc, KAPPA] = sgen_wd.kappa.values
@@ -134,7 +133,10 @@ def _add_sgen_sc_z(net, ppc):
         sgen_buses_ppc = net["_pd2ppc_lookups"]["bus"][sgen_buses]
 
         vn_net = net.bus.loc[sgen_buses, "vn_kv"].values
-        base_z_ohm = vn_net ** 2 # / net.sn_mva  # by logic it must by divided by sn_mva, but why is it wrong?
+        # NOTE: in principle there should be here a division for net.sn_mva. This is not done 
+        # because, for some reason, makeYbus_numba then divides the gs and bs values by 
+        # net.sn_mva (see makeYbus_numba.py line 150)
+        base_z_ohm = vn_net ** 2  # by logic it must by divided by sn_mva
 
         i_rg_ka = sgen_g.sn_mva / (vn_net * np.sqrt(3))
         z_g_ohm = 1 / sgen_g.lrc_pu * np.square(vn_net) / sgen_g.sn_mva
@@ -143,8 +145,8 @@ def _add_sgen_sc_z(net, ppc):
         y_g_pu = 1 / z_g_complex_pu.values
 
         bus_idx, sgen_gs, sgen_bs = _sum_by_group(sgen_buses_ppc, y_g_pu.real, y_g_pu.imag)
-        ppc['bus'][bus_idx, GS] = sgen_gs
-        ppc['bus'][bus_idx, BS] = sgen_bs
+        ppc['bus'][bus_idx, GS] += sgen_gs
+        ppc['bus'][bus_idx, BS] += sgen_bs
 
 
 def _add_gen_sc_z_kg_ks(net, ppc, sequence=1):
@@ -176,16 +178,14 @@ def _add_gen_sc_z_kg_ks(net, ppc, sequence=1):
     # Extracting generator parameters for subtransient resistance and reactance
     rdss_ohm = gen.rdss_ohm.values  # Subtransient generator resistance in ohms
     xdss_pu = gen.xdss_pu.values  # Subtransient reactance in per unit
-
-    # Handle NaN values for active power percentage
-    pg_percent = np.nan_to_num(gen.pg_percent.values)
+    
     vn_net = net.bus.loc[gen_buses, "vn_kv"].values  # Nominal voltage of the network
 
-    # Calculate sine of the power factor angle
-    sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values ** 2, 0, None))
-
     # Base impedance calculation for the generators
-    gen_base_z_ohm = vn_net ** 2
+    # NOTE: in principle there should be here a division for net.sn_mva. This is not done 
+    # because, for some reason, makeYbus_numba then divides the gs and bs values by 
+    # net.sn_mva (see makeYbus_numba.py line 150)
+    gen_base_z_ohm = vn_net ** 2 # by logic it must by divided by sn_mva
 
     # Use conditional assignment to set resistance and reactance based on sequence
     if sequence == 2:
@@ -209,14 +209,14 @@ def _add_gen_sc_z_kg_ks(net, ppc, sequence=1):
     ppc["bus"][buses, BS_GEN] = bs
 
     # Calculate the correction factor kg for generators
-    cmax = ppc["bus"][gen_buses_ppc, C_MAX] # c-factor according to IEC standard
-    # Calculate the correction factor based on network and generator parameters according to IEC standard
-    kg = vn_net / (vn_gen * (1 + pg_percent / 100)) * cmax / (1 + xdss_pu * sin_phi_gen)
-
-    # If the case is "min", set kg to 1 (as per IEC standard)
     case = net._options["case"]
     if case == "min":
         kg = 1
+    else:
+        pg_percent = np.nan_to_num(gen.pg_percent.values)
+        sin_phi_gen = np.sqrt(np.clip(1 - gen.cos_phi.values ** 2, 0, None))
+        cmax = ppc["bus"][gen_buses_ppc, C_MAX]  # c-factor according to IEC standard
+        kg = vn_net / (vn_gen * (1 + pg_percent / 100)) * cmax / (1 + xdss_pu * sin_phi_gen)
 
     # Update the ppc with calculated K_G and nominal generator voltage
     ppc["bus"][gen_buses_ppc, K_G] = kg
@@ -312,7 +312,7 @@ def _add_gen_sc_z_kg_ks(net, ppc, sequence=1):
 
 def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
     ppci = deepcopy(ppci_orig)
-    base_z_ohm = ppci['bus'][:, BASE_KV] ** 2 / net.sn_mva
+    # base_z_ohm = ppci['bus'][:, BASE_KV] ** 2 / net.sn_mva
 
     non_ps_gen_bus = ppci_bus[np.isnan(ppci["bus"][ppci_bus, K_SG])]
     ps_gen_bus = ppci_bus[~np.isnan(ppci["bus"][ppci_bus, K_SG])]
@@ -323,7 +323,7 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
     if np.any(ps_trafo_mask):
         ps_trafo_ppci_ix = np.argwhere(ps_trafo_mask)
         ps_trafo_ppci_lv_bus = ppci["branch"][ps_trafo_mask, T_BUS].real.astype(np.int64)
-        ps_trafo_ppci_hv_bus = ppci["branch"][ps_trafo_mask, F_BUS].real.astype(np.int64)
+        # ps_trafo_ppci_hv_bus = ppci["branch"][ps_trafo_mask, F_BUS].real.astype(np.int64)
         ppci["bus"][np.ix_(ps_trafo_ppci_lv_bus, [PS_TRAFO_IX])] = ps_trafo_ppci_ix
         # if zero_sequence:
         #     ppci["bus"][np.ix_(ps_trafo_ppci_hv_bus, [BS])] += 1/(3 * 22 / (110 ** 2))
@@ -340,6 +340,7 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
         ppci["bus"][np.ix_(gen_bus_mask, [GS_P, BS_P])] /= ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
         ppci["bus"][np.ix_(gen_bus_mask, [GS, BS])] += (1 / ppci["bus"][np.ix_(gen_bus_mask, [K_G])] - 1) * \
                                                        ppci["bus"][np.ix_(gen_bus_mask, [GS_GEN, BS_GEN])]
+        ppci["bus"][np.ix_(gen_bus_mask, [GS_GEN, BS_GEN])] /= ppci["bus"][np.ix_(gen_bus_mask, [K_G])]
 
     bus_ppci = {}
     if ps_gen_bus.size > 0:
@@ -362,4 +363,3 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
     return non_ps_gen_bus, ppci, bus_ppci
 
 # TODO Roman: correction factor for LG cases
-

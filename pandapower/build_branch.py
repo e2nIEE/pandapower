@@ -479,8 +479,7 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
             bus_index = bus_lookup[get_trafo_values(trafo_df, "lv_bus")]
             column_index = C_MAX if case == "max" else C_MIN
             c = ppc["bus"][bus_index, column_index]
-            # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
-            # kt is only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
+            # kt should be only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
             if not net._options.get("use_pre_fault_voltage", False):
                 kt = _transformer_correction_factor(
                     trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, c, case)
@@ -1347,12 +1346,11 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, c, case):
     else:
         power_station_unit = np.zeros(len(trafo_df)).astype(bool)
     if case == "max":
-        zt = vk / 100 / sn
-        rt = vkr / 100 / sn
+        zt = vk / 100
+        rt = vkr / 100
         xt = np.sqrt(zt ** 2 - rt ** 2)
-        kt = 0.95 * c / (1 + .6 * xt * sn)
+        kt = 0.95 * c / (1 + .6 * xt)
     else:
-        # kt = np.array([1, 1])
         kt = 1
 
     return np.where(~power_station_unit, kt, 1)
