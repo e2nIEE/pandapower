@@ -267,7 +267,6 @@ def _ppci_internal_to_ppc(result, ppc):
         # Only for sc calculation
         # if branch current matrices have been stored they need to include out of service elements
         if key in BRANCH_RESULTS_KEYS:
-
             # n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]
             # n_rows_result = np.shape(result['bus'])[0]

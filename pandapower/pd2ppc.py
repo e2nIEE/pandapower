@@ -329,9 +329,8 @@ def _ppc2ppci(ppc, net, ppci=None):
     # update lookups (pandapower -> ppci internal)
     _update_lookup_entries(net, bus_dc_lookup, e2i_dc, "bus_dc")
 
-    if 'areas' in ppc:
-        if len(ppc["areas"]) == 0:  # if areas field is empty
-            del ppc['areas']  # delete it (so it's ignored)
+    if 'areas' in ppc and len(ppc["areas"]) == 0:  # if areas field is empty
+        del ppc['areas']  # delete it (so it's ignored)
 
     # bus types
     bus_type = ppc["bus"][:, BUS_TYPE]

@@ -123,7 +123,6 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
     sql_column_types = [index_type,
                         *[match_sql_type(t) for t in table[table_columns].dtypes.astype(str).values],
                         *[match_sql_type(np.result_type(type(v)).name) for v in id_columns.values()]]
-    placeholders = ",".join(['%s'] * len(sql_columns))
 
     # check if all columns already exist and if not, add more columns
     existing_columns = get_sql_table_columns(cursor, table_name)

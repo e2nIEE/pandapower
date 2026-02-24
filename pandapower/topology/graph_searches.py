@@ -72,7 +72,7 @@ def connected_components(mg, notravbuses=set()):
     if len(notravbuses) > 0:
         for f, t in mg.edges(notravbuses):
             if f in notravbuses and t in notravbuses:
-                yield set([f, t])
+                yield {f, t}
 
 
 def calc_distance_to_bus(
@@ -160,8 +160,8 @@ def find_basic_graph_characteristics(g, roots, characteristics):
     char_dict = {'connected': set(), 'stub_buses': set(), 'bridges': set(),
                  'articulation_points': set(), 'notn1_starts': set()}
 
-    discovery = {root: 0 for root in roots}  # "time" of first discovery of node during search
-    low = {root: 0 for root in roots}
+    discovery = dict.fromkeys(roots, 0) # "time" of first discovery of node during search
+    low = dict.fromkeys(roots, 0)
     visited = set(roots)
     path = []
     stack = [(root, root, iter(g[root])) for root in roots]
@@ -169,9 +169,8 @@ def find_basic_graph_characteristics(g, roots, characteristics):
         grandparent, parent, children = stack[-1]
         try:
             child = next(children)
-            if stub_buses:
-                if child not in visited:
-                    path.append(child)  # keep track of movement through the graph
+            if stub_buses and child not in visited:
+                path.append(child)  # keep track of movement through the graph
             if grandparent == child:
                 continue
             if child in visited:
@@ -266,7 +265,7 @@ def find_graph_characteristics(g, roots, characteristics):
     if not required_bridges and not notn1_areas:
         return {key: char_dict[key] for key in characteristics}
 
-    char_dict.update({'required_bridges': dict(), 'notn1_areas': dict()})
+    char_dict.update({'required_bridges': {}, 'notn1_areas': {}})
 
     visited = set(roots)
     visited_bridges = []
