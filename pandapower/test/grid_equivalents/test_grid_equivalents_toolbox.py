@@ -1,6 +1,9 @@
+from collections.abc import Callable
+
 import numpy as np
 import pytest
 
+from pandapower import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import (
     create_bus,
@@ -20,101 +23,111 @@ from pandapower.run import runpp
 from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen, merge_nets
 
 
-def boundary_testnet(which):
-    if which == "case9_27":
-        net = case9()
-        expected_bbr = {"line": {2, 7}}
-        expected_bb = {
-            "all": {4, 5, 7, 8},
-            0: {"all": {4, 5, 7, 8}, "internal": {4, 8}, "external": {5, 7}, 1: {5, 7}},
-            1: {"all": {4, 5, 7, 8}, "internal": {5, 7}, "external": {4, 8}, 0: {4, 8}},
-        }
-    elif which == "case9_abc":
-        net = case9()
-        net.bus["zone"] = ["a", "b", "c", "a", "a", "c", "c", "b", "b"]
-        expected_bbr = {"all": {"line": {2, 5, 8}}, "a": {"line": {2, 8}}, "b": {"line": {5, 8}}, "c": {"line": {2, 5}}}
-        expected_bb = {"a": {"internal": {3, 4}, "external": {5, 8}}}
-    elif which == "case9_ab_merged":
-        net1 = case9()
-        net1.bus["zone"] = "a"
-        net2 = case9()
-        net2.bus["zone"] = "b"
-        net2.ext_grid["p_disp_mw"] = 71.9547
-        replace_ext_grid_by_gen(net2)
-        net = merge_nets(net1, net2, merge_results=False, validate=False, net2_reindex_log_level=None)
-        new_bus = create_bus(net, 345, zone="b")
+def case9_27() -> tuple[pandapowerNet, dict, dict]:
+    net = case9()
+    expected_bbr = {"line": {2, 7}}
+    expected_bb = {
+        "all": {4, 5, 7, 8},
+        '0': {"all": {4, 5, 7, 8}, "internal": {4, 8}, "external": {5, 7}, '1': {5, 7}},
+        '1': {"all": {4, 5, 7, 8}, "internal": {5, 7}, "external": {4, 8}, '0': {4, 8}},
+    }
+    net = convert_format(net)
+    runpp(net)
+    return net, expected_bb, expected_bbr
 
-        # expected_bbr
-        expected_bbr = {
-            "line": {
-                create_line_from_parameters(
-                    net, net.bus.index[net.bus.name == '9'][0], net.bus.index[net.bus.name == '9'][1], 1, 0, 65, 0, 0.41
-                )
-            },
-            "impedance": {
-                create_impedance(
-                    net, net.bus.index[net.bus.name == '5'][0], net.bus.index[net.bus.name == '5'][1], 0, 0.06, 250
-                )
-            },
-            "switch": {
-                create_switch(net, net.bus.index[net.bus.name == '7'][0], net.bus.index[net.bus.name == '7'][1], "b")
-            },
-            "trafo": {
-                create_transformer_from_parameters(
-                    net,
-                    net.bus.index[net.bus.name == '8'][0],
-                    net.bus.index[net.bus.name == '8'][1],
-                    250,
-                    345,
-                    345,
-                    0,
-                    10,
-                    50,
-                    0,
-                )
-            },
-            "trafo3w": {
-                create_transformer3w_from_parameters(
-                    net,
-                    net.bus.index[net.bus.name == '3'][0],
-                    new_bus,
-                    net.bus.index[net.bus.name == '3'][1],
-                    345,
-                    345,
-                    345,
-                    250,
-                    250,
-                    250,
-                    10,
-                    10,
-                    10,
-                    0,
-                    0,
-                    0,
-                    50,
-                    0,
-                )
-            },
-        }
 
-        # expected_bb
-        expected_bb = {key: {} for key in ["a", "b"]}
-        expected_bb["a"]["internal"] = set(net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "a")])
-        expected_bb["a"]["external"] = set(
-            net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "b")]
-        ) | {new_bus}
-        expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
-        expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
+def case9_abc() -> tuple[pandapowerNet, dict, dict]:
+    net = case9()
+    net.bus["zone"] = ["a", "b", "c", "a", "a", "c", "c", "b", "b"]
+    expected_bbr = {"all": {"line": {2, 5, 8}}, "a": {"line": {2, 8}}, "b": {"line": {5, 8}}, "c": {"line": {2, 5}}}
+    expected_bb = {"a": {"internal": {3, 4}, "external": {5, 8}}}
+    net = convert_format(net)
+    runpp(net)
+    return net, expected_bb, expected_bbr
 
+
+def case9_ab_merged() -> tuple[pandapowerNet, dict, dict]:
+    net1 = case9()
+    net1.bus["zone"] = "a"
+    net2 = case9()
+    net2.bus["zone"] = "b"
+    net2.ext_grid["p_disp_mw"] = 71.9547
+    replace_ext_grid_by_gen(net2)
+    net = merge_nets(net1, net2, merge_results=False, validate=False, net2_reindex_log_level=None)
+    new_bus = create_bus(net, 345, zone="b")
+
+    # expected_bbr
+    expected_bbr = {
+        "line": {
+            create_line_from_parameters(
+                net, net.bus.index[net.bus.name == '9'][0], net.bus.index[net.bus.name == '9'][1], 1, 0, 65, 0, 0.41
+            )
+        },
+        "impedance": {
+            create_impedance(
+                net, net.bus.index[net.bus.name == '5'][0], net.bus.index[net.bus.name == '5'][1], 0, 0.06, 250
+            )
+        },
+        "switch": {
+            create_switch(net, net.bus.index[net.bus.name == '7'][0], net.bus.index[net.bus.name == '7'][1], "b")
+        },
+        "trafo": {
+            create_transformer_from_parameters(
+                net,
+                net.bus.index[net.bus.name == '8'][0],
+                net.bus.index[net.bus.name == '8'][1],
+                250,
+                345,
+                345,
+                0,
+                10,
+                50,
+                0,
+            )
+        },
+        "trafo3w": {
+            create_transformer3w_from_parameters(
+                net,
+                net.bus.index[net.bus.name == '3'][0],
+                new_bus,
+                net.bus.index[net.bus.name == '3'][1],
+                345,
+                345,
+                345,
+                250,
+                250,
+                250,
+                10,
+                10,
+                10,
+                0,
+                0,
+                0,
+                50,
+                0,
+            )
+        },
+    }
+
+    # expected_bb
+    expected_bb = {
+        "a": {
+            "internal": set(net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "a")]),
+            "external": set(net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "b")]) | {new_bus}
+        },
+        "b": {}
+    }
+    expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
+    expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
     net = convert_format(net)
     runpp(net)
     return net, expected_bb, expected_bbr
 
 
 def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches1():
-    net, expected_bb, expected_bbr = boundary_testnet("case9_27")
+    net, expected_bb, expected_bbr = case9_27()
     set_bus_zone_by_boundary_branches(net, expected_bbr)
-    assert all(net.bus.zone.values == np.array([0, 1, 1, 0, 0, 1, 1, 1, 0]))
+    assert all(net.bus.zone.values == np.array(['0', '1', '1', '0', '0', '1', '1', '1', '0']))
 
     boundary_buses, boundary_branches = get_boundaries_by_bus_zone_with_boundary_branches(net)
 
@@ -124,11 +137,11 @@ def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_b
     # --- test against set_bus_zone_by_boundary_branches()
     bb_in = {"line": {2, 4, 7}}
     set_bus_zone_by_boundary_branches(net, bb_in)
-    assert all(net.bus.zone.values == np.array([0, 1, 2, 0, 0, 2, 1, 1, 0]))
+    assert all(net.bus.zone.values == np.array(['0', '1', '2', '0', '0', '2', '1', '1', '0']))
 
 
 def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches2():
-    net, expected_bb, expected_bbr = boundary_testnet("case9_abc")
+    net, expected_bb, expected_bbr = case9_abc()
     boundary_buses, boundary_branches = get_boundaries_by_bus_zone_with_boundary_branches(net)
 
     assert len(boundary_buses.keys()) == 4
@@ -140,7 +153,7 @@ def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_b
 
 
 def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches3():
-    net, expected_bb, expected_bbr = boundary_testnet("case9_ab_merged")
+    net, expected_bb, expected_bbr = case9_ab_merged()
     boundary_buses, boundary_branches = get_boundaries_by_bus_zone_with_boundary_branches(net)
 
     # --- check form of boundary_buses

@@ -88,6 +88,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
+# FIXME: Remove this!
 def log_to_level(
     msg: str,
     passed_logger: logging.Logger,
@@ -112,6 +113,7 @@ def version_check(
     level: Literal["error", "warning", "info", "debug", "UserWarning"] = "UserWarning",
     ignore_not_installed: bool = False
 ) -> None:
+    # FIXME: version should NEVER be defined in code!
     minimum_version = {'plotly': "3.1.1",
                        'numba': "0.25",
                        }
@@ -1954,7 +1956,7 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
         p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw  # type: ignore[operator]
 
         max_p_mw: float
-        if 'max_p_mw' in dctab:
+        if hasattr(dctab, 'max_p_mw') and pd.notna(dctab.max_p_mw):
             max_p_mw = dctab.max_p_mw  # type: ignore[assignment]
         else:
             max_p_mw = float('nan')

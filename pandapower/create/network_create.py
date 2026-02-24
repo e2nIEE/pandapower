@@ -41,10 +41,6 @@ def create_empty_network(
 
     net = pandapowerNet(pandapowerNet.create_dataframes(network_structure_dict))
 
-    net._empty_res_load_3ph = net._empty_res_load
-    net._empty_res_sgen_3ph = net._empty_res_sgen
-    net._empty_res_storage_3ph = net._empty_res_storage
-
     if add_stdtypes:
         add_basic_std_types(net)
     else:

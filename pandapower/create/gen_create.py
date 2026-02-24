@@ -313,8 +313,9 @@ def create_gens(
         )
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo", power_station_trafo)
-    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable, default_val=False)
+    _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable)
+    
 
-    _set_multiple_entries(net, "gen", index, defaults_to_fill=[("controllable", False)], entries=entries)
+    _set_multiple_entries(net, "gen", index, entries=entries, defaults_to_fill=[("controllable", False)])
 
     return index
