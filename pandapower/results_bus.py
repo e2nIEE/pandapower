@@ -348,7 +348,7 @@ def write_p_dc_results_to_element(net, ppc, element):
 def _extract_dist_slack_pq_results(net, ppc, element, res_):
     node_elements = ['sgen', 'load', 'ward', 'xward', 'storage']
     for b in net[element].bus.values:
-        connected = dict()
+        connected = {}
         for e in node_elements:
             conn = net[e].loc[net[e].in_service & (net[e].bus == b)].index.values
             if len(conn) > 0:
@@ -493,7 +493,6 @@ def _get_p_dc_results(net, ppc, bus_lookup_aranged):
     bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)  # 1 because only p relevant
     b, p = np.array([]), np.array([])
 
-    # ac = net["_options"]["ac"]
     # elements = ["load", "motor", "sgen", "storage", "ward", "xward",
     #             "asymmetric_load", "asymmetric_sgen"]
     elements = ["vsc", "load_dc"]  # we only have VSC element so far that injects or consumes P from DC bus
@@ -582,9 +581,8 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
         v_ratio = (ppc["bus"][sidx, BASE_KV] / net["shunt"]["vn_kv"].values) ** 2
         u_shunt = np.nan_to_num(u_shunt)
         use_step_table = False
-        if "step_dependency_table" in s:
-            if any(s.step_dependency_table):
-                use_step_table = True
+        if "step_dependency_table" in s and any(s.step_dependency_table):
+            use_step_table = True
         if use_step_table:
             merged_df = s.merge(net.shunt_characteristic_table, left_on=['id_characteristic_table', 'step'],
                                 right_on=['id_characteristic', 'step'], how='left', suffixes=('', '_char'))
