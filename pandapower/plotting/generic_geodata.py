@@ -48,7 +48,6 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
     bus_index = net.bus.index if buses is None else np.array(buses)
     nr_buses = len(bus_index)
     g.add_vertices(nr_buses)
-    # g.vs["label"] = [s.encode('unicode-escape') for s in net.bus.name.tolist()]
     g.vs["label"] = list(bus_index)
     pp_bus_mapping = dict(list(zip(bus_index, list(range(nr_buses)))))
     if respect_switches:

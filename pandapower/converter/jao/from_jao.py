@@ -901,7 +901,7 @@ def _get_bus_idx(net: pandapowerNet) -> pd.Series:
 
 
 def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
-    notravbuses_dict = dict() if "notravbuses" not in kwargs.keys() else {
+    notravbuses_dict = {} if "notravbuses" not in kwargs.keys() else {
         "notravbuses": kwargs.pop("notravbuses")}
     grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs),
                                                               **notravbuses_dict)]
@@ -922,7 +922,7 @@ def _lng_lat_to_df(dict_: dict, line_EIC: str, line_name: str) -> pd.DataFrame:
 def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
 
     def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, Union[pd.Index, int]]:
-        av = dict()  # availablitiy of geodata
+        av = {}  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
         av["lines_fbw_tbwo"] = net.line.index[net.line.from_bus.isin(av["bus_with_geo"]) &
                                               (~net.line.to_bus.isin(av["bus_with_geo"]))]
