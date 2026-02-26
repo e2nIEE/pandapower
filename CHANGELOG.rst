@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
+
 
 [3.4.0] - 2026-02-09
 -------------------------------

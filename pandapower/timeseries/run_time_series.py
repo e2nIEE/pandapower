@@ -53,22 +53,6 @@ def init_output_writer(net, time_steps):
     output_writer.init_all(net)
 
 
-#
-# def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
-#     """
-#     Call in a loop to create terminal progress bar.
-#     the code is mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-#     """
-#     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-#     filled_length = int(length * iteration // total)
-#     bar = fill * filled_length + '-' * (length - filled_length)
-#     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
-#     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
-#     # Print New Line on Complete
-#     if iteration == total:
-#         print("\n")
-
-
 def controller_not_converged(time_step, ts_variables):
     logger.error('ControllerNotConverged at time step %s' % time_step)
     if not ts_variables["continue_on_divergence"]:
@@ -144,7 +128,7 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
 
 def _check_controller_recyclability(net):
     # if a parameter is set to True here, it will be recalculated during the time series simulation
-    recycle = dict(trafo=False, gen=False, bus_pq=False)
+    recycle = {'trafo': False, 'gen': False, 'bus_pq': False}
     if "controller" not in net:
         # everything can be recycled since no controller is in net. But the time series simulation makes no sense
         # then anyway...
@@ -169,9 +153,9 @@ def _check_output_writer_recyclability(net, recycle, run):
         raise ValueError("OutputWriter not defined")
     ow = net.output_writer.at[0, "object"]
     # results which are read with a faster batch function after the time series simulation
-    recycle["batch_read"] = list()
+    recycle["batch_read"] = []
     recycle["only_v_results"] = False
-    new_log_variables = list()
+    new_log_variables = []
 
     if hasattr(run, "__name__") and run.__name__ == "rundcpp":
         recycle["only_v_results"] = False

@@ -42,10 +42,6 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
         p = np.hstack([p, net.res_dcline[["p_from_mw", "p_to_mw"]].values.flatten()])
         q = np.hstack([q, net.res_dcline[["q_from_mvar", "q_to_mvar"]].values.flatten()])
 
-    # if len(net.vsc) > 0:
-    #     # not necessary actually because the pq results already read from bus.
-    #     b, p, q = _get_vsc_slack_results(net, ppc, b, p, q)
-
     if not ac:
         q = np.zeros(len(p))
     b_sum, p_sum, q_sum = _sum_by_group(b, p, q)
@@ -193,7 +189,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
                                    * ppc["gen"][eg_idx_ppc, QG]) \
                                     for ppc in [ppc0, ppc1, ppc2]])
 
-    Sabc, Vabc = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
+    Sabc, _ = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
@@ -239,15 +235,9 @@ def _get_p_q_gen_results(net, ppc):
 
 def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     _is_elements = net["_is_elements"]
-    ac = net["_options"]["ac"]
     gen_is_mask = _is_elements['gen']
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
     gen_is_idx = net["gen"].index[gen_is_mask]
-    # indices of in service gens in the ppc
-    if np.any(_is_elements["gen"]):
-        gen_idx_ppc = gen_lookup[gen_is_idx]
-    else:
-        gen_idx_ppc = []
 
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])

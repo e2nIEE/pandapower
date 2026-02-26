@@ -131,7 +131,7 @@ def verify_results(net, mode="pf"):
     elements = get_relevant_elements(mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
-        res_element, res_empty_element = get_result_tables(element, suffix)
+        res_element, _ = get_result_tables(element, suffix)
 
         index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
         if not index_equal:
@@ -267,7 +267,6 @@ def _ppci_internal_to_ppc(result, ppc):
         # Only for sc calculation
         # if branch current matrices have been stored they need to include out of service elements
         if key in BRANCH_RESULTS_KEYS:
-
             # n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]
             # n_rows_result = np.shape(result['bus'])[0]

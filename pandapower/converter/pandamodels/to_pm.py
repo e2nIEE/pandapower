@@ -115,7 +115,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=voltage_depend_loads, delta=delta,
                      trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
@@ -124,7 +124,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      pm_mip_solver=pm_mip_solver,
                      pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    net, pm, ppc, ppci = convert_to_pm_structure(net, from_time_step=from_time_step, 
+    net, pm, _, _ = convert_to_pm_structure(net, from_time_step=from_time_step,
                                                  to_time_step=to_time_step)
     buffer_file = dump_pm_json(pm, pm_file_path)
     if pm_file_path is None and isfile(buffer_file):
@@ -329,9 +329,6 @@ def ppc_to_pm(net, ppci):
             branch["rate_b"] = row[RATE_B].real
             branch["rate_c"] = row[RATE_C].real
         elif net._options["opf_flow_lim"] == "I":  # need to call _run_opf_cl from PowerModels
-            # f = net._pd2ppc_lookups["branch"]["line"][0]
-            f = int(row[F_BUS].real)  # from bus of this line
-            # vr = ppci["bus"][f][BASE_KV]
             branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
             branch["c_rating_b"] = row[RATE_B].real
             branch["c_rating_c"] = row[RATE_C].real
@@ -369,7 +366,7 @@ def ppc_to_pm(net, ppci):
     gen_df["model"] = model_type
     # calc ncost and cost
     ncost = np.array([0] * len(ppci["gen"]))
-    cost = [[0, 0, 0] for i in gen_idxs_pm]
+    cost = [[0, 0, 0] for _ in gen_idxs_pm]
     ncost[model_type==1] = ppci["gencost"][:, NCOST][model_type==1]
     ncost[model_type==2] = 3
     for i in np.nonzero(model_type == 1)[0]:
@@ -401,7 +398,6 @@ def ppc_to_pm(net, ppci):
                 branch["rate_b"] = row[RATE_B].real
                 branch["rate_c"] = row[RATE_C].real
             elif net._options["opf_flow_lim"] == "I":
-                f, t = net._pd2ppc_lookups["branch"]["line"]
                 f = int(row[F_BUS].real)  # from bus of this line
                 vr = ppci["bus"][f][BASE_KV]
                 row[RATE_A] = row[RATE_A] / (vr * np.sqrt(3))
@@ -505,7 +501,7 @@ def add_params_to_pm(net, pm):
                 pd_idxs_br += net[elm].index[net[elm][param_col].notna()].tolist()
                 target_values = net[elm][param_col][pd_idxs_br].values.tolist()
             if elm in ["line", "trafo"]:
-                start, end = net._pd2pm_lookups["branch"][elm]
+                start, _ = net._pd2pm_lookups["branch"][elm]
                 pd_pos = [net[elm].index.tolist().index(p) for p in pd_idxs_br]
                 pm_idxs = [int(v) + start for v in pd_pos]
             elif elm == "sgen":
@@ -524,11 +520,6 @@ def add_params_to_pm(net, pm):
             for bp in br_param:
                 for k in pm["user_defined_params"]["side"].keys():
                     side = pm["user_defined_params"]["side"][k]["value"]
-                    side_bus_f = side + "_bus"
-                    if elm == "line":
-                        side_bus_t = "from_bus" if side == "to" else "to_bus"
-                    if elm == "trafo":
-                        side_bus_t = "hv_bus" if side == "lv" else "lv_bus"
                     pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
                     ppcidx = net._pd2pm_lookups["branch"][elm][0]-1+pd_idx   
                     
@@ -544,10 +535,6 @@ def add_params_to_pm(net, pm):
                         int(net._ppc_opf["branch"][ppcidx, ppcrow_f].real) + 1
                     pm["user_defined_params"][bp][k]["t_bus"] = \
                         int(net._ppc_opf["branch"][ppcidx, ppcrow_t].real) + 1
-                    # pm["user_defined_params"][bp][k]["f_bus"] = \
-                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
-                    # pm["user_defined_params"][bp][k]["t_bus"] = \
-                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
 
     # add controllable sgen:
     dic = {}
@@ -562,7 +549,7 @@ def add_params_to_pm(net, pm):
     
     # add objective factors for multi optimization
     if "obj_factors" in net.keys():
-        assert type(net.obj_factors) == list
+        assert isinstance(net.obj_factors, list)
         assert sum(net.obj_factors) <= 1
         dic = {}
         for i, k in enumerate(net.obj_factors):
@@ -584,7 +571,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
                              "from_time_step": from_time_step+1, 
                              "to_time_step": to_time_step+1} 
         for idx, content in net.controller.iterrows():
-            if not type(content["object"]) == ConstControl:
+            if type(content["object"]) != ConstControl:
                 continue
             else:
                 element = content["object"].__dict__["matching_params"]["element"]

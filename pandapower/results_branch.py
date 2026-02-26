@@ -59,7 +59,7 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
         **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
 
     """
-    I012_f, S012_f, V012_f, I012_t, S012_t, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
+    I012_f, _, V012_f, I012_t, _, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
     _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     # _get_trafo3w_results(net, ppc, s_ft, i_ft)
@@ -84,11 +84,11 @@ def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
                         np.exp(1j * np.deg2rad(ppc["bus"][br_from_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
     V012_t = np.array([(ppc["bus"][br_to_idx, VM] * ppc["bus"][br_to_idx, BASE_KV] *
                         np.exp(1j * np.deg2rad(ppc["bus"][br_to_idx, VA]))).flatten() for ppc in [ppc0, ppc1, ppc2]])
-    S012_f = np.array([((ppc["branch"][:, PF].real +
-                         1j * ppc["branch"][:, QF].real))
+    S012_f = np.array([(ppc["branch"][:, PF].real +
+                         1j * ppc["branch"][:, QF].real)
                        for ppc in [ppc0, ppc1, ppc2]])
-    S012_t = np.array([((ppc["branch"][:, PT].real +
-                         1j * ppc["branch"][:, QT].real))
+    S012_t = np.array([(ppc["branch"][:, PT].real +
+                         1j * ppc["branch"][:, QT].real)
                        for ppc in [ppc0, ppc1, ppc2]])
     I012_f = I_from_SV_elementwise(S012_f, V012_f / np.sqrt(3))
     I012_t = I_from_SV_elementwise(S012_t, V012_t / np.sqrt(3))
@@ -221,7 +221,7 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     # create res_line_vals which are written to the pandas dataframe
     ac = net["_options"]["ac"]
 
-    if not "line" in net._pd2ppc_lookups["branch"]:
+    if "line" not in net._pd2ppc_lookups["branch"]:
         return
 
     f, t = net._pd2ppc_lookups["branch"]["line"]
@@ -366,12 +366,11 @@ def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     ac = net["_options"]["ac"]
     trafo_loading = net["_options"]["trafo_loading"]
 
-    if not "trafo" in net._pd2ppc_lookups["branch"]:
+    if "trafo" not in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
     I012_hv_ka = I012_f[:, f:t]
     I012_lv_ka = I012_t[:, f:t]
-    trafo_df = net["trafo"]
 
     Vabc_hv, Vabc_lv, Iabc_hv, Iabc_lv = [sequence_to_phase(X012) for X012 in
                                           [V012_f[:, f:t], V012_t[:, f:t], I012_f[:, f:t], I012_t[:, f:t]]]
@@ -535,7 +534,7 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
 def _get_impedance_results(net, ppc, i_ft, suffix=None):
     ac = net["_options"]["ac"]
 
-    if not "impedance" in net._pd2ppc_lookups["branch"]:
+    if "impedance" not in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["impedance"]
     pf_mw = ppc["branch"][f:t, (PF)].real
@@ -638,7 +637,7 @@ def _get_tcsc_results(net, ppc, suffix=None):
 def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     ac = net["_options"]["ac"]
 
-    if not "xward" in net._pd2ppc_lookups["branch"]:
+    if "xward" not in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["xward"]
     p_branch_xward = ppc["branch"][f:t, PF].real
