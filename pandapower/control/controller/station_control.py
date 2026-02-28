@@ -791,7 +791,7 @@ class DroopControl(Controller):
                         f"'voltage_ctrl' in Controller {self.index} is deprecated. "
                         "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead.")
                     self._deprecation_warned = True
-        ###atching old implementation
+        ###catching old implementation
         if isinstance(self.control_modus, bool) and self.control_modus == True:
             self.control_modus = ControlModusEnum.v_ctrl_q_droop
             logger.warning(f"Deprecated Control Modus in Controller {self.index}, using V_ctrl with Q droop from available types"
@@ -845,7 +845,7 @@ class DroopControl(Controller):
         self.check_control_modus_and_values(net)
         if self.control_modus in ControlModusEnum.v_modes():
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
-                         read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag))
+                         read_from_net(net, "res_bus", int(self.bus_idx), "vm_pu", self.read_flag))
         else:
             counter = 0
             input_values = []
@@ -866,7 +866,7 @@ class DroopControl(Controller):
 
     def _droop_control_step(self, net):
         self.vm_pu_old = self.vm_pu
-        self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", self.read_flag)
+        self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", flag=self.read_flag)
         if self.control_modus not in ControlModusEnum.v_modes():
             if self.q_set_mvar_bsc is None:
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
@@ -937,19 +937,17 @@ class VDroopControl_local(Controller):
         self.q_droop_mvar = q_droop_mvar
         self.vm_pu = None
         self.vm_pu_old = self.vm_pu
-        value = vm_set_pu_bsc if vm_set_pu_bsc is not None else kwargs.get('vm_set_pu')
-        self.vm_set_pu_bsc = value
+        self.vm_set_pu_bsc =  vm_set_pu_bsc if vm_set_pu_bsc is not None else kwargs.get('vm_set_pu')
         self.vm_set_pu_new = None
         self.q_set_mvar = q_set_mvar
         self.lb_voltage = vm_set_lb
         self.ub_voltage = vm_set_ub
         self.controller_idx = controller_idx
         self.bus_idx = bus_idx
-        self.control_modus = control_modus
         try:
-            self.control_modus = ControlModusEnum(self.control_modus)
+            self.control_modus = ControlModusEnum(control_modus)
         except ValueError:
-            logger.warning(f"Control_modus {self.control_modus} not recognized, using 'V_ctrl_Q_droop_local' \n")
+            logger.warning(f"Control_modus {control_modus} not recognized, using 'V_ctrl_Q_droop_local' \n")
             self.control_modus = ControlModusEnum.v_ctrl_q_droop_local
         self.tol = tol
         self.applied = False

@@ -392,7 +392,28 @@ def from_json_string(
                     continue
                 elif 'pandas' in net[key]:
                     net[key] = net_dummy[key]
-
+    # converting enum class variables from string to enum
+    for cont in net.controller.object:
+        if (hasattr(cont, "control_modus") and isinstance(cont.control_modus, str) and
+            cont.control_modus.startswith("ControlModusEnum.") and len(cont.control_modus) <= 40):
+            control_modus_mapping = {
+                "ControlModusEnum.v_ctrl": "V_ctrl",
+                "ControlModusEnum.v_ctrl_q_droop": "V_ctrl_Q_droop",
+                "ControlModusEnum.v_ctrl_q_droop_local": "V_ctrl_Q_droop_local",
+                "ControlModusEnum.q_ctrl": "Q_ctrl",
+                "ControlModusEnum.q_ctrl_v_droop": "Q_ctrl_V_droop",
+                "ControlModusEnum.PF_ctrl": "PF_ctrl",
+                "ControlModusEnum.PF_ctrl_ind": "PF_ctrl_ind",
+                "ControlModusEnum.PF_ctrl_cap": "PF_ctrl_cap",
+                "ControlModusEnum.tan_phi_ctrl": "tan_phi_ctrl"}
+            from pandapower.control.controller.station_control import ControlModusEnum
+            if cont.control_modus in control_modus_mapping:
+                cont.control_modus = eval(cont.control_modus)
+            else:
+                logger.warning(
+                    f"Control_modus {cont.control_modus} not recognized, using 'Q_ctrl' from available"
+                    f" types\n")
+                cont.control_modus = ControlModusEnum.q_ctrl
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.

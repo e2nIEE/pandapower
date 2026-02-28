@@ -24,7 +24,7 @@ from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
-from pandapower.topology import create_nxgraph, calc_distance_to_bus
+from pandapower.topology import create_nxgraph
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object, \
     get_min_max_q_mvar_from_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
@@ -781,8 +781,8 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
     except IndexError:
         logger.debug("Cannot add Line '%s': not connected" % params['name'])
         return
-    except:
-        logger.error("Error while exporting Line '%s'" % params['name'])
+    except Exception as e:
+        logger.error("Error %s while exporting Line '%s'", e, params['name'])
         return
 
     ac = bus_table == "bus"
@@ -4127,7 +4127,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                         res[switch_dict[element]].get("direction")
                     )
                 else:
-                    element_type = None
+                    element_type, element_index, direction, connection_side = None, None, None, None
                 if element_type == "trafo":
                     res_element_table = "res_trafo"
                     res_element_index.append(element_index)
@@ -4326,7 +4326,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 name=item.loc_name,
                 q_droop_mvar=item.Srated * 100 / item.ddroop,
                 bus_idx=bus,
-                vm_set_pu_bsc=None,
+                vm_set_pu_bsc=item.qsetp,
                 vm_set_ub=item.udeadbup,
                 vm_set_lb=item.udeadblow,
                 q_set_mvar_bsc=item.qsetp,
