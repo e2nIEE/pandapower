@@ -3925,10 +3925,6 @@ def create_pp_vsc(net, item):
 
 
 def create_stactrl(net, item, top, top_all, **kwargs):
-    #if 'bus_dict_Elm_Term' in kwargs:
-    #    bus_dict_stactrl = kwargs.get('bus_dict_Elm_Term')
-    #else:
-    #    bus_dict_stactrl = None
     stactrl_in_service = True
     logger.info(f"Creating Station Controller {item.loc_name}")
     if item.outserv:

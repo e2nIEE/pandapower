@@ -387,7 +387,7 @@ def test_pf_control_ind():
     runpp(net, run_control=False)
     assert(abs(np.arctan(net.res_line.loc[0, "q_to_mvar"] / net.res_line.loc[0, 'p_to_mw']) + 0.7953988 - np.arccos(0.7)) < tol)
     runpp(net, run_control = True)
-    assert(abs(np.arctan(net.res_line.loc[0, "q_to_mvar"]/net.res_line.loc[0, 'p_to_mw']) - np.arccos(0.7)) < tol)#positive = inductive
+    assert(abs(np.arctan(net.res_line.loc[0, "q_to_mvar"]/net.res_line.loc[0, 'p_to_mw']) - np.arccos(0.7)) < tol)#positive means inductive
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'PF_ctrl_ind')# test correct control_modus
 
@@ -429,8 +429,8 @@ def test_station_ctrl_pf_import_new():
           net.res_line.loc[4, "q_from_mvar"], "\t", net.res_line.loc[4, "q_to_mvar"])
     print("Controlled bus, initial set point 1.01 pu and 40 MVar/pu, vm_pu, \n expected: "
           "2 * 0.2442 MVar / 40 MVar/pu + 1.01 pu = 1.02221: \n", net.res_bus.loc[86, "vm_pu"])
-    assert(abs(net.res_bus.loc[77, "vm_pu"] - (1.01 + ((net.res_line.loc[3, "q_to_mvar"] +
-                                             net.res_line.loc[4, "q_to_mvar"])) / 40)) < tol)
+    assert(abs(net.res_bus.loc[77, "vm_pu"] - (1.01 + (net.res_line.loc[3, "q_to_mvar"] +
+                                             net.res_line.loc[4, "q_to_mvar"]) / 40)) < tol)
     assert(getattr(net.controller.at[6, 'object'].control_modus, 'value', None) == 'V_ctrl_Q_droop')  # test correct control_modus
     assert(getattr(net.controller.at[7, 'object'].control_modus, 'value', None) == 'V_ctrl_Q_droop')  # test correct control_modus
     assert(net.controller.at[7, 'object'].controller_idx == 6)  # test droop controller linkage

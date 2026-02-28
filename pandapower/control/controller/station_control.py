@@ -165,7 +165,7 @@ class BinarySearchControl(Controller):
 
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(np.atleast_1d(self.output_values_distribution),
-                                                np.atleast_1d(self.output_element_in_service))], dtype=np.bool)
+                                                np.atleast_1d(self.output_element_in_service))], dtype=bool)
         ###finding correct control_modus, catching deprecated voltage_ctrl argument###
         if control_modus is None: #catching old attribute voltage_ctrl
             if hasattr(self, 'voltage_ctrl'):
@@ -230,11 +230,11 @@ class BinarySearchControl(Controller):
             if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus== ControlModusEnum.tan_phi_ctrl:
                 if isinstance(input_variable, list):
                     input_variable_p = input_variable[counter].replace('q', 'p').replace('var','w')
-                    read_flag_temp_p, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,input_index,
+                    _, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,input_index,
                                                                                   input_variable_p)
                 else:
                     input_variable_p = input_variable.replace('q', 'p').replace('var', 'w')
-                    read_flag_temp_p, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,
+                    _, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,
                                                                                       input_index,
                                                                                       input_variable_p)
                 self.input_variable_p.append(input_variable_temp_p) #read flag p not necessary, flag same as Q variables
@@ -276,7 +276,7 @@ class BinarySearchControl(Controller):
         self.output_adjustable = np.array([False if not distribution else service
                                             for distribution, service in zip(np.atleast_1d(self.output_values_distribution),
                                                                             np.atleast_1d(self.output_element_in_service))],
-                                            dtype=np.bool)
+                                            dtype=bool)
 
     def is_converged(self, net):
         """
@@ -390,7 +390,7 @@ class BinarySearchControl(Controller):
             else:
                 # adapt output adjustable depending on in_service
                 self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=bool)
                 # normalize the values distribution
                 self._normalize_distribution_in_service()
             if -0.012 < self.set_point < 0.012: #clip set_point to handle pf=0
@@ -452,7 +452,7 @@ class BinarySearchControl(Controller):
                             # adapt output adjustable depending on in_service
                             self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
                                                                in zip(self.output_element_in_service,
-                                                                      self.output_adjustable)], dtype=np.bool)
+                                                                      self.output_adjustable)], dtype=bool)
 
                             # normalize the values distribution
                             self._normalize_distribution_in_service()
@@ -474,7 +474,7 @@ class BinarySearchControl(Controller):
                         else:
                             # adapt output adjustable depending on in_service
                             self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                               in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                                                               in zip(self.output_element_in_service, self.output_adjustable)], dtype=bool)
 
                             # normalize the values distribution
                             self._normalize_distribution_in_service()
@@ -490,7 +490,7 @@ class BinarySearchControl(Controller):
                     else:
                         # adapt output adjustable depending on in_service
                         self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                           in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                                                           in zip(self.output_element_in_service, self.output_adjustable)], dtype=bool)
 
                         # normalize the values distribution
                         self._normalize_distribution_in_service()
@@ -510,7 +510,7 @@ class BinarySearchControl(Controller):
                 else:
                     # adapt output adjustable depending on in_service
                     self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                       in zip(self.output_element_in_service, self.output_adjustable)], dtype=np.bool)
+                                                       in zip(self.output_element_in_service, self.output_adjustable)], dtype=bool)
 
                     # normalize the values distribution
                     self._normalize_distribution_in_service()
@@ -693,8 +693,6 @@ class BinarySearchControl(Controller):
         else:
             self.output_max_q_mvar = list(np.array([np.inf]*len(self.output_element_index), dtype=np.float64))
 
-    def finalize_control(self, net):
-        pass
 class DroopControl(Controller):
     """
     The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller or
@@ -809,11 +807,11 @@ class DroopControl(Controller):
                 self.control_modus = ControlModusEnum.q_ctrl_v_droop
         if self.control_modus in ControlModusEnum.pf_modes():#legacy ambiguous
                 raise UserWarning(f"Power Factor Droop Control not implemented (in Controller {self.index}).'\n")
-        elif self.control_modus in ControlModusEnum.v_modes() and not self.control_modus in ControlModusEnum.droop_modes():
+        elif self.control_modus in ControlModusEnum.v_modes() and self.control_modus not in ControlModusEnum.droop_modes():
             logger.warning(f"Power Factor Droop Control in Controller {self.index}: Control modus is ambivalent, using"
                            f" 'V_ctrl with Q droop' from available modi.\n")
             self.control_modus = ControlModusEnum.v_ctrl_q_droop
-        elif self.control_modus in ControlModusEnum.q_modes() and not self.control_modus in ControlModusEnum.droop_modes():
+        elif self.control_modus in ControlModusEnum.q_modes() and self.control_modus not in ControlModusEnum.droop_modes():
             logger.warning(f"Power Factor Droop Control in Controller {self.index}: Control modus is ambivalent, using"
                            f" 'Q_ctrl with V droop' from available modi.\n")
             self.control_modus = ControlModusEnum.q_ctrl_v_droop
