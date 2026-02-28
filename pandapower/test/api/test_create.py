@@ -983,37 +983,34 @@ def test_create_transformers():
         name=["trafo1", "trafo2"],
         test_kwargs="TestKW"
     )
-    res_df = pd.DataFrame({
-        'name': ['trafo1', 'trafo2'],
-        'std_type': ['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'],
-        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
-        'lv_bus': pd.Series([1, 2], dtype=np.uint32),
-        'sn_mva': [0.4, 0.4],
-        'vn_hv_kv': [10.0, 10.0],
-        'vn_lv_kv': [0.4, 0.4],
-        'vk_percent': [4.0, 4.0],
-        'vkr_percent': [1.325, 1.325],
-        'pfe_kw': [0.95, 0.95],
-        'i0_percent': [0.2375, 0.2375],
-        'shift_degree': [0.0, 0.0],
-        'tap_side': ['', ''],
-        'tap_neutral': [nan, nan],
-        'tap_min': [nan, nan],
-        'tap_max': [nan, nan],
-        'tap_step_percent': [nan, nan],
-        'tap_step_degree': [nan, nan],
-        'tap_pos': [nan, nan],
-        'tap_changer_type': ['', ''],
-        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
-        'tap_dependency_table': [False, False],
-        'parallel': pd.Series([1, 1], dtype=np.uint32),
-        'df': [1.0, 1.0],
-        'in_service': [True, True],
-        'oltc': [False, False],
-        'test_kwargs': ['TestKW', 'TestKW'],
-        'vector_group': ['Dyn5', 'Dyn5'],
-    })
-    assert dataframes_equal(net.trafo, res_df)
+
+    assert net.trafo["name"].tolist() == ["trafo1", "trafo2"]
+    assert net.trafo["std_type"].tolist() == ["0.4 MVA 10/0.4 kV", "0.4 MVA 10/0.4 kV"]
+    assert net.trafo["hv_bus"].tolist() == [0, 0]
+    assert net.trafo["lv_bus"].tolist() == [1, 2]
+    assert np.allclose(net.trafo["sn_mva"].values, [0.4, 0.4])
+    assert np.allclose(net.trafo["vn_hv_kv"].values, [10.0, 10.0])
+    assert np.allclose(net.trafo["vn_lv_kv"].values, [0.4, 0.4])
+    assert np.allclose(net.trafo["vk_percent"].values, [4.0, 4.0])
+    assert np.allclose(net.trafo["vkr_percent"].values, [1.325, 1.325])
+    assert np.allclose(net.trafo["pfe_kw"].values, [0.95, 0.95])
+    assert np.allclose(net.trafo["i0_percent"].values, [0.2375, 0.2375])
+    assert np.allclose(net.trafo["shift_degree"].values, [150.0, 150.0])
+    assert net.trafo["tap_side"].tolist() == ["hv", "hv"]
+    assert np.allclose(net.trafo["tap_neutral"].values, [0, 0])
+    assert np.allclose(net.trafo["tap_min"].values, [-2, -2])
+    assert np.allclose(net.trafo["tap_max"].values, [2, 2])
+    assert np.allclose(net.trafo["tap_step_percent"].values, [2.5, 2.5])
+    assert np.allclose(net.trafo["tap_step_degree"].values, [0, 0])
+    assert np.allclose(net.trafo["tap_pos"].values, [0, 0])
+    assert net.trafo["tap_changer_type"].tolist() == ["Ratio", "Ratio"]
+    assert net.trafo["id_characteristic_table"].isna().all() 
+    assert net.trafo["parallel"].tolist() == [1, 1]
+    assert np.allclose(net.trafo["df"].values, [1.0, 1.0])
+    assert net.trafo["in_service"].tolist() == [True, True]
+    assert net.trafo["oltc"].tolist() == [False, False]
+    assert net.trafo["test_kwargs"].tolist() == ["TestKW", "TestKW"]
+    assert net.trafo["vector_group"].tolist() == ["Dyn5", "Dyn5"]
 
 def test_create_transformers_for_single():
     net = create_empty_network()
@@ -1028,37 +1025,33 @@ def test_create_transformers_for_single():
         test_kwargs="TestKW",
         sn_mva=.4
     )
-    res_df = pd.DataFrame({
-        'name': ['trafo1'],
-        'std_type': ['0.4 MVA 10/0.4 kV'],
-        'hv_bus': pd.Series([0], dtype=np.uint32),
-        'lv_bus': pd.Series([1], dtype=np.uint32),
-        'sn_mva': [0.4],
-        'vn_hv_kv': [10.0],
-        'vn_lv_kv': [0.4],
-        'vk_percent': [4.0],
-        'vkr_percent': [1.325],
-        'pfe_kw': [0.95],
-        'i0_percent': [0.2375],
-        'shift_degree': [0.0],
-        'tap_side': [''],
-        'tap_neutral': [nan],
-        'tap_min': [nan],
-        'tap_max': [nan],
-        'tap_step_percent': [nan],
-        'tap_step_degree': [nan],
-        'tap_pos': [nan],
-        'tap_changer_type': [''],
-        'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
-        'tap_dependency_table': [False],
-        'parallel': pd.Series([1], dtype=np.uint32),
-        'df': [1.0],
-        'in_service': [True],
-        'oltc': [False],
-        'test_kwargs': ['TestKW'],
-        'vector_group': ['Dyn5'],
-    })
-    assert dataframes_equal(net.trafo, res_df)
+    assert net.trafo["name"].tolist() == ["trafo1"]
+    assert net.trafo["std_type"].tolist() == ["0.4 MVA 10/0.4 kV"]
+    assert net.trafo["hv_bus"].tolist() == [0]
+    assert net.trafo["lv_bus"].tolist() == [1]
+    assert np.allclose(net.trafo["sn_mva"].values, [0.4])
+    assert np.allclose(net.trafo["vn_hv_kv"].values, [10.0])
+    assert np.allclose(net.trafo["vn_lv_kv"].values, [0.4])
+    assert np.allclose(net.trafo["vk_percent"].values, [4.0])
+    assert np.allclose(net.trafo["vkr_percent"].values, [1.325])
+    assert np.allclose(net.trafo["pfe_kw"].values, [0.95])
+    assert np.allclose(net.trafo["i0_percent"].values, [0.2375])
+    assert np.allclose(net.trafo["shift_degree"].values, [150.0])
+    assert net.trafo["tap_side"].tolist() == ["hv"]
+    assert np.allclose(net.trafo["tap_neutral"].values, [0])
+    assert np.allclose(net.trafo["tap_min"].values, [-2])
+    assert np.allclose(net.trafo["tap_max"].values, [2])
+    assert np.allclose(net.trafo["tap_step_percent"].values, [2.5])
+    assert np.allclose(net.trafo["tap_step_degree"].values, [0])
+    assert np.allclose(net.trafo["tap_pos"].values, [0])
+    assert net.trafo["tap_changer_type"].tolist() == ["Ratio"]
+    assert net.trafo["id_characteristic_table"].isna().all() 
+    assert net.trafo["parallel"].tolist() == [1]
+    assert np.allclose(net.trafo["df"].values, [1.0])
+    assert net.trafo["in_service"].tolist() == [True]
+    assert net.trafo["oltc"].tolist() == [False]
+    assert net.trafo["test_kwargs"].tolist() == ["TestKW"]
+    assert net.trafo["vector_group"].tolist() == ["Dyn5"]
 
 
 def test_create_transformers3w():

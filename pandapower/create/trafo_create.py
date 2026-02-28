@@ -252,19 +252,25 @@ def create_transformers(
 
     std_params = load_std_type(net, std_type, "trafo")
 
-    required_params = ("sn_mva", "vn_lv_kv", "vn_hv_kv", "vk_percent", "vkr_percent", "pfe_kw")
+    params = {
+        "shift_degree": std_params.get("shift_degree", 0)
+    }
+
+    required_params = ("sn_mva", "vn_lv_kv", "vn_hv_kv", "vk_percent", "vkr_percent", "pfe_kw", "i0_percent")
     if not all(param in std_params for param in required_params):
         raise ValueError(f"std_type is missing a required value. Required values: {', '.join(required_params)}")
     params_from_std_type = (
-        "i0_percent", "vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", "si0_hv_partial", "vector_group",
+        "tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent", "tap_step_degree", "tap_changer_type", "vector_group",
         *required_params
     )
-    params = {param: std_params[param] for param in params_from_std_type if param in std_params}
+    params.update({param: std_params[param] for param in params_from_std_type if param in std_params})
+    if tap_changer_type is not None:
+        params["tap_changer_type"] = tap_changer_type
     params.update(kwargs)
 
     return create_transformers_from_parameters(
         net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
-        max_loading_percent=max_loading_percent, parallel=parallel, df=df, tap_changer_type=tap_changer_type,
+        max_loading_percent=max_loading_percent, parallel=parallel, df=df,
         tap_dependency_table=tap_dependency_table, id_characteristic_table=id_characteristic_table,
         pt_percent=pt_percent, oltc=oltc, xn_ohm=xn_ohm, tap2_pos=tap2_pos, std_type=std_type,
         **params
@@ -282,7 +288,7 @@ def create_transformer_from_parameters(
     vk_percent: float,
     pfe_kw: float,
     i0_percent: float,
-    shift_degree: float = 0,
+    shift_degree: float = 0.0,
     tap_side: HVLVType | None = None,
     tap_neutral: int | float = nan,
     tap_max: int | float = nan,
@@ -514,7 +520,7 @@ def create_transformers_from_parameters(  # index missing ?
     vk_percent: float | Iterable[float],
     pfe_kw: float | Iterable[float],
     i0_percent: float | Iterable[float],
-    shift_degree: float | Iterable[float] = 0,
+    shift_degree: float | Iterable[float] = 0.0,
     tap_side: HVLVType | Iterable[str] | None = None,
     tap_neutral: int | Iterable[int] | float = nan,
     tap_max: int | Iterable[int] | float = nan,
