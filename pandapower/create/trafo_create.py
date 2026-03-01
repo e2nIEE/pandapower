@@ -1109,6 +1109,7 @@ def create_transformer3w_from_parameters(
         "vkr0_mv_percent": vkr0_mv_percent,
         "vkr0_lv_percent": vkr0_lv_percent,
         "vector_group": vector_group,
+        **kwargs,
     }
     _set_entries(net, "trafo3w", index, entries=entries)
 

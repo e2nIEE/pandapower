@@ -6,7 +6,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import _init_runpp_options, _add_dcline_gens, LoadflowNotConverged
+from pandapower.auxiliary import (
+    _init_runpp_options,
+    _add_dcline_gens,
+    LoadflowNotConverged,
+    pandapowerNet,
+)
 from pandapower.create import create_ext_grid, create_bus, create_impedance, create_transformer_from_parameters, \
     create_load
 from pandapower.diagnostic import diagnostic
@@ -27,7 +32,7 @@ desktop = os.path.join(home, "Desktop")
 impedance_columns = ["from_bus", "to_bus", "rft_pu", "xft_pu", "rtf_pu", "xtf_pu", "gf_pu", "bf_pu", "gt_pu", "bt_pu"]
 
 
-def _runpp_except_voltage_angles(net, **kwargs):
+def _runpp_except_voltage_angles(net: pandapowerNet, **kwargs) -> pandapowerNet:
     if "calculate_voltage_angles" not in kwargs or not kwargs["calculate_voltage_angles"]:
         runpp(net, **kwargs)
     else:
@@ -420,15 +425,19 @@ def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
 
 def _check_network(net):
     """
-    This function will perfoms some checks and modifications on the given grid model.
+    This function will perform some checks and modifications on the given grid model.
+    
+    Check inactive elements
+    Check dc lines and replace by gen if exists
+    Check controller names
     """
-    # --- check invative elements
+    # --- check inactive elements
     if net.res_bus.vm_pu.isnull().any():
         logger.info("There are some inactive buses. It is suggested to remove "
                     "them using 'pandapower.drop_inactive_elements()' "
                     "before starting the grid equivalent calculation.")
 
-    # --- check dclines
+    # --- check and replace dclines by gens
     if "dcline" in net and len(net.dcline.query("in_service")) > 0:
         _add_dcline_gens(net)
         dcline_index = net.dcline.index.values

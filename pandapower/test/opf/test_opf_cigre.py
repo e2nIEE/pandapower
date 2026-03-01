@@ -64,7 +64,7 @@ def test_some_sgens_not_controllable():
 
     for sgen_idx, row in net["sgen"].iterrows():
         cost_sgen = create_poly_cost(net, sgen_idx, 'sgen', cp1_eur_per_mw=1.)
-        net.poly_cost.cp1_eur_per_mw.at[cost_sgen] = 100
+        net.poly_cost.at[cost_sgen, "cp1_eur_per_mw"] = 100
 
     # run OPF
     runopp(net, calculate_voltage_angles=False)

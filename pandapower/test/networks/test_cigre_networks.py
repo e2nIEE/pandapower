@@ -50,6 +50,8 @@ def test_cigre_mv():
     assert len(net.switch) == 8
     assert net.converged
 
+
+def test_cigre_mv_pv_wind():
     net = create_cigre_network_mv(with_der="pv_wind")
     runpp(net)
 
@@ -66,6 +68,8 @@ def test_cigre_mv():
     assert len(net.switch) == 8
     assert net.converged
 
+
+def test_cigre_mv_all():
     net = create_cigre_network_mv(with_der="all")
     runpp(net)
 
@@ -102,5 +106,5 @@ def test_cigre_lv():
     assert net.converged
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
