@@ -1053,6 +1053,67 @@ def test_create_transformers_for_single():
     assert net.trafo["test_kwargs"].tolist() == ["TestKW"]
     assert net.trafo["vector_group"].tolist() == ["Dyn5"]
 
+def test_create_transformers_for_single_override_std_type():
+    net = create_empty_network()
+    b1 = create_bus(net, 22)
+    b2 = create_bus(net, .5)
+    create_transformers(
+        net,
+        hv_buses=[b1],
+        lv_buses=[b2],
+        std_type="0.4 MVA 10/0.4 kV",
+        name="trafo1",
+        sn_mva = 0.5,
+        vn_hv_kv = 22,
+        vn_lv_kv = 0.5,
+        vk_percent = 5,
+        vkr_percent = 1.532,
+        pfe_kw = 0.65,
+        i0_percent = 0.1264,
+        shift_degree = 90,
+        vector_group = "Dd5",
+        tap_side = "lv",
+        tap_neutral = 1,
+        tap_min = -4,
+        tap_max = 4,
+        tap_step_degree = 3,
+        tap_step_percent = 1.5,
+        tap_changer_type = "Symmetrical",
+        trafo_characteristic_table = True,
+        parallel = 2,
+        df = 2,
+        in_service = False,
+        oltc = True,
+        test_kwargs = "TestKW"
+    )
+    assert net.trafo["name"].tolist() == ["trafo1"]
+    assert net.trafo["std_type"].tolist() == ["0.4 MVA 10/0.4 kV"]
+    assert net.trafo["hv_bus"].tolist() == [0]
+    assert net.trafo["lv_bus"].tolist() == [1]
+    assert np.allclose(net.trafo["sn_mva"].tolist(), [0.5])
+    assert np.allclose(net.trafo["vn_hv_kv"].tolist(), [22.0])
+    assert np.allclose(net.trafo["vn_lv_kv"].tolist(), [0.5])
+    assert np.allclose(net.trafo["vk_percent"].tolist(), [5.0])
+    assert np.allclose(net.trafo["vkr_percent"].tolist(), [1.532])
+    assert np.allclose(net.trafo["pfe_kw"].tolist(), [0.65])
+    assert np.allclose(net.trafo["i0_percent"].tolist(), [0.1264])
+    assert np.allclose(net.trafo["shift_degree"].tolist(), [90.0])
+    assert net.trafo["tap_side"].tolist() == ["lv"]
+    assert net.trafo["tap_neutral"].tolist(), [1]
+    assert net.trafo["tap_min"].tolist(), [-4]
+    assert net.trafo["tap_max"].tolist(), [4]
+    assert np.allclose(net.trafo["tap_step_percent"].tolist(), [1.5])
+    assert net.trafo["tap_step_degree"].tolist(), [3]
+    assert net.trafo["tap_pos"].tolist(), [1]
+    assert net.trafo["tap_changer_type"].tolist() == ["Symmetrical"]
+    assert net.trafo["id_characteristic_table"].isna().all() 
+    assert net.trafo["parallel"].tolist() == [2]
+    assert np.allclose(net.trafo["df"].tolist(), [2.0])
+    assert net.trafo["in_service"].tolist() == [False]
+    assert net.trafo["oltc"].tolist() == [True]
+    assert net.trafo["test_kwargs"].tolist() == ["TestKW"]
+    assert net.trafo["vector_group"].tolist() == ["Dd5"]
+
 
 def test_create_transformers3w():
     net = create_empty_network()

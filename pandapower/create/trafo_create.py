@@ -258,6 +258,9 @@ def create_transformers(
         raise ValueError(f"std_type is missing a required value. Required values: {', '.join(create_transformers_required_parameters)}")
     params = {**std_params, **kwargs}
 
+    if tap_changer_type is not None:
+        params["tap_changer_type"] = tap_changer_type
+
     return create_transformers_from_parameters(
         net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
         max_loading_percent=max_loading_percent, parallel=parallel, df=df,
