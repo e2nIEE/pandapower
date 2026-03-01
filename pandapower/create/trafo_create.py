@@ -212,7 +212,7 @@ def create_transformers(
     xn_ohm: float | Iterable[float] = nan,
     tap2_pos: int | Iterable[int] | float = nan,
     **kwargs,
-) -> npt.NDArray[Int]:
+) -> npt.NDArray[integer]:
     """
     Creates several two-winding transformers in table net.trafo.
     Additional parameters passed will be added to the transformers dataframe. If keywords are passed that are present
@@ -252,21 +252,11 @@ def create_transformers(
 
     std_params = load_std_type(net, std_type, "trafo")
 
-    params = {
-        "shift_degree": std_params.get("shift_degree", 0)
-    }
-
-    required_params = ("sn_mva", "vn_lv_kv", "vn_hv_kv", "vk_percent", "vkr_percent", "pfe_kw", "i0_percent")
-    if not all(param in std_params for param in required_params):
-        raise ValueError(f"std_type is missing a required value. Required values: {', '.join(required_params)}")
-    params_from_std_type = (
-        "tap_neutral", "tap_max", "tap_min", "tap_side", "tap_step_percent", "tap_step_degree", "tap_changer_type", "vector_group",
-        *required_params
-    )
-    params.update({param: std_params[param] for param in params_from_std_type if param in std_params})
-    if tap_changer_type is not None:
-        params["tap_changer_type"] = tap_changer_type
-    params.update(kwargs)
+    create_transformers_required_parameters = ("sn_mva", "vn_lv_kv", "vn_hv_kv", "vkr_percent", "vk_percent", "pfe_kw", "i0_percent")
+    missing = [p for p in create_transformers_required_parameters if p not in std_params]
+    if missing:
+        raise ValueError(f"std_type is missing a required value. Required values: {', '.join(create_transformers_required_parameters)}")
+    params = {**std_params, **kwargs}
 
     return create_transformers_from_parameters(
         net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
