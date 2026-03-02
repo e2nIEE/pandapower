@@ -257,7 +257,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     replace_zero_branches_with_switches(net)
     pf_results = _get_pf_results(net, is_unbalanced=is_unbalanced)
 
-    run_control = "controller" in net.keys() and len(net.controller) > 0
+    default_run_control = hasattr(net, "controller") and len(net.controller) > 0
+    run_control = kwargs.pop("run_control", default_run_control)
     for arg in 'trafo_model check_connectivity'.split():
         if arg in kwargs:
             kwargs.pop(arg)

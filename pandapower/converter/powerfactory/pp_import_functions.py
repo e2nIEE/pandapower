@@ -166,7 +166,7 @@ def from_pf(
     # create asynchronous machines:
     n = 0
     for n, asm in enumerate(dict_net['ElmAsm'], n):
-        create_sgen_asm(net=net, item=asm, pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net)
+        create_sgen_asm(net=net, item=asm, pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, export_ctrl=export_controller)
     if n > 0: logger.info('imported %d asynchronous machines' % n)
 
     logger.debug('creating synchronous machines')
@@ -2172,7 +2172,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                                               input_inverted=[False], input_element_index=[next_index],
                                               set_point=item.usetp, control_modus = "V_ctrl_Q_droop_local", bus_idx=bus, tol=1e-5)
                     VDroopControl_local(net, name=item.loc_name + "_ctrl", q_droop_mvar=item.sgn * 100 / ddroop,
-                                        q_set_mvar=item.qgini, vm_set_pu_bsc=item.usetp, bus_idx=bus,
+                                        q_set_mvar=item.qgini, vm_set_pu_bsc=item.usetp, control_modus = "V_ctrl_Q_droop_local", bus_idx=bus,
                                         controller_idx=bsc.index)
             del params['q_mvar']
 
@@ -2445,7 +2445,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
             try:
                 q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
             except AttributeError:
-                q_mvar = ngnum * item.qgini * multiplier
+                q_mvar = item.ngnum * item.qgini * multiplier
             if item.iqtype == 1:
                 type = item.typ_id
                 sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
@@ -2485,10 +2485,12 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
     logger.debug('created genstat <%s> at index <%d>' % (name, sid))
 
 
-def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
+def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
     is_motor = bool(item.i_mot)
     global_scaling = dict_net['global_parameters']['global_motor_scaling'] if is_motor else \
         dict_net['global_parameters']['global_generation_scaling']
+
+    av_mode = item.av_mode
 
     multiplier = get_power_multiplier(item, pf_variable_p_gen)
     p_res = item.GetAttribute('pgini') * multiplier
@@ -2520,21 +2522,106 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net):
         'scaling': global_scaling
     }
 
-    logger.debug('params: %s' % params)
+    categories = {"wgen": "WKA", "pv": "PV", "reng": "REN", "stg": "SGEN"}
+    # category (wind, PV, etc):
+    try:
+        cat = categories[item.aCategory]
+    except KeyError:
+        cat = 'SGEN'
+        logger.debug('sgen <%s> with category <%s> imported as <%s>' %
+                     (item.loc_name, item.aCategory, cat))
 
-    sid = create_sgen(net, **params)
+    pstac = item.c_pstac
+    # None if station controller is not available
+    if pstac is not None and not pstac.outserv and export_ctrl:
+        if pstac.i_droop:
+            av_mode = 'constq'
+        else:
+            i_ctrl = pstac.i_ctrl
+            if i_ctrl == 0:
+                av_mode = 'constq'
+            elif i_ctrl == 1:
+                av_mode = 'constq'
+            elif i_ctrl == 2:
+                av_mode = 'constq' # cosphi
+                #logger.error('Error! avmode cosphi not implemented')
+                #return
+            elif i_ctrl == 3:
+                av_mode = 'constq'
+                #logger.error('Error! avmode tanphi not implemented')
+                #return
 
-    net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",  "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"}
-    add_additional_attributes(item, net, "sgen", sid, attr_dict=attr_dict,
-                              attr_list=["sernum", "chr_name"])
+    logger.debug('av_mode: %s' % av_mode)
+    if av_mode == 'constv':
+        logger.debug('creating asym %s as gen' % item.loc_name)
+        vm_pu = item.usetp
+        if pstac is not None and not pstac.outserv and export_ctrl:
+            try:
+                vm_pu = item.GetAttribute('m:u:bus1')
+            except AttributeError:
+                if not pstac.uset_mode:
+                    vm_pu = pstac.usetp
+                else:
+                    vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
+        #if item.iqtype == 1:
+        #    sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier, vm_pu=vm_pu,
+        #                     min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
+        #                     min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+        #                     name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
+        #else:
+        type = item.typ_id
+        sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier, vm_pu=vm_pu,
+                         min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
+                         min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                         name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
+        element = 'gen'
+    elif av_mode == 'constq':
+        try:
+            q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
+        except AttributeError:
+            q_mvar = item.ng_num * item.qgini * multiplier if item.bustp == 'PQ' else q_res
+        #if item.iqtype == 1:
+        #    type = item.typ_id
+        #    sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
+        #                      min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
+        #                      min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+        #                      name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
+        #else:
+        type = item.typ_id
+        sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
+                          min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
+                          min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                          name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
+        element = 'sgen'
 
-    if item.HasResults(0):
-        net.res_sgen.at[sid, 'pf_p'] = item.GetAttribute('m:P:bus1') * multiplier
-        net.res_sgen.at[sid, 'pf_q'] = item.GetAttribute('m:Q:bus1') * multiplier
-    else:
-        net.res_sgen.at[sid, 'pf_p'] = np.nan
-        net.res_sgen.at[sid, 'pf_q'] = np.nan
+    #logger.debug('params: %s' % params)
+
+    #sid = create_sgen(net, **params)
+    if element == "gen":
+        net.gen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+        attr_dict = {"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site",
+                     "c_pstac.loc_name": "sta_ctrl"}
+        add_additional_attributes(item, net, "gen", sid, attr_dict=attr_dict,
+                                  attr_list=["sernum", "chr_name"])
+
+        if item.HasResults(0):
+            net.res_gen.at[sid, 'pf_p'] = item.GetAttribute('m:P:bus1') * multiplier
+            net.res_gen.at[sid, 'pf_q'] = item.GetAttribute('m:Q:bus1') * multiplier
+        else:
+            net.res_gen.at[sid, 'pf_p'] = np.nan
+            net.res_gen.at[sid, 'pf_q'] = np.nan
+    elif element == "sgen":
+        net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+        attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",  "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"}
+        add_additional_attributes(item, net, "sgen", sid, attr_dict=attr_dict,
+                                  attr_list=["sernum", "chr_name"])
+
+        if item.HasResults(0):
+            net.res_sgen.at[sid, 'pf_p'] = item.GetAttribute('m:P:bus1') * multiplier
+            net.res_sgen.at[sid, 'pf_q'] = item.GetAttribute('m:Q:bus1') * multiplier
+        else:
+            net.res_sgen.at[sid, 'pf_p'] = np.nan
+            net.res_sgen.at[sid, 'pf_q'] = np.nan
 
 
 def create_trafo_type(net, item):
@@ -3757,7 +3844,7 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         logger.debug('creating SVC %s as gen' % name)
         vm_pu = item.usetp
         in_service = monopolar_in_service(item)
-        svc = create_gen(net, bus=bus1[0], p_mw=0, vm_pu=vm_pu,
+        svc = create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
                          name=name, type="SVC", in_service=in_service)
         element = 'gen'
 
@@ -3945,16 +4032,26 @@ def create_stactrl(net, item, top, top_all, **kwargs):
 
     gen_types = []
     for s in machines:
-        if s.ip_ctrl == 1:
-            gt = "other"
-        elif not hasattr(s, 'av_mode'):
-            gt = "other"
-        elif s.av_mode == "constq":
-            gt = "sgen"
-        elif s.av_mode == "constv":
-            gt = "gen"
+        if s.GetClassName() =='ElmAsm':
+            if not hasattr(s, 'av_mode'):
+                gt = "other"
+            elif s.av_mode == "constq":
+                gt = "sgen"
+            elif s.av_mode == "constv":
+                gt = "gen"
+            else:
+                gt = "other"
         else:
-            gt = "other"
+            if s.ip_ctrl == 1:
+                gt = "other"
+            elif not hasattr(s, 'av_mode'):
+                gt = "other"
+            elif s.av_mode == "constq":
+                gt = "sgen"
+            elif s.av_mode == "constv":
+                gt = "gen"
+            else:
+                gt = "other"
         gen_types.append(gt)
 
     for s in machines:
@@ -4015,20 +4112,22 @@ def create_stactrl(net, item, top, top_all, **kwargs):
 
     gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name, "in_service"].values[0] for s in machines]
 
-    i = 0
-    distribution = []
-    for m in item.psym:
-        if m is not None and isinstance(item.cvqq, list):
-            distribution.append(item.cvqq[i] / 100)
-        elif m is not None and not isinstance(item.cvqq, list):
-            distribution.append(item.cvqq / 100)
-        i = i + 1
-
     if item.imode > 2:
-        raise NotImplementedError(f"{item}: reactive power distribution {item.imode=} not implemented")
+        #raise NotImplementedError(f"{item}: reactive power distribution {item.imode=} not implemented")
+        n = sum(1 for m in item.psym if m is not None)
+        distribution = [1 / n] * n if n > 0 else []
+    else:
+        i = 0
+        distribution = []
+        for m in item.psym:
+            if m is not None and isinstance(item.cvqq, list):
+                distribution.append(item.cvqq[i] / 100)
+            elif m is not None and not isinstance(item.cvqq, list):
+                distribution.append(item.cvqq / 100)
+            i = i + 1
 
     if sum(distribution)!=1:
-        logger.info(f'{item}: sum of reactive power dstribution is unequal to 1 but will be normalized in binary search control.')
+        logger.info(f'{item}: sum of reactive power distribution is unequal to 1 but will be normalized in binary search control.')
 
     phase = item.i_phase
     if phase != 0:
