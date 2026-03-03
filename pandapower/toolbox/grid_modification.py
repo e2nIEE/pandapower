@@ -1244,7 +1244,7 @@ def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=T
             xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
             gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
             bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p if "c0_nf_per_km" in cols else None,
-            name=line_.name,
+            name=line_["name"], # TODO: should this be line_.name (line index) or line_["name"]
             in_service=line_.in_service))
         i += 1
     _replace_group_member_element_type(net, index, "line", new_index, "impedance",
