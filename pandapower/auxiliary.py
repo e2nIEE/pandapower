@@ -2139,8 +2139,7 @@ def _init_runpp_options(
     # tolerance_mva, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
 
     # check if numba is available and the corresponding flag
-    if numba:
-        numba = _check_if_numba_is_installed()
+    numba &= _check_if_numba_is_installed()
 
     cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
     # if const parameters are not set voltage_depend_loads is deactivated
