@@ -24,7 +24,7 @@ from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
-from pandapower.topology import create_nxgraph
+from pandapower.topology import create_nxgraph, calc_distance_to_bus
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object, \
     get_min_max_q_mvar_from_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
@@ -4113,9 +4113,9 @@ def create_stactrl(net, item, top, top_all, **kwargs):
     gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name, "in_service"].values[0] for s in machines]
 
     if item.imode > 2:
-        #raise NotImplementedError(f"{item}: reactive power distribution {item.imode=} not implemented")
-        n = sum(1 for m in item.psym if m is not None)
-        distribution = [1 / n] * n if n > 0 else []
+        logger.warning(f"{item}: reactive power distribution {item.imode=} not implemented, using flat distribution")
+        n = len(item.psym) if getattr(item, "psym", None) is not None else 0
+        distribution = [1.0 / n] * n if n > 0 else []
     else:
         i = 0
         distribution = []
@@ -4125,9 +4125,9 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             elif m is not None and not isinstance(item.cvqq, list):
                 distribution.append(item.cvqq / 100)
             i = i + 1
-
-    if sum(distribution)!=1:
-        logger.info(f'{item}: sum of reactive power distribution is unequal to 1 but will be normalized in binary search control.')
+    if sum(distribution) != 1:
+        logger.info(
+            f'{item}: sum of reactive power distribution is unequal to 1 but will be normalized in binary search control.')
 
     phase = item.i_phase
     if phase != 0:
