@@ -237,7 +237,7 @@ def test_qlimits_with_capability_curve(v, p):
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
 
-"""def test_qlimits_with_capability_curve_no_reactive_power(): #todo
+def test_qlimits_with_capability_curve_no_reactive_power():
     # test once more when there is no reactive power capability curve
     net = simple_test_net()
     tol = 1e-6
@@ -249,7 +249,7 @@ def test_qlimits_with_capability_curve(v, p):
     runpp(net, run_control=True, enforce_q_lims=True)
     assert(abs(net.res_sgen.loc[0, 'q_mvar'] + 6.7373132) < tol)
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
-    assert(all(net.controller.object[i].converged == True for i in net.controller.index))"""
+    assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
 
 def test_stactrl_pf_import():
@@ -564,8 +564,8 @@ def test_q_relative_to_p_dist():
         net.sgen.at[0, 'p_mw'] + net.sgen.at[1, 'p_mw'])) < tol)
     assert(abs(net.sgen.at[1, 'q_mvar'] / (net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar'])-net.sgen.at[1, 'p_mw']/(
         net.sgen.at[0, 'p_mw'] + net.sgen.at[1, 'p_mw'])) < tol)
-    assert (getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')  # test correct control_modus
-
+    assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')  # test correct control_modus
+    assert(getattr(net.controller.at[0, 'object'].distribution_method, 'value', None) == 'rel_P')
 
 def test_q_relative_to_rated_s_dist(): #rated p is not implemented and defaults to 50 MVar => 50/50
     net = distribution_test_net()
@@ -583,6 +583,7 @@ def test_q_relative_to_rated_s_dist(): #rated p is not implemented and defaults 
     assert(net.sgen.at[0, 'q_mvar'] / net.sgen.at[0, 'sn_mva'] == net.sgen.at[1, 'q_mvar'] / net.sgen.at[1, 'sn_mva'])
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl')  # test correct control_modus
+    assert(getattr(net.controller.at[0, 'object'].distribution_method, 'value', None) == 'rel_rated_S')
 
 def test_set_q_dist():
     net = distribution_test_net()
@@ -599,6 +600,7 @@ def test_set_q_dist():
     assert(abs(net.sgen.at[1, 'q_mvar'] / (net.sgen.at[0, 'q_mvar'] + net.sgen.at[1, 'q_mvar']) - 0.8 / (0.5 + 0.8)) < tol)
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'PF_ctrl_ind')  # test correct control_modus
+    assert(getattr(net.controller.at[0, 'object'].distribution_method, 'value', None) == 'set_Q')
 
 def test_max_q():
     net = distribution_test_net()
@@ -645,8 +647,9 @@ def test_max_q():
            abs(net.sgen.at[idx_pos[1], 'q_mvar']) < abs(net.sgen.at[idx_pos[2], 'q_mvar']))
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'PF_ctrl_cap')  # test correct control_modus
-#todo
-"""def test_rel_v_pu():
+    assert (getattr(net.controller.at[0, 'object'].distribution_method, 'value', None) == 'max_Q')
+
+def test_rel_v_pu():
     net = distribution_test_net()
     tol = 0.02 #voltage adaption is not very precise
     BinarySearchControl(net, True, 'sgen', 'q_mvar',
@@ -663,14 +666,15 @@ def test_max_q():
     BinarySearchControl(net, True, 'sgen', 'q_mvar',
                         [0, 1], [True, True], 'res_line',
                         'q_to_mvar', 0, 0.5, 'rel_V_pu',
-                        [[0.98, 0.95, 1.1], [0.89, 0.8, 1.3]], 'tan(phi)_ctrl', 1e-6)
+                        [[0.98, 0.95, 1.1], [0.89, 0.8, 1.3]], 'tan_phi_ctrl', 1e-6)
     net.sgen.drop(2, inplace=True) #delete interfering sgen
     runpp(net, run_control= True)
     assert(net.sgen.at[0, 'q_mvar'] != net.sgen.at[1, 'q_mvar']) #now controlled sgens
     assert(abs(net.res_bus.at[net.sgen.at[0, 'bus'], 'vm_pu'] + net.res_bus.at[net.sgen.at[1, 'bus'], 'vm_pu']
                 - 0.98 - 0.89) < tol) #now at set points
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
-    assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'tan(phi)_ctrl')  # test correct control_modus"""
+    assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'tan_phi_ctrl')  # test correct control_modus
+    assert(getattr(net.controller.at[0, 'object'].distribution_method, 'value', None) == 'rel_V_pu')
 
 def test_station_ctrl_pf_import_distributions():#test comparability between PF and pp
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'station_ctrl_test_distributions.json')
@@ -696,7 +700,11 @@ def test_station_ctrl_pf_import_distributions():#test comparability between PF a
     assert(getattr(net.controller.at[2, 'object'].control_modus, 'value', None) == 'PF_ctrl_ind')  # test correct control_modus
     assert(getattr(net.controller.at[3, 'object'].control_modus, 'value', None) == 'PF_ctrl_cap')  # test correct control_modus
     assert(getattr(net.controller.at[4, 'object'].control_modus, 'value', None) == 'tan_phi_ctrl')  # test correct control_modus
-
+    assert(getattr(net.controller.at[0, 'object'].distribution_method, 'value', None) == 'set_Q')
+    assert(getattr(net.controller.at[1, 'object'].distribution_method, 'value', None) == 'rel_rated_S')
+    assert(getattr(net.controller.at[2, 'object'].distribution_method, 'value', None) == 'rel_P')
+    assert(getattr(net.controller.at[3, 'object'].distribution_method, 'value', None) == 'max_Q')
+    assert(getattr(net.controller.at[4, 'object'].distribution_method, 'value', None) == 'rel_V_pu')
 
 if __name__ == '__main__':
     pytest.main(['-s', __file__])

@@ -219,10 +219,16 @@ class BinarySearchControl(Controller):
                 self.output_values_distribution = None
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
-
-        self.output_adjustable = np.array([False if not distribution else service
-                                            for distribution, service in zip(np.atleast_1d(self.output_values_distribution),
-                                                np.atleast_1d(self.output_element_in_service))], dtype=bool)
+        if self.distribution_method == ControlModusEnum.rel_V_pu:
+            self.output_adjustable = np.array([
+                                service if distribution is None else (False if not distribution else service)
+                                for distribution, service in zip(np.atleast_1d(np.atleast_2d(
+                                    self.output_values_distribution)[0][0]), np.atleast_1d(self.output_element_in_service))],
+                                dtype=np.bool)
+        else: #rel_V_pu has arrays as output_values_distribution
+            self.output_adjustable = np.array([False if not distribution else service
+                                            for distribution, service in zip(list(np.atleast_1d(self.output_values_distribution)),
+                                                list(np.atleast_1d(self.output_element_in_service)))], dtype=bool)
         ###finding correct control_modus, catching deprecated voltage_ctrl argument###
         if control_modus is None: #catching old attribute voltage_ctrl
             if hasattr(self, 'voltage_ctrl'):
@@ -325,10 +331,6 @@ class BinarySearchControl(Controller):
         #normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
         self._update_min_max_q_mvar(net)
-        self.output_adjustable = np.array([service if distribution is None else (False if not distribution else service)
-                                           for distribution, service in zip(np.atleast_1d(output_values_distribution) or [],
-                                                                        np.atleast_1d(self.output_element_in_service))],
-                                          dtype=np.bool)
         ###directions of q and inverted index
         n = len(self.input_element_index)
         if input_inverted is None or (isinstance(input_inverted, Sequence) and len(input_inverted) == 0):
@@ -391,8 +393,8 @@ class BinarySearchControl(Controller):
             self.output_adjustable = np.array([
                 service if distribution is None else (False if not distribution else service)
                 for distribution, service in zip(
-                    np.atleast_1d(self.output_values_distribution),
-                    np.atleast_1d(self.output_element_in_service)
+                    list(np.atleast_1d(self.output_values_distribution)),
+                    list(np.atleast_1d(self.output_element_in_service))
                 )
             ], dtype=bool)
 
@@ -406,7 +408,15 @@ class BinarySearchControl(Controller):
             self.converged = True
             return self.converged
         ###legacy before ControlModusEnum
-        if isinstance(self.control_modus, str):
+        if isinstance(self.control_modus,bool) and self.control_modus == True: #Only functions written out!?!
+            self.control_modus = ControlModusEnum.v_ctrl
+            logger.warning(f"Deprecated Controller control_modus for Controller {self.index}, using 'V_ctrl' from available"
+                         f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan_phi_ctrl'\n")
+        elif isinstance(self.control_modus, bool) and self.control_modus == False: #Only functions written out!?!
+            self.control_modus = ControlModusEnum.q_ctrl
+            logger.warning(f"Deprecated Controller control_modus for Controller {self.index}, using Q_ctrl from available"
+                         f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan_phi_ctrl'\n")
+        else:
             try:
                 self.control_modus = ControlModusEnum(self.control_modus)
             except ValueError:
@@ -415,11 +425,21 @@ class BinarySearchControl(Controller):
                 self.control_modus = ControlModusEnum.q_ctrl
         if isinstance(self.control_modus, str):
             try:
+                self.control_modus = ControlModusEnum(self.control_modus)
+            except ValueError:
+                logger.warning(f"Control_modus {self.control_modus} not recognized, using 'Q_ctrl' from available"
+                               f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan_phi_ctrl'\n")
+                self.control_modus = ControlModusEnum.q_ctrl
+        if isinstance(self.distribution_method, str):
+            try:
                 self.distribution_method = ControlModusEnum(self.distribution_method)
             except ValueError:
                 logger.warning(f"Control_modus {self.distribution_method} not recognized, using 'rel_P' from available"
                                f" types 'rel_P', 'max_Q', 'set_Q', 'rel_V_pu' or 'rel_rated_S'\n")
-                self.distribution_method = ControlModusEnum.rel_P
+                if self.output_values_distribution is not None:
+                    self.distribution_method = ControlModusEnum.set_Q
+                else:
+                    self.distribution_method = ControlModusEnum.rel_P
         ###updating input & output elements in service lists
         self.input_element_in_service = []
         self.output_element_in_service = []
@@ -514,7 +534,7 @@ class BinarySearchControl(Controller):
         # read previously set values
         # compare old and new set values
         if self.control_modus in ControlModusEnum.q_modes() or (self.control_modus in ControlModusEnum.v_modes()
-                        and self.bus_idx is None):
+                        and self.control_modus in ControlModusEnum.droop_modes() and self.bus_idx is None):
             if self.control_modus in ControlModusEnum.v_modes():
                 logger.warning('Missing attribute self.input_element_index, defaulting to Q_ctrl\n')
                 self.control_modus = ControlModusEnum.q_ctrl
@@ -583,7 +603,10 @@ class BinarySearchControl(Controller):
                 if self.diff is None:  # first step for assured bsc_ctrl_step
                     self.diff = 1
                 else:
-                    self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.bus_idx)[0]]
+                    if self.control_modus not in ControlModusEnum.droop_modes():
+                        self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.input_element_index)[0]]
+                    else:
+                        self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.bus_idx)[0]]
                 self.converged = np.all(np.abs(self.diff) < self.tol)
             else:
                 if self.control_modus not in ControlModusEnum.q_modes():
