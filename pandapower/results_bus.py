@@ -430,7 +430,7 @@ def write_pq_results_to_element_3ph(net, element):
 def get_p_q_b(net, element, suffix=None):
     ac = net["_options"]["ac"]
     res_ = "res_" + element
-    if suffix != None:
+    if suffix is not None:
         res_ += "_%s" % suffix
 
     # bus values are needed for stacking
@@ -442,7 +442,7 @@ def get_p_q_b(net, element, suffix=None):
 
 def get_p_q_b_3ph(net, element):
     ac = net["_options"]["ac"]
-    res_ = "res_" + element+"_3ph"
+    res_ = "res_" + element+ "_3ph"
 
     # bus values are needed for stacking
     b = net[element]["bus"].values

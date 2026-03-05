@@ -10,8 +10,10 @@ import pytest
 import copy
 
 from pandapower import pp_dir
-from pandapower.create import create_empty_network, create_bus, create_line, create_load, create_ext_grid, \
-    create_buses, create_sgen, create_gen, create_gens, create_line_from_parameters
+from pandapower.create import (
+    create_empty_network, create_bus, create_line, create_load, create_ext_grid, create_buses, create_sgen, create_gen,
+    create_gens, create_line_from_parameters
+)
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.pf.create_jacobian_tdpf import calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, \
     calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank
@@ -145,7 +147,9 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
         create_sgen(net, 4, 300, scaling=sgen_scaling, name="G5")
 
     if distributed_slack:
-        net["gen" if with_gen else "sgen"].at[idx, 'slack_weight'] = 1
+        if with_gen: # distributed slack is currently not supported for sgen.
+            net["gen"]["slack_weight"] = 0.0
+            net["gen"].at[idx, 'slack_weight'] = 1
         set_user_pf_options(net, distributed_slack=True)
         net.sn_mva = 1000  # otherwise numerical issues
 

@@ -1398,6 +1398,7 @@ def test_tap_dependent_impedance():
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     add_column_to_df(net, "trafo", "id_characteristic_table")
     add_column_to_df(net, "trafo", 'tap_dependency_table')
+    net.trafo.at[0, 'id_characteristic_table'] = 0
     net.trafo.at[0, 'tap_dependency_table'] = True
     net.trafo.at[1, 'tap_dependency_table'] = False
 
@@ -1409,7 +1410,7 @@ def test_tap_dependent_impedance():
          'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
     add_column_to_df(net, "trafo3w", "id_characteristic_table")
-    add_column_to_df(net, "trafo33w", 'tap_dependency_table')
+    add_column_to_df(net, "trafo3w", 'tap_dependency_table')
     net.trafo3w.at[0, 'id_characteristic_table'] = 1
     net.trafo3w.at[0, 'tap_dependency_table'] = True
 
