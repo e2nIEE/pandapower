@@ -2543,13 +2543,10 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
             elif i_ctrl == 1:
                 av_mode = 'constq'
             elif i_ctrl == 2:
-                av_mode = 'constq' # cosphi
-                #logger.error('Error! avmode cosphi not implemented')
-                #return
+                av_mode = 'constq' #cosphi
             elif i_ctrl == 3:
-                av_mode = 'constq'
-                #logger.error('Error! avmode tanphi not implemented')
-                #return
+                av_mode = 'constq' #tanphi
+
 
     logger.debug('av_mode: %s' % av_mode)
     if av_mode == 'constv':
