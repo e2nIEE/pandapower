@@ -3,6 +3,9 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] cim2pp shift_lv_degree was translated from wrong entry
+- [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
+
 
 [3.4.0] - 2026-02-09
 -------------------------------
