@@ -1830,44 +1830,74 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         if load_type is None:
             params["const_z_p_percent"] = 100
         else:
+            attrs_p = [("aP", "kpu0"), ("bP", "kpu1"), ("cP", "kpu")]
+            attrs_q = [("aQ", "kqu0"), ("bQ", "kqu1"), ("cQ", "kqu")]
+
+            default_cfg = [(1, 0), (0, 1), (0, 2)]  # (c, e)
+
+            use_standard_p = False
+            use_standard_q = False
             used_e_p = set()
             used_e_q = set()
-            for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
-                                              ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
 
+            for cc_p, ee_p in attrs_p:
                 c_p = load_type.GetAttribute(cc_p)
                 e_p = load_type.GetAttribute(ee_p)
+
+                if c_p:  # nur aktive Koeffizienten prüfen
+                    if e_p not in {0, 1, 2} or e_p in used_e_p:
+                        logger.warning(
+                            f"Load {item.loc_name} ({load_class}) unsupported P voltage dependency configuration, "
+                            f"using standard config"
+                        )
+                        use_standard_p = True
+                        break
+                    used_e_p.add(e_p)
+
+            for cc_q, ee_q in attrs_q:
                 c_q = load_type.GetAttribute(cc_q)
                 e_q = load_type.GetAttribute(ee_q)
 
-                if c_p:  # check whether c_p is 0 or not
-                    if e_p not in {0, 1, 2} or e_p in used_e_p:
-                        raise UserWarning(
-                            f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
-                    used_e_p.add(e_p)
-
                 if c_q:
                     if e_q not in {0, 1, 2} or e_q in used_e_q:
-                        raise UserWarning(
-                            f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+                        logger.warning(
+                            f"Load {item.loc_name} ({load_class}) unsupported Q voltage dependency configuration, "
+                            f"using standard config"
+                        )
+                        use_standard_q = True
+                        break
                     used_e_q.add(e_q)
 
+            # finale Konfiguration festlegen
+            if use_standard_p:
+                p_cfg = default_cfg
+            else:
+                p_cfg = [
+                    (load_type.GetAttribute(cc_p), load_type.GetAttribute(ee_p))
+                    for cc_p, ee_p in attrs_p
+                ]
+
+            if use_standard_q:
+                q_cfg = default_cfg
+            else:
+                q_cfg = [
+                    (load_type.GetAttribute(cc_q), load_type.GetAttribute(ee_q))
+                    for cc_q, ee_q in attrs_q
+                ]
+
+            # auswerten
             i_p = 0
             z_p = 0
             i_q = 0
             z_q = 0
-            for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
-                                              ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
 
-                c_p = load_type.GetAttribute(cc_p)
-                e_p = load_type.GetAttribute(ee_p)
+            for c_p, e_p in p_cfg:
                 if e_p == 1:
                     i_p += 100 * c_p
                 elif e_p == 2:
                     z_p += 100 * c_p
 
-                c_q = load_type.GetAttribute(cc_q)
-                e_q = load_type.GetAttribute(ee_q)
+            for c_q, e_q in q_cfg:
                 if e_q == 1:
                     i_q += 100 * c_q
                 elif e_q == 2:
@@ -1877,7 +1907,6 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             params["const_z_p_percent"] = z_p
             params["const_i_q_percent"] = i_q
             params["const_z_q_percent"] = z_q
-
     ### added
     elif load_class == 'ElmLodlvp':
         params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
