@@ -16,7 +16,9 @@ ward_schema = pa.DataFrameSchema(
         "qs_mvar": pa.Column(float, description="constant reactive power demand [MVar]"),
         "pz_mw": pa.Column(float, description="constant impedance active power demand at 1.0 pu [MW]"),
         "qz_mvar": pa.Column(float, description="constant impedance reactive power demand at 1.0 pu [MVar]"),
-        "in_service": pa.Column(bool, description="specifies if the ward equivalent is in service."),
+        "in_service": pa.Column(
+            bool, description="specifies if the ward equivalent is in service.", metadata={"default": True}
+        ),
     },
     strict=False,
 )

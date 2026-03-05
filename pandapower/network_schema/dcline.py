@@ -60,7 +60,7 @@ _dcline_columns = {
     "max_q_to_mvar": pa.Column(
         float, nullable=True, required=False, description="Maximum reactive power at to bus", metadata={"opf": True}
     ),
-    "in_service": pa.Column(bool, description="specifies if the line is in service."),
+    "in_service": pa.Column(bool, description="specifies if the line is in service.", metadata={"default": True}),
 }
 dcline_schema = pa.DataFrameSchema(
     _dcline_columns,

@@ -11,8 +11,11 @@ source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
         "vm_pu": pa.Column(
             float,
             description="set-point for the bus voltage magnitude at the connection bus",
+            metadata={"default": 1.0},
         ),
-        "in_service": pa.Column(bool, description="specifies if the generator is in service."),
+        "in_service": pa.Column(
+            bool, description="specifies if the generator is in service.", metadata={"default": 1.0}
+        ),
     },
     strict=False,
 )

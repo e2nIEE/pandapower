@@ -20,6 +20,7 @@ _motor_columns = {
         float,
         pa.Check.between(min_value=0, max_value=100),
         description="Efficiency in percent at current operating point[%]",
+        metadata={"default": 100.0},
     ),
     "efficiency_n_percent": pa.Column(
         float,
@@ -31,8 +32,11 @@ _motor_columns = {
         float,
         pa.Check.between(min_value=0, max_value=100),
         description="The mechanical loading in percentage of the rated mechanical power",
+        metadata={"default": 100.0},
     ),
-    "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
+    "scaling": pa.Column(
+        float, pa.Check.ge(0), description="scaling factor for active and reactive power", metadata={"default": 1.0}
+    ),
     "lrc_pu": pa.Column(
         float,
         pa.Check.ge(0),
@@ -51,7 +55,7 @@ _motor_columns = {
         description="Rated voltage of the motor for short-circuit calculation",
         metadata={"sc": True},
     ),
-    "in_service": pa.Column(bool, description="specifies if the motor is in service."),
+    "in_service": pa.Column(bool, description="specifies if the motor is in service.", metadata={"default": True}),
 }
 motor_schema = pa.DataFrameSchema(
     _motor_columns,

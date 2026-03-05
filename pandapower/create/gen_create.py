@@ -13,6 +13,7 @@ from numpy import nan, bool_
 import numpy.typing as npt
 
 from pandapower.auxiliary import pandapowerNet
+from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
@@ -32,7 +33,7 @@ def create_gen(
     net: pandapowerNet,
     bus: Int,
     p_mw: float,
-    vm_pu: float = 1.0,
+    vm_pu: float = get_default_value("gen", "vm_pu"),
     sn_mva: float = pd.NA,
     name: str = pd.NA,
     index: Int | None = None,
@@ -42,9 +43,9 @@ def create_gen(
     max_p_mw: float = nan,
     min_vm_pu: float = nan,
     max_vm_pu: float = nan,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("gen", "scaling"),
     type: str = pd.NA,
-    slack: bool = False,
+    slack: bool = get_default_value("gen", "slack"),
     id_q_capability_characteristic: int | None = pd.NA,
     reactive_capability_curve: bool | None = None,
     curve_style: str | None = pd.NA,
@@ -55,7 +56,7 @@ def create_gen(
     cos_phi: float = pd.NA,
     pg_percent: float = pd.NA,
     power_station_trafo: int = pd.NA,
-    in_service: bool = True,
+    in_service: bool = get_default_value("gen", "in_service"),
     slack_weight: float = nan,
     **kwargs,
 ) -> Int:
@@ -141,7 +142,9 @@ def create_gen(
     _set_entries(net, "gen", index, True, entries=entries)
 
     # OPF limits
-    _set_value_if_not_nan(net, index, controllable, "controllable", "gen", default_val=False)
+    _set_value_if_not_nan(
+        net, index, controllable, "controllable", "gen", default_val=get_default_value("gen", "controllable")
+    )
 
     # id for q capability curve table
     _set_value_if_not_nan(net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "gen")
@@ -149,7 +152,14 @@ def create_gen(
     # behaviour of reactive power capability curve
     _set_value_if_not_nan(net, index, curve_style, "curve_style", "gen")
 
-    _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "gen", default_val=False)
+    _set_value_if_not_nan(
+        net,
+        index,
+        reactive_capability_curve,
+        "reactive_capability_curve",
+        "gen",
+        default_val=get_default_value("gen", "reactive_capability_curve"),
+    )
 
     # P limits for OPF if controllable == True
     _set_value_if_not_nan(net, index, min_p_mw, "min_p_mw", "gen")
@@ -158,8 +168,8 @@ def create_gen(
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "gen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "gen")
     # V limits for OPF if controllable == True
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=2.0)
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=0.0)
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=get_default_value("gen", "max_vm_pu"))
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=get_default_value("gen", "min_vm_pu"))
 
     # Short circuit calculation variables
     _set_value_if_not_nan(net, index, vn_kv, "vn_kv", "gen")
@@ -176,7 +186,7 @@ def create_gens(
     net: pandapowerNet,
     buses: Sequence,
     p_mw: float | Iterable[float],
-    vm_pu: float | Iterable[float] = 1.0,
+    vm_pu: float | Iterable[float] = get_default_value("gen", "vm_pu"),
     sn_mva: float | Iterable[float] = nan,
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
@@ -186,9 +196,9 @@ def create_gens(
     max_p_mw: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
     max_vm_pu: float | Iterable[float] = nan,
-    scaling: float | Iterable[float] = 1.0,
+    scaling: float | Iterable[float] = get_default_value("gen", "scaling"),
     type: str | Iterable[str] = pd.NA,
-    slack: bool | Iterable[bool] = False,
+    slack: bool | Iterable[bool] = get_default_value("gen", "slack"),
     id_q_capability_characteristic: Int | Iterable[Int] | None = pd.NA,
     reactive_capability_curve: bool | Iterable[bool] | None = None,
     curve_style: str | Iterable[str] | None = pd.NA,
@@ -199,7 +209,7 @@ def create_gens(
     cos_phi: float | Iterable[float] = pd.NA,
     pg_percent: float = pd.NA,
     power_station_trafo: int | float = pd.NA,
-    in_service: bool = True,
+    in_service: bool = get_default_value("gen", "in_service"),
     slack_weight: float = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
@@ -309,12 +319,17 @@ def create_gens(
 
     if "reactive_capability_curve" in net.gen or reactive_capability_curve is not None:
         _add_to_entries_if_not_nan(
-            net, "gen", entries, index, "reactive_capability_curve", reactive_capability_curve, default_val=False
+            net,
+            "gen",
+            entries,
+            index,
+            "reactive_capability_curve",
+            reactive_capability_curve,
+            default_val=get_default_value("gen", "reactive_capability_curve"),
         )
 
     _add_to_entries_if_not_nan(net, "gen", entries, index, "power_station_trafo", power_station_trafo)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "controllable", controllable)
-    
 
     _set_multiple_entries(net, "gen", index, entries=entries, defaults_to_fill=[("controllable", False)])
 

@@ -14,17 +14,27 @@ ssc_schema = pa.DataFrameSchema(
             float, pa.Check.ge(0), description="resistance of the coupling transformer component of SSC"
         ),
         "x_ohm": pa.Column(float, pa.Check.le(0), description="reactance of the coupling transformer component of SSC"),
-        "set_vm_pu": pa.Column(float, description="set-point for the bus voltage magnitude at the connection bus"),
+        "set_vm_pu": pa.Column(
+            float,
+            description="set-point for the bus voltage magnitude at the connection bus",
+            metadata={"default": 1.0},
+        ),
         "vm_internal_pu": pa.Column(
-            float, description="The voltage magnitude of the voltage source converter VSC at the SSC component."
+            float,
+            description="The voltage magnitude of the voltage source converter VSC at the SSC component.",
+            metadata={"default": 1.0},
         ),
         "va_internal_degree": pa.Column(
-            float, description="The voltage angle of the voltage source converter VSC at the SSC component."
+            float,
+            description="The voltage angle of the voltage source converter VSC at the SSC component.",
+            metadata={"default": 0.0},
         ),
         "controllable": pa.Column(
-            bool, description="whether the element is considered as actively controlling or as a fixed shunt impedance"
+            bool,
+            description="whether the element is considered as actively controlling or as a fixed shunt impedance",
+            metadata={"default": True},
         ),
-        "in_service": pa.Column(bool, description="specifies if the SSC is in service."),
+        "in_service": pa.Column(bool, description="specifies if the SSC is in service.", metadata={"default": True}),
     },
     strict=False,
 )

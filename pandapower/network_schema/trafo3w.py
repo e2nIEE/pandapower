@@ -66,8 +66,8 @@ _trafo3w_columns = {
     ),
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
     "i0_percent": pa.Column(float, description="open loop losses [%]"),
-    "shift_mv_degree": pa.Column(float, description="transformer phase shift angle at the MV side"),
-    "shift_lv_degree": pa.Column(float, description="transformer phase shift angle at the LV side"),
+    "shift_mv_degree": pa.Column(float, description="transformer phase shift angle at the MV side", metadata={"default": 0.0}),
+    "shift_lv_degree": pa.Column(float, description="transformer phase shift angle at the LV side", metadata={"default": 0.0}),
     "tap_side": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["hv", "mv", "lv"]),
@@ -86,7 +86,7 @@ _trafo3w_columns = {
         pd.BooleanDtype,
         nullable=True,
         required=False,
-        description="whether the tap changer is modelled at terminal or at star point",
+        description="whether the tap changer is modelled at terminal or at star point", metadata={"default": False},
     ),
     "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
     "tap_changer_type": pa.Column(
@@ -137,7 +137,7 @@ _trafo3w_columns = {
         required=False,
         description="",
     ),
-    "in_service": pa.Column(bool, description="specifies if the transformer is in service."),
+    "in_service": pa.Column(bool, description="specifies if the transformer is in service.", metadata={"default": True}),
 }
 # FIXME: either tap_step_percent or tap_step_degree for each row
 tap_columns = ["tap_pos", "tap_neutral", "tap_side"]  # , "tap_step_percent", "tap_step_degree"]

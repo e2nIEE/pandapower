@@ -10,6 +10,7 @@ import logging
 from pandapower.auxiliary import pandapowerNet
 from pandapower.pp_types import Int
 from pandapower.create._utils import _check_element, _get_index_with_check, _set_entries
+from pandapower.network_structure import get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -17,16 +18,16 @@ logger = logging.getLogger(__name__)
 def create_source_dc(
     net: pandapowerNet,
     bus_dc: Int,
-    vm_pu: float = 1.0,
+    vm_pu: float = get_default_value("source_dc", "vm_pu"),
     index: Int | None = None,
     name: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("source_dc", "in_service"),
     type: str | None = None,
     **kwargs,
 ):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
-    
+
     Parameters:
         net: The pandapower network in which the element is created
         bus_dc: index of the bus the shunt is connected to

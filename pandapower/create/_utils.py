@@ -38,7 +38,9 @@ def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
     if table_name not in net:
         if table_name not in net_struct_dict:
             raise ValueError(f"Table {table_name} has no definition in network structure.")
-        net[table_name] = pd.DataFrame(columns=net_struct_dict[table_name].keys(), dtype=net_struct_dict[table_name].values())
+        net[table_name] = pd.DataFrame(
+            columns=net_struct_dict[table_name].keys(), dtype=net_struct_dict[table_name].values()
+        )
     # Add Optional Column:
     dtype = get_structure_dict(False)[table_name][column_name]
     net[table_name][column_name] = pd.Series(dtype=dtype)
@@ -232,12 +234,7 @@ def _try_astype(df, column, dtyp):
 
 
 def _set_value_if_not_nan(
-        net: pandapowerNet,
-        index: int,
-        value: Any,
-        column: str,
-        element_type: str,
-        default_val=pd.NA
+    net: pandapowerNet, index: int, value: Any, column: str, element_type: str, default_val=pd.NA
 ):
     """Sets the given value to the dataframe net[element_type]. If the value is nan, default_val
     is assumed if this is not nan.
@@ -258,8 +255,8 @@ def _set_value_if_not_nan(
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
     col_info = get_column_info(element_type, column)
-    if col_info is not None and pd.isna(default_val) and not col_info['nullable'] and col_info['default'] is not None:
-        default_val = col_info['default']
+    if col_info is not None and pd.isna(default_val) and not col_info["nullable"] and col_info["default"] is not None:
+        default_val = col_info["default"]
     if dtype == "float" and pd.isna(default_val):
         default_val = float("nan")
     if _not_nan(value):
@@ -274,14 +271,7 @@ def _set_value_if_not_nan(
 
 
 def _add_to_entries_if_not_nan(
-        net: pandapowerNet,
-        element_type,
-        entries,
-        index: int,
-        column,
-        values,
-        dtype=None,
-        default_val=pd.NA
+    net: pandapowerNet, element_type, entries, index: int, column, values, dtype=None, default_val=pd.NA
 ):
     """
 
@@ -292,8 +282,8 @@ def _add_to_entries_if_not_nan(
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
     col_info = get_column_info(element_type, column)
-    if col_info is not None and pd.isna(default_val) and not col_info['nullable'] and col_info['default'] is not None:
-        default_val = col_info['default']
+    if col_info is not None and pd.isna(default_val) and not col_info["nullable"] and col_info["default"] is not None:
+        default_val = col_info["default"]
     if _not_nan(values):
         entries[column] = pd.Series(values, index=index)
         if _not_nan(default_val):
@@ -329,7 +319,7 @@ def _add_branch_geodata(net: pandapowerNet, geodata, index, table="line"):
 def _add_multiple_branch_geodata(net, geodata, index, table="line"):
     dtype = get_structure_dict(required_only=False)[table]["geo"]
     if not geodata:
-        net[table].loc[index, "geo"] = pd.Series(data=[pd.NA]*len(net[table]), index=net[table].index, dtype=dtype)
+        net[table].loc[index, "geo"] = pd.Series(data=[pd.NA] * len(net[table]), index=net[table].index, dtype=dtype)
         return
     dtypes = net[table].dtypes
     if hasattr(geodata, "__iter__") and all(isinstance(g, tuple) and len(g) == 2 for g in geodata):
@@ -365,7 +355,9 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
             net[table].at[index, col] = val
             try:
                 dtype = get_structure_dict(required_only=False)[table][col]
-                if dtype == bool and net[table][col].isna().any(): # default value for bool entries # TODO: check if wanted behaviour
+                if (
+                    dtype == bool and net[table][col].isna().any()
+                ):  # default value for bool entries # TODO: check if wanted behaviour
                     net[table][col] = net[table][col].astype(pd.BooleanDtype()).fillna(False)
                 net[table][col] = net[table][col].astype(dtype)
             except KeyError as e:

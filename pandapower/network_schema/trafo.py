@@ -74,7 +74,7 @@ _trafo_columns = {
         description="Vector Groups ( required for zero sequence model of transformer )",
         metadata={"sc": True, "3ph": True},
     ),
-    "shift_degree": pa.Column(float, description="transformer phase shift angle"),  # Thomas: optional
+    "shift_degree": pa.Column(float, description="transformer phase shift angle", metadata={"default": 0.0}),  # Thomas: optional
     "tap_side": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["hv", "lv"]),
@@ -121,15 +121,15 @@ _trafo_columns = {
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
         metadata={"opf": True},
     ),
-    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel transformers"),
+    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel transformers", metadata={"default": 1}),
     "df": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=1, include_min=False),
         nullable=True,
         required=False,
-        description="derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)",
+        description="derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)", metadata={"default": 1.0},
     ),
-    "in_service": pa.Column(bool, description="specifies if the transformer is in service"),
+    "in_service": pa.Column(bool, description="specifies if the transformer is in service", metadata={"default": True}),
     "oltc": pa.Column(
         bool,
         nullable=True,

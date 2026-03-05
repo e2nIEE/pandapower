@@ -10,9 +10,11 @@ _storage_columns = {
         float,
         description="Momentary real power of the storage (positive for charging, negative for discharging)",
     ),
-    "q_mvar": pa.Column(float, description="Reactive power of the storage [MVar]"),
+    "q_mvar": pa.Column(float, description="Reactive power of the storage [MVar]", metadata={"default": 0.0}),
     "sn_mva": pa.Column(float, pa.Check.gt(0), nullable=True, description="Nominal power ot the storage [MVA]"),
-    "scaling": pa.Column(float, description="Scaling factor for the active and reactive power"),
+    "scaling": pa.Column(
+        float, description="Scaling factor for the active and reactive power", metadata={"default": 1.0}
+    ),
     "max_e_mwh": pa.Column(
         float,
         nullable=True,
@@ -24,6 +26,7 @@ _storage_columns = {
         nullable=True,
         required=False,
         description="The minimum energy content of the storage (minimum charge level)",
+        metadata={"default": 0.0},
     ),
     "max_p_mw": pa.Column(
         float, nullable=True, required=False, description="Maximum active power", metadata={"opf": True}
@@ -48,9 +51,9 @@ _storage_columns = {
         bool,
         required=False,
         description="States if sgen is controllable or not, sgen will not be used as a flexibilty if it is not controllable",
-        metadata={"opf": True},
+        metadata={"opf": True, "default": False},
     ),
-    "in_service": pa.Column(bool, description="Specifies if the generator is in service"),
+    "in_service": pa.Column(bool, description="Specifies if the generator is in service", metadata={"default": True}),
     "type": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="type variable to classify the storage"
     ),

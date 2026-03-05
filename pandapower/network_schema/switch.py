@@ -23,7 +23,7 @@ switch_schema = pa.DataFrameSchema(
             required=False,
             description="type of switch naming conventions:  “CB” - circuit breaker “LS” - load switch “LBS” - load break switch “DS” - disconnecting switch",
         ),
-        "closed": pa.Column(bool, description="signals the switching state of the switch"),
+        "closed": pa.Column(bool, description="signals the switching state of the switch", metadata={"default": True}),
         "in_ka": pa.Column(
             float,
             pa.Check.gt(0),
@@ -34,6 +34,7 @@ switch_schema = pa.DataFrameSchema(
             float,
             nullable=True,
             description="indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0, the buses will be fused like before, if larger than 0 a branch will be created for the switch which has also effects on the bus mapping",
+            metadata={"default": 0.0},
         ),
     },
     strict=False,

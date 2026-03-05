@@ -7,7 +7,13 @@ from pandapower.network_schema.tools.validation.column_condition import create_l
 _bus_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=True, description="name of the bus"),
     "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the bus [kV]"),
-    "type": pa.Column(pd.StringDtype, nullable=True, required=False, description="type variable to classify buses"),
+    "type": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="type variable to classify buses",
+        metadata={"default": "b"},
+    ),
     "zone": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -15,12 +21,22 @@ _bus_columns = {
         description="can be used to group buses, for example network groups / regions",
     ),
     "max_vm_pu": pa.Column(
-        float, pa.Check.gt(0), nullable=False, required=False, description="Maximum voltage", metadata={"opf": True}
+        float,
+        pa.Check.gt(0),
+        nullable=False,
+        required=False,
+        description="Maximum voltage",
+        metadata={"opf": True, "default": 2.0},
     ),
     "min_vm_pu": pa.Column(
-        float, pa.Check.ge(0), nullable=False, required=False, description="Minimum voltage", metadata={"opf": True}
+        float,
+        pa.Check.ge(0),
+        nullable=False,
+        required=False,
+        description="Minimum voltage",
+        metadata={"opf": True, "default": 0.0},
     ),
-    "in_service": pa.Column(bool, description="specifies if the bus is in service."),
+    "in_service": pa.Column(bool, description="specifies if the bus is in service.", metadata={"default": True}),
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
 }
 bus_schema = pa.DataFrameSchema(
