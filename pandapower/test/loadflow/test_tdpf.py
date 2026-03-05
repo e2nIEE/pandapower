@@ -146,8 +146,8 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
         idx = create_sgen(net, 2, 600, scaling=sgen_scaling, name="G3")
         create_sgen(net, 4, 300, scaling=sgen_scaling, name="G5")
 
-    if distributed_slack: # TODO: @vogt1337 is slack_weight relevant for sgen?
-        if with_gen:
+    if distributed_slack:
+        if with_gen: # distributed slack is currently not supported for sgen.
             net["gen"]["slack_weight"] = 0.0
             net["gen"].at[idx, 'slack_weight'] = 1
         set_user_pf_options(net, distributed_slack=True)
