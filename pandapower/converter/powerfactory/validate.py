@@ -281,11 +281,28 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
                                     net.bus[net.bus.type == "ls"].index)
     in_both = np.setdiff1d(net.bus.index, only_in_pandapower)
 
-    pf_closed = pf_results['pf_switch_status']
-    wrong_switches = net.res_switch.loc[pf_closed != net.switch.loc[pf_closed.index, 'closed']].index.values if 'res_switch' in net.keys() else []
+    pf_closed = pf_results["pf_switch_status"].astype(bool)
+
+    pf_idx = pf_closed.index
+    pp_idx = net.switch.index
+
+    # 1) Mismatch-Reports (nur warnen, nicht abbrechen)
+    missing_in_pp = pf_idx.difference(pp_idx)  # PF hat mehr als PP
+    missing_in_pf = pp_idx.difference(pf_idx)  # PP hat mehr als PF
+
+    if len(missing_in_pp):
+        logger.warning(f"{len(missing_in_pp)} switches exist in PF but not in PP. e.g. {missing_in_pp[:20].tolist()}")
+    if len(missing_in_pf):
+        logger.warning(f"{len(missing_in_pf)} switches exist in PP but not in PF. e.g. {missing_in_pf[:20].tolist()}")
+
+    # 2) Nur auf der Schnittmenge vergleichen (KeyError-frei)
+    common = pf_idx.intersection(pp_idx)
+
+    wrong_switches = common[pf_closed.loc[common].astype(bool).values !=
+                            net.switch.loc[common, "closed"].astype(bool).values].to_numpy()
 
     if len(net.switch) > 0:
-        logger.info('%d switches are wrong: %s' % (len(wrong_switches), wrong_switches))
+            logger.info('%d switches are wrong: %s' % (len(wrong_switches), wrong_switches))
 
     if len(net.trafo3w[net.trafo3w.in_service]) > 0:
         trafo3w_idx = net.trafo3w.query('in_service').index

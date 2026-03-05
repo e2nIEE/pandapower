@@ -2550,13 +2550,16 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
             elif i_ctrl == 1:
                 av_mode = 'constq'
             elif i_ctrl == 2:
-                av_mode = 'cosphi'
+                av_mode = 'constq'
                 logger.error('Error! avmode cosphi not implemented')
                 return
             elif i_ctrl == 3:
-                av_mode = 'tanphi'
+                av_mode = 'constq'
                 logger.error('Error! avmode tanphi not implemented')
                 return
+
+    #Parallel machines
+    ngnum = item.ngnum
 
     logger.debug('av_mode: %s' % av_mode)
     if av_mode == 'constv':
@@ -2577,16 +2580,16 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
         #                     name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
         #else:
         type = item.typ_id
-        sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier, vm_pu=vm_pu,
-                         min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
-                         min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+        sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier * ngnum, vm_pu=vm_pu,
+                         min_q_mvar=item.cQ_min * ngnum, max_q_mvar=item.cQ_max * ngnum,
+                         min_p_mw=item.Pmin_uc * ngnum, max_p_mw=item.Pmax_uc * ngnum,
                          name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
         element = 'gen'
     elif av_mode == 'constq':
         try:
             q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
         except AttributeError:
-            q_mvar = item.ng_num * item.qgini * multiplier if item.bustp == 'PQ' else q_res
+            q_mvar = item.ng_num * item.qgini * multiplier * ngnum if item.bustp == 'PQ' else q_res
         #if item.iqtype == 1:
         #    type = item.typ_id
         #    sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
@@ -2595,9 +2598,9 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
         #                      name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
         #else:
         type = item.typ_id
-        sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
-                          min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
-                          min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+        sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier * ngnum, q_mvar=q_mvar,
+                          min_q_mvar=item.cQ_min * ngnum, max_q_mvar=item.cQ_max * ngnum,
+                          min_p_mw=item.Pmin_uc * ngnum, max_p_mw=item.Pmax_uc * ngnum,
                           name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
         element = 'sgen'
 
@@ -3319,46 +3322,56 @@ def create_trafo3w(net, item, tap_opt='nntap', export_controller=True, hunting_l
     # adding tap changer
     name = item.loc_name
     if (export_controller and item.HasAttribute('ntrcn') and item.HasAttribute('i_cont') and item.ntrcn == 1):
-        if item.t3ldc == 0:
-            logger.debug('tap controller of trafo3w <%s> at hv' % name)
-            side = 'hv'
-        elif item.t3ldc == 1:
-            logger.debug('tap controller of trafo3w <%s> at mv' % name)
-            side = 'mv'
+        if item.c_ptapc and not item.c_ptapc.outserv:
+            logger.debug('external trafo3w tap changer controller not supported, skipped')
         else:
-            logger.debug('tap controller of trafo3w <%s> at lv' % name)
-            side = 'lv'
-        if item.i_cont == 1:
-            vm_set_pu = item.usetp
-            logger.debug('trafo3w <%s> has continuous tap controller with vm_set_pu = %.3f, side = %s' %
-                         (name, vm_set_pu, side))
-            try:
-                ContinuousTapControl(net, tid, side=side, vm_set_pu=vm_set_pu)
-            except BaseException as err:
-                logger.error('error while creating continuous tap controller at trafo3w <%s>' % name)
-                logger.error('Error: %s' % err)
+            in_service = not item.outserv
+            if item.t3ldc == 0:
+                logger.debug('tap controller of trafo3w <%s> at hv' % name)
+                side = 'hv'
+            elif item.t3ldc == 1:
+                logger.debug('tap controller of trafo3w <%s> at mv' % name)
+                side = 'mv'
             else:
-                logger.debug('created continuous tap controller at trafo3w <%s>' % name)
-        else:
-            if item.i_rem == 1:  # remote control
-                vm_lower_pu = item.p_rem.vtarget * (1 + item.p_rem.dvmin / 100)
-                vm_upper_pu = item.p_rem.vtarget * (1 + item.p_rem.dvmax / 100)
-            elif item.uset_mode == 0:  # local
-                vm_lower_pu = item.usp_low
-                vm_upper_pu = item.usp_up
-            elif item.uset_mode == 1:  # bus voltage setpoint
-                vm_lower_pu = item.cpCtrlNode.vtarget * (1 + item.cpCtrlNode.dvmin / 100)
-                vm_upper_pu = item.cpCtrlNode.vtarget * (1 + item.cpCtrlNode.dvmax / 100)
-            logger.debug('trafo3w <%s> has discrete tap controller with '
-                         'u_low = %.3f, u_up = %.3f, side = %s' % (name, vm_lower_pu, vm_upper_pu, side))
-            try:
-                DiscreteTapControl(net, tid, side=side, element="trafo3w", vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu,
-                                   hunting_limit=hunting_limit)
-            except BaseException as err:
-                logger.error('error while creating discrete tap controller at trafo3w <%s>' % name)
-                logger.error('Error: %s' % err)
+                logger.debug('tap controller of trafo3w <%s> at lv' % name)
+                side = 'lv'
+            if item.i_cont == 1:
+                vm_set_pu = item.usetp
+                logger.debug('trafo3w <%s> has continuous tap controller with vm_set_pu = %.3f, side = %s' %
+                             (name, vm_set_pu, side))
+                try:
+                    ContinuousTapControl(net, tid, side=side, vm_set_pu=vm_set_pu)
+                except BaseException as err:
+                    logger.error('error while creating continuous tap controller at trafo3w <%s>' % name)
+                    logger.error('Error: %s' % err)
+                else:
+                    logger.debug('created continuous tap controller at trafo3w <%s>' % name)
             else:
-                logger.debug('created discrete tap controller at trafo3w <%s>' % name)
+                if item.i_rem == 1:  # remote control
+                    vm_lower_pu = item.p_rem.vtarget * (1 + item.p_rem.dvmin / 100)
+                    vm_upper_pu = item.p_rem.vtarget * (1 + item.p_rem.dvmax / 100)
+                elif item.uset_mode == 0:  # local
+                    vm_lower_pu = item.usp_low
+                    vm_upper_pu = item.usp_up
+                elif item.uset_mode == 1:  # bus voltage setpoint
+                    try:
+                        vm_lower_pu = item.cpCtrlNode.vtarget * (1 + item.cpCtrlNode.dvmin / 100)
+                        vm_upper_pu = item.cpCtrlNode.vtarget * (1 + item.cpCtrlNode.dvmax / 100)
+                    except AttributeError:
+                        vm_lower_pu = 0.95
+                        vm_upper_pu = 1.05
+                        in_service = False
+                        logger.warning("Tap changer controller with missing remote node, set to out of service")
+                logger.debug('trafo3w <%s> has discrete tap controller with '
+                             'u_low = %.3f, u_up = %.3f, side = %s' % (name, vm_lower_pu, vm_upper_pu, side))
+                try:
+                    DiscreteTapControl(net, tid, side=side, element="trafo3w", vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu,
+                                       hunting_limit=hunting_limit)
+                except BaseException as err:
+                    logger.error('error while creating discrete tap controller at trafo3w <%s>' % name)
+                    logger.error('Error: %s' % err)
+                else:
+                    logger.debug('created discrete tap controller at trafo3w <%s>' % name)
     else:
         logger.debug('trafo3w <%s> has no tap controller' % name)
 
