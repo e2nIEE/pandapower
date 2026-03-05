@@ -159,9 +159,12 @@ class BinarySearchControl(Controller):
         try:
             self.distribution_method = ControlModusEnum(distribution_method)
         except ValueError:
-            logger.warning(f"Control_modus {distribution_method} not recognized, using 'rel_P' from available"
-                           f" types 'rel_P', 'max_Q', 'set_Q', 'rel_V_pu' or 'rel_rated_S'\n")
-            self.distribution_method = ControlModusEnum.rel_P
+            logger.warning(f"Control_modus {getattr(self, 'distribution_method', None)} not recognized,"
+                       f" using 'rel_P' from available types 'rel_P', 'max_Q', 'set_Q', 'rel_V_pu' or 'rel_rated_S'\n")
+            if self.output_values_distribution is not None:
+                self.distribution_method = ControlModusEnum.set_Q
+            else:
+                self.distribution_method = ControlModusEnum.rel_P
 
         ###Q direction at element
         n = len(self.input_element_index)
@@ -374,9 +377,12 @@ class BinarySearchControl(Controller):
         try:
             self.distribution_method = ControlModusEnum(self.distribution_method)
         except ValueError:
-            logger.warning(f"Control_modus {self.distribution_method} not recognized, using 'rel_P' from available"
-                           f" types 'rel_P', 'max_Q', 'set_Q', 'rel_V_pu' or 'rel_rated_S'\n")
-            self.distribution_method = ControlModusEnum.rel_P
+            logger.warning(f"Control_modus {getattr(self, 'distribution_method', None)} not recognized,"
+                       f" using 'rel_P' from available types 'rel_P', 'max_Q', 'set_Q', 'rel_V_pu' or 'rel_rated_S'\n")
+            if self.output_values_distribution is not None:
+                self.distribution_method = ControlModusEnum.set_Q
+            else:
+                self.distribution_method = ControlModusEnum.rel_P
         #reread output elements
         output_element_index = np.atleast_1d(self.output_element_index)[0] if self.write_flag == 'single_index' else \
                 self.output_element_index #ruggedize for single index
@@ -434,8 +440,8 @@ class BinarySearchControl(Controller):
             try:
                 self.distribution_method = ControlModusEnum(self.distribution_method)
             except ValueError:
-                logger.warning(f"Control_modus {self.distribution_method} not recognized, using 'rel_P' from available"
-                               f" types 'rel_P', 'max_Q', 'set_Q', 'rel_V_pu' or 'rel_rated_S'\n")
+                logger.warning(f"Control_modus {getattr(self, 'distribution_method', None)} not recognized,"
+                       f" using 'rel_P' from available types 'rel_P', 'max_Q', 'set_Q', 'rel_V_pu' or 'rel_rated_S'\n")
                 if self.output_values_distribution is not None:
                     self.distribution_method = ControlModusEnum.set_Q
                 else:
