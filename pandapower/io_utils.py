@@ -518,6 +518,7 @@ class FromSerializableRegistry():
         self.omit_modules = omit_modules
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
+    @from_serializable.register(class_name='Series', module_name='pandas')
     def Series(self):
         is_multiindex = self.d.pop('is_multiindex', False)
         index_name = self.d.pop('index_name', None)
@@ -542,6 +543,7 @@ class FromSerializableRegistry():
         return ser
 
     @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
+    @from_serializable.register(class_name='DataFrame', module_name='pandas')
     def DataFrame(self):
         is_multiindex = self.d.pop('is_multiindex', False)
         is_multicolumn = self.d.pop('is_multicolumn', False)
@@ -649,6 +651,10 @@ class FromSerializableRegistry():
                               (self.obj, module.__name__))
         class_ = getattr(module, self.obj)  # works
         return class_
+    
+    @from_serializable.register(class_name='bool', module_name='numpy')
+    def bool_handling(self):
+        return bool(self.obj)
 
     @from_serializable.register()
     def rest(self):

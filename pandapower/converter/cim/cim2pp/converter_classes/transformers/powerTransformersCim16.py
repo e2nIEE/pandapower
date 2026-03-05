@@ -676,7 +676,7 @@ class PowerTransformersCim16:
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(0)
         power_trafo3w['phaseAngleClock_lv'] = power_trafo3w['phaseAngleClock_lv'].fillna(0)
         power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
-        power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
+        power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_lv'].astype(float) * 30
         power_trafo3w['tap_at_star_point'] = False
         power_trafo3w['in_service'] = power_trafo3w.connected & power_trafo3w.connected_mv & power_trafo3w.connected_lv
         power_trafo3w['connectionKind'] = power_trafo3w['connectionKind'].fillna('')

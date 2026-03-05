@@ -22,71 +22,53 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
                   climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
                   filename="temp-plot.html", auto_open=True, zoomlevel=11):
     """
-        Plots a pandapower network in plotly
+    Plots a pandapower network in plotly
 
-        using colormap for coloring lines according to line loading and buses according to voltage in p.u.
-        If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
+    using colormap for coloring lines according to line loading and buses according to voltage in p.u.
+    If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
-        INPUT:
-            **net** - The pandapower format network.
-
-        OPTIONAL:
-            **respect_switches** (bool, False) - Respect switches when artificial geodata is created
-
-            **cmap** (str, True) - name of the colormap
-
-            **colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
-            Otherwise, user can define a dictionary in the form: voltage_kv : color
-
-            **on_map** (bool, False) - enables using mapLibre plot in plotly. If provided geodata are not
-            real geo-coordinates in lon/lat form, on_map will be set to False.
-
-            **projection** (String, None) - defines a projection from which network geo-data will be transformed to
-            lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
-
-            **map_style** (str, 'basic') - enables using mapLibre plot in plotly
+    Parameters:
+        net: The pandapower format network.
+        respect_switches (bool, False): Respect switches when artificial geodata is created
+        cmap (str, True): name of the colormap
+        colors_dict (dict, None): by default 6 basic colors from default collor palette is used. Otherwise, user can
+            define a dictionary in the form: voltage_kv : color
+        on_map (bool, False): enables using mapLibre plot in plotly. If provided geodata are not real
+            geo-coordinates in lon/lat form, on_map will be set to False.
+        projection (String, None): defines a projection from which network geo-data will be transformed to lat-long.
+            For each projection a string can be found at http://spatialreference.org/ref/epsg/
+        map_style (str, 'basic'): enables using mapLibre plot in plotly
             
-                - 'basic'
-                - 'carto-darkmatter'
-                - 'carto-darkmatter-nolabels'
-                - 'carto-positron'
-                - 'carto-positron-nolabels'
-                - 'carto-voyager'
-                - 'carto-voyager-nolabels'
-                - 'dark'
-                - 'light'
-                - 'open-street-map'
-                - 'outdoors'           
-                - 'satellite''
-                - 'satellite-streets'
-                - 'streets'
-            
-            **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
-
-            **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
-            any custom aspectration can be given as a tuple, e.g. (1.2, 1)
-
-            **line_width** (float, 1.0) - width of lines
-
-            **bus_size** (float, 10.0) -  size of buses to plot.
-
-            **climits_volt** (tuple, (0.9, 1.0)) - limits of the colorbar for voltage
-
-            **climits_load** (tuple, (0, 100)) - limits of the colorbar for line_loading
-
-            **cpos_volt** (float, 1.0) - position of the bus voltage colorbar
-
-            **cpos_load** (float, 1.1) - position of the loading percent colorbar
-
-            **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on `*.html`
-
-            **auto_open** (bool, True) - automatically open plot in browser
-
-            **zoomlevel** (int, 11) - initial zoomlevel of map plot (only if on_map=True)
-
-        OUTPUT:
-            **figure** (graph_objs._figure.Figure) figure object
-
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
+            - 'dark'
+            - 'light'
+            - 'open-street-map'
+            - 'outdoors'
+            - 'satellite''
+            - 'satellite-streets'
+            - 'streets'
+        
+        figsize (float, 1): aspectratio is multiplied by it in order to get final image size
+        aspectratio (tuple, 'auto'): when 'auto' it preserves original aspect ratio of the network geodata any
+            custom aspectration can be given as a tuple, e.g. (1.2, 1)
+        line_width (float, 1.0): width of lines
+        bus_size (float, 10.0): size of buses to plot.
+        climits_volt (tuple, (0.9, 1.0)): limits of the colorbar for voltage
+        climits_load (tuple, (0, 100)): limits of the colorbar for line_loading
+        cpos_volt (float, 1.0): position of the bus voltage colorbar
+        cpos_load (float, 1.1): position of the loading percent colorbar
+        filename (str, "temp-plot.html"): filename / path to plot to. Should end on `*.html`
+        auto_open (bool, True): automatically open plot in browser
+        zoomlevel (int, 11): initial zoomlevel of map plot (only if on_map=True)
+    
+    Returns:
+        graph_objs._figure.Figure: figure object
     """
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
         logger.warning('There are no Power Flow results. A Newton-Raphson power flow will be executed.')

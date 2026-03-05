@@ -38,13 +38,13 @@ def test_cost_mixed():
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values[0])
 
-    net.poly_cost.cp1_eur_per_mw.at[0] = 0
-    net.poly_cost.cp2_eur_per_mw2.at[0] = 1
+    net.poly_cost.at[0, "cp1_eur_per_mw"] = 0
+    net.poly_cost.at[0, "cp2_eur_per_mw2"] = 1
     runopp(net)
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values ** 2)
 
-    net.poly_cost.cp0_eur.at[0] = 1
+    net.poly_cost.at[0, "cp0_eur"] = 1
     runopp(net)
     assert net["OPF_converged"]
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values ** 2 + 1)
@@ -57,8 +57,8 @@ def test_cost_mixed():
     net.pwl_cost = net.pwl_cost.drop(net.pwl_cost.index)
     create_pwl_cost(net, 0, "ext_grid", [[-1000, 0, -2000], [0, 1000, 2000]], power_type="p")
 
-    net.poly_cost.cp1_eur_per_mw.at[0] = 1000
-    net.poly_cost.cp2_eur_per_mw2.at[0] = 0
+    net.poly_cost.at[0, "cp1_eur_per_mw"] = 1000
+    net.poly_cost.at[0, "cp2_eur_per_mw2"] = 0
     runopp(net)
     assert np.isclose(net.res_ext_grid.p_mw.values[0], 0, atol=1e-4)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.values[0] * 1000, atol=1e-3)

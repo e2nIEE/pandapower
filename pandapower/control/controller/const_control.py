@@ -25,33 +25,19 @@ class ConstControl(Controller):
     table (e.g. net.controller["object"] -> net.controller.object.at[0, "vm_set_pu"]
     can be set if the attribute is specified as "object.attribute" (e.g. "object.vm_set_pu").
 
-    INPUT:
-
-        **net** (attrdict) - The net in which the controller resides
-
-        **element** - element table ('sgen', 'load' etc.)
-
-        **variable** - variable ('p_mw', 'q_mvar', 'vm_pu', 'tap_pos' etc.)
-
-        **element_index** (int[]) - IDs of the controlled elements
-
-        **data_source** (obj) - The data source that provides profile data
-
-        **profile_name** (str[]) - The profile names of the elements in the data source
-
-
-    OPTIONAL:
-
-        **scale_factor** (real, 1.0) - Scaling factor for time series input values
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **recycle** (bool, True) - Re-use of internal-data in a time series loop.
-
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of
-        the same type and with the same matching parameters (e.g. at same element) should be
-        dropped
-
+    Parameters:
+        net (ADict): The net in which the controller resides
+        element: element table ('sgen', 'load' etc.)
+        variable: variable ('p_mw', 'q_mvar', 'vm_pu', 'tap_pos' etc.)
+        element_index (int[]): IDs of the controlled elements
+        data_source (obj): The data source that provides profile data
+        profile_name (str[]): The profile names of the elements in the data source
+        scale_factor (real, 1.0): Scaling factor for time series input values
+        in_service (bool, True): Indicates if the controller is currently in_service
+        recycle (bool, True): Re-use of internal-data in a time series loop.
+        drop_same_existing_ctrl (bool, False): Indicates if already existing controllers of the same type and with the
+            same matching parameters (e.g. at same element) should be dropped
+    
     .. note:: If multiple elements are represented with one controller, the data source must have
         integer columns. At the moment, only the DFData format is tested for the multiple const
         control.
