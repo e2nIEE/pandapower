@@ -22,11 +22,17 @@ vsc_schema = pa.DataFrameSchema(
         "pl_dc_mw": pa.Column(
             float,
             description="no-load losses of the VSC on the DC side for the shunt R representing the no load losses",
+            metadata={"default": 0.0},
         ),
         "control_mode_ac": pa.Column(
-            str, pa.Check.isin(["vm_pu", "q_mvar", "slack"]), description="the control mode of the AC side of the VSC"
+            str,
+            pa.Check.isin(["vm_pu", "q_mvar", "slack"]),
+            description="the control mode of the AC side of the VSC",
+            metadata={"default": "vm_pu"},
         ),
-        "control_value_ac": pa.Column(float, description="the value of the controlled parameter at the ac bus"),
+        "control_value_ac": pa.Column(
+            float, description="the value of the controlled parameter at the ac bus", metadata={"default": 1.0}
+        ),
         "control_mode_dc": pa.Column(
             str,
             pa.Check.isin(
@@ -36,10 +42,15 @@ vsc_schema = pa.DataFrameSchema(
                 ]
             ),
             description="the control mode of the dc side of the VSC",
+            metadata={"default": "p_mw"},
         ),
-        "control_value_dc": pa.Column(float, description="the value of the controlled parameter at the dc bus"),
-        "controllable": pa.Column(bool, description="whether the element is considered as actively controlling"),
-        "in_service": pa.Column(bool, description="specifies if the VSC is in service."),
+        "control_value_dc": pa.Column(
+            float, description="the value of the controlled parameter at the dc bus", metadata={"default": 0.0}
+        ),
+        "controllable": pa.Column(
+            bool, description="whether the element is considered as actively controlling", metadata={"default": True}
+        ),
+        "in_service": pa.Column(bool, description="specifies if the VSC is in service.", metadata={"default": True}),
         # "ref_bus": pa.Column(int, pa.Check.ge(0), description=""),  #TODO: Mike
     },
     strict=False,

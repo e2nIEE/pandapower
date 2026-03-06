@@ -52,11 +52,13 @@ impedance_schema = pa.DataFrameSchema(
             float,
             # pa.Check.gt(1),
             description="conductance at the ‘from_bus’ [p.u.]",
+            metadata={"default": 0.0},
         ),
         "bf_pu": pa.Column(
             float,
             # pa.Check.gt(2),
             description="susceptance at the ‘from_bus’ [p.u.]",
+            metadata={"default": 0.0},
         ),
         "gt_pu": pa.Column(
             float,
@@ -99,7 +101,7 @@ impedance_schema = pa.DataFrameSchema(
         "sn_mva": pa.Column(
             float, pa.Check.gt(0), description="reference apparent power for the impedance per unit values [MVA]"
         ),
-        "in_service": pa.Column(bool, description="specifies if the impedance is in service."),
+        "in_service": pa.Column(bool, description="specifies if the impedance is in service.", metadata={"default": True}),
     },
     strict=False,
 )

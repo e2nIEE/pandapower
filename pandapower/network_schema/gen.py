@@ -14,7 +14,9 @@ _gen_columns = {
     ),
     "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
     "p_mw": pa.Column(float, description="active power of the generator [MW]"),
-    "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage set point of the generator [p.u.]"),
+    "vm_pu": pa.Column(
+        float, pa.Check.gt(0), description="voltage set point of the generator [p.u.]", metadata={"default": 1.0}
+    ),
     "sn_mva": pa.Column(
         float, pa.Check.gt(0), nullable=True, required=False, description="nominal power of the generator [MVA]"
     ),
@@ -33,9 +35,7 @@ _gen_columns = {
         metadata={"opf": True, "q_lim_enforced": True},
     ),
     "scaling": pa.Column(
-        float,
-        pa.Check.ge(0),
-        description="scaling factor for the active power",
+        float, pa.Check.ge(0), description="scaling factor for the active power", metadata={"default": 1.0}
     ),
     "max_p_mw": pa.Column(
         float, nullable=True, required=False, description="maximum active power", metadata={"opf": True}
@@ -70,7 +70,7 @@ _gen_columns = {
         description="rated generator cosine phi",
         metadata={"sc": True},
     ),
-    "in_service": pa.Column(bool, description="specifies if the generator is in service"),
+    "in_service": pa.Column(bool, description="specifies if the generator is in service", metadata={"default": True}),
     "power_station_trafo": pa.Column(
         pd.Int64Dtype,
         nullable=True,
@@ -98,14 +98,14 @@ _gen_columns = {
         nullable=False,
         required=False,
         description="True if generator has dependency on q characteristic",
-        metadata={"qcc": True},
+        metadata={"qcc": True, "default": False},
     ),
     "slack_weight": pa.Column(
         float, nullable=True, required=False, description="weight of the slack when using multiple slacks"
     ),
-    "slack": pa.Column(bool, description="use the gen as slack"),
+    "slack": pa.Column(bool, description="use the gen as slack", metadata={"default": False}),
     "controllable": pa.Column(
-        bool, required=False, description="allow control for opf", metadata={"opf": True}
+        bool, required=False, description="allow control for opf", metadata={"opf": True, "default": False}
     ),
     "pg_percent": pa.Column(
         float,
@@ -120,7 +120,7 @@ _gen_columns = {
         nullable=True,
         required=False,
         description="Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.",
-        metadata={"opf": True},
+        metadata={"opf": True, "default": 0.0},
     ),
     "max_vm_pu": pa.Column(
         float,
@@ -128,7 +128,7 @@ _gen_columns = {
         nullable=True,
         required=False,
         description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF",
-        metadata={"opf": True},
+        metadata={"opf": True, "default": 2.0},
     ),
 }
 gen_checks = create_column_dependency_checks_from_metadata(

@@ -33,6 +33,7 @@ measurement_schema = pa.DataFrameSchema(
         "check_existing": pa.Column(
             bool,
             description="Checks if a measurement of the type already exists and overwrites it. If set to False, the measurement may be added twice (unsafe behaviour), but the performance increases",
+            metadata={"default": False},
         ),  # TODO: shouldn't this be called overwrite?
         "side": pa.Column(
             str,

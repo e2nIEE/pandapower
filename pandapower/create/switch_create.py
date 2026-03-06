@@ -21,6 +21,7 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
 )
+from pandapower.network_structure import get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +31,11 @@ def create_switch(
     bus: Int,
     element: Int,
     et: SwitchElementType,
-    closed: bool = True,
+    closed: bool = get_default_value("switch", "closed"),
     type: SwitchType | None = None,
     name: str | None = None,
     index: Int | None = None,
-    z_ohm: float = 0,
+    z_ohm: float = get_default_value("switch", "z_ohm"),
     in_ka: float = nan,
     **kwargs,
 ) -> Int:
@@ -55,24 +56,24 @@ def create_switch(
         bus: The bus that the switch is connected to
         element: index of the element
         et: element type
-        
+
             - "l" = switch between bus and line
             - "t" = switch between bus and transformer
             - "t3" = switch between bus and transformer3w
             - "b" = switch between two buses
-        
+
         closed: switch position:
-         
+
             - False = open
             - True = closed
-        
+
         type: indicates the type of switch
-        
+
             - "LS" = Load Switch
             - "CB" = Circuit Breaker
             - "LBS" = Load Break Switch
             - "DS" = Disconnecting Switch
-        
+
         z_ohm: indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0, the
             buses will be fused like before, if larger than 0 a branch will be created for the switch which has also
             effects on the bus mapping
@@ -139,11 +140,11 @@ def create_switches(
     buses: Sequence,
     elements: Sequence,
     et: SwitchElementType | Sequence[str],
-    closed: bool | Iterable[bool] = True,
+    closed: bool | Iterable[bool] = get_default_value("switch", "closed"),
     type: SwitchType | None = None,
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
-    z_ohm: float = 0,
+    z_ohm: float = get_default_value("switch", "z_ohm"),
     in_ka: float = nan,
     **kwargs,
 ) -> Int:
@@ -164,24 +165,24 @@ def create_switches(
         buses: The bus that the switch is connected to
         element: index of the element
         et: element type
-         
+
             - "l" = switch between bus and line
             - "t" = switch between bus and transformer
             - "t3" = switch between bus and transformer3w
             - "b" = switch between two buses
-        
+
         closed: switch position
-         
+
             - False = open
             - True = closed
-        
+
         type: indicates the type of switch
-         
+
             - "LS" = Load Switch
             - "CB" = Circuit Breaker
             - "LBS" = Load Break Switch or
             - "DS" = Disconnecting Switch
-        
+
         z_ohm: indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0,
             the buses will be fused like before, if larger than 0 a branch will be created for the switch which has also
             effects on the bus mapping

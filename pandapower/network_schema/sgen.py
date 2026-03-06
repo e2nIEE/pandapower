@@ -7,7 +7,7 @@ _sgen_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the static generator"),
     "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
     "p_mw": pa.Column(float, description="active power of the static generator [MW]"),
-    "q_mvar": pa.Column(float, description="reactive power of the static generator [MVAr]"),
+    "q_mvar": pa.Column(float, description="reactive power of the static generator [MVAr]", metadata={"default": 0.0}),
     "sn_mva": pa.Column(
         float,
         pa.Check.gt(0),
@@ -15,7 +15,9 @@ _sgen_columns = {
         required=False,
         description="rated power ot the static generator [MVA]",
     ),
-    "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for the active and reactive power"),
+    "scaling": pa.Column(
+        float, pa.Check.ge(0), description="scaling factor for the active and reactive power", metadata={"default": 1.0}
+    ),
     "min_p_mw": pa.Column(
         float, nullable=True, required=False, description="maximum active power [MW]", metadata={"opf": True}
     ),
@@ -32,6 +34,7 @@ _sgen_columns = {
         bool,
         required=False,
         description="states if sgen is controllable or not, sgen will not be used as a flexibility if it is not controllable",
+        metadata={"default": False},
     ),
     "k": pa.Column(
         float,
@@ -49,7 +52,7 @@ _sgen_columns = {
         description="R/X ratio for short circuit impedance. Only relevant if type is specified as motor so that sgen is treated as asynchronous motor",
         metadata={"sc": True},
     ),
-    "in_service": pa.Column(bool, description="specifies if the generator is in service."),
+    "in_service": pa.Column(bool, description="specifies if the generator is in service.", metadata={"default": True}),
     "id_q_capability_characteristic": pa.Column(
         pd.Int64Dtype,
         nullable=True,
@@ -76,20 +79,21 @@ _sgen_columns = {
         nullable=True,
         required=False,
         description="type of generator naming conventions: “PV” - photovoltaic system “WP” - wind power system “CHP” - combined heating and power system",
+        metadata={"default": "wye"},
     ),
     "current_source": pa.Column(
         pd.BooleanDtype,
         nullable=True,
         required=False,
         description="Model this sgen as a current source during short- circuit calculations; useful in some cases, for example the simulation of full- size converters per IEC 60909-0:2016.",
-        metadata={"sc": True},
+        metadata={"sc": True, "default": True},
     ),
     "generator_type": pa.Column(  # TODO: is this not an sgen, did someone model motor as an sgen?
         pd.StringDtype,
         nullable=True,
         required=False,
         description="can be one of current_source (full size converter), async (asynchronous generator), or async_doubly_fed (doubly fed asynchronous generator, DFIG). Represents the type of the static generator in the context of the short-circuit calculations of wind power station units. If None, other short-circuit-related parameters are not set",
-        metadata={"sc": True},
+        metadata={"sc": True, "default": "current_source"},
     ),
     "lrc_pu": pa.Column(
         float,

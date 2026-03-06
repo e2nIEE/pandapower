@@ -10,6 +10,7 @@ _load_columns = {
     "q_mvar": pa.Column(
         float,
         description=" reactive power of the load [MVar], positive for inductive consumers, negative for capacitive consumers",
+        metadata={"default": 0.0},
     ),
     "const_z_p_percent": pa.Column(
         float,
@@ -17,7 +18,7 @@ _load_columns = {
         nullable=True,
         required=False,
         description="percentage of p_mw that is associated to constant impedance load at rated voltage [%]",
-        metadata={"zip": True},
+        metadata={"zip": True, "default": 0.0},
     ),
     "const_i_p_percent": pa.Column(
         float,
@@ -25,7 +26,7 @@ _load_columns = {
         nullable=True,
         required=False,
         description="percentage of p_mw that is associated to constant current load at rated voltage [%]",
-        metadata={"zip": True},
+        metadata={"zip": True, "default": 0.0},
     ),
     "const_z_q_percent": pa.Column(
         float,
@@ -33,7 +34,7 @@ _load_columns = {
         nullable=True,
         required=False,
         description="percentage of q_mvar that is associated to constant impedance load at rated voltage [%]",
-        metadata={"zip": True},
+        metadata={"zip": True, "default": 0.0},
     ),
     "const_i_q_percent": pa.Column(
         float,
@@ -41,25 +42,28 @@ _load_columns = {
         nullable=True,
         required=False,
         description="percentage of q_mvar that is associated to constant current load at rated voltage [%]",
-        metadata={"zip": True},
+        metadata={"zip": True, "default": 0.0},
     ),
     "sn_mva": pa.Column(
         float, pa.Check.gt(0), nullable=True, required=False, description="rated power of the load [kVA]"
     ),
-    "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
-    "in_service": pa.Column(bool, description="specifies if the load is in service."),
+    "scaling": pa.Column(
+        float, pa.Check.ge(0), description="scaling factor for active and reactive power", metadata={"default": 1.0}
+    ),
+    "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
     "type": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["wye", "delta"]),
         nullable=True,
         required=False,
         description="Connection Type of 3 Phase Load(Valid for three phase load flow only) Naming convention: wye, delta",
-        metadata={"3ph": True},
+        metadata={"3ph": True, "default": "wye"},
     ),
     "controllable": pa.Column(
         bool,
         required=False,
         description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
+        metadata={"default": False},
     ),
     "zone": pa.Column(
         pd.StringDtype,

@@ -27,6 +27,7 @@ _line_columns = {
         float,
         pa.Check.ge(0),
         description="dielectric conductance in micro Siemens per km",
+        metadata={"default": 0.0},
     ),
     "r0_ohm_per_km": pa.Column(
         float,
@@ -58,12 +59,15 @@ _line_columns = {
         nullable=True,
         required=False,
         description="dielectric conductance of the line [micro Siemens per km]",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "default": 0.0},
     ),
     "max_i_ka": pa.Column(float, pa.Check.gt(0), description="maximal thermal current [kilo Ampere]"),
-    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel line systems"),
+    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel line systems", metadata={"default": 1}),
     "df": pa.Column(
-        float, pa.Check.between(min_value=0, max_value=1), description="derating factor (scaling) for max_i_ka"
+        float,
+        pa.Check.between(min_value=0, max_value=1),
+        description="derating factor (scaling) for max_i_ka",
+        metadata={"default": 1.0},
     ),
     "type": pa.Column(
         pd.StringDtype,
@@ -87,7 +91,7 @@ _line_columns = {
         description="Short-Circuit end temperature of the line in degree Celsius",
         metadata={"sc": True, "tdpf": True},
     ),
-    "in_service": pa.Column(bool, description="specifies if the line is in service."),
+    "in_service": pa.Column(bool, description="specifies if the line is in service.", metadata={"default": True}),
     "geo": pa.Column(
         pd.StringDtype,
         nullable=True,

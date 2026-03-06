@@ -17,9 +17,15 @@ xward_schema = pa.DataFrameSchema(
         "x_ohm": pa.Column(float, pa.Check.gt(0), description="internal reactance of the voltage source [ohm]"),
         "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage source set point [p.u]"),
         "slack_weight": pa.Column(
-            float, nullable=True, required=False, description=" Contribution factor for distributed slack power"
+            float,
+            nullable=True,
+            required=False,
+            description=" Contribution factor for distributed slack power",
+            metadata={"default": 0.0},
         ),
-        "in_service": pa.Column(bool, description="specifies if the extended ward equivalent is in service."),
+        "in_service": pa.Column(
+            bool, description="specifies if the extended ward equivalent is in service.", metadata={"default": True}
+        ),
     },
     strict=False,
 )

@@ -6,8 +6,8 @@ from pandapower.network_schema.tools.validation.group_dependency import create_c
 _ext_grid_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the external grid"),
     "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
-    "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage set point [p.u]"),
-    "va_degree": pa.Column(float, description="voltage angle set point [degree]"),
+    "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage set point [p.u]", metadata={"default": 1.0}),
+    "va_degree": pa.Column(float, description="voltage angle set point [degree]", metadata={"default": 0.0}),
     "max_p_mw": pa.Column(
         float, nullable=True, required=False, description="Maximum active power", metadata={"opf": True}
     ),
@@ -69,12 +69,15 @@ _ext_grid_columns = {
         metadata={"sc": True, "3ph": True},
     ),
     "slack_weight": pa.Column(
-        float, description="Contribution factor for distributed slack power flow calculation (active power balancing)"
+        float,
+        description="Contribution factor for distributed slack power flow calculation (active power balancing)",
+        metadata={"default": 1.0},
     ),
-    "in_service": pa.Column(bool, description="specifies if the external grid is in service."),
+    "in_service": pa.Column(bool, description="specifies if the external grid is in service.", metadata={"default": True}),
     "controllable": pa.Column(
         bool,
         description="Control of value limits - True: p_mw, q_mvar and vm_pu limits are enforced for the ext_grid in OPF. The voltage limits set in the ext_grid bus are enforced. - False: p_mw and vm_pu set points are enforced and *limits are ignored*. The vm_pu set point is enforced and limits of the bus table are ignored. Defaults to False if controllable column exists in DataFrame",
+        metadata={"default": False},
     ),
 }
 ext_grid_schema = pa.DataFrameSchema(

@@ -26,12 +26,20 @@ _line_dc_columns = {
     "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
     "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),
     "g_us_per_km": pa.Column(
-        float, pa.Check.ge(0), description="dielectric conductance of the dc line [micro Siemens per km]"
+        float,
+        pa.Check.ge(0),
+        description="dielectric conductance of the dc line [micro Siemens per km]",
+        metadata={"default": 0.0},
     ),
     "max_i_ka": pa.Column(float, pa.Check.ge(0), description="maximal thermal current [kilo Ampere]"),
-    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel dc line systems"),
+    "parallel": pa.Column(
+        int, pa.Check.ge(1), description="number of parallel dc line systems", metadata={"default": 1}
+    ),
     "df": pa.Column(
-        float, pa.Check.between(min_value=0, max_value=1), description="derating factor (scaling) for max_i_ka"
+        float,
+        pa.Check.between(min_value=0, max_value=1),
+        description="derating factor (scaling) for max_i_ka",
+        metadata={"default": 1.0},
     ),
     "type": pa.Column(
         pd.StringDtype,
@@ -47,7 +55,7 @@ _line_dc_columns = {
         description="Maximum loading of the dc line",
         metadata={"opf": True},
     ),
-    "in_service": pa.Column(bool, description="specifies if the dc line is in service."),
+    "in_service": pa.Column(bool, description="specifies if the dc line is in service.", metadata={"default": True}),
     "geo": pa.Column(
         pd.StringDtype,
         nullable=True,

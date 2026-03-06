@@ -89,6 +89,8 @@ def get_column_info(table: str, column: str) -> dict[str, str | bool] | None:
         return column
     return column.__dict__
 
+def get_default_value(table: str, column: str):
+    return get_column_info(table, column)["metadata"]["default"]
 
 def get_structure_dict(required_only: bool = True) -> dict:
     """

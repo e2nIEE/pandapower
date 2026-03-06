@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Sequence
 
-import numpy as np
 import pandas as pd
 from numpy import nan, bool_
 import numpy.typing as npt
@@ -25,6 +24,7 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network_structure import get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +33,13 @@ def create_sgen(
     net: pandapowerNet,
     bus: Int,
     p_mw: float,
-    q_mvar: float = 0,
+    q_mvar: float = get_default_value("sgen", "q_mvar"),
     sn_mva: float = nan,
     name: str = pd.NA,
     index: Int | None = None,
-    scaling: float = 1.0,
-    type: WyeDeltaType = "wye",
-    in_service: bool = True,
+    scaling: float = get_default_value("sgen", "scaling"),
+    type: WyeDeltaType = get_default_value("sgen", "type"),
+    in_service: bool = get_default_value("sgen", "in_service"),
     max_p_mw: float = nan,
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
@@ -50,7 +50,7 @@ def create_sgen(
     id_q_capability_characteristic: int = pd.NA,
     reactive_capability_curve: bool = pd.NA,
     curve_style: str = pd.NA,
-    current_source: bool = True,
+    current_source: bool = get_default_value("sgen", "current_source"),
     generator_type: GeneratorType = pd.NA,
     max_ik_ka: float = pd.NA,
     kappa: float = nan,
@@ -97,11 +97,11 @@ def create_sgen(
         curve_style: The curve style of the generator represents the relationship between active power (P) and reactive
             power (Q). It indicates whether the reactive power remains constant as the active power changes or varies dynamically in response to it, e.g. "straightLineYValues" and "constantYValue"
         generator_type: can be one of
-         
+
             - "current_source" (full size converter)
             - "async" (asynchronous generator)
             - "async_doubly_fed" (doubly fed asynchronous generator, DFIG).
-            
+
             Represents the type of the static generator in the context of the short-circuit calculations of wind power
             station units. If None, other short-circuit-related parameters are not set
         lrc_pu: locked rotor current in relation to the rated generator current. Relevant if the generator_type is
@@ -141,11 +141,11 @@ def create_sgen(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "sgen")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "sgen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "sgen")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "sgen", default_val=False)
-
     _set_value_if_not_nan(
-        net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "sgen"
+        net, index, controllable, "controllable", "sgen", default_val=get_default_value("sgen", "controllable")
     )
+
+    _set_value_if_not_nan(net, index, id_q_capability_characteristic, "id_q_capability_characteristic", "sgen")
 
     _set_value_if_not_nan(net, index, reactive_capability_curve, "reactive_capability_curve", "sgen")
 
@@ -154,7 +154,7 @@ def create_sgen(
     _set_value_if_not_nan(net, index, rx, "rx", "sgen")  # rx is always required
     _set_value_if_not_nan(net, index, kappa, "kappa", "sgen", default_val=nan)
     _set_value_if_not_nan(
-        net, index, generator_type, "generator_type", "sgen", default_val="current_source"
+        net, index, generator_type, "generator_type", "sgen", default_val=get_default_value("sgen", "generator_type")
     )
     if pd.isna(generator_type) or generator_type == "current_source":
         _set_value_if_not_nan(net, index, k, "k", "sgen")
@@ -175,13 +175,13 @@ def create_sgens(
     net: pandapowerNet,
     buses: Sequence,
     p_mw: float | Iterable[float],
-    q_mvar: float | Iterable[float] = 0,
+    q_mvar: float | Iterable[float] = get_default_value("sgen", "q_mvar"),
     sn_mva: float | Iterable[float] = nan,
     name: Iterable[str] = pd.NA,
     index: Int | Iterable[Int] | None = None,
-    scaling: float | Iterable[float] = 1.0,
-    type: WyeDeltaType = "wye",
-    in_service: bool | Iterable[bool] = True,
+    scaling: float | Iterable[float] = get_default_value("sgen", "scaling"),
+    type: WyeDeltaType = get_default_value("sgen", "type"),
+    in_service: bool | Iterable[bool] = get_default_value("sgen", "in_service"),
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
@@ -192,8 +192,8 @@ def create_sgens(
     id_q_capability_characteristic: Int | Iterable[Int] = pd.NA,
     reactive_capability_curve: bool | Iterable[bool] = pd.NA,
     curve_style: str | Iterable[str] = pd.NA,
-    current_source: bool | Iterable[bool] = True,
-    generator_type: GeneratorType = "current_source",
+    current_source: bool | Iterable[bool] = get_default_value("sgen", "current_source"),
+    generator_type: GeneratorType = get_default_value("sgen", "generator_type"),
     max_ik_ka: float = pd.NA,
     kappa: float = nan,
     lrc_pu: float = pd.NA,
@@ -267,12 +267,28 @@ def create_sgens(
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "max_q_mvar", max_q_mvar)
     _add_to_entries_if_not_nan(
-        net, "sgen", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+        net,
+        "sgen",
+        entries,
+        index,
+        "controllable",
+        controllable,
+        dtype=bool_,
+        default_val=get_default_value("sgen", "controllable"),
     )
     _add_to_entries_if_not_nan(net, "sgen", entries, index, "rx", rx)  # rx is always required
-    _add_to_entries_if_not_nan(net, "sgen", entries, index, "kappa", kappa, default_val=nan)  # is used for Type C also as a max. current limit
     _add_to_entries_if_not_nan(
-        net, "sgen", entries, index, "generator_type", generator_type, dtype="str", default_val="current_source"
+        net, "sgen", entries, index, "kappa", kappa, default_val=nan
+    )  # is used for Type C also as a max. current limit
+    _add_to_entries_if_not_nan(
+        net,
+        "sgen",
+        entries,
+        index,
+        "generator_type",
+        generator_type,
+        dtype="str",
+        default_val=get_default_value("sgen", "generator_type"),
     )
     gen_types = ["current_source", "async", "async_doubly_fed"]
     gen_type_match = pd.concat([entries["generator_type"] == match for match in gen_types], axis=1, keys=gen_types)  # type: ignore[call-overload]
@@ -292,7 +308,13 @@ def create_sgens(
             f"unknown sgen generator_type '{generator_type}'! "
             f"Must be one of: None, 'current_source', 'async', 'async_doubly_fed'"
         )
-    _set_multiple_entries(net, "sgen", index, entries=entries, defaults_to_fill=[("controllable", False)])
+    _set_multiple_entries(
+        net,
+        "sgen",
+        index,
+        entries=entries,
+        defaults_to_fill=[("controllable", get_default_value("sgen", "controllable"))],
+    )
 
     return index
 
@@ -305,21 +327,21 @@ def create_sgens(
 def create_asymmetric_sgen(
     net: pandapowerNet,
     bus: Int,
-    p_a_mw: float = 0,
-    p_b_mw: float = 0,
-    p_c_mw: float = 0,
-    q_a_mvar: float = 0,
-    q_b_mvar: float = 0,
-    q_c_mvar: float = 0,
+    p_a_mw: float = get_default_value("asymmetric_sgen", "p_a_mw"),
+    p_b_mw: float = get_default_value("asymmetric_sgen", "p_b_mw"),
+    p_c_mw: float = get_default_value("asymmetric_sgen", "p_c_mw"),
+    q_a_mvar: float = get_default_value("asymmetric_sgen", "q_a_mvar"),
+    q_b_mvar: float = get_default_value("asymmetric_sgen", "q_b_mvar"),
+    q_c_mvar: float = get_default_value("asymmetric_sgen", "q_c_mvar"),
     sn_a_mva: float = nan,
     sn_b_mva: float = nan,
     sn_c_mva: float = nan,
     sn_mva: float = nan,
     name: str | None = None,
     index: Int | None = None,
-    scaling: float = 1.0,
-    type: WyeDeltaType = "wye",
-    in_service: bool = True,
+    scaling: float = get_default_value("asymmetric_sgen", "scaling"),
+    type: WyeDeltaType = get_default_value("asymmetric_sgen", "type"),
+    in_service: bool = get_default_value("asymmetric_sgen", "in_service"),
     **kwargs,
 ) -> Int:
     """
@@ -399,7 +421,7 @@ def create_sgen_from_cosphi(  # no index ?
         sn_mva: rated power of the generator
         cos_phi: power factor cos_phi
         mode:
-        
+
             - "underexcited" (Q absorption, decreases voltage)
             - "overexcited" (Q injection, increases voltage)
 
