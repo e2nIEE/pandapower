@@ -161,7 +161,7 @@ def _pd2ppc(net, sequence=None, **kwargs):
     # Adds P and Q for loads / sgens in ppc['bus'] (PQ nodes)
     if mode == "sc":
         _add_ext_grid_sc_impedance(net, ppc)
-        # Generator impedance are seperately added in sc module
+        # Generator impedance are separately added in sc module
         _add_motor_impedances_ppc(net, ppc)
         if net._options.get("use_pre_fault_voltage", False):
             _add_load_sc_impedances_ppc(net, ppc)  # add SC impedances for loads
@@ -171,10 +171,10 @@ def _pd2ppc(net, sequence=None, **kwargs):
         # adds P and Q for shunts, wards and xwards (to PQ nodes)
         _calc_shunts_and_add_on_ppc(net, ppc)
 
-    # adds auxilary buses for open switches at branches
+    # adds auxiliary buses for open switches at branches
     _switch_branches(net, ppc)
 
-    # Adds auxilary buses for in service lines with out of service buses.
+    # Adds auxiliary buses for in service lines with out of service buses.
     # Also deactivates lines if they are connected to two out of service buses
     _branches_with_oos_buses(net, ppc)
     _branches_with_oos_buses(net, ppc, True)

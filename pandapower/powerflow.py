@@ -47,8 +47,7 @@ def _powerflow(net, **kwargs):
     if net["_options"]["voltage_depend_loads"] and algorithm not in ['nr', 'bfsw'] and not (
             allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0) and
             allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0)):
-        logger.error(("pandapower powerflow does not support voltage depend loads for algorithm "
-                      "'%s'!") % algorithm)
+        logger.error(f"pandapower powerflow does not support voltage depend loads for algorithm '{algorithm}'!")
 
     # clear lookups
     net._pd2ppc_lookups = {"bus": array([], dtype=int64), "bus_dc": array([], dtype=int64),

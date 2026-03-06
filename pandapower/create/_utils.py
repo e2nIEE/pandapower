@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 
 
 def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
+    """
+    Adds column to table if not present, if table not present adds table
+    Only works for columns that are defined in the network structure dict
+    """
     if table_name in net and column_name in net[table_name]:
         return
     # Add Table:

@@ -2143,7 +2143,7 @@ def _init_runpp_options(
 
     cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
     # if const parameters are not set voltage_depend_loads is deactivated
-    voltage_depend_loads &= cols.issubset(net.load.columns) and net.load[list(cols)].any().any()
+    voltage_depend_loads &= bool(cols.issubset(net.load.columns) and net.load[list(cols)].any().any())
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
                                                        distributed_slack, tdpf)
