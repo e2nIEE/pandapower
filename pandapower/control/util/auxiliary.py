@@ -394,7 +394,7 @@ def _set_reactive_capability_curve_flag(net, element):
             len(net[element]) == 0
             or not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
             or (
-                not net[element]['id_q_capability_characteristic'].notna().any()
+                net[element]['id_q_capability_characteristic'].isna().all()
                 and not net[element]['reactive_capability_curve'].any()
             )
             and not net[element]['curve_style'].any()
