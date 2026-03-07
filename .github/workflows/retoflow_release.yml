@@ -1,0 +1,41 @@
+name: Build and publish to PyPI
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-release-artifacts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up variables
+        run: |
+          echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+
+      - name: Validate release tag
+        run: |
+          if ! [[ "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+\+retoflow\.[0-9]+.*$ ]]; then
+            echo "Error: Release tag '${RELEASE_TAG}' is not in the format 'vX.Y.Z+retoflow.A.*'. 
+            Please use a valid versioning format."
+            exit 1
+          fi
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 #v4.1.1
+
+      - name: Set up Python
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c #v5.0.0
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install pypa/build
+        run: python3 -m pip install --user build
+
+      - name: Build a binary wheel
+        run: python3 -m build
+
+      - name: Publish to GitLab PyPI
+        run: |
+          pip install twine
+          twine upload --repository-url https://gitlab.com/api/v4/projects/62822150/packages/pypi dist/*.whl \
+          -u ${{ secrets.GITLAB_USERNAME }} \
+          -p ${{ secrets.GITLAB_DEPLOY_TOKEN }}
