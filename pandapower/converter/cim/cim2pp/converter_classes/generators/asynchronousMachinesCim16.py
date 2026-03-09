@@ -63,7 +63,7 @@ class AsynchronousMachinesCim16:
                                                                            add_cim_type_column=True)
         # prevent conflict of merging two dataframes each containing column 'name'
         eqssh_generating_units = eqssh_generating_units.drop(columns='name')
-        eqssh_generating_units = eqssh_generating_units.rename(columns={'in_service': 'in_service_gu'})
+        eqssh_generating_units = eqssh_generating_units.rename(columns={'inService': 'inService_gu'})
         asynchronous_machines = pd.merge(asynchronous_machines, eqssh_generating_units,
                                          how='left', on='GeneratingUnit')
         asynchronous_machines = pd.merge(asynchronous_machines, self.cimConverter.bus_merge, how='left',
@@ -79,7 +79,7 @@ class AsynchronousMachinesCim16:
             100 * asynchronous_machines['p_mw'] / asynchronous_machines['ratedMechanicalPower']
         if self.cimConverter.cim_version == '3.0':
             asynchronous_machines['in_service'] = (asynchronous_machines.connected & asynchronous_machines.inService &
-                                                   asynchronous_machines.in_service_gu)
+                                                   asynchronous_machines.inService_gu)
         elif self.cimConverter.cim_version == 'ltds':
             asynchronous_machines['in_service'] = asynchronous_machines.inService
         else:

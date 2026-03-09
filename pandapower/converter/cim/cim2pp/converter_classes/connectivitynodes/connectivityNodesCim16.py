@@ -293,6 +293,6 @@ class ConnectivityNodesCim16:
                                                                 'nominalVoltage': 'vn_kv', 'name_substation': 'zone'})
         connectivity_nodes['in_service'] = True
         # set if a bus is a busbar or a node
+        connectivity_nodes['type'] = 'n'
         connectivity_nodes.loc[connectivity_nodes[sc['bb_id']].notna(), 'type'] = 'b'
-        connectivity_nodes['type'] = connectivity_nodes['type'].fillna('n')
         return connectivity_nodes, eqssh_terminals
