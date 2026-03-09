@@ -130,7 +130,7 @@ def trafo_characteristic_table_diagnostic(net):
                           f"characteristics populated in the trafo_characteristic_table.", category=UserWarning)
             warnings_count += 1
         # check tap_dependency_table & id_characteristic_table column types
-        if net[trafo_table]['tap_dependency_table'].dtype != 'bool':
+        if net[trafo_table]['tap_dependency_table'].dtype != pd.BooleanDtype():
             warnings.warn(f"The tap_dependency_table column in the {trafo_table} table is not of bool type.",
                           category=UserWarning)
             warnings_count += 1
