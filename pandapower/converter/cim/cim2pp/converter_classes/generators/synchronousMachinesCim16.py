@@ -130,9 +130,9 @@ class SynchronousMachinesCim16:
         synchronous_machines['current_source'] = True
         synchronous_machines['sn_mva'] = \
             synchronous_machines['ratedS'].fillna(synchronous_machines['nominalP'])
-        # Convert governorSCD unit from percent to MW/Hz  # todo kann wird für verteilten Slack verwendet
+        # Convert governorSCD unit from percent to MW/Hz, used for distributed slack
         synchronous_machines['governorSCD'] = synchronous_machines['governorSCD'] * synchronous_machines[
-            'nominalP'] / 50 / 100  # todo f_hz von pp
+            'nominalP'] / self.cimConverter.net['f_hz'] / 100
         # SC data
         synchronous_machines['vn_kv'] = synchronous_machines['ratedU'][:]
         synchronous_machines['rdss_ohm'] = \
@@ -154,7 +154,7 @@ class SynchronousMachinesCim16:
         synchronous_machines['RegulatingControl.mode'] = synchronous_machines['mode'][:]
         if self.cimConverter.cim_version == '3.0':
            synchronous_machines['in_service'] = synchronous_machines.connected & synchronous_machines.inService
-        elif self.cimConverter.cim_version == 'ltds':  # todo check EnergySource and AsynchMa
+        elif self.cimConverter.cim_version == 'ltds':
            synchronous_machines['in_service'] = synchronous_machines.inService
         else:
            synchronous_machines['in_service'] = synchronous_machines.connected

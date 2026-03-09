@@ -167,7 +167,7 @@ class CimConverter:
 
         # set the datatypes after the conversion, especially for integer and boolean columns
         self.net = pp_tools.set_pp_col_types(net=self.net)
-        # create transformer tap controller # todo check why here
+        # create transformer tap controller
         self.classes_dict['tapController'](cimConverter=self).create_tap_controller_for_power_transformers()
 
         self.logger.info("Running a power flow.")
@@ -189,7 +189,8 @@ class CimConverter:
                 self.logger.info("Power flow solved normal.")
                 self.report_container.add_log(Report(
                     level=LogLevel.INFO, code=ReportCode.INFO, message="Power flow solved normal."))
-        try:  #todo sv =loadflow res and analog raw measurement
+        try:
+            # SV: StateVariables (loadflow results), Analog: raw measurements from field
             create_measurements = kwargs.get('create_measurements', None)
             if create_measurements is not None and create_measurements.lower() == 'sv':
                 CreateMeasurements(self.net, self.cim).create_measurements_from_sv()
@@ -226,14 +227,11 @@ class CimConverter:
                 self.logger.info("Fusing buses: b1: %s, b2: %s" % (b1, b2))
                 fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
-        # network behind this boundary node is attached. In this case, disable the EquivalentInjection. todo add 2 grids connected
-        ward_t = self.net.ward.copy()  # todo check performance
-        ward_t['bus_prf'] = ward_t['bus'].map(self.net.bus[[sc['o_prf']]].to_dict().get(sc['o_prf']))
-        self.net.ward.loc[(self.net.ward.bus.duplicated(keep=False) &
-                           ((ward_t['bus_prf'] == 'eq_bd') | (ward_t['bus_prf'] == 'tp_bd'))), 'in_service'] = False
-        xward_t = self.net.xward.copy()
-        xward_t['bus_prf'] = xward_t['bus'].map(self.net.bus[[sc['o_prf']]].to_dict().get(sc['o_prf']))
-        self.net.xward.loc[(self.net.xward.bus.duplicated(keep=False) &
-                            ((xward_t['bus_prf'] == 'eq_bd') | (xward_t['bus_prf'] == 'tp_bd'))), 'in_service'] = False
+        # network behind this boundary node is attached. In this case, disable the EquivalentInjection.
+        for w in ["ward", "xward"]:
+            w_t = self.net[w].copy()
+            w_t['bus_prf'] = w_t['bus'].map(self.net.bus[[sc['o_prf']]].to_dict().get(sc['o_prf']))
+            self.net[w].loc[(self.net[w].bus.duplicated(keep=False) &
+                             ((w_t['bus_prf'] == 'eq_bd') | (w_t['bus_prf'] == 'tp_bd'))), 'in_service'] = False
         self.net['report_container'] = self.report_container
         return self.net

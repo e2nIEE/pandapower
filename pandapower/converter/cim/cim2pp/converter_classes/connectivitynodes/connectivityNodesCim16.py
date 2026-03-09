@@ -113,7 +113,7 @@ class ConnectivityNodesCim16:
 
             connectivity_nodes = pd.merge(connectivity_nodes, eq_voltage_levels, how='left',
                                           on='ConnectivityNodeContainer')
-            if 'tp_bd' in self.cimConverter.cim:
+            if self.cimConverter.cim_version == '2.4.15':
                 # now prepare the BaseVoltage from the boundary profile at the ConnectivityNode (4)
                 eq_bd_cns = pd.merge(self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']],
                                      self.cimConverter.cim['tp_bd']['ConnectivityNode'][['rdfId', 'TopologicalNode']],
@@ -124,10 +124,10 @@ class ConnectivityNodesCim16:
                                      self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'BaseVoltage']].rename(
                                          columns={'rdfId': 'TopologicalNode'}), how='inner', on='TopologicalNode')
             else:
-                eq_bd_cns = self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']]  # todo check for CGMES 3.0
-                eq_bd_cns['BaseVoltage'] = float('NaN')  # todo add warning (if not CGMES 3.0)
+                eq_bd_cns = self.cimConverter.cim['eq_bd']['ConnectivityNode'][['rdfId']]
+                eq_bd_cns['BaseVoltage'] = float('NaN')
                 eq_bd_cns['TopologicalNode'] = float('NaN')
-            # eq_bd_cns = eq_bd_cns.drop(columns=['TopologicalNode']) # todo check
+            # eq_bd_cns = eq_bd_cns.drop(columns=['TopologicalNode'])
             eq_bd_cns = eq_bd_cns.rename(columns={'BaseVoltage': 'BaseVoltage_2',
                                                   'TopologicalNode': 'TopologicalNode_2'})
             connectivity_nodes = pd.merge(connectivity_nodes, eq_bd_cns, how='left', on='rdfId')
@@ -162,7 +162,7 @@ class ConnectivityNodesCim16:
                 tp_temp = self.cimConverter.cim['tp']['TopologicalNode'][
                     ['rdfId', 'name', 'description', 'BaseVoltage']]
                 tp_temp[sc['o_prf']] = 'tp'
-                if 'tp_bd' in self.cimConverter.cim:  # todo check because tp_bd has been removed in cgmes 3.0
+                if self.cimConverter.cim_version == '2.4.15':
                     tp_temp = pd.concat(
                         [tp_temp, self.cimConverter.cim['tp_bd']['TopologicalNode'][['rdfId', 'name', 'BaseVoltage']]],
                         sort=False)
@@ -202,13 +202,14 @@ class ConnectivityNodesCim16:
         connectivity_nodes['BaseVoltage'] = connectivity_nodes['BaseVoltage'].astype(str)
         connectivity_nodes = pd.merge(connectivity_nodes, eq_base_voltages, how='left', on='BaseVoltage')
         connectivity_nodes = connectivity_nodes.drop(columns=['BaseVoltage'])
+        # the terminals are used for the mapping asset -> node later during the conversion of other assets
         eqssh_terminals = self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment',
                                                                    'sequenceNumber']]
         eqssh_terminals = \
             pd.concat([eqssh_terminals, self.cimConverter.cim['eq_bd']['Terminal'][['rdfId', 'ConductingEquipment',
                                                                                     'ConnectivityNode',
                                                                                     'sequenceNumber']]],
-                      ignore_index=True, sort=False)  #todo kommentar für die terminals
+                      ignore_index=True, sort=False)
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['ssh']['Terminal'], how='left', on='rdfId')
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['tp']['Terminal'], how='left', on='rdfId')
         eqssh_terminals['ConnectivityNode'] = eqssh_terminals['ConnectivityNode'].fillna(

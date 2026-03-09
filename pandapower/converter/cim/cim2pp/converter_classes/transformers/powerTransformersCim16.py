@@ -289,7 +289,7 @@ class PowerTransformersCim16:
             power_transformers = self.cimConverter.merge_eq_sc_profile('PowerTransformer')
         else:
             power_transformers = self.cimConverter.cim['eq']['PowerTransformer']
-        if self.cimConverter.cim_version == 'ltds':  # todo fix for dont need this if, take all from SC and PT
+        if self.cimConverter.cim_version == 'ltds':
             power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit',
                                                      'inService']]
         else:
@@ -344,7 +344,7 @@ class PowerTransformersCim16:
         eqssh_tap_changers[sc['tc']] = 'RatioTapChanger'
         eqssh_tap_changers['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers[sc['tc_id']] = eqssh_tap_changers['rdfId'].copy()
-        # todo: check correct implementation for PhaseTapChangerLinear tap changers -> Ideal done, compared with PF
+        # todo: check correct implementation for PhaseTapChangerLinear tap changers -> Done and compared with PF
         eqssh_tap_changers_linear = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerLinear'],
                                              self.cimConverter.cim['ssh']['PhaseTapChangerLinear'], how='left',
                                              on='rdfId')
@@ -353,7 +353,7 @@ class PowerTransformersCim16:
         eqssh_tap_changers_linear['tap_changer_type'] = "Ideal"  # Ideal phase shifter
         eqssh_tap_changers_linear[sc['tc_id']] = eqssh_tap_changers_linear['rdfId'].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_linear], ignore_index=True, sort=False)
-        # todo: check correct implementation for PhaseTapChangerAsymmetrical tap changers -> Done by Irene and compared with PF
+        # todo: check correct implementation for PhaseTapChangerAsymmetrical tap changers -> Done and compared with PF
         eqssh_tap_changers_async = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerAsymmetrical'],
                                             self.cimConverter.cim['ssh']['PhaseTapChangerAsymmetrical'], how='left',
                                             on='rdfId')

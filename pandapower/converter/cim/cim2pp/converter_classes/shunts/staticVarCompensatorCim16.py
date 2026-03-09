@@ -46,5 +46,5 @@ class StaticVarCompensatorCim16:
                                                     'voltageSetPoint': 'vn_kv', 'index_bus': 'bus'})
         eq_stat_coms['step'] = 1
         eq_stat_coms['max_step'] = 1
-        eq_stat_coms["step_dependency_table"] = False # todo char to nan
+        eq_stat_coms["step_dependency_table"] = False
         return eq_stat_coms
