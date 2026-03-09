@@ -315,7 +315,7 @@ def test_Simbench_1_EHV_mixed__2_no_sw_res_dcline(Simbench_1_EHV_mixed__2_no_sw)
 
 
 def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw):
-    assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 571
+    assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 1142
     element_0 = Simbench_1_EHV_mixed__2_no_sw.measurement[
         Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
         Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus[
