@@ -65,5 +65,5 @@ class EnergySourceCim16:
         else:
            eqssh_energy_sources['in_service'] = eqssh_energy_sources.connected
         eqssh_energy_sources = eqssh_energy_sources.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
-                                                                    'connected': 'in_service', 'index_bus': 'bus'})
+                                                                    'index_bus': 'bus'})
         return eqssh_energy_sources
