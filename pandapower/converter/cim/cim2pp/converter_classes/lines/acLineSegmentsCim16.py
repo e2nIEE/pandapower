@@ -152,16 +152,14 @@ class AcLineSegmentsCim16:
             ac_line_segments.loc[(abs(ac_line_segments['r']) <= line_r_limit) |
                                     (abs(ac_line_segments['x']) <= line_x_limit), 'kindOfType'] = 'switch'
         ac_line_segments[sc['o_cl']] = 'ACLineSegment'
-        ac_line_segments['r_ohm_per_km'] = abs(ac_line_segments.r) / ac_line_segments.length_km
-        ac_line_segments['x_ohm_per_km'] = abs(ac_line_segments.x) / ac_line_segments.length_km
-        ac_line_segments['c_nf_per_km'] = (
-                abs(ac_line_segments.bch) / (2 * 50 * np.pi * ac_line_segments.length_km) * 1e9)
-        ac_line_segments['g_us_per_km'] = abs(ac_line_segments.gch) * 1e6 / ac_line_segments.length_km
-        ac_line_segments['r0_ohm_per_km'] = abs(ac_line_segments.r0) / ac_line_segments.length_km
-        ac_line_segments['x0_ohm_per_km'] = abs(ac_line_segments.x0) / ac_line_segments.length_km
-        ac_line_segments['c0_nf_per_km'] = (
-                abs(ac_line_segments.b0ch) / (2 * 50 * np.pi * ac_line_segments.length_km) * 1e9)
-        ac_line_segments['g0_us_per_km'] = abs(ac_line_segments.g0ch) * 1e6 / ac_line_segments.length_km
+        ac_line_segments['r_ohm_per_km'] = abs(ac_line_segments.r) / ac_line_segments.length
+        ac_line_segments['x_ohm_per_km'] = abs(ac_line_segments.x) / ac_line_segments.length
+        ac_line_segments['c_nf_per_km'] = abs(ac_line_segments.bch) / (2 * 50 * np.pi * ac_line_segments.length) * 1e9
+        ac_line_segments['g_us_per_km'] = abs(ac_line_segments.gch) * 1e6 / ac_line_segments.length
+        ac_line_segments['r0_ohm_per_km'] = abs(ac_line_segments.r0) / ac_line_segments.length
+        ac_line_segments['x0_ohm_per_km'] = abs(ac_line_segments.x0) / ac_line_segments.length
+        ac_line_segments['c0_nf_per_km'] = abs(ac_line_segments.b0ch) / (2 * 50 * np.pi * ac_line_segments.length) * 1e9
+        ac_line_segments['g0_us_per_km'] = abs(ac_line_segments.g0ch) * 1e6 / ac_line_segments.length
         ac_line_segments['parallel'] = 1
         ac_line_segments['df'] = 1.
         ac_line_segments['type'] = None
