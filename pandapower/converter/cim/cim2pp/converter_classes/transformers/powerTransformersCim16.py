@@ -554,7 +554,7 @@ class PowerTransformersCim16:
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
-        if self.cimConverter.cim_version == 'ltds':  # todo check for CGMES 3.0
+        if self.cimConverter.cim_version == 'ltds':
             power_trafo2w['in_service'] = power_trafo2w.inService
         else:
             power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
@@ -687,7 +687,7 @@ class PowerTransformersCim16:
         power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
         power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_lv'].astype(float) * 30
         power_trafo3w['tap_at_star_point'] = False
-        if self.cimConverter.cim_version == 'ltds':  # todo check for CGMES 3.0
+        if self.cimConverter.cim_version == 'ltds':
             power_trafo3w['in_service'] = power_trafo3w.inService
         else:
             power_trafo3w['in_service'] = (power_trafo3w.connected & power_trafo3w.connected_mv &
