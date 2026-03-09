@@ -126,6 +126,7 @@ def from_cim(file_list: Union[str, List[str]] = None, encoding: str = None, conv
     Default: False.
     - ignore_errors (bool): Option to disable raising of internal errors. Useful if you need to get a network not matter
     if there are errors in the conversion. Default: True.
+    - set_switch_impedance (bool): Set the line impedance for lines that will be converted to switches
 
     :param file_list: The path to the CGMES files as a string or list.
     :param encoding: The encoding from the files. Optional, default: None

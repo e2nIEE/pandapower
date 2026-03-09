@@ -31,19 +31,6 @@ class AcLineSegmentsCim16:
                 'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'],
                 'index_bus': 'from_bus', 'index_bus2': 'to_bus', 'length': 'length_km',
                 'shortCircuitEndTemperature': 'endtemp_degree', 'EquipmentContainer': 'EquipmentContainer_id'})
-            line_df[sc['o_cl']] = 'ACLineSegment'
-            line_df['r_ohm_per_km'] = abs(line_df.r) / line_df.length_km  # todo move to prepare
-            line_df['x_ohm_per_km'] = abs(line_df.x) / line_df.length_km
-            line_df['c_nf_per_km'] = abs(line_df.bch) / (2 * 50 * np.pi * line_df.length_km) * 1e9
-            line_df['g_us_per_km'] = abs(line_df.gch) * 1e6 / line_df.length_km
-            line_df['r0_ohm_per_km'] = abs(line_df.r0) / line_df.length_km
-            line_df['x0_ohm_per_km'] = abs(line_df.x0) / line_df.length_km
-            line_df['c0_nf_per_km'] = abs(line_df.b0ch) / (2 * 50 * np.pi * line_df.length_km) * 1e9
-            line_df['g0_us_per_km'] = abs(line_df.g0ch) * 1e6 / line_df.length_km
-            line_df['parallel'] = 1
-            line_df['df'] = 1.
-            line_df['type'] = None
-            line_df['std_type'] = None
             self.cimConverter.copy_to_pp('line', line_df)
         else:
             line_df = pd.DataFrame(None)
@@ -54,9 +41,6 @@ class AcLineSegmentsCim16:
             switch_df = switch_df.rename(columns={
                 'rdfId': sc['o_id'], 'index_bus': 'bus', 'index_bus2': 'element', 'rdfId_Terminal': sc['t_bus'],
                 'rdfId_Terminal2': sc['t_ele']})
-            switch_df['et'] = 'b'
-            switch_df['type'] = None
-            switch_df['z_ohm'] = 0  # todo maybe use r and x
             self.cimConverter.copy_to_pp('switch', switch_df)
         else:
             switch_df = pd.DataFrame(None)
@@ -167,4 +151,24 @@ class AcLineSegmentsCim16:
         if convert_line_to_switch:
             ac_line_segments.loc[(abs(ac_line_segments['r']) <= line_r_limit) |
                                     (abs(ac_line_segments['x']) <= line_x_limit), 'kindOfType'] = 'switch'
+        ac_line_segments[sc['o_cl']] = 'ACLineSegment'
+        ac_line_segments['r_ohm_per_km'] = abs(ac_line_segments.r) / ac_line_segments.length_km
+        ac_line_segments['x_ohm_per_km'] = abs(ac_line_segments.x) / ac_line_segments.length_km
+        ac_line_segments['c_nf_per_km'] = (
+                abs(ac_line_segments.bch) / (2 * 50 * np.pi * ac_line_segments.length_km) * 1e9)
+        ac_line_segments['g_us_per_km'] = abs(ac_line_segments.gch) * 1e6 / ac_line_segments.length_km
+        ac_line_segments['r0_ohm_per_km'] = abs(ac_line_segments.r0) / ac_line_segments.length_km
+        ac_line_segments['x0_ohm_per_km'] = abs(ac_line_segments.x0) / ac_line_segments.length_km
+        ac_line_segments['c0_nf_per_km'] = (
+                abs(ac_line_segments.b0ch) / (2 * 50 * np.pi * ac_line_segments.length_km) * 1e9)
+        ac_line_segments['g0_us_per_km'] = abs(ac_line_segments.g0ch) * 1e6 / ac_line_segments.length_km
+        ac_line_segments['parallel'] = 1
+        ac_line_segments['df'] = 1.
+        ac_line_segments['type'] = None
+        ac_line_segments['std_type'] = None
+        ac_line_segments['et'] = 'b'
+        if self.kwargs.get('set_switch_impedance', False):
+            ac_line_segments['z_ohm'] = (abs(ac_line_segments.r)**2 + abs(ac_line_segments.x)**2)**.5
+        else:
+            ac_line_segments['z_ohm'] = 0
         return ac_line_segments
