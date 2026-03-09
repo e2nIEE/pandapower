@@ -143,8 +143,8 @@ def test_from_ucte(test_case):
 
         # --- compare the results itself
         all_close = all([np.allclose(
-            df_after_conversion[col].values,
-            df_target.loc[df_after_conversion.index, col].values, atol=atol) for col, atol in
+            df_after_conversion[col].to_numpy(),
+            df_target.loc[df_after_conversion.index, col].to_numpy(), atol=atol) for col, atol in
             atol_dict[res_et].items()])
         if not all_close:
             logger.error(f"{res_et=} comparison fails due to different values.\n{df_str}")

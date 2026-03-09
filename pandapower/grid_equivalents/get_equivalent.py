@@ -264,11 +264,11 @@ def get_equivalent(
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
-        ib_buses_after_merge, be_buses_after_merge = \
-            _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal)
+        ib_buses_after_merge, be_buses_after_merge = _get_buses_after_merge(
+            net_eq, net_internal, bus_lookups, return_internal
+        )
         eq_elms = {}
-        for elm in ["bus", "gen", "impedance", "load", "sgen", "shunt",
-                    "switch", "ward", "xward"]:
+        for elm in ["bus", "gen", "impedance", "load", "sgen", "shunt", "switch", "ward", "xward"]:
             if "ward" in elm:
                 if "name" in net[elm].columns:
                     new_idx = net_eq[elm].index[net_eq[elm].name == "network_equivalent"].difference(

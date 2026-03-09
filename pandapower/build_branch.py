@@ -487,11 +487,11 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         else:
             r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
     else:
-        warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
-                                         "unsupported net data. tap_dependency_table was introduced with "
-                                         "pandapower 3.0 and replaced spline characteristics. Spline "
-                                         "characteristics will still work, but they are deprecated and will be "
-                                         "removed in future releases."))
+        warnings.warn(DeprecationWarning(
+            "tap_dependency_table is missing in net, which is most probably due to unsupported net data. "
+            "tap_dependency_table was introduced with pandapower 3.0 and replaced spline characteristics. "
+            "Spline characteristics will still work, but they are deprecated and will be removed in future releases."
+        ))
         r, x = _calc_r_x_from_dataframe(
             mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence, characteristic=net.get("characteristic")
         )

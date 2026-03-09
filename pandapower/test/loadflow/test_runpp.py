@@ -1676,6 +1676,7 @@ def test_q_capability_curve():
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 30, 40,
                         134.0099, 0.01]})
     add_column_to_df(net, "gen", "id_q_capability_characteristic")
+    add_column_to_df(net, "gen", "reactive_capability_curve")
     net.gen.at[0, "id_q_capability_characteristic"] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
@@ -1725,6 +1726,7 @@ def test_q_capability_curve_for_sgen():
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 218.0099945068,
                         134.0099, 0.01]})
     add_column_to_df(net, "sgen", "id_q_capability_characteristic")
+    add_column_to_df(net, "sgen", "reactive_capability_curve")
     net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)
