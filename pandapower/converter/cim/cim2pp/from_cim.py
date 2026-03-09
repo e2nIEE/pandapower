@@ -23,6 +23,7 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
                   repair_pp: Union[str, interfaces.PandapowerRepair] = None,
                   repair_pp_class: Type[interfaces.PandapowerRepair] = None,
                   custom_converter_classes: Dict = None,
+                  cim_version: str = None,
                   **kwargs) -> pandapowerNet:
     """
     Creates a pandapower net from a CIM data structure.
@@ -39,8 +40,11 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
     :param repair_pp: The PandapowerRepair object or a path to its serialized object. Optional, default: None
     :param repair_pp_class: The PandapowerRepair class. Optional, default: None
     :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
+    :param cim_version: The CIM / CGMES / LTDS version. Optional, default: None
     :return: The pandapower net.
     """
+    if cim_version is None:
+        cim_version = '2.4.15'
     converter_classes = get_converter_classes()
     if custom_converter_classes is not None:
         for key in custom_converter_classes:
@@ -51,7 +55,8 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
         repair_cim = repair_cim_class().deserialize(repair_cim, report_container=cim_parser.get_report_container())
         repair_cim.repair(cim_parser.get_cim_dict(), report_container=cim_parser.get_report_container())
 
-    cim_converter = build_pp_net.CimConverter(cim_parser=cim_parser, converter_classes=converter_classes, **kwargs)
+    cim_converter = build_pp_net.CimConverter(cim_parser=cim_parser, converter_classes=converter_classes,
+                                              cim_version=cim_version, **kwargs)
     pp_net = cim_converter.convert_to_pp(convert_line_to_switch=convert_line_to_switch, line_r_limit=line_r_limit,
                                          line_x_limit=line_x_limit, log_debug=log_debug, **kwargs)
 
@@ -146,7 +151,7 @@ def from_cim(file_list: Union[str, List[str]] = None, encoding: str = None, conv
     pp_net = from_cim_dict(cim_parser, convert_line_to_switch=convert_line_to_switch,
                            line_r_limit=line_r_limit, line_x_limit=line_x_limit, repair_cim=repair_cim,
                            repair_cim_class=repair_cim_class, repair_pp=repair_pp, repair_pp_class=repair_pp_class,
-                           custom_converter_classes=custom_converter_classes, **kwargs)
+                           custom_converter_classes=custom_converter_classes, cim_version=cgmes_version, **kwargs)
     time_end_converting = time.time()
     logger.info("The pandapower net: \n%s" % pp_net)
 

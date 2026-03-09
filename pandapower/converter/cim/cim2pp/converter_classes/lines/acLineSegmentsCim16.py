@@ -32,8 +32,7 @@ class AcLineSegmentsCim16:
                 'index_bus': 'from_bus', 'index_bus2': 'to_bus', 'length': 'length_km',
                 'shortCircuitEndTemperature': 'endtemp_degree', 'EquipmentContainer': 'EquipmentContainer_id'})
             line_df[sc['o_cl']] = 'ACLineSegment'
-            line_df['in_service'] = line_df.connected & line_df.connected2  # todo move to prepare
-            line_df['r_ohm_per_km'] = abs(line_df.r) / line_df.length_km
+            line_df['r_ohm_per_km'] = abs(line_df.r) / line_df.length_km  # todo move to prepare
             line_df['x_ohm_per_km'] = abs(line_df.x) / line_df.length_km
             line_df['c_nf_per_km'] = abs(line_df.bch) / (2 * 50 * np.pi * line_df.length_km) * 1e9
             line_df['g_us_per_km'] = abs(line_df.gch) * 1e6 / line_df.length_km
@@ -58,8 +57,6 @@ class AcLineSegmentsCim16:
             switch_df['et'] = 'b'
             switch_df['type'] = None
             switch_df['z_ohm'] = 0  # todo maybe use r and x
-            if switch_df.index.size > 0:
-                switch_df['closed'] = switch_df.connected & switch_df.connected2
             self.cimConverter.copy_to_pp('switch', switch_df)
         else:
             switch_df = pd.DataFrame(None)
@@ -147,6 +144,16 @@ class AcLineSegmentsCim16:
         ac_line_segments = ac_line_segments.drop_duplicates(['rdfId'], keep='first')
         # get the max_i_ka
         ac_line_segments['max_i_ka'] = ac_line_segments['value'].fillna(ac_line_segments['value2']) * 1e-3
+        if self.cimConverter.cim_version == '3.0':
+           ac_line_segments['in_service'] = (ac_line_segments.connected & ac_line_segments.connected2 &
+                                             ac_line_segments.inService)
+        elif self.cimConverter.cim_version == 'ltds':
+            mapping = self.cimConverter.cim['ssh']['Equipment'][['rdfId', 'inService']]
+            mapping = mapping.set_index('rdfId').to_dict()['inService']
+            ac_line_segments['in_service'] = ac_line_segments['rdfId'].map(mapping)
+        else:
+            ac_line_segments['in_service'] = ac_line_segments.connected & ac_line_segments.connected2
+        ac_line_segments['closed'] = ac_line_segments['in_service']
 
         # filter if line or switches will be added
         ac_line_segments['kindOfType'] = 'line'

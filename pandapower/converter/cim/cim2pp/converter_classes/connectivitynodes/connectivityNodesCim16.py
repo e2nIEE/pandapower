@@ -134,6 +134,20 @@ class ConnectivityNodesCim16:
             connectivity_nodes['BaseVoltage'] = connectivity_nodes['BaseVoltage'].fillna(
                 connectivity_nodes['BaseVoltage_2'])
             connectivity_nodes = connectivity_nodes.drop(columns=['BaseVoltage_2'])
+            # check if the version is LTDS: If so, some nodes might have no voltage given. In LTDS, the boundary nodes
+            # are part of the EQ profile without a reference to VoltageLevel. Get the voltage from the attached
+            # EquivalentInjection
+            if self.cimConverter.cim_version == 'ltds' and connectivity_nodes['BaseVoltage'].isna().any():
+                # create a mapping for the missing voltages
+                mapping = self.cimConverter.cim['eq']['EquivalentInjection'][['BaseVoltage', 'EquipmentContainer']]
+                mapping = mapping.set_index('EquipmentContainer').to_dict()['BaseVoltage']
+                connectivity_nodes.loc[connectivity_nodes['BaseVoltage'].isna(), 'BaseVoltage_2'] = (
+                    connectivity_nodes.loc[connectivity_nodes['BaseVoltage'].isna(),
+                    'ConnectivityNodeContainer'].map(mapping))
+                connectivity_nodes['BaseVoltage'] = connectivity_nodes['BaseVoltage'].fillna(
+                    connectivity_nodes['BaseVoltage_2'])
+                connectivity_nodes = connectivity_nodes.drop(columns=['BaseVoltage_2'])
+                del mapping
             # check if there is a mix between BB and NB models
             terminals_temp = \
                 self.cimConverter.cim['eq']['Terminal'].loc[

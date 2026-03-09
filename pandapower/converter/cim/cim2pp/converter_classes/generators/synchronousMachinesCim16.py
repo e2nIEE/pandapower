@@ -152,10 +152,14 @@ class SynchronousMachinesCim16:
         synchronous_machines.loc[synchronous_machines['slack_weight'] == 0, 'slack_weight'] = np.nan
         synchronous_machines['RegulatingControl.enabled'] = synchronous_machines['enabled'][:]
         synchronous_machines['RegulatingControl.mode'] = synchronous_machines['mode'][:]
-        if 'inService' in synchronous_machines.columns:
-            synchronous_machines['connected'] = (synchronous_machines['connected'] & synchronous_machines['inService'])
+        if self.cimConverter.cim_version == '3.0':
+           synchronous_machines['in_service'] = synchronous_machines.connected & synchronous_machines.inService
+        elif self.cimConverter.cim_version == 'ltds':  # todo check EnergySource and AsynchMa
+           synchronous_machines['in_service'] = synchronous_machines.inService
+        else:
+           synchronous_machines['in_service'] = synchronous_machines.connected
         synchronous_machines = synchronous_machines.rename(columns={
-            'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service', 'index_bus': 'bus',
+            'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'index_bus': 'bus',
             'minOperatingP': 'min_p_mw', 'maxOperatingP': 'max_p_mw', 'minQ': 'min_q_mvar', 'maxQ': 'max_q_mvar',
             'ratedPowerFactor': 'cos_phi', 'targetValue': 'RegulatingControl.targetValue'})
         return synchronous_machines

@@ -289,7 +289,11 @@ class PowerTransformersCim16:
             power_transformers = self.cimConverter.merge_eq_sc_profile('PowerTransformer')
         else:
             power_transformers = self.cimConverter.cim['eq']['PowerTransformer']
-        power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
+        if self.cimConverter.cim_version == 'ltds':  # todo fix for dont need this if, take all from SC and PT
+            power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit',
+                                                     'inService']]
+        else:
+            power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
         power_transformers[sc['o_cl']] = 'PowerTransformer'
 
         if 'sc' in self.cimConverter.cim:
@@ -550,7 +554,10 @@ class PowerTransformersCim16:
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
-        power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
+        if self.cimConverter.cim_version == 'ltds':  # todo check for CGMES 3.0
+            power_trafo2w['in_service'] = power_trafo2w.inService
+        else:
+            power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'] = power_trafo2w['connectionKind'].fillna('')
         power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')
         power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(True)
@@ -680,7 +687,11 @@ class PowerTransformersCim16:
         power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
         power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
         power_trafo3w['tap_at_star_point'] = False
-        power_trafo3w['in_service'] = power_trafo3w.connected & power_trafo3w.connected_mv & power_trafo3w.connected_lv
+        if self.cimConverter.cim_version == 'ltds':  # todo check for CGMES 3.0
+            power_trafo3w['in_service'] = power_trafo3w.inService
+        else:
+            power_trafo3w['in_service'] = (power_trafo3w.connected & power_trafo3w.connected_mv &
+                                           power_trafo3w.connected_lv)
         power_trafo3w['connectionKind'] = power_trafo3w['connectionKind'].fillna('')
         power_trafo3w['connectionKind_mv'] = power_trafo3w['connectionKind_mv'].fillna('')
         power_trafo3w['connectionKind_lv'] = power_trafo3w['connectionKind_lv'].fillna('')
