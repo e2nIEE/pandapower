@@ -231,13 +231,12 @@ class BinarySearchControl(Controller):
                 if isinstance(input_variable, list):
                     input_variable_p = input_variable[counter].replace('q', 'p').replace('var','w')
                     _, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,input_index,
-                                                                                  input_variable_p)
+                                                                       input_variable_p)
                 else:
                     input_variable_p = input_variable.replace('q', 'p').replace('var', 'w')
-                    _, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,
-                                                                                      input_index,
-                                                                                      input_variable_p)
-                self.input_variable_p.append(input_variable_temp_p) #read flag p not necessary, flag same as Q variables
+                    _, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,input_index,
+                                                                       input_variable_p)
+                self.input_variable_p.append(input_variable_temp_p)  #read flag p not necessary, flag same as Q variables
             self.read_flag.append(read_flag_temp)
             self.input_variable.append(input_variable_temp)
             counter += 1
@@ -253,7 +252,7 @@ class BinarySearchControl(Controller):
                     f"'voltage_ctrl' in Controller {self.index} is deprecated. "
                     "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead."
                 )
-                self._deprecation_warned = True#only one message that voltage ctrl is deprecated
+                self._deprecation_warned = True  #only one message that voltage ctrl is deprecated
             return self.voltage_ctrl
         if name == 'bus_idx':
             if not hasattr(self, '_deprecation_warned_bus_idx'):
@@ -262,7 +261,7 @@ class BinarySearchControl(Controller):
                     f"Give index of controlled bus to input_element_index. Input_variable must be 'vm_pu' and"
                     f" input_element 'res_bus'"
                 )
-                self._deprecation_warned_bus_idx = True#only one warning about bus_idx deprecation
+                self._deprecation_warned_bus_idx = True  #only one warning about bus_idx deprecation
             return self.input_element_index
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")
 
@@ -439,8 +438,7 @@ class BinarySearchControl(Controller):
                 self.control_modus = ControlModusEnum.q_ctrl
 
             if self.control_modus in ControlModusEnum.v_modes():
-                if self.input_element != 'res_bus':# and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
-                            #self.index for x in net.controller.index):#no droop, disable for legacy, see below
+                if self.input_element != 'res_bus':  # and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
                     if hasattr(self, 'bus_idx') and getattr(self, 'bus_idx') is not None:  # legacy
                         self.diff_old = self.diff
                         if not any(self.output_adjustable):
@@ -540,10 +538,10 @@ class BinarySearchControl(Controller):
                     self.output_values[i] = 0
                 else:
                     continue
-        else:#second step
+        else:  #second step
             step_diff = self.diff - self.diff_old
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
-                step_diff == 0, 1e-6, step_diff)  #converging
+                step_diff == 0, 1e-6, step_diff)  # converging
 
             rel_cap = 2
             cap = rel_cap * (np.abs(self.output_values) + 1e-6) + 50  # add epsilon to avoid zero; absolute cap +50 MVAr
@@ -790,11 +788,11 @@ class DroopControl(Controller):
                         "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead.")
                     self._deprecation_warned = True
         ###catching old implementation
-        if isinstance(self.control_modus, bool) and self.control_modus == True:
+        if isinstance(self.control_modus, bool) and self.control_modus:
             self.control_modus = ControlModusEnum.v_ctrl_q_droop
             logger.warning(f"Deprecated Control Modus in Controller {self.index}, using V_ctrl with Q droop from available types"
                          f" 'Q_ctrl' or 'V_ctrl'\n")
-        elif isinstance(self.control_modus, bool) and self.control_modus == False:
+        elif isinstance(self.control_modus, bool) and not self.control_modus:
             self.control_modus = ControlModusEnum.q_ctrl_v_droop
             logger.warning(f"Deprecated Control Modus in Controller {self.index}, using Q_ctrl with V droop from available types"
                          f" 'Q_ctrl' or 'V_ctrl'\n")
@@ -805,7 +803,7 @@ class DroopControl(Controller):
                 logger.warning(f"Control_modus {self.control_modus} not recognized, using 'Q_ctrl_V_droop' from available"
                                f" types 'Q_ctrl' and 'V_ctrl'\n")
                 self.control_modus = ControlModusEnum.q_ctrl_v_droop
-        if self.control_modus in ControlModusEnum.pf_modes():#legacy ambiguous
+        if self.control_modus in ControlModusEnum.pf_modes():  #legacy ambiguous
                 raise UserWarning(f"Power Factor Droop Control not implemented (in Controller {self.index}).'\n")
         elif self.control_modus in ControlModusEnum.v_modes() and self.control_modus not in ControlModusEnum.droop_modes():
             logger.warning(f"Power Factor Droop Control in Controller {self.index}: Control modus is ambivalent, using"
@@ -816,7 +814,7 @@ class DroopControl(Controller):
                            f" 'Q_ctrl with V droop' from available modi.\n")
             self.control_modus = ControlModusEnum.q_ctrl_v_droop
         if (self.control_modus in ControlModusEnum.v_modes() and not
-                    isinstance(getattr(self, 'vm_set_pu', None), numbers.Number)):#catching missing voltage set point
+                    isinstance(getattr(self, 'vm_set_pu', None), numbers.Number)):  #catching missing voltage set point
             logger.warning(f"vm_set_pu must be a number, not "
                    f"{isinstance(getattr(self, 'vm_set_pu', None), numbers.Number)} in Controller {self.index}, "
                    f"using 1 as new setpoint")

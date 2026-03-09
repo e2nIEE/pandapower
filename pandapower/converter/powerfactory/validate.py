@@ -283,7 +283,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     pf_idx = pf_closed.index
     pp_idx = net.switch.index
 
-    # 1) Mismatch-Reports (nur warnen, nicht abbrechen)
+    # 1) Mismatch-Reports (only warning, do not stop)
     missing_in_pp = pf_idx.difference(pp_idx)  # PF hat mehr als PP
     missing_in_pf = pp_idx.difference(pf_idx)  # PP hat mehr als PF
 
@@ -292,7 +292,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     if len(missing_in_pf):
         logger.warning(f"{len(missing_in_pf)} switches exist in PP but not in PF. e.g. {missing_in_pf[:20].tolist()}")
 
-    # 2) Nur auf der Schnittmenge vergleichen (KeyError-frei)
+    # 2) check matching switches
     common = pf_idx.intersection(pp_idx)
 
     wrong_switches = common[pf_closed.loc[common].astype(bool).values !=

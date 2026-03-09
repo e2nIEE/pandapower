@@ -2129,10 +2129,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         pstac = item.c_pstac  # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop and pstac.i_ctrl == 0:
-                av_mode = 'constq'#'constq'
+                av_mode = 'constq'
             else:
                 if pstac.i_ctrl == 0:
-                    av_mode = 'constq'#'constq'
+                    av_mode = 'constq'
                 elif pstac.i_ctrl == 1:
                     av_mode = 'constq'
                 elif pstac.i_ctrl == 2:
@@ -2405,11 +2405,11 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
-                av_mode = 'constq'#'constq'
+                av_mode = 'constq'
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
-                    av_mode = 'constq'#'constq'
+                    av_mode = 'constq'
                 elif i_ctrl == 1:
                     av_mode = 'constq'
                 elif i_ctrl == 2:
@@ -2560,12 +2560,6 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
                     vm_pu = pstac.usetp
                 else:
                     vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
-        #if item.iqtype == 1:
-        #    sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier, vm_pu=vm_pu,
-        #                     min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
-        #                     min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
-        #                     name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
-        #else:
         type = item.typ_id
         sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier, vm_pu=vm_pu,
                          min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
@@ -2577,13 +2571,6 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
             q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
         except AttributeError:
             q_mvar = item.ng_num * item.qgini * multiplier if item.bustp == 'PQ' else q_res
-        #if item.iqtype == 1:
-        #    type = item.typ_id
-        #    sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
-        #                      min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
-        #                      min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
-        #                      name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
-        #else:
         type = item.typ_id
         sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
                           min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
@@ -2591,9 +2578,6 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
                           name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
         element = 'sgen'
 
-    #logger.debug('params: %s' % params)
-
-    #sid = create_sgen(net, **params)
     if element == "gen":
         net.gen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
         attr_dict = {"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site",
@@ -4137,15 +4121,6 @@ def create_stactrl(net, item, top, top_all, **kwargs):
     variable = None
     res_element_table = None
     res_element_index = None
-    # Create nx graph for further usage
-    # top is needed to check connectivity between inpout and output elements, therefore respect switches
-    # top_all is the full topology to identify the sign of measurements, that is why respect_switches = False
-    #top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
-    #                     include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-    #                     calc_branch_impedances=False, branch_impedance_unit='ohm')
-    #top_all = create_nxgraph(net, respect_switches=False, include_lines=True, include_trafos=True,
-    #                         include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-    #                         calc_branch_impedances=False, branch_impedance_unit='ohm')
     if control_mode >= 1 or item.i_droop: #droop control
         #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
         q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  #item.p_cub if other mode and droop?
@@ -4272,7 +4247,6 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             logger.error(
                 f"{item}: only line, impedance, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
             return
-    #elif control_mode == 0:
     else:
         res_element_table = "res_bus"
     input_busses = []
@@ -4453,7 +4427,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 control_modus=control_modus, tol=1e-6,
                 name = item.loc_name
             )
-    elif control_mode== 3:#tan(phi)_control
+    elif control_mode== 3:  #tan(phi)_control
         if item.iQorient != 0:
             if not stactrl_in_service:
                 return
