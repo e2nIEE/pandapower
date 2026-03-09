@@ -261,7 +261,7 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
             - "lc" - Linear current approximation algorithm
             - "lin" - Linear approximation algorithm
 
-        error_tolerance_u_pu (float, 1e-8): error tolerance for voltage in p.u.
+        error_tolerance_vm_pu (float, 1e-8): error tolerance for voltage in p.u.
         max_iterations (int, 20): Maximum number of iterations for algorithms. No effect on linear approximation
             algorithms.
         validate_input (bool, False): Validate input data to be used for power-flow in power-grid-model. It is

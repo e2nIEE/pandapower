@@ -14,6 +14,7 @@ import pandas as pd
 from pandapower.network_structure import get_structure_dict
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
+from pandapower.create._utils import add_column_to_df
 
 
 class UCTE2pandapower:
@@ -733,11 +734,13 @@ class UCTE2pandapower:
                     self._set_column_to_type(net[ele], one_bool, bool_type)
         # some individual things
         if hasattr(net, "sgen"):
+            add_column_to_df(net, "sgen", "current_source")
             self._set_column_to_type(net["sgen"], "current_source", bool_type)
         if hasattr(net, "gen"):
             self._set_column_to_type(net["gen"], "slack", bool_type)
         if hasattr(net, "shunt"):
             self._set_column_to_type(net["shunt"], "step", int_type)
+            add_column_to_df(net, "shunt", "max_step")
             self._set_column_to_type(net["shunt"], "max_step", int_type)
         self.logger.info(
             "Finished setting the data types for the pandapower network in %ss."
