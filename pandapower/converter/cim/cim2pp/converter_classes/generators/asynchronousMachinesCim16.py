@@ -84,12 +84,10 @@ class AsynchronousMachinesCim16:
             asynchronous_machines['in_service'] = asynchronous_machines.inService
         else:
             asynchronous_machines['in_service'] = asynchronous_machines.connected
-        asynchronous_machines = asynchronous_machines.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
-                                                                      'connected': 'in_service', 'index_bus': 'bus',
-                                                                      'rxLockedRotorRatio': 'rx', 'iaIrRatio': 'lrc_pu',
-                                                                      'ratedPowerFactor': 'cos_phi', 'ratedU': 'vn_kv',
-                                                                      'efficiency': 'efficiency_n_percent',
-                                                                      'ratedMechanicalPower': 'pn_mech_mw'})
+        asynchronous_machines = asynchronous_machines.rename(columns={
+            'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'index_bus': 'bus', 'rxLockedRotorRatio': 'rx',
+            'iaIrRatio': 'lrc_pu', 'ratedPowerFactor': 'cos_phi', 'ratedU': 'vn_kv',
+            'efficiency': 'efficiency_n_percent', 'ratedMechanicalPower': 'pn_mech_mw'})
         asynchronous_machines['scaling'] = 1
         asynchronous_machines['efficiency_percent'] = 100
         return asynchronous_machines
