@@ -38,6 +38,7 @@ class CimConverter:
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
         self.report_container: ReportContainer = cim_parser.get_report_container()
         self.classes_dict = converter_classes
+        self.ignore_errors = bool(kwargs.get('ignore_errors', True))
 
     def merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
         return self.merge_eq_other_profiles(['ssh'], cim_type, add_cim_type_column)
@@ -183,7 +184,7 @@ class CimConverter:
                     level=LogLevel.ERROR, code=ReportCode.ERROR, message="Failed running a powerflow."))
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION,
                                                      message=traceback.format_exc()))
-                if not kwargs.get('ignore_errors', True):
+                if not self.ignore_errors:
                     raise e
             else:
                 self.logger.info("Power flow solved normal.")
@@ -213,7 +214,7 @@ class CimConverter:
                 level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                 message=traceback.format_exc()))
             self.net.measurement = self.net.measurement[0:0]
-            if not kwargs.get('ignore_errors', True): # todo move ignore_errors to cunstroctur
+            if not self.ignore_errors:
                 raise e
         # a special fix for BB and NB mixed networks:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
