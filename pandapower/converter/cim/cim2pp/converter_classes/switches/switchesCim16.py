@@ -85,7 +85,7 @@ class SwitchesCim16:
            eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
                                        & eqssh_switches.inService)
         elif self.cimConverter.cim_version == 'ltds' and eqssh_switches.index.size > 0:
-           eqssh_switches['in_service'] = (~eqssh_switches.open & eqssh_switches.inService)
+           eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.inService)
         elif eqssh_switches.index.size > 0:
-           eqssh_switches['in_service'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2)
+           eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2)
         return eqssh_switches
