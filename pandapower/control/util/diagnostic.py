@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from copy import deepcopy
 
+import pandas as pd
+
 from pandapower.control.util.auxiliary import get_controller_index
 from pandapower.control.controller.trafo_control import TrafoController
 
@@ -166,13 +168,13 @@ def shunt_characteristic_table_diagnostic(net):
         (~net["shunt"]['step_dependency_table'] & net["shunt"]['id_characteristic_table'].notna())
         ].shape[0]
     if mismatch != 0:
-        warnings.warn(f"Found {mismatch} shunt(s) with not both "
-                      f"step_dependency_table and id_characteristic_table parameters populated. "
-                      f"Power flow calculation will raise an error.", category=UserWarning)
+        warnings.warn(
+            f"Found {mismatch} shunt(s) with not both step_dependency_table and id_characteristic_table parameters populated. "
+            f"Power flow calculation will raise an error.", category=UserWarning
+        )
         warnings_count += 1
     # check if all relevant columns are populated in the shunt_characteristic_table
-    temp = net["shunt"].dropna(subset=["id_characteristic_table"])[
-        ["step_dependency_table", "id_characteristic_table"]]
+    temp = net.shunt.dropna(subset=["id_characteristic_table"])[["step_dependency_table", "id_characteristic_table"]]
     merged_df = temp.merge(net["shunt_characteristic_table"], left_on="id_characteristic_table",
                            right_on="id_characteristic", how="inner")
     unpopulated = merged_df.loc[~merged_df[cols].notna().all(axis=1)]
@@ -181,11 +183,11 @@ def shunt_characteristic_table_diagnostic(net):
                       "populated in the shunt_characteristic_table.", category=UserWarning)
         warnings_count += 1
     # check step_dependency_table & id_characteristic_table column types
-    if net["shunt"]['step_dependency_table'].dtype != 'bool':
+    if net.shunt.step_dependency_table.dtype != pd.BooleanDtype():
         warnings.warn("The step_dependency_table column in the shunt table is not of bool type.",
                       category=UserWarning)
         warnings_count += 1
-    if net["shunt"]['id_characteristic_table'].dtype != 'Int64':
+    if net.shunt.id_characteristic_table.dtype != 'Int64':
         warnings.warn("The id_characteristic_table column in the shunt table is not of Int64 type.",
                       category=UserWarning)
         warnings_count += 1
