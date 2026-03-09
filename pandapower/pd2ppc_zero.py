@@ -221,7 +221,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                 "Magnetizing impedance to vk0 ratio needs to be specified for transformer "
                 'modelling  \n Try : net.trafo["mag0_percent"] = 100'
             )
-        mag0_ratio = trafos.mag0_percent.values.astype(float)
+        mag0_ratio = trafos.mag0_percent.values.astype(float) * 1e-2
         if "mag0_rx" not in trafos:
             raise ValueError(
                 "Magnetizing impedance R/X ratio needs to be specified for transformer "
@@ -461,13 +461,13 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         )
     else:
         c = 1.1
-    if not "s_sc_%s_mva" % case in eg:
+    if "s_sc_%s_mva" % case not in eg:
         raise ValueError(
             "short circuit apparent power s_sc_%s_mva needs to be specified for " % case
             + "external grid"
         )
     s_sc = eg["s_sc_%s_mva" % case].values
-    if not "rx_%s" % case in eg:
+    if "rx_%s" % case not in eg:
         raise ValueError(
             "short circuit R/X rate rx_%s needs to be specified for external grid"
             % case

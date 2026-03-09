@@ -105,7 +105,14 @@ class AcLineSegmentsCim16:
                 self.cimConverter.report_container.add_log(Report(
                     level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                     message="The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count)))
-            ac_line_segments = ac_line_segments[0:0]  # todo ac_line_segments = dups.loc[dups == 2] or respect ignore_errors
+            # Only remove the problematic ACLineSegments, keep the valid ones
+            ac_line_segments = ac_line_segments[~ac_line_segments['rdfId'].isin(dups.index)]
+            self.logger.warning("Removed %s ACLineSegments with invalid Terminals, continuing with %s valid segments." %
+                                (len(dups), ac_line_segments.index.size // 2))
+            self.cimConverter.report_container.add_log(Report(
+                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
+                message="Removed %s ACLineSegments with invalid Terminals, continuing with %s valid segments." %
+                        (len(dups), ac_line_segments.index.size // 2)))
         ac_line_segments = ac_line_segments.reset_index()
         # now merge with OperationalLimitSets and CurrentLimits
         eq_operational_limit_sets = self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']]

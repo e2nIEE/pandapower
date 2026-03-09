@@ -102,11 +102,11 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
                             color=line_color, **kwargs)
                 if bus_colors is not None:
                     if isinstance(bus_colors, str):
-                        bus_colors = {b: bus_colors for b in net.bus.index}
+                        bus_colors = dict.fromkeys(net.bus.index, bus_colors)
                     for bus, x, y in zip((from_bus, to_bus), x, y):
                         if bus in bus_colors:
                             ax.plot(x, y, 'o', color=bus_colors[bus], ms=bus_size)
-                kwargs = {k: v for k, v in kwargs.items() if not k == "label"}
+                kwargs = {k: v for k, v in kwargs.items() if k != "label"}
 
         # trafo geodata
         if plot_transformers:
@@ -126,7 +126,7 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
                         tr_coords = ([x0 + d.loc[bi], x0 + d.loc[bj]],
                                      [net.res_bus.at[bi, 'vm_pu'], net.res_bus.at[bj, 'vm_pu']])
                         ax.plot(*tr_coords, color=trafo_color,
-                                **{k: v for k, v in kwargs.items() if not k == "color"})
+                                **{k: v for k, v in kwargs.items() if k != "color"})
 
         if xlabel:
             ax.set_xlabel(xlabel, fontweight="bold", color=(.4, .4, .4))

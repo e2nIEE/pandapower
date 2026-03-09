@@ -268,7 +268,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         logger.info("running pandapower loadflow")
         runpp(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
 
-    all_diffs = dict()
+    all_diffs = {}
     logger.info('pandapower net converged: %s' % net.converged)
     _set_pf_results(net, pf_results, is_unbalanced=is_unbalanced)
 

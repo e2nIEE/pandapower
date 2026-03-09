@@ -7,9 +7,30 @@
 import numpy as np
 import pytest
 
-from pandapower import create_empty_network, create_bus, create_ext_grid, create_transformer, create_line, create_load, \
-    create_gen, create_sgen
+from pandapower.create import (
+    create_empty_network, create_bus, create_ext_grid, create_transformer, create_line, create_load, create_gen,
+    create_sgen
+)
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
+
+
+def pytest_collection_modifyitems(config, items):
+    """
+    For every collected test:
+      * if it has the `slow` marker → set a larger timeout
+      * otherwise keep the global timeout (no extra work needed)
+
+    """
+    # Global timeout we defined above (in seconds)
+    default_timeout = config.getoption("timeout")
+    # Desired timeout for slow tests – change as you need
+    slow_timeout = 180  # 3 minutes
+
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(pytest.mark.timeout(slow_timeout))
+        else:
+            item.add_marker(pytest.mark.timeout(default_timeout))
 
 
 @pytest.fixture(scope="session")
