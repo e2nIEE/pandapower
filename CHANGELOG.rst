@@ -20,6 +20,8 @@ Change Log
 - [ADDED] rundcpp: Added DC elements to DC powerflow
 - [ADDED] python: support for version 3.14 added to the test pipelines
 - [FIXED] renamed b2b_vsc to vsc_stacked
+- [ADDED] Station Controller support for power factor control and tangens control
+- [CHANGED] attribute voltage_ctrl in Station Controller to control_modus to select new control modi. Changed the type from boolean to enum class
 
 [3.3.2] - 2026-01-13
 -------------------------------
