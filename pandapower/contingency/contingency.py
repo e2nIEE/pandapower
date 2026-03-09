@@ -21,7 +21,7 @@ try:
 
     from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
     from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
-    from lightsim2grid_cpp import SolverType
+    from lightsim2grid_cpp import SolverType, GridModel
 
     lightsim2grid_installed = True
 except ImportError:
@@ -35,6 +35,29 @@ except ImportError:
     KLU_solver_available = False
 
 from pandapower.run import runpp
+from pandapower.auxiliary import pandapowerNet
+
+
+def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
+    """
+    Try to initialize a lightsim2grid model
+
+    Arguments:
+        net: The pandapower network to use in lightsim2grid
+
+    Returns:
+        The initialized lightsim2grid model
+
+    Raises:
+        Any Exception thrown by lightsim2grid is logged and raised again.
+    """
+    try:
+        ls2g_model = init_ls2g(net)
+        return ls2g_model
+    except Exception as e:
+        logger.error(f"Failed to create lightsim2grid model for network: {net.name}")
+        logger.exception(e)
+        raise e
 
 
 def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None, write_to_net=True,
@@ -205,11 +228,11 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
               "slack bus of pandapower will be used."
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", msg)
-            lightsim_grid_model = init_ls2g(net)
+            lightsim_grid_model = pp_to_ls2g(net)
         net.gen['slack'] = slack_backup
         solver_type = SolverType.KLU if KLU_solver_available else SolverType.SparseLU
     else:
-        lightsim_grid_model = init_ls2g(net)
+        lightsim_grid_model = pp_to_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
     if tps_flag:
