@@ -315,17 +315,29 @@ def test_Simbench_1_EHV_mixed__2_no_sw_res_dcline(Simbench_1_EHV_mixed__2_no_sw)
 
 
 def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw):
-    assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 571
+    assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 1142
     element_0 = Simbench_1_EHV_mixed__2_no_sw.measurement[
-        Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
         Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus[
-                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]
+                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]) &
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['measurement_type'] == 'v')]
     assert element_0['name'].item() == 'EHV Bus 1'
     assert element_0['measurement_type'].item() == 'v'
     assert element_0['element_type'].item() == 'bus'
     assert element_0['value'].item() == pytest.approx(1.0920, abs=0.000001)
     assert element_0['std_dev'].item() == pytest.approx(0.001092, abs=0.000001)
     assert element_0['side'].item() is None
+    element_1 = Simbench_1_EHV_mixed__2_no_sw.measurement[
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
+        Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus[
+                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]) &
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['measurement_type'] == 'angle')]
+    assert element_1['name'].item() == 'EHV Bus 1'
+    assert element_1['measurement_type'].item() == 'angle'
+    assert element_1['element_type'].item() == 'bus'
+    assert element_1['value'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_1['std_dev'].item() == pytest.approx(0.001, abs=0.000001)
+    assert element_1['side'].item() is None
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
