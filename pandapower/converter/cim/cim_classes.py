@@ -475,7 +475,7 @@ class CimParser:
                                                  message="The CGMES profile could not be parsed from the XML."))
             raise Exception("The CGMES profile could not be parsed from the XML.")
 
-    def _parse_source_file(self, file: str, output: dict, encoding: str | None, profile_name: str | None = None):
+    def _parse_source_file(self, file: str, output: dict, encoding: str | None):
         self.logger.info(f"Parsing file: {file}")
         if not self._check_file(file):
             return
