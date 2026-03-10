@@ -31,7 +31,7 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
         net.format_version = net.version
     if Version(str(net.format_version)) > Version(str(net.version).split('.dev')[0]):
         net.format_version = net.version
-    if Version(net.format_version) > Version(__format_version__):
+    if Version(str(net.format_version)) > Version(__format_version__):
         msg1 = (f"The network format version {net.format_version} is newer than the current "
                 f"pandapower version {__format_version__}. ")
         if donot_open_newer:
@@ -44,6 +44,7 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
                                   "install --upgrade pandapower`).")
             logger.warning(msg1 + "Some features may not work as expected.")
     if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
+        # TODO: What if net.format_version is not a string?
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
