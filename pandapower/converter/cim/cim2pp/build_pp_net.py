@@ -26,9 +26,10 @@ sc = cim_tools.get_pp_net_special_columns_dict()
 
 class CimConverter:
 
-    def __init__(self, cim_parser: cim_classes.CimParser, converter_classes: Dict, **kwargs):
+    def __init__(self, cim_parser: cim_classes.CimParser, converter_classes: Dict, cim_version: str, **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cim_parser: cim_classes.CimParser = cim_parser
+        self.cim_version = cim_version.lower()
         self.kwargs = kwargs
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
         self.net: pandapowerNet = create_empty_network()
@@ -37,6 +38,7 @@ class CimConverter:
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()
         self.report_container: ReportContainer = cim_parser.get_report_container()
         self.classes_dict = converter_classes
+        self.ignore_errors = bool(kwargs.get('ignore_errors', True))
 
     def merge_eq_ssh_profile(self, cim_type: str, add_cim_type_column: bool = False) -> pd.DataFrame:
         return self.merge_eq_other_profiles(['ssh'], cim_type, add_cim_type_column)
@@ -163,8 +165,9 @@ class CimConverter:
                     message="Creating the coordinates failed, returning the net without coordinates!"))
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                                                      message=traceback.format_exc()))
-        self.net = pp_tools.set_pp_col_types(net=self.net)
 
+        # set the datatypes after the conversion, especially for integer and boolean columns
+        self.net = pp_tools.set_pp_col_types(net=self.net)
         # create transformer tap controller
         self.classes_dict['tapController'](cimConverter=self).create_tap_controller_for_power_transformers()
 
@@ -181,13 +184,14 @@ class CimConverter:
                     level=LogLevel.ERROR, code=ReportCode.ERROR, message="Failed running a powerflow."))
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION,
                                                      message=traceback.format_exc()))
-                if not kwargs.get('ignore_errors', True):
+                if not self.ignore_errors:
                     raise e
             else:
                 self.logger.info("Power flow solved normal.")
                 self.report_container.add_log(Report(
                     level=LogLevel.INFO, code=ReportCode.INFO, message="Power flow solved normal."))
         try:
+            # SV: StateVariables (loadflow results), Analog: raw measurements from field
             create_measurements = kwargs.get('create_measurements', None)
             if create_measurements is not None and create_measurements.lower() == 'sv':
                 CreateMeasurements(self.net, self.cim).create_measurements_from_sv()
@@ -210,7 +214,7 @@ class CimConverter:
                 level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                 message=traceback.format_exc()))
             self.net.measurement = self.net.measurement[0:0]
-            if not kwargs.get('ignore_errors', True):
+            if not self.ignore_errors:
                 raise e
         # a special fix for BB and NB mixed networks:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
@@ -225,13 +229,10 @@ class CimConverter:
                 fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
         # network behind this boundary node is attached. In this case, disable the EquivalentInjection.
-        ward_t = self.net.ward.copy()
-        ward_t['bus_prf'] = ward_t['bus'].map(self.net.bus[[sc['o_prf']]].to_dict().get(sc['o_prf']))
-        self.net.ward.loc[(self.net.ward.bus.duplicated(keep=False) &
-                           ((ward_t['bus_prf'] == 'eq_bd') | (ward_t['bus_prf'] == 'tp_bd'))), 'in_service'] = False
-        xward_t = self.net.xward.copy()
-        xward_t['bus_prf'] = xward_t['bus'].map(self.net.bus[[sc['o_prf']]].to_dict().get(sc['o_prf']))
-        self.net.xward.loc[(self.net.xward.bus.duplicated(keep=False) &
-                            ((xward_t['bus_prf'] == 'eq_bd') | (xward_t['bus_prf'] == 'tp_bd'))), 'in_service'] = False
+        for w in ["ward", "xward"]:
+            w_t = self.net[w].copy()
+            w_t['bus_prf'] = w_t['bus'].map(self.net.bus[[sc['o_prf']]].to_dict().get(sc['o_prf']))
+            self.net[w].loc[(self.net[w].bus.duplicated(keep=False) &
+                             ((w_t['bus_prf'] == 'eq_bd') | (w_t['bus_prf'] == 'tp_bd'))), 'in_service'] = False
         self.net['report_container'] = self.report_container
         return self.net
