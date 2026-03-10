@@ -10,8 +10,9 @@ import os
 import pandas as pd
 import pytest
 from packaging import version as vs
+from packaging.version import Version
 
-from pandapower import pp_dir, from_json, convert_format, runpp
+from pandapower import pp_dir, from_json, convert_format, runpp, __format_version__
 
 folder = os.path.join(pp_dir, "test", "test_files", "old_versions")
 found_versions = [file.split("_")[1].split(".json")[0] for _, _, files
@@ -103,6 +104,18 @@ def test_convert_format_renaming_characteristic_table():
     assert 'q_capability_characteristic' not in net
     assert 'q_capability_curve_characteristic' in net
     pd.testing.assert_frame_equal(net['q_capability_curve_table'], capa_df, atol=1e-5)
+
+
+def test_convert_format_newer_format_version():
+    version = sorted(found_versions, key=lambda k: Version(k))[-1]
+    filename = os.path.join(folder, "example_%s.json" % version)
+    if not os.path.isfile(filename):
+        raise ValueError("File for version %s does not exist" % version)
+    net = from_json(filename, convert=False)
+    net.format_version = ".".join([str(int(__format_version__.split(".")[0]) + 1)] + __format_version__.split(".")[1:])
+    with pytest.raises(ValueError, match="is newer than the current pandapower version"):
+        convert_format(net)
+    convert_format(net, donot_open_newer=False)
 
 
 if __name__ == '__main__':
