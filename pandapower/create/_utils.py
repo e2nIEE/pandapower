@@ -46,8 +46,14 @@ def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
             columns=net_struct_dict[table_name].keys(), dtype=net_struct_dict[table_name].values()
         )
     # Add Optional Column:
-    dtype = get_structure_dict(False)[table_name][column_name]
+    net_struct_dict = get_structure_dict(False)
+    dtype = net_struct_dict[table_name][column_name]
     net[table_name][column_name] = pd.Series(dtype=dtype)
+    # Ensure column order:
+    desired_order = list(net_struct_dict[table_name].keys())
+    struct_columns = [col for col in desired_order if col in net[table_name].columns]
+    custom_columns = [col for col in net[table_name].columns if col not in desired_order]
+    net[table_name] = net[table_name][struct_columns+custom_columns]
 
 
 def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int], nr_buses: int) -> list[str]:
