@@ -71,6 +71,55 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
     return pp_net
 
 def average_voltage_setpoints(net: pandapowerNet) -> None:
+    """
+    Adjust generator voltage setpoints by averaging vm_pu for generators that
+    appear to represent the same physical voltage setpoint across connected buses.
+
+    This function mutates net.gen in-place.
+
+    Algorithm / detailed behavior:
+    - Create a temporary 'prefix' column from the first 7 characters of each
+        generator name. Generators that share this prefix are treated as a group
+        of candidates for having a shared voltage setpoint.
+    - For each group with more than one distinct name:
+        - Collect the buses where those generators are connected.
+        - Starting from the first bus in the list, expand the set of buses by
+            repeatedly calling get_connected_buses(..., consider=('s'), respect_switches=False)
+            until no new buses are found. This performs a local neighborhood search
+            across switch connections to find buses electrically tied to the start bus.
+        - Find which of the group's generator buses (beyond the first) lie within
+            the expanded connected-bus set. If any are found, consider the first bus
+            and those matching buses as "critical" for averaging.
+        - Compute the arithmetic mean of vm_pu for generators connected to the
+            critical buses and assign that mean to all of those generators' vm_pu.
+    - Remove the temporary 'prefix' column.
+
+    Parameters
+    - net: pandapowerNet
+            A pandapower network object expected to contain a net.gen table with at
+            least the following columns:
+            - name (string)
+            - bus (bus indices)
+            - vm_pu (voltage setpoint in per-unit)
+
+    Returns
+    - None
+
+    Side effects and notes
+    - The function modifies net.gen['vm_pu'] in-place for generators deemed to
+        share a voltage setpoint.
+    - A temporary column 'prefix' is added to net.gen and removed before returning.
+    - Grouping is done by the first 7 characters of the generator name; adjust
+        this slice if your naming convention differs.
+    - The function depends on get_connected_buses to discover electrically
+        connected buses; its behavior (which element types are considered and how
+        switches are handled) affects which generators are averaged together.
+
+    Example (conceptual)
+    - If generators "GEN_A_01" and "GEN_A_02" share the same 7-char prefix and
+        their buses are connected through switches, their vm_pu values will be
+        replaced by their common average.
+    """
     net.gen["prefix"] = net.gen["name"].str[:7]
     name_sets = (
         net.gen
