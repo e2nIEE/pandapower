@@ -110,7 +110,6 @@ def test_iec60909_on_single_branch():
             "max": [144.337567,     80.016087]
         }
     }
-    print("\n")
     for tolerance in cases.keys():
         for case in cases[tolerance].keys():
             net = create_empty_network()
@@ -119,7 +118,6 @@ def test_iec60909_on_single_branch():
             create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=50., rx_min=1, rx_max=1)
             create_impedance(net, b1, b2, 0.01, 0, 1)
             calc_sc(net, case=case, lv_tol_percent=tolerance)
-            print(f"Tolerance: {tolerance}%, Case: {case}, Ikss: {net.res_bus_sc.ikss_ka.values}")
             assert np.allclose(net.res_bus_sc.ikss_ka, cases[tolerance][case], atol=1e-3)
 
 
