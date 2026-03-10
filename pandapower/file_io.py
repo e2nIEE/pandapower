@@ -4,16 +4,15 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import pickle
-
-import os
-import sys
 import json
+import os
+import pickle
+import sys
 from warnings import warn
+
 import numpy
 import pandas as pd
 from packaging.version import Version
-
 
 try:
     import xlsxwriter
@@ -33,7 +32,7 @@ from pandapower.std_types import basic_std_types
 from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
 from pandapower.io_utils import to_dict_with_coord_transform, to_dict_of_dfs, PPJSONEncoder, encrypt_string, \
-    get_raw_data_from_pickle, transform_net_with_df_and_geo, check_net_version, from_dict_of_dfs, decrypt_string, \
+    get_raw_data_from_pickle, transform_net_with_df_and_geo, from_dict_of_dfs, decrypt_string, \
     PPJSONDecoder
 
 import logging
@@ -146,7 +145,7 @@ def to_json(net, filename=None, encryption_key=None, store_index_names=None):
             fp.write(json_string)
 
 
-def from_pickle(filename, convert=True):
+def from_pickle(filename, convert=True, drop_invalid_geodata=True, ignore_version_conflicts=False):
     """
     Load a pandapower format Network from pickle file
 
@@ -156,6 +155,13 @@ def from_pickle(filename, convert=True):
 
         **convert** (bool, True) - If True, converts the format of the net loaded from pickle
         from the older version of pandapower to the newer version format
+
+        **drop_invalid_geodata** (bool, True) - If set to True, drop geodata entries with invalid\
+        coordinates instead of raising an error
+
+        **ignore_version_conflicts** (bool, False) - If set to True, ignore version conflicts \
+        between the net being loaded and the pandapower version. This can lead to errors when \
+        loading nets saved in older formats. Use with caution!
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -172,14 +178,12 @@ def from_pickle(filename, convert=True):
     transform_net_with_df_and_geo(net, ["bus_geodata"], ["line_geodata"])
 
     if convert:
-        convert_format(net)
-
-        # compare pandapowerNet-format_version and package-version
-        check_net_version(net)
+        convert_format(net, drop_invalid_geodata=drop_invalid_geodata,
+                       donot_open_newer=not ignore_version_conflicts)
     return net
 
 
-def from_excel(filename, convert=True):
+def from_excel(filename, convert=True, drop_invalid_geodata=True, ignore_version_conflicts=False):
     """
     Load a pandapower network from an excel file
 
@@ -188,6 +192,13 @@ def from_excel(filename, convert=True):
 
         **convert** (bool, True) - If True, converts the format of the net loaded from excel from
             the older version of pandapower to the newer version format
+
+        **drop_invalid_geodata** (bool, True) - If set to True, drop geodata entries with invalid\
+        coordinates instead of raising an error
+
+        **ignore_version_conflicts** (bool, False) - If set to True, ignore version conflicts \
+        between the net being loaded and the pandapower version. This can lead to errors when \
+        loading nets saved in older formats. Use with caution!
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -211,10 +222,8 @@ def from_excel(filename, convert=True):
     except:
         net = _from_excel_old(xls)
     if convert:
-        convert_format(net)
-
-        # compare pandapowerNet-format_version and package-version
-        check_net_version(net)
+        convert_format(net, drop_invalid_geodata=True,
+                       donot_open_newer=not ignore_version_conflicts)
     return net
 
 
@@ -243,7 +252,8 @@ def _from_excel_old(xls):
 
 def from_json(filename, convert=True, encryption_key=None, elements_to_deserialize=None,
               keep_serialized_elements=True, add_basic_std_types=False, replace_elements=None,
-              empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False):
+              empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False,
+              ignore_version_conflicts=False):
     """
     Load a pandapower network from a JSON file.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -278,6 +288,13 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         **ignore_unknown_objects** (bool, False) - If set to True, ignore any objects that cannot be
          deserialized instead of raising an error
 
+        **drop_invalid_geodata** (bool, False) - If set to True, drop geodata entries with invalid \
+        coordinates instead of raising an error
+
+        **ignore_version_conflicts** (bool, False) - If set to True, ignore version conflicts \
+        between the net being loaded and the pandapower version. This can lead to errors when \
+        loading nets saved in older formats. Use with caution!
+
     OUTPUT:
         **net** (dict) - The pandapower format network
 
@@ -304,13 +321,15 @@ def from_json(filename, convert=True, encryption_key=None, elements_to_deseriali
         replace_elements=replace_elements,
         empty_dict_like_object=empty_dict_like_object,
         ignore_unknown_objects=ignore_unknown_objects,
-        drop_invalid_geodata=drop_invalid_geodata)
+        drop_invalid_geodata=drop_invalid_geodata,
+        ignore_version_conflicts=ignore_version_conflicts
+    )
 
 
 def from_json_string(json_string, convert=False, encryption_key=None, elements_to_deserialize=None,
                      keep_serialized_elements=True, add_basic_std_types=False,
                      replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False,
-                     drop_invalid_geodata=False):
+                     drop_invalid_geodata=False, ignore_version_conflicts=False):
     """
     Load a pandapower network from a JSON string.
     The index of the returned network is not necessarily in the same order as the original network.
@@ -343,6 +362,13 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
 
         **ignore_unknown_objects** (bool, False) - If set to True, ignore any objects that cannot be
          deserialized instead of raising an error
+
+        **drop_invalid_geodata** (bool, False) - If set to True, drop geodata entries with invalid \
+        coordinates instead of raising an error
+
+        **ignore_version_conflicts** (bool, False) - If set to True, ignore version conflicts \
+        between the net being loaded and the pandapower version. This can lead to errors when \
+        loading nets saved in older formats. Use with caution!
 
     OUTPUT:
         **net** (dict) - The pandapower format network
@@ -402,10 +428,9 @@ def from_json_string(json_string, convert=False, encryption_key=None, elements_t
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net, elements_to_deserialize=elements_to_deserialize, drop_invalid_geodata=drop_invalid_geodata)
-
-        # compare pandapowerNet-format_version and package-version
-        check_net_version(net)
+        convert_format(net, elements_to_deserialize=elements_to_deserialize,
+                       drop_invalid_geodata=drop_invalid_geodata,
+                       donot_open_newer=not ignore_version_conflicts)
     if add_basic_std_types:
         # get std-types and add only new keys ones
         for key, std_types in basic_std_types().items():

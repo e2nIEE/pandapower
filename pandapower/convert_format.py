@@ -20,7 +20,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True, donot_open_newer=True):
+def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True,
+                   donot_open_newer=True):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
@@ -34,10 +35,13 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=True,
         msg1 = (f"The network format version {net.format_version} is newer than the current "
                 f"pandapower version {__format_version__}. ")
         if donot_open_newer:
-            msg = msg1 + "Please update pandapower to the latest version."
+            msg = msg1 + ("Please update pandapower to the latest version (e.g. by using `pip "
+                          "install --upgrade pandapower`).")
             raise ValueError(msg)
         else:
-            logger.warning(msg1 + "Some features may not work as expected. ")
+            logger.warning(msg1 + "Some features may not work as expected. You should consider "
+                                  "updating pandapower to the latest version (e.g. by using `pip "
+                                  "install --upgrade pandapower`).")
     _add_nominal_power(net)
     _add_missing_tables(net)
     _rename_columns(net, elements_to_deserialize)
