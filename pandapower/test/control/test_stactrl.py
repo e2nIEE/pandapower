@@ -174,6 +174,7 @@ def test_qlimits_voltctrl():
     runpp(net, run_control=True, enforce_q_lims=True)
     assert (abs(net.res_sgen.loc[0, "q_mvar"] + 0.8) < tol)
 
+
 @pytest.mark.parametrize("v", linspace(start=0.98, stop=1.02, num=5, dtype=float64))
 @pytest.mark.parametrize("p", linspace(start=-2.5, stop=2.5, num=10, dtype=float64))
 def test_qlimits_with_capability_curve(v, p):
@@ -187,6 +188,8 @@ def test_qlimits_with_capability_curve(v, p):
         'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
         'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
     add_column_to_df(net, "sgen", "id_q_capability_characteristic")
+    add_column_to_df(net, "sgen", "reactive_capability_curve")
+    add_column_to_df(net, "sgen", "curve_style")
     net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)
