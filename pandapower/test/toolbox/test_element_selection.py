@@ -36,7 +36,7 @@ def test_next_bus():
     bus4 = create_bus(net, vn_kv=0.4)
     bus5 = create_bus(net, vn_kv=20)
 
-    trafo0 = create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, name='trafo0',
+    create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, name='trafo0',
                                   std_type='63/25/38 MVA 110/20/10 kV')
     trafo1 = create_transformer(net, hv_bus=bus2, lv_bus=bus3, std_type='0.4 MVA 10/0.4 kV')
 
@@ -45,8 +45,8 @@ def test_next_bus():
 
     # switch0=create_switch(net, bus = bus0, element = trafo0, et = 't3') #~~~~~ not implementable now
     switch1 = create_switch(net, bus=bus1, element=bus5, et='b')
-    switch2 = create_switch(net, bus=bus2, element=trafo1, et='t')
-    switch3 = create_switch(net, bus=bus3, element=line1, et='l')
+    create_switch(net, bus=bus2, element=trafo1, et='t')
+    create_switch(net, bus=bus3, element=line1, et='l')
 
     # assert next_bus(net,bus0,trafo0,et='trafo3w')==bus1                         # not implemented in existing toolbox
     # assert next_bus(net,bus0,trafo0,et='trafo3w',choice_for_trafo3w='lv')==bus2 # not implemented in existing toolbox
@@ -108,7 +108,7 @@ def test_get_connected_buses():
     line1 = create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1,
                         std_type='24-AL1/4-ST1A 0.4')
 
-    switch0a = create_switch(net, bus=bus0, element=trafo0, et='t3')
+    create_switch(net, bus=bus0, element=trafo0, et='t3')
     switch0b = create_switch(net, bus=bus2, element=trafo0, et='t3')
     switch1 = create_switch(net, bus=bus1, element=bus5, et='b')
     switch2 = create_switch(net, bus=bus2, element=trafo1, et='t')

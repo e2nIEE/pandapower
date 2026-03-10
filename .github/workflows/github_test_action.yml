@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python' and the release pipelines
         group: [ 1, 2 ]
@@ -36,12 +36,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          uv sync --all-extras          
-          # if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+          uv sync --extra dev          
           uv pip install pytest-split
           uv pip uninstall juliacall
           # if ${{ matrix.python-version == '3.10' }}; then uv pip install pypower; fi
           # if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
+          # if ${{ matrix.python-version == '3.14' }}; then uv pip install lightsim2grid; fi
           # if ${{ matrix.python-version == '3.13' }}; then uv pip install lightsim2grid; fi
       - name: List of installed packages
         run: |
@@ -49,12 +49,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.10' }}
         run: |
-          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.10' }}
         run: |
-          uv pip install pytest-cov
-          uv run pytest -n=auto --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv pip install pytest-cov numpy~=1.26
+          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         if: ${{ matrix.python-version == '3.10' }}
@@ -63,6 +63,30 @@ jobs:
           name: coverage-${{ matrix.group }}
           path: ./coverage-${{ matrix.group }}.xml
 
+  numpy1-support:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        group: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        with:
+          python-version: "3.14"
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev          
+          uv pip install pytest-split
+          uv pip install numpy~=1.26
+          uv pip uninstall juliacall
+      - name: List of installed packages
+        run: |
+          uv pip list
+      - name: Test with pytest
+        run: |
+          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
 
   opf:
     # needs: build
@@ -71,7 +95,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
         julia-version: ['1.10']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
@@ -88,9 +112,9 @@ jobs:
       #    python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          # uv sync --all-extras
+          # uv sync --extra dev
           python -m pip install pypower pytest-split pytest-cov juliacall julia
-          python -m pip install .[pandamodels]
+          python -m pip install .[pandamodels,test]
           # if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       #- name: Install Julia
       #  run: |
@@ -109,7 +133,7 @@ jobs:
       - name: Test with pytest, Codecov and Coverage
         run: |
           pytest --cov=./ --cov-report=xml pandapower/test/opf
-          # uv run python-jl -m pytest -n=auto --cov=./ --cov-report=xml
+          # uv run python-jl -m pytest --cov=./ --cov-report=xml
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
   upload-coverage:
@@ -150,7 +174,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
         group: [ 1, 2 ]
     steps:
     - uses: actions/checkout@v4
@@ -160,7 +184,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        uv sync --all-extras
+        uv sync --extra dev
         uv pip install pytest-split
         if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
     - name: List of installed packages
@@ -175,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
     - uses: actions/checkout@v4
     - name: Install uv
@@ -258,7 +282,7 @@ jobs:
           --health-retries 5
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
     steps:
     - name: Wait for PostgreSQL database to be ready
       run: |
@@ -307,48 +331,34 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # UV does not work for julia, do not add it here!
       - uses: actions/checkout@v4
-      #- name: Install uv
-      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-      #  with:
-      #    python-version: '3.11'
       - name: Install dependencies
         run: |
-          # uv sync --all-extras
-          python -m pip install -e .[all]
-          # ./.install_julia.sh 1.10.4
-          python -m pip install julia seaborn jupyter juliacall
-          # uv run python ./.install_pycall.py
+          python -m pip install -e .[all,tutorials,test]
       - name: List all installed packages
         run: |
           python -m pip list
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          pytest --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          pytest --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # UV does not work for julia, do not add it here!
       - uses: actions/checkout@v4
-      #- name: Install uv
-      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-      #  with:
-      #    python-version: '3.11'
       - name: Install dependencies
         run: |
-          # uv sync --all-extras
-          # ./.install_julia.sh 1.10.4
-          python -m pip install -e .[all]
-          python -m pip install julia seaborn juliacall jupyter
-          # uv run python ./.install_pycall.py
+          python -m pip install -e .[all,tutorials,test]
       - name: List all installed packages
         run: |
           python -m pip list
       - name: Test with pytest
         run: |
-          pytest -W error --nbmake -n=auto --nbmake-timeout=900 "./tutorials"
+          pytest -W error --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
 
   docs_check:
     needs: build
@@ -359,7 +369,7 @@ jobs:
       - name: Check sphinx build
         uses: ammaraskar/sphinx-action@54e52bfb642e9b60ea5b6bcb05fe3f74b40d290a #8.2.3
         with:
-          pre-build-command: "python -m pip install uv && uv pip install .[docs] --system --link-mode=copy"
+          pre-build-command: "python -m pip install uv && uv pip install .[dev] --system --link-mode=copy"
           build-command: "sphinx-build -b html . _build -W"
           docs-folder: "doc/"
 
@@ -368,7 +378,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        python-version: ['3.13']
+        python-version: ['3.14']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
     steps:

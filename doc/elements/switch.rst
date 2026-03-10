@@ -8,6 +8,7 @@ Create Function
 =====================
 
 .. autofunction:: pandapower.create.create_switch
+.. autofunction:: pandapower.create.create_switches
 
 Input Parameters
 =====================

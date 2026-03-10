@@ -49,69 +49,44 @@ def create_ext_grid(
     External grids represent the higher level power grid connection and are modelled as the slack
     bus in the power flow calculation.
 
-    INPUT:
-        **net** - pandapower network
+    Parameters:
+        net: pandapower network
+        bus: bus where the slack is connected
+        vm_pu: voltage at the slack node in per unit
+        va_degree: voltage angle at the slack node in degrees*
+        name: name of the external grid
+        in_service: True for in_service or False for out of service
+        s_sc_max_mva: maximum short circuit apparent power to calculate internal impedance of ext_grid for short circuit
+            calculations
+        s_sc_min_mva: minimum short circuit apparent power to calculate internal impedance of ext_grid for short circuit
+            calculations
+        rx_max: maximum R/X-ratio to calculate internal impedance of ext_grid for short circuit calculations
+        rx_min: minimum R/X-ratio to calculate internal impedance of ext_grid for short circuit calculations
+        max_p_mw: Maximum active power injection. Only respected for OPF
+        min_p_mw: Minimum active power injection. Only respected for OPF
+        max_q_mvar: Maximum reactive power injection. Only respected for OPF
+        min_q_mvar: Minimum reactive power injection. Only respected for OPF
+        index: The index to use if available
+        r0x0_max: maximum R/X-ratio to calculate Zero sequence internal impedance of ext_grid
+        x0x_max: maximum X0/X-ratio to calculate Zero sequence internal impedance of ext_grid
+        slack_weight: Contribution factor for distributed slack power flow calculation (active power balancing)
+        controllable: Control of value limits
+        
+            - True: p_mw, q_mvar and vm_pu limits are enforced for the ext_grid in OPF. The voltage limits set in the \
+            ext_grid bus are enforced.
+            - False: p_mw and vm_pu set points are enforced and *limits are ignored*. The vm_pu set point is enforced \
+            and limits of the bus table are ignored. Defaults to False if "controllable" column exists in DataFrame
 
-        **bus** (int) - bus where the slack is connected
+            \\* considered in load flow if calculate_voltage_angles = True
+        
+        **kwargs: Additional keyword arguments
 
-    OPTIONAL:
-        **vm_pu** (float, default 1.0) - voltage at the slack node in per unit
-
-        **va_degree** (float, default 0.) - voltage angle at the slack node in degrees*
-
-        **name** (string, default None) - name of the external grid
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **s_sc_max_mva** (float, NaN) - maximum short circuit apparent power to calculate internal \
-            impedance of ext_grid for short circuit calculations
-
-        **s_sc_min_mva** (float, NaN) - minimum short circuit apparent power to calculate internal \
-            impedance of ext_grid for short circuit calculations
-
-        **rx_max** (float, NaN) - maximum R/X-ratio to calculate internal impedance of ext_grid \
-            for short circuit calculations
-
-        **rx_min** (float, NaN) - minimum R/X-ratio to calculate internal impedance of ext_grid \
-            for short circuit calculations
-
-        **max_p_mw** (float, NaN) - Maximum active power injection. Only respected for OPF
-
-        **min_p_mw** (float, NaN) - Minimum active power injection. Only respected for OPF
-
-        **max_q_mvar** (float, NaN) - Maximum reactive power injection. Only respected for OPF
-
-        **min_q_mvar** (float, NaN) - Minimum reactive power injection. Only respected for OPF
-
-        **r0x0_max** (float, NaN) - maximum R/X-ratio to calculate Zero sequence
-            internal impedance of ext_grid
-
-        **x0x_max** (float, NaN) - maximum X0/X-ratio to calculate Zero sequence
-            internal impedance of ext_grid
-
-        **slack_weight** (float, default 1.0) - Contribution factor for distributed slack power flow calculation \
-            (active power balancing)
-
-        **controllable** (bool, NaN) - Control of value limits
-
-                                        - True: p_mw, q_mvar and vm_pu limits are enforced for the \
-                                             ext_grid in OPF. The voltage limits set in the \
-                                             ext_grid bus are enforced.
-
-                                        - False: p_mw and vm_pu set points are enforced and *limits are\
-                                              ignored*. The vm_pu set point is enforced and limits \
-                                              of the bus table are ignored. Defaults to False if \
-                                              "controllable" column exists in DataFrame
-
-        \\* considered in load flow if calculate_voltage_angles = True
-
-    EXAMPLE:
-        create_ext_grid(net, 1, voltage=1.03)
-
+    Example:
+        >>> create_ext_grid(net, 1, voltage=1.03)
+        
         For three phase load flow
 
-        create_ext_grid(net, 1, voltage=1.03, s_sc_max_mva=1000, rx_max=0.1, r0x0_max=0.1,\
-                       x0x_max=1.0)
+        >>> create_ext_grid(net, 1, voltage=1.03, s_sc_max_mva=1000, rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
     """
     _check_element(net, bus)
 

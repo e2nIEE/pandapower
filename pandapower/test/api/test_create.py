@@ -546,12 +546,12 @@ def test_create_lines_from_parameters():
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.in_service.dtype == bool
-    assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
+    assert net.line.at[l[0], "in_service"]
+    assert not net.line.at[l[1], "in_service"]
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "max_loading_percent"] == 80
     assert net.line.at[l[1], "max_loading_percent"] == 90
     assert net.line.at[l[0], "parallel"] == 2
@@ -646,7 +646,7 @@ def test_create_lines_optional_columns():
 
 def test_create_line_alpha_temperature():
     net = create_empty_network()
-    b = create_buses(net, 5, 110)
+    create_buses(net, 5, 110)
 
     l1 = create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
     l2 = create_line(
@@ -735,7 +735,7 @@ def test_create_transformers_from_parameters():
         vk0_percent=0.4,
         vkr0_percent=1.7,
         mag0_rx=0.4,
-        mag0_percent=0.3,
+        mag0_percent=30,
         tap_neutral=0.0,
         vector_group="Dyn",
         si0_hv_partial=0.1,
@@ -754,7 +754,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.i0_percent == 0.3)
     assert all(net.trafo.vk0_percent == 0.4)
     assert all(net.trafo.mag0_rx == 0.4)
-    assert all(net.trafo.mag0_percent == 0.3)
+    assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.tap_neutral == 0.0)
     assert all(net.trafo.tap_pos == 0.0)
     assert all(net.trafo.vector_group.values == "Dyn")
@@ -779,7 +779,7 @@ def test_create_transformers_from_parameters():
         i0_percent=[0.3, 0.3],
         vk0_percent=[0.4, 0.4],
         mag0_rx=[0.4, 0.4],
-        mag0_percent=[0.3, 0.3],
+        mag0_percent=[30, 30],
         tap_neutral=[0.0, 1.0],
         tap_pos=[-1, 4],
         test_kwargs=["dummy_string", "dummy_string"],
@@ -797,7 +797,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.i0_percent == 0.3)
     assert all(net.trafo.vk0_percent == 0.4)
     assert all(net.trafo.mag0_rx == 0.4)
-    assert all(net.trafo.mag0_percent == 0.3)
+    assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.test_kwargs == "dummy_string")
     assert net.trafo.tap_neutral.at[t[0]] == 0
     assert net.trafo.tap_neutral.at[t[1]] == 1
@@ -1115,9 +1115,7 @@ def test_create_transformers3w():
     }).set_index(pd.Index([5, 6]))
     assert dataframes_equal(net.trafo3w, res_df)
 
-
-def test_create_transformers3w_from_parameters():
-    # setting params as single value
+def net_transformer3w_from_parameters(**kwargs):
     net = create_empty_network()
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
@@ -1143,9 +1141,14 @@ def test_create_transformers3w_from_parameters():
         i0_percent=0.3,
         tap_neutral=0.0,
         mag0_rx=0.4,
-        mag0_percent=0.3,
-        test_kwargs="dummy_string",
+        mag0_percent=30,
+        **kwargs,
     )
+    return net, b1, b2, b3
+
+def test_create_transformers3w_from_parameters():
+    # setting params as single value
+    net, _, _ , _= net_transformer3w_from_parameters(test_kwargs="dummy_string")
     assert len(net.trafo3w) == 2
     assert all(net.trafo3w.hv_bus == 0)
     assert all(net.trafo3w.lv_bus == 1)
@@ -1165,7 +1168,7 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.pfe_kw == 0.2)
     assert all(net.trafo3w.i0_percent == 0.3)
     assert all(net.trafo3w.mag0_rx == 0.4)
-    assert all(net.trafo3w.mag0_percent == 0.3)
+    assert all(net.trafo3w.mag0_percent == 30)
     assert all(net.trafo3w.tap_neutral == 0.0)
     assert all(net.trafo3w.tap_pos == 0.0)
     assert all(net.trafo3w.test_kwargs == "dummy_string")
@@ -1225,34 +1228,7 @@ def test_create_transformers3w_from_parameters():
 
 def test_create_transformers3w_raise_errorexcept():
     # standard
-    net = create_empty_network()
-    b1 = create_bus(net, 15)
-    b2 = create_bus(net, 0.4)
-    b3 = create_bus(net, 0.9)
-    create_transformers3w_from_parameters(
-        net,
-        hv_buses=[b1, b1],
-        mv_buses=[b3, b3],
-        lv_buses=[b2, b2],
-        vn_hv_kv=15.0,
-        vn_mv_kv=0.9,
-        vn_lv_kv=0.45,
-        sn_hv_mva=0.6,
-        sn_mv_mva=0.5,
-        sn_lv_mva=0.4,
-        vk_hv_percent=1.0,
-        vk_mv_percent=1.0,
-        vk_lv_percent=1.0,
-        vkr_hv_percent=0.3,
-        vkr_mv_percent=0.3,
-        vkr_lv_percent=0.3,
-        pfe_kw=0.2,
-        i0_percent=0.3,
-        tap_neutral=0.0,
-        mag0_rx=0.4,
-        mag0_percent=0.3,
-    )
-
+    net, b1, b2, b3 = net_transformer3w_from_parameters()
     with pytest.raises(
             UserWarning,
             match=r"Three winding transformers with indexes \[1\] already exist.",
@@ -1278,7 +1254,7 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
             index=[2, 1],
         )
     net = create_empty_network()
@@ -1309,7 +1285,7 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
             index=[0, 1],
         )
     with pytest.raises(
@@ -1336,7 +1312,7 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
         )
     with pytest.raises(
             UserWarning,
@@ -1363,7 +1339,7 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
         )
 
 
@@ -1453,7 +1429,7 @@ def test_create_switches_raise_errorexcept():
         create_switches(
             net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match=r"Cannot attach to lines {np\.int64\(1\)}, they do not exist"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to lines {(:?np\.int64\(1\)|1)}, they do not exist"):
         create_switches(
             net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
@@ -1465,12 +1441,12 @@ def test_create_switches_raise_errorexcept():
             et=["l", "t", "b"],
             z_ohm=0.0,
         )
-    with pytest.raises(UserWarning, match=r"Cannot attach to trafos {np\.int64\(1\)}, they do not exist"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to trafos {(:?np\.int64\(1\)|1)}, they do not exist"):
         create_switches(
             net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
     with pytest.raises(
-            UserWarning, match=r"Trafo not connected \(trafo element, bus\): \[\(%s, %s\)\]" % (b1, t1)
+            UserWarning, match=rf"Trafo not connected \(trafo element, bus\): \[\({b1}, {t1}\)\]"
     ):
         create_switches(
             net,
@@ -1480,12 +1456,12 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match=r"Cannot attach to buses {np\.int64\(6\)}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses {(:?np\.int64\(6\)|6)}, they do not exist"
     ):
         create_switches(
             net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match=r"Cannot attach to trafo3ws {np\.int64\(1\)}, they do not exist"):
+    with pytest.raises(UserWarning, match=r"Cannot attach to trafo3ws {(:?np\.int64\(1\)|1)}, they do not exist"):
         create_switches(
             net,
             buses=[b1, b2, b3],
@@ -1494,7 +1470,7 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match=r"Trafo3w not connected \(trafo3w element, bus\): \[\(%s, %s\)\]" % (t3w1, b3)
+            UserWarning, match=rf"Trafo3w not connected \(trafo3w element, bus\): \[\({t3w1}, {b3}\)\]"
     ):
         create_switches(
             net,
@@ -1504,7 +1480,7 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-        UserWarning, match=r"Cannot attach to buses {np\.int64\(12398\)}, they do not exist"
+        UserWarning, match=r"Cannot attach to buses {(:?np\.int64\(12398\)|12398)}, they do not exist"
     ):
         create_switches(
             net,
@@ -1575,7 +1551,7 @@ def test_create_loads_raise_errorexcept():
     b3 = create_bus(net, 110)
 
     with pytest.raises(
-            UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses {3, 4, 5}, they do not exist"
     ):
         create_loads(
             net,
@@ -1777,6 +1753,38 @@ def test_create_sgens():
     assert all(net.sgen.id_q_capability_characteristic.values == [0, 1, 2])
     assert all(net.sgen.curve_style == "straightLineYValues")
     assert all(net.sgen.reactive_capability_curve == [False, False, False])
+    
+
+def test_create_sgen_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.sgen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_sgen(net, b1, 50)
+    # controllable column should not exist
+    assert 'controllable' not in net.sgen.columns
+    s2 = create_sgen(net, b1, 50, controllable=True)
+    # controllable should be created with default value False
+    assert not net.sgen.loc[s1, 'controllable']
+    assert net.sgen.loc[s2, 'controllable']
+    
+
+def test_create_sgens_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.sgen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_sgens(net, [b1], 50)[0]
+    # controllable column should not exist
+    assert 'controllable' not in net.sgen.columns
+    s2 = create_sgens(net, [b1], 50, controllable=True)[0]
+    # controllable should be created with default value False
+    assert not net.sgen.loc[s1, 'controllable']
+    assert net.sgen.loc[s2, 'controllable']
 
 
 def test_create_sgens_raise_errorexcept():
@@ -1889,6 +1897,37 @@ def test_create_gens():
     assert all(net.gen.curve_style == "straightLineYValues")
     assert all(net.gen.reactive_capability_curve == [False, False, False])
 
+
+def test_create_gen_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.gen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_gen(net, b1, 50)
+    # controllable column should not exist
+    assert 'controllable' not in net.gen.columns
+    s2 = create_gen(net, b1, 50, controllable=False)
+    # controllable should be created with default value True
+    assert net.gen.loc[s1, 'controllable']
+    assert not net.gen.loc[s2, 'controllable']
+
+
+def test_create_gens_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.gen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_gens(net, [b1], 50)[0]
+    # controllable column should not exist
+    assert 'controllable' not in net.gen.columns
+    s2 = create_gens(net, [b1], 50, controllable=False)[0]
+    # controllable should be created with default value True
+    assert net.gen.loc[s1, 'controllable']
+    assert not net.gen.loc[s2, 'controllable']
 
 def test_create_gens_raise_errorexcept():
     net = create_empty_network()

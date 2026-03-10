@@ -37,85 +37,58 @@ BR_Z = 3
 logger = logging.getLogger(__name__)
 
 
-def create_nxgraph(net, respect_switches=True, include_lines=True, include_impedances=True,
-                   include_dclines=True, include_trafos=True, include_trafo3ws=True, include_tcsc=True,
-                   include_vsc=True, include_line_dc=True,
-                   nogobuses=None, notravbuses=None, multi=True,
-                   calc_branch_impedances=False, branch_impedance_unit="ohm",
-                   library="networkx", include_out_of_service=False,
-                   include_switches=True, trafo_length_km=None, switch_length_km=None):
+# TODO: undocumented Parameters
+def create_nxgraph(
+    net, respect_switches=True, include_lines=True, include_impedances=True, include_dclines=True, include_trafos=True,
+    include_trafo3ws=True, include_tcsc=True, include_vsc=True, include_line_dc=True, nogobuses=None, notravbuses=None,
+    multi=True, calc_branch_impedances=False, branch_impedance_unit="ohm", library="networkx",
+    include_out_of_service=False, include_switches=True, trafo_length_km=None, switch_length_km=None
+):
     """
-     Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
-     of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
-     (Note: only buses with in_service = 1 appear in the graph), edges represent physical
-     connections between buses (typically lines or trafos).
+    Converts a pandapower network into a NetworkX graph, which is a is a simplified representation
+    of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
+    (Note: only buses with in_service = 1 appear in the graph), edges represent physical
+    connections between buses (typically lines or trafos).
 
-     INPUT:
-        **net** (pandapowerNet) - variable that contains a pandapower network
+    Parameters:
+        net (pandapowerNet): variable that contains a pandapower network
+        respect_switches (bool, True):
+            
+            - True: open switches (line, trafo, bus) are being considered (no edge between nodes)
+            - False: open switches are being ignored
 
-
-     OPTIONAL:
-        **respect_switches** (boolean, True) - True: open switches (line, trafo, bus) are being \
-            considered (no edge between nodes)
-            False: open switches are being ignored
-
-        **include_lines** (boolean or index, True) - determines, whether or which lines get
+        include_lines (bool or index, True): determines, whether or which lines get converted to edges
+        include_impedances (bool or index, True): determines, whether or which per unit impedances (net.impedance) are
             converted to edges
+        include_tcsc (bool or index, True): determines, whether or which TCSC elements (net.tcsc) are converted to edges
+        include_vsc (bool or index, True): determines, whether or which VSC elements (net.vsc) are converted to edges
+        include_line_dc (bool or index, True): determines, whether or which DC line elements (net.line_dc) are converted
+            to edges
+        include_dclines (bool or index, True): determines, whether or which dclines get converted to edges
+        include_trafos (bool or index, True): determines, whether or which trafos get converted to edges
+        include_trafo3ws (bool or index, True): determines, whether or which trafo3ws get converted to edges
+        nogobuses (integer/list, None): nogobuses are not being considered in the graph
+        notravbuses (integer/list, None): lines connected to these buses are not being considered in the graph
+        multi (bool, True):
+         
+            - True: The function generates a NetworkX MultiGraph, which allows multiple parallel edges between nodes
+            - False: NetworkX Graph (no multiple parallel edges)
 
-        **include_impedances** (boolean or , True) - determines, whether or which per unit
-            impedances (net.impedance) are converted to edges
+        calc_branch_impedances (bool, False): determines wether impedances are calculated and added as a weight to all
+            branches or not. Impedances can be added in ohm or per unit (see branch_impedance unit parameter). DC Lines
+            are considered as infinity.
+        branch_impedance_unit (str, "ohm"): defines the unit of the branch impedance for calc_branch_impedances=True.
+            If it is set to "ohm", the parameters 'r_ohm', 'x_ohm' and 'z_ohm' are added to each branch. If it is set
+            to "pu", the parameters are 'r_pu', 'x_pu' and 'z_pu'.
+        include_out_of_service (bool, False): defines if out of service buses are included in the nx graph
 
-        **include_tcsc** (boolean or , True) - determines, whether or which TCSC elements (net.tcsc)
-            are converted to edges
+    Returns:
+        Returns the required NetworkX graph
 
-        **include_vsc** (boolean or , True) - determines, whether or which VSC elements (net.vsc)
-            are converted to edges
-
-        **include_line_dc** (boolean or , True) - determines, whether or which DC line elements (net.line_dc)
-            are converted to edges
-
-        **include_dclines** (boolean or index, True) - determines, whether or which dclines get
-            converted to edges
-
-        **include_trafos** (boolean or index, True) - determines, whether or which trafos get
-            converted to edges
-
-        **include_trafo3ws** (boolean or index, True) - determines, whether or which trafo3ws get
-            converted to edges
-
-        **nogobuses** (integer/list, None) - nogobuses are not being considered in the graph
-
-        **notravbuses** (integer/list, None) - lines connected to these buses are not being
-            considered in the graph
-
-        **multi** (boolean, True) - True: The function generates a NetworkX MultiGraph, which allows
-            multiple parallel edges between nodes
-            False: NetworkX Graph (no multiple parallel edges)
-
-
-        **calc_branch_impedances** (boolean, False) - determines wether impedances are calculated
-            and added as a weight to all branches or not. Impedances can be added in ohm or per unit
-            (see branch_impedance unit parameter). DC Lines are considered as infinity.
-
-        **branch_impedance_unit** (str, "ohm") - defines the unit of the branch impedance for
-            calc_branch_impedances=True. If it is set to "ohm", the parameters 'r_ohm',
-            'x_ohm' and 'z_ohm' are added to each branch. If it is set to "pu", the
-            parameters are 'r_pu', 'x_pu' and 'z_pu'.
-
-        **include_out_of_service** (bool, False) - defines if out of service buses are included in the nx graph
-
-     OUTPUT:
-        **mg** - Returns the required NetworkX graph
-
-     EXAMPLE:
+    Example:
          >>> from pandapower.topology.create_graph import create_nxgraph
          >>> mg = create_nxgraph(net, respect_switches = False)
-         # converts the pandapower network "net" to a MultiGraph. Open switches will be ignored.
-
-    Parameters
-    ----------
-    include_tcsc
-
+         >>> # converts the pandapower network "net" to a MultiGraph. Open switches will be ignored.
     """
 
     if multi:

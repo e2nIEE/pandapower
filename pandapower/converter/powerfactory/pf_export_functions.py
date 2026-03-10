@@ -61,9 +61,6 @@ def create_network_dict(app, include_hidden_bus=None, flag_graphics='GPS'):
 
     # make all values in MW
     logger.info('applying unit settings')
-    # echo_on(app)
-    # apply_unit_settings(app, elm_units, 'M')
-    # echo_off(app)
 
     dict_net = {}
 

@@ -3,10 +3,10 @@ import copy
 import numpy as np
 import pytest
 
-from pandapower import create_line_dc_from_parameters
-from pandapower.create import create_buses, create_bus, create_empty_network, create_line_from_parameters, \
-    create_load, create_ext_grid, create_bus_dc, create_b2b_vsc, create_line_dc, create_vsc, create_source_dc, \
-    create_load_dc
+from pandapower.create import (
+    create_buses, create_bus, create_empty_network, create_line_from_parameters, create_load, create_ext_grid,
+    create_bus_dc, create_vsc_stacked, create_line_dc, create_source_dc, create_load_dc, create_line_dc_from_parameters
+)
 
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
@@ -60,15 +60,15 @@ def test_hvdc_interconnect_with_dmr():
     dmr = create_line_dc_from_parameters(net, 1, 4, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963, in_service=False)
 
     # Left side
-    create_b2b_vsc(net, 2, 0, 1, 0.2, 10, 0.3,
+    create_vsc_stacked(net, 2, 0, 1, 0.2, 10, 0.3,
                    control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.)
-    create_b2b_vsc(net, 3, 1, 2, 0.2, 10, 0.3,
+    create_vsc_stacked(net, 3, 1, 2, 0.2, 10, 0.3,
                    control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.)
 
     # Right side
-    create_b2b_vsc(net, 4, 3, 4, 0.2, 10, 0.3,
+    create_vsc_stacked(net, 4, 3, 4, 0.2, 10, 0.3,
                    control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=1.5)
-    create_b2b_vsc(net, 5, 4, 5, 0.2, 10, 0.3,
+    create_vsc_stacked(net, 5, 4, 5, 0.2, 10, 0.3,
                    control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=0.5)
 
     # dmr current calculator
@@ -100,7 +100,7 @@ def test_source_dc():
 
 
 @pytest.mark.xfail
-def test_b2b_vsc_shorted():
+def test_vsc_stacked_shorted():
     """
     Test to test a simple bipolar vsc setup, without a metallic return line:
        +-------+        +-------+
@@ -143,17 +143,17 @@ def test_b2b_vsc_shorted():
     create_line_dc_from_parameters(net, 2, 3, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
 
     # b2b VSC, first one regulates the voltages
-    create_b2b_vsc(net, 1, 0, 2, 0.006, 1., 0.1,
+    create_vsc_stacked(net, 1, 0, 2, 0.006, 1., 0.1,
                    control_mode_ac='vm_pu', control_value_ac=1., control_mode_dc="vm_pu", control_value_dc=1.)
 
     # second one draws constant power and works as a slack on the ac side
-    create_b2b_vsc(net, 2, 1, 3, 0.006, 1., 0.1,
+    create_vsc_stacked(net, 2, 1, 3, 0.006, 1., 0.1,
                    control_mode_ac='slack', control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0.)
 
     runpp_with_consistency_checks(net)
 
 
-def test_b2b_vsc_with_long_lines():
+def test_vsc_stacked_with_long_lines():
     """
     Test to test a simple bipolar vsc setup:
                +-------+        +-------+
@@ -184,17 +184,17 @@ def test_b2b_vsc_with_long_lines():
     create_line_dc(net, 2, 3, 100, std_type="2400-CU")
 
     # b2b VSC, first one regulates the voltages
-    create_b2b_vsc(net, 1, 0, 2, 0.2, 10, 0.3,
+    create_vsc_stacked(net, 1, 0, 2, 0.2, 10, 0.3,
                    control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
 
     # second one draws constant power and works as a slack on the ac side
-    create_b2b_vsc(net, 2, 1, 3, 0.2, 10, 0.3,
+    create_vsc_stacked(net, 2, 1, 3, 0.2, 10, 0.3,
                    control_mode_ac='slack', control_value_ac=1., control_mode_dc="p_mw", control_value_dc=0.)
 
     runpp_with_consistency_checks(net)
 
 
-def test_grounded_b2b_vsc():
+def test_grounded_vsc_stacked():
     """
     Test to test a simple bipolar vsc setup, without a metallic return line, but the second line grounded:
        +-------+        +-------+
@@ -225,11 +225,11 @@ def test_grounded_b2b_vsc():
     create_line_dc(net, 2, 3, 100, std_type="2400-CU", in_service=False)
 
     # b2b VSC, first one regulates the voltages
-    create_b2b_vsc(net, 1, 0, 2, 0.2, 10, 0.3,
+    create_vsc_stacked(net, 1, 0, 2, 0.2, 10, 0.3,
                    control_mode_ac='vm_pu', control_value_ac=1, control_mode_dc="vm_pu", control_value_dc=1.02)
 
     # second one draws constant power and works as a slack on the ac side
-    create_b2b_vsc(net, 2, 1, 3, 0.2, 10, 0.3,
+    create_vsc_stacked(net, 2, 1, 3, 0.2, 10, 0.3,
                    control_mode_ac='slack', control_value_ac=1, control_mode_dc="p_mw", control_value_dc=10.)
 
     runpp_with_consistency_checks(net)

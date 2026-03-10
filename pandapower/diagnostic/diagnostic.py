@@ -25,6 +25,9 @@ class Diagnostic:
 
     default Diagnostic Functions are for networks of type pandapowerNet
 
+    Parameters:
+        add_default_functions: Should the default DiagnosticFunctions for pandapower networks be added.
+
     Example:
         >>> from pandapower.diagnostic import Diagnostic
         >>> from pandapower.networks.mv_oberrhein import mv_oberrhein
@@ -35,21 +38,21 @@ class Diagnostic:
 
     """
     def __init__(self, add_default_functions: bool = True):
-        """
-
-        Parameters:
-            add_default_functions: Should the DiagnosticFunctions for pandapower networks be added?
-        """
         self._functions: list[tuple[str, DiagnosticFunction, list[str] | None]] = []
         self._report_functions: list[Callable] = []
         self.kwargs = {}
+        """
+        The Keyword Arguments passed to every DiagnosticFunction registered without explicit list of required args.
+        """
         if add_default_functions:
             self.kwargs = default_argument_values
             self._functions = default_diagnostic_functions
 
         self.net: ADict | None = None
         self.diag_results: dict[str, Any] = {}
+        "Dictionary storing the return values of the DiagnosticFunctions"
         self.diag_errors: dict[str, Any] = {}
+        "Dictionary storing the errors raised by the DiagnosticFunctions"
 
     def register_function(
             self, diagnostic_function: DiagnosticFunction, argument_names: list[str] | None, name: str | None

@@ -60,7 +60,7 @@ def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs)
     if not include_heat_pumps:
         drop_elements(net, "load", net.load.loc[net.load.type == "HP"].index)
 
-    subnets = list()
+    subnets = []
     if separation_by_sub:
         # creating multigraph
         mg = create_nxgraph(net)

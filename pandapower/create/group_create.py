@@ -31,35 +31,27 @@ def create_group(
 ):
     """Add a new group to net['group'] dataframe.
 
-    Attention
-    ::
-
+    .. attention::
         If you declare a group but forget to declare all connected elements although
         you wants to (e.g. declaring lines but forgetting to mention the connected switches),
-        you may get problems after using drop_elements_and_group() or other functions.
+        you may get problems after using :func:`drop_elements_and_group` or other functions.
         There are different pandapower toolbox functions which may help you to define
-        'elements_dict', such as get_connecting_branches(),
-        get_inner_branches(), get_connecting_elements_dict().
+        'elements_dict', such as :func:`get_connecting_branches`,
+        :func:`get_inner_branches`, :func:`get_connecting_elements_dict`.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    element_types : str or list of strings
-        defines, together with 'elements', which net elements belong to the group
-    element_indices : list of list of indices
-        defines, together with 'element_types', which net elements belong to the group
-    name : str, optional
-        name of the group, by default ""
-    reference_columns : string or list of strings, optional
-        If given, the elements_dict should
-        not refer to DataFrames index but to another column. It is highly relevant that the
-        reference_column exists in all DataFrames of the grouped elements and have the same dtype,
-        by default None
-    index : int, optional
-        index for the dataframe net.group, by default None
+    Parameters:
+        net: pandapower net
+        element_types (str or list of strings): defines, together with 'elements', which net elements belong to the
+            group
+        element_indices (list of list of indices): defines, together with 'element_types', which net elements belong to
+            the group
+        name (str, optional): name of the group, by default ""
+        reference_columns (string or list of strings, optional): If given, the elements_dict should not refer to
+            DataFrames index but to another column. It is highly relevant that the reference_column exists in all
+            DataFrames of the grouped elements and have the same dtype, by default None
+        index (int, optional): index for the dataframe net.group, by default None
 
-    EXAMPLES:
+    Example:
         >>> create_group(net, ["bus", "gen"], [[10, 12], [1, 2]])
         >>> create_group(net, ["bus", "gen"], [["Berlin", "Paris"], ["Wind_1", "Nuclear1"]], reference_columns="name")
     """
@@ -87,7 +79,7 @@ def create_group(
 def create_group_from_dict(
     net, elements_dict, name: str = "", reference_column=None, index: int | None = None, **kwargs
 ):
-    """Wrapper function of create_group()."""
+    """Wrapper function of :func:`create_group`."""
     return create_group(
         net,
         elements_dict.keys(),
