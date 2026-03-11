@@ -5,6 +5,7 @@ Change Log
 -------------------------------
 - [FIXED] cim2pp shift_lv_degree was translated from wrong entry
 - [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
+- [FIXED] incompatible network versions (i.e. networks with newer format versions than the currently installed pandapower version) are identified in convert_format and raise an error
 - [ADDED] LTDS support
 
 
