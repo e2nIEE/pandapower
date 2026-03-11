@@ -26,7 +26,8 @@ sc = cim_tools.get_pp_net_special_columns_dict()
 
 class CimConverter:
 
-    def __init__(self, cim_parser: cim_classes.CimParser, converter_classes: Dict, cim_version: str = None, **kwargs):
+    def __init__(self, cim_parser: cim_classes.CimParser, converter_classes: Dict,
+                 cim_version: str | None = None, **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.cim_version = cim_version.lower() if cim_version is not None else '2.4.15'
