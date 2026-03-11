@@ -9,7 +9,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from pandapower import pp_dir
+from pandapower import pp_dir, reset_results
 from pandapower.file_io import from_json
 from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.comparison import nets_equal
@@ -125,6 +125,11 @@ def test_to_and_from_ppc():
         net2 = from_ppc(ppc, f_hz=net.f_hz, tap_side=net.trafo.tap_side.values)
         # again add max_loading_percent to enable valid comparison
         net2.line["max_loading_percent"] = 100
+
+        # TODO: remove after https://github.com/e2nIEE/pandapower/pull/2813:
+        #  reset 3ph results (new columns not in net but in ppc, would be solved by 3ph powerflow, so not relevant)
+        reset_results(net, "pf_3ph")
+        reset_results(net2, "pf_3ph")
 
         # compare loadflow results
         runpp(net)
