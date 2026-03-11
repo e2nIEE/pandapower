@@ -33,7 +33,8 @@ def test_from_mpc_mat():
     this_folder = os.path.join(pp_dir, "test", "converter")
     mat_case = os.path.join(this_folder, 'case24_ieee_rts.mat')
     case24_from_mpc = from_mpc(mat_case, f_hz=60, casename_mpc_file='mpc', tap_side="hv")
-    # reset 3ph results (new columns in case24 but not in from_mpc, would be solved by 3ph powerflow, so not relevant)
+    # TODO: remove after https://github.com/e2nIEE/pandapower/pull/2813:
+    #  reset 3ph results (new columns in case24 but not in from_mpc, would be solved by 3ph powerflow, so not relevant)
     reset_results(case24, "pf_3ph")
     reset_results(case24_from_mpc, "pf_3ph")
 
