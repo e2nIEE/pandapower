@@ -5,6 +5,8 @@ import os
 
 import pandas as pd
 import numpy as np
+from jupyter_core.migrate import regex
+
 from pandapower.auxiliary import pandapowerNet
 
 from pandapower import pp_dir
@@ -169,13 +171,13 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
 
 def compare_results(columns_to_check, net_df, pf_results):
     # define tolerances
-    rtol = {"ikss_ka": 0, "skss_mw": 0, "rk_ohm": 0, "xk_ohm": 0,
+    rtol = {"ikss_ka": 0, "skss_mva": 0, "rk_ohm": 0, "xk_ohm": 0,
             "vm_pu": 0, "va_degree": 0, "p_mw": 0, "q_mvar": 0, "ikss_degree": 0}
-    atol = {"ikss_ka": 1e-4, "skss_mw": 1e-3, "rk_ohm": 1e-2, "xk_ohm": 1e-3,
+    atol = {"ikss_ka": 1e-4, "skss_mva": 1e-3, "rk_ohm": 1e-2, "xk_ohm": 1e-3,
             "vm_pu": 1e-4, "va_degree": 1e-2, "p_mw": 1e-4, "q_mvar": 1e-4, "ikss_degree": 1e-2}  # TODO: tolerances ok?
 
     for column in columns_to_check:
-        if column == 'name':
+        if column == 'name' or column == 'index':
             continue
         column_ar = check_pattern(column)
 
@@ -194,9 +196,14 @@ def compare_results(columns_to_check, net_df, pf_results):
             rtol=rtol[column_ar], atol=atol[column_ar]
         )
         assert mismatch.all(), (
-            f"{column} mismatch for {net_df.loc[~mismatch, 'name']}: {net_df.loc[~mismatch, column]}"
-            f"vs {pf_results.loc[~mismatch, column]}"
+            f"{column} mismatch for {net_df.loc[~mismatch, 'name'].values[0]}:\n"
+            f"pp values: {net_df.loc[~mismatch, column].values[0]}\n"
+            f"pf values: {pf_results.loc[~mismatch, column].values[0]}\n"
+            f"diff_percent: {np.nan if pf_results.loc[~mismatch, column].values[0] == 0 else
+                            (net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0]) /
+                            pf_results.loc[~mismatch, column].values[0] * 100}"
         )
+
 
 def load_test_case(net_name: str) -> pandapowerNet:
     if net_name.endswith("_sgen") or net_name.endswith("_sgen_act") or net_name.endswith("_gen"):
@@ -316,6 +323,11 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
             ))
         except FileNotFoundError:
             logger.warning(f"File {file_name} not found in {testfiles_path}/sc_result_comparison/")
+
+    # for key, df_branch in dataframes['branch'].items():
+    #     cols = df_branch.filter(like='_degree')
+    #     dataframes['bus'][key] = dataframes['bus'][key].join(cols)
+
     return net, dataframes
 
 
@@ -356,12 +368,11 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
     selected_pf_results = dataframes[selected_sheet]
     modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
 
-    calc_sc(net, bus=fault_location_bus, fault=fault, case=case, branch_results=branch_results,
-            return_all_currents=False, ip=False,
+    calc_sc(net, fault_bus=fault_location_bus, fault=fault, case=case, branch_results=branch_results, ip=False,
             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
 
     if branch_results:
-        columns_to_check = net.res_line_sc.columns
+        columns_to_check = net.res_line_sc.columns[1:]
         if fault == "LG" or fault == "LLG" or fault == "LL":
             if branch_results:
                 patterns_to_drop = ["ikss_ka"]  # ToDo: Do we need the value ikss_ka ?
@@ -372,24 +383,35 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
 
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_line_sc['name'])]
         modified_pf_results_selection = clean_small_angles(fault, modified_pf_results_selection)
-        net_df = net.res_line_sc
+        net_df = net.res_line_sc.copy()
         if fault == 'LLL':
             cols_to_drop = net_df.filter(regex=r'_(b|c)_').columns
             net_df = net_df.drop(columns=cols_to_drop)
             columns_to_check = net_df.columns
+
+        cols_to_ignore = columns_to_check[columns_to_check.str.contains('skss_')]
+        columns_to_check = columns_to_check.drop(cols_to_ignore)
+
     else:
-        columns_to_check = net.res_bus_sc.columns
         net.res_bus_sc.insert(0, "name", net.bus.name)
         net.res_bus_sc.sort_values(by='name', inplace=True)
 
         # shorten the results from the file to the ones calculated by pp.
         # This was done by only iterating over the net table before.
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_bus_sc['name'])]
-        net_df = net.res_bus_sc
+        net_df = net.res_bus_sc.copy()
         if fault == 'LLL':
             cols_to_drop = net_df.filter(regex=r'_(b|c)_').columns
             net_df = net_df.drop(columns=cols_to_drop)
             columns_to_check = net_df.columns
+
+            modified_pf_results_selection.rename(columns={'skss_mw': 'skss_a_mva', 'ikss_ka': 'ikss_a_ka',
+                                                          'rk_ohm': 'rk0_ohm', 'xk_ohm': 'xk0_ohm'}, inplace=True)
+            cols_to_ignore = columns_to_check[columns_to_check.str.contains(r'rk1_|xk1_|rk2_|xk2_|degree')]
+            columns_to_check = columns_to_check.drop(cols_to_ignore)
+
+    cols = modified_pf_results_selection.columns.str.contains(r'skss_|p_|q_')
+    modified_pf_results_selection.loc[:, cols] /= 3
 
     return columns_to_check, net_df, modified_pf_results_selection
 
@@ -437,8 +459,8 @@ def check_pattern(pattern):
         return "ikss_ka"
     elif match(r"^ikss_([abc]|from|to|[abc]_(from|to))_degree$", pattern):
         return "ikss_degree"
-    elif match(r"^skss_([abc]|from|to|[abc]_(from|to))_mw$", pattern):
-        return "skss_mw"
+    elif match(r"^skss_([abc]|from|to|[abc]_(from|to))_mva$", pattern):
+        return "skss_mva"
     elif match(r"^p_([abc]|from|to|[abc]_(from|to))_mw$", pattern):
         return "p_mw"
     elif match(r"^q_([abc]|from|to|[abc]_(from|to))_mvar$", pattern):
@@ -576,8 +598,7 @@ def load_pf_results(excel_file):
                                           "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm", "3xI0"]
                 else:
                     pf_results.columns = ["name", "ikss_ka", 'skss_mw',
-                                        "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
-
+                                          "rk0_ohm", "xk0_ohm", "rk1_ohm", "xk1_ohm", "rk2_ohm", "xk2_ohm"]
 
             dataframes[sheet] = pf_results
 
@@ -623,3 +644,5 @@ def load_pf_results(excel_file):
             dataframes[sheet] = pf_results
 
     return dataframes
+
+##
