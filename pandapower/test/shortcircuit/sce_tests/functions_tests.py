@@ -199,6 +199,7 @@ def compare_results(columns_to_check, net_df, pf_results):
             f"{column} mismatch for {net_df.loc[~mismatch, 'name'].values[0]}:\n"
             f"pp values: {net_df.loc[~mismatch, column].values[0]}\n"
             f"pf values: {pf_results.loc[~mismatch, column].values[0]}\n"
+            f"diff: {np.abs(net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0])}\n"
             f"diff_percent: {np.nan if pf_results.loc[~mismatch, column].values[0] == 0 else
                             (net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0]) /
                             pf_results.loc[~mismatch, column].values[0] * 100}"
@@ -372,7 +373,7 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
 
     if branch_results:
-        columns_to_check = net.res_line_sc.columns[1:]
+        columns_to_check = net.res_line_sc.columns
         if fault == "LG" or fault == "LLG" or fault == "LL":
             if branch_results:
                 patterns_to_drop = ["ikss_ka"]  # ToDo: Do we need the value ikss_ka ?
@@ -388,11 +389,14 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             cols_to_drop = net_df.filter(regex=r'_(b|c)_').columns
             net_df = net_df.drop(columns=cols_to_drop)
             columns_to_check = net_df.columns
+            cols = modified_pf_results_selection.columns.str.contains(r'skss_|p_|q_')
+            modified_pf_results_selection.loc[:, cols] /= 3
 
         cols_to_ignore = columns_to_check[columns_to_check.str.contains('skss_')]
         columns_to_check = columns_to_check.drop(cols_to_ignore)
 
     else:
+        columns_to_check = net.res_bus_sc.columns
         net.res_bus_sc.insert(0, "name", net.bus.name)
         net.res_bus_sc.sort_values(by='name', inplace=True)
 
@@ -406,12 +410,22 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             columns_to_check = net_df.columns
 
             modified_pf_results_selection.rename(columns={'skss_mw': 'skss_a_mva', 'ikss_ka': 'ikss_a_ka',
-                                                          'rk_ohm': 'rk0_ohm', 'xk_ohm': 'xk0_ohm'}, inplace=True)
-            cols_to_ignore = columns_to_check[columns_to_check.str.contains(r'rk1_|xk1_|rk2_|xk2_|degree')]
+                                                          'rk_ohm': 'rk1_ohm', 'xk_ohm': 'xk1_ohm'}, inplace=True)
+            cols_to_ignore = columns_to_check[columns_to_check.str.contains(r'rk0_|xk0_|rk2_|xk2_|degree')]
             columns_to_check = columns_to_check.drop(cols_to_ignore)
 
-    cols = modified_pf_results_selection.columns.str.contains(r'skss_|p_|q_')
-    modified_pf_results_selection.loc[:, cols] /= 3
+            cols = modified_pf_results_selection.columns.str.contains(r'skss_|p_|q_')
+            modified_pf_results_selection.loc[:, cols] /= 3
+
+        if fault == 'LL':
+            cols_to_drop = net_df.filter(regex=r'_(a|c)_').columns
+            net_df = net_df.drop(columns=cols_to_drop)
+            columns_to_check = net_df.columns
+            modified_pf_results_selection.rename(columns={'skss_mw': 'skss_b_mva', 'ikss_ka': 'ikss_b_ka'}, inplace=True)
+
+        cols_to_ignore = columns_to_check[columns_to_check.str.contains('degree')]
+        columns_to_check = columns_to_check.drop(cols_to_ignore)
+
 
     return columns_to_check, net_df, modified_pf_results_selection
 
