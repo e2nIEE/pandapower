@@ -199,7 +199,7 @@ def compare_results(columns_to_check, net_df, pf_results):
             f"{column} mismatch for {net_df.loc[~mismatch, 'name'].values[0]}:\n"
             f"pp values: {net_df.loc[~mismatch, column].values[0]}\n"
             f"pf values: {pf_results.loc[~mismatch, column].values[0]}\n"
-            f"diff: {np.abs(net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0])}\n"
+            f"diff: {np.round(np.abs(net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0]), 3)}\n"
             f"diff_percent: {np.nan if pf_results.loc[~mismatch, column].values[0] == 0 else
                             (net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0]) /
                             pf_results.loc[~mismatch, column].values[0] * 100}"
@@ -422,6 +422,13 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
             net_df = net_df.drop(columns=cols_to_drop)
             columns_to_check = net_df.columns
             modified_pf_results_selection.rename(columns={'skss_mw': 'skss_b_mva', 'ikss_ka': 'ikss_b_ka'}, inplace=True)
+        if fault == 'LG':
+            cols_to_drop = net_df.filter(regex=r'_(b|c)_').columns
+            net_df = net_df.drop(columns=cols_to_drop)
+            columns_to_check = net_df.columns
+            modified_pf_results_selection.rename(columns={'skss_mw': 'skss_a_mva', 'ikss_ka': 'ikss_a_ka'}, inplace=True)
+        if fault == 'LLG':
+            modified_pf_results_selection.rename(columns={'skss_a_mw': 'skss_a_mva', 'skss_b_mw': 'skss_b_mva', 'skss_c_mw': 'skss_c_mva'}, inplace=True)
 
         cols_to_ignore = columns_to_check[columns_to_check.str.contains('degree')]
         columns_to_check = columns_to_check.drop(cols_to_ignore)
