@@ -3,8 +3,10 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] cim2pp shift_lv_degree was translated from wrong entry
 - [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
-
+- [ADDED] LTDS support
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
 
 [3.4.0] - 2026-02-09
 -------------------------------
@@ -19,6 +21,8 @@ Change Log
 - [ADDED] rundcpp: Added DC elements to DC powerflow
 - [ADDED] python: support for version 3.14 added to the test pipelines
 - [FIXED] renamed b2b_vsc to vsc_stacked
+- [ADDED] Station Controller support for power factor control and tangens control
+- [CHANGED] attribute voltage_ctrl in Station Controller to control_modus to select new control modi. Changed the type from boolean to enum class
 
 [3.3.2] - 2026-01-13
 -------------------------------
