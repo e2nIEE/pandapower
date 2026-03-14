@@ -142,7 +142,7 @@ class WLSAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
 
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
@@ -225,7 +225,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
                 cur_it += 1
                 current_error = np.max(np.abs(d_E_ext[:len(eppci.non_slack_buses) + num_bus]))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
@@ -267,7 +267,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
@@ -348,7 +348,7 @@ class AFWLSAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
 
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
