@@ -28,6 +28,8 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
     """
     from pandapower.toolbox import set_data_type_of_columns_to_default
     if not isinstance(net.version, str) or not hasattr(net, 'format_version'):
+        # if net.format_version and net.version are integers, this network is very old and will
+        # just pass the whole convert_format process.
         net.format_version = net.version
     if Version(str(net.format_version)) > Version(str(net.version).split('.dev')[0]):
         net.format_version = net.version
@@ -44,7 +46,6 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
                                   "install --upgrade pandapower`).")
             logger.warning(msg1 + "Some features may not work as expected.")
     if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
-        # TODO: What if net.format_version is not a string?
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)

@@ -142,7 +142,7 @@ def to_json(
     return None
 
 
-def from_pickle(filename, convert=True, drop_invalid_geodata=True, ignore_version_conflicts=False):
+def from_pickle(filename, convert=True, drop_invalid_geodata=False, ignore_version_conflicts=False):
     """
     Load a pandapower format Network from pickle file
 
@@ -174,7 +174,7 @@ def from_pickle(filename, convert=True, drop_invalid_geodata=True, ignore_versio
     return net
 
 
-def from_excel(filename, convert=True, drop_invalid_geodata=True, ignore_version_conflicts=False):
+def from_excel(filename, convert=True, drop_invalid_geodata=False, ignore_version_conflicts=False):
     """
     Load a pandapower network from an Excel file
 
@@ -209,7 +209,7 @@ def from_excel(filename, convert=True, drop_invalid_geodata=True, ignore_version
     except:
         net = _from_excel_old(xls)
     if convert:
-        convert_format(net, drop_invalid_geodata=True,
+        convert_format(net, drop_invalid_geodata=drop_invalid_geodata,
                        donot_open_newer=not ignore_version_conflicts)
     return net
 
