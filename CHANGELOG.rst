@@ -7,7 +7,7 @@ Change Log
 - [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
 - [FIXED] incompatible network versions (i.e. networks with newer format versions than the currently installed pandapower version) are identified in convert_format and raise an error
 - [ADDED] LTDS support
-
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
 
 [3.4.0] - 2026-02-09
 -------------------------------
