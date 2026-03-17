@@ -13,7 +13,7 @@ from pandapower.toolbox import get_connected_buses
 logger = logging.getLogger('ucte.from_ucte')
 
 
-def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True) -> pandapowerNet:
+def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True, clip_small_x_values: bool = True) -> pandapowerNet:
     """
     Creates a pandapower net from an UCTE data structure.
 
@@ -24,12 +24,12 @@ def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True) -> pandap
     :rtype: pandapowerNet
 
     """
-    ucte_converter = UCTE2pandapower(slack_as_gen=slack_as_gen)
+    ucte_converter = UCTE2pandapower(slack_as_gen=slack_as_gen, clip_small_x_values=clip_small_x_values)
     net = ucte_converter.convert(ucte_parser.get_data())
     return net
 
 
-def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
+def from_ucte(ucte_file: str, slack_as_gen: bool = True, clip_small_x_values: bool = True) -> pandapowerNet:
     """
     Converts net data stored as an UCTE file to a pandapower net.
 
@@ -58,7 +58,7 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
 
     time_start_converting = time.time()
 
-    pp_net = from_ucte_dict(ucte_parser, slack_as_gen=slack_as_gen)
+    pp_net = from_ucte_dict(ucte_parser, slack_as_gen=slack_as_gen, clip_small_x_values=clip_small_x_values)
 
     average_voltage_setpoints(pp_net)
 
