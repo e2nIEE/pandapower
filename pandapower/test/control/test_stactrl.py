@@ -211,6 +211,10 @@ def test_qlimits_with_capability_curve(v, p):
     net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)
+    # min_q_mvar and max_q_mvar columns required for BinarySearchControl to work correctly
+    #  (see station_control.py _update_min_max_q_mvar function)
+    add_column_to_df(net, "sgen", "min_q_mvar")
+    add_column_to_df(net, "sgen", "max_q_mvar")
     BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                         output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                         output_element_in_service=[True], output_values_distribution=[1],
