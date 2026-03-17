@@ -10,6 +10,7 @@ Change Log
 - [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
 - [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
 - [FIXED] ucte2pp: prevent nan values for impedances and transformers for B/G/P_fe/i0
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
 
 [3.4.0] - 2026-02-09
 -------------------------------
