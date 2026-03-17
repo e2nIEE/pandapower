@@ -29,11 +29,15 @@ class DmrControl(Controller):
         self.dmr_line = dmr_line
         self.dc_plus_line = dc_plus_line
         self.dc_minus_line = dc_minus_line
+        self.dmr_line_status = net.line_dc.loc[self.dmr_line, 'in_service']
 
         if not np.all(net.line_dc.index.isin([dmr_line, dc_plus_line, dc_minus_line])):
             raise ValueError("Wrong dc line index given. Please check if all lines are in line_dc!")
 
         self.applied = False
+
+    def initialize_control(self, net):
+        net.line_dc.loc[self.dmr_line, 'in_service'] = False
 
     def is_converged(self, net):
         """
@@ -43,7 +47,6 @@ class DmrControl(Controller):
         return True
 
     def finalize_control(self, net):
-    #def control_step(self, net):
         """
         Set applied to True, which means that the values set in time_step have been included in the
         load flow calculation.
@@ -61,6 +64,11 @@ class DmrControl(Controller):
         net.res_line_dc.loc[self.dmr_line, 'i_ka'] = np.abs(dcp - dcm)
 
         net.res_line_dc.loc[self.dmr_line, 'loading_percent'] = np.abs(dcp - dcm) / (max_i_ka * parallel) * 100.
+        net.line_dc.loc[self.dmr_line, 'in_service'] = self.dmr_line_status
+        logger.warning("Loadflow calculation done with DMR. Line currents and voltages probably not 100% correct!")
+
+    def restore_init_state(self, net):
+        net.line_dc.loc[self.dmr_line, 'in_service'] = self.dmr_line_status
 
 
     def __str__(self):

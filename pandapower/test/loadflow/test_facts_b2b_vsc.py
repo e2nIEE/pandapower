@@ -57,7 +57,7 @@ def test_hvdc_interconnect_with_dmr():
     dcp = create_line_dc_from_parameters(net, 0, 3, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
     dcm = create_line_dc_from_parameters(net, 2, 5, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
     # DMR Line
-    dmr = create_line_dc_from_parameters(net, 1, 4, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963, in_service=False)
+    dmr = create_line_dc_from_parameters(net, 1, 4, length_km=100, r_ohm_per_km=0.0212, max_i_ka=0.963)
 
     # Left side
     create_b2b_vsc(net, 2, 0, 1, 0.2, 10, 0.3,

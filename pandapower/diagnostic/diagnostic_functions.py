@@ -227,11 +227,12 @@ class NoExtGrid(DiagnosticFunction[pandapowerNet, bool]):
     """
     Checks, if at least one external grid exists.
     """
+
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         if net.ext_grid.in_service.sum() + (net.gen.slack & net.gen.in_service).sum() == 0:
             return True
         return None
-    
+
     def report(self, error: Exception | None, results: bool | None):
         # error and success checks
         if error is not None:
@@ -248,6 +249,75 @@ class NoExtGrid(DiagnosticFunction[pandapowerNet, bool]):
         # message body
         if results:
             self.out.warning("No ext_grid found. There has to be at least one ext_grid!")
+
+
+class WrongVscDcConfig(DiagnosticFunction[pandapowerNet, dict[str, list[int]]]):
+    """
+    Checks, if at least one external grid exists.
+    """
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, list[int]]:
+        results = {}
+        # already checked VSCs
+        visited_vsc = []
+        # VSCs which are connected to each other via DC lines
+        vsc_pairs = []
+        for vsc_id in net.vsc.index:
+            if vsc_id in visited_vsc:
+                continue
+            visited_vsc.append(vsc_id)
+            # find the connected VSC via DC line
+            vsc_id_pair = self.find_vsc(net, net.vsc.loc[vsc_id, 'bus_dc'], [])
+            if vsc_id_pair is not None:
+                vsc_id_pair = int(vsc_id_pair)
+                vsc_pairs.append([vsc_id, vsc_id_pair])
+                visited_vsc.append(vsc_id_pair)
+        problem_ids = []
+        for vsc_system in vsc_pairs:
+            if set(vsc_pairs).issubset(problem_ids):
+                continue
+            # check the topology and the modes
+            res = self.check_topo(net, vsc_system)
+            if not res[0]:
+                results["VSC names: " + str(net.vsc.loc[res[1], 'name'].values) + ' index: ' + str(res[1])] = res[1]
+                problem_ids.append(res[1])
+        return results
+
+    def find_vsc(self, net, start_bus: int, no_bus: list[int]) -> int | None:
+        no_bus.append(start_bus)
+        # get DC lines connected to start_bus
+        l = net.line_dc.loc[(net.line_dc['from_bus_dc'] == start_bus) | (net.line_dc['to_bus_dc'] == start_bus)]
+        next_buses = l[['from_bus_dc', 'to_bus_dc']].to_numpy().ravel()
+        next_buses = next_buses[~np.isin(next_buses, no_bus)]
+        # check if a VSC is connected to one of those next_buses, otherwise continue search recursively
+        vscs = net.vsc.loc[net.vsc['bus_dc'].isin(next_buses)]
+        if not vscs.empty:
+            return vscs.index.values[0]
+        else:
+            for one_next_buses in next_buses:
+                self.find_vsc(net, one_next_buses, no_bus)
+            # if there was no VSC found yet, there is no second VSC
+            return None
+
+    def check_topo(self, net: pandapowerNet, vsc_id: int) -> tuple[bool, list[int]]:
+        return True, []
+
+    def report(self, error: Exception | None, results: dict[str, list[int]]):
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for VSC DC config failed due to the following error:")
+            self.out.warning(error)
+            return
+        if not results:
+            self.out.info("PASSED: VSC config plausible.")
+            return
+        # message header
+        self.out.compact("wrong_vsc_dc_config:\n")
+        self.out.detailed("Checking if the VSC config is plausible for DC power flow...\n")
+
+        # message body
+        m = "Missing at least one P-Setpoint for the following VSC systems: \n"
+        m += str([vsc_system for vsc_system in results])
+        self.out.detailed(m)
 
 
 class MultipleVoltageControllingElementsPerBus(DiagnosticFunction[pandapowerNet, dict[str, list[Any]]]):
@@ -1800,6 +1870,7 @@ default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | No
     ("test_continuous_bus_indices", TestContinuousBusIndices(), None),
     ("multiple_voltage_controlling_elements_per_bus", MultipleVoltageControllingElementsPerBus(), []),
     ("no_ext_grid", NoExtGrid(), []),
+    ("wrong_vsc_dc_config", WrongVscDcConfig(), []),
     ("wrong_reference_system", WrongReferenceSystem(), []),
     ("deviation_from_std_type", DeviationFromStdType(), []),
     ("numba_comparison", NumbaComparison(), None),

@@ -18,3 +18,8 @@ pandapower uses PYPOWER to solve the DC power flow problem:
 
     If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_ppc"].
     However all necessary information is written into the pandapower format net, so the pandapower user should not usually have to deal with pypower.
+
+.. note::
+    If you have mor than one VSC system in your grid, make sure that the VSCs are modelled proper.
+    Meaning if there are more than one parallel VSCs, all except one should provide a P-setpoint.
+    Otherwise the impedance from the VSC is considered for the load flow.
