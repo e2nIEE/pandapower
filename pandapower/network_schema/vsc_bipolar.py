@@ -3,7 +3,7 @@ import pandera.pandas as pa
 
 # TODO: where is the documentation?
 
-bi_vsc_schema = pa.DataFrameSchema(
+vsc_bipolar_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description=""),
         "bus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus.index"}),
@@ -16,17 +16,14 @@ bi_vsc_schema = pa.DataFrameSchema(
             float,
             description="no-load losses of the VSC on the DC side for the shunt R representing the no load losses",
         ),
-        "control_mode_ac": pa.Column(
-            str, description="the control mode of the ac side of the VSC. it could be vm_pu, q_mvar or slack"
+        "control_mode": pa.Column(
+            str, description="the control mode of the ac side of the VSC. Can be 'Vac_phi', 'Vdc_phi', 'Vdc_Q', 'Pac_Vac', 'Pac_Qac' or 'Vdc_Vac'"
         ),
-        "control_value_ac": pa.Column(
-            float, description="the value of the controlled parameter at the ac bus in p.u. or MVAr"
+        "control_value_1": pa.Column(
+            float, description="The first controlled parameter, for example voltage magnitude or phase"
         ),
-        "control_mode_dc": pa.Column(
-            str, description="the control mode of the dc side of the VSC. it could be vm_pu or p_mw"
-        ),
-        "control_value_dc": pa.Column(
-            float, description="the value of the controlled parameter at the dc bus in p.u. or MW"
+        "control_value_2": pa.Column(
+            float, description="The second controlled parameter, also depends on the control mode"
         ),
         "controllable": pa.Column(
             bool,
@@ -37,7 +34,7 @@ bi_vsc_schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_bi_vsc_schema = pa.DataFrameSchema(
+res_vsc_bipolar_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, nullable=True, description=""),
         "q_mvar": pa.Column(float, nullable=True, description=""),

@@ -58,7 +58,7 @@ def get_filename(entry_fname, save_as="JSON"):
     logger.debug('filename extension: %s' % extension)
     if filename == '':
         raise RuntimeError('No filename given!')
-    elif not extension == goal_extension:
+    elif extension != goal_extension:
         logger.debug('setting correct file extension')
         entry_fname.insert(len(filename), goal_extension)
         filename = entry_fname.get()

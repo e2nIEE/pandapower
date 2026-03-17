@@ -17,13 +17,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         os:  [ ubuntu-latest, windows-latest ]
         group: [ 1, 2 ]
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
@@ -55,4 +55,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          uv run pytest -n=auto --splits 2 --group ${{ matrix.group }}
+          uv run pytest --splits 2 --group ${{ matrix.group }}

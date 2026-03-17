@@ -26,8 +26,6 @@ from pandapower.toolbox.element_selection import get_connected_buses_at_element,
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 
-import warnings
-
 logger = log.getLogger(__name__)
 
 try:
@@ -44,9 +42,6 @@ try:
 except ImportError:
     MPLCURSORS_INSTALLED = False
     logger.info('could not import mplcursors')
-
-warnings.filterwarnings('ignore')
-
 
 def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> List[Tuple[float, float]]:
     try:
@@ -125,12 +120,12 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
             net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
-    net.bus.loc[max_idx_bus + 1, 'geo'] = None
+    net.bus.at[max_idx_bus + 1, 'geo'] = None
 
     x1, y1 = _get_coords_from_bus_idx(net, aux_line.from_bus)[0]
     x2, y2 = _get_coords_from_bus_idx(net, aux_line.to_bus)[0]
 
-    net.bus.geo.at[max_idx_bus + 1] = geojson.dumps(
+    net.bus.at[max_idx_bus + 1, "geo"] = geojson.dumps(
         geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True)
     return net
 

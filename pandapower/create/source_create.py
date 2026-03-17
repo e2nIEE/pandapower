@@ -26,27 +26,18 @@ def create_source_dc(
 ):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
-    INPUT:
+    
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus_dc: index of the bus the shunt is connected to
+        vm_pu: set-point for the bus voltage magnitude at the connection bus
+        name: element name
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
+        in_service: True for in_service or False for out of service
+        type: A string describing the type.
 
-        **net** (pandapowerNet) - The pandapower network in which the element is created
-
-        **bus** (int) - index of the bus the shunt is connected to
-
-        **vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
-
-    OPTIONAL:
-        **name** (str, None) - element name
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **type** (str) - A string describing the type.
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created svc
-
+    Returns:
+        The ID of the created svc
     """
     _check_element(net, bus_dc, element="bus_dc")
 

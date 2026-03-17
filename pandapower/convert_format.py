@@ -373,20 +373,19 @@ def _rename_columns(net, elements_to_deserialize):
                 'q_c_l_mvar': 'ql_c_mvar',
             })
 
-    if "options" in net:
-        if "recycle" in net["options"]:
-            if "Ybus" in net["options"]["recycle"]:
-                if net["options"]["recycle"]["Ybus"]:
-                    net["options"]["recycle"]["trafo"] = False
-                del net["options"]["recycle"]["Ybus"]
-            else:
-                net["options"]["recycle"]["trafo"] = True
-            if "ppc" in net["options"]["recycle"]:
-                if net["options"]["recycle"]["ppc"]:
-                    net["options"]["recycle"]["bus_pq"] = False
-                del net["options"]["recycle"]["ppc"]
-            else:
-                net["options"]["recycle"]["bus_pq"] = True
+    if "options" in net and "recycle" in net["options"]:
+        if "Ybus" in net["options"]["recycle"]:
+            if net["options"]["recycle"]["Ybus"]:
+                net["options"]["recycle"]["trafo"] = False
+            del net["options"]["recycle"]["Ybus"]
+        else:
+            net["options"]["recycle"]["trafo"] = True
+        if "ppc" in net["options"]["recycle"]:
+            if net["options"]["recycle"]["ppc"]:
+                net["options"]["recycle"]["bus_pq"] = False
+            del net["options"]["recycle"]["ppc"]
+        else:
+            net["options"]["recycle"]["bus_pq"] = True
 
 
 def _add_missing_columns(net, elements_to_deserialize):
@@ -632,10 +631,11 @@ def _update_object_attributes(obj):
             obj.__dict__["hunting_limit"] = None
     elif isinstance(obj, BinarySearchControl):
         if "output_adjustable" not in obj.__dict__:
-            obj.__dict__["output_adjustable"] = np.array([False if not distribution else service
-                                            for distribution, service in zip(obj.output_values_distribution,
-                                                                            obj.output_element_in_service)],
-                                            dtype=np.bool)
+            obj.__dict__["output_adjustable"] = np.array([
+                False if not distribution else service for distribution, service in zip(
+                    obj.output_values_distribution, obj.output_element_in_service
+                )
+            ], dtype=bool)
         if "output_max_q_mvar" not in obj.__dict__:
             obj.__dict__["output_max_q_mvar"] = np.array([np.inf]*len(obj.output_element_index), dtype=np.float64)
         if "output_min_q_mvar" not in obj.__dict__:
