@@ -32,8 +32,17 @@ class UCTE2pandapower:
     def _create_empty_network() -> pandapowerNet:
         net: pandapowerNet = create_empty_network()
         structure_dict = get_structure_dict(required_only=False)
+        # TODO: this should be refactored and only create the columns that are used
         new_columns: dict[str, dict] = {
             "trafo": {
+                "tap_side": structure_dict['trafo']["tap_side"],
+                "tap_neutral": structure_dict['trafo']["tap_neutral"],
+                "tap_min": structure_dict['trafo']["tap_min"],
+                "tap_max": structure_dict['trafo']["tap_max"],
+                "tap_step_percent": structure_dict['trafo']["tap_step_percent"],
+                "tap_step_degree": structure_dict['trafo']["tap_step_degree"],
+                "tap_pos": structure_dict['trafo']["tap_pos"],
+                "tap_changer_type": structure_dict['trafo']["tap_changer_type"],
                 "tap2_min": structure_dict['trafo']["tap2_min"],
                 "tap2_max": structure_dict['trafo']["tap2_max"],
                 "tap2_neutral": structure_dict['trafo']["tap2_neutral"],

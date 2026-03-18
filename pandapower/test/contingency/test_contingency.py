@@ -138,6 +138,11 @@ def test_contingency_timeseries(get_net, contingency_function):
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_with_lightsim2grid(get_net, get_case):
+    # FIXME: temporary skip for case14 because of error in lightsim2grid
+    if get_net.name == "case14":
+        pytest.skip(
+            "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
+        )
     net = get_net
     case = get_case
     rng = np.random.default_rng()
@@ -348,6 +353,10 @@ def test_lightsim2grid_phase_shifters():
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_cause_congestion():
+    # FIXME: temporary skip for case14 because of error in lightsim2grid
+    pytest.skip(
+        "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
+    )
     net = case14()
     for c in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
         net.trafo[c] = 0
@@ -427,6 +436,10 @@ def test_cause_element_index():
     check_cause_index(net, nminus1_cases)
 
     if lightsim2grid_installed:
+        # FIXME: temporary skip for case14 because of error in lightsim2grid
+        pytest.skip(
+            "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
+        )
         run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
         columns = [

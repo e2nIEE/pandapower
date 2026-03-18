@@ -30,7 +30,7 @@ def create_test_net():
     net = create_empty_network()
     # buses
     create_buses(net, 7, 20, zone=['0', '0', '1', '1', '1', '0', '0'], name=[f"bus {i}" for i in range(7)],
-                 min_vm_pu=np.append(np.arange(.9, 0.94, .01), [np.nan, np.nan, np.nan]))
+                 min_vm_pu=np.append(np.arange(.9, 0.94, .01), [np.nan, np.nan, np.nan]), max_vm_pu=2.0)
 
     # ext_grid
     idx = create_ext_grid(net, 0, 1.0, 0.0)
