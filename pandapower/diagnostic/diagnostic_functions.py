@@ -298,7 +298,8 @@ class WrongVscDcConfig(DiagnosticFunction[pandapowerNet, dict[str, list[int]]]):
             # if there was no VSC found yet, there is no second VSC
             return None
 
-    def check_topo(self, net: pandapowerNet, vsc_id: int) -> tuple[bool, list[int]]:
+    def check_topo(self, net: pandapowerNet, vsc_id: list[int]) -> tuple[bool, list[int]]:
+        # todo detect other VSCs and check topo
         return True, []
 
     def report(self, error: Exception | None, results: dict[str, list[int]]):
