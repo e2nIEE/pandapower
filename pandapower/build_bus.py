@@ -403,8 +403,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     else:
         in_service = net["bus"]["in_service"].values
     ppc["bus"][~in_service, BUS_TYPE] = NONE
-    if mode != "nx":
-        set_reference_buses(net, ppc, bus_lookup, mode)
+    set_reference_buses(net, ppc, bus_lookup, mode)
     vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude", sequence=sequence)
     if vm_pu is not None:
         ppc["bus"][:n_bus, VM] = vm_pu
@@ -416,7 +415,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     if mode == "sc":
         _add_c_to_ppc(net, ppc)
 
-    if net._options["mode"] == "opf":
+    if mode == "opf":
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:

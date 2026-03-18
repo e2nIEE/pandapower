@@ -76,9 +76,7 @@ def add_gen_order(gen_order, element, _is_elements, f):
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
     ppc["gen"] = np.zeros(shape=(nr_gens, gen_cols), dtype=np.float64)
-    ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
-                              1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                              0, 0, 0, 0, 0])
+    ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     q_lim_default = net._options["q_lim_default"]
     p_lim_default = net._options["p_lim_default"]
     ppc["gen"][:, PMAX] = p_lim_default
