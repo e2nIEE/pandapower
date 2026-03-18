@@ -4,12 +4,14 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _line_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the line"),
+    "name": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="name of the line", metadata={"cim": True}
+    ),
     "std_type": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
-        description="standard type which can be used to easily define line parameters with the pandapower standard type library",
+        description="standard type which can be used to easily define line parameters with the pandapower standard type library", metadata={"cim": True},
     ),
     "from_bus": pa.Column(
         int, pa.Check.ge(0), description="Index of bus where the line starts", metadata={"foreign_key": "bus.index"}
@@ -35,7 +37,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence resistance of the line [Ohm per km]",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "x0_ohm_per_km": pa.Column(
         float,
@@ -43,7 +45,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence reactance of the line [Ohm per km]",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "c0_nf_per_km": pa.Column(
         float,
@@ -51,7 +53,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence capacitance of the line [nano Farad per km]",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "g0_us_per_km": pa.Column(
         float,
@@ -59,7 +61,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="dielectric conductance of the line [micro Siemens per km]",
-        metadata={"sc": True, "3ph": True, "default": 0.0},
+        metadata={"sc": True, "3ph": True, "cim": True, "default": 0.0},
     ),
     "max_i_ka": pa.Column(float, pa.Check.gt(0), description="maximal thermal current [kilo Ampere]"),
     "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel line systems", metadata={"default": 1}),
@@ -73,7 +75,7 @@ _line_columns = {
         pd.StringDtype,
         nullable=True,
         required=False,
-        description="type of line normally “ol” - overhead line “cs” - underground cable system",
+        description="type of line normally “ol” - overhead line “cs” - underground cable system", metadata={"cim": True},
     ),
     "max_loading_percent": pa.Column(
         float,
@@ -89,14 +91,14 @@ _line_columns = {
         nullable=True,
         required=False,
         description="Short-Circuit end temperature of the line in degree Celsius",
-        metadata={"sc": True, "tdpf": True},
+        metadata={"sc": True, "tdpf": True, "cim": True},
     ),
     "in_service": pa.Column(bool, description="specifies if the line is in service.", metadata={"default": True}),
     "geo": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
-        description="geojson.LineString object or its string representation",
+        description="geojson.LineString object or its string representation", metadata={"cim": True}
     ),
     "alpha": pa.Column(
         float,
@@ -190,6 +192,40 @@ _line_columns = {
         required=False,
         description="specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)",
         metadata={"tdpf": True},
+    ),
+    "origin_id": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+    ),
+    "origin_class": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+    ),
+    "description": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="description from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "terminal_to": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_to from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "terminal_from": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_from from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "EquipmentContainer_id": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="EquipmentContainer_id from converter, not relevant for calculations",
+        metadata={"cim": True},
     ),
 }
 line_schema = pa.DataFrameSchema(

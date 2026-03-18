@@ -3,7 +3,7 @@ import pandera.pandas as pa
 
 shunt_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the shunt"),
+        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the shunt", metadata={"cim": True}),
         "bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -30,7 +30,7 @@ shunt_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="maximum allowed step of shunt",
-            metadata={"opf": True, "default": 1},
+            metadata={"opf": True,"cim": True, "default": 1},
         ),
         "in_service": pa.Column(bool, description="specifies if the shunt is in service", metadata={"default": True}),
         "step_dependency_table": pa.Column(
@@ -38,7 +38,7 @@ shunt_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="whether the shunt parameters (q_mvar, p_mw) are adjusted dependent on the step of the shunt",
-            metadata={"default": False},
+            metadata={"cim": True, "default": False},
         ),  # TODO: remove since it is implied by id_characteristic_table
         "id_characteristic_table": pa.Column(
             pd.Int64Dtype,
@@ -46,6 +46,37 @@ shunt_schema = pa.DataFrameSchema(
             nullable=True,
             required=True,  # TODO: switch to false, when step_dependancy_table is gone
             description="references the id_characteristic index from the shunt_characteristic_table",
+        ),
+        "origin_id": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True},
+        ),
+        "terminal": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "sVCControlMode": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="sVCControlMode from converter, not relevant for calculations",
+            metadata={"cim": True},
         ),
     },
     checks=[

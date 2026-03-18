@@ -33,7 +33,7 @@ class CimConverter:
         self.cim_version = cim_version.lower()
         self.kwargs = kwargs
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
-        self.net: pandapowerNet = create_empty_network()
+        self.net: pandapowerNet = create_empty_network(structure=get_structure_dict(metadata=['cim']))
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()

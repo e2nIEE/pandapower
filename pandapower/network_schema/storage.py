@@ -57,6 +57,26 @@ _storage_columns = {
     "type": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="type variable to classify the storage"
     ),
+    "origin_id": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+    ),
+    "origin_class": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+    ),
+    "terminal": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "description": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="description from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
 }
 storage_schema = pa.DataFrameSchema(
     _storage_columns,

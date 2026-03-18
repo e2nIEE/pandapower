@@ -39,6 +39,44 @@ measurement_schema = pa.DataFrameSchema(
             str,
             description="Only used for measured lines or transformers. Side defines at which end of the branch the measurement is gathered. For lines this may be “from“, “to“ to denote the side with the from_bus or to_bus. It can also be the index of the from_bus or to_bus. For transformers, it can be “hv“, “mv“ or “lv“ or the corresponding bus index, respectively.",
         ),  # TODO: check nur wenn element_type trafo oder line
+        "origin_id": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True},
+        ),
+        "source": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="source from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "analog_id": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="analog_id from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "terminal_id": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal_id from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
     },
     strict=False,
 )

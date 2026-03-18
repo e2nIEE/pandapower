@@ -4,7 +4,7 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _load_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load"),
+    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load", metadata={"cim": True}),
     "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
     "p_mw": pa.Column(float, description="active power of the load [MW], a positiv value means power consumption"),
     "q_mvar": pa.Column(
@@ -75,6 +75,26 @@ _load_columns = {
     "min_p_mw": pa.Column(float, nullable=True, required=False, description="Minimum active power"),
     "max_q_mvar": pa.Column(float, nullable=True, required=False, description="Maximum reactive power"),
     "min_q_mvar": pa.Column(float, nullable=True, required=False, description="Minimum reactive power"),
+    "origin_id": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+    ),
+    "origin_class": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+    ),
+    "terminal": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "description": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="description from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
 }
 load_schema = pa.DataFrameSchema(
     _load_columns,

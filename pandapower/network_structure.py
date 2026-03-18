@@ -1,3 +1,5 @@
+from importlib.metadata import metadata
+
 from numpy import dtype
 from pandera import DataFrameSchema
 
@@ -92,11 +94,11 @@ def get_column_info(table: str, column: str) -> dict[str, str | bool] | None:
 def get_default_value(table: str, column: str):
     return get_column_info(table, column)["metadata"]["default"]
 
-def get_structure_dict(required_only: bool = True) -> dict:
+def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
     """
     This function returns the structure dict of the network
     """
-    dtypes_dict = {key: get_dtypes(val, required_only) for key, val in get_table_schema().items()}
+    dtypes_dict = {key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()}
     dtypes_dict.update({
         "pwl_cost": {  # TODO: not a datastructure or element?
             "power_type": dtype(object),

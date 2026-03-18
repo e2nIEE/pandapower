@@ -4,7 +4,11 @@ import pandera.pandas as pa
 xward_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="name of the extended ward equivalent"
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="name of the extended ward equivalent",
+            metadata={"cim": True},
         ),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
@@ -21,10 +25,34 @@ xward_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description=" Contribution factor for distributed slack power",
-            metadata={"default": 0.0},
+            metadata={"cim": True, "default": 0.0},
         ),
         "in_service": pa.Column(
             bool, description="specifies if the extended ward equivalent is in service.", metadata={"default": True}
+        ),
+        "origin_id": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True},
+        ),
+        "terminal": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True},
         ),
     },
     strict=False,
