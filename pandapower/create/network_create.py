@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_empty_network(
-    name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True
+    name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True, structure: dict = None
 ) -> pandapowerNet:
     """
     This function initializes the pandapower data structure.
@@ -34,7 +34,10 @@ def create_empty_network(
         >>> net = create_empty_network()
 
     """
-    network_structure_dict = get_structure_dict()
+    if structure is None:
+        network_structure_dict = get_structure_dict()
+    else:
+        network_structure_dict = structure
     network_structure_dict["name"] = name
     network_structure_dict["f_hz"] = f_hz
     network_structure_dict["sn_mva"] = sn_mva

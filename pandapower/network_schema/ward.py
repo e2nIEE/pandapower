@@ -8,6 +8,7 @@ ward_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="name of the ward equivalent",
+            metadata={"cim": True},
         ),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
@@ -18,6 +19,30 @@ ward_schema = pa.DataFrameSchema(
         "qz_mvar": pa.Column(float, description="constant impedance reactive power demand at 1.0 pu [MVar]"),
         "in_service": pa.Column(
             bool, description="specifies if the ward equivalent is in service.", metadata={"default": True}
+        ),
+        "origin_id": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True},
+        ),
+        "terminal": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True},
         ),
     },
     strict=False,

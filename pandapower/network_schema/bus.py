@@ -12,13 +12,14 @@ _bus_columns = {
         nullable=True,
         required=False,
         description="type variable to classify buses",
-        metadata={"default": "b"},
+        metadata={"cim": True, "default": "b"},
     ),
     "zone": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="can be used to group buses, for example network groups / regions",
+        metadata={"cim": True},
     ),
     "max_vm_pu": pa.Column(
         float,
@@ -37,7 +38,91 @@ _bus_columns = {
         metadata={"opf": True, "default": 0.0},
     ),
     "in_service": pa.Column(bool, description="specifies if the bus is in service.", metadata={"default": True}),
-    "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
+    "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string",
+        metadata={"cim": True}),
+    "origin_id": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+    ),
+    "origin_class": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+    ),
+    "origin_profile": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_profile from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "cim_topnode": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="cim_topnode from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "ConnectivityNodeContainer_id": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="ConnectivityNodeContainer_id from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "Substation_id": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="Substation_id from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "description": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="description from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "Busbar_id": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="Busbar_id from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "Busbar_name": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="Busbar_name from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "GeographicalRegion_id": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="GeographicalRegion_id from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "GeographicalRegion_name": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="GeographicalRegion_name from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "SubGeographicalRegion_id": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="SubGeographicalRegion_id from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "SubGeographicalRegion_name": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="SubGeographicalRegion_name from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
 }
 bus_schema = pa.DataFrameSchema(
     _bus_columns,

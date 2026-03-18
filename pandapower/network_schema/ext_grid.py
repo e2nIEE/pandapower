@@ -4,21 +4,22 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _ext_grid_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the external grid"),
+    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the external grid",
+        metadata={"cim": True}),
     "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
     "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage set point [p.u]", metadata={"default": 1.0}),
     "va_degree": pa.Column(float, description="voltage angle set point [degree]", metadata={"default": 0.0}),
     "max_p_mw": pa.Column(
-        float, nullable=True, required=False, description="Maximum active power", metadata={"opf": True}
+        float, nullable=True, required=False, description="Maximum active power", metadata={"opf": True, "cim": True}
     ),
     "min_p_mw": pa.Column(
-        float, nullable=True, required=False, description="Minimum active power", metadata={"opf": True}
+        float, nullable=True, required=False, description="Minimum active power", metadata={"opf": True, "cim": True}
     ),
     "max_q_mvar": pa.Column(
-        float, nullable=True, required=False, description="Maximum reactive power", metadata={"opf": True}
+        float, nullable=True, required=False, description="Maximum reactive power", metadata={"opf": True, "cim": True}
     ),
     "min_q_mvar": pa.Column(
-        float, nullable=True, required=False, description="Minimum reactive power", metadata={"opf": True}
+        float, nullable=True, required=False, description="Minimum reactive power", metadata={"opf": True, "cim": True}
     ),
     "s_sc_max_mva": pa.Column(
         float,
@@ -26,7 +27,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maximum short circuit power provision [MVA]",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "s_sc_min_mva": pa.Column(
         float,
@@ -34,7 +35,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="minimum short circuit power provision [MVA]",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "rx_max": pa.Column(
         float,
@@ -42,7 +43,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maxium R/X ratio of short-circuit impedance",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "rx_min": pa.Column(
         float,
@@ -50,7 +51,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="minimum R/X ratio of short-circuit impedance",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "r0x0_max": pa.Column(
         float,
@@ -58,7 +59,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maximal R/X-ratio to calculate Zero sequence internal impedance of ext_grid",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "x0x_max": pa.Column(
         float,
@@ -66,18 +67,81 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maximal X0/X-ratio to calculate Zero sequence internal impedance of ext_grid",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "slack_weight": pa.Column(
         float,
         description="Contribution factor for distributed slack power flow calculation (active power balancing)",
         metadata={"default": 1.0},
     ),
-    "in_service": pa.Column(bool, description="specifies if the external grid is in service.", metadata={"default": True}),
+    "in_service": pa.Column(
+        bool, description="specifies if the external grid is in service.", metadata={"default": True}
+    ),
     "controllable": pa.Column(
         bool,
         description="Control of value limits - True: p_mw, q_mvar and vm_pu limits are enforced for the ext_grid in OPF. The voltage limits set in the ext_grid bus are enforced. - False: p_mw and vm_pu set points are enforced and *limits are ignored*. The vm_pu set point is enforced and limits of the bus table are ignored. Defaults to False if controllable column exists in DataFrame",
         metadata={"default": False},
+    ),
+    "origin_id": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+    ),
+    "origin_class": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+    ),
+    "substation": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="substation from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "terminal": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "description": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="description from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "RegulatingControl.mode": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="RegulatingControl.mode from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "RegulatingControl.targetValue": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="RegulatingControl.targetValue from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "RegulatingControl.enabled": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="RegulatingControl.enabled from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "referencePriority": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="referencePriority, from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "p_mw": pa.Column(
+        float, nullable=True, description="p from converter, not relevant for calculations", metadata={"cim": True}
+    ),
+    "q_mvar": pa.Column(
+        float, nullable=True, description="q from converter, not relevant for calculations", metadata={"cim": True}
     ),
 }
 ext_grid_schema = pa.DataFrameSchema(
