@@ -938,6 +938,10 @@ def test_gen_p_vm_limits(four_bus_net):
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
     create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
                min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
+
     runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
