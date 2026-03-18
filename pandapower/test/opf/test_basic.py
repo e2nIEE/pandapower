@@ -890,8 +890,7 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
                controllable=False)  # controllable == False -> vm_pu enforced
     create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
-               controllable=True)
-    # controllable == True -> vm_pu between
+               controllable=True) # controllable == True -> vm_pu between
 
     # bus voltages
     runpp(net)
@@ -958,6 +957,10 @@ def test_gen_violated_p_vm_limits(four_bus_net):
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
     g = create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
                    min_vm_pu=.9, max_vm_pu=1.1, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
+
     runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
