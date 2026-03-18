@@ -33,7 +33,7 @@ def _check_necessary_opf_parameters(net, logger):
                           net[element_type][col].loc[controllables].isnull().any()]
 
                 if len(missing_col):
-                    if element_type in ["ext_grid", "dcline"]:  # no error due to missing columns
+                    if element_type == "ext_grid":  # no error due to missing columns
                         logger.debug(
                             f"These missing columns in {element_type} are considered in OPF as +- 1000 TW.: {missing_col}"
                         )
