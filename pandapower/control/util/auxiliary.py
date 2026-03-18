@@ -11,6 +11,7 @@ from pandas import Index
 
 from pandapower.auxiliary import soft_dependency_error, ensure_iterability
 from pandapower.control.util.characteristic import SplineCharacteristic, Characteristic
+from pandapower.create._utils import add_column_to_df
 
 try:
     import matplotlib.pyplot as plt
@@ -529,10 +530,8 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
         if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
             logger.warning(f"The reactive_capability_curve of {element} is True, but the relevant "
                            f"characteristic value is None. So default Q limit value has been used in the load flow.")
-        if "min_q_mvar" not in net[element].columns:
-            net[element]["min_q_mvar"] = float("nan")
-        if "max_q_mvar" not in net[element].columns:
-            net[element]["max_q_mvar"] = float("nan")
+        add_column_to_df(net, "sgen", "min_q_mvar")
+        add_column_to_df(net, "sgen", "max_q_mvar")
         curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
         curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
         qmin = curve_q.loc[element_index, "min_q_mvar"]
