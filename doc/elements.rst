@@ -43,4 +43,4 @@ information about the definition and interpretation of the parameters in the fol
     elements/tcsc
     elements/ssc
     elements/vsc
-    elements/b2b_vsc
+    elements/vsc_stacked

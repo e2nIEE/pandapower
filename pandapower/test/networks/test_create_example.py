@@ -25,8 +25,19 @@ def test_create_realistic():
     net = example_multivoltage()
     runpp(net)
     assert net.converged
-    for element in ["bus", "line", "gen", "sgen", "shunt", "trafo", "trafo3w", "load", "ext_grid",
-                    "impedance", "xward"]:
+    for element in [
+        "bus",
+        "line",
+        "gen",
+        "sgen",
+        "shunt",
+        "trafo",
+        "trafo3w",
+        "load",
+        "ext_grid",
+        "impedance",
+        "xward",
+    ]:
         assert len(net[element]) >= 1
     for et in ["l", "b", "t"]:
         assert len(net.switch[net.switch.et == et]) >= 1
@@ -38,5 +49,5 @@ def test_create_realistic():
     assert net.bus.vn_kv.isin(all_vn_kv).all()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

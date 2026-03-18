@@ -190,8 +190,8 @@ def test_level_in_service(net):
 
 
 def test_matching_params(net):
-    c0 = DummyController(net)
-    c1 = DummyController(net, order=1, drop_same_existing_ctrl=True)
+    DummyController(net)
+    DummyController(net, order=1, drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([0, 1]))
     c2 = DummyController(net, drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([1, 2]))

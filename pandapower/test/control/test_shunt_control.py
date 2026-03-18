@@ -44,9 +44,9 @@ def test_discrete_shunt_control_with_step_dependency_table(tol=1e-6):
     net["shunt_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -50, -75, -100, -125],
          'p_mw': [0, 0, 0, 0, 0]})
-    net.shunt.step_dependency_table.at[0] = True
-    net.shunt.id_characteristic_table.at[0] = 0
-    net.shunt.step.at[0] = 2
+    net.shunt.at[0, "step_dependency_table"] = True
+    net.shunt.at[0, "id_characteristic_table"] = 0
+    net.shunt.at[0, "step"] = 2
 
     DiscreteShuntController(net, shunt_index=0, bus_index=1, vm_set_pu=1.08, tol=1e-2)
     runpp(net, run_control=False)

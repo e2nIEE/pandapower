@@ -373,20 +373,19 @@ def _rename_columns(net, elements_to_deserialize):
                 'q_c_l_mvar': 'ql_c_mvar',
             })
 
-    if "options" in net:
-        if "recycle" in net["options"]:
-            if "Ybus" in net["options"]["recycle"]:
-                if net["options"]["recycle"]["Ybus"]:
-                    net["options"]["recycle"]["trafo"] = False
-                del net["options"]["recycle"]["Ybus"]
-            else:
-                net["options"]["recycle"]["trafo"] = True
-            if "ppc" in net["options"]["recycle"]:
-                if net["options"]["recycle"]["ppc"]:
-                    net["options"]["recycle"]["bus_pq"] = False
-                del net["options"]["recycle"]["ppc"]
-            else:
-                net["options"]["recycle"]["bus_pq"] = True
+    if "options" in net and "recycle" in net["options"]:
+        if "Ybus" in net["options"]["recycle"]:
+            if net["options"]["recycle"]["Ybus"]:
+                net["options"]["recycle"]["trafo"] = False
+            del net["options"]["recycle"]["Ybus"]
+        else:
+            net["options"]["recycle"]["trafo"] = True
+        if "ppc" in net["options"]["recycle"]:
+            if net["options"]["recycle"]["ppc"]:
+                net["options"]["recycle"]["bus_pq"] = False
+            del net["options"]["recycle"]["ppc"]
+        else:
+            net["options"]["recycle"]["bus_pq"] = True
 
 
 def _add_missing_columns(net, elements_to_deserialize):

@@ -31,7 +31,6 @@ def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
         net["_pm_result"]["ne_branch"] = result_pm["solution"]["ne_branch"]
     net["_pm_result"]["solve_time"] = result_pm["solve_time"]
 
-    # net["_pm_result"] = result_pm
     success = ppc["success"]
     if success:
         if not multinetwork:
@@ -156,7 +155,7 @@ def read_ots_results(net: pandapowerNet):
             net[res].loc[:, "in_service"] = net[res].loc[:, "in_service"].values
         branch_status = ppc["branch"][f:t, BR_STATUS].real
 
-        net[res]["in_service"].values[:] = branch_status
+        net[res].loc[:, "in_service"] = branch_status
 
 
 def read_tnep_results(net: pandapowerNet):

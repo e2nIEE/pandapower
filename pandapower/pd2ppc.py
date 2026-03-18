@@ -45,14 +45,6 @@ def _pd2ppc_recycle(net, sequence, recycle):
         # update pq values in bus
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
 
-    # if "trafo" in recycle and recycle["trafo"]:
-    #     # update trafo in branch and Ybus
-    #     lookup = net._pd2ppc_lookups["branch"]
-    #     if "trafo" in lookup:
-    #         _calc_trafo_parameter(net, ppc)
-    #     if "trafo3w" in lookup:
-    #         _calc_trafo3w_parameter(net, ppc)
-
     if "gen" in recycle and recycle["gen"]:
         # updates the ppc["gen"] part
         _build_gen_ppc(net, ppc)
@@ -337,9 +329,8 @@ def _ppc2ppci(ppc, net, ppci=None):
     # update lookups (pandapower -> ppci internal)
     _update_lookup_entries(net, bus_dc_lookup, e2i_dc, "bus_dc")
 
-    if 'areas' in ppc:
-        if len(ppc["areas"]) == 0:  # if areas field is empty
-            del ppc['areas']  # delete it (so it's ignored)
+    if 'areas' in ppc and len(ppc["areas"]) == 0:  # if areas field is empty
+        del ppc['areas']  # delete it (so it's ignored)
 
     # bus types
     bus_type = ppc["bus"][:, BUS_TYPE]

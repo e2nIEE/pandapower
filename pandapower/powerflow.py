@@ -183,7 +183,7 @@ def _ppci_to_net(result, net):
 
 def _bypass_pf_and_set_results(ppci, options):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, _, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:, VM]
     bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens)
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
