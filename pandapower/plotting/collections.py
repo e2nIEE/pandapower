@@ -1283,7 +1283,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
 
         if use_line_geodata:
             if line.name in net.line.geo.dropna().index:
-                line_coords = net.line.loc[line.name, "geo"]
+                line_coords = _get_coords_from_geojson(net.line.loc[line.name, "geo"])
                 # check, which end of the line is nearer to the switch bus
                 intersection = position_on_busbar(net, sb, busbar_coords=line_coords)
                 if intersection is not None:
