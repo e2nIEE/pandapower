@@ -13,6 +13,7 @@ from pandapower.convert_format import convert_format
 from pandapower.create import create_empty_network, create_bus, create_gen, create_ext_grid, create_load, \
     create_poly_cost, create_line_from_parameters, create_transformer3w_from_parameters, create_line, create_sgen, \
     create_transformer_from_parameters, create_transformer3w, create_pwl_cost, create_storage
+from pandapower.create._utils import add_column_to_df
 from pandapower.networks import simple_four_bus_system
 from pandapower.run import runopp, rundcopp, runpp
 from pandapower.test.helper_functions import add_grid_connection
@@ -884,12 +885,13 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
     # create two additional slacks with different voltage setpoints
-    create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
-               max_q_mvar=1., slack=True)
-    create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
-               max_q_mvar=1., controllable=False)  # controllable == False -> vm_pu enforced
-    create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
-               min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between
+    create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1., slack=True,
+               controllable=True)
+    create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
+               controllable=False)  # controllable == False -> vm_pu enforced
+    create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
+               controllable=True) # controllable == True -> vm_pu between
+
     # bus voltages
     runpp(net)
     # assert if voltage limits are correct in result in pf an opf
@@ -936,6 +938,10 @@ def test_gen_p_vm_limits(four_bus_net):
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
     create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
                min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
+
     runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
@@ -955,6 +961,10 @@ def test_gen_violated_p_vm_limits(four_bus_net):
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
     g = create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
                    min_vm_pu=.9, max_vm_pu=1.1, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
+
     runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)

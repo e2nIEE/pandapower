@@ -9,6 +9,7 @@ import pytest
 
 from pandapower.create import create_empty_network, create_bus, create_gen, create_ext_grid, create_load, \
     create_line_from_parameters, create_pwl_cost, create_sgen
+from pandapower.create._utils import add_column_to_df
 from pandapower.run import runopp
 
 import logging
@@ -55,6 +56,8 @@ def test_cost_piecewise_linear_eg():
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10)
     create_ext_grid(net, 0, min_p_mw=0, max_p_mw=0.050)
     create_gen(net, 1, p_mw=0.01, min_p_mw=0, max_p_mw=0.050, controllable=True)
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
     # create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
     create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,

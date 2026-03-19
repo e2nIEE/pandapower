@@ -11,6 +11,7 @@ from pandapower.create import (
     create_dcline, create_line, create_transformer,  create_bus, create_poly_cost,
     create_pwl_cost
 )
+from pandapower.create._utils import add_column_to_df
 from pandapower.networks import create_cigre_network_lv, case9
 from pandapower.run import runpp
 from pandapower.toolbox import (
@@ -33,6 +34,11 @@ def test_opf_task():
         controllable=True)
     create_dcline(net, 4, 5, 0.3, 1e-4, 1e-2, 1.01, 1.02, min_q_from_mvar=-10,
         min_q_to_mvar=-10)
+
+    add_column_to_df(net, "dcline", "max_p_mw")
+    add_column_to_df(net, "dcline", "max_q_from_mvar")
+    add_column_to_df(net, "dcline", "max_q_to_mvar")
+
     create_line(net, 3, 4, 5, "122-AL1/20-ST1A 10.0", max_loading_percent=50)
     create_transformer(net, 2, 3, "0.25 MVA 10/0.4 kV")
 
