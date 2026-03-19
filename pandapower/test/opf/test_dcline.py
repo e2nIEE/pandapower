@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -41,16 +41,6 @@ def dcline_net():
     return net
 
 
-def get_delta_try_except(net):
-    for delta in [1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11, 1e-12]:
-        try:
-            runopp(net, delta=delta)
-            return delta
-        except OPFNotConverged:
-            continue
-    return 1e-10
-
-
 def test_dcline_reverse(dcline_net):
     """
     Checks normal function of dcline. And will also reverse the powerflow and check if the flow reverses.
@@ -63,7 +53,6 @@ def test_dcline_reverse(dcline_net):
     net.dcline.p_mw = -200.
     runpp(net)
     assert allclose(net.res_ext_grid.p_mw, [-196.358, 1008.311], atol=1e-3)
-    pass
 
 
 @pytest.mark.xfail(reason="numerical issue with OPF convergence. The failure seems to depend on the"

@@ -106,7 +106,7 @@ def test_trafo_tap2_results():
     all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
     tol = 2e-7
     for key, diff in all_diffs.items():
-        if type(diff) == pd.Series:
+        if isinstance(diff, pd.Series):
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()
@@ -137,7 +137,7 @@ def test_trafo3w_tap_dependent_imp_with_tc():
     }
 
     for key, diff in all_diffs.items():
-        if type(diff) == pd.Series:
+        if isinstance(diff, pd.Series):
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()
@@ -169,7 +169,7 @@ def test_pf_export_tap_changer():
     }
 
     for key, diff in all_diffs.items():
-        if type(diff) == pd.Series:
+        if isinstance(diff, pd.Series):
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()
@@ -250,7 +250,7 @@ def test_pf_SC_meas_relocate():
     }
 
     for key, diff in all_diffs.items():
-        if type(diff) == pd.Series:
+        if isinstance(diff, pd.Series):
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()
@@ -297,7 +297,7 @@ def test_pf_export_q_capability_curve():
     }
 
     for key, diff in all_diffs.items():
-        if type(diff) == pd.Series:
+        if isinstance(diff, pd.Series):
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()
@@ -334,7 +334,7 @@ def test_shunt_tables():
     assert np.isclose(Q_shunt_without_table, net.res_shunt.loc[0, "q_mvar"], rtol=0, atol=1e-5)
 
     for key, diff in all_diffs.items():
-        if type(diff) == pd.Series:
+        if isinstance(diff, pd.Series):
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()
@@ -356,7 +356,7 @@ def test_mixed_zip_loads_import():
     tol = get_tol()
 
     for key, diff in all_diffs.items():
-        if type(diff) == pd.Series:
+        if isinstance(diff, pd.Series):
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()
@@ -387,7 +387,7 @@ def test_vdroop_ctrl_local():
     }
 
     for key, diff in all_diffs.items():
-        if type(diff) == pd.Series:
+        if isinstance(diff, pd.Series):
             delta = diff.abs().max()
         else:
             delta = diff['diff'].abs().max()

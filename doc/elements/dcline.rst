@@ -1,8 +1,8 @@
 ﻿.. _dcline:
 
-=============
-DC Line
-=============
+====================
+HV DC Link / DC Line
+====================
 
 .. seealso::
     :ref:`Unit Systems and Conventions <conventions>`

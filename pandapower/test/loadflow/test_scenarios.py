@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -243,7 +243,8 @@ def test_transformer_phase_shift():
     assert np.isclose(b3b_angle - net.res_bus.va_degree.at[5], -10)
 
 
-def test_transformer_phase_shift_complex():
+@pytest.mark.parametrize('side', ["hv", "lv"])
+def test_transformer_phase_shift_complex(side):
     test_ref = (0.99967, -30.7163)
     test_tap_pos = {
         'hv': (0.9617, -31.1568),
@@ -253,31 +254,31 @@ def test_transformer_phase_shift_complex():
         'hv': (1.0407, -30.2467),
         'lv': (0.9603, -31.1306)
     }
-    for side in ["hv", "lv"]:
-        net = create_empty_network()
-        b1 = create_bus(net, vn_kv=110.)
-        create_ext_grid(net, b1)
-        b2 = create_bus(net, vn_kv=20.)
-        create_load(net, b2, p_mw=10)
-        create_transformer_from_parameters(net, hv_bus=b1, lv_bus=b2, sn_mva=40, vn_hv_kv=110,
-                                           vn_lv_kv=20, vkr_percent=0.1, vk_percent=5,
-                                           pfe_kw=0, i0_percent=0.1, shift_degree=30,
-                                           tap_side=side, tap_neutral=0, tap_max=2, tap_min=-2,
-                                           tap_step_percent=2, tap_step_degree=10, tap_pos=0,
-                                           tap_changer_type="Ratio")
-        runpp(net, init="dc", calculate_voltage_angles=True)
-        assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0], rtol=1e-4)
-        assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[1], rtol=1e-4)
 
-        net.trafo.at[0, "tap_pos"] = 2
-        runpp(net, init="dc", calculate_voltage_angles=True)
-        assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_pos[side][0], rtol=1e-4)
-        assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_pos[side][1], rtol=1e-4)
+    net = create_empty_network()
+    b1 = create_bus(net, vn_kv=110.)
+    create_ext_grid(net, b1)
+    b2 = create_bus(net, vn_kv=20.)
+    create_load(net, b2, p_mw=10)
+    create_transformer_from_parameters(net, hv_bus=b1, lv_bus=b2, sn_mva=40, vn_hv_kv=110,
+                                       vn_lv_kv=20, vkr_percent=0.1, vk_percent=5,
+                                       pfe_kw=0, i0_percent=0.1, shift_degree=30,
+                                       tap_side=side, tap_neutral=0, tap_max=2, tap_min=-2,
+                                       tap_step_percent=2, tap_step_degree=10, tap_pos=0,
+                                       tap_changer_type="Ratio")
+    runpp(net, init="dc", calculate_voltage_angles=True)
+    assert np.isclose(net.res_bus.vm_pu.at[b2], test_ref[0], rtol=1e-4)
+    assert np.isclose(net.res_bus.va_degree.at[b2], test_ref[1], rtol=1e-4)
 
-        net.trafo.at[0, "tap_pos"] = -2
-        runpp(net, init="dc", calculate_voltage_angles=True)
-        assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_neg[side][0], rtol=1e-4)
-        assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_neg[side][1], rtol=1e-4)
+    net.trafo.at[0, "tap_pos"] = 2
+    runpp(net, init="dc", calculate_voltage_angles=True)
+    assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_pos[side][0], rtol=1e-4)
+    assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_pos[side][1], rtol=1e-4)
+
+    net.trafo.at[0, "tap_pos"] = -2
+    runpp(net, init="dc", calculate_voltage_angles=True)
+    assert np.isclose(net.res_bus.vm_pu.at[b2], test_tap_neg[side][0], rtol=1e-4)
+    assert np.isclose(net.res_bus.va_degree.at[b2], test_tap_neg[side][1], rtol=1e-4)
 
 
 def test_transformer3w_phase_shift():
@@ -339,9 +340,9 @@ def test_volt_dep_load_at_inactive_bus():
     # create buses
     bus1 = create_bus(net, index=0, vn_kv=20., name="Bus 1")
     bus2 = create_bus(net, index=1, vn_kv=0.4, name="Bus 2")
-    bus3 = create_bus(net, index=3, in_service=False, vn_kv=0.4, name="Bus 3")
-    bus4 = create_bus(net, index=4, vn_kv=0.4, name="Bus 4")
-    bus4 = create_bus(net, index=5, vn_kv=0.4, name="Bus 4")
+    create_bus(net, index=3, in_service=False, vn_kv=0.4, name="Bus 3")
+    create_bus(net, index=4, vn_kv=0.4, name="Bus 4")
+    create_bus(net, index=5, vn_kv=0.4, name="Bus 4")
 
     # create bus elements
     create_ext_grid(net, bus=bus1, vm_pu=1.02, name="Grid Connection")
@@ -349,13 +350,13 @@ def test_volt_dep_load_at_inactive_bus():
     create_load(net, bus=5, p_mw=0.1, q_mvar=0.05, name="Load4")
 
     # create branch elements
-    trafo = create_transformer(net, hv_bus=bus1, lv_bus=bus2, std_type="0.4 MVA 20/0.4 kV",
+    create_transformer(net, hv_bus=bus1, lv_bus=bus2, std_type="0.4 MVA 20/0.4 kV",
                                name="Trafo")
-    line1 = create_line(net, from_bus=1, to_bus=3, length_km=0.1, std_type="NAYY 4x50 SE",
+    create_line(net, from_bus=1, to_bus=3, length_km=0.1, std_type="NAYY 4x50 SE",
                         name="Line")
-    line2 = create_line(net, from_bus=1, to_bus=4, length_km=0.1, std_type="NAYY 4x50 SE",
+    create_line(net, from_bus=1, to_bus=4, length_km=0.1, std_type="NAYY 4x50 SE",
                         name="Line")
-    line3 = create_line(net, from_bus=1, to_bus=5, length_km=0.1, std_type="NAYY 4x50 SE",
+    create_line(net, from_bus=1, to_bus=5, length_km=0.1, std_type="NAYY 4x50 SE",
                         name="Line")
 
     runpp(net)
@@ -399,7 +400,7 @@ def test_oos_buses_at_trafo3w():
 
     create_ext_grid(net, b1)
     l1 = create_line(net, b1, b2, 0.5, std_type="NAYY 4x50 SE", in_service=True)
-    l2 = create_line(net, b2, b3, 0.5, std_type="NAYY 4x50 SE", in_service=False)
+    create_line(net, b2, b3, 0.5, std_type="NAYY 4x50 SE", in_service=False)
 
     tidx = create_transformer3w(
         net, b3, b4, b5, std_type='63/25/38 MVA 110/20/10 kV', in_service=True)
@@ -414,7 +415,7 @@ def test_oos_buses_at_trafo3w():
 def network_with_trafo3ws():
     net = create_empty_network()
     add_test_trafo(net)
-    slack, hv, ln = add_grid_connection(net, zone="test_trafo3w")
+    _, hv, _ = add_grid_connection(net, zone="test_trafo3w")
     for _ in range(2):
         mv = create_bus(net, vn_kv=0.6, zone="test_trafo3w")
         create_load(net, mv, p_mw=0.8, q_mvar=0)

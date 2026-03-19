@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import warnings
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -25,12 +25,17 @@ from .pypower.idx_vsc import vsc_cols, VSC_BUS, VSC_INTERNAL_BUS, VSC_R, VSC_X, 
     VSC_MODE_DC_V, VSC_MODE_DC_P, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC, VSC_DIFF_REF_BUS, VSC_MODE_DC_DP, \
     VSC_MODE_DC_DM
 from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS, SOURCE_DC_VG, source_dc_cols
+from pandapower.build_gen import _calculate_qmin_qmax_from_q_capability_characteristics
 
 try:
     from numba import jit
     version_check('numba')
 except ImportError:
     from .pf.no_numba import jit
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @jit(nopython=True, cache=False)
@@ -350,7 +355,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
             aux_ssc = np.arange(max_idx + nr_xward + nr_trafo3w, max_idx + nr_xward + nr_trafo3w + nr_ssc)
             aux["ssc"] = aux_ssc
             bus_indices.append(aux_ssc)
-        if nr_vsc:
+        if nr_vsc and mode != "dc":
             aux_vsc = np.arange(max_idx + nr_xward + nr_trafo3w + nr_ssc, max_idx + nr_xward + nr_trafo3w + nr_ssc + nr_vsc)
             aux["vsc"] = aux_vsc
             bus_indices.append(aux_vsc)
@@ -389,7 +394,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     # init voltages from net
     ppc["bus"][:n_bus, BASE_KV] = net["bus"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
-    if nr_xward > 0 or nr_trafo3w > 0 or nr_ssc > 0 or nr_vsc > 0:
+    if nr_xward > 0 or nr_trafo3w > 0 or nr_ssc > 0 or (nr_vsc > 0 and mode != "dc"):
         in_service = np.concatenate([net["bus"]["in_service"].values,
                                      net["xward"]["in_service"].values,
                                      net["trafo3w"]["in_service"].values,
@@ -430,7 +435,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     if len(net.ssc):
         _fill_auxiliary_buses(net, ppc, bus_lookup, "ssc", "bus", aux)
 
-    if len(net.vsc):
+    if len(net.vsc) and mode != "dc":
         _fill_auxiliary_buses(net, ppc, bus_lookup, "vsc", "bus", aux)
 
     net["_pd2ppc_lookups"]["bus"] = bus_lookup
@@ -452,7 +457,7 @@ def _build_bus_dc_ppc(net, ppc):
     # get in service elements
     aux = dict()
     nr_vsc = len(net.vsc)
-    if nr_vsc > 0:
+    if nr_vsc > 0 and mode != "dc":
         max_idx = max(net["bus_dc"].index) + 1
         aux_vsc = np.arange(max_idx, max_idx + nr_vsc)
         aux["vsc"] = aux_vsc
@@ -489,7 +494,7 @@ def _build_bus_dc_ppc(net, ppc):
     ppc["bus_dc"][:n_bus_dc, DC_BASE_KV] = net["bus_dc"]["vn_kv"].values
     # set buses out of service (BUS_TYPE == 4)
 
-    if nr_vsc > 0:
+    if nr_vsc > 0 and mode != "dc":
         in_service = np.concatenate([net["bus_dc"]["in_service"].values, net["vsc"]["in_service"].values])
     else:
         in_service = net["bus_dc"]["in_service"].values
@@ -511,7 +516,7 @@ def _build_bus_dc_ppc(net, ppc):
         else:
             ppc["bus_dc"][:n_bus_dc, DC_VMIN] = 0.  # changes of VMIN must be considered in check_opf_data
 
-    if nr_vsc > 0:
+    if nr_vsc > 0 and mode != "dc":
         _fill_auxiliary_buses(net, ppc, bus_lookup, "vsc", "bus_dc", aux, "bus_dc")
 
     net["_pd2ppc_lookups"]["bus_dc"] = bus_lookup
@@ -587,10 +592,11 @@ def set_reference_buses_dc(net, ppc, bus_lookup):
     ppc["bus_dc"][ref_buses, DC_BUS_TYPE] = DC_REF
 
     # identify back-to-back converters:
-    vsc_dc_p = net.vsc.control_mode_dc.values == "p_mw"
-    p_buses = bus_lookup[net._pd2ppc_lookups["aux_dc"].get("vsc", np.array([], dtype=np.int64))[net._is_elements["vsc"] & vsc_dc_p]]
-    b2b_buses = np.intersect1d(ref_buses, p_buses)
-    ppc["bus_dc"][b2b_buses, DC_BUS_TYPE] = DC_B2B
+    if "vsc" in net._pd2ppc_lookups["aux_dc"]:
+        vsc_dc_p = net.vsc.control_mode_dc.values == "p_mw"
+        p_buses = bus_lookup[net._pd2ppc_lookups["aux_dc"].get("vsc", np.array([], dtype=np.int64))[net._is_elements["vsc"] & vsc_dc_p]]
+        b2b_buses = np.intersect1d(ref_buses, p_buses)
+        ppc["bus_dc"][b2b_buses, DC_BUS_TYPE] = DC_B2B
 
 
 def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
@@ -636,6 +642,45 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
         elif element.endswith("ward"):
             p = np.hstack([p, tab["ps_mw"].values * active * sign])
             q = np.hstack([q, tab["qs_mvar"].values * active * sign])
+        elif element == "sgen":
+            scaling = tab["scaling"].values
+
+            # enforce sgen active power limits
+            if net._options["enforce_p_lims"]:
+                min_p = tab["min_p_mw"] if "min_p_mw" in tab.columns else pd.Series(index=tab.index, data=np.nan,
+                                                                                    dtype=float)
+                max_p = tab["max_p_mw"] if "max_p_mw" in tab.columns else pd.Series(index=tab.index, data=np.nan,
+                                                                                    dtype=float)
+                p_used = tab["p_mw"].clip(lower=min_p, upper=max_p)
+            else:
+                p_used = tab["p_mw"]
+
+            p = np.hstack([p, p_used.values * active * scaling * sign])
+
+            # enforce sgen reactive power limits
+            if net._options["enforce_q_lims"]:
+                # get default min/max limits (if they exist)
+                if "min_q_mvar" in tab.columns:
+                    min_q = tab["min_q_mvar"].copy()
+                else:
+                    min_q = pd.Series(index=tab.index, data=np.nan, dtype=float)
+                if "max_q_mvar" in tab.columns:
+                    max_q = tab["max_q_mvar"].copy()
+                else:
+                    max_q = pd.Series(index=tab.index, data=np.nan, dtype=float)
+
+                # overwrite with capability-curve-based limits where available
+                if "q_capability_characteristic" in net:
+                    curve_q = _calculate_qmin_qmax_from_q_capability_characteristics(net, element)
+                    if curve_q is not None and not curve_q.empty:
+                        min_q.update(curve_q["min_q_mvar"])
+                        max_q.update(curve_q["max_q_mvar"])
+
+                # clip q_mvar using effective min/max limits
+                q_used = tab["q_mvar"].clip(lower=min_q, upper=max_q)
+            else:
+                q_used = tab["q_mvar"]
+            q = np.hstack([q, q_used.values * active * scaling * sign])
         else:
             scaling = tab["scaling"].values
             p = np.hstack([p, tab["p_mw"].values * active * scaling * sign])
@@ -728,7 +773,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         v_ratio = (ppc["bus"][bus_lookup[s["bus"].values], BASE_KV] / s["vn_kv"].values) ** 2 * base_multiplier
 
         if "step_dependency_table" in s:
-            # TODO: remove step_dependency_table and infer from id_characterists_table if it exsists
+            # TODO: remove step_dependency_table and infer from id_characterists_table if it exists
             if np.any(vl & (s.step_dependency_table == True) & (pd.isna(s.id_characteristic_table))):
                 raise UserWarning("Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
                                   "Please set an id_characteristic_table or set step_dependency_table to False.")
@@ -868,7 +913,7 @@ def _build_vsc_ppc(net, ppc, mode):
     length = len(net.vsc)
     ppc["vsc"] = np.zeros(shape=(length, vsc_cols), dtype=np.float64)
 
-    if mode != "pf":
+    if mode != "pf" and mode != "dc":
         return
 
     if length == 0:
@@ -899,9 +944,11 @@ def _build_vsc_ppc(net, ppc, mode):
     baseR = baseVDC ** 2 / baseMVA
 
     vsc[f:t, VSC_BUS] = bus
-    vsc[f:t, VSC_INTERNAL_BUS] = bus_lookup[aux["vsc"]]
+    if mode != "dc":
+        vsc[f:t, VSC_INTERNAL_BUS] = bus_lookup[aux["vsc"]]
     vsc[f:t, VSC_BUS_DC] = bus_dc
-    vsc[f:t, VSC_INTERNAL_BUS_DC] = bus_lookup_dc[aux_dc["vsc"]]
+    if mode != "dc":
+        vsc[f:t, VSC_INTERNAL_BUS_DC] = bus_lookup_dc[aux_dc["vsc"]]
 
     if 'ref_bus' in net['vsc']:
         ref_bus_values = net["vsc"]["ref_bus"].fillna(0).values.astype(int)
@@ -938,7 +985,8 @@ def _build_vsc_ppc(net, ppc, mode):
 
     vsc[f:t, VSC_STATUS] = net._is_elements["vsc"].astype(np.int64)
     vsc[f:t, VSC_CONTROLLABLE] = controllable & net["vsc"]["in_service"].values.astype(bool)
-    ppc["bus"][aux["vsc"][~controllable], BUS_TYPE] = PV
+    if mode != "dc":
+        ppc["bus"][aux["vsc"][~controllable], BUS_TYPE] = PV
     # it has a role of REF but internally it is PQ and we set the behavior of REF with the Jacobian and mismatch:
     ppc["bus"][bus[(mode_ac_code == VSC_MODE_AC_SL) & (ppc["bus"][bus, BUS_TYPE] != NONE)], BUS_TYPE] = REF
     # maybe we add this in the future
@@ -1061,7 +1109,7 @@ def _add_load_sc_impedances_ppc(net, ppc):
 def _add_c_to_ppc(net, ppc):
     ppc["bus"][:, C_MAX] = 1.1
     ppc["bus"][:, C_MIN] = 1.
-    lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)
+    lv_buses = np.nonzero(ppc["bus"][:, BASE_KV] < 1.)
     if len(lv_buses) > 0:
         lv_tol_percent = net["_options"]["lv_tol_percent"]
         if lv_tol_percent == 10:
