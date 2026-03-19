@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -37,49 +37,31 @@ def create_motor(
     Adds a motor to the network.
 
 
-    INPUT:
-        **net** - The net within this motor should be created
+    Parameters:
+        net: The net within this motor should be created
+        bus: The bus id to which the motor is connected
+        pn_mech_mw: Mechanical rated power of the motor
+        cos_phi: cosine phi at current operating point
+        name: The name for this motor
+        efficiency_percent: Efficiency in percent at current operating point
+        loading_percent: The mechanical loading in percentage of the rated mechanical power
+        scaling: scaling factor which for the active power of the motor
+        cos_phi_n: cosine phi at rated power of the motor for short-circuit calculation
+        efficiency_n_percent: Efficiency in percent at rated power for short-circuit calculation
+        lrc_pu: locked rotor current in relation to the rated motor current
+        rx: R/X ratio of the motor for short-circuit calculation.
+        vn_kv: Rated voltage of the motor for short-circuit calculation
+        in_service: True for in_service or False for out of service
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
 
-        **bus** (int) - The bus id to which the motor is connected
+    Returns:
+        The ID of the created motor
 
-        **pn_mech_mw** (float) - Mechanical rated power of the motor
-
-        **cos_phi** (float, nan) - cosine phi at current operating point
-
-    OPTIONAL:
-
-        **name** (string, None) - The name for this motor
-
-        **efficiency_percent** (float, 100) - Efficiency in percent at current operating point
-
-        **loading_percent** (float, 100) - The mechanical loading in percentage of the rated \
-            mechanical power
-
-        **scaling** (float, 1.0) - scaling factor which for the active power of the motor
-
-        **cos_phi_n** (float, nan) - cosine phi at rated power of the motor for short-circuit \
-            calculation
-
-        **efficiency_n_percent** (float, 100) - Efficiency in percent at rated power for \
-            short-circuit calculation
-
-        **lrc_pu** (float, nan) - locked rotor current in relation to the rated motor current
-
-        **rx** (float, nan) - R/X ratio of the motor for short-circuit calculation.
-
-        **vn_kv** (float, NaN) - Rated voltage of the motor for short-circuit calculation
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created motor
-
-    EXAMPLE:
-        create_motor(net, 1, pn_mech_mw=0.120, cos_ph=0.9, vn_kv=0.6, efficiency_percent=90, \
-                     loading_percent=40, lrc_pu=6.0)
+    Example:
+        >>> create_motor(
+        >>>     net, 1, pn_mech_mw=0.120, cos_ph=0.9, vn_kv=0.6, efficiency_percent=90, loading_percent=40, lrc_pu=6.0
+        >>> )
 
     """
     _check_element(net, bus)

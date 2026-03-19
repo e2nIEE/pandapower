@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
@@ -34,7 +34,7 @@ def test_write():
 def test_write_to_object_attribute():
     net = simple_four_bus_system()
     ds = DFData(pd.DataFrame(data=[1.01, 1.02, 1.03]))
-    c1 = ContinuousTapControl(net, 0, 1.)
+    ContinuousTapControl(net, 0, 1.)
     c2 = ConstControl(net, 'controller', 'object.vm_set_pu', element_index=0, profile_name=0, data_source=ds)
     for t in range(2):
         c2.time_step(net, t)

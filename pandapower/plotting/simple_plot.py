@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 try:
     import matplotlib.pyplot as plt
-    from matplotlib.lines import Line2D
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -35,66 +34,41 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
         Plots a pandapower network as simple as possible. If no geodata is available, artificial
         geodata is generated. For advanced plotting see the tutorial
 
-        INPUT:
-            **net** - The pandapower format network.
+        Parameters:
+            net: The pandapower format network.
+            respect_switches (bool, False) Respect switches if artificial geodata is created. This Flag is ignored if
+                plot_line_switches is True
+            line_width (float, 1.0): width of lines
+            bus_size (float, 1.0): Relative size of buses to plot. The value bus_size is multiplied with
+                mean_distance_between_buses, which equals the distance between the max geocoord and the min divided by
+                200. mean_distance_between_buses = sum((net.bus.geo.max() - net.bus.geo.min()) / 200)
+            ext_grid_size (float, 1.0): Relative size of ext_grids to plot. See bus sizes for details. Note: ext_grids
+                are plotted as rectangles
+            trafo_size (float, 1.0): Relative size of trafos to plot.
+            plot_loads (bool, False): Flag to decide whether load symbols should be drawn.
+            plot_gens (bool, False): Flag to decide whether gen symbols should be drawn.
+            plot_sgens (bool, False): Flag to decide whether sgen symbols should be drawn.
+            load_size (float, 1.0): Relative size of loads to plot.
+            sgen_size (float, 1.0): Relative size of sgens to plot.
+            switch_size (float, 2.0): Relative size of switches to plot. See bus size for details
+            switch_distance (float, 1.0): Relative distance of the switch to its corresponding bus. See bus size for
+                details
+            plot_line_switches (bool, False): Flag if line switches are plotted
+            scale_size (bool, True): Flag if bus_size, ext_grid_size, bus_size- and distance will be scaled with respect
+                to grid mean distances
+            bus_color (String, colors[0]): Bus Color. Init as first value of color palette. Usually colors[0] = "b".
+            line_color (String, 'grey'): Line Color. Init is grey
+            dcline_color (String, 'c'): Line Color. Init is cyan
+            trafo_color (String, 'k'): Trafo Color. Init is black
+            ext_grid_color (String, 'y'): External Grid Color. Init is yellow
+            switch_color (String, 'k'): Switch Color. Init is black
+            library (String, "igraph"): library name to create generic coordinates (case of missing geodata). "igraph"
+                to use igraph package or "networkx" to use networkx package.
+            show_plot (bool, True): Shows plot at the end of plotting
+            ax (object, None): matplotlib axis to plot to
 
-        OPTIONAL:
-            **respect_switches** (bool, False) - Respect switches if artificial geodata is created.
-                                                This Flag is ignored if plot_line_switches is True
-
-            **line_width** (float, 1.0) - width of lines
-
-            **bus_size** (float, 1.0) - Relative size of buses to plot.
-                                        The value bus_size is multiplied with mean_distance_between_buses, which equals
-                                        the distance between the max geocoord and the min divided by 200.
-                                        mean_distance_between_buses = sum((net.bus.geo.max() - net.bus.geo.min()) / 200)
-
-            **ext_grid_size** (float, 1.0) - Relative size of ext_grids to plot. See bus sizes for details.
-                                                Note: ext_grids are plotted as rectangles
-
-            **trafo_size** (float, 1.0) - Relative size of trafos to plot.
-
-            **plot_loads** (bool, False) - Flag to decide whether load symbols should be drawn.
-
-            **plot_gens** (bool, False) - Flag to decide whether gen symbols should be drawn.
-
-            **plot_sgens** (bool, False) - Flag to decide whether sgen symbols should be drawn.
-
-            **load_size** (float, 1.0) - Relative size of loads to plot.
-
-            **sgen_size** (float, 1.0) - Relative size of sgens to plot.
-
-            **switch_size** (float, 2.0) - Relative size of switches to plot. See bus size for details
-
-            **switch_distance** (float, 1.0) - Relative distance of the switch to its corresponding \
-                                               bus. See bus size for details
-
-            **plot_line_switches** (bool, False) - Flag if line switches are plotted
-
-            **scale_size** (bool, True) - Flag if bus_size, ext_grid_size, bus_size- and distance \
-                                          will be scaled with respect to grid mean distances
-
-            **bus_color** (String, colors[0]) - Bus Color. Init as first value of color palette. Usually colors[0] = "b".
-
-            **line_color** (String, 'grey') - Line Color. Init is grey
-
-            **dcline_color** (String, 'c') - Line Color. Init is cyan
-
-            **trafo_color** (String, 'k') - Trafo Color. Init is black
-
-            **ext_grid_color** (String, 'y') - External Grid Color. Init is yellow
-
-            **switch_color** (String, 'k') - Switch Color. Init is black
-
-            **library** (String, "igraph") - library name to create generic coordinates (case of
-                                                missing geodata). "igraph" to use igraph package or "networkx" to use networkx package.
-
-            **show_plot** (bool, True) - Shows plot at the end of plotting
-
-            **ax** (object, None) - matplotlib axis to plot to
-
-        OUTPUT:
-            **ax** - axes of figure
+        Returns:
+            axes of figure
     """
     try:
         if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):
@@ -216,163 +190,3 @@ def simple_plot(net, respect_switches=False, line_width=1.0, bus_size=1.0, ext_g
             soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
         plt.show()
     return ax
-
-
-def hover(event, ax, net, hover_text):
-    vis = hover_text.get_visible()
-    fig = plt.gcf()
-    if event.inaxes == ax:
-        for collection in ax.collections:
-            if hasattr(collection, "info"):
-                hit, props = collection.contains(event)
-                hovering_over = list(props["ind"])
-                if len(hovering_over) > 0 and len(collection.info) > 0:
-                    info = collection.info[hovering_over[0]]
-                    if isinstance(info, tuple):
-                        element, index = info
-                        if element == "bus":
-                            hover_info = f"Bus: {net.bus.name.at[index]} | Index: {index}"
-                        elif element == "line":
-                            hover_info = f"Line: {net.line.name.at[index]} | Index: {index}"
-                        elif element == "trafo":
-                            hover_info = f"Transformer: {net.trafo.name.at[index]} | Index: {index}"
-                        elif element == "trafo3w":
-                            hover_info = f"Threephase-Transformer: {net.trafo3w.name.at[index]} | Index: {index}"
-
-                        # set text and position
-                        hover_text.set_text(hover_info)
-                        hover_text.set_position((event.xdata, event.ydata))
-                        hover_text.set_visible(True)
-                        fig.canvas.draw_idle()
-                else:
-                    if vis:
-                        hover_text.set_visible(False)
-                        fig.canvas.draw_idle()
-    else:
-        # hide text if not hovering over
-        if vis:
-            hover_text.set_visible(False)
-            fig.canvas.draw_idle()
-
-
-def bus_info(bus):
-    return ("bus", bus)
-
-
-def line_info(line):
-    return ("line", line)
-
-
-def simple_hl_plot(net, lines=None, buses=None, hl_buses=None, hl_lines=None, line_size=1,
-                   bus_size=None, plot_scale=6, legend_size=10, legend_position=(1, 0),
-                   ):
-    if bus_size is None:
-        sizes = get_collection_sizes(net)
-        bus_size = sizes["bus"]
-    if not lines:
-        lines = net.line_geodata.index
-    if not buses:
-        buses = net.bus_geodata.index
-
-    collection_list = list()
-    legend_titles = list()
-    legend_handles = list()
-
-    bus_color = "grey"
-    bus_patch = "circle"
-
-    if hl_buses:
-        mc = create_bus_collection(net,
-                                        hl_buses,
-                                        size=0.25 * bus_size,
-                                        patch_type="circle",
-                                        zorder=10,
-                                        facecolor="red",
-                                        edgecolor="red",
-                                        infofunc=bus_info,
-                                        )
-        collection_list.append(mc)
-        legend_titles.append("Highlighted buses")
-        legend_handles.append(Line2D([0], [0], markeredgecolor="red",
-                                     color="red", linestyle='', marker="o"))
-    if hl_lines:
-        ml = create_line_collection(net,
-                                         hl_lines,
-                                         linewidth=4 * line_size,
-                                         zorder=11,
-                                         color="red",
-                                         infofunc=line_info,
-                                         )
-        collection_list.append(ml)
-        legend_titles.append("Highlighted lines")
-        legend_handles.append(Line2D([0], [0], color="red"))
-
-    bc = create_bus_collection(net,
-                                     buses,
-                                     size=0.125 * bus_size,
-                                     patch_type=bus_patch,
-                                     zorder=2,
-                                     facecolor=bus_color,
-                                     edgecolor=bus_color,
-                                     infofunc=bus_info,
-                                     )
-    collection_list.append(bc)
-
-    # open line switches
-    open_lines = set(net.switch.loc[(net.switch.et == "l") &
-                                (net.switch.closed == False)].element.values.tolist())
-
-    open_lines = list(set(open_lines).intersection(lines))
-    if len(open_lines):
-        # open tie line
-        open_lines_coll = create_line_collection(net,
-                                                lines=open_lines,
-                                                zorder=0,
-                                                color="grey",
-                                                linestyle="dashed",
-                                                linewidths=2 * line_size,
-                                                infofunc=line_info)
-        open_lines_coll.set_dashes((0, (0.8, 1.5)))
-        collection_list.append(open_lines_coll)
-
-        legend_titles.append("Open Tie Line")
-        legend_handles.append(Line2D([0], [0], color="grey", linestyle="dashed"))
-
-    # lines
-    lc = create_line_collection(net,
-                                lines=list(set(lines)-set(open_lines)),
-                                zorder=2,
-                                color="grey",
-                                linewidths=3 * line_size,
-                                infofunc=line_info)
-    collection_list.append(lc)
-    legend_titles.append("Lines")
-    legend_handles.append(Line2D([0], [0], color="grey"))
-
-
-    # show plot
-    fig = plt.figure(figsize=(12 * plot_scale, 7 * plot_scale))
-    plt.legend(legend_handles, legend_titles, fontsize=legend_size, bbox_to_anchor=legend_position, loc="lower right")
-    ax = plt.gca()
-
-    hover_text = ax.text(0, 0, "", fontsize=12, fontweight="bold", color='white',
-                         ha='center', va='center', zorder=99, bbox=dict(boxstyle="round",
-                         facecolor='#1c3f52', alpha=1, edgecolor='#1c3f52'))
-
-    hover_text.set_visible(False)
-    fig.canvas.mpl_connect("motion_notify_event", lambda event: hover(event, ax, net, hover_text))
-
-    ax = draw_collections(collection_list, ax=ax, plot_colorbars=False, draw=True)
-
-    return ax
-
-
-if __name__ == "__main__":
-    from pandapower.networks.power_system_test_cases import case145
-    # from pandapower.networks.cigre_networks import create_cigre_network_mv
-    # from pandapower.networks.mv_oberrhein import mv_oberrhein
-
-    net = case145()
-    #    net = nw.create_cigre_network_mv()
-    #    net = nw.mv_oberrhein()
-    simple_plot(net, bus_size=0.4)

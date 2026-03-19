@@ -1,5 +1,5 @@
 ﻿=============
-DC Bus
+Bus DC
 =============
 
 .. seealso::
@@ -10,7 +10,8 @@ Create Function
 
 .. _create_bus_dc:
 
-.. autofunction:: pandapower.create_bus_dc
+.. autofunction:: pandapower.create.create_bus_dc
+.. autofunction:: pandapower.create.create_buses_dc
 
 Input Parameters
 =========================

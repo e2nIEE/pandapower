@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-from pandapower.pypower.idx_brch import branch_cols
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.pypower.idx_bus import VM, VA
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
+from pandapower.pypower.idx_brch import branch_cols
 from pandapower.pypower.bustypes import bustypes
 from numpy import flatnonzero as find, pi, exp, int64, hstack, zeros, float64
+
 
 def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     ## default arguments
@@ -37,7 +38,7 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], vsc, \
+    return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], ppci["vsc"], \
         ref, pv, pq, on, gbus, V0, ref_gens
 
 

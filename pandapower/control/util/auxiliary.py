@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import time
@@ -261,7 +261,7 @@ def create_trafo_characteristic_object(net):
         logger.info("trafo_characteristic_table has no values for 3w-trafos - no characteristic objects created.")
 
     # pivot spline characteristic objects to have one row per trafo/trafo3w
-    net["trafo_characteristic_spline"] = net["trafo_characteristic_spline_temp"].applymap(
+    net["trafo_characteristic_spline"] = net["trafo_characteristic_spline_temp"].map(
         lambda x: net["trafo_characteristic_spline"].loc[x, 'object'] if pd.notna(x) else pd.NA).sort_index()
     # create id_characteristic column
     net["trafo_characteristic_spline"]["id_characteristic"] = net["trafo_characteristic_spline"].index
@@ -337,7 +337,7 @@ def create_shunt_characteristic_object(net):
         logger.info("shunt_characteristic_table is empty - no characteristic objects created.")
 
     # pivot spline characteristic objects to have one row per shunt
-    net["shunt_characteristic_spline"] = net["shunt_characteristic_spline_temp"].applymap(
+    net["shunt_characteristic_spline"] = net["shunt_characteristic_spline_temp"].map(
         lambda x: net["shunt_characteristic_spline"].loc[x, 'object'] if pd.notna(x) else pd.NA).sort_index()
     # create id_characteristic column
     net["shunt_characteristic_spline"]["id_characteristic"] = net["shunt_characteristic_spline"].index
