@@ -30,7 +30,7 @@ def _geodata_to_geo_series(
         data: Iterable[tuple[float, float]] | None,
         coords: Iterable[list[list[float]]] | None,
         nr_buses: int
-) -> list[str] | None:
+) -> list[str] | str | None:
     if data is None and coords is None:
         return None
     if data is not None and coords is not None:
@@ -61,7 +61,7 @@ def _geodata_to_geo_series(
         )
         logger.warning("coords will not be verified.")
         geo = [f'{{"coordinates":{str(c)}, "type":"LineString"}}' for c in coords]
-    return geo
+    return geo if nr_buses > 1 else geo[0]
 
 
 def create_bus(
@@ -106,7 +106,7 @@ def create_bus(
     """
     index = _get_index_with_check(net, "bus", index)
 
-    geo = _geodata_to_geo_series([geodata] if geodata else None, [coords] if coords else None, 1)[0]
+    geo = _geodata_to_geo_series([geodata] if geodata else None, [coords] if coords else None, 1)
 
     entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
     _set_entries(net, "bus", index, True, entries=entries)
@@ -161,7 +161,7 @@ def create_bus_dc(
     """
     index = _get_index_with_check(net, "bus_dc", index)
 
-    geo = _geodata_to_geo_series([geodata] if geodata else None, [coords] if coords else None, 1)[0]
+    geo = _geodata_to_geo_series([geodata] if geodata else None, [coords] if coords else None, 1)
 
     entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
     _set_entries(net, "bus_dc", index, True, entries=entries)
