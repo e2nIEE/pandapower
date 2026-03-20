@@ -6,4 +6,4 @@ The ``from_jao`` function allows users to convert the Static Grid Model provided
 Function Overview
 -----------------
 
-.. autofunction:: pandapower.converter.from_jao
+.. autofunction:: pandapower.converter.jao.from_jao

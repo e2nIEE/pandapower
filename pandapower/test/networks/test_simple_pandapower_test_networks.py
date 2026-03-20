@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import pytest
 
-from pandapower.networks.simple_pandapower_test_networks import panda_four_load_branch, four_loads_with_branches_out, \
-    simple_four_bus_system, simple_mv_open_ring_net
+from pandapower.networks.simple_pandapower_test_networks import (
+    panda_four_load_branch,
+    four_loads_with_branches_out,
+    simple_four_bus_system,
+    simple_mv_open_ring_net,
+)
 from pandapower.run import runpp
 
 
@@ -56,5 +60,5 @@ def test_simple_mv_open_ring_net():
     assert net.converged
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

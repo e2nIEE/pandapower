@@ -23,6 +23,9 @@ pickle
 Excel
 -----------
 
+Using excel is highly discouraged as to_excel uses pandas to_excel which is a lossy conversion.
+Loading from excel may result in a different network.
+
 .. autofunction:: pandapower.to_excel
 
 .. autofunction:: pandapower.from_excel

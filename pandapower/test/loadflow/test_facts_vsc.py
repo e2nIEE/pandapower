@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -11,12 +11,13 @@ from itertools import product
 import numpy as np
 import pytest
 
-from pandapower import pp_dir, create_b2b_vsc, LoadflowNotConverged
+from pandapower import pp_dir
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
-from pandapower.create import create_impedance, create_shunts, create_buses, create_gens, create_bus,  \
-    create_empty_network, create_line_from_parameters, create_gen, create_load_dc, \
-    create_load, create_ext_grid, create_vsc, create_line_dc_from_parameters, \
-    create_buses_dc, create_bus_dc, create_line_dc, create_lines_from_parameters, create_lines_dc
+from pandapower.create import (
+    create_impedance, create_shunts, create_buses, create_gens, create_bus, create_empty_network,
+    create_line_from_parameters, create_gen, create_load, create_ext_grid, create_vsc, create_line_dc_from_parameters,
+    create_buses_dc, create_bus_dc, create_line_dc, create_lines_from_parameters, create_lines_dc, create_vsc_bipolar
+)
 
 from pandapower.file_io import from_json
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
@@ -176,6 +177,34 @@ def test_vsc_hvdc():
                control_mode_ac="vm_pu", control_value_ac=1.,
                control_mode_dc="vm_pu", control_value_dc=1.02)
     create_vsc(net, 2, 1, 0.1, 5, 0.15,
+               control_mode_ac="vm_pu", control_value_ac=1.,
+               control_mode_dc="p_mw", control_value_dc=5)
+
+    runpp(net)
+    runpp_with_consistency_checks(net)
+
+
+def test_vsc_bipolar_hvdc():
+    net = create_empty_network()
+    # AC part
+    create_buses(net, 4, 380, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
+    create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    create_ext_grid(net, 0)
+    create_load(net, 3, 100, 0)
+
+    # DC part
+    A = create_bus_dc(net, 380, 'A', geodata=(120, 10))
+    B = create_bus_dc(net, 380, 'B', geodata=(120, -10))
+    C = create_bus_dc(net, 380, 'C', geodata=(180, 10))
+    D = create_bus_dc(net, 380, 'D', geodata=(180, -10))
+
+    create_line_dc_from_parameters(net, A, C, 100, 0.1, 1)
+    create_line_dc_from_parameters(net, B, D, 100, 0.1, 1)
+
+    create_vsc_bipolar(net, 1, A, B, 0.1, 5, 0.15,
+               control_mode="Vdc_Qac", control_value_1=1., control_value_2=1.)
+    create_vsc_bipolar(net, 2, C, D, 0.1, 5, 0.15,
                control_mode_ac="vm_pu", control_value_ac=1.,
                control_mode_dc="p_mw", control_value_dc=5)
 
@@ -1128,7 +1157,7 @@ def test_simple_2vsc_hvdc2():
     runpp_with_consistency_checks(net)
 
 
-def test_b2b_vsc_1():
+def test_vsc_stacked_1():
     net = create_empty_network()
     # AC part
     create_buses(net, 3, 110)
@@ -1153,7 +1182,7 @@ def test_b2b_vsc_1():
     assert np.isclose(net.res_vsc.at[1, 'p_dc_mw'], net.vsc.at[1, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
-def test_multiple_b2b_vsc_1():
+def test_multiple_vsc_stacked_1():
     net = create_empty_network()
     # AC part
     create_buses(net, 5, 110)
@@ -1194,7 +1223,7 @@ def test_multiple_b2b_vsc_1():
     assert np.isclose(net.res_vsc.at[3, 'p_dc_mw'], net.vsc.at[3, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
-def test_tres_amigas_b2b_vsc_1():
+def test_tres_amigas_vsc_stacked_1():
     net = create_empty_network()
     # AC part
     create_buses(net, 5, 110)
@@ -1227,7 +1256,7 @@ def test_tres_amigas_b2b_vsc_1():
     assert np.isclose(net.res_vsc.at[2, 'p_dc_mw'], net.vsc.at[2, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
-def test_tres_amigas_b2b_vsc_2():
+def test_tres_amigas_vsc_stacked_2():
     net = create_empty_network()
     # AC part
     create_buses(net, 5, 110)
@@ -1260,7 +1289,7 @@ def test_tres_amigas_b2b_vsc_2():
     assert np.isclose(net.res_vsc.at[2, 'p_dc_mw'], net.vsc.at[2, 'control_value_dc'], rtol=0, atol=1e-6)
 
 
-def test_b2b_vsc_2():
+def test_vsc_stacked_2():
     net = create_empty_network()
     # AC part
     create_buses(net, 4, 110)
@@ -1284,7 +1313,7 @@ def test_b2b_vsc_2():
     assert net.res_ext_grid.p_mw.at[0] > 10
 
 
-def test_b2b_vsc_2a():
+def test_vsc_stacked_2a():
     net = create_empty_network()
     # AC part
     create_buses(net, 4, 110)
@@ -1307,7 +1336,7 @@ def test_b2b_vsc_2a():
     assert net.res_ext_grid.p_mw.at[0] > 10
 
 
-def test_b2b_vsc_3():
+def test_vsc_stacked_3():
     net = create_empty_network()
     # AC part
     create_buses(net, 4, 110)
@@ -1332,7 +1361,7 @@ def test_b2b_vsc_3():
 
 
 @pytest.mark.xfail
-def test_b2b_vsc_4():
+def test_vsc_stacked_4():
     """
     For reasons I do not understand, this test fails on the github server, but runs locally.
     """
@@ -1360,7 +1389,7 @@ def test_b2b_vsc_4():
     runpp_with_consistency_checks(net)
 
 
-def test_b2b_vsc_5():
+def test_vsc_stacked_5():
     net = create_empty_network()
     # AC part
     create_buses(net, 5, 110)
@@ -1386,7 +1415,7 @@ def test_b2b_vsc_5():
     runpp_with_consistency_checks(net, max_iteration=1000)
 
 
-def test_b2b_vsc_6():
+def test_vsc_stacked_6():
     net = create_empty_network()
     # AC part
     create_buses(net, 3, 110)
@@ -1408,7 +1437,7 @@ def test_b2b_vsc_6():
     runpp_with_consistency_checks(net)
 
 
-def test_b2b_vsc_7():
+def test_vsc_stacked_7():
     net = create_empty_network()
     # AC part
     create_buses(net, 2, 110)

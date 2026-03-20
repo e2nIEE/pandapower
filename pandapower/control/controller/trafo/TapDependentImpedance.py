@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.control.controller.characteristic_control import CharacteristicControl
@@ -8,22 +8,17 @@ from pandapower.control.controller.characteristic_control import CharacteristicC
 
 class TapDependentImpedance(CharacteristicControl):
     """
-    Controller that adjusts the impedance of a transformer (or multiple transformers) depending to the actual tap position and
-    according to a defined characteristic.
+    Controller that adjusts the impedance of a transformer (or multiple transformers) depending to the actual tap
+    position and according to a defined characteristic.
 
-    INPUT:
-        **net** (attrdict) - Pandapower net
-
-        **element_index** (int or list or numpy array) - ID of the transformer or multiple transfromers
-
-        **characteristic** (object of class Characteristic) - Characteristic that describes the relationship between transformer tap
-                                                                position and transformer impedance
-
-    OPTIONAL:
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
+    Parameters:
+        net (ADict): Pandapower net
+        element_index (int or list or numpy array): ID of the transformer or multiple transformers
+        characteristic (object of class Characteristic): Characteristic that describes the relationship between
+            transformer tap position and transformer impedance
+        in_service (bool, True): Indicates if the controller is currently in_service
+        drop_same_existing_ctrl (bool, False): Indicates if already existing controllers of the same type and with the
+            same matching parameters (e.g. at same element) should be dropped
     """
 
     def __init__(self, net, element_index, characteristic_index, element="trafo",

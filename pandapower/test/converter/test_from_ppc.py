@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -16,7 +16,7 @@ from pandapower.toolbox.comparison import nets_equal
 from pandapower.run import set_user_pf_options, runpp, runopp
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 
-from pandapower.converter import from_ppc, validate_from_ppc, to_ppc
+from pandapower.converter.pypower import from_ppc, validate_from_ppc, to_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.pypower.idx_bus import PD, VM, VA
 from pandapower.pypower.idx_gen import PG, QG
@@ -70,30 +70,31 @@ def test_from_ppc_simple_against_target():
 @pytest.mark.xfail
 def test_validate_from_ppc_simple_against_target():
     ppc = get_testgrids('ppc_testgrids', 'case2_2.json') # TODO: marked as xfail since it uses wrong paths to load references
-    net = pp.from_json(os.path.join(pp.pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
+    net = from_json(os.path.join(pp_dir, 'test', 'converter', 'case2_2_by_code.json'))
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
-def test_ppc_testgrids():
+@pytest.mark.parametrize('case_name', ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6',
+                  'case14', 'case57'])
+def test_ppc_testgrids(case_name):
     # check ppc_testgrids
-    case_names = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6',
-                  'case14', 'case57']
-    for case_name in case_names:
-        ppc = get_testgrids('ppc_testgrids', case_name+'.json')
-        net = from_ppc(ppc, f_hz=60)
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
-        logger.info(f'{case_name} has been checked successfully.')
+    ppc = get_testgrids('ppc_testgrids', case_name+'.json')
+    net = from_ppc(ppc, f_hz=60)
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+    logger.info(f'{case_name} has been checked successfully.')
 
 
 @pytest.mark.slow
-def test_pypower_cases():
+@pytest.mark.parametrize('case_name', ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39', 'case118']) # 'case300'
+def test_pypower_cases(case_name):
     # check pypower cases
-    case_names = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39', 'case118'] # 'case300'
-    for case_name in case_names:
-        ppc = get_testgrids('pypower_cases', case_name+'.json')
-        net = from_ppc(ppc, f_hz=60)
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
-        logger.info(f'{case_name} has been checked successfully.')
+    ppc = get_testgrids('pypower_cases', case_name+'.json')
+    net = from_ppc(ppc, f_hz=60)
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+    logger.info(f'{case_name} has been checked successfully.')
+
+
+def test_case9_not_in_matpower():
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-3,
@@ -106,7 +107,7 @@ def test_pypower_cases():
 def test_to_and_from_ppc():
     net9 = case9()
     net24 = case24_ieee_rts()
-    net24.trafo.tap_side.iat[1] = "hv"
+    net24.trafo.iat[1, net24.trafo.columns.get_loc("tap_side")] = "hv"
 
     for i, net in enumerate([net24, net9]):
 

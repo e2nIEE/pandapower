@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import math
@@ -220,7 +220,7 @@ def ellipse_patches(node_coords, width, height, angle=0, color=None, **kwargs):
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    patches = list()
+    patches = []
     angles = get_angle_list(angle, len(node_coords))
     if color is not None:
         colors = get_color_list(color, len(node_coords))
@@ -250,7 +250,7 @@ def rectangle_patches(node_coords, width, height, color=None, **kwargs):
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    patches = list()
+    patches = []
     if color is not None:
         colors = get_color_list(color, len(node_coords))
         for (x, y), col in zip(node_coords, colors):
@@ -281,7 +281,7 @@ def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    patches = list()
+    patches = []
     if color is not None:
         colors = get_color_list(color, len(node_coords))
         for (x, y), col in zip(node_coords, colors):
@@ -320,7 +320,7 @@ def load_patches(node_coords, size, angles, **kwargs):
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
-    polys, lines = list(), list()
+    polys, lines = [], []
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), all_angles[i])
         p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), all_angles[i])
@@ -353,7 +353,7 @@ def gen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = True
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys, lines = list(), list()
+    polys, lines = [], []
     offset = kwargs.get("offset", 2. * size)
     all_angles = get_angle_list(angles, len(node_coords))
     all_patches = get_list(patch_type, len(node_coords), 'patches', 'patch types')
@@ -403,8 +403,8 @@ def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = Tru
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    lines = list()
-    polys: list[Patch] = list()
+    lines = []
+    polys: list[Patch] = []
     offset = kwargs.get("offset", 2 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     hub_size = size * 0.15  # Hub size
@@ -464,7 +464,7 @@ def storage_patches(node_coords, size, angles, **kwargs):
         - polys (list of RegularPolygon) - list containing the storage patches\
         - keywords (set) - set of keywords removed from kwargs
     """
-    polys, lines = list(), list()
+    polys, lines = [], []
     offset = kwargs.get("offset", 1 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     for i, node_geo in enumerate(node_coords):
@@ -511,7 +511,7 @@ def ext_grid_patches(node_coords, size, angles, **kwargs):
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
-    polys, lines = list(), list()
+    polys, lines = [], []
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
         p_ll = p2 + _rotate_dim2(np.array([-size, 0]), all_angles[i])
@@ -546,7 +546,7 @@ def trafo_patches(coords, size, **kwargs):
     facecolors = get_color_list(facecolor, len(coords))
     linewidths = kwargs.get("linewidths", 2.)
     linewidths = get_linewidth_list(linewidths, len(coords), name_entries="trafos")
-    circles, lines = list(), list()
+    circles, lines = [], []
 
     # load and extract the coords from the geojson object
     coords = list(map(lambda x: list(geojson.utils.coords(geojson.loads(x))), coords))
@@ -602,7 +602,7 @@ def ward_patches(node_coords, size, angles, **kwargs):
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
-    polys, lines = list(), list()
+    polys, lines = [], []
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
         p_ll = p2 + _rotate_dim2(np.array([-size, 0]), all_angles[i])
@@ -612,7 +612,7 @@ def ward_patches(node_coords, size, angles, **kwargs):
 
         text_foot = p2 + np.array([-1.425 * size, -0.34 * size]) + _rotate_dim2(np.array([size, size]), all_angles[i])
 
-        text_path = TextPath((0, 0), "W", size=0.9 * size, prop=dict(weight='light'))
+        text_path = TextPath((0, 0), "W", size=0.9 * size, prop={'weight': 'light'})
         transform = Affine2D().translate(text_foot[0], text_foot[1]).rotate(all_angles[i])
         text_patch = PathPatch(transform.transform_path(text_path), edgecolor='black', facecolor='black', lw=0.5)
         polys.append(text_patch)
@@ -647,7 +647,7 @@ def xward_patches(node_coords, size, angles, **kwargs):
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
-    polys, lines = list(), list()
+    polys, lines = [], []
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
         p_ll = p2 + _rotate_dim2(np.array([-size, 0]), all_angles[i])
@@ -657,7 +657,7 @@ def xward_patches(node_coords, size, angles, **kwargs):
 
         text_foot = p2 + np.array([-1.755 * size, -0.34 * size]) + _rotate_dim2(np.array([size, size]), all_angles[i])
 
-        text_path = TextPath((0, 0), "XW", size=0.9 * size, prop=dict(weight='light'))
+        text_path = TextPath((0, 0), "XW", size=0.9 * size, prop={'weight': 'light'})
         transform = Affine2D().translate(text_foot[0], text_foot[1]).rotate(all_angles[i])
         text_patch = PathPatch(transform.transform_path(text_path), edgecolor='black', facecolor='black', lw=0.5)
         polys.append(text_patch)
@@ -690,7 +690,7 @@ def vsc_patches(coords, size, **kwargs):
     facecolors = get_color_list(facecolor, len(coords))
     linewidths = kwargs.get("linewidths", 2.)
     linewidths = get_linewidth_list(linewidths, len(coords), name_entries="vscs")
-    squares, lines = list(), list()
+    squares, lines = [], []
 
     # load and extract the coords from the geojson object
     coords = list(map(lambda x: list(geojson.utils.coords(geojson.loads(x))), coords))

@@ -1,22 +1,79 @@
 Change Log
 =============
 
-[upcoming release] - 2025-..-..
+[upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] cim2pp shift_lv_degree was translated from wrong entry
+- [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
+- [ADDED] LTDS support
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
+
+[3.4.0] - 2026-02-09
+-------------------------------
+- [FIXED] `mag0_percent` is treated as a percent instead of ratio, consistent with its name.
+- [CHANGED] setup: remove extra dependencies from `all` set.
+- [ADDED] setup: add `dev` set for all dependencies required for development.
+- [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
+- [CHANGED] runpp: expanded enforce_q_lims functionality to consider max & min q limits for sgen elements (from either net.sgen.min/max_q_mvar parameters or reactive power capability curves)
+- [FIXED] cim2pp: prevent crash with comments in xml, by dropping them via library
+- [FIXED] cim2pp: ACLineSegments with invalid terminals no longer cause all valid lines to be discarded
+- [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
+- [ADDED] rundcpp: Added DC elements to DC powerflow
+- [ADDED] python: support for version 3.14 added to the test pipelines
+- [FIXED] renamed b2b_vsc to vsc_stacked
+- [ADDED] Station Controller support for power factor control and tangens control
+- [CHANGED] attribute voltage_ctrl in Station Controller to control_modus to select new control modi. Changed the type from boolean to enum class
+
+[3.3.2] - 2026-01-13
+-------------------------------
+- [FIXED] fixing the scipy version to <1.16 since python 3.10 is only compatible with scipy 1.15
+
+[3.3.1] - 2026-01-13
+-------------------------------
+- [FIXED] short circuit calculation failed, bug in scipy did calculate zbus = inv(ybus) incorrectly.
+
+[3.3.0] - 2025-12-15
+-------------------------------
+- [ADDED] network_structure, load_create, sgen_create: seperate nominal mva attributes for each phase `sn_a_mva`, `sn_b_mva`, `sn_c_mva`. While existing total nominal mva `sn_mva` is also retained.
+- [FIXED] julia implementation, now using juliacall
+- [CHANGED] diagnostics restructured for better extensibility
+- [FIXED] implausible impedance test results never showing in report
+- [ADDED] load_case_engine for matpower converter
+- [FIXED] added a check for droop controller that ensure the correct convergence for VDroop controller and Q(U) controller
+- [FIXED] typo in ieee_european_lv_asymmetric
+- [ADDED] pf2pp: added possibility to export pf_area and pf_zone to busses
+- [FIXED] remove not used method in test_rundcpp
+- [FIXED] add missing tests for runpp_3ph parameters
+- [FIXED] remove never used parameter from runpp_3ph method signature
+- [CHANGED] Documentation configuration to support custom keywords
+- [CHANGED] Offset for weighted marker legend
+- [ADDED] pf2pp: possibility to convert a specific variant and scenario
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
+- [ADDED] Static Var Compensator with Voltage Control
+- [CHANGED] refactored diagnostic and diagnostic_report for cleaner output
+- [FIXED] legacy np.random.random uses
+- [FIXED] SonarCube reliability complaints
+- [FIXED] remove imports from converter init, change code usage and docu accordingly
 - [FIXED] fixed broken converter import in runpm
 - [REMOVED] deprecated functions removed: wrapper for deepcopy, get_connected_lines, get_connected_switches, connected_bus_in_line, get_line_path
-- [FIXED] diagnostic: increase readabillity
+- [FIXED] diagnostic: increase readability
 - [CHANGED] removed general imports again
 - [CHANGED] updated all tutorials to remove general imports
-- [FIXED] toolbox: increase readabillity
-- [FIXED] io_utils: increase readabillity
+- [FIXED] toolbox: increase readability
+- [FIXED] io_utils: increase readability
 - [ADDED] cim2pp: added EquipmentContainer to BusbarSection and Junction, added max and min p to sgen, updated schemas
 - [FIXED] network_structure: id_q_capability_characteristic -> pd.Int64Dtype(), id_characteristic_table -> pd.Int64Dtype()
 - [FIXED] cim2pp: extracting the additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
 - [CHANGED] create.py: refactored to create module with smaller files. Backwards compatible, importing does not require change!
-- [FIXED] cim2pp: update docu with correct dependancy install
+- [FIXED] cim2pp: update docu with correct dependency install
 - [FIXED] cim2pp: fixed using the trafo characteristics for the correct tap changer at 2w trafos
 - [ADDED] cim2pp: additional info about referencePrios, modes and targetValues for ext_grid / gen / sgen
+- [ADDED] cim2pp: added ratedCurrent as in_ka to switch
+- [ADDED] cim2pp: added CurrentLimit values and OperationalLimitType to trafo and trafo3w
+
+[3.2.1] - 2025-10-27
+-------------------------------
+- [HOTFIX] Fixed changelog, added lxml back.
 - [ADDED] Feature to plot multiple layers for buses using plotly
 - [CHANGED] Plotly is switching from mapbox to maplibre. This was also changed in our plotting functions.
 - [FIXED] Fixed res_trafo_3ph, including converter since it was wrong in code and did not adhere to documentation: 'p_a_l_mw' is now 'pl_a_mw', same for ql and all phases.
@@ -69,6 +126,10 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [ADDED] pf2pp: possibility to convert a specific varaint and scenario
+- [ADDED] Static Var Compensator with Voltage Control
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
+- [ADDED] Static Var Compensator with Voltage Control
 - [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
 - [FIXED] cim2pp: add more dtype parameters, fix some tests
 - [FIXED] convert_format fix check when net version is below format version

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -18,7 +18,8 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.control import DiscreteTapControl, ConstControl, ContinuousTapControl, Characteristic, \
     SplineCharacteristic
 from pandapower.create import create_transformer
-from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, convert_format, from_json, to_json, \
+from pandapower.convert_format import convert_format
+from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, from_json, to_json, \
     from_json_string, create_empty_network
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.networks import mv_oberrhein, simple_four_bus_system, case9, case14, create_kerber_dorfnetz
@@ -30,7 +31,7 @@ from pandapower.toolbox.comparison import nets_equal, dataframes_equal
 from pandapower.topology.create_graph import create_nxgraph
 
 try:
-    import cryptography.fernet
+    import cryptography.fernet # type: ignore
 
     cryptography_INSTALLED = True
 except ImportError:
@@ -518,8 +519,8 @@ def test_json_generalized():
                 "col4": "i8"}
     }))
     general_net1 = copy.deepcopy(general_net0)
-    general_net1.df1.loc[0] = ["hey", 1.2]
-    general_net1.df2.loc[2] = [False, 2]
+    general_net1.df1.loc[0, ["col1", "col2"]] = ["hey", 1.2]
+    general_net1.df2.loc[2, ["col3", "col4"]] = [False, 2]
 
     for general_in in [general_net0, general_net1]:
         out = from_json_string(to_json(general_in),
@@ -649,10 +650,27 @@ def test_ignore_unknown_objects():
     assert isinstance(net4.controller.object.at[0], dict)
 
     # make sure that the loaded net equals the original net except for the controller
-    net3.controller.object.at[0] = net.controller.object.at[0]
-    net4.controller.object.at[0] = net.controller.object.at[0]
+    net3.controller.at[0, "object"] = net.controller.object.at[0]
+    net4.controller.at[0, "object"] = net.controller.object.at[0]
     assert_net_equal(net, net3)
     assert_net_equal(net, net4)
+
+
+def test_omitting_tables_from_json(net_in):
+    net = copy.deepcopy(net_in)
+    ConstControl(net, 'load', 'p_mw', 0)
+    json_string = to_json(net)
+    net1 = from_json(json_string, omit_tables=['controller'])
+    net2 = from_json(json_string)
+    net3 = from_json(json_string, omit_modules=['control.controller'])
+
+    assert(nets_equal(net, net2))
+    assert(not nets_equal(net, net1))
+    net.controller.drop(0, inplace=True)
+    assert(nets_equal(net, net1))
+    assert(not nets_equal(net, net3))
+    net3.controller.drop(net3.controller.index, inplace=True)
+    assert(nets_equal(net, net3))
 
 
 if __name__ == "__main__":

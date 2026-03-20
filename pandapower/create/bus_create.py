@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def create_bus(
     in_service: bool = True,
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
-    coords: list[tuple[float, float]] | None = None,
+    coords: list[tuple[float, float]] | None = None,  # TODO: remove
     **kwargs,
 ) -> Int:
     """
@@ -48,39 +48,26 @@ def create_bus(
 
     Buses are the nodes of the network that all other elements connect to.
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters:
+        net: The pandapower network in which the element is created
+        vn_kv: The grid voltage level.
+        name: the name for this bus
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        geodata: (x, y) tuple coordinates used for plotting
+        type:Type of the bus. "n" - node, "b" - busbar, "m" - muff
+        zone: grid region
+        in_service: True for in_service or False for out of service
+        max_vm_pu: Maximum bus voltage in p.u. - necessary for OPF
+        min_vm_pu: Minimum bus voltage in p.u. - necessary for OPF
+        coords: list (len=2) of tuples (len=2) busbar coordinates to plot the bus with multiple points.
+            coords is typically a list of tuples (start and endpoint of the busbar) - Example: [(x1, y1), (x2, y2)]
 
-        **vn_kv** (float) - The grid voltage level.
+    Returns:
+        The unique ID of the created element
 
-    OPTIONAL:
-        **name** (string, default None) - the name for this bus
-
-        **index** (int, default None) - Force a specified ID if it is available. If None, the \
-            index one higher than the highest already existing index is selected.
-
-        **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
-
-        **type** (string, default "b") - Type of the bus. "n" - node,
-        "b" - busbar, "m" - muff
-
-        **zone** (string, None) - grid region
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **max_vm_pu** (float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
-
-        **min_vm_pu** (float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
-
-        **coords** (list (len=2) of tuples (len=2), default None) - busbar coordinates to plot
-        the bus with multiple points. coords is typically a list of tuples (start and endpoint of
-        the busbar) - Example: [(x1, y1), (x2, y2)]
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created element
-
-    EXAMPLE:
-        create_bus(net, 20., name="bus1")
+    Example:
+        >>> create_bus(net, 20., name="bus1")
     """
     index = _get_index_with_check(net, "bus", index)
 
@@ -122,7 +109,7 @@ def create_bus_dc(
     in_service: bool = True,
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
-    coords: list[tuple[float, float]] | None = None,
+    coords: list[tuple[float, float]] | None = None,  # TODO: remove
     **kwargs,
 ) -> Int:
     """
@@ -130,39 +117,27 @@ def create_bus_dc(
 
     Buses are the nodes of the network that all other elements connect to.
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
-
-        **vn_kv** (float) - The grid voltage level.
-
-    OPTIONAL:
-        **name** (string, default None) - the name for this dc bus
-
-        **index** (int, default None) - Force a specified ID if it is available. If None, the \
+    Parameters:
+        net: The pandapower network in which the element is created
+        vn_kv: The grid voltage level.
+        name: the name for this dc bus
+        index: Force a specified ID if it is available. If None, the \
             index one higher than the highest already existing index is selected.
+        geodata: coordinates used for plotting
+        type: Type of the bus. "n" - node, "b" - busbar, "m" - muff
+        zone: grid region
+        in_service: True for in_service or False for out of service
+        max_vm_pu: necessary for OPF
+        min_vm_pu: necessary for OPF
+        coords: busbar coordinates to plot
+            the dc bus with multiple points. coords is typically a list of tuples (start and endpoint of
+            the busbar) - Example: [(x1, y1), (x2, y2)]
 
-        **geodata** ((x,y)-tuple, default None) - coordinates used for plotting
+    Returns:
+        The unique ID of the created element
 
-        **type** (string, default "b") - Type of the bus. "n" - node,
-        "b" - busbar, "m" - muff
-
-        **zone** (string, None) - grid region
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **max_vm_pu** (float, NAN) - Maximum dc bus voltage in p.u. - necessary for OPF
-
-        **min_vm_pu** (float, NAN) - Minimum dc bus voltage in p.u. - necessary for OPF
-
-        **coords** (list (len=2) of tuples (len=2), default None) - busbar coordinates to plot
-        the dc bus with multiple points. coords is typically a list of tuples (start and endpoint of
-        the busbar) - Example: [(x1, y1), (x2, y2)]
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created element
-
-    EXAMPLE:
-        create_bus_dc(net, 20., name="bus1")
+    Example:
+        >>> create_bus_dc(net, 20., name="bus1")
     """
     index = _get_index_with_check(net, "bus_dc", index)
 
@@ -201,12 +176,12 @@ def create_buses(
     index: Int | Iterable[Int] | None = None,
     name: Iterable[str] | None = None,
     type: BusType | Iterable[BusType] = "b",
-    geodata: Iterable[tuple[float, float]] | None = None,
+    geodata: tuple[float, float] | Iterable[tuple[float, float]] | None = None,
     zone: str | Iterable[str] | None = None,
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
-    coords: list[list[tuple[float, float]]] | None = None,
+    coords: list[list[tuple[float, float]]] | None = None,  # TODO: remove
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -214,41 +189,27 @@ def create_buses(
 
     Buses are the nodal points of the network that all other elements connect to.
 
-    Input:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters:
+        net: The pandapower network in which the element is created
+        nr_buses: The number of buses that is created
+        vn_kv: The grid voltage level.
+        name: the name for this bus
+        index: Force specified IDs if available. If None, the indices higher than the highest already existing index are
+            selected.
 
-        **nr_buses** (int) - The number of buses that is created
-
-        **vn_kv** (float) - The grid voltage level.
-
-    OPTIONAL:
-        **name** (list of string, default None) - the name for this bus
-
-        **index** (list of int, default None) - Force specified IDs if available. If None, the indices \
-            higher than the highest already existing index are selected.
-
-        **geodata** ((x,y)-tuple or Iterable of (x, y)-tuples with length == nr_buses,
-            default None) - coordinates used for plotting
-
-        **type** (string, default "b") - Type of the bus. "n" - auxiliary node,
-        "b" - busbar, "m" - muff
-
-        **zone** (string, None) - grid region
-
-        **in_service** (list of boolean) - True for in_service or False for out of service
-
-        **max_vm_pu** (list of float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
-
-        **min_vm_pu** (list of float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
-
-        **coords** (list (len=nr_buses) of list (len=2) of tuples (len=2), default None) - busbar
-            coordinates to plot the bus with multiple points. coords is typically a list of tuples
+        geodata: (x,y)-tuple or Iterable of (x, y)-tuples with length == nr_buses, coordinates used for plotting
+        type: Type of the buses. "n" - auxiliary node, "b" - busbar, "m" - muff
+        zone: grid region
+        in_service: True for in_service or False for out of service
+        max_vm_pu: necessary for OPF
+        min_vm_pu: necessary for OPF
+        coords: busbar coordinates to plot the bus with multiple points. coords is typically a list of tuples
             (start and endpoint of the busbar) - Example for 3 buses:
             [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
 
 
-    OUTPUT:
-        **index** (numpy.ndarray (int)) - The unique indices IDs of the created elements
+    Returns:
+        The IDs of the created elements
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
 
@@ -257,7 +218,7 @@ def create_buses(
             geo = _geodata_to_geo_series([geodata], nr_buses)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata, nr_buses)
+            geo = _geodata_to_geo_series(geodata, nr_buses)  # type: ignore
     else:
         geo = [None] * nr_buses  # type: ignore[list-item,assignment]
 
@@ -268,7 +229,8 @@ def create_buses(
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
     _set_multiple_entries(net, "bus", index, entries=entries)
-    net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
+    if "geo" in net.bus.columns:
+        net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
 
     return index
 
@@ -285,7 +247,7 @@ def create_buses_dc(
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
-    coords: list[list[tuple[float, float]]] | None = None,
+    coords: list[list[tuple[float, float]]] | None = None,  # TODO: remove
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -293,44 +255,29 @@ def create_buses_dc(
 
     Buses are the nodal points of the network that all other elements connect to.
 
-    Input:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
-
-        **nr_buses_dc** (int) - The number of dc buses that is created
-
-        **vn_kv** (float) - The grid voltage level.
-
-    OPTIONAL:
-        **index** (list of int, default None) - Force specified IDs if available. If None, the indices \
+    Parameters:
+        net: The pandapower network in which the element is created
+        nr_buses_dc: The number of dc buses that is created
+        vn_kv: The grid voltage level.
+        index: Force specified IDs if available. If None, the indices \
             higher than the highest already existing index are selected.
-
-        **name** (list of string, default None) - the name for this dc bus
-
-        **type** (string, default "b") - Type of the dc bus. "n" - auxilary node,
-        "b" - busbar, "m" - muff
-
-        **geodata** ((x,y)-tuple or list of tuples with length == nr_buses_dc, default None) -
-        coordinates used for plotting
-
-        **zone** (string, None) - grid region
-
-        **in_service** (list of boolean) - True for in_service or False for out of service
-
-        **max_vm_pu** (list of float, NAN) - Maximum bus voltage in p.u. - necessary for OPF
-
-        **min_vm_pu** (list of float, NAN) - Minimum bus voltage in p.u. - necessary for OPF
-
-        **coords** (list (len=nr_buses_dc) of list (len=2) of tuples (len=2), default None) - busbar
-        coordinates to plot the dc bus with multiple points. coords is typically a list of tuples
-        (start and endpoint of the busbar) - Example for 3 dc buses:
-        [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
+        name: the name for this dc bus
+        type: Type of the bus. "n" - auxiliary node, "b" - busbar, "m" - muff
+        geodata: (x,y)-tuple or list of tuples with length == nr_buses_dc, coordinates used for plotting
+        zone: grid region
+        in_service: True for in_service or False for out of service
+        max_vm_pu: necessary for OPF
+        min_vm_pu: necessary for OPF
+        coords: busbar coordinates to plot the dc bus with multiple points. coords is typically a list of tuples
+            (start and endpoint of the busbar) - Example for 3 dc buses:
+            [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
 
 
-    OUTPUT:
-        **index** (numpy.ndarray (int)) - The unique indices ID of the created elements
+    Returns:
+        The unique indices ID of the created elements
 
-    EXAMPLE:
-        create_buses_dc(net, 2, [20., 20.], name=["bus1","bus2"])
+    Example:
+        >>> create_buses_dc(net, 2, [20., 20.], name=["bus1","bus2"])
     """
     index = _get_multiple_index_with_check(net, "bus_dc", index, nr_buses_dc)
 

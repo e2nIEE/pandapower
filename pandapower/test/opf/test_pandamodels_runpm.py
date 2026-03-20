@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -13,7 +13,7 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.control import ConstControl
-from pandapower.converter import convert_pp_to_pm
+from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import create_storage, create_shunt, create_pwl_cost, create_poly_cost, create_empty_network, \
     create_bus, create_line, create_gen, create_load, create_transformer3w_from_parameters, create_sgen, \
@@ -32,15 +32,12 @@ from pandapower.test.opf.test_basic import net_3w_trafo_opf
 from pandapower.timeseries import DFData, run_timeseries
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
+
 try:
-    from julia.api import Julia
-
-    Julia(compiled_modules=False)
-    from julia import Main
-
+    from juliacall import Main
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
     julia_installed = False
@@ -192,7 +189,7 @@ def test_pm_dc_powerflow_tap():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_compare_pwl_and_poly(net_3w_trafo_opf):
-    net = net_3w_trafo_opf
+    net = deepcopy(net_3w_trafo_opf)
     net.ext_grid.loc[:, "min_p_mw"] = -999.
     net.ext_grid.loc[:, "max_p_mw"] = 999.
     net.ext_grid.loc[:, "max_q_mvar"] = 999.
@@ -253,7 +250,6 @@ def test_pwl():
     # create generators
     g1 = create_gen(net, bus1, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01, slack=True)
     g2 = create_gen(net, bus3, p_mw=80, min_p_mw=0, max_p_mw=80, vm_pu=1.01)
-    #    net.gen["controllable"] = False
 
     create_pwl_cost(net, g1, 'gen', [[0, 2, 2], [2, 80, 5]])
     create_pwl_cost(net, g2, 'gen', [[0, 2, 2], [2, 80, 5]])
@@ -364,9 +360,9 @@ def test_without_ext_grid():
 def test_multiple_ext_grids():
     net = create_empty_network()
     # generate three ext grids
-    b11, b12, l11 = add_grid_connection(net, vn_kv=110.)
-    b21, b22, l21 = add_grid_connection(net, vn_kv=110.)
-    b31, b32, l31 = add_grid_connection(net, vn_kv=110.)
+    _, b12, _ = add_grid_connection(net, vn_kv=110.)
+    _, b22, _ = add_grid_connection(net, vn_kv=110.)
+    _, b32, _ = add_grid_connection(net, vn_kv=110.)
     # connect them
     create_test_line(net, b12, b22)
     create_test_line(net, b22, b32)
@@ -382,7 +378,6 @@ def test_multiple_ext_grids():
     net["ext_grid"].loc[1, "vm_pu"] = 1.0
     net["ext_grid"].loc[2, "vm_pu"] = 1.01
     for idx in ext_grids:
-        # eg = net["ext_grid"].loc[idx]
         create_poly_cost(net, idx, 'ext_grid', cp1_eur_per_mw=10.)
 
     runpm_ac_opf(net)
@@ -393,7 +388,7 @@ def test_multiple_ext_grids():
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_voltage_angles():
     net = create_empty_network()
-    b1, b2, l1 = add_grid_connection(net, vn_kv=110.)
+    b1, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
     b5 = create_bus(net, vn_kv=10., in_service=False)
@@ -593,19 +588,19 @@ def test_storage_opt():
     assert len(
         pm["time_series"]["gen"].keys()) == 0  # because all sgen are not controllable, they are treated as loads.
     assert len(pm["time_series"]["load"].keys()) == len(net.load) + len(net.sgen)
-    assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == set([str(i) for i in range(5, 26)])
+    assert set(pm["time_series"]["load"]["1"]["p_mw"].keys()) == {str(i) for i in range(5, 26)}
 
     net = create_cigre_grid_with_time_series(json_path)
-    runpm_storage_opf(net, from_time_step=0, to_time_step=5)
+    runpm_storage_opf(net, from_time_step=0, to_time_step=5, pm_mip_solver='cbc')
     storage_results_1 = read_pm_storage_results(net)
     assert net._pm_org_result["multinetwork"]
     assert net._pm["pm_solver"] == "juniper"
-    assert net._pm["pm_mip_solver"] == "highs"
+    assert net._pm["pm_mip_solver"] == "cbc"
     assert len(net.res_ts_opt) == 5
 
     net2 = create_cigre_grid_with_time_series(json_path)
     net2.sn_mva = 100.0
-    runpm_storage_opf(net2, from_time_step=0, to_time_step=5)
+    runpm_storage_opf(net2, from_time_step=0, to_time_step=5, pm_mip_solver='cbc')
     storage_results_100 = read_pm_storage_results(net2)
 
     assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6
@@ -744,26 +739,21 @@ def test_runpm_ploss_loading():
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_convergence_dc_opf():
-    for cpnd in [True, False]:
-        net = case5()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
-        net = case9()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
-        net = case14()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
-        net = case30()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
-        net = case39()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
-        net = case57()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
-        net = case118()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
-        net = case145()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
-        net = case300()
-        runpm_dc_opf(net, correct_pm_network_data=cpnd)
+@pytest.mark.parametrize("net_func", [
+    case5,
+    case9,
+    case14,
+    case30,
+    case39,
+    case57,
+    case118,
+    case145,
+    case300,
+])
+@pytest.mark.parametrize('cpnd', [True, False])
+def test_convergence_dc_opf(net_func, cpnd):
+    net = net_func()
+    runpm_dc_opf(net, correct_pm_network_data=cpnd)
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
