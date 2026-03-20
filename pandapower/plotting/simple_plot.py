@@ -6,7 +6,6 @@ import sys
 import math
 import logging
 from collections import defaultdict
-from typing import Union
 
 import pandas as pd
 
@@ -35,7 +34,6 @@ from pandapower.plotting.collections import (
     create_vsc_collection,
 )
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.toolbox.element_selection import get_connected_elements_dict
 
 logger = logging.getLogger(__name__)
 
@@ -309,7 +307,7 @@ def simple_plot(
     return ax
 
 
-def calculate_unique_angles(net: pandapowerNet) -> dict[int, dict[str, Union[dict[str, float], float]]]:
+def calculate_unique_angles(net: pandapowerNet) -> dict[int, dict[str, dict[str, float] | float]]:
     """
     Calculate the angles for each patch at each bus. (currently only respects sgen, gen and load)
     Only a single patch for all loads is currently supported.
@@ -325,13 +323,13 @@ def calculate_unique_angles(net: pandapowerNet) -> dict[int, dict[str, Union[dic
     patch_counts = pd.concat([sgen_counts, gen_counts, loads], axis=1).fillna(0)
     patches_per_bus = patch_counts.ne(0).sum(axis=1)
 
-    patches: dict[int, dict[str, Union[dict[str, float], float]]] = defaultdict(dict)
+    patches: dict[int, dict[str, dict[str, float] | float]] = defaultdict(dict)
     counts: dict[int, int] = defaultdict(int)
     for df, df_name in [(sgen_counts, "sgen"), (gen_counts, "gen")]:
         index: int
         for index, row in df.iterrows():
             patch_angle = float(2 * math.pi / patches_per_bus[index])
-            c: Union(str, float)
+            c: str | float
             for c, v in row.items():
                 _type: str
                 if v > 0:
