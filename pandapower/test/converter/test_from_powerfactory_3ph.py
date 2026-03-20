@@ -255,7 +255,7 @@ def get_pf_results(app, net):
 
 def write_pf_results_to_file(app, net, filename, combinations):
     if combinations:
-        pf_results = dict()
+        pf_results = {}
         for loadtype in ["delta", "wye"]:
             for vector_group in ["Dyn", "YNyn", "Yzn"]:
                 study_case_name = "Study Case_%s_%s" % (vector_group, loadtype)

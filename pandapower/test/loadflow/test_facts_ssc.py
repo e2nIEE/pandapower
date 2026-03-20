@@ -96,7 +96,6 @@ def test_2_sscs():
     runpp(net2)
     compare_ssc_impedance_gen(net1, net2)
 
-    return
     # todo:
     # # second controllable
     # net1 = copy.deepcopy(net)

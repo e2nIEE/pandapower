@@ -36,11 +36,11 @@ def test_batch_output_reader(simple_test_net):
     # 1load
     c = add_const(net, ds, recycle=True)
 
-    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=list())
+    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=[])
     ow.log_variable('ppc_bus', 'vm')
     ow.log_variable('ppc_bus', 'va')
 
-    recycle = dict(trafo=False, gen=False, bus_pq=True)
+    recycle = {'trafo': False, 'gen': False, 'bus_pq': True}
     only_v = True
     runpp(net, only_v_results=only_v, recycle=recycle)
     run_timeseries(net, time_steps, recycle=recycle, only_v_results=only_v, verbose=False)
@@ -49,14 +49,14 @@ def test_batch_output_reader(simple_test_net):
     # ppc was removed (set to None) in cleanup() after the timeseries was over. now we have to remake the net._ppc by
     # running the power flow again
     runpp(net, only_v_results=only_v, recycle=recycle)
-    s, s_abs, i_abs = v_to_i_s(net, vm, va)
+    _, s_abs, i_abs = v_to_i_s(net, vm, va)
 
     del net, ow, c
     net = simple_test_net
     net.output_writer = net.output_writer.drop(index=net.output_writer.index)
     net.controller = net.controller.drop(index=net.controller.index)
     add_const(net, ds, recycle=False)
-    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=list())
+    ow = OutputWriter(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=[])
     ow.log_variable('res_line', 'i_from_ka')
     ow.log_variable('res_line', 'loading_percent')
     ow.log_variable('res_line', 'i_to_ka')
@@ -85,8 +85,8 @@ def test_batch_output_reader(simple_test_net):
 
     v_normal = polar_to_rad(vm_pu, va_degree)
     v_batch = polar_to_rad(vm, va)
-    i_ka, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(net, i_abs)
-    i_ka, i_hv_ka, i_lv_ka, s_mva, ld_trafo = get_batch_trafo_results(net, i_abs, s_abs)
+    _, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(net, i_abs)
+    _, i_hv_ka, i_lv_ka, _, ld_trafo = get_batch_trafo_results(net, i_abs, s_abs)
     i_h, i_m, i_l, ld3_trafo = get_batch_trafo3w_results(net, i_abs, s_abs)
 
     # v batch contains aux buses of trafo3w. we can only compare non-aux bus voltages
@@ -149,7 +149,7 @@ def test_const_pq(simple_test_net, run_function):
     del c
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=False)
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
@@ -170,8 +170,8 @@ def test_const_gen(simple_test_net, run_function):
     del c1, c2
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=None, profile_name="gen", element_index=0, element="gen")
+    add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=None, profile_name="gen", element_index=0, element="gen")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
@@ -193,8 +193,8 @@ def test_const_ext_grid(simple_test_net, run_function):
     del c1, c2
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
+    add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
                    element_index=0, element="ext_grid")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
@@ -216,8 +216,8 @@ def test_trafo_tap(simple_test_net, run_function=runpp):
     del c1, c2
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
-    c2 = ContinuousTapControl(net, 0, .99, recycle=False, tol=1e-9)
+    add_const(net, ds, recycle=False)
+    ContinuousTapControl(net, 0, .99, recycle=False, tol=1e-9)
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
@@ -237,8 +237,8 @@ def test_trafo_tap_dc(simple_test_net, run_function=rundcpp):
     del c1, c2
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+    add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
@@ -261,10 +261,10 @@ def test_const_pq_gen_trafo_tap(simple_test_net, run_function=runpp):
     del c1, c2, c3
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
+    add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
                    element="ext_grid")
-    c3 = ContinuousTapControl(net, 0, 1.01, recycle=False, tol=1e-9)
+    ContinuousTapControl(net, 0, 1.01, recycle=False, tol=1e-9)
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)])
     assert np.allclose(ll, ow.output["res_line.loading_percent"])
@@ -287,10 +287,10 @@ def test_const_pq_gen_trafo_tap_dc(simple_test_net, run_function=rundcpp):
     del c1, c2, c3
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
+    add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=False, profile_name="ext_grid", variable="vm_pu", element_index=0,
                    element="ext_grid")
-    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+    add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
@@ -315,10 +315,10 @@ def test_const_pq_gen_trafo_tap_ideal(simple_test_net, run_function):
     del c1, c2, c3
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
+    add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
                    element_index=0, element="ext_grid")
-    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+    add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
@@ -344,11 +344,11 @@ def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
     del c1, c2, c3
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
-    c2 = add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
+    add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=False, profile_name="ext_grid", variable=_v_var(run_function, False),
                    element_index=0,
                    element="ext_grid")
-    c3 = add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
+    add_const(net, ds, recycle=None, profile_name="trafo_tap", variable="tap_pos",
                    element_index=0, element="trafo")
     ow = _run_normal(net, run_function)
     assert np.allclose(vm_pu, ow.output[_v_var(run_function)], rtol=0, atol=1e-6)
@@ -358,7 +358,7 @@ def test_const_pq_gen_trafo_tap_shifter(simple_test_net, run_function):
 def test_const_pq_out_of_service(simple_test_net, run_function):
     # allows to use recycle = {"bus_pq"} and fast output read
     net = simple_test_net
-    for i in range(3):
+    for _ in range(3):
         b = create_bus(net, 20., in_service=False)
         create_line(net, 2, b, std_type="149-AL1/24-ST1A 20.0", length_km=1., in_service=False)
         create_transformer(net, 2, b, std_type="25 MVA 110/20 kV", in_service=False)
@@ -370,7 +370,7 @@ def test_const_pq_out_of_service(simple_test_net, run_function):
     del c
 
     # calculate the same results without recycle
-    c = add_const(net, ds, recycle=False)
+    add_const(net, ds, recycle=False)
     ow = _run_normal(net, run_function)
     in_service = net.bus.loc[net.bus.in_service].index
     assert np.allclose(vm_pu.loc[:, in_service], ow.output[_v_var(run_function)].loc[:, in_service])

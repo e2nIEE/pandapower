@@ -4,16 +4,13 @@ def calculate_protection_times(net, scenario="sc"):
     """
     Calculate protection times for short-circuit and power-flow scenarios
 
-    INPUT:
-        **net** - pandapower network
+    Parameters:
+        net: pandapower network
+        scenario (string, 'sc'): specify what type of scenario to calculate for: 'sc' for short-circuit, 'pp' for power
+            flow. Default is 'sc'
 
-        **scenario** (string, 'sc') - specify what type of scenario to calculate for: 'sc' for short-circuit, 'pp'
-            for power flow. Default is 'sc'
-
-    OUTPUT:
-
-        **df_protection_results** - pandas dataframe containing results
-
+    Returns:
+        pandas dataframe containing results
     """
 
     if scenario != "sc" and scenario != "pp":

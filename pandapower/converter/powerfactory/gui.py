@@ -1,4 +1,5 @@
 import os
+from typing_extensions import deprecated
 import tkinter as tk
 from pandapower.auxiliary import ADict
 from pandapower.converter.powerfactory.main_pf import exit_gracefully
@@ -10,16 +11,15 @@ logger = logging.getLogger(__name__)
 
 def cancel(app, input_panel):
     logger.debug('received a cancel request from the user')
-    input_panel.destroy()
-    logger.debug('destroyed input panel, will attempt exit()')
     for h in logger.handlers:
         logger.removeHandler(h)
-    exit_gracefully(app, 'exiting script', False)
+    exit_gracefully(app, input_panel, 'exiting script', False)
 
 
+@deprecated("Function unused, will be removed in future.")
 def calc_test(app, **kwargs):
     logger.info('TESTING')
-    exit_gracefully(app, 'test complete', False)
+    exit_gracefully(app, None, 'test complete', False)
 
 
 def browse_dst_test(input_panel, entry_path_dst):
@@ -127,7 +127,6 @@ def make_gui(app, project_name, browse_dst, calc):
         conf_var_graphics(app, opt_grf, var_graphics)
     except Exception as err:
         logger.error('could not find network diagrams: %s' % err)
-        pass
 
     params.flag_graphics = var_graphics.get
 
@@ -265,15 +264,3 @@ def make_gui(app, project_name, browse_dst, calc):
     start_button.grid(row=1, column=7, sticky='e', padx=4, pady=0)
 
     input_panel.mainloop()
-
-# if __name__ == '__main__':
-#     import powerfactory
-#
-#     app = powerfactory.GetApplication()
-#     app.Show()
-#
-#     logger, app_handler = logger_setup.setup_logger(app, 'INFO')
-#     make_gui(app, 'test', browse_dst_test, calc_test)
-# else:
-#     logger = logging.getLogger(__name__)
-#     # logger.setLevel('DEBUG')

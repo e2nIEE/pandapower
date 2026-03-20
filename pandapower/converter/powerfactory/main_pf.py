@@ -58,7 +58,7 @@ def get_filename(entry_fname, save_as="JSON"):
     logger.debug('filename extension: %s' % extension)
     if filename == '':
         raise RuntimeError('No filename given!')
-    elif not extension == goal_extension:
+    elif extension != goal_extension:
         logger.debug('setting correct file extension')
         entry_fname.insert(len(filename), goal_extension)
         filename = entry_fname.get()
@@ -80,7 +80,8 @@ def exit_gracefully(app, input_panel, msg, is_err):
     else:
         logger.info('Execution finished: %s' % msg)
     echo_on(app)
-    input_panel.destroy()
+    if input_panel is not None:
+        input_panel.destroy()
     # del(app)
     # quit()
     sys.exit(1 if is_err else 0)

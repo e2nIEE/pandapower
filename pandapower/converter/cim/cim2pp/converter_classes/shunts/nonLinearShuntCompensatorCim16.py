@@ -60,15 +60,19 @@ class NonLinearShuntCompensatorCim16:
                 eqssh_shunts.loc[eqssh_shunts['sections'] >= eqssh_shunts['sectionNumber'], 'q'] = \
                     eqssh_shunts['q'] + eqssh_shunts['q_temp']
             eqssh_shunts = eqssh_shunts[eqssh_shunts_cols]
-        if 'inService' in eqssh_shunts.columns:
-            eqssh_shunts['connected'] = eqssh_shunts['connected'] & eqssh_shunts['inService']
+        if self.cimConverter.cim_version == '3.0':
+           eqssh_shunts['in_service'] = eqssh_shunts.connected & eqssh_shunts.inService
+        elif self.cimConverter.cim_version == 'ltds':
+           eqssh_shunts['in_service'] = eqssh_shunts.inService
+        else:
+           eqssh_shunts['in_service'] = eqssh_shunts.connected
         # added to use the logic of p/q values multiplied by the number of steps
         # this is only correct for the current step values
         eqssh_shunts['p'] = eqssh_shunts['p'] / eqssh_shunts['sections']
         eqssh_shunts['q'] = eqssh_shunts['q'] / eqssh_shunts['sections']
         eqssh_shunts = eqssh_shunts.rename(columns={
-            'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
-            'nomU': 'vn_kv', 'p': 'p_mw', 'q': 'q_mvar', 'sections': 'step', 'maximumSections': 'max_step'})
+            'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus', 'nomU': 'vn_kv', 'p': 'p_mw',
+            'q': 'q_mvar', 'sections': 'step', 'maximumSections': 'max_step'})
         return eqssh_shunts
 
     def _create_shunt_characteristic_table(self, eqssh_shunts):

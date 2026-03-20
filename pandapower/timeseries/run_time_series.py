@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import tempfile
@@ -51,22 +51,6 @@ def init_output_writer(net, time_steps):
     output_writer = net.output_writer.iat[0, 0]
     output_writer.time_steps = time_steps
     output_writer.init_all(net)
-
-
-#
-# def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
-#     """
-#     Call in a loop to create terminal progress bar.
-#     the code is mentioned in : https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
-#     """
-#     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-#     filled_length = int(length * iteration // total)
-#     bar = fill * filled_length + '-' * (length - filled_length)
-#     # logger.info('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix))
-#     print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end="")
-#     # Print New Line on Complete
-#     if iteration == total:
-#         print("\n")
 
 
 def controller_not_converged(time_step, ts_variables):
@@ -144,7 +128,7 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
 
 def _check_controller_recyclability(net):
     # if a parameter is set to True here, it will be recalculated during the time series simulation
-    recycle = dict(trafo=False, gen=False, bus_pq=False)
+    recycle = {'trafo': False, 'gen': False, 'bus_pq': False}
     if "controller" not in net:
         # everything can be recycled since no controller is in net. But the time series simulation makes no sense
         # then anyway...
@@ -169,9 +153,9 @@ def _check_output_writer_recyclability(net, recycle, run):
         raise ValueError("OutputWriter not defined")
     ow = net.output_writer.at[0, "object"]
     # results which are read with a faster batch function after the time series simulation
-    recycle["batch_read"] = list()
+    recycle["batch_read"] = []
     recycle["only_v_results"] = False
-    new_log_variables = list()
+    new_log_variables = []
 
     if hasattr(run, "__name__") and run.__name__ == "rundcpp":
         recycle["only_v_results"] = False
@@ -339,19 +323,14 @@ def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=T
     **Controllers**. Optionally other functions than the pp power flow can be called by setting the run function in
     kwargs
 
-    INPUT:
-        **net** - The pandapower format network
-
-    OPTIONAL:
-        **time_steps** (list or tuple, None) - time_steps to calculate as list or tuple (start, stop)
-        if None, all time steps from provided data source are simulated
-
-        **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
-
-        **verbose** (bool, True) - prints progress bar or if logger.level == Debug it prints debug messages
-
-        **kwargs** - Keyword arguments for run_control and run If "run" is in kwargs the default call to runpp()
-        is replaced by the function kwargs["run"]
+    Parameters:
+        net: The pandapower format network
+        time_steps (list or tuple, None): time_steps to calculate as list or tuple (start, stop)
+            if None, all time steps from provided data source are simulated
+        continue_on_divergence (bool, False): If True time series calculation continues in case of errors.
+        verbose (bool, True): prints progress bar or if logger.level == Debug it prints debug messages
+    Keyword Arguments:
+        run (Callable): for run_control and run the default call to runpp() is replaced by the function passed
     """
 
     ts_variables = init_time_series(net, time_steps, continue_on_divergence, verbose, **kwargs)

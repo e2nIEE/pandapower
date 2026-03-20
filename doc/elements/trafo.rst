@@ -18,9 +18,10 @@ Create Function
 
 Transformers can be either created from the standard type library (create_transformer) or with custom values (create_transformer_from_parameters).
 
-.. autofunction:: pandapower.create_transformer
-
-.. autofunction:: pandapower.create_transformer_from_parameters
+.. autofunction:: pandapower.create.create_transformer
+.. autofunction:: pandapower.create.create_transformers
+.. autofunction:: pandapower.create.create_transformer_from_parameters
+.. autofunction:: pandapower.create.create_transformers_from_parameters
 
 Input Parameters
 =====================

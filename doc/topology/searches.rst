@@ -16,10 +16,6 @@ connected_component
 ---------------------
 
 .. autofunction:: pandapower.topology.connected_component
-
-connected_components
----------------------
-
 .. autofunction:: pandapower.topology.connected_components
 
 

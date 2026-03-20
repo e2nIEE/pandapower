@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import sys
@@ -48,7 +48,6 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
     bus_index = net.bus.index if buses is None else np.array(buses)
     nr_buses = len(bus_index)
     g.add_vertices(nr_buses)
-    # g.vs["label"] = [s.encode('unicode-escape') for s in net.bus.name.tolist()]
     g.vs["label"] = list(bus_index)
     pp_bus_mapping = dict(list(zip(bus_index, list(range(nr_buses)))))
     if respect_switches:
@@ -204,7 +203,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     :return: net - pandapower network with added geo coordinates for the buses
 
     :Example:
-        net = create_generic_coordinates(net)
+        >>> net = create_generic_coordinates(net)
     """
 
     _prepare_geodata_table(net, geodata_table, overwrite)

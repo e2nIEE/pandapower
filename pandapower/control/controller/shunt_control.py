@@ -3,6 +3,7 @@ from pandapower.control.basic_controller import Controller
 
 import logging
 
+
 class ShuntController(Controller):
     """
     Base Shunt Controller for controlling the steps of a shunt in a power network.
@@ -61,43 +62,31 @@ class ShuntController(Controller):
             logging.warning("Controlled Bus is Slack Bus - deactivating controller")
             self.set_active(net, False)
 
+
 class DiscreteShuntController(ShuntController):
     """
     Discrete Shunt Controller that controls the shunt steps in a discrete manner to regulate the voltage
     at a specific bus. This controller adjusts the active and reactive power of a shunt in steps based on the
     voltage deviation from a setpoint.
 
-    INPUT:
-        **net** (attrdict) - pandapower network object
-
-        **shunt_index** (int) - The index of the shunt in the pandapower network to be controlled.
-
-        **vm_set_pu** (float) - The voltage setpoint in per-unit (pu) for controlling the bus voltage.
-
-    OPTIONAL:
-        **bus_index** (int, None) - The index of the bus where voltage control is applied. If None, the bus
-                                    connected to the shunt is used by default.
-
-        **tol** (float, 0.001) - Voltage tolerance band in per-unit (pu) for control action (default is 1% or 0.01 pu).
-
-        **increment** (int, 1) - Step increment size for controlling the shunt. The controller adjusts the
-                                 shunt steps by this increment based on the voltage deviation.
-
-        **reset_at_init** (bool, False) - If True, the shunt steps will be reset to 0 during the initialization
-                                          of the controller.
-
-        **in_service** (bool, True) - Boolean flag to indicate whether the controller is active or not.
-
-        **check_step_bounds** (bool, True) - If True, the controller will check and enforce the step boundaries
-                                             (minimum and maximum) for the shunt.
-
-        **order** (int, 0) - Execution order of the controller. Controllers with lower order are executed first.
-
-        **level** (int, 0) - Controller level.
-
-        **matching_params** (dict, None) - Dictionary of parameters used to match this controller with the appropriate
-                                           elements in the network. Defaults to shunt_index and bus_index.
-
+    Parameters:
+        net (ADict): pandapower network object
+        shunt_index (int): The index of the shunt in the pandapower network to be controlled.
+        vm_set_pu (float): The voltage setpoint in per-unit (pu) for controlling the bus voltage.
+        bus_index (int, None): The index of the bus where voltage control is applied. If None, the bus connected to the
+            shunt is used by default.
+        tol (float, 0.001): Voltage tolerance band in per-unit (pu) for control action (default is 1% or 0.01 pu).
+        increment (int, 1): Step increment size for controlling the shunt. The controller adjusts the shunt steps by
+            this increment based on the voltage deviation.
+        reset_at_init (bool, False): If True, the shunt steps will be reset to 0 during the initialization of the
+            controller.
+        in_service (bool, True): Boolean flag to indicate whether the controller is active or not.
+        check_step_bounds (bool, True): If True, the controller will check and enforce the step boundaries
+            (minimum and maximum) for the shunt.
+        order (int, 0): Execution order of the controller. Controllers with lower order are executed first.
+        level (int, 0): Controller level.
+        matching_params (dict, None): Dictionary of parameters used to match this controller with the appropriate
+            elements in the network. Defaults to shunt_index and bus_index.
     """
     def __init__(self, net, shunt_index, vm_set_pu, bus_index=None, tol=1e-3, increment=1, reset_at_init=False,
                  in_service=True, check_step_bounds=True, order=0, level=0, matching_params=None, **kwargs):

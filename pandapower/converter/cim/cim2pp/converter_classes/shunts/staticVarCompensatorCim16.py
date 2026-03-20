@@ -36,13 +36,15 @@ class StaticVarCompensatorCim16:
         # therefore p is set to 0
         eq_stat_coms['p_mw'] = 0.0
         eq_stat_coms.loc[eq_stat_coms['sVCControlMode'] == 'reactivePower', 'voltageSetPoint'] = float('NaN')
-        if 'inService' in eq_stat_coms.columns:
-            eq_stat_coms['connected'] = eq_stat_coms['connected'] & eq_stat_coms['inService']
+        if self.cimConverter.cim_version == '3.0':
+           eq_stat_coms['in_service'] = eq_stat_coms.connected & eq_stat_coms.inService
+        elif self.cimConverter.cim_version == 'ltds':
+           eq_stat_coms['in_service'] = eq_stat_coms.inService
+        else:
+           eq_stat_coms['in_service'] = eq_stat_coms.connected
         eq_stat_coms = eq_stat_coms.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 
-                                                    'voltageSetPoint': 'vn_kv', 'index_bus': 'bus', 'connected': 'in_service'})
+                                                    'voltageSetPoint': 'vn_kv', 'index_bus': 'bus'})
         eq_stat_coms['step'] = 1
         eq_stat_coms['max_step'] = 1
-        # create step_dependency_table flag
-        if 'step_dependency_table' not in eq_stat_coms.columns:
-            eq_stat_coms["step_dependency_table"] = False
+        eq_stat_coms["step_dependency_table"] = False
         return eq_stat_coms

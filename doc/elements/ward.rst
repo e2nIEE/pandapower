@@ -11,6 +11,7 @@ Create Function
 =====================
 
 .. autofunction:: pandapower.create.create_ward
+.. autofunction:: pandapower.create.create_wards
 
 Input Parameters
 =========================

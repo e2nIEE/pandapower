@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -70,7 +70,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
         net_parameters = ["name", "f_hz"]
         for net_parameter in net_parameters:
-            if net_parameter in net.keys():
+            if net_parameter in net:
                 p2[net_parameter] = net[net_parameter]
 
     p2.bus = net.bus.loc[list(buses)]
@@ -114,10 +114,10 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     _select_cost_df(net, p2, "pwl_cost")
 
     if include_results:
-        for table in net.keys():
+        for table in net:
             if net[table] is None or not isinstance(net[table], pd.DataFrame) or not \
                 net[table].shape[0] or not table.startswith("res_") or table[4:] not in \
-                net.keys() or not isinstance(net[table[4:]], pd.DataFrame) or not \
+                net or not isinstance(net[table[4:]], pd.DataFrame) or not \
                 net[table[4:]].shape[0]:
                 continue
             elif table == "res_bus":
@@ -182,14 +182,14 @@ def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs
     """
     old_params = {"retain_original_indices_in_net1", "create_continuous_bus_indices"}
     new_params = {"std_prio_on_net1", "return_net2_reindex_lookup", "net2_reindex_log_level"}
-    msg1 = f"Since pandapower version 2.11.0, merge_nets() keeps element indices " + \
+    msg1 = "Since pandapower version 2.11.0, merge_nets() keeps element indices " + \
         "and prioritize net1 standard types by default."
     msg2 = f"Parameters {old_params} are deprecated."
     msg3 = "To silence this warning, explicitely pass at least one of the new parameters " + \
         f"{new_params}."
 
-    old_params_passed = len(set(kwargs.keys()).intersection(old_params))
-    new_params_passed = len(set(kwargs.keys()).intersection(new_params))
+    old_params_passed = len(set(kwargs).intersection(old_params))
+    new_params_passed = len(set(kwargs).intersection(new_params))
 
     if old_params_passed:
         raise FutureWarning(msg1 + msg2 + msg3)
@@ -225,7 +225,7 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
     )]
 
     # reindex net2 elements if some indices already exist in net
-    reindex_lookup = dict()
+    reindex_lookup = {}
     for elm_type in elm_types:
         if elm_type not in net:
             continue
@@ -242,13 +242,11 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
                     id_start = net1[elm_type].id_characteristic.max() + 1
                     id_max = net2[elm_type].id_characteristic.max() + id_start
                     combined_ids = net2[elm_type].id_characteristic.dropna().unique()
-                    reindex_lookup[elm_type] = {
-                        old_id: new_id for old_id, new_id in zip(sorted(combined_ids), range(id_start, id_max + 1))
-                    }
+                    reindex_lookup[elm_type] = dict(zip(sorted(combined_ids), range(id_start, id_max + 1)))
             reindex_elements(net2, elm_type, lookup=reindex_lookup[elm_type])
-    if len(reindex_lookup.keys()):
+    if len(reindex_lookup):
         log_to_level("net2 elements of these types has been reindexed by merge_nets() because " + \
-            f"these exist already in net1: {list(reindex_lookup.keys())}", logger,
+            f"these exist already in net1: {list(reindex_lookup)}", logger,
             net2_reindex_log_level)
 
     # copy dataframes from net2 to net (output)
@@ -261,7 +259,7 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
             net[elm_type] = net2[elm_type].copy()
 
     # copy standard types of net by data of net2
-    for type_ in net.std_types.keys():
+    for type_ in net.std_types:
         if std_prio_on_net1:
             net.std_types[type_] = {**net2.std_types[type_], **net.std_types[type_]}
         else:
@@ -288,7 +286,7 @@ def set_element_status(net, buses, in_service):
     """
     net.bus.loc[buses, "in_service"] = in_service
 
-    for element in net.keys():
+    for element in net:
         if element not in ['bus'] and isinstance(net[element], pd.DataFrame) \
                 and "in_service" in net[element].columns:
             try:
@@ -475,15 +473,12 @@ def merge_parallel_line(net, idx):
         ---|          |---   =  --- Z1 ---
             --- Z0 ---
 
-    Parameters
-    ----------
-        net - pandapower net
+    Parameters:
+        net: pandapower net
+        idx (int): idx of the line to merge
 
-        idx (int) - idx of the line to merge
-
-    Returns
-    -------
-    net
+    Returns:
+        the modified network
     """
     # impedance before changing the standard type
     r0 = net.line.at[idx, "r_ohm_per_km"]
@@ -520,21 +515,16 @@ def merge_same_bus_generation_plants(net, add_info=True, error=True,
     Merge generation plants connected to the same buses so that a maximum of one generation plants
     per node remains.
 
-    ATTENTION:
-        * gen_elms should always be given in order of slack (1.), PV (2.) and PQ (3.) elements.
+    .. attention::
+        gen_elms should always be given in order of slack (1.), PV (2.) and PQ (3.) elements.
 
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **add_info** (bool, True) - If True, the column 'includes_other_plants' is added to the
-        elements dataframes. This column informs about which element table rows are the result of a
-        merge of generation plants.
-
-        **error** (bool, True) - If True, raises an Error, if vm_pu values differ with same buses.
-
-        **gen_elms** (list, ["ext_grid", "gen", "sgen"]) - list of elements to be merged by same
-        buses. Should be in order of slack (1.), PV (2.) and PQ (3.) elements.
+    Parameters:
+        net: pandapower net
+        add_info (bool, True): If True, the column 'includes_other_plants' is added to the elements dataframes. This
+            column informs about which element table rows are the result of a merge of generation plants.
+        error (bool, True): If True, raises an Error, if vm_pu values differ with same buses.
+        gen_elms (list, ["ext_grid", "gen", "sgen"]): list of elements to be merged by same buses. Should be in order
+            of slack (1.), PV (2.) and PQ (3.) elements.
     """
     if add_info:
         for elm in gen_elms:
@@ -622,8 +612,8 @@ def close_switch_at_line_with_two_open_switches(net):
 
 def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
     """
-    Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
-    if drop=True (default).
+    Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2, if drop=True
+    (default).
     """
     b2 = set(b2) - {b1} if isinstance(b2, Iterable) else [b2]
 
@@ -658,8 +648,7 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
 
 def drop_elements(net, element_type, element_index, **kwargs):
     """
-    Drops element, result and group entries, as well as, associated elements from the pandapower
-    net.
+    Drops element, result and group entries, as well as, associated elements from the pandapower net.
     """
     if element_type ==  "bus":
         drop_buses(net, element_index, **kwargs)
@@ -689,7 +678,7 @@ def drop_elements_simple(net, element_type, element_index):
 
     # res_element
     res_element_type = "res_" + element_type
-    if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):
+    if res_element_type in net and isinstance(net[res_element_type], pd.DataFrame):
         drop_res_idx = net[res_element_type].index.intersection(element_index)
         net[res_element_type] = net[res_element_type].drop(drop_res_idx)
 
@@ -794,7 +783,7 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True,
                 drop_measurements_at_elements(net, element_type, idx=eid)
                 # res_element_type
                 res_element_type = "res_" + element_type
-                if res_element_type in net.keys() and isinstance(net[res_element_type], pd.DataFrame):
+                if res_element_type in net and isinstance(net[res_element_type], pd.DataFrame):
                     res_eid = net[res_element_type].index.intersection(eid)
                     net[res_element_type] = net[res_element_type].drop(res_eid)
                 if net[element_type].shape[0] < n_el:
@@ -834,7 +823,7 @@ def drop_controllers_at_elements(net, element_type, idx=None):
     Drop all the controllers for the given elements (idx).
     """
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    to_drop = list()
+    to_drop = []
     for ctrl_idx in net.controller.index:
         _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop)
     net.controller = net.controller.drop(to_drop)
@@ -864,7 +853,7 @@ def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
                              "p_series_mw", "q_series_mvar", "target_p_mw", "target_q_mvar",
                              "p_curtailment"]
     for ctrl_col in further_vars_to_adapt:
-        if ctrl_col not in ctrl_dict.keys():
+        if ctrl_col not in ctrl_dict:
             continue
 
         if ctrl_col == "bus":
@@ -882,7 +871,7 @@ def drop_controllers_at_buses(net, buses):
     Drop all the controllers for the elements connected to the given buses.
     """
     elms = get_connected_elements_dict(net, buses)
-    for elm in elms.keys():
+    for elm in elms:
         drop_controllers_at_elements(net, elm, elms[elm])
 
 
@@ -911,7 +900,7 @@ def _inner_branches(net, buses, task, branch_elements=None):
     if branch_elements is not None:
         branch_dict = {key: branch_dict[key] for key in branch_elements}
 
-    inner_branches = dict()
+    inner_branches = {}
     for elm, bus_types in branch_dict.items():
         inner = pd.Series(True, index=net[elm].index)
         for bus_type in bus_types:
@@ -1112,7 +1101,7 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
         raise TypeError(
             'input parameter "elements" must be a tuple, e.g. ("line", "impedance") or ("line")')
 
-    replaced = dict()
+    replaced = {}
     for elm in elements:
         branch_zero = set()
         if elm == 'line' and zero_length:
@@ -1156,21 +1145,15 @@ def replace_zero_branches_with_switches(net, elements=('line', 'impedance'), zer
 
 def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka=np.nan):
     """
-    Creates lines by given impedances data, while the impedances are dropped.
+    Creates lines by given impedance data, while the impedance are dropped.
 
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **index** (index, None) - Index of all impedances to be replaced. If None, all impedances
-        will be replaced.
-
-        **only_valid_replace** (bool, True) - If True, impedances will only replaced, if a
-        replacement leads to equal power flow results. If False, unsymmetric impedances will
-        be replaced by symmetric lines.
-
-        **max_i_ka** (value(s), False) - Data/Information how to set max_i_ka. If 'imp.sn_mva' is
-        given, the sn_mva values of the impedances are considered.
+    Parameters:
+        net: pandapower net
+        index (index, None): Index of all impedance to be replaced. If None, all impedance will be replaced.
+        only_valid_replace (bool, True): If True, impedance will only replaced, if a replacement leads to equal power
+            flow results. If False, unsymmetric impedance will be replaced by symmetric lines.
+        max_i_ka (value(s), False): Data/Information how to set max_i_ka. If 'imp.sn_mva' is given, the sn_mva values of
+            the impedance are considered.
     """
     index = list(ensure_iterability(index)) if index is not None else list(net.impedance.index)
     max_i_ka = ensure_iterability(max_i_ka, len(index))
@@ -1215,21 +1198,14 @@ def replace_impedance_by_line(net, index=None, only_valid_replace=True, max_i_ka
 
 def replace_line_by_impedance(net, index=None, sn_mva=None, only_valid_replace=True):
     """
-    Creates impedances by given lines data, while the lines are dropped.
+    Creates impedance by given lines data, while the lines are dropped.
 
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **index** (index, None) - Index of all lines to be replaced. If None, all lines
-        will be replaced.
-
-        **sn_kva** (list or array, None) - Values of sn_kva for creating the impedances. If None,
-        the net.sn_kva is assumed
-
-        **only_valid_replace** (bool, True) - If True, lines will only replaced, if a replacement
-        leads to equal power flow results. If False, capacitance and dielectric conductance will
-        be neglected.
+    Parameters:
+        net: pandapower net
+        index (index, None): Index of all lines to be replaced. If None, all lines will be replaced.
+        sn_mva (list or array, None): Values of sn_mva for creating the impedance. If None, the net.sn_mva is assumed
+        only_valid_replace (bool, True): If True, lines will only replaced, if a replacement leads to equal power flow
+            results. If False, capacitance and dielectric conductance will be neglected.
     """
     index = list(ensure_iterability(index)) if index is not None else list(net.line.index)
     sn_mva = sn_mva or net.sn_mva
@@ -1287,24 +1263,16 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
     """
     Replaces external grids by generators.
 
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **ext_grids** (iterable) - indices of external grids which should be replaced
-
-        **gen_indices** (iterable) - required indices of new generators
-
-        **slack** (bool, False) - indicates which value is set to net.gen.slack for the new
-        generators
-
-        **cols_to_keep** (list, None) - list of column names which should be kept while replacing
-        ext_grids. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
-        "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
-
-        **add_cols_to_keep** (list, None) - list of column names which should be added to
-        'cols_to_keep' to be kept while replacing ext_grids.
+    Parameters:
+        net: pandapower net
+        ext_grids (iterable): indices of external grids which should be replaced
+        gen_indices (iterable): required indices of new generators
+        slack (bool, False): indicates which value is set to net.gen.slack for the new generators
+        cols_to_keep (list, None): list of column names which should be kept while replacing ext_grids. If None these
+            columns are kept if values exist: "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar". However cols_to_keep
+            is given, these columns are always set: "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
+        add_cols_to_keep (list, None): list of column names which should be added to 'cols_to_keep' to be kept while
+            replacing ext_grids.
     """
     # --- determine ext_grid index
     if ext_grids is None:
@@ -1371,26 +1339,19 @@ def replace_ext_grid_by_gen(net, ext_grids=None, gen_indices=None, slack=False, 
     return new_idx
 
 
-def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=None,
-                            add_cols_to_keep=None):
+def replace_gen_by_ext_grid(net, gens=None, ext_grid_indices=None, cols_to_keep=None, add_cols_to_keep=None):
     """
     Replaces generators by external grids.
 
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **gens** (iterable) - indices of generators which should be replaced
-
-        **ext_grid_indices** (iterable) - required indices of new external grids
-
-        **cols_to_keep** (list, None) - list of column names which should be kept while replacing
-        gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are alway set:
-        "bus", "vm_pu", "va_degree", "name", "in_service"
-
-        **add_cols_to_keep** (list, None) - list of column names which should be added to
-        'cols_to_keep' to be kept while replacing gens.
+    Parameters:
+        net: pandapower net
+        gens (iterable): indices of generators which should be replaced
+        ext_grid_indices (iterable): required indices of new external grids
+        cols_to_keep (list, None): list of column names which should be kept while replacing gens. If None these columns
+            are kept if values exist: "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar". However cols_to_keep is given,
+            these columns are always set: "bus", "vm_pu", "va_degree", "name", "in_service"
+        add_cols_to_keep (list, None): list of column names which should be added to 'cols_to_keep' to be kept while
+            replacing gens.
     """
     # --- determine gen index
     if gens is None:
@@ -1457,21 +1418,15 @@ def replace_gen_by_sgen(net, gens=None, sgen_indices=None, cols_to_keep=None,
     """
     Replaces generators by static generators.
 
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **gens** (iterable) - indices of generators which should be replaced
-
-        **sgen_indices** (iterable) - required indices of new static generators
-
-        **cols_to_keep** (list, None) - list of column names which should be kept while replacing
-        gens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
-        "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
-
-        **add_cols_to_keep** (list, None) - list of column names which should be added to
-        'cols_to_keep' to be kept while replacing gens.
+    Parameters:
+        net: pandapower net
+        gens (iterable): indices of generators which should be replaced
+        sgen_indices (iterable): required indices of new static generators
+        cols_to_keep (list, None): list of column names which should be kept while replacing gens. If None these columns
+            are kept if values exist: "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar". However cols_to_keep is given,
+            these columns are always set: "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
+        add_cols_to_keep (list, None): list of column names which should be added to 'cols_to_keep' to be kept while
+            replacing gens.
     """
     # --- determine gen index
     if gens is None:
@@ -1541,21 +1496,15 @@ def replace_sgen_by_gen(net, sgens=None, gen_indices=None, cols_to_keep=None,
     """
     Replaces static generators by generators.
 
-    INPUT:
-        **net** - pandapower net
-
-    OPTIONAL:
-        **sgens** (iterable) - indices of static generators which should be replaced
-
-        **gen_indices** (iterable) - required indices of new generators
-
-        **cols_to_keep** (list, None) - list of column names which should be kept while replacing
-        sgens. If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". However cols_to_keep is given, these columns are always set:
-        "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
-
-        **add_cols_to_keep** (list, None) - list of column names which should be added to
-        'cols_to_keep' to be kept while replacing sgens.
+    Parameters:
+        net: pandapower net
+        sgens (iterable): indices of static generators which should be replaced
+        gen_indices (iterable): required indices of new generators
+        cols_to_keep (list, None): list of column names which should be kept while replacing sgens. If None these
+            columns are kept if values exist: "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar". However cols_to_keep
+            is given, these columns are always set: "bus", "vm_pu", "p_mw", "name", "in_service", "controllable"
+        add_cols_to_keep (list, None): list of column names which should be added to 'cols_to_keep' to be kept while
+            replacing sgens.
     """
     # --- determine sgen index
     if sgens is None:
@@ -1641,30 +1590,20 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
     """
     Replaces e.g. static generators by loads or loads by storages and so forth.
 
-    INPUT:
-        **net** - pandapower net
+    Parameters:
+        net: pandapower net
+        old_element_type: element type of which elements should be replaced. Should be in ["sgen", "load", "storage"]
+        new_element_type: element type of which elements should be created. Should be in ["sgen", "load", "storage"]
+        old_indices: indices of the elements which should be replaced
+        new_indices: required indices of the new elements
+        cols_to_keep (list, None): list of column names which should be kept while replacing. If None these columns are
+            kept if values exist: "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar". Independent whether cols_to_keep
+            is given, these columns are always set: "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
+        add_cols_to_keep (list, None): list of column names which should be added to 'cols_to_keep' to be kept while
+            replacing.
 
-        **old_element_type** (str) - element type of which elements should be replaced. Should be in [
-            "sgen", "load", "storage"]
-
-        **new_element_type** (str) - element type of which elements should be created. Should be in [
-            "sgen", "load", "storage"]
-
-    OPTIONAL:
-        **old_indices** (iterable) - indices of the elements which should be replaced
-
-        **new_indices** (iterable) - required indices of the new elements
-
-        **cols_to_keep** (list, None) - list of column names which should be kept while replacing.
-        If None these columns are kept if values exist: "max_p_mw", "min_p_mw",
-        "max_q_mvar", "min_q_mvar". Independent whether cols_to_keep is given, these columns are
-        always set: "bus", "p_mw", "q_mvar", "name", "in_service", "controllable"
-
-        **add_cols_to_keep** (list, None) - list of column names which should be added to
-        'cols_to_keep' to be kept while replacing.
-
-    OUTPUT:
-        **new_idx** (list) - list of indices of the new elements
+    Returns:
+        list: list of indices of the new elements
     """
     if old_element_type == new_element_type:
         logger.warning(f"'old_element_type' and 'new_element_type' are both '{old_element_type}'. "
@@ -1706,7 +1645,7 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
     for oelm, index in zip(net[old_element_type].loc[old_indices].itertuples(), new_indices):
         controllable = False if "controllable" not in net[old_element_type].columns else oelm.controllable
         sign = -1 if old_element_type in ["sgen"] else 1
-        args = dict()
+        args = {}
         if new_element_type == "load":
             fct = create_load
         elif new_element_type == "sgen":
@@ -1758,19 +1697,16 @@ def replace_pq_elmtype(net, old_element_type, new_element_type, old_indices=None
     return new_idx
 
 
-def replace_ward_by_internal_elements(net, wards=None, log_level="warning"):
+def replace_ward_by_internal_elements(net, wards=None):
     """
     Replaces wards by loads and shunts.
 
-    INPUT:
-        **net** - pandapower net
+    Parameters:
+        net: pandapower net
+        wards (iterable): indices of xwards which should be replaced
 
-    OPTIONAL:
-        **wards** (iterable) - indices of xwards which should be replaced
-
-    OUTPUT:
-        No output - the given wards in pandapower net are replaced by loads and shunts
-
+    Returns:
+        No return value; the given wards in pandapower net are replaced by loads and shunts
     """
     # --- determine wards index
     if wards is None:
@@ -1964,14 +1900,14 @@ def _adapt_profiles_in_replace_functions(
     et_old, et_new = element_type_old, element_type_new
     idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
 
-    keys_old = [key for key in net.profiles.keys() if (
+    keys_old = [key for key in net.profiles if (
         key.startswith(f"{et_old}.") or key.startswith(f"res_{et_old}."))]
     for key_old in keys_old:
         key_new = key_old.replace(et_old, et_new)
         in_prof = pd.Series(idx_old).isin(net.profiles[key_old].columns).values
         to_add = net.profiles[key_old].loc[:, idx_old[in_prof]]
         to_add.columns = idx_new[in_prof]
-        if key_new in net.profiles.keys():
+        if key_new in net.profiles:
             net.profiles[key_new] = pd.concat([net.profiles[key_new], to_add], sort=True)
         else:
             net.profiles[key_new] = to_add

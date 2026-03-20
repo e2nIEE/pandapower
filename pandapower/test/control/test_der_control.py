@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
@@ -192,23 +192,23 @@ def test_cosphi_of_p_timeseries():
 
     # Run timeseries
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_ue.index] = True
+    net.controller.at[DER_ue.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_ue = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_ue2.index] = True
+    net.controller.at[DER_ue2.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_ue2 = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_oe.index] = True
+    net.controller.at[DER_oe.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_oe = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_no_q.index] = True
+    net.controller.at[DER_no_q.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_no_q2.index] = True
+    net.controller.at[DER_no_q2.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q2 = deepcopy(ow.output)
 
@@ -262,7 +262,7 @@ def test_cosphi_of_p_timeseries():
 
 def test_QModels_with_2Dim_timeseries():
     def define_outputwriters(nets):
-        ows = list()
+        ows = []
         for net in nets:
             ow = OutputWriter(net)
             ow.log_variable("res_sgen", "p_mw")

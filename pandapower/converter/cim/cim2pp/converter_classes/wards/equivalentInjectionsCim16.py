@@ -53,11 +53,14 @@ class EquivalentInjectionsCim16:
         equivalent_injection.nominalVoltage = equivalent_injection.nominalVoltage.fillna(equivalent_injection.vn_kv)
         equivalent_injection['regulationStatus'] = equivalent_injection['regulationStatus'].fillna(False)
         equivalent_injection['vm_pu'] = equivalent_injection.regulationTarget / equivalent_injection.nominalVoltage
-        if 'inService' in equivalent_injection.columns:
-            equivalent_injection['connected'] = equivalent_injection['connected'] & equivalent_injection['inService']
+        if self.cimConverter.cim_version == '3.0':
+           equivalent_injection['in_service'] = equivalent_injection.connected & equivalent_injection.inService
+        elif self.cimConverter.cim_version == 'ltds':
+           equivalent_injection['in_service'] = equivalent_injection.inService
+        else:
+           equivalent_injection['in_service'] = equivalent_injection.connected
         equivalent_injection = equivalent_injection.rename(
-            columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'connected': 'in_service', 'index_bus': 'bus',
-                     'p': 'ps_mw', 'q': 'qs_mvar'})
+            columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'], 'index_bus': 'bus', 'p': 'ps_mw', 'q': 'qs_mvar'})
         equivalent_injection['pz_mw'] = 0.
         equivalent_injection['qz_mvar'] = 0.
         equivalent_injection['r_ohm'] = 0.

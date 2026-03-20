@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import os
@@ -56,19 +56,25 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
                                      'SubGeographicalRegion_id', 'SubGeographicalRegion_name']
 
     fill_dict['ext_grid'] = {}
-    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description']
+    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description', 'RegulatingControl.mode']
     fill_dict['ext_grid'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'p_mw', 'q_mvar',
-                                            's_sc_max_mva', 's_sc_min_mva', 'rx_max', 'rx_min', 'r0x0_max', 'x0x_max']
+                                            's_sc_max_mva', 's_sc_min_mva', 'rx_max', 'rx_min', 'r0x0_max', 'x0x_max',
+                                            'RegulatingControl.targetValue', 'referencePriority']
+    fill_dict['ext_grid'][np_bool_type] = ['RegulatingControl.enabled']
 
     fill_dict['load'] = {}
     fill_dict['load'][np_str_type] = [sc['t'], 'description']
     fill_dict['gen'] = {}
-    fill_dict['gen'][np_str_type] = [sc['t'], 'description']
-    fill_dict['gen'][np_float_type] = \
-        ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'cos_phi', 'pg_percent', 'governorSCD']
+    fill_dict['gen'][np_str_type] = [sc['t'], 'description', 'RegulatingControl.mode']
+    fill_dict['gen'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm',
+                                       'xdss_pu', 'cos_phi', 'pg_percent',  'governorSCD',
+                                       'RegulatingControl.targetValue', 'referencePriority']
+    fill_dict['gen'][np_bool_type] = ['RegulatingControl.enabled']
     fill_dict['sgen'] = {}
-    fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type']
-    fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu']
+    fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type', 'RegulatingControl.mode']
+    fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu',
+                                        'RegulatingControl.targetValue', 'referencePriority', 'max_p_mw', 'min_p_mw']
+    fill_dict['sgen'][np_bool_type] = ['RegulatingControl.enabled']
     fill_dict['motor'] = {}
     fill_dict['motor'][np_str_type] = [sc['t'], 'description']
     fill_dict['storage'] = {}
@@ -97,16 +103,27 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
 
     fill_dict['trafo'] = {}
     fill_dict['trafo'][np_str_type] = [sc['t_hv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_lv'], sc['tc'], sc['tc_id'],
-                                       sc['tc2'], sc['tc2_id'], 'tap2_changer_type', 'tap2_side', 'description', 'vector_group']
-    fill_dict['trafo'][np_float_type] = ['tap2_neutral', 'tap2_min', 'tap2_max', 'tap2_pos', 'tap2_step_percent', 'tap2_step_degree', 
-                                         'vk0_percent', 'vkr0_percent', 'xn_ohm']
+                                       sc['tc2'], sc['tc2_id'], 'tap2_changer_type', 'tap2_side', 'description',
+                                       'vector_group', 'OperationalLimitType.limitType_hv',
+                                       'OperationalLimitType.limitType_lv']
+    fill_dict['trafo'][np_float_type] = ['tap2_neutral', 'tap2_min', 'tap2_max', 'tap2_pos', 'tap2_step_percent',
+                                         'tap2_step_degree', 'vk0_percent', 'vkr0_percent', 'xn_ohm',
+                                         'CurrentLimit.value_hv', 'CurrentLimit.value_lv',
+                                         'OperationalLimitType.acceptableDuration_hv',
+                                         'OperationalLimitType.acceptableDuration_lv']
     fill_dict['trafo'][np_bool_type] = ['power_station_unit', 'oltc']
 
     fill_dict['trafo3w'] = {}
     fill_dict['trafo3w'][np_str_type] = [sc['t_hv'], sc['t_mv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_mv'],
-                                         sc['pte_id_lv'], sc['tc'], sc['tc_id'], 'description', 'vector_group']
+                                         sc['pte_id_lv'], sc['tc'], sc['tc_id'], 'description', 'vector_group',
+                                         'OperationalLimitType.limitType_hv', 'OperationalLimitType.limitType_mv',
+                                         'OperationalLimitType.limitType_lv']
     fill_dict['trafo3w'][np_float_type] = ['vk0_hv_percent', 'vk0_mv_percent', 'vk0_lv_percent', 'vkr0_hv_percent',
-                                           'vkr0_mv_percent', 'vkr0_lv_percent']
+                                           'vkr0_mv_percent', 'vkr0_lv_percent', 'CurrentLimit.value_hv',
+                                           'CurrentLimit.value_mv', 'CurrentLimit.value_lv',
+                                           'OperationalLimitType.acceptableDuration_hv',
+                                           'OperationalLimitType.acceptableDuration_mv',
+                                           'OperationalLimitType.acceptableDuration_lv']
     fill_dict['trafo3w'][np_bool_type] = ['power_station_unit']
 
     fill_dict['measurement'] = {}
@@ -143,7 +160,7 @@ def get_cim_schema(cgmes_version: str = '2.4.15') -> Dict[str, Dict[str, Dict[st
     Parses the CIM schema from the serialized CIM schema json files which have been created from the RDF schema files.
     The schema is parsed for the serializer from the CIM data structure used by the cim2pp and pp2cim converters.
 
-    :param cgmes_version: CIM version to use, '2.4.15' or '3.0', default '2.4.15'
+    :param cgmes_version: CIM version to use, '2.4.15', '3.0' or LTDS, default '2.4.15'
     :return: The CIM schema as dictionary.
     """
     path_with_serialized_schemas = os.path.dirname(__file__) + os.sep + 'serialized_schemas'
@@ -156,7 +173,7 @@ def get_cim_schema(cgmes_version: str = '2.4.15') -> Dict[str, Dict[str, Dict[st
             with open(path_to_schema, encoding='UTF-8', mode='r') as f:
                 cim_schema = json.load(f)
             return cim_schema
-        elif one_file.lower().startswith('cim100_') and cgmes_version == '3.0':
+        elif one_file.lower().startswith('cim100_') and (cgmes_version == '3.0' or cgmes_version.lower() == 'ltds'):
             logger.info("Parsing the schema from CIM 100 from disk: %s" % path_to_schema)
             with open(path_to_schema, encoding='UTF-8', mode='r') as f:
                 cim_schema = json.load(f)

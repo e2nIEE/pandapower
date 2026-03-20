@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -20,6 +20,7 @@ from pandapower.toolbox.data_modification import reindex_elements, reindex_buses
     add_column_from_element_to_elements, create_continuous_bus_index, create_continuous_elements_index, \
     set_scaling_by_type
 from pandapower.toolbox.element_selection import pp_elements
+from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
 
 def test_add_column_from_node_to_elements():
@@ -36,13 +37,13 @@ def test_add_column_from_node_to_elements():
         for elm in elements:
             if "bus" in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values,
-                                          np.array(["subnet_%i" % bus for bus in ntw[elm].bus])))
+                                          np.array([f"subnet_{bus}" for bus in ntw[elm].bus]).astype(object)))
             elif branch_bus_el[0] in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values, np.array([
-                    "subnet_%i" % bus for bus in ntw[elm][branch_bus_el[0]]])))
+                    f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[0]]]).astype(object)))
             elif branch_bus_el[1] in ntw[elm].columns:
                 assert all(compare_arrays(ntw[elm]["subnet"].values, np.array([
-                    "subnet_%i" % bus for bus in ntw[elm][branch_bus_el[1]]])))
+                    f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[1]]]).astype(object)))
 
     check_subnet_correctness(net, pp_elements(bus=False) - {"sgen"}, branch_bus)
 
@@ -143,7 +144,7 @@ def test_continuos_bus_numbering():
                     continue
 
     # assert that no buses were used except the ones in net.bus
-    assert set(list(used_buses)) - set(list(net.bus.index.values)) == set()
+    assert set(used_buses) - set(net.bus.index.values) == set()
 
 
 def test_reindex_elements():
@@ -178,7 +179,6 @@ def test_reindex_elements():
 
 
 def test_continuous_element_numbering():
-    from pandapower.estimation.util import add_virtual_meas_from_loadflow
     net = example_multivoltage()
 
     # Add noises to index with some large number

@@ -172,9 +172,11 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     if len(element_indices) == 0:
         return np.array([], dtype=object), np.array([], dtype=int)
 
+    if node_geodata_to is None:
+        node_geodata_to = node_geodata
     # reduction of from_nodes, to_nodes, node_geodata to intersection
     in_geo = np.isin(from_nodes, node_geodata.index.values) \
-        & np.isin(to_nodes, node_geodata.index.values)
+        & np.isin(to_nodes, node_geodata_to.index.values)
     fb_with_geo, tb_with_geo = from_nodes[in_geo], to_nodes[in_geo]
     if sum(~in_geo):
         logger.warning(
@@ -184,7 +186,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
 
     # reduction to not nans
     fb_geo_is_nan = node_geodata.loc[fb_with_geo].isnull().values
-    tb_geo_is_nan = node_geodata.loc[tb_with_geo].isnull().values
+    tb_geo_is_nan = node_geodata_to.loc[tb_with_geo].isnull().values
     not_nan = ~(fb_geo_is_nan | tb_geo_is_nan)
     if n_nans := len(not_nan) - sum(not_nan):
         logger.warning(
@@ -192,11 +194,12 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         )
 
     node_geodata = node_geodata.apply(_get_coords_from_geojson)
+    node_geodata_to = node_geodata_to.apply(_get_coords_from_geojson)
     if np.sum(not_nan):
         coords, no_geo_diff = zip(*[
             (f'{{"coordinates": [[{x_from}, {y_from}], [{x_to}, {y_to}]], "type": "LineString"}}',
             x_from == x_to and y_from == y_to) for [x_from, y_from], [x_to, y_to] in zip(
-                node_geodata.loc[fb_with_geo[not_nan]], node_geodata.loc[tb_with_geo[not_nan]])])
+                node_geodata.loc[fb_with_geo[not_nan]], node_geodata_to.loc[tb_with_geo[not_nan]])])
                 #   if not ignore_no_geo_diff or (ignore_no_geo_diff and not ())]
         coords, no_geo_diff = np.array(coords), np.array(no_geo_diff)
     else:

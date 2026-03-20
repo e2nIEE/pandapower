@@ -136,8 +136,8 @@ class PowerTransformersCim16:
                 (abs(trafo_df.r_lv) ** 2 + abs(trafo_df.x_lv) ** 2) ** 0.5 * \
                 (trafo_df.ratedS * 1e3) / (10. * trafo_df.ratedU_lv ** 2)
             trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
-            append_dict = dict({'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
-                                'vk_percent': [], 'vkr_percent': []})
+            append_dict = {'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [], 'vk_percent': [],
+                           'vkr_percent': []}
         else:
             trafo_df = trafo_df_origin.copy()
             trafo_df = trafo_df.sort_values(['PowerTransformer', 'endNumber']).reset_index()
@@ -234,9 +234,9 @@ class PowerTransformersCim16:
                          trafo_df.ratedU_lv / trafo_df.ratedU) ** 2) ** 2) ** 0.5 * \
                 trafo_df.min_s_lvhv * 100 / trafo_df.ratedU_lv ** 2
             trafo_df['tabular_step'] = trafo_df['tabular_step'].astype(int)
-            append_dict = dict({'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
-                                'vkr_hv_percent': [], 'vkr_mv_percent': [], 'vkr_lv_percent': [], 'vk_hv_percent': [],
-                                'vk_mv_percent': [], 'vk_lv_percent': []})
+            append_dict = {'id_characteristic': [], 'step': [], 'voltage_ratio': [], 'angle_deg': [],
+                           'vkr_hv_percent': [], 'vkr_mv_percent': [], 'vkr_lv_percent': [], 'vk_hv_percent': [],
+                           'vk_mv_percent': [], 'vk_lv_percent': []}
 
         def append_row(res_dict, id_c, row, cols):
             res_dict['id_characteristic'].append(id_c)
@@ -289,7 +289,11 @@ class PowerTransformersCim16:
             power_transformers = self.cimConverter.merge_eq_sc_profile('PowerTransformer')
         else:
             power_transformers = self.cimConverter.cim['eq']['PowerTransformer']
-        power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
+        if self.cimConverter.cim_version == 'ltds':
+            power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit',
+                                                     'inService']]
+        else:
+            power_transformers = power_transformers[['rdfId', 'name', 'description', 'isPartOfGeneratorUnit']]
         power_transformers[sc['o_cl']] = 'PowerTransformer'
 
         if 'sc' in self.cimConverter.cim:
@@ -299,6 +303,37 @@ class PowerTransformersCim16:
         power_transformer_ends = power_transformer_ends[
             ['rdfId', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0',
              'phaseAngleClock', 'connectionKind', 'grounded']]
+        # merge the CurrentLimits to the power_transformer_ends
+        if 'CurrentLimit' in self.cimConverter.cim['ssh']:  # CGMES 3.0
+            current_limits = self.cimConverter.merge_eq_ssh_profile('CurrentLimit')[['OperationalLimitSet', 'value',
+                                                                                     'OperationalLimitType']]
+        else:  # CGMES 2.4.15
+            current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['OperationalLimitSet', 'OperationalLimitType',
+                                                                          'value']]
+        current_limits = current_limits.rename(columns={'OperationalLimitSet': 'rdfId'})
+        current_limits = pd.merge(current_limits,
+                                  self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']],
+                                  how='left', on='rdfId', validate='m:m')  # should be validate='m:1'
+        current_limits = current_limits.drop(columns='rdfId')
+        current_limits = current_limits.rename(columns={'OperationalLimitType': 'rdfId'})
+        if 'kind' in self.cimConverter.cim['eq']['OperationalLimitType']:  # CGMES 3.0
+            olt = (self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'kind', 'acceptableDuration']]
+                   .rename(columns={'kind': 'limitType'}))
+        else:  # CGMES 2.4.15
+            olt = self.cimConverter.cim['eq']['OperationalLimitType'][['rdfId', 'limitType', 'acceptableDuration']]
+        current_limits = pd.merge(current_limits, olt, how='left', on='rdfId', validate='m:m')  # should be validate=m:1
+        current_limits = current_limits.drop(columns='rdfId')
+        current_limits = current_limits.rename(columns={
+            'value': 'CurrentLimit.value', 'limitType': 'OperationalLimitType.limitType',
+            'acceptableDuration': 'OperationalLimitType.acceptableDuration'})
+        power_transformer_ends = pd.merge(power_transformer_ends, current_limits, how='left', on='Terminal',
+                                          validate='m:m')  # should be validate='1:m'
+        # make sure there is only one CurrentLimit per winding, keep the one with the lowest value (and choose patl
+        # first: sort ascending for OperationalLimitType.limitType)
+        power_transformer_ends = (
+            power_transformer_ends.sort_values(['rdfId', 'OperationalLimitType.limitType', 'CurrentLimit.value'],
+                                               ascending=[True, True, True])
+            .drop_duplicates(subset='rdfId', keep='first').reset_index(drop=True))
 
         # merge and append the tap changers
         eqssh_tap_changers = pd.merge(self.cimConverter.cim['eq']['RatioTapChanger'][[
@@ -309,16 +344,16 @@ class PowerTransformersCim16:
         eqssh_tap_changers[sc['tc']] = 'RatioTapChanger'
         eqssh_tap_changers['tap_changer_type'] = "Ratio"  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers[sc['tc_id']] = eqssh_tap_changers['rdfId'].copy()
-        # todo: check correct implementation for PhaseTapChangerLinear tap changers
+        # todo: check correct implementation for PhaseTapChangerLinear tap changers -> Done and compared with PF
         eqssh_tap_changers_linear = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerLinear'],
                                              self.cimConverter.cim['ssh']['PhaseTapChangerLinear'], how='left',
                                              on='rdfId')
-        eqssh_tap_changers_linear['stepVoltageIncrement'] = .001
+        eqssh_tap_changers_linear['stepVoltageIncrement'] = np.nan
         eqssh_tap_changers_linear[sc['tc']] = 'PhaseTapChangerLinear'
         eqssh_tap_changers_linear['tap_changer_type'] = "Ideal"  # Ideal phase shifter
         eqssh_tap_changers_linear[sc['tc_id']] = eqssh_tap_changers_linear['rdfId'].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_linear], ignore_index=True, sort=False)
-        # todo: check correct implementation for PhaseTapChangerAsymmetrical tap changers
+        # todo: check correct implementation for PhaseTapChangerAsymmetrical tap changers -> Done and compared with PF
         eqssh_tap_changers_async = pd.merge(self.cimConverter.cim['eq']['PhaseTapChangerAsymmetrical'],
                                             self.cimConverter.cim['ssh']['PhaseTapChangerAsymmetrical'], how='left',
                                             on='rdfId')
@@ -335,6 +370,8 @@ class PowerTransformersCim16:
                                                  on='rdfId')
         eqssh_ratio_tap_changers_sync['stepVoltageIncrement'] = eqssh_ratio_tap_changers_sync['voltageStepIncrement']
         eqssh_ratio_tap_changers_sync = eqssh_ratio_tap_changers_sync.drop(columns=['voltageStepIncrement'])
+        eqssh_ratio_tap_changers_sync['stepPhaseShiftIncrement'] = (
+            eqssh_ratio_tap_changers_sync["stepVoltageIncrement"].apply(lambda du: 2 * math.atan2(du, 2)))
         eqssh_ratio_tap_changers_sync[sc['tc']] = 'PhaseTapChangerSymmetrical'
         eqssh_ratio_tap_changers_sync['tap_changer_type'] = "Symmetrical"  # Symmetrical phase shifter
         eqssh_ratio_tap_changers_sync[sc['tc_id']] = eqssh_ratio_tap_changers_sync['rdfId'].copy()
@@ -450,7 +487,8 @@ class PowerTransformersCim16:
         copy_list = ['index_bus', 'Terminal', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0', 'neutralStep', 'lowStep',
                      'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step', 'connected',
                      'phaseAngleClock', 'connectionKind', sc['pte_id'], sc['tc'], sc['tc_id'], 'grounded', 'angle',
-                     'tap_changer_type']
+                     'tap_changer_type', 'CurrentLimit.value', 'OperationalLimitType.limitType',
+                     'OperationalLimitType.acceptableDuration']
         for one_item in copy_list:
             # copy the columns which are required for each winding
             power_trafo2w[one_item + '_lv'] = power_trafo2w[one_item].copy()
@@ -465,6 +503,14 @@ class PowerTransformersCim16:
         power_trafo2w.loc[power_trafo2w['step_lv'].notna(), 'tap2_side'] = 'lv'
         # just keep one transformer
         power_trafo2w = power_trafo2w.drop_duplicates(subset=['PowerTransformer'], keep='first')
+        # shift lv tap changer from tap2 to tap if there is no hv tap changer
+        hv_taps_na = power_trafo2w['step'].isna() & power_trafo2w['step_lv'].notna()
+        power_trafo2w['tap_side'] = power_trafo2w['tap_side'].fillna(power_trafo2w['tap2_side'])
+        power_trafo2w.loc[hv_taps_na, 'tap2_side'] = None
+        for one_item in ['neutralStep', 'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement',
+                         'step', 'tap_changer_type', sc['tc'], sc['tc_id']]:
+            power_trafo2w[one_item] = power_trafo2w[one_item].fillna(power_trafo2w[one_item + '_lv'])
+            power_trafo2w.loc[hv_taps_na, one_item + '_lv'] = np.nan
 
         power_trafo2w['pfe_kw'] = (power_trafo2w.g * power_trafo2w.ratedU ** 2 +
                                    power_trafo2w.g_lv * power_trafo2w.ratedU_lv ** 2) * 1000
@@ -508,7 +554,10 @@ class PowerTransformersCim16:
         power_trafo2w['shift_degree'] = power_trafo2w['phaseAngleClock'].astype(float).fillna(
             power_trafo2w['phaseAngleClock_lv'].astype(float)) * 30
         power_trafo2w['parallel'] = 1
-        power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
+        if self.cimConverter.cim_version == 'ltds':
+            power_trafo2w['in_service'] = power_trafo2w.inService
+        else:
+            power_trafo2w['in_service'] = power_trafo2w.connected & power_trafo2w.connected_lv
         power_trafo2w['connectionKind'] = power_trafo2w['connectionKind'].fillna('')
         power_trafo2w['connectionKind_lv'] = power_trafo2w['connectionKind_lv'].fillna('')
         power_trafo2w['grounded'] = power_trafo2w['grounded'].fillna(True)
@@ -527,9 +576,12 @@ class PowerTransformersCim16:
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_lv': 'vn_lv_kv',
             'ratedS': 'sn_mva', 'xground': 'xn_ohm', 'grounded': 'oltc',
             'neutralStep_lv': 'tap2_neutral',  'lowStep_lv': 'tap2_min', 'highStep_lv': 'tap2_max',
-            'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',\
-            'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',\
-            'tapchanger_class_lv': sc['tc2'], 'tapchanger_id_lv': sc['tc2_id']})
+            'step_lv': 'tap2_pos', 'stepVoltageIncrement_lv': 'tap2_step_percent',
+            'stepPhaseShiftIncrement_lv': 'tap2_step_degree', 'tap_changer_type_lv': 'tap2_changer_type',
+            'tapchanger_class_lv': sc['tc2'], 'tapchanger_id_lv': sc['tc2_id'],
+            'CurrentLimit.value': 'CurrentLimit.value_hv',
+            'OperationalLimitType.limitType': 'OperationalLimitType.limitType_hv',
+            'OperationalLimitType.acceptableDuration': 'OperationalLimitType.acceptableDuration_hv'})
         return power_trafo2w
 
     def _prepare_trafo3w_cim16(self, power_trafo3w: pd.DataFrame) -> pd.DataFrame:
@@ -539,7 +591,8 @@ class PowerTransformersCim16:
         copy_list = ['index_bus', 'Terminal', 'ratedS', 'ratedU', 'r', 'x', 'b', 'g', 'r0', 'x0', 'neutralStep',
                      'lowStep', 'highStep', 'stepVoltageIncrement', 'stepPhaseShiftIncrement', 'step', 'connected',
                      'angle', 'phaseAngleClock', 'connectionKind', 'grounded', sc['pte_id'], sc['tc'], sc['tc_id'],
-                     'tap_changer_type']
+                     'tap_changer_type', 'CurrentLimit.value', 'OperationalLimitType.limitType',
+                     'OperationalLimitType.acceptableDuration']
         for one_item in copy_list:
             # copy the columns which are required for each winding
             power_trafo3w[one_item + '_mv'] = power_trafo3w[one_item].copy()
@@ -632,9 +685,13 @@ class PowerTransformersCim16:
         power_trafo3w['phaseAngleClock_mv'] = power_trafo3w['phaseAngleClock_mv'].fillna(0)
         power_trafo3w['phaseAngleClock_lv'] = power_trafo3w['phaseAngleClock_lv'].fillna(0)
         power_trafo3w['shift_mv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
-        power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_mv'].astype(float) * 30
+        power_trafo3w['shift_lv_degree'] = power_trafo3w['phaseAngleClock_lv'].astype(float) * 30
         power_trafo3w['tap_at_star_point'] = False
-        power_trafo3w['in_service'] = power_trafo3w.connected & power_trafo3w.connected_mv & power_trafo3w.connected_lv
+        if self.cimConverter.cim_version == 'ltds':
+            power_trafo3w['in_service'] = power_trafo3w.inService
+        else:
+            power_trafo3w['in_service'] = (power_trafo3w.connected & power_trafo3w.connected_mv &
+                                           power_trafo3w.connected_lv)
         power_trafo3w['connectionKind'] = power_trafo3w['connectionKind'].fillna('')
         power_trafo3w['connectionKind_mv'] = power_trafo3w['connectionKind_mv'].fillna('')
         power_trafo3w['connectionKind_lv'] = power_trafo3w['connectionKind_lv'].fillna('')
@@ -657,5 +714,8 @@ class PowerTransformersCim16:
             'index_bus_lv': 'lv_bus', 'neutralStep': 'tap_neutral', 'lowStep': 'tap_min', 'highStep': 'tap_max',
             'step': 'tap_pos', 'stepVoltageIncrement': 'tap_step_percent', 'stepPhaseShiftIncrement': 'tap_step_degree',
             'isPartOfGeneratorUnit': 'power_station_unit', 'ratedU': 'vn_hv_kv', 'ratedU_mv': 'vn_mv_kv',
-            'ratedU_lv': 'vn_lv_kv', 'ratedS': 'sn_hv_mva', 'ratedS_mv': 'sn_mv_mva', 'ratedS_lv': 'sn_lv_mva'})
+            'ratedU_lv': 'vn_lv_kv', 'ratedS': 'sn_hv_mva', 'ratedS_mv': 'sn_mv_mva', 'ratedS_lv': 'sn_lv_mva',
+            'CurrentLimit.value': 'CurrentLimit.value_hv',
+            'OperationalLimitType.limitType': 'OperationalLimitType.limitType_hv',
+            'OperationalLimitType.acceptableDuration': 'OperationalLimitType.acceptableDuration_hv'})
         return power_trafo3w

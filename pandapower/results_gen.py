@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -41,10 +41,6 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
         b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
         p = np.hstack([p, net.res_dcline[["p_from_mw", "p_to_mw"]].values.flatten()])
         q = np.hstack([q, net.res_dcline[["q_from_mvar", "q_to_mvar"]].values.flatten()])
-
-    # if len(net.vsc) > 0:
-    #     # not necessary actually because the pq results already read from bus.
-    #     b, p, q = _get_vsc_slack_results(net, ppc, b, p, q)
 
     if not ac:
         q = np.zeros(len(p))
@@ -193,7 +189,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
                                    * ppc["gen"][eg_idx_ppc, QG]) \
                                     for ppc in [ppc0, ppc1, ppc2]])
 
-    Sabc, Vabc = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
+    Sabc, _ = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
@@ -232,22 +228,16 @@ def _get_p_q_gen_results(net, ppc):
     if net["_options"]["ac"]:
         q_gen = np.zeros(n_res_gen)
         q_gen[gen_is] = ppc["gen"][gen_idx_ppc, QG]
-        net["res_gen"]["q_mvar"].values[:] = q_gen
+        net["res_gen"].loc[:, "q_mvar"] = q_gen
 
-    net["res_gen"]["p_mw"].values[:] = p_gen
+    net["res_gen"].loc[:, "p_mw"] = p_gen
     return p_gen, q_gen
 
 def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     _is_elements = net["_is_elements"]
-    ac = net["_options"]["ac"]
     gen_is_mask = _is_elements['gen']
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
     gen_is_idx = net["gen"].index[gen_is_mask]
-    # indices of in service gens in the ppc
-    if np.any(_is_elements["gen"]):
-        gen_idx_ppc = gen_lookup[gen_is_idx]
-    else:
-        gen_idx_ppc = []
 
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])
@@ -301,8 +291,8 @@ def _get_v_gen_resuts(net, ppc):
     v_a = np.zeros(n_res_gen)
     v_a[gen_is] = ppc["bus"][bus_idx_ppc][:, VA]
 
-    net["res_gen"]["vm_pu"].values[:] = v_pu
-    net["res_gen"]["va_degree"].values[:] = v_a
+    net["res_gen"].loc[:, "vm_pu"] = v_pu
+    net["res_gen"].loc[:, "va_degree"] = v_a
     return v_pu, v_a
 
 

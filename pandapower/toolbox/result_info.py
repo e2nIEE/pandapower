@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -21,11 +21,9 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
 
-    OPTIONAL:
-
-        **numv** (integer, 1) - maximal number of printed maximal respectively minimal voltages
-
-        **numi** (integer, 2) - maximal number of printed maximal loading at trafos or lines
+    Parameters:
+        numv (integer, 1): maximal number of printed maximal respectively minimal voltages
+        numi (integer, 2): maximal number of printed maximal loading at trafos or lines
     """
     logger.info("Max voltage in vm_pu:")
     for _, r in net.res_bus.sort_values("vm_pu", ascending=False).iloc[:numv].iterrows():
@@ -53,9 +51,9 @@ def opf_task(net, delta_pq=1e-3, keep=False, log=True):
         net = copy.deepcopy(net)
     _check_necessary_opf_parameters(net, logger)
 
-    opf_task_overview = {"flexibilities": dict(),
-                         "network_constraints": dict(),
-                         "flexibilities_without_costs": dict()}
+    opf_task_overview = {"flexibilities": {},
+                         "network_constraints": {},
+                         "flexibilities_without_costs": {}}
     _determine_flexibilities_dict(net, opf_task_overview["flexibilities"], delta_pq)
     _determine_network_constraints_dict(net, opf_task_overview["network_constraints"])
     _determine_costs_dict(net, opf_task_overview)
@@ -222,7 +220,7 @@ def _determine_costs_dict(net, opf_task_overview):
 
         # determine keys of opf_task_overview["flexibilities"] ending with flex_element
         keys = [power_type + flex_element for power_type in ["P", "Q"] if (
-                power_type + flex_element) in opf_task_overview["flexibilities"].keys()]
+                power_type + flex_element) in opf_task_overview["flexibilities"]]
 
         # determine indices of all flexibles
         idx_without_cost = set()
@@ -354,7 +352,7 @@ def _log_opf_task_overview(opf_task_overview):
 
 
 def _get_keys_and_elements_from_opf_task_dict(dict_):
-    keys = list(dict_.keys())
+    keys = list(dict_)
     elms = ["".join(c for c in key if not c.isupper()) for key in keys]
     keys = list(np.array(keys)[np.argsort(elms)])
     elms = sorted(elms)
@@ -410,8 +408,8 @@ def clear_result_tables(net):
     """
     Clears all ``res_`` DataFrames in net.
     """
-    for key in net.keys():
-        if isinstance(net[key], pd.DataFrame) and key[:3] == "res" and net[key].shape[0]:
+    for key in net:
+        if isinstance(net[key], pd.DataFrame) and key.startswith("res") and net[key].shape[0]:
             net[key] = net[key].drop(net[key].index)
 
 

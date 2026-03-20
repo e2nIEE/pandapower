@@ -25,14 +25,10 @@ Electric Model
 =================
 
 .. math::
-   :nowrap:
-   
-    \begin{align*}
-    P_{motor, n} =& pn\_mech\_mw / (efficiency\_percent/100) \\
-    P_{motor} =& P_{motor, n} * (loading\_percent / 100) * scaling \\
-    S_{motor} =& P_{motor} / cos\_phi \\
-    Q_{motor} =& \sqrt{S_{motor}^2 - P_{motor}^2} 
-    \end{align*}
+    P_{motor, n} &= \frac{pn\_mech\_mw}{\mathit{efficiency}\_percent/100} \\
+    P_{motor} &= P_{motor, n} * (loading\_percent / 100) * scaling \\
+    S_{motor} &= \frac{P_{motor}}{cos\_phi} \\
+    Q_{motor} &= \sqrt{S_{motor}^2 - P_{motor}^2}
 
 
 Result Parameters

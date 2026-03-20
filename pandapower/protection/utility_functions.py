@@ -26,8 +26,6 @@ from pandapower.toolbox.element_selection import get_connected_buses_at_element,
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 
-import warnings
-
 logger = log.getLogger(__name__)
 
 try:
@@ -44,9 +42,6 @@ try:
 except ImportError:
     MPLCURSORS_INSTALLED = False
     logger.info('could not import mplcursors')
-
-warnings.filterwarnings('ignore')
-
 
 def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> List[Tuple[float, float]]:
     try:
@@ -125,12 +120,12 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
             net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
-    net.bus.loc[max_idx_bus + 1, 'geo'] = None
+    net.bus.at[max_idx_bus + 1, 'geo'] = None
 
     x1, y1 = _get_coords_from_bus_idx(net, aux_line.from_bus)[0]
     x2, y2 = _get_coords_from_bus_idx(net, aux_line.to_bus)[0]
 
-    net.bus.geo.at[max_idx_bus + 1] = geojson.dumps(
+    net.bus.at[max_idx_bus + 1, "geo"] = geojson.dumps(
         geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True)
     return net
 
@@ -636,19 +631,6 @@ def calc_line_intersection(m1, b1, m2, b2):
     return xi, yi
 
 
-# get connected lines using bus id
-@deprecated("Use pandapower.get_connected_elements(net, 'line', bus_idx) instead!")
-def get_connected_lines(net, bus_idx):
-    return get_connected_elements(net, "line", bus_idx)
-
-
-# Returns the index of the second bus an element is connected to, given a
-# first one. E.g. the from_bus given the to_bus of a line.
-@deprecated("Use pandapower.next_bus(net, bus, element_id instead!")
-def next_buses(net, bus, element_id):
-    return next_bus(net, bus, element_id)
-
-
 # get the connected bus listr from start to end bus
 def source_to_end_path(net, start_bus, bus_list, bus_order):
     connected_lines = get_connected_elements(net, 'line', start_bus)
@@ -668,36 +650,6 @@ def source_to_end_path(net, start_bus, bus_list, bus_order):
         bus_list.append(bus_order)
 
     return bus_list
-
-
-# get connected switches with bus
-@deprecated("Use pandapower.get_connected_switches(net, buses, consider='l', status='closed') instead!")
-def get_connected_switches(net, buses):
-    return get_connected_switches(net, buses, consider='l', status="closed")
-
-
-# get connected buses with a oven element
-@deprecated(
-    "Use pandapower.get_connected_buses_at_element(net, element, element_type='l', respect_in_service=False) instead!"
-)
-def connected_bus_in_line(net, element):
-    return get_connected_buses_at_element(net, element, element_type='l', respect_in_service=False)
-
-
-@deprecated("Use networkx topological search instead! See pandapower docs.")
-def get_line_path(net, bus_path, sc_line_id=0):
-    """line path from bus path """
-    line_path = []
-    for i in range(len(bus_path) - 1):
-        bus1 = bus_path[i]
-        bus2 = bus_path[i + 1]
-
-        # line=net.line [(net.line.from_bus==bus1) & (net.line.to_bus==bus2)].index.item()
-
-        line_path.extend(net.line[((net.line.from_bus == bus1) & (net.line.to_bus == bus2)) | (
-                (net.line.from_bus == bus2) & (net.line.to_bus == bus1))].index.to_list())
-
-    return line_path
 
 
 def switch_geodatas(net, size, distance_to_bus):
@@ -721,17 +673,17 @@ def switch_geodatas(net, size, distance_to_bus):
 
         pos_sb = _get_coords_from_bus_idx(net, sb)
         if len(pos_sb) > 1:
-            ValueError(f'Bus {sb} has multiple geodata entries: {pos_sb}')
+            raise ValueError(f'Bus {sb} has multiple geodata entries: {pos_sb}')
         if len(pos_sb) == 0:
-            ValueError(f'Bus {sb} has no geodata entry.')
+            raise ValueError(f'Bus {sb} has no geodata entry.')
         pos_sb = pos_sb[0]
         pos_tb = np.zeros(2)
 
         pos_tb = _get_coords_from_bus_idx(net, target_bus)
-        if len(pos_sb) > 1:
-            ValueError(f'Bus {sb} has multiple geodata entries: {pos_sb}')
-        if len(pos_sb) == 0:
-            ValueError(f'Bus {sb} has no geodata entry.')
+        if len(pos_tb) > 1:
+            raise ValueError(f'Bus {target_bus} has multiple geodata entries: {pos_tb}')
+        if len(pos_tb) == 0:
+            raise ValueError(f'Bus {target_bus} has no geodata entry.')
         pos_tb = pos_tb[0]
 
         # position of switch symbol
