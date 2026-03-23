@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_indices
-from pandapower.create import create_empty_network
+from pandapower.create.network_create import create_empty_network
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 
@@ -235,8 +235,8 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
 
     Examples
     --------
-    >>> net = pp.create_empty_network()
-    >>> idx0 = pp.create_bus(net, 110)
+    >>> net = create_empty_network()
+    >>> idx0 = create_bus(net, 110)
     >>> idx1 = 4
     >>> idx2 = 7
     >>> # Reindex using 'new_indices':
@@ -335,7 +335,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
         start: index begins with "start"
         add_df_to_reindex: by default all useful pandapower elements for power flow will be selected. Customized
             DataFrames can also be considered here.
-    
+
     Returns:
       net: pandapower network with ordered and continuous indices
     """

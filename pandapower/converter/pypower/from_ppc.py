@@ -300,7 +300,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         sn_mva = ppc['branch'][is_impedance, RATE_A]
         sn_is_zero = np.isclose(sn_mva, 0)
         if np.any(sn_is_zero):
-            sn[sn_is_zero] = MAX_VAL
+            sn_mva[sn_is_zero] = MAX_VAL
             logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
                             "apparent power")
         # the impedances in ppc[branch] refer to the net.sn_mva and the impedances in net.impedance

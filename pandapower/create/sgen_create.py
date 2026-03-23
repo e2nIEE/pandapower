@@ -38,13 +38,13 @@ def create_sgen(
     name: str | None = None,
     index: Int | None = None,
     scaling: float = 1.0,
-    type: WyeDeltaType = "wye",
+    type: str | None = None,
     in_service: bool = True,
     max_p_mw: float = nan,
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
-    controllable: bool | float = nan,
+    controllable: bool | None = None,
     k: float = nan,
     rx: float = nan,
     id_q_capability_characteristic: int | None = None,
@@ -187,7 +187,7 @@ def create_sgens(
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
-    controllable: bool | Iterable[bool | float] | float = nan,  # TODO: do not think this should ever be float
+    controllable: bool | Iterable[bool] | None = None,
     k: float | Iterable[float] = nan,
     rx: float = nan,
     id_q_capability_characteristic: Int | Iterable[Int] | None = None,
@@ -417,7 +417,7 @@ def create_sgen_from_cosphi(  # no index ?
     underexcited behavior (Q absorption, decreases voltage) and
     positive for overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox import pq_from_cosphi
+    from pandapower.toolbox.power_factor import pq_from_cosphi
 
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
     return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)

@@ -15,7 +15,7 @@ from pandapower.auxiliary import get_values
 def _calc_power_flow(ppci, V):
     # store results for all elements
     # calculate branch results (in ppc_i)
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, _, _, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
     Ybus, Yf, Yt = ppci['internal']['Ybus'], ppci['internal']['Yf'], ppci['internal']['Yt']
     ppci['bus'], ppci['gen'], ppci['branch'] = pfsoln(
         baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens

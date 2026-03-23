@@ -392,7 +392,6 @@ def from_json_string(
                     continue
                 elif 'pandas' in net[key]:
                     net[key] = net_dummy[key]
-
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.

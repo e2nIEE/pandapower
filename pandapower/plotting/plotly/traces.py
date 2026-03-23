@@ -100,7 +100,6 @@ def create_edge_center_trace(
         color (String, "blue"): color of buses in the trace
 
     """
-    # color = get_plotly_color(color)
 
     center_trace = {
         "type": "scatter",
@@ -291,9 +290,7 @@ def _create_node_trace(
 
         cmap = "Jet" if cmap is True else cmap
 
-        if cmap_vals is not None:
-            cmap_vals = cmap_vals
-        else:
+        if cmap_vals is None:
             if net["res_" + branch_element].shape[0] == 0:
                 if branch_element == "line":
                     logger.error(
@@ -613,7 +610,7 @@ def _create_branch_trace(
             )
         else:
             raise NotImplementedError(
-                f"respect separators is only implements for switches, not for {{separator_element}}s."
+                "respect separators is only implements for switches, not for {{separator_element}}s."
             )
     branches_to_plot = net[branch_element].loc[list(set(net[branch_element].index) & (set(branches) - no_go_branches))]
     no_go_branches_to_plot = None
@@ -667,24 +664,20 @@ def _create_branch_trace(
                     "No color and info for {} {:d} (name: {}) available".format(branch_element, idx, branch["name"])
                 )
 
-        line_trace = dict(
-            type="scatter",
-            text=[],
-            hoverinfo="text",
-            mode="lines",
-            name=trace_name,
-            line=Line(width=width, color=color, dash=dash),
-            showlegend=False,
-            legendgroup=legendgroup,
-        )
+        line_trace = {
+            'type': "scatter",
+            'text': line_info,
+            'hoverinfo': "text",
+            'mode': "lines",
+            'name': trace_name,
+            'line': Line(width=width, color=line_color, dash=dash),
+            'showlegend': False,
+            'legendgroup': legendgroup,
+        }
 
         line_trace["x"], line_trace["y"] = _get_branch_geodata_plotly(
             net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
         )
-
-        line_trace["line"]["color"] = line_color
-
-        line_trace["text"] = line_info
 
         branch_traces.append(line_trace)
 
@@ -868,9 +861,7 @@ def create_trafo_trace(
         cmin = 0 if cmin is None else cmin
         cmax = 100 if cmin is None else cmax
 
-        if cmap_vals is not None:
-            cmap_vals = cmap_vals
-        else:
+        if cmap_vals is None:
             if net["res_" + trafotable].shape[0] == 0:
                 logger.error(
                     "There are no power flow results for lines which are default for line colormap coloring..."
@@ -886,18 +877,16 @@ def create_trafo_trace(
         if cmap is not None:
             color = cmap_colors[col_i]
         for from_bus1, to_bus1 in connections:
-            trafo_trace = dict(
-                type="scatter",
-                text=[],
-                line=Line(width=width, color=color),
-                hoverinfo="text",
-                mode="lines",
-                name=trace_name,
-                legendgroup=trace_name,
-                showlegend=False,
-            )
-
-            trafo_trace["text"] = trafo["name"] if infofunc is None else infofunc.loc[idx]
+            trafo_trace = {
+                'type': "scatter",
+                'text': trafo["name"] if infofunc is None else infofunc.loc[idx],
+                'line': Line(width=width, color=color),
+                'hoverinfo': "text",
+                'mode': "lines",
+                'name': trace_name,
+                'legendgroup': trace_name,
+                'showlegend': False,
+            }
 
             from_bus = next(geojson.utils.coords(geojson.loads(net.bus.loc[trafo[from_bus1], "geo"])))
             to_bus = next(geojson.utils.coords(geojson.loads(net.bus.loc[trafo[to_bus1], "geo"])))
@@ -1025,25 +1014,34 @@ def create_weighted_marker_trace(
         infofunc = pd.Series(index=values_by_bus.index, data=infofunc)
 
     # set up the marker trace:
-    marker_trace = dict(
-        type="scatter", text=infofunc, mode="markers", hoverinfo="text", name=trace_name, x=list(x_list), y=list(y_list)
-    )
-    marker_trace["marker"] = dict(
-        color=color, size=values_by_bus.abs() * marker_scaling, symbol=patch_type, sizemode=sizemode
-    )
+    marker_trace = {
+        "type": "scatter",
+        "text": infofunc,
+        "mode": "markers",
+        "hoverinfo": "text",
+        "name": trace_name,
+        "x": list(x_list),
+        "y": list(y_list),
+        "marker": {
+            "color": color,
+            "size": values_by_bus.abs() * marker_scaling,
+            "symbol": patch_type,
+            "sizemode": sizemode
+        }
+    }
 
     # additional info for the create_scale_trace function:
     if not isinstance(scale_marker_size, Iterable):
         scale_marker_size = [scale_marker_size]
 
-    marker_trace["meta"] = dict(
-        marker_scaling=marker_scaling,
-        column_to_plot=column_to_plot,
-        scale_legend_unit=scale_legend_unit or column_to_plot.split("_")[1].upper(),
-        show_scale_legend=show_scale_legend,
-        scale_marker_size=scale_marker_size,
-        scale_marker_color=scale_marker_color or color,
-    )
+    marker_trace["meta"] = {
+        'marker_scaling': marker_scaling,
+        'column_to_plot': column_to_plot,
+        'scale_legend_unit': scale_legend_unit or column_to_plot.split("_")[1].upper(),
+        'show_scale_legend': show_scale_legend,
+        'scale_marker_size': scale_marker_size,
+        'scale_marker_color': scale_marker_color or color,
+    }
     if trace_kwargs is not None:
         marker_trace.update(trace_kwargs)
     return marker_trace
@@ -1085,23 +1083,27 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
         # TODO: y_pos increment not scaled properly to avoid overlap
 
         # second (dummy) position is needed for correct marker sizing
-        scale_trace = dict(
-            type="scatter",
-            x=[x_pos, x_pos2],
-            y=[y_pos, y_pos],
-            mode="markers+text",
-            hoverinfo="skip",
-            marker=dict(
-                size=[scale_size, 0],
-                color=scale_info.get("scale_marker_color"),
-                symbol=marker["symbol"],
-                sizemode=marker["sizemode"],
-            ),
-            text=[f"{scale_size / scale_info['marker_scaling']:.0f} {unit}", ""],
-            textposition="top center",
-            showlegend=False,
-            textfont=dict(family="Helvetica", size=14, color="DarkSlateGrey"),
-        )
+        scale_trace = {
+            'type': "scatter",
+            'x': [x_pos, x_pos2],
+            'y': [y_pos, y_pos],
+            'mode': "markers+text",
+            'hoverinfo': "skip",
+            'marker': {
+                'size': [scale_size, 0],
+                'color': scale_info.get("scale_marker_color"),
+                'symbol': marker["symbol"],
+                'sizemode': marker["sizemode"],
+            },
+            'text': [f"{scale_size / scale_info['marker_scaling']:.0f} {unit}", ""],
+            'textposition': "top center",
+            'showlegend': False,
+            'textfont': {
+                'family': 'Helvetica',
+                'size': 14,
+                'color': 'DarkSlateGrey'
+            },
+        }
         scale_traces.append(scale_trace)
 
     return scale_traces, y_pos - y_pos_original
@@ -1197,19 +1199,13 @@ def draw_traces(
     fig = Figure(
         data=traces,  # edge_trace
         layout=Layout(
-            title_font=dict(size=16),
+            title_font={'size': 16},
             showlegend=showlegend,
             autosize=(aspectratio == "auto"),
             hovermode="closest",
-            margin=dict(b=5, l=5, r=5, t=5),
-            # annotations=[dict(
-            #     text="",
-            #     showarrow=False,
-            #     xref="paper", yref="paper",
-            #     x=0.005, y=-0.002)],
+            margin={'b': 5, 'l': 5, 'r': 5, 't': 5},
             xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
-            # legend=dict(x=0, y=1.0)
             legend={"itemsizing": "constant"},
         ),
     )

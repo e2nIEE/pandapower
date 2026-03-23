@@ -78,6 +78,7 @@ def test_calculate_protection_times():
     df_protection_results2 = calculate_protection_times(net_sc2)
 
 
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_fuse_plot_protection_characteristic():
     # test plot_protection_characteristic method of Fuse class
     net = fuse_test_net2()
@@ -85,6 +86,7 @@ def test_fuse_plot_protection_characteristic():
     Fuse1.plot_protection_characteristic(net)
 
 
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_plot_tripped_grid_protection_device1():
     net = fuse_test_net3()  # create radial network with four switches
 
@@ -98,6 +100,7 @@ def test_plot_tripped_grid_protection_device1():
         plot_tripped_grid_protection_device(net, protection_results, sc_bus=k, sc_location=0)
 
 
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_plot_tripped_grid_protection_device2():
     net = fuse_test_net4()
     # assign fuses to switches
@@ -299,7 +302,7 @@ def fuse_test_net3():
 def test_fuse_fault_oc_scenario():
     net = fuse_test_net4()
     print(net.switch)
-    assert net.switch.type.at[0] == "fuse"
+    assert net.switch.at[0, "type"] == "fuse"
 
     # assign fuses to switches
     fuse_list = ['HV 25A', 'Siemens NH-2-400', 'Siemens NH-2-250', 'Siemens NH-2-224', 'Siemens NH-2-200',

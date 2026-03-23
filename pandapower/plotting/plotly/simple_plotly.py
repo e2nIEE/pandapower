@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 def get_hoverinfo(net, element, precision=3, sub_index=None):
     hover_index = net[element].index
     if element == "bus":
-        # load_str, sgen_str, vsc_str = [], [], []
         load_str, sgen_str = [], []
         for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
             load_str.append("Load: {:.3f} MW<br />".format(ln) if not np.isclose(ln, 0.0) else "")

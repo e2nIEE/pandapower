@@ -73,11 +73,6 @@ def estimate(
     Returns:
         bool: Was the state estimation successful?
     """
-    # numpy 1 is not reliable with estimate. Most likely precision is at fault.
-    if np.__version__.startswith('1.'):
-        raise UserWarning("numpy 1.x should not be used with estimate as it has known Issues")
-    
-    
     if algorithm not in ALGORITHM_MAPPING:
         raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
 
@@ -138,8 +133,7 @@ def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start, delta_start = _initialize_voltage(net, init)
-    return wls_se.perform_chi2_test(v_start, delta_start, calculate_voltage_angles,
-                                    chi2_prob_false)
+    return wls_se.perform_chi2_test(v_start, delta_start, calculate_voltage_angles, chi2_prob_false)
 
 
 class StateEstimation:
@@ -429,7 +423,7 @@ class StateEstimation:
                     self.net.measurement = self.net.measurement.drop(meas_idx)
                     self.logger.debug("Bad data removed from the set of measurements.")
 
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error(
                     "A problem appeared while using the linear algebra methods. Check and change the measurement set."
                 )

@@ -81,9 +81,11 @@ class SwitchesCim16:
                                        'rdfId_Terminal': sc['t_bus'], 'rdfId_Terminal2': sc['t_ele']})
         eqssh_switches['et'] = 'b'
         eqssh_switches['z_ohm'] = 0
-        if 'inService' not in eqssh_switches.columns:
-            eqssh_switches['inService'] = True
-        if eqssh_switches.index.size > 0:
-            eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
-                                        & eqssh_switches.inService)
+        if self.cimConverter.cim_version == '3.0' and eqssh_switches.index.size > 0:
+           eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
+                                       & eqssh_switches.inService)
+        elif self.cimConverter.cim_version == 'ltds' and eqssh_switches.index.size > 0:
+           eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.inService)
+        elif eqssh_switches.index.size > 0:
+           eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2)
         return eqssh_switches
