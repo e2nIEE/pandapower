@@ -24,7 +24,7 @@ from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYP
      VM, PD, QD
 from pandapower.pypower.idx_cost import MODEL, NCOST, COST
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
-from pandapower.results import init_results
+from pandapower.results import init_results, verify_results
 
 
 # const value in branch for tnep
@@ -57,7 +57,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel",
                      pm_solver="ipopt",
                      pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8,
-                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, **kwargs):
+                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, init_vm_pu="flat", init_va_degree="flat", **kwargs):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -114,7 +114,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
 
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
                      enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=voltage_depend_loads, delta=delta,
                      trafo3w_losses=trafo3w_losses)
@@ -146,7 +146,10 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
-    init_results(net)
+    if net["_options"].get("init_results"):
+        verify_results(net, mode=net["_options"]["mode"])
+    else:
+        init_results(net)
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
@@ -283,7 +286,7 @@ def ppc_to_pm(net, ppci):
         bus["bus_type"] = int(row[BUS_TYPE])
         bus["vmax"] = row[VMAX]
         bus["vmin"] = row[VMIN]
-        bus["va"] = row[VA]
+        bus["va"] = math.radians(row[VA]) # PowerModels uses radians
         bus["vm"] = row[VM]
         bus["base_kv"] = row[BASE_KV]
 

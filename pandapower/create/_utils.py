@@ -28,28 +28,6 @@ from pandapower.pp_types import Int
 logger = logging.getLogger(__name__)
 
 
-def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int], nr_buses: int) -> list[str]:
-    geo = []
-    for g in data:
-        if isinstance(g, tuple):
-            if len(g) != 2:
-                raise ValueError("geodata tuples must be of length 2")
-            elif not _is_valid_number(g[0]):
-                raise UserWarning("geodata x must be a valid number")
-            elif not _is_valid_number(g[1]):
-                raise UserWarning("geodata y must be a valid number")
-            else:
-                x, y = g
-                geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
-        else:
-            raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
-    if len(geo) == 1:
-        geo = [geo[0]] * nr_buses
-    if len(geo) != nr_buses:
-        raise ValueError("geodata must be a single point or have the same length as nr_buses")
-    return geo
-
-
 def _group_parameter_list(element_types, elements, reference_columns):
     """
     Ensures that element_types, elements and reference_columns are iterables with same lengths.
