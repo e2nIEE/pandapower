@@ -11,7 +11,7 @@ import pandas as pd
 from packaging.version import Version
 
 from pandapower._version import __version__
-from pandapower.auxiliary import ets_to_element_types
+from pandapower.auxiliary import ets_to_element_types, pandapowerNet
 
 import logging
 
