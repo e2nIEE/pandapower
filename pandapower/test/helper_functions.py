@@ -12,7 +12,7 @@ from pandapower.auxiliary import get_free_id
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_transformer_from_parameters, \
     create_line_from_parameters, create_load, create_gen, create_sgen
 from pandapower.file_io import from_pickle
-from pandapower.toolbox import nets_equal
+from pandapower.toolbox.comparison import nets_equal
 
 
 def assert_net_equal(net1, net2, **kwargs):
