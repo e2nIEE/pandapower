@@ -12,7 +12,6 @@ from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.plotting import create_weighted_marker_trace
 from pandapower.plotting.plotly import simple_plotly
-from plotting import MATPLOTLIB_INSTALLED
 
 try:
     import plotly
