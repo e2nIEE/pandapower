@@ -540,8 +540,8 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
 def get_gc_objects_dict():
     """
     This function is based on the code in mem_top module
-    Summarize object types that are tracket by the garbage collector in the moment.
-    Useful to test if there are memoly leaks.
+    Summarize object types that are tracked by the garbage collector at the moment.
+    Useful to test if there are memory leaks.
     :return: dictionary with keys corresponding to types and values to the number of objects of the
     type
     """
