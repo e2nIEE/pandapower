@@ -6,6 +6,7 @@ import sys
 import math
 
 import geojson.utils
+from geojson import Point
 import numpy as np
 
 try:
@@ -27,8 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -> tuple[list[Patch], list]:
-    polys: list[Patch] = list()
-    lines = list()
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+    polys: list[Patch] = []
+    lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
     mid_tri1 = mid_circ + _rotate_dim2(np.array([r_triangle, -r_triangle / 4]), angle)
@@ -62,37 +65,41 @@ def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -
     return polys, lines
 
 
-def wp_patch(node_geo, offset, size, angle, facecolor, edgecolor, blade_coord1, blade_coord2, hub_size, path) -> tuple[
-    list[Patch], list]:
+def wp_patch(
+        node_geo: Point,
+        offset: float,
+        size: float,
+        angle: float,
+        facecolor: str,
+        edgecolor: str,
+        blade_coord1: float,
+        blade_coord2: float,
+        hub_size: float,
+        path: any
+) -> tuple[list[Patch], list]:
     """
     Generate Patch for wind power plant.
 
-    :param node_geo: Location at which the patch will be generated.
-    :type node_geo: Point
-    :param offset:
-    :type offset: float
-    :param size:
-    :type size: float
-    :param angle:
-    :type angle: float
-    :param facecolor:
-    :type facecolor: str
-    :param edgecolor:
-    :type edgecolor: str
-    :param blade_coord1:
-    :type blade_coord1: float
-    :param blade_coord2:
-    :type blade_coord2: float
-    :param hub_size:
-    :type hub_size: float
-    :param path:
-    :type path: any
+    Parameters:
+        node_geo: Location at which the patch will be generated.
+        offset:
+        size:
+        angle:
+        facecolor:
+        edgecolor:
+        blade_coord1:
+        blade_coord2:
+        hub_size:
+        path:
 
-    :return: a list of Patch objects and a list of coords for lines
-    :rtype: tuple[list[Patch], list]
+    Returns:
+        - a list of Patch objects
+        - a list of coords for lines
     """
-    polys: list[Patch] = list()
-    lines = list()
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+    polys: list[Patch] = []
+    lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
     circ_topedge = circ_edge + _rotate_dim2(np.array([0, 2 * size]), angle)
@@ -135,9 +142,27 @@ def wp_patch(node_geo, offset, size, angle, facecolor, edgecolor, blade_coord1, 
 
 
 def pv_patch(node_geo, offset, size, angle, pv_rect_size, pv_tri_size, facecolor, edgecolor) -> tuple[list, list]:
-    # TODO: remove unused params
-    polys: list[Patch] = list()
-    lines = list()
+    """
+    Generate PV patch Items
+
+    Parameters:
+        node_geo:
+        offset:
+        size:
+        angle:
+        pv_rect_size:
+        pv_tri_size:
+        facecolor:
+        edgecolor:
+
+    Returns:
+        - a list of Patch objects
+        - a list of Line objects
+    """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+    polys: list[Patch] = []
+    lines = []
     mid_rect = node_geo + _rotate_dim2(np.array([0, 2 * size]), angle)
     rect_lbottom = (mid_rect[0] - (pv_rect_size / 4), mid_rect[1])
     _pv_patch = Rectangle(rect_lbottom, pv_rect_size / 2, pv_rect_size, angle=-angle * (180 / math.pi),
@@ -160,23 +185,26 @@ def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
     """
     Creates node patches from coordinates translating the patch type into patches.
 
-    :param node_coords: coordinates of the nodes to draw
-    :type node_coords: iterable
-    :param size: size of the patch (can be interpreted differently, depending on the patch type)
-    :type size: float
-    :param patch_type: type of patches to create  - can be one of
-        - "circle" or "ellipse" for an ellipse (cirlces are just ellipses with the same width \
-            + height)\
-        - "rect" or "rectangle" for a rectangle\
-        - "poly<n>" for a polygon with n edges
-    :type patch_type: str
-    :param colors: colors or color of the patches
-    :type colors: iterable, float
-    :param kwargs: additional keyword arguments to pass to the patch initialization \
+    Parameters:
+        node_coords: coordinates of the nodes to draw
+        size: size of the patch (can be interpreted differently, depending on the patch type)
+        patch_type: type of patches to create  - can be one of
+
+            - "circle" or "ellipse" for an ellipse (circles are just ellipses with the same width and height)
+            - "rect" or "rectangle" for a rectangle
+            - "poly<n>" for a polygon with n edges
+
+        colors: colors or color of the patches
+
+    Keyword Arguments:
+        These are passed to the patch initialization
         (might contain "width", "height", "angle" depending on the patch type)
-    :type kwargs: dict
-    :return: patches - list of rectangle patches for the nodes
+
+    Returns:
+        patches - list of rectangle patches for the nodes
     """
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     if patch_type.lower() == 'ellipse' or patch_type.lower() == 'circle':
         # circles are just ellipses
         if patch_type.lower() == "circle" and len(set(kwargs.keys()) & {"width", "height"}) == 1:

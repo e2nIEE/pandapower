@@ -12,6 +12,7 @@ from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.plotting import create_weighted_marker_trace
 from pandapower.plotting.plotly import simple_plotly
+from plotting import MATPLOTLIB_INSTALLED
 
 try:
     import plotly
@@ -20,9 +21,17 @@ try:
 except ImportError:
     PLOTLY_INSTALLED = False
 
+try:
+    import matplotlib.pyplot as plt
+
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
 
 @pytest.mark.slow
 @pytest.mark.skipif(not PLOTLY_INSTALLED, reason="plotly functions require the plotly package")
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_simple_plotly_coordinates():
     net = mv_oberrhein(include_substations=True)
     net.load.scaling, net.sgen.scaling = 1, 1
@@ -42,6 +51,7 @@ def test_simple_plotly_coordinates():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not PLOTLY_INSTALLED, reason="plotly functions require the plotly package")
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_simple_plotly_3w():
     # net with 3W-transformer
     net = example_multivoltage()
@@ -52,6 +62,7 @@ def test_simple_plotly_3w():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not PLOTLY_INSTALLED, reason="plotly functions require the plotly package")
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_simple_plotly_no_html():
     net = example_multivoltage()
     # fig without generating a HTML

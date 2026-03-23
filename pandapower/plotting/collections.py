@@ -14,11 +14,10 @@ from typing import Callable, TYPE_CHECKING, Optional, Tuple, Literal
 import geojson
 import pandas as pd
 
-if TYPE_CHECKING:
-    from matplotlib.colors import Normalize, Colormap
 from itertools import combinations
 from typing_extensions import deprecated
 
+import logging
 import numpy as np
 from pandas import isnull, Series, DataFrame
 
@@ -31,6 +30,12 @@ try:
     from matplotlib.transforms import Affine2D
 
     MATPLOTLIB_INSTALLED = True
+
+    # Depends on matplotlib:
+    from pandapower.plotting.patch_makers import (
+        load_patches, node_patches, gen_patches, sgen_patches, ext_grid_patches, trafo_patches, storage_patches,
+        ward_patches, xward_patches, vsc_patches
+    )
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
@@ -39,12 +44,16 @@ except ImportError:
         pass
 
 from pandapower.auxiliary import soft_dependency_error, pandapowerNet
-from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
-    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches, vsc_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
-import logging
+if TYPE_CHECKING:
+    from matplotlib.colors import Normalize, Colormap
+    from matplotlib.collections import LineCollection, PatchCollection, Collection
+    from matplotlib.font_manager import FontProperties
+    from matplotlib.patches import Circle, Rectangle, PathPatch
+    from matplotlib.textpath import TextPath
+    from matplotlib.transforms import Affine2D
 
 logger = logging.getLogger(__name__)
 
@@ -100,14 +109,14 @@ class CustomTextPath(TextPath):
                               _interpolation_steps=self._interpolation_steps, usetex=self.usetex)
 
 
-def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
+def create_annotation_collection(texts, coords, size: float | list[float], prop=None, **kwargs):
     """
     Creates PatchCollection of Texts shown at the given coordinates
 
     Parameters:
         texts (iterable of strings): The texts to be
         coords (iterable of tuples): Coordinates to place the texts
-        size (int): Size of the texts
+        size: Size of the texts
         prop: FontProperties being passed to the TextPatches
 
     Keyword Arguments:

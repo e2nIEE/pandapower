@@ -9,7 +9,7 @@ import pytest
 
 from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous, cmap_logarithmic
 
-
+@pytest.importorskip("matplotlib", reason="colormaps require matplotlib")
 def test_cmap_discrete():
     cmap_list = [((0, 10), "green"), ((10, 30), "yellow"), ((30, 100), "red")]
     cmap, norm = cmap_discrete(cmap_list)
@@ -23,6 +23,7 @@ def test_cmap_discrete():
     assert norm(99.999) == 2
 
 
+@pytest.importorskip("matplotlib", reason="colormaps require matplotlib")
 def test_cmap_continuous():
     cmap_list = [(0.97, "blue"), (1.0, "green"), (1.03, "red")]
     cmap, norm = cmap_continuous(cmap_list)
@@ -33,6 +34,7 @@ def test_cmap_continuous():
                        [0.16666666666666666 * n for n in range(7)])
 
 
+@pytest.importorskip("matplotlib", reason="colormaps require matplotlib")
 def test_cmap_logarithmic():
     min_value, max_value = 1.0, 1.03
     colors = ["blue", "green", "red"]
