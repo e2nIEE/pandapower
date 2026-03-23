@@ -461,34 +461,28 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
 
 
 def get_connected_elements_dict(
-        net, buses, respect_switches=True, respect_in_service=False, include_empty_lists=False,
-        element_types=None, **kwargs):
+        net: pandapowerNet, buses, respect_switches: bool = True, respect_in_service: bool = False,
+        include_empty_lists: bool = False,
+        element_types=None, **kwargs) -> dict[str, list]:
     """
     Returns a dict of lists of connected elements.
 
-    Parameters
-    ----------
-    net : _type_
-        _description_
-    buses : iterable of buses
-        buses as origin to search for connected elements
-    respect_switches : bool, optional
-        _description_, by default True
-    respect_in_service : bool, optional
-        _description_, by default False
-    include_empty_lists : bool, optional
-        if True, the output doesn't have values of empty lists but may lack of element types as
-        keys, by default False
-    element_types : iterable of strings, optional
-        types elements which are analyzed for connection. If not given, all pandapower element types
-        are analyzed. That list of all element types can also be restricted by key word arguments
-        "connected_buses", "connected_bus_elements", "connected_branch_elements" and
-        "connected_other_elements", by default None
+    Parameters:
+        net: The pandapower network
+        buses: buses as origin to search for connected elements
+        respect_switches:
+        respect_in_service:
+        include_empty_lists: if True, the output doesn't have values of empty lists but may lack of element types as
+            keys, by default False
+        element_types: types elements which are analysed for connection. If not given, all pandapower element types
+            are analysed. That list of all element types can also be restricted by key word arguments
 
-    Returns
-    -------
-    dict[str,list]
-        elements connected to given buses
+    Keyword arguments:
+        "connected_buses", "connected_bus_elements", "connected_branch_elements" and
+        "connected_other_elements"
+
+    Returns:
+        elements connected to given buses as dict with element type as key
     """
     if element_types is None:
         element_types = pp_elements(
@@ -684,7 +678,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
 
 
 def count_elements(net, return_empties=False, **kwargs):
-    """Counts how much elements of which element type exist in the pandapower net
+    """Counts how many elements of which element type exist in the pandapower net
 
     Parameters
     ----------
