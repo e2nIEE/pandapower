@@ -212,16 +212,13 @@ def test_qlimits_voltctrl():
 def test_qlimits_with_capability_curve(v, p):
     net = simple_test_net()
     tol = 1e-6
-    for v in linspace(start=0.98, stop=1.02, num=5, dtype=float64):
-        for p in linspace(start=-2.5, stop=2.5, num=10, dtype=float64):
-            create_sgen(net, 2, p_mw=0., sn_mva=0, name="sgen2")
-            # create q characteristics table
-            net["q_capability_curve_table"] = DataFrame(
-                {'id_q_capability_curve': [0, 0, 0, 0, 0],
-                'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
-                'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
-                'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
-
+    create_sgen(net, 2, p_mw=0., sn_mva=0, name="sgen2")
+    # create q characteristics table
+    net["q_capability_curve_table"] = DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0],
+        'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
+        'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
+        'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
     net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)
