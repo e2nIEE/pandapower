@@ -5,8 +5,9 @@ from pandapower.network_schema.tools.validation.column_condition import create_l
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _gen_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the generator",
-        metadata={"cim": True}),
+    "name": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="name of the generator", metadata={"cim": True}
+    ),
     "type": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -20,8 +21,12 @@ _gen_columns = {
         float, pa.Check.gt(0), description="voltage set point of the generator [p.u.]", metadata={"default": 1.0}
     ),
     "sn_mva": pa.Column(
-        float, pa.Check.gt(0), nullable=True, required=False, description="nominal power of the generator [MVA]",
-        metadata={"cim": True}
+        float,
+        pa.Check.gt(0),
+        nullable=True,
+        required=False,
+        description="nominal power of the generator [MVA]",
+        metadata={"cim": True},
     ),
     "max_q_mvar": pa.Column(
         float,
@@ -90,7 +95,7 @@ _gen_columns = {
         nullable=True,
         required=False,
         description="references the index of the characteristic from the q_capability_characteristic",
-        metadata={"qcc": True},
+        metadata={"qcc": True, "cim": True},
     ),
     "curve_style": pa.Column(
         pd.StringDtype,
@@ -98,7 +103,7 @@ _gen_columns = {
         nullable=True,
         required=False,
         description="the style of the generator reactive power capability curve",
-        metadata={"qcc": True},
+        metadata={"qcc": True, "cim": True},
     ),
     "reactive_capability_curve": pa.Column(
         bool,
@@ -108,8 +113,11 @@ _gen_columns = {
         metadata={"qcc": True, "cim": True, "default": False},
     ),
     "slack_weight": pa.Column(
-        float, nullable=True, required=False, description="weight of the slack when using multiple slacks",
-        metadata={"cim": True}
+        float,
+        nullable=True,
+        required=False,
+        description="weight of the slack when using multiple slacks",
+        metadata={"cim": True},
     ),
     "slack": pa.Column(bool, description="use the gen as slack", metadata={"default": False}),
     "controllable": pa.Column(

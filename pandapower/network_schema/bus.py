@@ -38,8 +38,13 @@ _bus_columns = {
         metadata={"opf": True, "default": 0.0},
     ),
     "in_service": pa.Column(bool, description="specifies if the bus is in service.", metadata={"default": True}),
-    "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string",
-        metadata={"cim": True}),
+    "geo": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="geojson.Point as object or string",
+        metadata={"cim": True},
+    ),
     "origin_id": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
     ),

@@ -1044,21 +1044,16 @@ def test_fullgrid_measurement(fullgrid_v2):
     assert len(fullgrid_v2.measurement.index) == 0  # TODO: analogs
 
 
-def test_fullgrid_load(fullgrid_v2):
+def test_fullgrid_load(fullgrid_v2):  # TODO: test each load type
     assert len(fullgrid_v2.load.index) == 5
     element_0 = fullgrid_v2.load[fullgrid_v2.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']
     assert element_0['name'].item() == 'BE_CL_1'
     assert fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35'
     assert element_0['p_mw'].item() == pytest.approx(0.010, abs=0.000001)
     assert element_0['q_mvar'].item() == pytest.approx(0.010, abs=0.000001)
-    assert element_0['const_z_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_i_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_z_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_i_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
     assert math.isnan(element_0['sn_mva'].item())
     assert element_0['scaling'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_0['in_service'].item()
-    assert None is element_0['type'].item()
     assert element_0['origin_class'].item() == 'ConformLoad'
     assert element_0['terminal'].item() == '_84f6ff75-6bf9-8742-ae06-1481aa3b34de'
 
@@ -1073,7 +1068,6 @@ def test_fullgrid_line(fullgrid_v2):
     assert len(fullgrid_v2.line.index) == 11
     element_0 = fullgrid_v2.line[fullgrid_v2.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']
     assert element_0['name'].item() == 'BE-Line_7'
-    assert None is element_0['std_type'].item()
     assert fullgrid_v2.bus.iloc[element_0['from_bus'].item()]['origin_id'] == '_1fa19c281c8f4e1eaad9e1cab70f923e'
     assert fullgrid_v2.bus.iloc[element_0['to_bus'].item()]['origin_id'] == '_f70f6bad-eb8d-4b8f-8431-4ab93581514e'
     assert element_0['length_km'].item() == pytest.approx(23.0, abs=0.000001)
@@ -1084,7 +1078,6 @@ def test_fullgrid_line(fullgrid_v2):
     assert element_0['max_i_ka'].item() == pytest.approx(1.0620, abs=0.000001)
     assert element_0['df'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_0['parallel'].item() == pytest.approx(1.0, abs=0.000001)
-    assert None is element_0['type'].item()
     assert element_0['in_service'].item()
     assert element_0['origin_class'].item() == 'ACLineSegment'
     assert element_0['terminal_from'].item() == '_57ae9251-c022-4c67-a8eb-611ad54c963c'

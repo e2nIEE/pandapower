@@ -4,7 +4,9 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _load_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load", metadata={"cim": True}),
+    "name": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="name of the load", metadata={"cim": True}
+    ),
     "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
     "p_mw": pa.Column(float, description="active power of the load [MW], a positiv value means power consumption"),
     "q_mvar": pa.Column(
@@ -45,7 +47,12 @@ _load_columns = {
         metadata={"zip": True, "default": 0.0},
     ),
     "sn_mva": pa.Column(
-        float, pa.Check.gt(0), nullable=True, required=False, description="rated power of the load [kVA]"
+        float,
+        pa.Check.gt(0),
+        nullable=True,
+        required=False,
+        description="rated power of the load [kVA]",
+        metadata={"cim": True},
     ),
     "scaling": pa.Column(
         float, pa.Check.ge(0), description="scaling factor for active and reactive power", metadata={"default": 1.0}
@@ -62,7 +69,7 @@ _load_columns = {
     "controllable": pa.Column(
         bool,
         required=False,
-        description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
+        description="States if load is controllable or not, load will not be used as a flexibility if it is not controllable",
         metadata={"default": False},
     ),
     "zone": pa.Column(

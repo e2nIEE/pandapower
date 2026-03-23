@@ -4,7 +4,9 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _motor_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the motor", metadata={"cim": True}),
+    "name": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="name of the motor", metadata={"cim": True}
+    ),
     "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
     "pn_mech_mw": pa.Column(float, pa.Check.ge(0), description="Mechanical rated power of the motor [MW]"),
     "cos_phi": pa.Column(

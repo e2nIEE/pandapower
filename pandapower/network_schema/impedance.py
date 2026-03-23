@@ -3,7 +3,9 @@ import pandera.pandas as pa
 
 impedance_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the impedance", metadata={"cim": True}),
+        "name": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="name of the impedance", metadata={"cim": True}
+        ),
         "from_bus": pa.Column(
             int,
             pa.Check.ge(0),

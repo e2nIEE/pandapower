@@ -6,7 +6,9 @@ switch_schema = pa.DataFrameSchema(
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
-        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the switch", metadata={"cim": True}),
+        "name": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="name of the switch", metadata={"cim": True}
+        ),
         "element": pa.Column(
             int,
             pa.Check.ge(0),
@@ -21,7 +23,8 @@ switch_schema = pa.DataFrameSchema(
             pd.StringDtype,
             nullable=True,
             required=False,
-            description="type of switch naming conventions:  “CB” - circuit breaker “LS” - load switch “LBS” - load break switch “DS” - disconnecting switch", metadata={"cim": True},
+            description="type of switch naming conventions:  “CB” - circuit breaker “LS” - load switch “LBS” - load break switch “DS” - disconnecting switch",
+            metadata={"cim": True},
         ),
         "closed": pa.Column(bool, description="signals the switching state of the switch", metadata={"default": True}),
         "in_ka": pa.Column(

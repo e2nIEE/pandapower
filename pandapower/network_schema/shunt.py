@@ -3,7 +3,9 @@ import pandera.pandas as pa
 
 shunt_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the shunt", metadata={"cim": True}),
+        "name": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="name of the shunt", metadata={"cim": True}
+        ),
         "bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -30,7 +32,7 @@ shunt_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="maximum allowed step of shunt",
-            metadata={"opf": True,"cim": True, "default": 1},
+            metadata={"opf": True, "cim": True, "default": 1},
         ),
         "in_service": pa.Column(bool, description="specifies if the shunt is in service", metadata={"default": True}),
         "step_dependency_table": pa.Column(

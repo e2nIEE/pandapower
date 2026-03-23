@@ -11,7 +11,7 @@ _line_columns = {
         pd.StringDtype,
         nullable=True,
         required=False,
-        description="standard type which can be used to easily define line parameters with the pandapower standard type library", metadata={"cim": True},
+        description="standard type which can be used to easily define line parameters with the pandapower standard type library",
     ),
     "from_bus": pa.Column(
         int, pa.Check.ge(0), description="Index of bus where the line starts", metadata={"foreign_key": "bus.index"}
@@ -75,7 +75,7 @@ _line_columns = {
         pd.StringDtype,
         nullable=True,
         required=False,
-        description="type of line normally “ol” - overhead line “cs” - underground cable system", metadata={"cim": True},
+        description="type of line normally “ol” - overhead line “cs” - underground cable system",
     ),
     "max_loading_percent": pa.Column(
         float,
@@ -98,7 +98,8 @@ _line_columns = {
         pd.StringDtype,
         nullable=True,
         required=False,
-        description="geojson.LineString object or its string representation", metadata={"cim": True}
+        description="geojson.LineString object or its string representation",
+        metadata={"cim": True},
     ),
     "alpha": pa.Column(
         float,

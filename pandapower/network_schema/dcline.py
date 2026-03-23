@@ -4,8 +4,9 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _dcline_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the generator",
-        metadata={"cim": True}),
+    "name": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="name of the generator", metadata={"cim": True}
+    ),
     "from_bus": pa.Column(
         int,
         pa.Check.ge(0),
@@ -56,10 +57,18 @@ _dcline_columns = {
         metadata={"opf": True, "cim": True},
     ),
     "min_q_to_mvar": pa.Column(
-        float, nullable=True, required=False, description="Minimum reactive power at to bus", metadata={"opf": True, "cim": True}
+        float,
+        nullable=True,
+        required=False,
+        description="Minimum reactive power at to bus",
+        metadata={"opf": True, "cim": True},
     ),
     "max_q_to_mvar": pa.Column(
-        float, nullable=True, required=False, description="Maximum reactive power at to bus", metadata={"opf": True, "cim": True}
+        float,
+        nullable=True,
+        required=False,
+        description="Maximum reactive power at to bus",
+        metadata={"opf": True, "cim": True},
     ),
     "in_service": pa.Column(bool, description="specifies if the line is in service.", metadata={"default": True}),
     "origin_id": pa.Column(
