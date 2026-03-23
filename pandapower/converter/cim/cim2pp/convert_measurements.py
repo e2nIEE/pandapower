@@ -137,7 +137,7 @@ class CreateMeasurements:
         busses_temp = self.net.bus[['name', 'vn_kv', sc['ct']]].copy()
         busses_temp = busses_temp.reset_index(level=0)
         busses_temp = busses_temp.rename(columns={'index': 'element', sc['ct']: 'TopologicalNode'})
-        sv_sv_voltages = pd.merge(self.cim['sv']['SvVoltage'][['rdfId', 'TopologicalNode', 'v']], busses_temp,
+        sv_sv_voltages = pd.merge(self.cim['sv']['SvVoltage'][['rdfId', 'TopologicalNode', 'v', 'angle']], busses_temp,
                                   how='left', on='TopologicalNode')
         # drop all the rows mit vn_kv == np.nan (no measurements available for that bus)
         sv_sv_voltages = sv_sv_voltages.dropna(subset=['vn_kv'])
@@ -161,8 +161,15 @@ class CreateMeasurements:
         sv_sv_voltages[sc['desc']] = None
         sv_sv_voltages[sc['a_id']] = None
         sv_sv_voltages = sv_sv_voltages.rename(columns={'rdfId': sc['o_id']})
-
         self._copy_to_measurement(sv_sv_voltages)
+
+        # the angle
+        sv_sv_voltages_angle = sv_sv_voltages.copy()
+        sv_sv_voltages_angle['value'] = sv_sv_voltages_angle['angle']
+        sv_sv_voltages_angle['measurement_type'] = 'angle'
+        sv_sv_voltages_angle['std_dev'] = .001
+        self._copy_to_measurement(sv_sv_voltages_angle)
+
 
         # ---------------------------------------measure: line---------------------------------------------------
         sigma_line = 0.03

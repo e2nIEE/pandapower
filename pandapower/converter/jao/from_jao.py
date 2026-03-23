@@ -17,7 +17,7 @@ from pandapower.create import (
 )
 from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
-from pandapower.toolbox import drop_buses, fuse_buses
+from pandapower.toolbox.grid_modification import drop_buses, fuse_buses
 
 import logging
 
@@ -366,7 +366,7 @@ def _create_transformers_and_buses(
     max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, (
         "Maximum Current Imax (A) primary", "Max")].values
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
-    z_pu = vn_lv_kv**2 / sn_mva
+    z_pu = vn_hv_kv**2 / sn_mva
     rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
     xk = data[key].xs("Reactance_X(Ω)", level=1, axis=1).values[:, 0] / z_pu
     b0 = data[key].xs("Susceptance_B (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu
@@ -904,7 +904,7 @@ def _get_bus_idx(net: pandapowerNet) -> pd.Series:
 
 
 def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
-    notravbuses_dict = dict() if "notravbuses" not in kwargs.keys() else {
+    notravbuses_dict = {} if "notravbuses" not in kwargs.keys() else {
         "notravbuses": kwargs.pop("notravbuses")}
     grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs),
                                                               **notravbuses_dict)]
@@ -925,7 +925,7 @@ def _lng_lat_to_df(dict_: dict, line_EIC: str, line_name: str) -> pd.DataFrame:
 def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
 
     def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, Union[pd.Index, int]]:
-        av = dict()  # availablitiy of geodata
+        av = {}  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
         av["lines_fbw_tbwo"] = net.line.index[net.line.from_bus.isin(av["bus_with_geo"]) &
                                               (~net.line.to_bus.isin(av["bus_with_geo"]))]

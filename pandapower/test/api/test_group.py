@@ -87,7 +87,7 @@ def test_group_create(nets_to_test_group):
 
 
 def test_group_element_index(nets_to_test_group):
-    net, _, _, _ = nets_to_test_group
+    net, *_ = nets_to_test_group
         # ! group_element_index()
     assert all(group_element_index(net, 0, "gen") == pd.Index([0, 1], dtype=np.int64))
     assert all(group_element_index(net, 0, "sgen") == pd.Index([2, 3], dtype=np.int64))
@@ -121,7 +121,7 @@ def test_set_group_reference_column(nets_to_test_group):
 
 
 def test_compare_group_elements(nets_to_test_group):
-    net, _, _, _ = nets_to_test_group
+    net, *_ = nets_to_test_group
     net = deepcopy(net)
     ok = create_group(net, "trafo", [net.trafo.loc[:2].index], name='xxx')
     fail1 = create_group(net, ["trafo", "bus"], [net.trafo.loc[:2].index, [0]], name='xxx')
@@ -256,7 +256,7 @@ def test_drop_element():
 
 
 def test_drop_and_return(nets_to_test_group):
-    net, _, _, _ = nets_to_test_group
+    net, *_ = nets_to_test_group
     net = deepcopy(net)
 
     # ! drop_elements_and_group & ! return_group_as_net
@@ -288,7 +288,7 @@ def test_drop_and_return(nets_to_test_group):
 
 
 def test_set_out_of_service(nets_to_test_group):
-    net, _, _, _ = nets_to_test_group
+    net, *_ = nets_to_test_group
     net = deepcopy(net)
     # ! set_out_of_service
     assert net.trafo.in_service.all()
@@ -324,7 +324,7 @@ def test_attach_to_group(nets_to_test_group):
 
 
 def test_detach_and_compare(nets_to_test_group):
-    net, type_, _, _ = nets_to_test_group
+    net, type_, *_ = nets_to_test_group
     net = deepcopy(net)
     # detach_from_group() & compare_group_elements()
 
@@ -347,7 +347,7 @@ def test_detach_and_compare(nets_to_test_group):
 
 
 def test_res_power(nets_to_test_group):
-    net, _, _, _ = nets_to_test_group
+    net, *_ = nets_to_test_group
     net = deepcopy(net)
     et0, elm0, rc0 = group_element_lists(net, 0)
     attach_to_group(net, 3, et0, elm0, reference_columns=rc0)
@@ -419,7 +419,7 @@ def test_isin(nets_to_test_group):
 
 
 def test_element_associated_groups(nets_to_test_group):
-    net, _, _, _ = nets_to_test_group
+    net, *_ = nets_to_test_group
     net = deepcopy(net)
     assert element_associated_groups(net, "gen", [0, 1, 2, 3]) == \
            {0: [0], 1: [0], 2: [], 3: []}

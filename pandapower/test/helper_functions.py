@@ -14,7 +14,7 @@ from pandapower.create import (
     create_gen, create_sgen
 )
 from pandapower.file_io import from_pickle
-from pandapower.toolbox import nets_equal
+from pandapower.toolbox.comparison import nets_equal
 
 
 def assert_net_equal(net1, net2, **kwargs):

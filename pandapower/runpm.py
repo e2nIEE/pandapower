@@ -3,10 +3,9 @@
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 
-import os
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.pandamodels.from_pm import read_ots_results, read_tnep_results
-from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
+from pandapower.opf.pm_storage import add_storage_opf_settings
 from pandapower.opf.run_pandamodels import _runpm
 
 
@@ -15,7 +14,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
           correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
           pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
           delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
-          pdm_dev_mode=False, **kwargs):  # pragma: no cover
+          pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):  # pragma: no cover
     """
     Runs  optimal power flow from PowerModels.jl via PandaModels.jl
 
@@ -79,8 +78,8 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_opf", pm_solver=pm_solver, pm_model=pm_model,
@@ -95,15 +94,15 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  correct_pm_network_data=True, silence=True, pm_model="DCPPowerModel", pm_solver="ipopt",
                  pm_time_limits=None, pm_log_level=0, delete_buffer_file=True, pm_file_path = None,
-                 pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
+                 pm_tol=1e-8, pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):
     """
     Runs linearized optimal power flow from PowerModels.jl via PandaModels.jl
     """
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=False, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_opf",
@@ -117,15 +116,15 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                  pm_time_limits=None, pm_log_level=0, pm_file_path=None, delete_buffer_file=True,
-                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
+                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):
     """
     Runs non-linear optimal power flow from PowerModels.jl via PandaModels.jl
     """
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_opf", pm_model="ACPPowerModel", pm_solver=pm_solver,
@@ -158,7 +157,7 @@ def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_a
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_tnep", pm_model=pm_model, pm_solver=pm_solver,
@@ -187,7 +186,7 @@ def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_an
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_ots", pm_model=pm_model, pm_solver=pm_solver,
@@ -217,7 +216,7 @@ def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angle
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=add_storage_opf_settings, julia_file="run_powermodels_multi_storage",
@@ -244,7 +243,7 @@ def runpm_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_pandamodels_vstab", pm_model=pm_model, pm_solver=pm_solver,
@@ -272,7 +271,7 @@ def runpm_multi_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_pandamodels_multi_vstab", pm_model=pm_model, pm_solver=pm_solver,
@@ -294,7 +293,7 @@ def runpm_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_pandamodels_qflex", pm_model=pm_model, pm_solver=pm_solver,
@@ -322,7 +321,7 @@ def runpm_multi_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_pandamodels_multi_qflex", pm_model=pm_model, pm_solver=pm_solver,
@@ -349,7 +348,7 @@ def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_pandamodels_ploss", pm_model=pm_model, pm_solver=pm_solver,
@@ -376,7 +375,7 @@ def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_pandamodels_loading", pm_model=pm_model, pm_solver=pm_solver,
@@ -400,7 +399,7 @@ def runpm_pf(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_ang
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
                      mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
+                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, julia_file="run_powermodels_pf", pm_solver=pm_solver, pm_model=pm_model,

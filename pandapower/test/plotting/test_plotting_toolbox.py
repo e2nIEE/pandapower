@@ -8,11 +8,19 @@ from copy import deepcopy
 import pandas as pd
 import pytest
 
+try:
+    import matplotlib.pyplot as plt
+
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
 from pandapower.plotting.simple_plot import simple_plot
 
 
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_set_line_geodata_from_bus_geodata():
     net = case9()
     bus_geo_data = deepcopy(net.bus.geo)

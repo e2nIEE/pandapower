@@ -17,7 +17,7 @@ from pandapower.create import (
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks import simple_four_bus_system, mv_oberrhein
-from pandapower.toolbox import create_continuous_bus_index
+from pandapower.toolbox.data_modification import create_continuous_bus_index
 from pandapower.control import ContinuousTapControl
 
 
