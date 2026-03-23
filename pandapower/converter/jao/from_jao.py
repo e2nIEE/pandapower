@@ -16,7 +16,7 @@ from pandapower.create import create_empty_network, create_buses, create_lines_f
     create_transformers_from_parameters
 from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
-from pandapower.toolbox import drop_buses, fuse_buses
+from pandapower.toolbox.grid_modification import drop_buses, fuse_buses
 
 import logging
 

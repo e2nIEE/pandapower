@@ -677,7 +677,7 @@ def create_J_modification_hvdc(
     offset = J.shape[0] - num_p
     # Create an initial zero sparse matrix for J_m
     J_m = lil_matrix(J.shape)
-    # Create the modification J for the DC system to be added to the overall J[dc_p, :][:, dc_p]
-    J_m[offset:offset+num_p, offset:offset+num_p] = J_combined # type: ignore[index]
+    # Create the modification J for the DC system to be added to the overall J
+    J_m[offset:offset+num_p, offset:offset+num_p] = J_combined # [dc_p, :][:, dc_p]
 
     return J_m.tocsr()
