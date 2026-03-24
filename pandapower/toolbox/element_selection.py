@@ -5,6 +5,7 @@
 
 import gc
 import warnings
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -69,10 +70,10 @@ def get_element_indices(net, element_type, name, exact_match=True):
 
     EXAMPLE:
         >>> from pandapower.networks.create_examples import example_multivoltage
-        >>> from pandapower import get_element_indices
+        >>> from pandapower.toolbox.element_selection import get_element_indices
         >>> net = example_multivoltage()
         >>> # get indices of only one element type (buses in this example):
-        >>> get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+        >>> get_element_indices(net, "bus", [f"Bus HV{i}" for i in range(1, 4)])
         [32, 33, 34]
         >>> # get indices of only two element type (first buses, second lines):
         >>> get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
@@ -436,8 +437,9 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
             logger.warning("Unknown switch status \"%s\" selected! "
                            "Selecting all switches by default." % status)
 
+    branch_buses = None
     if include_element_connections:
-        bebd = branch_element_bus_dict()
+        branch_buses = branch_element_bus_dict()
 
     cs = set()
     for et in consider:
@@ -452,8 +454,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
             if include_element_connections:
                 element_type = ets_to_element_types(et)
                 sw_idx = net.switch.index[(net.switch.et == et) & switch_selection]
-                element_buses = net[element_type].loc[list(net.switch.element.loc[sw_idx]),
-                bebd[element_type]]
+                element_buses = net[element_type].loc[list(net.switch.element.loc[sw_idx]), branch_buses[element_type]]
                 isin_df = pd.concat([element_buses[col].isin(buses) for col in element_buses],
                                     axis=1)
                 cs |= set(sw_idx[isin_df.any(axis=1)])
@@ -461,14 +462,19 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
 
 
 def get_connected_elements_dict(
-        net: pandapowerNet, buses, respect_switches: bool = True, respect_in_service: bool = False,
+        net: pandapowerNet,
+        buses: Iterable,
+        respect_switches: bool = True,
+        respect_in_service: bool = False,
         include_empty_lists: bool = False,
-        element_types=None, **kwargs) -> dict[str, list]:
+        element_types: Iterable[str] | None = None,
+        **kwargs
+) -> dict[str, list]:
     """
     Returns a dict of lists of connected elements.
 
     Parameters:
-        net: The pandapower network
+        net: pandapower network
         buses: buses as origin to search for connected elements
         respect_switches:
         respect_in_service:
@@ -477,7 +483,7 @@ def get_connected_elements_dict(
         element_types: types elements which are analysed for connection. If not given, all pandapower element types
             are analysed. That list of all element types can also be restricted by key word arguments
 
-    Keyword arguments:
+    Keyword Arguments:
         "connected_buses", "connected_bus_elements", "connected_branch_elements" and
         "connected_other_elements"
 
@@ -536,8 +542,9 @@ def get_gc_objects_dict():
     This function is based on the code in mem_top module
     Summarize object types that are tracked by the garbage collector at the moment.
     Useful to test if there are memory leaks.
-    :return: dictionary with keys corresponding to types and values to the number of objects of the
-    type
+
+    Returns:
+         dictionary with keys corresponding to types and values to the number of objects of the type
     """
     objs = gc.get_objects()
     nums_by_types = {}
@@ -704,7 +711,7 @@ def count_elements(net, return_empties=False, **kwargs):
 
     Examples
     --------
-    >>> from pandapower import count_elements
+    >>> from pandapower.toolbox.element_selection import count_elements
     >>> from pandapower.networks.power_system_test_cases import case9
     >>> count_elements(case9(), bus_elements=False)
     bus     9
