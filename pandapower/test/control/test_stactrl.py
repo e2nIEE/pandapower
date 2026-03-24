@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-import copy
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
+import copy
 import logging
 
 import pytest
+import numpy as np
 from numpy import linspace, float64
 from pandas import DataFrame
 
@@ -321,8 +322,8 @@ def test_stactrl_pf_import():
 
 ### Testing after rework of station controller###
 
-def test_volt_ctrl_new():
-    net = simple_test_net()
+def test_volt_ctrl_new(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True,
                                    output_element="sgen", output_variable="q_mvar", output_element_index=0,
@@ -338,8 +339,8 @@ def test_volt_ctrl_new():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')# test correct control_modus
 
 
-def test_volt_ctrl_droop_new():
-    net = simple_test_net()
+def test_volt_ctrl_droop_new(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     bsc = BinarySearchControl(net, ctrl_in_service=True,
                                          output_element="sgen", output_variable="q_mvar", output_element_index=0,
@@ -358,8 +359,8 @@ def test_volt_ctrl_droop_new():
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
-def test_qctrl_new():
-    net = simple_test_net()
+def test_qctrl_new(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
                                    output_element_index=0, output_element_in_service=True,
@@ -374,8 +375,8 @@ def test_qctrl_new():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl')#test correct control_modus
 
 
-def test_qctrl_droop_new():
-    net = simple_test_net()
+def test_qctrl_droop_new(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     net.load.loc[0, "p_mw"] = 60  # create voltage drop at bus 1
     bsc = BinarySearchControl(net, ctrl_in_service=True,
@@ -395,8 +396,9 @@ def test_qctrl_droop_new():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl_V_droop')   # test correct control_modus
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
-def test_pf_control_cap():
-    net = simple_test_net()
+
+def test_pf_control_cap(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True, output_element='sgen', output_variable='q_mvar',
                                          output_element_index=0, output_values_distribution=1,
@@ -412,8 +414,8 @@ def test_pf_control_cap():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'PF_ctrl_cap')# test correct control_modus
 
 
-def test_pf_control_ind():
-    net = simple_test_net()
+def test_pf_control_ind(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True, output_element='sgen', output_variable='q_mvar',
                                          output_element_index=0, output_values_distribution=1,
@@ -428,8 +430,8 @@ def test_pf_control_ind():
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'PF_ctrl_ind')  # test correct control_modus
 
-def test_tan_phi_control():
-    net = simple_test_net()
+def test_tan_phi_control(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service= True, output_element='sgen', output_variable='q_mvar',
                          output_element_index= 0, output_element_in_service= True, output_values_distribution=1,
@@ -441,6 +443,7 @@ def test_tan_phi_control():
     assert(abs(net.res_trafo.loc[0, "q_lv_mvar"] / net.res_trafo.loc[0, 'p_lv_mw'] - 2) < tol)
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'tan_phi_ctrl')  # test correct control_modus
+
 
 def test_station_ctrl_pf_import_new():
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'station_ctrl_test_new.json')
