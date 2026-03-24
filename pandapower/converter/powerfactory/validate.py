@@ -5,7 +5,7 @@ import numpy as np
 
 from pandapower.run import runpp
 from pandapower.pf.runpp_3ph import runpp_3ph
-from pandapower.toolbox import replace_zero_branches_with_switches
+from pandapower.toolbox.grid_modification import replace_zero_branches_with_switches
 
 import logging
 
