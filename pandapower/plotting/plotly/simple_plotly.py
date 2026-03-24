@@ -16,6 +16,34 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _calculate_aspect_ratio(traces):
+    xs = []
+    ys = []
+    for trace in traces:
+        trace_x = trace.get("x") or trace.get("lon") or []
+        trace_y = trace.get("y") or trace.get("lat") or []
+        xs.extend([v for v in trace_x if v is not None])
+        ys.extend([v for v in trace_y if v is not None])
+    if len(xs) == 0 or len(ys) == 0:
+        return (1, 1)
+    xs_arr = np.array(xs, dtype=float)
+    ys_arr = np.array(ys, dtype=float)
+    xrange = np.nanmax(xs_arr) - np.nanmin(xs_arr)
+    yrange = np.nanmax(ys_arr) - np.nanmin(ys_arr)
+    if np.isclose(xrange, 0) and np.isclose(yrange, 0):
+        return (1, 1)
+    elif np.isclose(xrange, 0):
+        return (0.35, 1)
+    elif np.isclose(yrange, 0):
+        return (1, 0.35)
+    else:
+        ratio = xrange / yrange
+        if ratio < 1:
+            return (ratio, 1.0)
+        else:
+            return (1.0, 1 / ratio)
+
+
 def get_hoverinfo(net, element, precision=3, sub_index=None):
     hover_index = net[element].index
     if element == "bus":
@@ -203,6 +231,9 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
 
         traces.extend(additional_traces)
     if auto_draw_traces:
+        if aspectratio == 'auto' and not settings['on_map']:
+            aspectratio = _calculate_aspect_ratio(traces)
+            settings['aspectratio'] = aspectratio
         return draw_traces(traces, **settings)
     else:
         return traces, settings
