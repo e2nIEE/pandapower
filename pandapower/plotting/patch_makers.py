@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import math
+import logging
+from typing import TYPE_CHECKING
 
 import geojson.utils
 from geojson import Point
@@ -22,7 +24,9 @@ from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, get_angle_list, \
     get_linewidth_list, get_list
 
-import logging
+
+if TYPE_CHECKING:
+    from matplotlib import Patch
 
 logger = logging.getLogger(__name__)
 
