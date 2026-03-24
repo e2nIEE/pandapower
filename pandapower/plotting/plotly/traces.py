@@ -1239,23 +1239,27 @@ def draw_traces(
                 ys += trace.get("y") or trace.get("lat") or []
             xs_arr = np.array(xs)
             ys_arr = np.array(ys)
-            xrange = np.nanmax(xs_arr) - np.nanmin(xs_arr)
-            yrange = np.nanmax(ys_arr) - np.nanmin(ys_arr)
 
-            # the ratio only makes sense, if xrange and yrange != 0
-            if xrange == 0 and yrange == 0:
+            # Handle edge cases: empty arrays or all-NaN arrays
+            if len(xs_arr) == 0 or len(ys_arr) == 0 or np.all(np.isnan(xs_arr)) or np.all(np.isnan(ys_arr)):
                 aspectratio = (1, 1)
-            elif xrange == 0:
-                aspectratio = (0.35, 1)
-            elif yrange == 0:
-                aspectratio = (1, 0.35)
-
             else:
-                ratio = xrange / yrange
-                if ratio < 1:
-                    aspectratio = (ratio, 1.0)
+                xrange = np.nanmax(xs_arr) - np.nanmin(xs_arr)
+                yrange = np.nanmax(ys_arr) - np.nanmin(ys_arr)
+
+                # the ratio only makes sense, if xrange and yrange != 0
+                if xrange == 0 and yrange == 0:
+                    aspectratio = (1, 1)
+                elif xrange == 0:
+                    aspectratio = (0.35, 1)
+                elif yrange == 0:
+                    aspectratio = (1, 0.35)
                 else:
-                    aspectratio = (1.0, 1 / ratio)
+                    ratio = xrange / yrange
+                    if ratio < 1:
+                        aspectratio = (ratio, 1.0)
+                    else:
+                        aspectratio = (1.0, 1 / ratio)
 
         aspectratio = np.array(aspectratio) / max(aspectratio)
         fig["layout"]["width"], fig["layout"]["height"] = [ar * figsize * 700 for ar in aspectratio]
