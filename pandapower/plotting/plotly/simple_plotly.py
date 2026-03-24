@@ -5,6 +5,7 @@
 
 import pandas as pd
 import numpy as np
+import geojson
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
@@ -203,9 +204,77 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
 
         traces.extend(additional_traces)
     if auto_draw_traces:
+        # Fix: Handle aspect ratio edge case where all x coordinates are 0
+        # This prevents TypeError in draw_traces when nanmax/nanmin fail on object arrays
+        settings = _fix_aspect_ratio_for_zero_xrange(net, settings)
         return draw_traces(traces, **settings)
     else:
         return traces, settings
+
+
+def _fix_aspect_ratio_for_zero_xrange(net, settings):
+    """
+    Fixes the aspect ratio calculation edge case where all bus x coordinates are the same.
+    This avoids a bug in draw_traces (in traces.py) where None values in coordinate arrays
+    cause numpy nanmax/nanmin to fail with a TypeError when computing aspect ratio 'original'.
+    
+    Parameters:
+        net: pandapower network
+        settings: dict containing 'aspectratio', 'on_map', etc.
+        
+    Returns:
+        settings: updated settings dict with fixed aspect ratio
+    """
+    aspectratio = settings.get('aspectratio', 'auto')
+    on_map = settings.get('on_map', False)
+    
+    # The problematic calculation happens when aspectratio is 'original'
+    # draw_traces converts 'auto' to 'original' when not on_map
+    target_aspectratio = aspectratio
+    if aspectratio == 'auto' and not on_map:
+        target_aspectratio = 'original'
+    
+    if target_aspectratio != 'original':
+        return settings
+    
+    # Check both bus and bus_dc coordinates
+    x_coords = []
+    
+    # Check AC buses
+    if 'bus' in net and len(net.bus["geo"].dropna()) > 0:
+        try:
+            bus_coords = list(zip(*net.bus["geo"].dropna()
+                                  .apply(geojson.loads)
+                                  .apply(geojson.utils.coords)
+                                  .apply(next)))
+            x_coords.extend([x for x in bus_coords[0] if x is not None])
+        except Exception:
+            pass
+    
+    # Check DC buses
+    if 'bus_dc' in net and len(net.bus_dc["geo"].dropna()) > 0:
+        try:
+            bus_coords = list(zip(*net.bus_dc["geo"].dropna()
+                                  .apply(geojson.loads)
+                                  .apply(geojson.utils.coords)
+                                  .apply(next)))
+            x_coords.extend([x for x in bus_coords[0] if x is not None])
+        except Exception:
+            pass
+    
+    if len(x_coords) > 0:
+        try:
+            xs = np.array(x_coords, dtype=float)
+            xrange = np.nanmax(xs) - np.nanmin(xs)
+            if np.isclose(xrange, 0):
+                # All x coordinates are the same - use a safe default aspect ratio
+                # This matches the behavior intended in traces.py (0.35, 1)
+                settings['aspectratio'] = (0.35, 1.0)
+        except Exception:
+            # If any error occurs (e.g., all NaN), use safe default
+            settings['aspectratio'] = (1.0, 1.0)
+    
+    return settings
 
 
 def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_width, node_size, ext_grid_size,
