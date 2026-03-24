@@ -483,7 +483,7 @@ class pandapowerNet(ADict):
 
     @classmethod
     def create_dataframes(cls, data):
-        for key in data: #TODO: change index dtype to np.uint32
+        for key in data:
             if isinstance(data[key], dict):
                 data[key] = pd.DataFrame(columns=data[key].keys(), index=pd.Index([], dtype=np.int64)).astype(data[key])
         return data

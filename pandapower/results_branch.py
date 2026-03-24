@@ -610,7 +610,6 @@ def _get_tcsc_results(net, ppc, suffix=None):
         # zeros_
 
     # write to impedance
-    # todo for suffix not None
     res_tcsc_df = net["res_tcsc"] if suffix is None else net["res_tcsc%s" % suffix]
 
     res_tcsc_df.loc[:, "thyristor_firing_angle_degree"] = np.rad2deg(ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real)

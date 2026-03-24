@@ -384,8 +384,6 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
                 geojson.utils.coords(geojson.loads(net.bus.geo.at[bus])) for bus in bus_list
             ]
 
-            # TODO:
-            #  place annotations on middle of the line
             line_geo_x = (bus_coords[0][0] + bus_coords[1][0]) / 2
             line_geo_y = ((bus_coords[0][1] + bus_coords[1][1]) / 2) + 0.05
 
@@ -417,7 +415,6 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
         # placing bus
         bus_index = [(x[0] - 0.11, x[1] + 0.095) for x in bus_geodata]
 
-        # TODO:
         bus_annotate = create_annotation_collection(texts=bus_text, coords=bus_index, size=0.06, prop=None)
         collection.append(bus_annotate)
 

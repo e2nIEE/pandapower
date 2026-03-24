@@ -23,7 +23,6 @@ from pandapower.auxiliary import (
     ensure_iterability,
     empty_defaults_per_dtype,
 )
-from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import Int
 from pandapower.network_structure import get_structure_dict, get_column_info
 
@@ -57,6 +56,7 @@ def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
 
 
 def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int], nr_buses: int) -> list[str]:
+    from pandapower.plotting.geo import _is_valid_number
     geo = []
     for g in data:
         if isinstance(g, tuple):
@@ -305,6 +305,7 @@ def _add_to_entries_if_not_nan(
 
 
 def _branch_geodata(geodata: Iterable[list[float] | tuple[float, float]]) -> list[list[float]]:
+    from pandapower.plotting.geo import _is_valid_number
     geo: list[list[float]] = []
     for x, y in geodata:
         if (not _is_valid_number(x)) | (not _is_valid_number(y)):

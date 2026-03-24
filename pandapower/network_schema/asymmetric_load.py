@@ -90,12 +90,12 @@ res_asymmetric_load_schema = pa.DataFrameSchema(
 
 res_asymmetric_load_3ph_schema = pa.DataFrameSchema(
     {
-        "p_a_mw": pa.Column(float, nullable=True, description=""),  # not in docu
-        "q_a_mvar": pa.Column(float, nullable=True, description=""),  # not in docu
-        "p_b_mw": pa.Column(float, nullable=True, description=""),  # not in docu
-        "q_b_mvar": pa.Column(float, nullable=True, description=""),  # not in docu
-        "p_c_mw": pa.Column(float, nullable=True, description=""),  # not in docu
-        "q_c_mvar": pa.Column(float, nullable=True, description=""),  # not in docu
+        "p_a_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_a_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_b_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_b_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_c_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_c_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
     },
     strict=False,
 )

@@ -69,7 +69,7 @@ class CimConverter:
                 message="Missing pandapower type %s in the pandapower network!" % pp_type))
             return
         self.net[pp_type] = pd.concat([self.net[pp_type],
-                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]], #TODO: needs columns from network_structure optionals but also custom cgmes like orgin_id
+                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]],
                                       ignore_index=True, sort=False)
 
     # noinspection PyShadowingNames

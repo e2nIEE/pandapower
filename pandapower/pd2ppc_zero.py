@@ -178,7 +178,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         )
 
     for vector_group, trafos in trafo_df.groupby("vector_group"):
-        # TODO Roman: check this/expand this
+        # TODO: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
 
         if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
@@ -557,7 +557,7 @@ def _add_impedance_sc_impedance_zero(net, ppc):
 
 
 def _add_trafo3w_sc_impedance_zero(net, ppc):
-    # TODO Roman: check this/expand this
+    # TODO: check this/expand this
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if "trafo3w" not in branch_lookup:
         return

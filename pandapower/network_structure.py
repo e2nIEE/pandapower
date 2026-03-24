@@ -104,13 +104,13 @@ def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
     """
     dtypes_dict: dict[str, Any] = {key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()}
     dtypes_dict.update({
-        "pwl_cost": {  # TODO: not a datastructure or element?
+        "pwl_cost": {  # TODO: convert to pandera
             "power_type": dtype(object),
             "element": "u4",
             "et": dtype(object),
             "points": dtype(object),
         },
-        "poly_cost": {  # TODO: not a datastructure or element?
+        "poly_cost": {  # TODO: convert to pandera
             "element": "u4",
             "et": dtype(object),
             "cp0_eur": "f8",
@@ -120,7 +120,7 @@ def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
             "cq1_eur_per_mvar": "f8",
             "cq2_eur_per_mvar2": "f8",
         },
-        "controller": {  # TODO: not a datastructure or element?
+        "controller": {  # TODO: convert to pandera
             "object": dtype(object),
             "in_service": "bool",
             "order": "float64",
@@ -128,7 +128,7 @@ def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
             "initial_run": "bool",
             "recycle": dtype(object),
         },
-        "group": {  # TODO: not a datastructure or element?
+        "group": {  # TODO: convert to pandera
             "name": dtype(object),
             "element_type": dtype(object),
             "element_index": dtype(object),
@@ -142,7 +142,7 @@ def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
             "act_param": dtype(object),
             "act_param_val": "f8",
             "trip_melt_time_s": "f8",
-        },  # TODO: what is this ?
+        },  # TODO: convert to pandera
         # internal
         "_ppc": None,
         "_ppc0": None,
@@ -189,5 +189,5 @@ def get_std_type_structure_dict() -> dict:
             "x_avg": dtype(object),
             "x_min": dtype(object),
             "x_total": dtype(object),
-        },  # TODO: what is this ?
+        },
     }

@@ -172,19 +172,21 @@ def _from_ppc_gen(net, ppc):
 
 
 def _from_ppc_branch(net, ppc, f_hz, **kwargs):
-    """ branch data -> create line, trafo """
-    n_bra = ppc["branch"].shape[0]
+    """
+    branch data -> create line, trafo
 
-    # todo how to preserve this information (g, r_asym, x_asym, g_asym, b_asym):
-    #  * for branches that are not transformers but non-zero r_asym, x_asym, g_asym, b_asym
-    #       - create as impedance instead of line
-    #  * for branches that are transfromers but have non-zero g_asym, b_asym: --> not done yet
-    #       - write a new function to convert delta to wye
-    #       - obtain the values for rft, rtf, xft, xtf
-    #       - calculate ratios for HV portion of r and x
-    #       - write the ratios in trafo columns leakage_resistance_ratio_hv, leakage_reactance_ratio_hv
-    #  * for branches that are not transformers but connect different voltage levels:
-    #       - import them as impedance instead
+    (g, r_asym, x_asym, g_asym, b_asym):
+        * for branches that are not transformers but non-zero r_asym, x_asym, g_asym, b_asym
+             - create as impedance instead of line
+        * for branches that are transfromers but have non-zero g_asym, b_asym: --> not done yet
+             - write a new function to convert delta to wye
+             - obtain the values for rft, rtf, xft, xtf
+             - calculate ratios for HV portion of r and x
+             - write the ratios in trafo columns leakage_resistance_ratio_hv, leakage_reactance_ratio_hv
+        * for branches that are not transformers but connect different voltage levels:
+             - import them as impedance instead
+    """
+    n_bra = ppc["branch"].shape[0]
 
     zero_column = np.zeros(n_bra, dtype=np.float64)
     br_r_asym = ppc.get("branch_r_asym", zero_column)
