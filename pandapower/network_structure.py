@@ -1,6 +1,7 @@
-from importlib.metadata import metadata
+from typing import Any
 
 from numpy import dtype
+import pandas as pd
 from pandera import DataFrameSchema
 
 from pandapower._version import __version__, __format_version__
@@ -82,7 +83,7 @@ def get_table_schema() -> dict[str, DataFrameSchema]:
     # ruff: enable
 
 
-def get_column_info(table: str, column: str) -> dict[str, str | bool] | None:
+def get_column_info(table: str, column: str) -> dict[str, str | bool | dict] | None:
     schema = get_table_schema().get(table, None)
     if schema is None:
         return schema
@@ -91,14 +92,17 @@ def get_column_info(table: str, column: str) -> dict[str, str | bool] | None:
         return column
     return column.__dict__
 
-def get_default_value(table: str, column: str):
-    return get_column_info(table, column)["metadata"]["default"]
+def get_default_value(table: str, column: str) -> Any:
+    column_info: dict[str, Any] | None = get_column_info(table, column)
+    if column_info is not None and 'metadata' in column_info and 'default' in column_info['metadata']:
+        return column_info["metadata"]["default"]
+    return pd.NA
 
 def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
     """
     This function returns the structure dict of the network
     """
-    dtypes_dict = {key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()}
+    dtypes_dict: dict[str, Any] = {key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()}
     dtypes_dict.update({
         "pwl_cost": {  # TODO: not a datastructure or element?
             "power_type": dtype(object),
