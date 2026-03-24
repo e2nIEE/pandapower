@@ -11,9 +11,8 @@ import numpy as np
 import pandas as pd
 from math import isclose
 
-from pandapower.control import SplineCharacteristic, Characteristic
 from pandapower.control.util.characteristic import LogSplineCharacteristic
-from pandapower import get_gc_objects_dict
+from pandapower.toolbox.element_selection  import get_gc_objects_dict
 from pandapower.file_io import from_json_string, to_json, create_empty_network
 from pandapower.create import create_bus, create_lines, create_line, create_buses, create_shunt
 from pandapower.create._utils import add_column_to_df
@@ -22,6 +21,7 @@ from pandapower.networks import example_simple, example_multivoltage, mv_oberrhe
 from pandapower.timeseries import DFData
 from pandapower.control import (
     SplineCharacteristic,
+    Characteristic,
     ContinuousTapControl,
     ConstControl,
     create_trafo_characteristic_object,

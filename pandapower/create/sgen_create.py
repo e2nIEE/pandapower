@@ -38,7 +38,7 @@ def create_sgen(
     name: str = pd.NA,
     index: Int | None = None,
     scaling: float = get_default_value("sgen", "scaling"),
-    type: WyeDeltaType = get_default_value("sgen", "type"),
+    type: str | None = None,
     in_service: bool = get_default_value("sgen", "in_service"),
     max_p_mw: float = nan,
     min_p_mw: float = nan,
@@ -433,7 +433,7 @@ def create_sgen_from_cosphi(  # no index ?
     underexcited behavior (Q absorption, decreases voltage) and
     positive for overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox import pq_from_cosphi
+    from pandapower.toolbox.power_factor import pq_from_cosphi
 
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="gen")
     return create_sgen(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)

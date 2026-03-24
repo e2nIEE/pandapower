@@ -8,16 +8,19 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from pandapower import ADict, select_subnet
-from pandapower.toolbox import replace_xward_by_ward, get_connected_elements, create_continuous_bus_index
+from pandapower.toolbox import (
+    select_subnet, replace_xward_by_ward, create_continuous_bus_index,
+    get_connected_buses_at_element, get_connected_elements
+)
 from pandapower.create import create_impedance, create_switch
 from pandapower.run import runpp
 from pandapower.auxiliary import (
+    ADict,
+    pandapowerNet,
     LoadflowNotConverged,
     OPFNotConverged,
     ControllerNotConverged,
     NetCalculationNotConverged,
-    pandapowerNet,
 )
 from pandapower.diagnostic.diagnostic_helpers import (
     DiagnosticFunction,
@@ -943,8 +946,6 @@ class DifferentVoltageLevelsConnected(DiagnosticFunction[pandapowerNet, dict]):
         return check_results if check_results else None
 
     def report(self, error: Exception | None, results: dict | None) -> None:
-        from pandapower.toolbox import get_connected_buses_at_element
-
         # error and success checks
         if error is not None:
             self.out.warning("Check for connection of different voltage levels failed due to the following error:")
