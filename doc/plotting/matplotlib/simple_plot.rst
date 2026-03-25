@@ -23,8 +23,6 @@ It will use all elements in a network to calculate angles for each patch based o
 Simple Highlighting Plot
 ==============================
 
-.. _simple_plot:
-
 The function ``simple_plot()`` can also highlight lines or buses in a simple network plot. The highlighted
 elements are displayed in red and enlarged. Additionally, buses and lines can be located directly
 in the plot by hovering the mouse over a specific line or bus. The ``name`` and ``index`` will be shown in
