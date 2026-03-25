@@ -10,7 +10,7 @@ import pytest
 
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
-from pandapower.plotting.simple_plot import simple_plot, simple_hl_plot
+from pandapower.plotting.simple_plot import simple_plot
 
 
 def test_set_line_geodata_from_bus_geodata():
@@ -84,7 +84,7 @@ def test_simple_hl_plot():
     net = case9()
     load_buses = net.load.bus.values
     load_lines = net.line.loc[net.line.from_bus.isin(load_buses) | net.line.to_bus.isin(load_buses)].index
-    ax = simple_hl_plot(net, hl_lines=load_lines, hl_buses=load_buses)
+    ax = simple_plot(net, hl_lines=load_lines, hl_buses=load_buses)
 
     assert ax is not None
 
