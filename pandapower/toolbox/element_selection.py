@@ -715,7 +715,7 @@ def count_elements(net, return_empties=False, **kwargs):
                       bool(net[et].shape[0])}, dtype=np.int64)
 
 
-def net_elements_overview(net, include_results=False):
+def get_all_elements(net, include_results=False):
     """
     Create a combined overview of all elements in a pandapower network
     as a single DataFrame.
@@ -748,11 +748,11 @@ def net_elements_overview(net, include_results=False):
     frames = []
 
     for name, table in net.items():
-        # nur DataFrames betrachten
+        # only DataFrame
         if not isinstance(table, pd.DataFrame):
             continue
 
-        # Ergebnis-Tabellen optional ausschließen (res_bus, res_line, ...)
+        # res_ optional (res_bus, res_line, ...)
         if not include_results and name.startswith("res_"):
             continue
 
@@ -760,11 +760,11 @@ def net_elements_overview(net, include_results=False):
             continue
 
         df = table.copy()
-        # Typ und Index des Elements mitgeben
+        # save type and index
         df.insert(0, "pp_type", name)
         df.insert(1, "pp_idx", df.index)
 
-        # zusammenführen mit einheitlichem (neuem) Index
+        # reset index
         frames.append(df.reset_index(drop=True))
 
     if not frames:
