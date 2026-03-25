@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -36,13 +36,13 @@ def test_PTDF():
 
     if not np.allclose(ptdf, ptdf_sparse):
         raise AssertionError("Sparse PTDF has differenct result against dense PTDF")
-    if not ptdf.shape == (ppci["branch"].shape[0], ppci["bus"].shape[0]):
+    if ptdf.shape != (ppci["branch"].shape[0], ppci["bus"].shape[0]):
         raise AssertionError("PTDF has wrong dimension")
     if not np.all(~np.isnan(ptdf)):
         raise AssertionError("PTDF has NaN value")
-    if not ptdf_reduced.shape == (15, ppci["bus"].shape[0]):
+    if ptdf_reduced.shape != (15, ppci["bus"].shape[0]):
         raise AssertionError("Reduced PTDF has wrong dimension")
-    if not ptdf_reduced_sparse.shape == (15, ppci["bus"].shape[0]):
+    if ptdf_reduced_sparse.shape != (15, ppci["bus"].shape[0]):
         raise AssertionError("Sparse reduced PTDF has wrong dimension")
 
 
@@ -53,7 +53,7 @@ def test_PTDF_large():
 
     ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
                            using_sparse_solver=True)
-    if not ptdf_sparse.shape == (ppci["branch"].shape[0], ppci["bus"].shape[0]):
+    if ptdf_sparse.shape != (ppci["branch"].shape[0], ppci["bus"].shape[0]):
         raise AssertionError("PTDF has wrong dimension")
 
 
@@ -64,7 +64,7 @@ def test_LODF():
 
     ptdf = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     lodf = makeLODF(ppci["branch"], ptdf)
-    if not lodf.shape == (ppci["branch"].shape[0], ppci["branch"].shape[0]):
+    if lodf.shape != (ppci["branch"].shape[0], ppci["branch"].shape[0]):
         raise AssertionError("LODF has wrong dimension")
 
 

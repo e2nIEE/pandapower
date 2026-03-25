@@ -19,10 +19,11 @@ def simple_test_net_shunt_control():
 
 def test_continuous_shunt_control(tol=1e-6):
     net = simple_test_net_shunt_control()
-    BinarySearchControl(net, ctrl_in_service=True, output_element='shunt', output_variable='step',
-                        output_element_index=[0], output_element_in_service=[True], output_values_distribution=[1],
-                        input_element='res_bus', input_variable='vm_pu', input_element_index=[1], set_point=1.08, voltage_ctrl=True,
-                        tol=tol)
+    BinarySearchControl(
+        net, ctrl_in_service=True, output_element='shunt', output_variable='step', output_element_index=[0], tol=tol,
+        output_element_in_service=[True], output_values_distribution=[1], input_element='res_bus', voltage_ctrl=True,
+        input_variable='vm_pu', input_element_index=[1], set_point=1.08
+    )
     runpp(net, run_control=False)
     assert (abs(net.res_bus.loc[1, "vm_pu"] - 1.041789) < tol)
     runpp(net, run_control=True)
@@ -43,9 +44,9 @@ def test_discrete_shunt_control_with_step_dependency_table(tol=1e-6):
     net["shunt_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -50, -75, -100, -125],
          'p_mw': [0, 0, 0, 0, 0]})
-    net.shunt.step_dependency_table.at[0] = True
-    net.shunt.id_characteristic_table.at[0] = 0
-    net.shunt.step.at[0] = 2
+    net.shunt.at[0, "step_dependency_table"] = True
+    net.shunt.at[0, "id_characteristic_table"] = 0
+    net.shunt.at[0, "step"] = 2
 
     DiscreteShuntController(net, shunt_index=0, bus_index=1, vm_set_pu=1.08, tol=1e-2)
     runpp(net, run_control=False)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -13,28 +13,18 @@ class ContinuousTapControl(TrafoController):
     """
     Trafo Controller with local tap changer voltage control.
 
-    INPUT:
-        **net** (attrdict) - Pandapower struct
-
-        **element_index** (int) - ID of the trafo that is controlled
-
-        **vm_set_pu** (float) - Maximum OLTC target voltage at bus in pu
-
-    OPTIONAL:
-
-        **tol** (float, 0.001) - Voltage tolerance band at bus in percent (default: 1% = 0.01pu)
-
-        **side** (string, "lv") - Side of the transformer where the voltage is controlled
-
-        **element** (string, "trafo") - Trafo type ("trafo" or "trafo3w")
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **check_tap_bounds** (bool, True) - In case of true the tap_bounds will be considered
-
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
+    Parameters:
+        net (ADict): Pandapower struct
+        element_index (int): ID of the trafo that is controlled
+        vm_set_pu (float): Maximum OLTC target voltage at bus in pu
+        tol (float, 0.001): Voltage tolerance band at bus in percent (default: 1% = 0.01pu)
+        side (string, "lv"): Side of the transformer where the voltage is controlled
+        element (string, "trafo"): Trafo type ("trafo" or "trafo3w")
+        in_service (bool, True): Indicates if the controller is currently in_service
+        check_tap_bounds (bool, True): In case of true the tap_bounds will be considered
+        drop_same_existing_ctrl (bool, False): Indicates if already existing controllers of the same type and with the
+            same matching parameters (e.g. at same element) should be dropped
     """
-
     def __init__(self, net, element_index, vm_set_pu, tol=1e-3, side="lv", element="trafo", in_service=True,
                  check_tap_bounds=True, level=0, order=0, drop_same_existing_ctrl=False,
                  matching_params=None, **kwargs):

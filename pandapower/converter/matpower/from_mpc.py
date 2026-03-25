@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -39,32 +39,26 @@ def from_mpc(
     In that other cases, please, rename the file ending or use the internal subfunctions.
     To run actual MATPOWER to load the `.m` file, use matpower-pip and pass `load_case_engine`.
 
-    Note: python is 0-based while Matlab is 1-based.
+    .. note::
+        python is 0-based while Matlab is 1-based.
 
-    INPUT:
+    Parameters:
+        mpc_file: path to a matpower case file (.mat format not .m script).
+        f_hz (int, 50): The frequency of the network.
+        casename_mpc_file (str, 'mpc'): The name of the variable in .mat file which contain the matpower case structure,
+            i.e. the arrays "gen", "branch" and "bus".
+        load_case_engine (object, None): External engine used to call MATPOWER `loadcase` (e.g. Oct2Py() object from
+            matpower.start_instance()). Defaults to None. If None, parse data using
+            matpowercaseframes.reader.parse_file.
 
-        **mpc_file** - path to a matpower case file (.mat format not .m script).
+    Keyword Arguments:
+        any: are passed to :func:`from_ppc`
 
-    OPTIONAL:
+    Returns:
+        The pandapower network
 
-        **f_hz** (int, 50) - The frequency of the network.
-
-        **casename_mpc_file** (str, 'mpc') - The name of the variable in .mat file which contain
-        the matpower case structure, i.e. the arrays "gen", "branch" and "bus".
-
-        **load_case_engine** (object, None) - External engine used to call MATPOWER `loadcase`
-        (e.g. Oct2Py() object from matpower.start_instance()). Defaults to None. If None, parse
-        data using matpowercaseframes.reader.parse_file.
-
-        ****kwargs** - key word arguments for from_ppc().
-
-    OUTPUT:
-
-        **net** - The pandapower network
-
-    EXAMPLE:
+    Example:
         >>> from pandapower.converter.matpower import from_mpc
-        >>>
         >>> pp_net1 = from_mpc('case9.mat', f_hz=60)
         >>> pp_net2 = from_mpc('case9.m', f_hz=60)
     """
@@ -153,4 +147,4 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 
 def _change_ppc_TAP_value(ppc):
     # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
-    ppc["branch"][np.where(ppc["branch"][:, 8] == 0), 8] = 1
+    ppc["branch"][ppc["branch"][:, 8] == 0, 8] = 1

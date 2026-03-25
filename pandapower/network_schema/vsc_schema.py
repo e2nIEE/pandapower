@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-b2b_vsc_schema = pa.DataFrameSchema(
+vsc_stacked_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the B2B VSC"),
         "bus": pa.Column(
@@ -45,7 +45,7 @@ b2b_vsc_schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_b2b_vsc_schema = pa.DataFrameSchema(
+res_vsc_stacked_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, nullable=True, description="total active power consumption of B2B VSC [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="total reactive power consumption of B2B VSC [MVAr]"),

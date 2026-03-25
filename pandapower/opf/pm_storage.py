@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 def add_storage_opf_settings(net, ppci, pm):
@@ -56,7 +55,7 @@ def add_storage_opf_settings(net, ppci, pm):
 
 def read_pm_storage_results(net):
     # reads the storage results from multiple time steps from the PowerModels optimization
-    storage_results = dict()
+    storage_results = {}
     timesteps = list(net.res_ts_opt.keys())
     for idx in net.storage.index:
         # read storage results for each storage from power models to a dataframe with rows = timesteps

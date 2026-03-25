@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -153,7 +153,7 @@ class BasicCtrl(JSONSerializableClass):
 
 class Controller(BasicCtrl):
     """
-    Base-Class of all controllable elements within a network.
+    Base-Class of all controllable elements within a network. Extension of BasicCtrl
     """
 
     def __init__(self, net, name=None, in_service=True, order=0, level=0, index=None, recycle=False,
@@ -176,17 +176,12 @@ class Controller(BasicCtrl):
         """
         adds the controller to net['controller'] dataframe.
 
-        INPUT:
-            **in_service** (bool) - in service status
-
-            **order** (int) - order
-
-            **index** (int) - index
-
-            **recycle** (bool) - if controller needs a new bbm (ppc, Ybus...) or if it can be used \
-                                 with prestored values. This is mostly needed for time series \
-                                 calculations
-
+        Parameters:
+            in_service (bool): in service status
+            order: order
+            index: index
+            recycle: if controller needs a new bbm (ppc, Ybus...) or if it can be used with prestored values. This is
+                mostly needed for time series calculations
         """
         if drop_same_existing_ctrl:
             drop_same_type_existing_controllers(net, type(self), index=index, **kwargs)
@@ -200,34 +195,7 @@ class Controller(BasicCtrl):
         added_index = super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite,
                            fill_dict=fill_dict, preserve_dtypes=True)
         return added_index
-
-    def time_step(self, net, time):
-        super().time_step(net, time)
-
-    def initialize_control(self, net):
-        super().initialize_control(net)
-
-    def is_converged(self, net):
-        return super().is_converged(net)
-
-    def control_step(self, net):
-        super().control_step(net)
-
-    def repair_control(self, net):
-        super().repair_control(net)
-
-    def restore_init_state(self, net):
-        super().restore_init_state(net)
-
-    def finalize_control(self, net):
-        super().finalize_control(net)
-
-    def finalize_step(self, net, time):
-        super().finalize_step(net, time)
-
-    def set_active(self, net, in_service):
-        super().set_active(net, in_service)
-
+    
     def set_recycle(self, net):
         """
         Checks the recyclability of this controller and changes the recyclability of the control handler if
