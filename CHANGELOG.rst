@@ -8,6 +8,7 @@ Change Log
 - [ADDED] LTDS support
 - [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
 - [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
+- [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
 
 [3.4.0] - 2026-02-09
 -------------------------------
