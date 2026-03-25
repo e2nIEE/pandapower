@@ -423,7 +423,7 @@ class StateEstimation:
                     self.net.measurement = self.net.measurement.drop(meas_idx)
                     self.logger.debug("Bad data removed from the set of measurements.")
 
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error(
                     "A problem appeared while using the linear algebra methods. Check and change the measurement set."
                 )
