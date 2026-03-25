@@ -41,6 +41,3 @@ a small box: ::
 .. image:: /pics/plotting/simple_hl_plot_mv_obi.png
     :width: 80em
     :align: left
-
-
-.. autofunction:: pandapower.plotting.simple_plot
