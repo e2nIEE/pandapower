@@ -5,7 +5,11 @@ from pandapower.network_schema.tools.validation.group_dependency import create_c
 
 _line_columns = {
     "name": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="name of the line", metadata={"cim": True}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="name of the line",
+        metadata={"cim": True, "ucte": True},
     ),
     "std_type": pa.Column(
         pd.StringDtype,
@@ -228,6 +232,13 @@ _line_columns = {
         description="EquipmentContainer_id from converter, not relevant for calculations",
         metadata={"cim": True},
     ),
+    "amica_name": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="amica_name from converter, not relevant for calculations",
+        metadata={"ucte": True},
+    ),
 }
 line_schema = pa.DataFrameSchema(
     _line_columns,
@@ -326,18 +337,14 @@ res_line_3ph_schema = pa.DataFrameSchema(
         "i_c_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Phase C [kA]"),
         "i_c_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Phase C [kA]"),
         "i_c_ka": pa.Column(float, nullable=True, description="Current at Phase C [kA]"),
-        "i_n_from_ka": pa.Column(
-            float, nullable=True, description="Current at from bus: Neutral [kA]"
-        ),  # TODO: muss mike schauen
-        "i_n_to_ka": pa.Column(
-            float, nullable=True, description="Current at to bus: Neutral [kA]"
-        ),  # TODO: muss mike schauen
+        "i_n_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Neutral [kA]"),
+        "i_n_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Neutral [kA]"),
         "i_ka": pa.Column(float, nullable=True, description="Maximum of i_from_ka and i_to_ka [kA]"),
-        "i_n_ka": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu muss mike schauen
+        "i_n_ka": pa.Column(float, nullable=True, description="Current Neutral [kA]"),
         "loading_a_percent": pa.Column(float, nullable=True, description="line a loading [%]"),
         "loading_b_percent": pa.Column(float, nullable=True, description="line b loading [%]"),
         "loading_c_percent": pa.Column(float, nullable=True, description="line c loading [%]"),
-        "loading_n_percent": pa.Column(float, nullable=True, description=""),  # TODO: was only in docu
+        "loading_n_percent": pa.Column(float, nullable=True, description="line loading [%]"),
     },
     strict=False,
 )

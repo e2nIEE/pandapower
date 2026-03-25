@@ -32,7 +32,7 @@ shunt_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="maximum allowed step of shunt",
-            metadata={"opf": True, "cim": True, "default": 1},
+            metadata={"opf": True, "cim": True, "ucte": True, "default": 1},
         ),
         "in_service": pa.Column(bool, description="specifies if the shunt is in service", metadata={"default": True}),
         "step_dependency_table": pa.Column(

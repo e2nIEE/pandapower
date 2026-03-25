@@ -24,47 +24,9 @@ class UCTE2pandapower:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.u_d: dict = {}
-        self.net = self._create_empty_network()
+        self.net = create_empty_network(structure=get_structure_dict(metadata=['ucte']))
         self.net.bus["node_name"] = ""
         self.slack_as_gen = slack_as_gen
-
-    @staticmethod
-    def _create_empty_network() -> pandapowerNet:
-        net: pandapowerNet = create_empty_network()
-        structure_dict = get_structure_dict(required_only=False)
-        # TODO: this should be refactored and only create the columns that are used
-        new_columns: dict[str, dict] = {
-            "trafo": {
-                "tap_side": structure_dict['trafo']["tap_side"],
-                "tap_neutral": structure_dict['trafo']["tap_neutral"],
-                "tap_min": structure_dict['trafo']["tap_min"],
-                "tap_max": structure_dict['trafo']["tap_max"],
-                "tap_step_percent": structure_dict['trafo']["tap_step_percent"],
-                "tap_step_degree": structure_dict['trafo']["tap_step_degree"],
-                "tap_pos": structure_dict['trafo']["tap_pos"],
-                "tap_changer_type": structure_dict['trafo']["tap_changer_type"],
-                "tap2_min": structure_dict['trafo']["tap2_min"],
-                "tap2_max": structure_dict['trafo']["tap2_max"],
-                "tap2_neutral": structure_dict['trafo']["tap2_neutral"],
-                "tap2_pos": structure_dict['trafo']["tap2_pos"],
-                "tap2_step_percent": structure_dict['trafo']["tap2_step_percent"],
-                "tap2_step_degree": structure_dict['trafo']["tap2_step_degree"],
-                "tap2_side": structure_dict['trafo']["tap2_side"],
-                "tap2_changer_type": structure_dict['trafo']["tap2_changer_type"],
-                "name": structure_dict['trafo']["name"],
-                "df": structure_dict['trafo']["df"],
-                "amica_name": str,
-            },
-            "line": {
-                "name": structure_dict['line']["name"],
-                "amica_name": str
-            },
-            "bus": {"ucte_country": str},
-        }
-        for pp_element in new_columns.keys():
-            for col, dtype in new_columns[pp_element].items():
-                net[pp_element][col] = pd.Series(dtype=dtype)
-        return net
 
     def convert(self, ucte_dict: Dict) -> pandapowerNet:
         self.logger.info("Converting UCTE data to a pandapower network.")
@@ -119,9 +81,6 @@ class UCTE2pandapower:
         self._convert_impedances()
         self._convert_switches()
         self._convert_trafos()
-
-        # copy data to the element tables of self.net
-        self.net = self.set_pp_col_types(self.net)
 
         # currently, net.bus.name contains the UCTE node name ("Node"), while
         # net.bus.node_name contains the original node name "Node Name". This is changed now:
@@ -528,7 +487,6 @@ class UCTE2pandapower:
         trafos.loc[ars, "tap_max"] = trafos.loc[ar, "angle_reg_n"]
         trafos.loc[ars, "tap_pos"] = trafos.loc[ar, "angle_reg_n2"]
         trafos.loc[ars, "tap_step_percent"] = np.nan
-        # trafos.loc[ars, 'phase_reg_n'] = trafos.loc[ar, 'angle_reg_n']
         trafos.loc[ars, "tap_changer_type"] = "Ideal"
         trafos.loc[
             ars, "tap_step_degree"
@@ -687,72 +645,3 @@ class UCTE2pandapower:
 
         amica_names = input_df.loc[:, input_column].map(get_name_from_ucte_string)
         input_df.loc[:, "amica_name"] = amica_names
-
-    def set_pp_col_types(
-        self,
-        net: pandapowerNet,
-        ignore_errors: bool = False,
-    ) -> pandapowerNet:
-        """
-        Set the data types for some columns from pandapower assets. This mainly effects bus columns (to int, e.g.
-        sgen.bus or line.from_bus) and in_service and other boolean columns (to bool, e.g. line.in_service or gen.slack).
-        :param net: The pandapower network to update the data types.
-        :param ignore_errors: Ignore problems if set to True (no warnings displayed). Optional, default: False.
-        :return: The pandapower network with updated data types.
-        """
-        time_start = time.time()
-        pp_elements = [
-            "bus",
-            "dcline",
-            "ext_grid",
-            "gen",
-            "impedance",
-            "line",
-            "load",
-            "sgen",
-            "shunt",
-            "storage",
-            "switch",
-            "trafo",
-            "trafo3w",
-            "ward",
-            "xward",
-        ]
-        to_int = ["bus", "element", "to_bus", "from_bus", "hv_bus", "mv_bus", "lv_bus"]
-        to_bool = ["in_service", "closed"]
-        self.logger.info(
-            "Setting the columns data types for buses to int and in_service to bool for the following elements: "
-            "%s" % pp_elements
-        )
-        int_type = int
-        bool_type = bool
-        for ele in pp_elements:
-            self.logger.info("Accessing pandapower element %s." % ele)
-            if not hasattr(net, ele):
-                if not ignore_errors:
-                    self.logger.warning(
-                        "Missing the pandapower element %s in the input pandapower network!"
-                        % ele
-                    )
-                continue
-            for one_int in to_int:
-                if one_int in net[ele].columns:
-                    self._set_column_to_type(net[ele], one_int, int_type)
-            for one_bool in to_bool:
-                if one_bool in net[ele].columns:
-                    self._set_column_to_type(net[ele], one_bool, bool_type)
-        # some individual things
-        if hasattr(net, "sgen"):
-            add_column_to_df(net, "sgen", "current_source")
-            self._set_column_to_type(net["sgen"], "current_source", bool_type)
-        if hasattr(net, "gen"):
-            self._set_column_to_type(net["gen"], "slack", bool_type)
-        if hasattr(net, "shunt"):
-            self._set_column_to_type(net["shunt"], "step", int_type)
-            add_column_to_df(net, "shunt", "max_step")
-            self._set_column_to_type(net["shunt"], "max_step", int_type)
-        self.logger.info(
-            "Finished setting the data types for the pandapower network in %ss."
-            % (time.time() - time_start)
-        )
-        return net

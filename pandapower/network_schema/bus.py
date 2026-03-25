@@ -128,6 +128,13 @@ _bus_columns = {
         description="SubGeographicalRegion_name from converter, not relevant for calculations",
         metadata={"cim": True},
     ),
+    "ucte_country": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="ucte_country from converter, not relevant for calculations",
+        metadata={"ucte": True},
+    ),
 }
 bus_schema = pa.DataFrameSchema(
     _bus_columns,

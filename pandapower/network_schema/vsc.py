@@ -51,7 +51,7 @@ vsc_schema = pa.DataFrameSchema(
             bool, description="whether the element is considered as actively controlling", metadata={"default": True}
         ),
         "in_service": pa.Column(bool, description="specifies if the VSC is in service.", metadata={"default": True}),
-        # "ref_bus": pa.Column(int, pa.Check.ge(0), description=""),  #TODO: Mike
+        # "ref_bus": pa.Column(int, pa.Check.ge(0), description=""),  #TODO: implementation currently not finished
     },
     strict=False,
 )

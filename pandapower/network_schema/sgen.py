@@ -94,14 +94,14 @@ _sgen_columns = {
         nullable=True,
         required=False,
         description="type of generator naming conventions: “PV” - photovoltaic system “WP” - wind power system “CHP” - combined heating and power system",
-        metadata={"default": "wye", "cim": True},
+        metadata={"cim": True, "default": "wye"},
     ),
     "current_source": pa.Column(
         pd.BooleanDtype,
         nullable=True,
         required=False,
         description="Model this sgen as a current source during short- circuit calculations; useful in some cases, for example the simulation of full- size converters per IEC 60909-0:2016.",
-        metadata={"sc": True, "default": True, "cim": True},
+        metadata={"sc": True, "cim": True, "ucte": True, "default": True},
     ),
     "generator_type": pa.Column(  # TODO: is this not an sgen, did someone model motor as an sgen?
         pd.StringDtype,

@@ -9,7 +9,11 @@ from pandapower.network_schema.tools.validation.column_condition import create_l
 
 _trafo_columns = {
     "name": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="name of the transformer", metadata={"cim": True}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="name of the transformer",
+        metadata={"cim": True, "ucte": True},
     ),
     "std_type": pa.Column(
         pd.StringDtype,
@@ -91,16 +95,16 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="defines if tap changer is at the high- or low voltage side",
-        metadata={"cim": True},
+        metadata={"cim": True, "ucte": True},
     ),  # Thomas: null only if no tap_changer_type
     "tap_neutral": pa.Column(
-        float, nullable=True, required=False, description="rated tap position", metadata={"cim": True}
+        float, nullable=True, required=False, description="rated tap position", metadata={"cim": True, "ucte": True}
     ),
     "tap_min": pa.Column(
-        float, nullable=True, required=False, description="minimum tap position", metadata={"cim": True}
+        float, nullable=True, required=False, description="minimum tap position", metadata={"cim": True, "ucte": True}
     ),
     "tap_max": pa.Column(
-        float, nullable=True, required=False, description="maximum tap position", metadata={"cim": True}
+        float, nullable=True, required=False, description="maximum tap position", metadata={"cim": True, "ucte": True}
     ),
     "tap_step_percent": pa.Column(
         float,
@@ -108,7 +112,7 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="tap step size for voltage magnitude [%]",
-        metadata={"cim": True},
+        metadata={"cim": True, "ucte": True},
     ),
     "tap_step_degree": pa.Column(
         float,
@@ -116,10 +120,14 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="tap step size for voltage angle",
-        metadata={"cim": True},
+        metadata={"cim": True, "ucte": True},
     ),
     "tap_pos": pa.Column(
-        float, nullable=True, required=False, description="current position of tap changer", metadata={"cim": True}
+        float,
+        nullable=True,
+        required=False,
+        description="current position of tap changer",
+        metadata={"cim": True, "ucte": True},
     ),
     "tap_changer_type": pa.Column(
         pd.StringDtype,
@@ -127,7 +135,7 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="specifies the tap changer type",
-        metadata={"cim": True},
+        metadata={"cim": True, "ucte": True},
     ),
     "tap_dependency_table": pa.Column(
         pd.BooleanDtype,
@@ -158,7 +166,7 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="derating factor: maximum current of transformer in relation to nominal current of transformer (from 0 to 1)",
-        metadata={"default": 1.0, "cim": True},
+        metadata={"default": 1.0, "cim": True, "ucte": True},
     ),
     "in_service": pa.Column(bool, description="specifies if the transformer is in service", metadata={"default": True}),
     "oltc": pa.Column(
@@ -181,16 +189,16 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="position of the second tap changer (hv, lv)",
-        metadata={"cim": True},
+        metadata={"cim": True, "ucte": True},
     ),
     "tap2_neutral": pa.Column(
-        float, nullable=True, required=False, description="rated tap position", metadata={"cim": True}
+        float, nullable=True, required=False, description="rated tap position", metadata={"cim": True, "ucte": True}
     ),
     "tap2_min": pa.Column(
-        float, nullable=True, required=False, description="minimum tap position", metadata={"cim": True}
+        float, nullable=True, required=False, description="minimum tap position", metadata={"cim": True, "ucte": True}
     ),
     "tap2_max": pa.Column(
-        float, nullable=True, required=False, description="maximum tap position", metadata={"cim": True}
+        float, nullable=True, required=False, description="maximum tap position", metadata={"cim": True, "ucte": True}
     ),
     "tap2_step_percent": pa.Column(
         float,
@@ -198,7 +206,7 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="tap step size for voltage magnitude [%]",
-        metadata={"cim": True},
+        metadata={"cim": True, "ucte": True},
     ),
     "tap2_step_degree": pa.Column(
         float,
@@ -206,10 +214,14 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="tap step size for voltage angle",
-        metadata={"cim": True},
+        metadata={"cim": True, "ucte": True},
     ),
     "tap2_pos": pa.Column(
-        float, nullable=True, required=False, description="current position of tap changer", metadata={"cim": True}
+        float,
+        nullable=True,
+        required=False,
+        description="current position of tap changer",
+        metadata={"cim": True, "ucte": True},
     ),
     "tap2_changer_type": pa.Column(
         pd.StringDtype,
@@ -217,7 +229,7 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="specifies the tap changer type",
-        metadata={"cim": True},
+        metadata={"cim": True, "ucte": True},
     ),
     "leakage_resistance_ratio_hv": pa.Column(
         float,
@@ -352,6 +364,13 @@ _trafo_columns = {
         required=False,
         description="OperationalLimitType.acceptableDuration_lv from converter, not relevant for calculations",
         metadata={"cim": True},
+    ),
+    "amica_name": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="amica_name from converter, not relevant for calculations",
+        metadata={"ucte": True},
     ),
 }
 tap2_columns = ["tap2_pos", "tap2_neutral", "tap2_side", "tap2_step_percent", "tap2_step_degree"]
