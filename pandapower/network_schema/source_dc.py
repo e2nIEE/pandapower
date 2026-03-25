@@ -14,7 +14,7 @@ source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
             metadata={"default": 1.0},
         ),
         "in_service": pa.Column(
-            bool, description="specifies if the generator is in service.", metadata={"default": 1.0}
+            bool, description="specifies if the generator is in service.", metadata={"default": True}
         ),
     },
     strict=False,

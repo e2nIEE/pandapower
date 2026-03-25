@@ -194,7 +194,7 @@ _sgen_columns = {
         metadata={"cim": True},
     ),
     "RegulatingControl.enabled": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="RegulatingControl.enabled from converter, not relevant for calculations",

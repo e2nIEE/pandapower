@@ -19,7 +19,7 @@ _bus_dc_columns = {
         required=False,
         description="can be used to group dc buses, for example network groups / regions",
     ),
-    "in_service": pa.Column(bool, description="specifies if the dc bus is in service", metadata={"default": "b"}),
+    "in_service": pa.Column(bool, description="specifies if the dc bus is in service", metadata={"default": True}),
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
     "max_vm_pu": pa.Column(
         float,

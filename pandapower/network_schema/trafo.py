@@ -170,14 +170,14 @@ _trafo_columns = {
     ),
     "in_service": pa.Column(bool, description="specifies if the transformer is in service", metadata={"default": True}),
     "oltc": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="specifies if the transformer has an OLTC (short-circuit relevant)",
         metadata={"sc": True, "cim": True},
     ),
     "power_station_unit": pa.Column(
-        bool,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="specifies if the transformer is part of a power_station_unit (short-circuit relevant) refer to IEC60909-0-2016 section 6.7.1",

@@ -14,7 +14,6 @@ import pandas as pd
 from pandapower.network_structure import get_structure_dict
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
-from pandapower.create._utils import add_column_to_df
 
 
 class UCTE2pandapower:
