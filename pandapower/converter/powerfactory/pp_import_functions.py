@@ -61,15 +61,15 @@ def from_pf(net_name,
     
     ###    
     
-    log_file_path = r'C:\Users\mfischer\spyder_projects\nap26_edis\nap26_edis\convertpf2pp\validate_pf2pp\converter_logger\log'
-    # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings_specialUW.log', level=logging.WARNING, 
-    #                 format='%(asctime)s - %(levelname)s - %(message)s')
-    # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings.log', level=logging.WARNING, 
-    #                 format='%(asctime)s - %(levelname)s - %(message)s')
+    # log_file_path = r'C:\Users\mfischer\spyder_projects\nap26_edis\nap26_edis\convertpf2pp\validate_pf2pp\converter_logger\log'
+    # # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings_specialUW.log', level=logging.WARNING, 
+    # #                 format='%(asctime)s - %(levelname)s - %(message)s')
+    # # logging.basicConfig(filename=log_file_path + '\\'+'all_logger_warnings.log', level=logging.WARNING, 
+    # #                 format='%(asctime)s - %(levelname)s - %(message)s')
 
-    logger = logging.getLogger(__name__)
+    # logger = logging.getLogger(__name__)
     
-    logger.warning('FhKassel - Initial log for net: %s' % net_name)
+    # logger.warning('FhKassel - Initial log for net: %s' % net_name)
     #logger = logging.getLogger(net_name) 
     ####
     
@@ -788,6 +788,7 @@ def get_coords_from_grf_object(item):
 
 
 def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
+    
     params = {'parallel': item.nlnum, 'name': item.loc_name}
     logger.debug('>> creating line <%s>' % params['name'])
     logger.debug('line <%s> has <%d> parallel lines' % (params['name'], params['parallel']))
@@ -845,6 +846,12 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
             
             sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
                                             coords=coords, is_unbalanced=is_unbalanced, **params)
+            
+            if item.outserv:
+                # if ElmLne out of service, set all ElmLnesec out of service 
+                # ElmLne is parent of ElmLnsesec
+                net.line.loc[sid_list, 'in_service']=False
+                
         else:
             lidx = create_line_no_sections(net, item, line_sections, params["bus1"], params["bus2"], coords,
                                            is_unbalanced, ac)
@@ -2752,6 +2759,16 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
         else:
             logger.debug('tap controller of trafo <%s> at lv' % name)
             side = 'lv'
+            
+        #### E.DIS 14d
+            item.SetAttribute('i_cont', 1) # set every controller to continous controller
+            item.SetAttribute('usetp', 1.0)
+            
+            if side == 'hv':
+                logger.error("ContinuousTapControl at hv side, check for E.DIS: %s" % name)
+                             
+        #####
+        
         if item.i_cont == 1:
             vm_set_pu = item.usetp
             logger.debug('trafo <%s> has continuous tap controller with vm_set_pu = %.3f, side = %s' %
@@ -2781,7 +2798,11 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
 
     add_additional_attributes(item, net, element='trafo', element_id=tid,
                               attr_dict={'e:cpSite.loc_name': 'site', 'for_name': 'equipment', "cimRdfId": "origin_id"})
-
+    
+    #### E.DIS 14d
+    pf_type.SetAttribute('itapzdep', 0) # do NOT consider tap dependend impedance 
+    #####
+    
     if pf_type.itapch and pf_type.itapzdep and not use_tap_table:
         add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid)
 
@@ -3017,7 +3038,11 @@ def create_trafo3w(net, item, tap_opt='nntap'):
             new_tap_table = pd.DataFrame(measurement_report)
             new_tap_table = new_tap_table.iloc[:, :len(columns)]
             new_tap_table.columns = columns
-
+        
+        #### E.DIS 14d
+            pf_type.SetAttribute('itapzdep', 0) # do NOT consider tap dependend impedance 
+        #####
+        
         if pf_type.itapzdep:
             table_side = pf_type.itapzside
         else:
@@ -3174,10 +3199,44 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         net.res_trafo3w.at[tid, "pf_loading"] = loading
     else:
         net.res_trafo3w.at[tid, "pf_loading"] = np.nan
+    
+    #### E.DIS 14d
+    pf_type.SetAttribute('itapzdep', 0) # do NOT consider tap dependend impedance 
+    #####
 
     # TODO Implement the tap changer controller for 3-winding transformer
     if pf_type.itapzdep and not use_tap_table:
         add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid)
+        
+    #### E.DIS 14d
+    ### Tap controller
+    #### E.DIS 14d
+    item.SetAttribute('i_cont', 1) # set every controller to continous controller
+    item.SetAttribute('usetp', 1.0)
+    #####
+    
+    # identify voltage side
+    # if net.trafo3w.loc[tid, "vn_lv_kv"] > net.trafo3w.loc[tid, "vn_mv_kv"]:
+    #     logger.debug('tap controller of trafo <%s> at lv' % params['name'])
+    #     side = 'lv'
+    #     item.SetAttribute('t3ldc', 2) # set controlled node to 1: MV or 2: LV
+    # elif net.trafo3w.loc[tid, "vn_lv_kv"] < net.trafo3w.loc[tid, "vn_mv_kv"]:
+    #     logger.debug('tap controller of trafo <%s> at mv' % params['name'])
+    #     side = 'mv'
+    #     item.SetAttribute('t3ldc', 1) # set controlled node to 1: MV or 2: LV
+    
+    if item.GetAttribute('t3ldc')==1:
+        side = 'mv'
+    elif item.GetAttribute('t3ldc')==2:
+        side = 'lv'
+    else: 
+        logger.error("ContinuousTapControl trafo3w at side which is not implemented, check for E.DIS: %s" % item.loc_name)
+        
+    # create continous controller
+    ContinuousTapControl(net, tid, side=side, element="trafo3w", vm_set_pu=1.0)
+    
+    ####
+    
 
     # TODO right now Pandapower only supports one tapchanger
     #        # todo zero-sequence parameters (must be implemented in build_branch first)
