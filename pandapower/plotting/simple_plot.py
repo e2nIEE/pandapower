@@ -427,8 +427,8 @@ def simple_plot(
         hover_text = ax.text(0, 0, "", fontsize=12, fontweight="bold", color='white',
                              ha='center', va='center', zorder=99,
                              bbox=dict(boxstyle="round",
-                                       facecolor='black', alpha=1,
-                                       edgecolor='black'))
+                                       facecolor='#179c7d', alpha=1,
+                                       edgecolor='white'))
         hover_text.set_visible(False)
         fig.canvas.mpl_connect(
             "motion_notify_event",
