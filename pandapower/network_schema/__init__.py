@@ -1,3 +1,8 @@
+"""
+init for network_schema
+
+ALL VARIABLES EXPOSED HERE SHOULD BE OF TYPE pandera.DataFrameSchema
+"""
 from pandapower.network_schema.asymmetric_load import (
     asymmetric_load_schema,
     res_asymmetric_load_schema,

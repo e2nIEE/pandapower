@@ -147,6 +147,7 @@ _ext_grid_columns = {
 }
 ext_grid_schema = pa.DataFrameSchema(
     _ext_grid_columns,
+    name="ext_grid",
     strict=False,
     checks=create_column_dependency_checks_from_metadata(["opf", "sc", "3ph"], _ext_grid_columns),
 )
@@ -156,6 +157,7 @@ res_ext_grid_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, nullable=True, description="active power supply at the external grid [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="reactive power supply at the external grid [MVar]"),
     },
+    name="res_ext_grid",
     strict=False,
 )
 
@@ -180,5 +182,6 @@ res_ext_grid_3ph_schema = pa.DataFrameSchema(
             float, nullable=True, description="reactive power supply at the external grid : Phase C [MVar]"
         ),
     },
+    name="res_ext_grid_3ph",
     strict=False,
 )

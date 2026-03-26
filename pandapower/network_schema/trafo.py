@@ -404,6 +404,7 @@ trafo_checks.append(create_lower_than_column_check(first_element="min_angle_degr
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,
+    name="trafo",
     strict=False,
 )
 
@@ -435,6 +436,7 @@ res_trafo_schema = pa.DataFrameSchema(
         "va_lv_degree": pa.Column(float, nullable=True, description="voltage angle at the low voltage bus [degrees]"),
         "loading_percent": pa.Column(float, nullable=True, description="load utilization relative to rated power [%]"),
     },
+    name="res_trafo",
     strict=False,
 )
 
@@ -521,6 +523,7 @@ res_trafo_3ph_schema = pa.DataFrameSchema(
             description="load utilization relative to rated power: Maximum of Phase A, B, C in [%]",
         ),
     },
+    name="res_trafo_3ph",
     strict=False,
 )
 
@@ -553,5 +556,6 @@ res_trafo_sc_schema = pa.DataFrameSchema(
             float, nullable=True, description="voltage angle at the low voltage (LV) bus [degrees]"
         ),
     },
+    name="res_trafo_sc",
     strict=False,
 )

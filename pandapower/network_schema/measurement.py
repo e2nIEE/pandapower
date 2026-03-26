@@ -78,5 +78,6 @@ measurement_schema = pa.DataFrameSchema(
             metadata={"cim": True},
         ),
     },
+    name="measurement",
     strict=False,
 )

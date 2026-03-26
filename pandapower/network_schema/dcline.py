@@ -102,6 +102,7 @@ _dcline_columns = {
 dcline_schema = pa.DataFrameSchema(
     _dcline_columns,
     checks=create_column_dependency_checks_from_metadata(["opf"], _dcline_columns),
+    name="dcline",
     strict=False,
 )
 
@@ -121,5 +122,6 @@ res_dcline_schema = pa.DataFrameSchema(
         "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at ‘to_bus’ [p.u]"),
         "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at ‘to_bus’ [degree]"),
     },
+    name="res_dcline",
     strict=False,
 )

@@ -216,6 +216,7 @@ gen_checks.append(create_lower_equals_column_check(first_element="min_p_mw", sec
 gen_checks.append(create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"))
 gen_schema = pa.DataFrameSchema(
     _gen_columns,
+    name="gen",
     strict=False,
     checks=gen_checks,
 )
@@ -230,5 +231,6 @@ res_gen_schema = pa.DataFrameSchema(
         "va_degree": pa.Column(float, nullable=True, description="generator voltage angle [degree]"),
         "vm_pu": pa.Column(float, nullable=True, description="voltage at the generator [p.u.]"),
     },
+    name="res_gen",
     strict=False,
 )

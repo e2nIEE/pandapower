@@ -203,6 +203,7 @@ _sgen_columns = {
 }
 sgen_schema = pa.DataFrameSchema(
     _sgen_columns,
+    name="sgen",
     strict=False,
     checks=create_column_dependency_checks_from_metadata(
         [
@@ -221,5 +222,6 @@ res_sgen_schema = pa.DataFrameSchema(
             float, nullable=True, description="resulting reactive power production after scaling [MVar]"
         ),
     },
+    name="res_sgen",
     strict=False,
 )

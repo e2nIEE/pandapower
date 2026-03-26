@@ -71,6 +71,7 @@ switch_schema = pa.DataFrameSchema(
             metadata={"cim": True},
         ),
     },
+    name="switch",
     strict=False,
 )
 
@@ -85,5 +86,6 @@ res_switch_schema = pa.DataFrameSchema(
             float, nullable=True, description="loading of switch in percent of maximum current [%]"
         ),
     },
+    name="res_switch",
     strict=False,
 )

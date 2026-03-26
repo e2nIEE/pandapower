@@ -142,6 +142,7 @@ impedance_schema = pa.DataFrameSchema(
             metadata={"cim": True},
         ),
     },
+    name="impedance",
     strict=False,
 )
 
@@ -163,5 +164,6 @@ res_impedance_schema = pa.DataFrameSchema(
         "i_from_ka": pa.Column(float, nullable=True, description="current at from bus [kA]"),
         "i_to_ka": pa.Column(float, nullable=True, description="current at to bus [kA]"),
     },
+    name="res_impedance",
     strict=False,
 )

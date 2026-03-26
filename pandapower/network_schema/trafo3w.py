@@ -366,6 +366,7 @@ trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_lv_perce
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,
+    name="trafo3w",
     strict=False,
 )
 
@@ -412,6 +413,7 @@ res_trafo3w_schema = pa.DataFrameSchema(
         "vm_internal_pu": pa.Column(float, nullable=True, description="voltage magnitude at internal bus"),
         "loading_percent": pa.Column(float, nullable=True, description="transformer utilization [%]"),
     },
+    name="res_trafo3w",
     strict=False,
 )
 
@@ -433,5 +435,6 @@ res_trafo3w_sc_schema = pa.DataFrameSchema(
             description="magnitude of the initial SC current at the low voltage side of the transformer [kA]",
         ),
     },
+    name="res_trafo3w_sc",
     strict=False,
 )

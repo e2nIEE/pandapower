@@ -106,6 +106,7 @@ _load_columns = {
 load_schema = pa.DataFrameSchema(
     _load_columns,
     checks=create_column_dependency_checks_from_metadata(["zip"], _load_columns),
+    name="load",
     strict=False,
 )
 
@@ -122,5 +123,6 @@ res_load_schema = pa.DataFrameSchema(
             description="resulting reactive power demand after scaling and after considering voltage dependence [MVar]",
         ),
     },
+    name="res_load",
     strict=False,
 )

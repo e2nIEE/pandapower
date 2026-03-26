@@ -138,6 +138,7 @@ _bus_columns = {
 }
 bus_schema = pa.DataFrameSchema(
     _bus_columns,
+    name="bus",
     checks=[
         *create_column_dependency_checks_from_metadata(["opf"], _bus_columns),
         create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
@@ -153,6 +154,7 @@ res_bus_schema = res_bus_est_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, nullable=True, description="resulting active power demand [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="resulting reactive power demand [Mvar]"),
     },
+    name="res_bus",
     strict=False,
 )
 
@@ -176,6 +178,7 @@ res_bus_3ph_schema = pa.DataFrameSchema(
             description="unbalance in percent defined as the ratio of V2 and V1 according to IEC 62749",
         ),
     },
+    name="res_bus_3ph",
     strict=False,
 )
 
@@ -199,5 +202,6 @@ res_bus_sc_schema = pa.DataFrameSchema(
             float, nullable=True, description="reactive part of equiv. (zero sequence) SC impedance [Ohm]"
         ),
     },
+    name="res_bus_sc",
     strict=False,
 )

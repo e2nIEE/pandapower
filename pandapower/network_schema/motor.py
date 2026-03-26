@@ -82,6 +82,7 @@ _motor_columns = {
 motor_schema = pa.DataFrameSchema(
     _motor_columns,
     checks=create_column_dependency_checks_from_metadata(["sc"], _motor_columns),
+    name="motor",
     strict=False,
 )
 
@@ -91,5 +92,6 @@ res_motor_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, nullable=True, description="resulting active power demand [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="resulting reactive power demand [MVar]"),
     },
+    name="res_motor",
     strict=False,
 )

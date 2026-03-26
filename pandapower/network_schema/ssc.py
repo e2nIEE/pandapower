@@ -36,6 +36,7 @@ ssc_schema = pa.DataFrameSchema(
         ),
         "in_service": pa.Column(bool, description="specifies if the SSC is in service.", metadata={"default": True}),
     },
+    name="ssc",
     strict=False,
 )
 
@@ -48,5 +49,6 @@ res_ssc_schema = pa.DataFrameSchema(
         "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude at ssc bus [pu]"),
         "va_degree": pa.Column(float, nullable=True, description="voltage angle at ssc bus [degree]"),
     },
+    name="res_ssc",
     strict=False,
 )

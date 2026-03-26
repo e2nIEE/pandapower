@@ -45,6 +45,7 @@ ward_schema = pa.DataFrameSchema(
             metadata={"cim": True},
         ),
     },
+    name="ward",
     strict=False,
 )
 
@@ -54,5 +55,6 @@ res_ward_schema = pa.DataFrameSchema(
         "q_mvar": pa.Column(float, nullable=True, description="reactive power demand of the ward equivalent [MVar]"),
         "vm_pu": pa.Column(float, nullable=True, description="voltage at the ward bus [p.u]"),
     },
+    name="res_ward",
     strict=False,
 )

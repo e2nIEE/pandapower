@@ -55,6 +55,7 @@ xward_schema = pa.DataFrameSchema(
             metadata={"cim": True},
         ),
     },
+    name="xward",
     strict=False,
 )
 
@@ -66,5 +67,6 @@ res_xward_schema = pa.DataFrameSchema(
         "va_internal_degree": pa.Column(float, nullable=True, description=""),
         "vm_internal_pu": pa.Column(float, nullable=True, description=""),
     },
+    name="res_xward",
     strict=False,
 )
