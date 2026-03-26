@@ -708,7 +708,7 @@ class CimParser:
                 'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage',
                                                              'EquipmentContainer']),
                 'SeriesCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'EquipmentContainer']),
                 'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
                 'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description']),
                 'ReactiveCapabilityCurve': pd.DataFrame(columns=['rdfId', 'name', 'curveStyle', 'xUnit', 'y1Unit',
