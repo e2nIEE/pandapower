@@ -11,7 +11,6 @@ import pandas as pd
 
 try:
     import matplotlib.pyplot as plt
-    from matplotlib.lines import Line2D
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -123,7 +122,7 @@ def hover(event, ax, net, hover_text):
 def simple_plot(
         net: pandapowerNet,
         respect_switches: bool = False,
-        line_width: float = 1.0,
+        line_width: float = 2.0,
         bus_size: float = 1.0,
         ext_grid_size: float = 1.0,
         trafo_size: float = 1.0,
@@ -138,11 +137,11 @@ def simple_plot(
         switch_distance: float = 1.0,
         plot_line_switches: bool = False,
         scale_size: bool = True,
-        bus_color="b",
+        bus_color="#1c3f52",
         line_color="grey",
         dcline_color="c",
         trafo_color="k",
-        ext_grid_color="y",
+        ext_grid_color="#179c7d",
         switch_color="k",
         library="igraph",
         show_plot: bool = True,
@@ -158,7 +157,7 @@ def simple_plot(
         enable_hover=True,
         hl_bus_size_factor=1.5,
         hl_line_width_factor=2.0,
-        hl_color="r"
+        hl_color="#f58220"
 ):
     """
         Plots a pandapower network as simple as possible. If no geodata is available, artificial
