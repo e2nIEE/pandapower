@@ -132,73 +132,73 @@ _sgen_columns = {
         metadata={"sc": True},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "terminal": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="terminal from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "description": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="description from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "RegulatingControl.mode": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="RegulatingControl.mode from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "RegulatingControl.targetValue": pa.Column(
         float,
         nullable=True,
         required=False,
         description="RegulatingControl.targetValue from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "referencePriority": pa.Column(
         float,
         nullable=True,
         required=False,
         description="referencePriority from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "vn_kv": pa.Column(
         float,
         nullable=True,
         required=False,
         description="vn_kv from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "rdss_ohm": pa.Column(
         float,
         nullable=True,
         required=False,
         description="rdss_ohm from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "xdss_pu": pa.Column(
         float,
         nullable=True,
         required=False,
         description="xdss_pu from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "RegulatingControl.enabled": pa.Column(
         pd.BooleanDtype,
         nullable=True,
         required=False,
         description="RegulatingControl.enabled from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
 }
 sgen_schema = pa.DataFrameSchema(

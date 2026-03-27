@@ -84,65 +84,65 @@ _ext_grid_columns = {
         metadata={"default": False},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "substation": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="substation from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="terminal from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "description": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="description from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "RegulatingControl.mode": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="RegulatingControl.mode from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "RegulatingControl.targetValue": pa.Column(
         float,
         nullable=True,
         required=False,
         description="RegulatingControl.targetValue from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "RegulatingControl.enabled": pa.Column(
         float,
         nullable=True,
         required=False,
         description="RegulatingControl.enabled from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "referencePriority": pa.Column(
         float,
         nullable=True,
         required=False,
         description="referencePriority, from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "p_mw": pa.Column(
-        float, nullable=True, description="p from converter, not relevant for calculations", metadata={"cim": True}
+        float, nullable=True, description="p from converter, not relevant for calculations", metadata={"cim": True, "doc": False}
     ),
     "q_mvar": pa.Column(
-        float, nullable=True, description="q from converter, not relevant for calculations", metadata={"cim": True}
+        float, nullable=True, description="q from converter, not relevant for calculations", metadata={"cim": True, "doc": False}
     ),
 }
 ext_grid_schema = pa.DataFrameSchema(

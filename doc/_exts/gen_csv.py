@@ -56,9 +56,11 @@ def create_docu_csv_from_schema(schema: DataFrameSchema, path: str, filename: st
             return f"{check_name_to_symbol[check["options"]["check_name"]]}{check['value']}"
         return pd.NA
 
-    def _get_metadata(name: str, kind: str):
+    def _get_metadata(name: str, kind: str, default: bool = False):
         metadata = schema.columns[name].metadata
-        return metadata is not None and kind in metadata
+        if metadata is None:
+            return default
+        return metadata.get(kind, default)
 
     for col_name, col_details in schema_dict["columns"].items():
         columns_info.append(
@@ -72,12 +74,19 @@ def create_docu_csv_from_schema(schema: DataFrameSchema, path: str, filename: st
                 "optimal power flow": bool_to_checkmark[_get_metadata(col_name, "opf")],
                 "short circuit": bool_to_checkmark[_get_metadata(col_name, "sc")],
                 "3ph": bool_to_checkmark[_get_metadata(col_name, "3ph")],
+                "tdpf": bool_to_checkmark[_get_metadata(col_name, "tdpf")],
+                "doc": _get_metadata(col_name, "doc", True),
             }
         )
 
     # Create CSV with column metadata
     df = pd.DataFrame(columns_info)
+    # Drop rows that should not appear in documentation and the doc column:
+    df = df[df.doc == True]
+    df = df.drop(columns=["doc"])
+    # Drop empty columns
     df = df.dropna(how='all', axis=1)
+    # fill NA fields with empty string
     df = df.fillna('')
 
     # pd.set_option("display.max_columns", None)

@@ -72,31 +72,31 @@ _dcline_columns = {
     ),
     "in_service": pa.Column(bool, description="specifies if the line is in service.", metadata={"default": True}),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "description": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="description from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "terminal_to": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="terminal_to from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "terminal_from": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="terminal_from from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
 }
 dcline_schema = pa.DataFrameSchema(

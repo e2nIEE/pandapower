@@ -46,94 +46,94 @@ _bus_columns = {
         metadata={"cim": True},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_profile": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="origin_profile from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "cim_topnode": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="cim_topnode from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "ConnectivityNodeContainer_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="ConnectivityNodeContainer_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "Substation_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="Substation_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "description": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="description from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "Busbar_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="Busbar_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "Busbar_name": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="Busbar_name from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "GeographicalRegion_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="GeographicalRegion_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "GeographicalRegion_name": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="GeographicalRegion_name from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "SubGeographicalRegion_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="SubGeographicalRegion_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "SubGeographicalRegion_name": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="SubGeographicalRegion_name from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "ucte_country": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="ucte_country from converter, not relevant for calculations",
-        metadata={"ucte": True},
+        metadata={"ucte": True, "doc": False},
     ),
 }
 bus_schema = pa.DataFrameSchema(

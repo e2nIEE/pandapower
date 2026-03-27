@@ -31,28 +31,28 @@ xward_schema = pa.DataFrameSchema(
             bool, description="specifies if the extended ward equivalent is in service.", metadata={"default": True}
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
         ),
         "origin_class": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="origin_class rdfId from CIM",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "terminal": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="terminal from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "description": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="description from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
     },
     name="xward",

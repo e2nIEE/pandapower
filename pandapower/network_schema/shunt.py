@@ -50,35 +50,35 @@ shunt_schema = pa.DataFrameSchema(
             description="references the id_characteristic index from the shunt_characteristic_table",
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
         ),
         "origin_class": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="origin_class rdfId from CIM",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "terminal": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="terminal from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "description": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="description from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "sVCControlMode": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="sVCControlMode from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
     },
     checks=[
