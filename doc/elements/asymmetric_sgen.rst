@@ -22,11 +22,10 @@ Input Parameters
 
 *net.asymmetric_sgen*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: asymmetric_sgen_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/asymmetric_sgen.csv
+    :header-rows: 1
+    :delim: ,
 
 .. |br| raw:: html
 
@@ -41,9 +40,9 @@ Electric Model
 Static Generators are modelled as PQ-buses in the power flow calculation:
 
 .. image:: pq.png
-	:width: 8em
-	:alt: alternate Text
-	:align: center
+    :width: 8em
+    :alt: alternate Text
+    :align: center
     
 The PQ-Values are calculated from the parameter table values as:
 
@@ -64,10 +63,9 @@ Result Parameters
 ==========================
 *net.asymmetric_sgen*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: asymmetric_sgen_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_asymmetric_sgen.csv
+    :header-rows: 1
+    :delim: ,
 
 The power values in the net.res_sgen table are equivalent to :math:`P_{sgen}` and :math:`Q_{sgen}`.

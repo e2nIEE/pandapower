@@ -20,11 +20,10 @@ Input Parameters
 
 *net.storage*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
 .. csv-table::
-   :file: storage_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+    :file: table_structures/storage.csv
+    :header-rows: 1
+    :delim: ,
 
 .. |br| raw:: html
 
@@ -39,9 +38,9 @@ Electric Model
 Storages are modelled as PQ-buses in the power flow calculation:
 
 .. image:: storage.png
-	:width: 8em
-	:alt: alternate Text
-	:align: center
+    :width: 8em
+    :alt: alternate Text
+    :align: center
 
 The PQ-Values are calculated from the parameter table values as:
 
@@ -61,10 +60,9 @@ Result Parameters
 ==========================
 *net.res_storage*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
 .. csv-table::
-   :file: storage_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+    :file: table_structures/res_storage.csv
+    :header-rows: 1
+    :delim: ,
 
 The power values in the net.res_storage table are equivalent to :math:`P_{storage}` and :math:`Q_{storage}`.

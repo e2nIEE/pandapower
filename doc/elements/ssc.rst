@@ -33,11 +33,10 @@ Input Parameters
 
 *net.ssc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: ssc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/ssc.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -47,9 +46,9 @@ Electric Model
 
 
 .. image:: ssc.png
-	:width: 12em
-	:alt: alternate Text
-	:align: center
+    :width: 12em
+    :alt: alternate Text
+    :align: center
 
 The SSC is a VSC-based shunt-connected FACTS controller and can thus be modeled as a single-terminal active component.
 The corresponding terminal-admittance equation is given as:
@@ -69,8 +68,7 @@ Result Parameters
 ==========================
 *net.res_ssc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: ssc_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_ssc.csv
+    :header-rows: 1
+    :delim: ,

@@ -21,12 +21,10 @@ Input Parameters
 
 *net.load_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-
 .. csv-table::
-   :file: load_dc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+    :file: table_structures/load_dc.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -61,11 +59,9 @@ Result Parameters
 ==========================    
 *net.res_load_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.45\linewidth}|
-.. csv-table:: 
-   :file: load_dc_res.csv
-   :delim: ;
-   :widths: 10, 10, 45
+.. csv-table::
+    :file: table_structures/res_load_dc.csv
+    :header-rows: 1
+    :delim: ,
    
 The power values in the net.res_load_dc table are equivalent to :math:`P_{load}`.
-

@@ -19,13 +19,12 @@ Create Function
 Input Parameters
 =====================
 
-*net.sgen*
+*net.source_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: source_dc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/source_dc.csv
+    :header-rows: 1
+    :delim: ,
 
 .. |br| raw:: html
 
@@ -56,10 +55,9 @@ Result Parameters
 ==========================
 *net.res_source_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-    :file: res_source_dc.csv
-    :delim: ;
-    :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_source_dc.csv
+    :header-rows: 1
+    :delim: ,
 
 The power values in the net.res_source_dc table are equivalent to :math:`P_{sgen}`.

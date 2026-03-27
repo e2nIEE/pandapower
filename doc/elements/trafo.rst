@@ -28,11 +28,10 @@ Input Parameters
 
 *net.trafo*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: trafo_par.csv
-   :delim: ;
-   :widths: 15, 10, 25, 40
+.. csv-table::
+    :file: table_structures/trafo.csv
+    :header-rows: 1
+    :delim: ,
   
 \*necessary for executing a balanced power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*necessary for executing a three phase power flow / single phase short circuit |br| \*\*\*\*optional, for modeling a second tap changer
 
@@ -59,20 +58,20 @@ The equivalent circuit used for the transformer can be set in the power flow wit
 *trafo_model='t':*
 
 .. image:: trafo_t.png
-	:width: 30em
-	:align: center
+    :width: 30em
+    :align: center
 
 *sequence = 0:*
 
 .. image:: trafo_t_zero.png
-	:width: 50em
-	:align: center
+    :width: 50em
+    :align: center
 
 *trafo_model='pi':*
 
 .. image:: trafo_pi.png
-	:width: 30em
-	:align: center
+    :width: 30em
+    :align: center
 
 .. note:: it is possible to specify unequal distributions of leakage resistance and reactance between HV and LV sides
 
@@ -293,11 +292,10 @@ Result Parameters
 ==========================
 *net.res_trafo*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-   :file: trafo_res.csv
-   :delim: ;
-   :widths: 15, 10, 55
+.. csv-table::
+    :file: table_structures/res_trafo.csv
+    :header-rows: 1
+    :delim: ,
 
 .. math::
    :nowrap:
@@ -307,19 +305,18 @@ Result Parameters
     q\_hv\_mvar &= Im(\underline{v}_{hv} \cdot \underline{i}^*_{hv}) \\
     p\_lv\_mw &= Re(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
     q\_lv\_mvar &= Im(\underline{v}_{lv} \cdot \underline{i}^*_{lv}) \\
-	pl\_mw &= p\_hv\_mw + p\_lv\_mw \\
-	ql\_mvar &= q\_hv\_mvar + q\_lv\_mvar \\
+    pl\_mw &= p\_hv\_mw + p\_lv\_mw \\
+    ql\_mvar &= q\_hv\_mvar + q\_lv\_mvar \\
     i\_hv\_ka &= i_{hv} \\
     i\_lv\_ka &= i_{lv}
     \end{align*}
     
 *net.res_trafo_3ph*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-   :file: trafo_res_3ph.csv
-   :delim: ;
-   :widths: 15, 10, 55
+.. csv-table::
+    :file: table_structures/res_trafo_3ph.csv
+    :header-rows: 1
+    :delim: ,
 
 
 .. math::
@@ -330,8 +327,8 @@ Result Parameters
     q\_hv\_mvar_{phase} &= Im(\underline{v}_{hv_{phase}} \cdot \underline{i}^*_{hv_{phase}}) \\
     p\_lv\_mw_{phase} &= Re(\underline{v}_{lv_{phase}} \cdot \underline{i}^*_{lv_{phase}}) \\
     q\_lv\_mvar_{phase} &= Im(\underline{v}_{lv_{phase}} \cdot \underline{i}^*_{lv_{phase}}) \\
-	pl\_mw_{phase} &= p\_hv\_mw_{phase} + p\_lv\_mw_{phase} \\
-	ql\_mvar_{phase} &= q\_hv\_mvar_{phase} + q\_lv\_mvar_{phase} \\
+    pl\_mw_{phase} &= p\_hv\_mw_{phase} + p\_lv\_mw_{phase} \\
+    ql\_mvar_{phase} &= q\_hv\_mvar_{phase} + q\_lv\_mvar_{phase} \\
     i\_hv\_ka_{phase} &= i_{hv_{phase}} \\
     i\_lv\_ka_{phase}&= i_{lv_{phase}}
     \end{align*}
@@ -361,8 +358,7 @@ For trafo_loading="power", the loading is defined as:
 
 The short-circuit (SC) results are put into *net.res_trafo_sc* with following definitions:
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-   :file: trafo_res_sc.csv
-   :delim: ;
-   :widths: 15, 10, 55
+.. csv-table::
+    :file: table_structures/res_trafo_sc.csv
+    :header-rows: 1
+    :delim: ,

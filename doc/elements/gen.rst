@@ -22,11 +22,10 @@ Input Parameters
 
 *net.gen*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: gen_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/gen.csv
+    :header-rows: 1
+    :delim: ,
 
 .. |br| raw:: html
 
@@ -126,10 +125,10 @@ Result Parameters
 *net.res_gen*
 
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: gen_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_gen.csv
+    :header-rows: 1
+    :delim: ,
 
 The power flow returns reactive generator power and generator voltage angle:
 

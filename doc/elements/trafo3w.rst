@@ -37,11 +37,10 @@ Input Parameters
 
 *net.trafo3w*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-    :file: trafo3w_par.csv
-    :delim: ;
-    :widths: 15, 10, 10, 30
+.. csv-table::
+    :file: table_structures/trafo3w.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -124,7 +123,7 @@ The variable tap\_side controls if the tap changer is located at T1 ('hv'), T2 (
 is located at the star point of the three winding transformer or at the terminal side (hv/mv/lv bus).
     
 .. seealso::
-    `MVA METHOD FOR 3-WINDING TRANSFORMER <https:/pangonilo.com/index.php?sdmon=files/MVA_Method_3-Winding_Transformer.pdf>`_
+    `MVA METHOD FOR 3-WINDING TRANSFORMER <https://pangonilo.com/index.php?sdmon=files/MVA_Method_3-Winding_Transformer.pdf>`_
 
 Trafo characteristic table
 ----------------------------
@@ -170,11 +169,10 @@ Result Parameters
 ==========================
 **net.res_trafo3w**
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.60\linewidth}|
-.. csv-table:: 
-    :file: trafo3w_res.csv
-    :delim: ;
-    :widths: 15, 10, 60
+.. csv-table::
+    :file: table_structures/res_trafo3w.csv
+    :header-rows: 1
+    :delim: ,
 
 .. math::
     p\_hv\_mw &= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\    
@@ -205,8 +203,7 @@ For trafo_loading='power', the loading is defined as:
 
 The short-circuit (SC) results are put into *net.res_trafo3w_sc* with following definitions:
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.60\linewidth}|
-.. csv-table:: 
-    :file: trafo3w_res_sc.csv
-    :delim: ;
-    :widths: 15, 10, 60
+.. csv-table::
+    :file: table_structures/res_trafo3w_sc.csv
+    :header-rows: 1
+    :delim: ,

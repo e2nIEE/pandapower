@@ -26,9 +26,9 @@ Input Parameters
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
 
 .. csv-table::
-   :file: asymmetric_load_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+    :file: table_structures/asymmetric_load.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 

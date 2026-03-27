@@ -7,7 +7,7 @@ Stacked Voltage Source Converter (VSC Stacked)
 The stacked VSC is implemented as the name suggests by using two VSC, which are connected on the AC side.
 
 .. seealso::
-	:ref:`Voltage Source Converter (VSC) <vsc>`
+    :ref:`Voltage Source Converter (VSC) <vsc>`
 
 The stacked Voltage Source Converter (VSC), is a power electronic device used to convert alternating current (AC) to direct
 current (DC) and vice versa. It connects an AC system to a dual DC system. Normally it is used to create multi terminal HVDC systems.
@@ -19,7 +19,7 @@ r\_ohm/2, x\_ohm/2 and r_dc_ohm/2.
 
 
 .. seealso::
-	:ref:`Unit Systems and Conventions <conventions>`
+    :ref:`Unit Systems and Conventions <conventions>`
 
 Create Function
 =====================
@@ -31,11 +31,11 @@ Input Parameters
 
 *net.vsc_stacked*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: vsc_stacked_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/vsc_stacked.csv
+    :header-rows: 1
+    :delim: ,
+    :widths: 10, 10, 25, 40, 2, 2
 
 \*necessary for executing a power flow calculation.
 
@@ -45,9 +45,9 @@ Electric Model
 
 
 .. imagesvg:: vsc_stacked.svg
-	:alt: Stacked VSC electric model
-	:align: center
-	:tagtype: object
+    :alt: Stacked VSC electric model
+    :align: center
+    :tagtype: object
 
 Image was created with https://www.circuit2tikz.tf.fau.de/designer/.
 Stacked Voltage Source Converters are self-commutated converters to connect HVAC and HVDC systems using devices suitable
@@ -70,8 +70,8 @@ Result Parameters
 ==========================
 *net.res_vsc_stacked*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: vsc_stacked_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_vsc_stacked.csv
+    :header-rows: 1
+    :delim: ,
+    :widths: 10, 10, 40, 2, 2

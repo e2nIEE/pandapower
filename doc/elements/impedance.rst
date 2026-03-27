@@ -15,11 +15,10 @@ Input Parameters
 
 *net.impedance*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.15\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: impedance_par.csv
-   :delim: ;
-   :widths: 10, 10, 15, 40
+.. csv-table::
+    :file: table_structures/impedance.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -31,9 +30,9 @@ Electric Model
 The impedance is modelled as a longitudinal per unit impedance with :math:`\underline{z}_{ft} \neq \underline{z}_{tf}` :
 
 .. image:: impedance.png
-	:width: 25em
-	:alt: alternate Text
-	:align: center
+    :width: 25em
+    :alt: alternate Text
+    :align: center
 
 The per unit values given in the parameter table are assumed to be relative to the rated voltage of from and to bus as well as to the apparent power given in the table.
 The per unit values are therefore transformed into the network per unit system:
@@ -70,11 +69,10 @@ Result Parameters
 ==========================
 *net.res_impedance*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-   :file: impedance_res.csv
-   :delim: ;
-   :widths: 10, 10, 55
+.. csv-table::
+    :file: table_structures/res_impedance.csv
+    :header-rows: 1
+    :delim: ,
 
 .. math::
    :nowrap:
@@ -86,6 +84,6 @@ Result Parameters
     q\_from\_mvar &= Im(\underline{v}_{from} \cdot \underline{i}^*_{from}) \\
     p\_to\_mw &= Re(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
     q\_to\_mvar &= Im(\underline{v}_{to} \cdot \underline{i}^*_{to}) \\
-	pl\_mw &= p\_from\_mw + p\_to\_mw \\
-	ql\_mvar &= q\_from\_mvar + q\_to\_mvar \\
+    pl\_mw &= p\_from\_mw + p\_to\_mw \\
+    ql\_mvar &= q\_from\_mvar + q\_to\_mvar \\
     \end{align*}

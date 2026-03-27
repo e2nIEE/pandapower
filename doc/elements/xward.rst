@@ -15,11 +15,11 @@ Input Parameters
 
 *net.xward*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.15\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-   :file: xward_par.csv
-   :delim: ;
-   :widths: 10, 10, 15, 55
+.. csv-table::
+    :file: table_structures/xward.csv
+    :header-rows: 1
+    :delim: ,
+    :widths: 10, 10, 15, 55, 2, 2
 
 \*necessary for executing a power flow calculation.
 
@@ -30,8 +30,8 @@ Electric Model
 The extended ward equivalent is a :ref:`ward equivalent<ward>`: with additional PV-node with an internal resistance.
 
 .. image:: xward.png
-	:width: 25em
-	:align: center
+    :width: 25em
+    :align: center
 
 The constant apparent power is given by:
 
@@ -75,11 +75,11 @@ Result Parameters
 ==========================
 *net.res_xward*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: xward_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+   :file: table_structures/res_xward.csv
+   :header-rows: 1
+   :delim: ,
+   :widths: 10, 10, 50, 2, 2
 
    
 

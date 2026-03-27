@@ -18,11 +18,11 @@ Input Parameters
 
 *net.ward*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.15\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: ward_par.csv
-   :delim: ;
-   :widths: 10, 10, 15, 40
+.. csv-table::
+    :file: table_structures/ward.csv
+    :header-rows: 1
+    :delim: ,
+    :widths: 10, 10, 15, 40, 2, 2
 
 \*necessary for executing a power flow calculation.
 
@@ -57,11 +57,11 @@ Result Parameters
 ==========================
 *net.res_ward*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: ward_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_ward.csv
+    :header-rows: 1
+    :delim: ,
+    :widths: 10, 10, 50, 2, 2
 
 
 .. math::

@@ -15,11 +15,10 @@ Input Parameters
 
 *net.switch*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: switch_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/switch.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -32,9 +31,9 @@ Electric Model
 Two buses that are connected with a closed bus-bus switches are fused internally for the power flow, open bus-bus switches are ignored:
 
 .. image:: switches_bus.png
-	:width: 18em
-	:alt: alternate Text
-	:align: center
+    :width: 18em
+    :alt: alternate Text
+    :align: center
 
 This has the following advantages compared to modelling the switch as a small impedance:
 
@@ -53,17 +52,16 @@ When the power flow is calculated internally for every open bus-element switch a
 Closed bus-element switches are ignored:
 
 .. image:: switches_element.png
-	:width: 30em
-	:alt: alternate Text
-	:align: center
+    :width: 30em
+    :alt: alternate Text
+    :align: center
 
 
 Result Parameters
 ==========================
 *net.res_switch*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
 .. csv-table::
-   :file: switch_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+    :file: table_structures/res_switch.csv
+    :header-rows: 1
+    :delim: ,

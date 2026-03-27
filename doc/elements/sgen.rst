@@ -23,11 +23,10 @@ Input Parameters
 
 *net.sgen*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: sgen_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/sgen.csv
+    :header-rows: 1
+    :delim: ,
 
 .. |br| raw:: html
 
@@ -112,10 +111,9 @@ Result Parameters
 ==========================
 *net.res_sgen*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: sgen_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_sgen.csv
+    :header-rows: 1
+    :delim: ,
 
 The power values in the net.res_sgen table are equivalent to :math:`P_{sgen}` and :math:`Q_{sgen}`.

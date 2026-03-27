@@ -51,11 +51,10 @@ Input Parameters
 
 *net.svc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
 .. csv-table::
-   :file: svc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+    :file: table_structures/svc.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -98,8 +97,7 @@ Result Parameters
 ==========================
 *net.res_svc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
 .. csv-table::
-   :file: svc_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+    :file: table_structures/res_svc.csv
+    :header-rows: 1
+    :delim: ,

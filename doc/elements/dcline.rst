@@ -17,11 +17,10 @@ Input Parameters
 
 *net.dcline*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: dcline_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/dcline.csv
+    :header-rows: 1
+    :delim: ,
 
 .. |br| raw:: html
 
@@ -38,14 +37,14 @@ Electric Model
 A DC line is modelled as two generators in the loadflow:
 
 .. image:: dcline1.png
-	:width: 20em
-	:alt: alternate Text
-	:align: center
+    :width: 20em
+    :alt: alternate Text
+    :align: center
 
 .. image:: dcline2.png
-	:width: 20em
-	:alt: alternate Text
-	:align: center
+    :width: 20em
+    :alt: alternate Text
+    :align: center
     
 The active power at the from side is defined by the parameters in the dcline table. The active power at the to side is equal to the active power on the from side minus the losses of the DC line.
 If the active power is negative, the values are swapped: Meaning the current is flowing backwards from to_bus to from_bus. Also the active power limits are inverted, not the reactive power limits.
@@ -64,11 +63,10 @@ Result Parameters
 ==========================
 *net.res_dcline*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: dcline_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_dcline.csv
+    :header-rows: 1
+    :delim: ,
    
 .. math::
    :nowrap:

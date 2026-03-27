@@ -35,11 +35,10 @@ Input Parameters
 
 *net.tcsc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: tcsc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/tcsc.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -49,9 +48,9 @@ Electric Model
 
 
 .. image:: tcsc.png
-	:width: 12em
-	:alt: alternate Text
-	:align: center
+    :width: 12em
+    :alt: alternate Text
+    :align: center
 
 The series impedance :math:`X_{TCSC}` of the TCSC element is calculated equivalently to SVC, according to the following equation:
    
@@ -96,8 +95,7 @@ Result Parameters
 ==========================
 *net.res_tcsc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: tcsc_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_tcsc.csv
+    :header-rows: 1
+    :delim: ,

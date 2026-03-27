@@ -29,11 +29,10 @@ Input Parameters
 
 *net.vsc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: vsc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/vsc.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -43,9 +42,9 @@ Electric Model
 
 
 .. image:: vsc.png
-	:width: 12em
-	:alt: VSC electric model
-	:align: center
+    :width: 12em
+    :alt: VSC electric model
+    :align: center
 
 Voltage Source Converters VSC are self-commutated converters to connect HVAC and HVDC systems using devices suitable
 for high power electronic applications, such as IGBTs.
@@ -67,8 +66,7 @@ Result Parameters
 ==========================
 *net.res_vsc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: vsc_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_vsc.csv
+    :header-rows: 1
+    :delim: ,

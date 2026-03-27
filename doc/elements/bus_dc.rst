@@ -18,11 +18,10 @@ Input Parameters
 
 *net.bus_dc*
 
-.. tabularcolumns:: |p{0.12\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.30\linewidth}|
-.. csv-table:: 
-   :file: bus_dc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/bus_dc.csv
+    :header-rows: 1
+    :delim: ,
 
 .. |br| raw:: html
 
@@ -31,14 +30,6 @@ Input Parameters
 \*necessary for executing a power flow calculation
 
 .. note:: Bus voltage limits can not be set for slack buses and will be ignored by the optimal power flow.
-
-*net.bus_dc_geodata*
-
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.30\linewidth}|
-.. csv-table:: 
-   :file: bus_dc_geo.csv
-   :delim: ;
-   :widths: 10, 10, 30
  
    
 Electric Model
@@ -55,11 +46,10 @@ Result Parameters
 
 *net.res_bus_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: bus_dc_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_bus_dc.csv
+    :header-rows: 1
+    :delim: ,
     
 The power flow bus results are defined as:
 
