@@ -6,16 +6,15 @@ pandapower combines the data analysis library `pandas <http://pandas.pydata.org>
 aimed at automation of analysis and optimization in power systems.
 
 .. image:: /pics/pp.svg
-		:width: 250em
+		:width: 30em
 		:align: left
 
-.. |br| raw:: html
-
-    <br />
-
-|br|
-|br|
-|br|
+|
+|
+|
+|
+|
+|
 
 More information about pandapower can be found on `www.pandapower.org <https://www.pandapower.org>`_.
 
@@ -30,14 +29,14 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 
 .. image:: /pics/e2n.png
 		:width: 22em
-		:align: right
+		:align: left
 
 
-
-|br|
-|br|
-|br|
-|br|
+|
+|
+|
+|
+|
 
 .. toctree::
     :maxdepth: 2

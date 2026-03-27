@@ -6,16 +6,15 @@ pandapower combines the data analysis library `pandas <http://pandas.pydata.org>
 aimed at automation of analysis and optimization in power systems.
 
 .. image:: /pics/pp.svg
-		:width: 250em
-		:align: left
+    :width: 30em
+    :align: left
 
-.. |br| raw:: html
-
-    <br />
-
-|br|
-|br|
-|br|
+|
+|
+|
+|
+|
+|
 
 More information about pandapower can be found on `www.pandapower.org <https://www.pandapower.org>`_.
 
@@ -38,18 +37,18 @@ pandapower is a joint development of the research group of the Department for Su
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
 .. image:: /pics/iee.png
-		:width: 18em
-		:align: left
+        :width: 18em
+        :align: left
 
 .. image:: /pics/e2n.png
-		:width: 22em
-		:align: right
+        :width: 22em
+        :align: left
 
 
-|br|
-|br|
-|br|
-|br|
+|
+|
+|
+|
 
 
 .. toctree::
