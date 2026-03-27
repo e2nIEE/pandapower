@@ -85,6 +85,8 @@ Item/Element Selection
 
 .. autofunction:: pandapower.toolbox.get_gc_objects_dict
 
+.. autofunction:: pandapower.toolbox.get_all_elements
+
 ====================================
 Data Modification
 ====================================
