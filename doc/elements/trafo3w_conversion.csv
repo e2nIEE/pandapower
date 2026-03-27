@@ -1,0 +1,9 @@
+;**T1**;**T2**;**T3**
+hv_bus;hv_bus;auxiliary bus;auxiliary bus
+lv_bus;auxiliary bus;mv_bus;lv_bus
+sn_mva;sn_hv_mva;sn_mv_mva;sn_lv_mva
+vn_hv_kv;vn_hv_kv;vn_hv_kv;vn_hv_kv
+vn_lv_kv;vn_hv_kv;vn_mv_kv;vn_lv_kv
+vk_percent;:math:`v_{k, t1}`;:math:`v_{k, t2}`;:math:`v_{k, t3}`
+vkr_percent;:math:`v_{r, t1}`;:math:`v_{r, t2}`;:math:`v_{r, t3}`
+shift_degree;0;shift_mv_degree;shift_lv_degree

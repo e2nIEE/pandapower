@@ -1,0 +1,3 @@
+;"**tap_side=""hv""**";"**tap_side=""lv""**"
+:math:`V_{n, HV, transformer}`;:math:`vnh\_kv  \cdot n_{tap}`;:math:`vnh\_kv`
+:math:`V_{n, LV, transformer}`;:math:`vnl\_kv`;:math:`vnl\_kv  \cdot n_{tap}`
