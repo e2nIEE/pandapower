@@ -106,3 +106,7 @@
 .highlight {
     background: var(--fh-17);
 }
+
+.filled {
+    fill: white !important;
+}
