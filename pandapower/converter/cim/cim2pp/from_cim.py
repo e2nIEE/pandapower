@@ -84,6 +84,7 @@ def get_converter_classes():
         'asynchronousMachinesCim16':
             std_converter_classes.generators.asynchronousMachinesCim16.AsynchronousMachinesCim16,
         'energySourcesCim16': std_converter_classes.generators.energySourcesCim16.EnergySourceCim16,
+        'powerElectronicsConnection': std_converter_classes.generators.powerElectronicsConnection.PowerElectronicsConnection,
         'linearShuntCompensatorCim16':
             std_converter_classes.shunts.linearShuntCompensatorCim16.LinearShuntCompensatorCim16,
         'nonLinearShuntCompensatorCim16':
