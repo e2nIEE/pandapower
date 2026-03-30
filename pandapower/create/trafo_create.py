@@ -871,7 +871,7 @@ def create_transformers3w(
     index: Iterable[Int] | None = None,
     max_loading_percent: float | Iterable[float] = nan,
     tap_at_star_point: bool | Iterable[bool] = get_default_value("trafo3w", "tap_at_star_point"),
-    tap_changer_type: float | Iterable[float] = pd.NA,
+    tap_changer_type: float | Iterable[float] = nan,
     tap_dependency_table: bool | Iterable[bool] = pd.NA,
     id_characteristic_table: int | Iterable[int] = pd.NA,
     **kwargs,
