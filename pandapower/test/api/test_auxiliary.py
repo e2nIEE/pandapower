@@ -438,11 +438,10 @@ def test_get_min_max_q_capability():
          'p_mw': p_mw,
          'q_min_mvar': q_min_mvar,
          'q_max_mvar': q_max_mvar})
-    net['sgen']['id_q_capability_characteristic'] = pd.Series(pd.NA, dtype=pd.Int64Dtype)
+    add_column_to_df(net, 'sgen', "id_q_capability_characteristic",)
     net.sgen.loc[sgen_indices_with_char, 'id_q_capability_characteristic'] = [0, 1]
-    net['sgen']['reactive_capability_curve'] = pd.Series(pd.NA, dtype=pd.BooleanDtype)
+    add_column_to_df(net, 'sgen', "reactive_capability_curve",)
     net.sgen.loc[sgen_indices_with_char, 'curve_style'] = "straightLineYValues"
-    net['sgen']['reactive_capability_curve'] = pd.Series(pd.NA, dtype=pd.Int64Dtype)
     create_q_capability_characteristics_object(net)
 
     p_mw_sgen1 = p_mw[:5]

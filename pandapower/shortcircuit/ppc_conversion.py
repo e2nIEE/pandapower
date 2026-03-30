@@ -327,5 +327,5 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
 
     return non_ps_gen_bus, ppci, bus_ppci
 
-# TODO Roman: correction factor for 1ph cases
+# TODO: correction factor for 1ph cases
 

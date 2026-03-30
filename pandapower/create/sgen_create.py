@@ -52,9 +52,9 @@ def create_sgen(
     curve_style: str = pd.NA,
     current_source: bool = get_default_value("sgen", "current_source"),
     generator_type: GeneratorType = pd.NA,
-    max_ik_ka: float = pd.NA,
+    max_ik_ka: float = nan,
     kappa: float = nan,
-    lrc_pu: float = pd.NA,
+    lrc_pu: float = nan,
     **kwargs,
 ) -> Int:
     """
@@ -194,9 +194,9 @@ def create_sgens(
     curve_style: str | Iterable[str] = pd.NA,
     current_source: bool | Iterable[bool] = get_default_value("sgen", "current_source"),
     generator_type: GeneratorType = get_default_value("sgen", "generator_type"),
-    max_ik_ka: float = pd.NA,
+    max_ik_ka: float = nan,
     kappa: float = nan,
-    lrc_pu: float = pd.NA,
+    lrc_pu: float = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
