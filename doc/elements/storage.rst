@@ -15,7 +15,7 @@ Create Function
 .. autofunction:: pandapower.create.create_storage
 .. autofunction:: pandapower.create.create_storages
 
-Input Parameters
+Table Structure
 =====================
 
 *net.storage*
@@ -24,12 +24,6 @@ Input Parameters
     :file: table_structures/storage.csv
     :header-rows: 1
     :delim: ,
-
-.. |br| raw:: html
-
-   <br />
-
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
 
 
 Electric Model
@@ -56,7 +50,7 @@ The PQ-Values are calculated from the parameter table values as:
 
     The apparent power value sn_mva, state of charge soc and storage capacity max_e_mwh are provided as additional information for usage in controller or other applications based on pandapower. It is not considered in the power flow!
 
-Result Parameters
+Result Table
 ==========================
 *net.res_storage*
 

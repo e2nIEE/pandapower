@@ -23,7 +23,7 @@ Transformers can be either created from the standard type library (create_transf
 .. autofunction:: pandapower.create.create_transformer_from_parameters
 .. autofunction:: pandapower.create.create_transformers_from_parameters
 
-Input Parameters
+Table Structure
 =====================
 
 *net.trafo*
@@ -32,8 +32,6 @@ Input Parameters
     :file: table_structures/trafo.csv
     :header-rows: 1
     :delim: ,
-  
-\*necessary for executing a balanced power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*necessary for executing a three phase power flow / single phase short circuit |br| \*\*\*\*optional, for modeling a second tap changer
 
 .. note:: The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current":
 
@@ -288,8 +286,9 @@ The below table provides an example trafo_characteristic_spline table, populated
    :delim: ,
    :widths: 10, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
 
-Result Parameters
+Result Tables
 ==========================
+
 *net.res_trafo*
 
 .. csv-table::

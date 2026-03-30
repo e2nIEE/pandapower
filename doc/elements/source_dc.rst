@@ -16,7 +16,7 @@ Create Function
 
 .. autofunction:: pandapower.create.create_source_dc
 
-Input Parameters
+Table Structure
 =====================
 
 *net.source_dc*
@@ -26,11 +26,6 @@ Input Parameters
     :header-rows: 1
     :delim: ,
 
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation
 
 Electric Model
 =================
@@ -51,7 +46,7 @@ The P-Values are calculated from the parameter table values as:
     
     Other values are provided as additional information for usage in controller or other applications based on pandapower. It is not considered in the power flow!
 
-Result Parameters
+Result Table
 ==========================
 *net.res_source_dc*
 

@@ -34,7 +34,7 @@ Lines can be either created from the standard type library (create_line) or with
 
 .. autofunction:: pandapower.create_line_from_parameters
 
-Input Parameters
+Table Structure
 =============================
 
 *net.line*
@@ -43,11 +43,6 @@ Input Parameters
     :file: table_structures/line.csv
     :header-rows: 1
     :delim: ,
-  
-\*necessary for executing a balanced power flow calculation |br|
-\*\*optimal power flow parameter |br|
-\*\*\*short-circuit calculation parameter |br|
-\*\*\*\*necessary for executing a three phase power flow / single phase short circuit
 
 .. note::
     Defining a line with length zero leads to a division by zero in the power flow and is therefore not allowed. Lines with a very low impedance might lead to convergence problems in the power flow
@@ -111,7 +106,7 @@ Where the reference voltage :math:`V_{N}` is the nominal voltage at the from bus
     pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.
     If you want to connect different voltage levels, either use a transformer or an impedance element.
     
-Result Parameters
+Result Tables
 ==========================
    
 *net.res_line*

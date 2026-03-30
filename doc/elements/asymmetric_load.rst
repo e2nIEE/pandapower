@@ -17,7 +17,7 @@ Create Function
 .. autofunction:: pandapower.create.create_asymmetric_load
 
 
-Input Parameters
+Table Structure
 =====================
 
 
@@ -29,8 +29,6 @@ Input Parameters
     :file: table_structures/asymmetric_load.csv
     :header-rows: 1
     :delim: ,
-
-\*necessary for executing a power flow calculation.
 
 .. note::
     
@@ -81,7 +79,7 @@ Where
 	:align: center
 
 
-Result Parameters
+Result Table
 ==========================    
 *net.res_asymmetric_load*
 

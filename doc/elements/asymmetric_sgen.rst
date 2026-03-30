@@ -17,7 +17,7 @@ Create Function
 .. autofunction:: pandapower.create.create_asymmetric_sgen
 
 
-Input Parameters
+Table Structure
 =====================
 
 *net.asymmetric_sgen*
@@ -26,12 +26,6 @@ Input Parameters
     :file: table_structures/asymmetric_sgen.csv
     :header-rows: 1
     :delim: ,
-
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
 
    
 Electric Model
@@ -59,7 +53,7 @@ The PQ-Values are calculated from the parameter table values as:
     
     The apparent power value sn_mva is provided as additional information for usage in controller or other applications based on pandapower. It is not considered in the power flow!
 
-Result Parameters
+Result Table
 ==========================
 *net.asymmetric_sgen*
 

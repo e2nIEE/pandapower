@@ -10,7 +10,7 @@ Create Function
 
 .. autofunction:: pandapower.create.create_measurement
 
-Input Parameters
+Table Structure
 =========================
 
 *net.measurement*

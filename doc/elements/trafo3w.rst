@@ -32,7 +32,7 @@ Create Function
     max(sn_hv_mva, sn_mv_mva, sn_lv_mva). You might have to convert the
     values depending on how the short-circuit voltages are defined.
 
-Input Parameters
+Table Structure
 =========================
 
 *net.trafo3w*
@@ -41,8 +41,6 @@ Input Parameters
     :file: table_structures/trafo3w.csv
     :header-rows: 1
     :delim: ,
-
-\*necessary for executing a power flow calculation.
 
 .. note:: Three Winding Transformer loading can not yet be constrained with the optimal power flow.
 
@@ -165,9 +163,10 @@ The below table provides an example trafo_characteristic_spline table, populated
     :delim: ,
     :widths: 10, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
 
-Result Parameters
+Result Tables
 ==========================
-**net.res_trafo3w**
+
+*net.res_trafo3w*
 
 .. csv-table::
     :file: table_structures/res_trafo3w.csv
@@ -199,7 +198,7 @@ For trafo_loading='power', the loading is defined as:
 .. math::
     loading\_percent = max( \frac{i_{hv} \cdot v_{hv}}{sn\_hv\_mva}, \frac{i_{mv} \cdot v_{mv}}{sn\_mv\_mva}, \frac{i_{lv} \cdot v_{lv}}{sn\_lv\_mva}) \cdot 100
 
-**net.res_trafo3w_sc**
+*net.res_trafo3w_sc*
 
 The short-circuit (SC) results are put into *net.res_trafo3w_sc* with following definitions:
 

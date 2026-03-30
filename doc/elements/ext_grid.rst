@@ -15,7 +15,7 @@ Create Function
 .. autofunction:: pandapower.create.create_ext_grid
 
 
-Input Parameters
+Table Structure
 =============================
 
 *net.ext_grid*
@@ -25,12 +25,6 @@ Input Parameters
     :header-rows: 1
     :delim: ,
 
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter |br| \*\*\*\*Single phase short circuit/Three Phase load flow calculation parameters
-   
 Electric Model
 =================
 ** Balanced Load Flow**
@@ -68,7 +62,7 @@ For zero sequence and negative sequence external grid impedance is calculated:
     \theta &= \mathit{shift}\_degree \cdot \frac{\pi}{180}
    
 
-Result Parameters
+Result Tables
 ==========================    
 *net.res_ext_grid*
 

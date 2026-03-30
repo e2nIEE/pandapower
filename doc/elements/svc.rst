@@ -46,7 +46,7 @@ Create Function
 
 .. autofunction:: pandapower.create.create_svc
 
-Input Parameters
+Table Structure
 =====================
 
 *net.svc*
@@ -56,17 +56,15 @@ Input Parameters
     :header-rows: 1
     :delim: ,
 
-\*necessary for executing a power flow calculation.
-
 
 Electric Model
 =================
 
 
 .. image:: svc.png
-	:width: 12em
-	:alt: alternate Text
-	:align: center
+    :width: 12em
+    :alt: alternate Text
+    :align: center
 
 The shunt impedance :math:`X_{SVC}` of the SVC element is calculated according to the following equation:
 
@@ -93,7 +91,7 @@ The reactive power consumption of the SVC element is calculated with:
 Where V is the complex voltage observed at the connection bus of the SVC element.
 The reference values for the per unit system as defined in :ref:`Unit Systems and Conventions<conventions>`.
 
-Result Parameters
+Result Table
 ==========================
 *net.res_svc*
 

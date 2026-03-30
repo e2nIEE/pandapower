@@ -17,7 +17,7 @@ Create Function
 .. autofunction:: pandapower.create.create_load_from_cosphi
 
 
-Input Parameters
+Table Structure
 =====================
 
 *net.load*
@@ -64,7 +64,7 @@ The load power values are then defines as:
     Q_{load} &= q\_mvar \cdot scaling \cdot (p_{const_q} + z_{const_q} \cdot V^2 + i_{const_q} \cdot V)
 
 
-Result Parameters
+Result Tables
 ==========================    
 *net.res_load*
 

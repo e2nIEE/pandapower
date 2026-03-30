@@ -10,7 +10,7 @@ Create Function
 
 .. autofunction:: pandapower.create_impedance
 
-Input Parameters
+Table Structure
 =====================
 
 *net.impedance*
@@ -65,7 +65,7 @@ conductance for the "from" and "to" bus, as is in the case of the resistance and
 flexibility in modeling an impedance branch element, which will be especially useful when modeling grid equivalents.
 
 
-Result Parameters
+Result Table
 ==========================
 *net.res_impedance*
 

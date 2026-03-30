@@ -17,7 +17,7 @@ Create Function
 .. autofunction:: pandapower.create.create_gen
 .. autofunction:: pandapower.create.create_gens
 
-Input Parameters
+Table Structure
 =====================
 
 *net.gen*
@@ -26,13 +26,6 @@ Input Parameters
     :file: table_structures/gen.csv
     :header-rows: 1
     :delim: ,
-
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
-|br| \^relevant for power flow calculation when `enforce_q_lims` optional parameter is set to True |br| \^\^relevant for power flow calculation when `enforce_p_lims` optional parameter is set to True
 
 Generator Reactive Power Capability Curve Characteristics
 ==========================================================
@@ -120,7 +113,7 @@ Voltage magnitude and active power are defined by the input parameters in the ge
     v_{bus} &= vm\_pu
    \end{align*}
     
-Result Parameters
+Result Tables
 ==========================
 *net.res_gen*
 

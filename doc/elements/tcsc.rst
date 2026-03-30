@@ -30,7 +30,7 @@ Create Function
 
 .. autofunction:: pandapower.create.create_tcsc
 
-Input Parameters
+Table Structure
 =====================
 
 *net.tcsc*
@@ -39,8 +39,6 @@ Input Parameters
     :file: table_structures/tcsc.csv
     :header-rows: 1
     :delim: ,
-
-\*necessary for executing a power flow calculation.
 
    
 Electric Model
@@ -91,7 +89,7 @@ The power flow through the TCSC element is described by the following equation:
         \end{bmatrix}^*
     \end{align*}
 
-Result Parameters
+Result Table
 ==========================
 *net.res_tcsc*
 

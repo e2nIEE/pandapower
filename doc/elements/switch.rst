@@ -10,7 +10,7 @@ Create Function
 .. autofunction:: pandapower.create.create_switch
 .. autofunction:: pandapower.create.create_switches
 
-Input Parameters
+Table Structure
 =====================
 
 *net.switch*
@@ -19,8 +19,6 @@ Input Parameters
     :file: table_structures/switch.csv
     :header-rows: 1
     :delim: ,
-
-\*necessary for executing a power flow calculation.
 
    
 Electric Model
@@ -57,7 +55,7 @@ Closed bus-element switches are ignored:
     :align: center
 
 
-Result Parameters
+Result Table
 ==========================
 *net.res_switch*
 

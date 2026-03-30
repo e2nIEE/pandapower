@@ -23,7 +23,7 @@ DC lines can be either created from the standard type library (create_line_dc) o
 
 .. autofunction:: pandapower.create_line_dc_from_parameters
 
-Input Parameters
+Table Structure
 =============================
 
 *net.line_dc*
@@ -78,7 +78,7 @@ Where the reference voltage :math:`V_{N}` is the nominal voltage at the from bus
     pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.
     If you want to connect different voltage levels, either use a transformer or an impedance element.
     
-Result Parameters
+Result Table
 ==========================
    
 *net.res_line_dc*

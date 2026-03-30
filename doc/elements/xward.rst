@@ -10,7 +10,7 @@ Create Function
 
 .. autofunction:: pandapower.create.create_xward
 
-Input Parameters
+Table Structure
 =========================
 
 *net.xward*
@@ -20,8 +20,6 @@ Input Parameters
     :header-rows: 1
     :delim: ,
     :widths: 10, 10, 15, 55, 2, 2
-
-\*necessary for executing a power flow calculation.
 
    
 Electric Model
@@ -71,7 +69,7 @@ The internal voltage source is modelled as a PV-node (:ref:`generator<gen>`) wit
    vm\_pu &= vm\_pu
    \end{align*}
 
-Result Parameters
+Result Table
 ==========================
 *net.res_xward*
 

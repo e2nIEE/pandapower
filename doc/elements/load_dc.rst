@@ -16,7 +16,7 @@ Create Function
 
 .. autofunction:: pandapower.create_load_dc
 
-Input Parameters
+Table Structure
 =====================
 
 *net.load_dc*
@@ -39,9 +39,9 @@ Electric Model
 Loads are modelled as P-buses in the power flow calculation:
 
 .. image:: load.png
-	:width: 8em
-	:alt: alternate Text
-	:align: center
+    :width: 8em
+    :alt: alternate Text
+    :align: center
 
 
 What part of the load is considered constant with constant power:
@@ -55,8 +55,9 @@ The load power values are then defines as:
     \end{align*}
 
 
-Result Parameters
-==========================    
+Result Table
+==========================
+
 *net.res_load_dc*
 
 .. csv-table::

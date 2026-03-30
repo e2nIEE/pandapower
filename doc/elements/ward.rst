@@ -13,7 +13,7 @@ Create Function
 .. autofunction:: pandapower.create.create_ward
 .. autofunction:: pandapower.create.create_wards
 
-Input Parameters
+Table Structure
 =========================
 
 *net.ward*
@@ -24,15 +24,13 @@ Input Parameters
     :delim: ,
     :widths: 10, 10, 15, 40, 2, 2
 
-\*necessary for executing a power flow calculation.
-
    
 Electric Model
 =================
 
 .. image:: ward.png
-	:width: 15em
-	:align: center
+    :width: 15em
+    :align: center
 
 The ward equivalent is a combination of a constant apparent power consumption and a constant impedance load. The constant apparent power is given by:
 
@@ -53,7 +51,7 @@ The shunt admittance part of the ward equivalent is calculated as described :ref
    \underline{y}_{shunt} &= \frac{pz\_mw + j \cdot qz\_mvar}{S_{N}}
    \end{align*}
 
-Result Parameters
+Result Table
 ==========================
 *net.res_ward*
 

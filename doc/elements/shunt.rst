@@ -15,7 +15,7 @@ Create Function
 .. autofunction:: pandapower.create.create_shunt_as_capacitor
 
 
-Input Parameters
+Table Structure
 =====================
 
 *net.shunt*
@@ -24,8 +24,6 @@ Input Parameters
     :file: table_structures/shunt.csv
     :header-rows: 1
     :delim: ,
-
-\*necessary for executing a power flow calculation.
 
    
 Electric Model
@@ -106,7 +104,7 @@ The below table provides an example shunt_characteristic_spline table, populated
    :delim: ,
    :widths: 10, 20, 30, 30
 
-Result Parameters
+Result Table
 ==========================
 *net.res_shunt*
 

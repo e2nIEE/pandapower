@@ -18,7 +18,8 @@ Create Function
 .. autofunction:: pandapower.create.create_sgens
 .. autofunction:: pandapower.create.create_sgen_from_cosphi
 
-Input Parameters
+
+Table Structure
 =====================
 
 *net.sgen*
@@ -28,12 +29,6 @@ Input Parameters
     :header-rows: 1
     :delim: ,
 
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter
-|br| \^relevant for power flow calculation when `enforce_p_lims` optional parameter is set to True |br| \^\^relevant for power flow calculation when `enforce_q_lims` optional parameter is set to True
 
 Static Generator Reactive Power Capability Curve Characteristics
 =================================================================
@@ -107,7 +102,7 @@ The PQ-Values are calculated from the parameter table values as:
     
     The apparent power value sn_mva is provided as additional information for usage in controller or other applications based on pandapower. It is not considered in the power flow!
 
-Result Parameters
+Result Table
 ==========================
 *net.res_sgen*
 

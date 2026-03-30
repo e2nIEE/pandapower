@@ -28,7 +28,7 @@ Create Function
 
 .. autofunction:: pandapower.create.create_ssc
 
-Input Parameters
+Table Structure
 =====================
 
 *net.ssc*
@@ -37,8 +37,6 @@ Input Parameters
     :file: table_structures/ssc.csv
     :header-rows: 1
     :delim: ,
-
-\*necessary for executing a power flow calculation.
 
    
 Electric Model
@@ -64,7 +62,7 @@ Where :math:`\underline{Y}_{T}` = 1/:math:`\underline{Z}_{T}` is the admittance 
 the VSC and the ac system. :math:`\underline{V}_{VSC}` stands for the VSC output Voltage.
 
 
-Result Parameters
+Result Table
 ==========================
 *net.res_ssc*
 

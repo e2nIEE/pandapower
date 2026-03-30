@@ -7,7 +7,7 @@ Create Function
 
 .. autofunction:: pandapower.create.create_motor
 
-Input Parameters
+Table Structure
 =====================
 
 *net.motor*
@@ -17,7 +17,6 @@ Input Parameters
     :header-rows: 1
     :delim: ,
 
-\*necessary for executing a power flow calculation.
 
 Electric Model
 =================

@@ -12,7 +12,7 @@ Create Function
 
 .. autofunction:: pandapower.create_dcline
 
-Input Parameters
+Table Structure
 =====================
 
 *net.dcline*
@@ -21,12 +21,6 @@ Input Parameters
     :file: table_structures/dcline.csv
     :header-rows: 1
     :delim: ,
-
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter 
 
 .. note::
     DC line is only able to model one-directional loadflow for now, which is why p_mw / max_p_mw have to be > 0.
@@ -59,7 +53,7 @@ If the active power is negative, the values are swapped: Meaning the current is 
 
 The voltage control with reactive power works just as described for the generator model. Maximum and Minimum reactive power limits are considered in the OPF, and in the PF if it is run with enforce_q_lims=True.
    
-Result Parameters
+Result Table
 ==========================
 *net.res_dcline*
 

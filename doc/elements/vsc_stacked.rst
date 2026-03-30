@@ -26,7 +26,7 @@ Create Function
 
 .. autofunction:: pandapower.create.create_vsc_stacked
 
-Input Parameters
+Table Structure
 =====================
 
 *net.vsc_stacked*
@@ -66,7 +66,7 @@ which calculates the resulting currents and updates the out-of-service line.
 See test_facts_vsc_stacked.py: test_hvdc_interconnect_with_dmr() for an example.
 
 
-Result Parameters
+Result Table
 ==========================
 *net.res_vsc_stacked*
 

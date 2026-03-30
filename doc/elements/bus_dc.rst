@@ -13,7 +13,7 @@ Create Function
 .. autofunction:: pandapower.create.create_bus_dc
 .. autofunction:: pandapower.create.create_buses_dc
 
-Input Parameters
+Table Structure
 =========================
 
 *net.bus_dc*
@@ -22,12 +22,6 @@ Input Parameters
     :file: table_structures/bus_dc.csv
     :header-rows: 1
     :delim: ,
-
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation
 
 .. note:: Bus voltage limits can not be set for slack buses and will be ignored by the optimal power flow.
  
@@ -41,7 +35,7 @@ Electric Model
     :align: center
     
 
-Result Parameters
+Result Table
 =========================
 
 *net.res_bus_dc*
