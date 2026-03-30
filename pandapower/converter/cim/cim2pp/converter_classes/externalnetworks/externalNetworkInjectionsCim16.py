@@ -85,7 +85,7 @@ class ExternalNetworkInjectionsCim16:
         eni['vm_pu'] = eni['vm_pu'].fillna(eni['v'] / eni['vn_kv'])  # voltage from measurement
         if eni['vm_pu'].isna().any():
             self.logger.warning(f"Missing target voltage for the following external network injections: "
-                                f"{eni.loc[eni['vm_pu'].isna(), self.sc['o_id']]}. Setting voltages to 1 pu.")
+                                f"{eni.loc[eni['vm_pu'].isna(), 'rdfId']}. Setting voltages to 1 pu.")
         eni['vm_pu'] = eni['vm_pu'].fillna(1.)  # default voltage
         eni['angle'] = eni['angle'].fillna(0.)  # default angle
         eni['ratedU'] = eni['targetValue'][:]  # targetValue in kV

@@ -6,7 +6,9 @@ Change Log
 - [FIXED] cim2pp shift_lv_degree was translated from wrong entry
 - [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
 - [ADDED] LTDS support
-
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
+- [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
+- [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
 
 [3.4.0] - 2026-02-09
 -------------------------------
@@ -802,7 +804,7 @@ Change Log
 
 [1.6.0] - 2018-09-18
 ----------------------
-- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
+- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (https://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
 - [ADDED] OPF data (controllable, max_loading, costs, min_p_kw, ...) in Power System Test Cases
 - [ADDED] case_ieee30, case5, case_illinois200
 - [FIXED] 1 additional Trafo in case39, vn_kv change in case118, sgen indices in polynomial_cost in case 1888rte, case2848rte
