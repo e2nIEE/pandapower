@@ -668,6 +668,10 @@ class CimParser:
                     'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType',
                     'EquipmentContainer']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
+                'PowerElectronicsConnection': pd.DataFrame(columns=['rdfId', 'name', 'PowerElectronicsUnit']),
+                'PhotoVoltaicUnit': pd.DataFrame(columns=['rdfId', 'name', 'maxP']),
+                'BatteryUnit': pd.DataFrame(columns=['rdfId', 'name', 'maxP']),
+                'PowerElectronicsWindUnit': pd.DataFrame(columns=['rdfId', 'name', 'maxP']),
                 'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint','sVCControlMode']),
                 'PowerTransformer': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'EquipmentContainer', 'inService']),
@@ -778,6 +782,7 @@ class CimParser:
                 'AsynchronousMachine': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
                 'EnergySource': pd.DataFrame(columns=[
                     'rdfId', 'activePower', 'reactivePower', 'inService', 'voltageAngle', 'voltageMagnitude']),
+                'PowerElectronicsConnection': pd.DataFrame(columns=['rdfId', 'p', 'q', 'controlEnabled', 'inService']),
                 'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'q', 'inService']),
                 'TapChangerControl': pd.DataFrame(columns=[
                     'rdfId', 'discrete', 'enabled', 'targetValue', 'targetValueUnitMultiplier', 'targetDeadband']),
