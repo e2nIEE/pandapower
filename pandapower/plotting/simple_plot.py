@@ -152,12 +152,12 @@ def simple_plot(
         line_dc_color="c",
         vsc_size: float = 4.0,
         vsc_color="orange",
-        hl_buses=None,
-        hl_lines=None,
+        highlight_buses=None,
+        highlight_lines=None,
         enable_hover=True,
-        hl_bus_size_factor=1.5,
-        hl_line_width_factor=2.0,
-        hl_color="#f58220"
+        highlight_bus_size_factor=1.5,
+        highlight_line_width_factor=2.0,
+        highlight_color="#f58220"
 ):
     """
         Plots a pandapower network as simple as possible. If no geodata is available, artificial
@@ -195,12 +195,12 @@ def simple_plot(
                 to use igraph package or "networkx" to use networkx package.
             show_plot (bool, True): Shows plot at the end of plotting
             ax (object, None): matplotlib axis to plot to
-            hl_buses (iterable, None): buses, to highlight
-            hl_lines (iterable, None): lines to highlight
+            highlight_buses (iterable, None): buses, to highlight
+            highlight_lines (iterable, None): lines to highlight
             enable_hover (bool, True): enable hovering functionality
-            hl_bus_size_factor (float, 1.5): bus_size for highlighted buses
-            hl_line_width_factor (float, 2.0): line_width for highlighted lines
-            hl_color (str, "r"): color for highlighted elements
+            highlight_bus_size_factor (float, 1.5): bus_size for highlighted buses
+            highlight_line_width_factor (float, 2.0): line_width for highlighted lines
+            highlight_color (str, "r"): color for highlighted elements
         Returns:
             axes of figure
     """
@@ -251,13 +251,13 @@ def simple_plot(
                                zorder=10, infofunc=bus_info)
     collections = [bc]
 
-    if hl_buses is not None:
-        hl_buses_idx = list(set(hl_buses) & set(net.bus.index))
+    if highlight_buses is not None:
+        hl_buses_idx = list(set(highlight_buses) & set(net.bus.index))
         if len(hl_buses_idx):
             hbc = create_bus_collection(
                 net, hl_buses_idx,
-                size=bus_size * hl_bus_size_factor,
-                color=hl_color,
+                size=bus_size * highlight_bus_size_factor,
+                color=highlight_color,
                 zorder=bc.zorder + 1 if hasattr(bc, "zorder") else 11,
                 infofunc=bus_info)
             collections.append(hbc)
@@ -283,14 +283,14 @@ def simple_plot(
         infofunc=line_info)
     collections.append(lc)
 
-    if hl_lines is not None:
-        hl_lines_idx = list(set(hl_lines) & set(plot_lines))
+    if highlight_lines is not None:
+        hl_lines_idx = list(set(highlight_lines) & set(plot_lines))
         if len(hl_lines_idx):
             hlc = create_line_collection(
                 net,
                 hl_lines_idx,
-                color=hl_color,
-                linewidths=line_width * hl_line_width_factor,
+                color=highlight_color,
+                linewidths=line_width * highlight_line_width_factor,
                 use_bus_geodata=use_bus_geodata,
                 infofunc=line_info)
             collections.append(hlc)
@@ -364,7 +364,7 @@ def simple_plot(
         )
         collections.append(tc)
 
-    # create trafo3w collection if trafo3w is available (mit Info für Hover)
+    # create trafo3w collection if trafo3w is available
     trafo3w_buses_with_geo_coordinates = [
         t
         for t, trafo3w in net.trafo3w.iterrows()
@@ -426,9 +426,10 @@ def simple_plot(
         fig = ax.figure
         hover_text = ax.text(0, 0, "", fontsize=12, fontweight="bold", color='white',
                              ha='center', va='center', zorder=99,
-                             bbox=dict(boxstyle="round",
-                                       facecolor='#179c7d', alpha=1,
-                                       edgecolor='white'))
+                             bbox={"boxstyle": "round",
+                                   "facecolor": '#179c7d',
+                                   "alpha": 1,
+                                   "edgecolor": 'white'})
         hover_text.set_visible(False)
         fig.canvas.mpl_connect(
             "motion_notify_event",
