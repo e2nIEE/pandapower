@@ -330,6 +330,9 @@ jobs:
   tutorial_tests:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        group: [ 1, 2, 3 ]
     steps:
       # UV does not work for julia, do not add it here!
       - uses: actions/checkout@v6
@@ -342,7 +345,7 @@ jobs:
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          pytest --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
     needs: build
