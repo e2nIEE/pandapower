@@ -57,19 +57,19 @@ def hover(event, ax, net, hover_text):
     """
     Update the hover text in an interactive pandapower plot based on the mouse position.
 
-    Erwartet, dass Collections ein Attribut `info` besitzen, das eine Liste von
-    (element, index)-Tupeln enthält, z.B. ("bus", 3) oder ("line", 5).
+    Expects collections to have an `info` attribute containing a list of
+    (element, index) tuples, e.g. ("bus", 3) or ("line", 5).
 
     Parameters
     ----------
     event : matplotlib.backend_bases.MouseEvent
-        Mouse-Move-Event von Matplotlib.
+        Mouse-move event from Matplotlib.
     ax : matplotlib.axes.Axes
-        Axes-Objekt mit den Collections.
+        Axes object containing the collections.
     net : pp.pandapowerNet
-        pandapower-Netz mit den DataFrames (bus, line, trafo, trafo3w, ...).
+        pandapower network with DataFrames (bus, line, trafo, trafo3w, ...).
     hover_text : matplotlib.text.Text
-        Text-Artist, dessen Inhalt/Position/Visibility aktualisiert wird.
+        Text artist whose content, position and visibility are updated.
     """
     fig = ax.figure
     visible = hover_text.get_visible()
@@ -83,7 +83,7 @@ def hover(event, ax, net, hover_text):
     for collection in ax.collections:
         info = getattr(collection, "info", None)
         if not info:
-            continue  # Collection hat keine Info für Hover
+            continue
 
         contains, props = collection.contains(event)
         if not contains or "ind" not in props or len(props["ind"]) == 0:
@@ -107,7 +107,7 @@ def hover(event, ax, net, hover_text):
         else:
             hover_info = str(element_info)
 
-        # Text und Position setzen
+        # text and position
         hover_text.set_text(hover_info)
         hover_text.set_position((event.xdata, event.ydata))
         hover_text.set_visible(True)
@@ -217,7 +217,7 @@ def simple_plot(
     if plot_line_switches:
         respect_switches = False
 
-        # create geocoord if none are available
+    # create geocoord if none are available
     if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (
             net.line.geo.isna().any() and net.bus.geo.isna().any()):
         logger.warning(
