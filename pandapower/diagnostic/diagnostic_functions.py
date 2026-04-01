@@ -640,7 +640,7 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
         check_result = None
-        line_reactance = copy.copy(net.line.c_nf_per_km)
+        line_reactance = copy.copy(net.line.x_ohm_per_km)
 
         reactance_scaling_factor = kwargs.pop(
             "reactance_scaling_factor", default_argument_values["reactance_scaling_factor"]
