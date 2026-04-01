@@ -34,7 +34,8 @@ from pandapower.diagnostic.diagnostic_helpers import (
     check_greater_equal_zero,
     check_switch_type,
     check_less_equal_zero,
-    check_greater_zero_less_equal_one
+    check_greater_zero_less_equal_one,
+    check_vkr_larger
 )
 
 logger = logging.getLogger(__name__)
@@ -98,6 +99,7 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
                 ("vkr_percent", ">=0"),
                 ("vk_percent", ">0"),
                 ("vkr_percent", "<15"),
+                ("vkr_percent", "vkr_percent_larger"),
                 ("vk_percent", "<20"),
                 ("pfe_kw", ">=0"),
                 ("i0_percent", ">=0"),
@@ -114,8 +116,11 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
                 ("vn_mv_kv", ">0"),
                 ("vn_lv_kv", ">0"),
                 ("vkr_hv_percent", ">=0"),
+                ("vkr_hv_percent", "vkr_percent_larger"),
                 ("vkr_mv_percent", ">=0"),
+                ("vkr_mv_percent", "vkr_percent_larger"),
                 ("vkr_lv_percent", ">=0"),
+                ("vkr_lv_percent", "vkr_percent_larger"),
                 ("vk_hv_percent", ">0"),
                 ("vk_mv_percent", ">0"),
                 ("vk_lv_percent", ">0"),
@@ -175,11 +180,13 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
             "number": check_number,
             "0<x<=1": check_greater_zero_less_equal_one,
             "switch_type": check_switch_type,
+            "vkr_percent_larger": check_vkr_larger,
         }
 
         for key in important_values:
             if len(net[key]) > 0:
                 for value in important_values[key]:
+                    # every element is checked separately, TODO: implement vector based checks
                     for i, element in net[key].iterrows():
                         check_result = type_checks[value[1]](element, i, value[0])
                         if check_result is not None:
