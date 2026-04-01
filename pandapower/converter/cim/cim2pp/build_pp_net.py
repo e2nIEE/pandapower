@@ -124,6 +124,8 @@ class CimConverter:
         self.classes_dict['synchronousMachinesCim16'](cimConverter=self).convert_synchronous_machines_cim16()
         self.classes_dict['asynchronousMachinesCim16'](cimConverter=self).convert_asynchronous_machines_cim16()
         self.classes_dict['energySourcesCim16'](cimConverter=self).convert_energy_sources_cim16()
+        if self.cim_version == 'ltds':
+            self.classes_dict['powerElectronicsConnection'](cimConverter=self).convert_power_electronics_connection()
         # --------- convert shunt elements ---------
         self.classes_dict['linearShuntCompensatorCim16'](cimConverter=self).convert_linear_shunt_compensator_cim16()
         self.classes_dict['nonLinearShuntCompensatorCim16'](

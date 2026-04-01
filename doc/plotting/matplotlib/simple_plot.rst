@@ -2,8 +2,8 @@
 Simple Plotting
 =============================
 
-The function simple_plot() can be used for simple plotting.
-For advanced possibilities see the `tutorial <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotting_basic.ipynb>`_.
+The function simple_plot() can be used for simple plotting. For advanced possibilities see the
+`tutorial <https://nbviewer.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotting_basic.ipynb>`__.
 
 .. _simple_plot:
 
