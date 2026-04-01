@@ -29,7 +29,7 @@ def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True) -> pandap
     return net
 
 
-def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
+def from_ucte(ucte_file: str, slack_as_gen: bool = True, harmonize_voltages: bool = False) -> pandapowerNet:
     """
     Converts net data stored as an UCTE file to a pandapower net.
 
@@ -60,7 +60,8 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True) -> pandapowerNet:
 
     pp_net = from_ucte_dict(ucte_parser, slack_as_gen=slack_as_gen)
 
-    average_voltage_setpoints(pp_net)
+    if harmonize_voltages:
+        average_voltage_setpoints(pp_net)
 
     time_end_converting = time.time()
 
