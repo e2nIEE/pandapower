@@ -62,7 +62,7 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True, clip_small_x_values: bo
 
     pp_net = from_ucte_dict(ucte_parser, slack_as_gen=slack_as_gen, clip_small_x_values=clip_small_x_values)
 
-    if harmonize_voltages:
+    if harmonize_voltage_setpoints:
         average_voltage_setpoints(pp_net)
 
     time_end_converting = time.time()
