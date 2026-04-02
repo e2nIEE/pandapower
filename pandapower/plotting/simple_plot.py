@@ -359,6 +359,88 @@ def _set_colormap_mode(
     fig.canvas.draw_idle()
 
 
+def bus_info(bus):
+    return ("bus", bus)
+
+
+def line_info(line):
+    return ("line", line)
+
+
+def trafo_info(idx):
+    return ("trafo", idx)
+
+
+def trafo3w_info(idx):
+    return ("trafo3w", idx)
+
+
+def hover(event, ax, net, hover_text):
+    """
+    Update the hover text in an interactive pandapower plot based on the mouse position.
+
+    Expects collections to have an `info` attribute containing a list of
+    (element, index) tuples, e.g. ("bus", 3) or ("line", 5).
+
+    Parameters
+    ----------
+    event : matplotlib.backend_bases.MouseEvent
+        Mouse-move event from Matplotlib.
+    ax : matplotlib.axes.Axes
+        Axes object containing the collections.
+    net : pp.pandapowerNet
+        pandapower network with DataFrames (bus, line, trafo, trafo3w, ...).
+    hover_text : matplotlib.text.Text
+        Text artist whose content, position and visibility are updated.
+    """
+    fig = ax.figure
+    visible = hover_text.get_visible()
+
+    if event.inaxes is not ax:
+        if visible:
+            hover_text.set_visible(False)
+            fig.canvas.draw_idle()
+        return
+
+    for collection in ax.collections:
+        info = getattr(collection, "info", None)
+        if not info:
+            continue
+
+        contains, props = collection.contains(event)
+        if not contains or "ind" not in props or len(props["ind"]) == 0:
+            continue
+
+        coll_idx = props["ind"][0]
+        element_info = info[coll_idx]
+
+        if isinstance(element_info, tuple) and len(element_info) == 2:
+            element, idx = element_info
+        else:
+            element, idx = str(element_info), None
+
+        df = getattr(net, element, None)
+
+        if df is not None and idx is not None and idx in df.index and "name" in df.columns:
+            name = df.at[idx, "name"]
+            hover_info = f"{element}: {name} | Index: {idx}"
+        elif idx is not None:
+            hover_info = f"{element} | Index: {idx}"
+        else:
+            hover_info = str(element_info)
+
+        # text and position
+        hover_text.set_text(hover_info)
+        hover_text.set_position((event.xdata, event.ydata))
+        hover_text.set_visible(True)
+        fig.canvas.draw_idle()
+        return
+
+    if visible:
+        hover_text.set_visible(False)
+        fig.canvas.draw_idle()
+
+
 def simple_plot(
     net: pandapowerNet,
     respect_switches: bool = False,
@@ -719,7 +801,10 @@ def simple_plot(
     # ── other collections -----------------------------------------------------
     if len(net.dcline) > 0:
         dclc = create_dcline_collection(
-            net, plot_dclines, color=dcline_color, linewidths=line_width
+            net,
+            plot_dclines,
+            color=dcline_color,
+            linewidths=line_width
         )
         collections.append(dclc)
 
