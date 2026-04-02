@@ -14,7 +14,7 @@
    :alt: versions
 
 .. image:: https://readthedocs.org/projects/pandapower/badge/
-   :target: http://pandapower.readthedocs.io/
+   :target: https://pandapower.readthedocs.io/
    :alt: docs
 
 .. image:: https://codecov.io/github/e2nIEE/pandapower/coverage.svg?branch=master
@@ -42,10 +42,12 @@
 
 
 pandapower is an easy to use network calculation program aimed to automate the analysis and optimization of power
-systems. It uses the data analysis library `pandas <http://pandas.pydata.org>`_ and is compatible with the commonly
+systems. It uses the data analysis library `pandas <https://pandas.pydata.org>`_ and is compatible with the commonly
 used MATPOWER / PYPOWER case format. pandapower allows using different solvers including an improved Newton-Raphson
-power flow implementation, all `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ solvers, the C++ library solvers for fast steady-state distribution power system analysis of `PowerGridModel <https://github.com/PowerGridModel/power-grid-model>`_, the Newton-Raphson power flow solvers in the C++ library `lightsim2grid <https://github.com/BDonnot/lightsim2grid/>`_, and the
-`PowerModels.jl <https://github.com/lanl-ansi/PowerModels.jl/>`_ library.
+power flow implementation, all `PYPOWER <https://pypi.python.org/pypi/PYPOWER>`_ solvers, the C++ library solvers for
+fast steady-state distribution power system analysis of `PowerGridModel <https://github.com/PowerGridModel/power-grid-model>`_,
+the Newton-Raphson power flow solvers in the C++ library `lightsim2grid <https://github.com/BDonnot/lightsim2grid/>`_,
+and the `PowerModels.jl <https://github.com/lanl-ansi/PowerModels.jl/>`_ library.
 
 More information about pandapower can be found on `www.pandapower.org <https://www.pandapower.org/>`_:
 
@@ -78,14 +80,15 @@ be used in pandapower, have a look at the *SimBench* `project website <https://w
    :alt: pandapipes_logo
 
 If you want to model pipe networks (heat, gas or water) as well, we recommend
-pandapower's sibling project *pandapipes* (`website <https://www.pandapipes.org>`_, `GitHub repository <https://github.com/e2nIEE/pandapipes>`_).
+pandapower's sibling project *pandapipes*. `pandapipes.org <https://www.pandapipes.org>`__,
+`GitHub repository <https://github.com/e2nIEE/pandapipes>`__.
 
 |
 
 pandapower is a joint development of the research group of the Department for Sustainable Electrical Energy Systems (e2n), University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
-.. image:: http://www.pandapower.org/images/contact/Logo_e2n.png
+.. image:: https://www.pandapower.org/images/contact/Logo_e2n.png
     :target: https://www.uni-kassel.de/eecs/en/sections/energiemanagement-und-betrieb-elektrischer-netze/home
     :width: 500
 
@@ -97,4 +100,5 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 
 |
 
-We welcome contributions to pandapower of any kind - if you want to contribute, please check out the `pandapower contribution guidelines <https://github.com/e2nIEE/pandapower/blob/develop/CONTRIBUTING.rst>`_.
+We welcome contributions to pandapower of any kind - if you want to contribute, please check out the
+`contribution guidelines <https://github.com/e2nIEE/pandapower/blob/develop/CONTRIBUTING.rst>`__.
