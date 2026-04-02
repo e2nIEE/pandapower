@@ -8,6 +8,10 @@ Change Log
 - [FIXED] cim2pp shift_lv_degree was translated from wrong entry
 - [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
 - [ADDED] LTDS support
+- [FIXED] ucte2pp: voltage setpoints from gens connected to the same busbar are now averaged
+- [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
+- [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
+- [FIXED] ucte2pp: prevent nan values for impedances and transformers for B/G/P_fe/i0
 - [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
 - [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
 - [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame

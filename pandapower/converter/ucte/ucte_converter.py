@@ -16,7 +16,7 @@ from pandapower.create import create_empty_network
 
 
 class UCTE2pandapower:
-    def __init__(self, slack_as_gen: bool = True):
+    def __init__(self, slack_as_gen: bool = True, clip_small_x_values: bool = True):
         """
         Convert UCTE data to pandapower.
         """
@@ -25,7 +25,7 @@ class UCTE2pandapower:
         self.net = self._create_empty_network()
         self.net.bus["node_name"] = ""
         self.slack_as_gen = slack_as_gen
-
+        self.clip_small_x_values = clip_small_x_values
     @staticmethod
     def _create_empty_network() -> pandapowerNet:
         net: pandapowerNet = create_empty_network()
@@ -297,7 +297,15 @@ class UCTE2pandapower:
         lines["length_km"] = 1
         self._fill_empty_names(lines)
         self._fill_amica_names(lines, ":line")
-        lines.loc[lines.x == 0, "x"] = 0.01
+
+        if self.clip_small_x_values:
+            # apply rule of min. X of 0.05 Ohm from UCTE-DEF
+            lines.loc[(lines.x >= 0.0) & (lines.x < 0.05) , "x"] = +0.05
+            lines.loc[(lines.x > -0.05) & (lines.x < 0.0) , "x"] = -0.05
+        else:
+            # being close to the PF approach
+            lines.loc[lines.x == 0, "x"] = 1e-3
+
         # rename the columns to the pandapower schema
         lines = lines.rename(
             columns={"r": "r_ohm_per_km", "x": "x_ohm_per_km", "name": "name"}
@@ -325,6 +333,14 @@ class UCTE2pandapower:
         trafos_to_impedances = self._get_trafos_modelled_as_impedances()
         impedances = pd.concat([impedances, trafos_to_impedances])
 
+        if self.clip_small_x_values:
+            # apply rule of min. X of 0.05 Ohm from UCTE-DEF
+            impedances.loc[(impedances.x >= 0.0) & (impedances.x < 0.05) , "x"] = +0.05 
+            impedances.loc[(impedances.x > -0.05) & (impedances.x < 0.0) , "x"] = -0.05
+        else:
+            # being close to the PF approach
+            impedances.loc[impedances.x == 0, "x"] = 1e-3
+
         # create the in_service column from the UCTE status
         in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
         impedances["in_service"] = impedances["status"].map(in_service_map)
@@ -339,6 +355,7 @@ class UCTE2pandapower:
         impedances["gt_pu"] = impedances["g"] / impedances["z_ohm"]
         impedances["bf_pu"] = impedances["b"] / impedances["z_ohm"]
         impedances["bt_pu"] = impedances["b"] / impedances["z_ohm"]
+        impedances.fillna({'gf_pu': 0.0, 'gt_pu': 0.0, 'bf_pu': 0.0, 'bt_pu': 0.0}, inplace=True)
         self._fill_empty_names(impedances)
         self._copy_to_pp("impedance", impedances)
         self.logger.info("Finished converting the impedances.")
@@ -364,30 +381,8 @@ class UCTE2pandapower:
         trafos_to_impedances = trafos_to_impedances.loc[
             trafos_to_impedances.angle_reg_theta.isnull()
         ]
-        # calculate iron losses in kW
-        trafos_to_impedances["pfe_kw"] = (
-            trafos_to_impedances.g * trafos_to_impedances.voltage1**2 / 1e3
-        )
-        # calculate open loop losses in percent of rated current
-        trafos_to_impedances["i0_percent"] = (
-            (
-                (
-                    (trafos_to_impedances.b * 1e-6 * trafos_to_impedances.voltage1**2)
-                    ** 2
-                    + (
-                        trafos_to_impedances.g
-                        * 1e-6
-                        * trafos_to_impedances.voltage1**2
-                    )
-                    ** 2
-                )
-                ** 0.5
-            )
-            * 100
-            / trafos_to_impedances.s
-        )
         trafos_to_impedances = trafos_to_impedances.loc[
-            (trafos_to_impedances.pfe_kw == 0) & (trafos_to_impedances.i0_percent == 0)
+            (trafos_to_impedances.g == 0) & (trafos_to_impedances.b == 0)
         ]
         # rename the columns to the pandapower schema, as voltages are the same we can take voltage1 as vn_kv
         trafos_to_impedances = trafos_to_impedances.rename(
@@ -434,6 +429,15 @@ class UCTE2pandapower:
         if not len(trafos):
             self.logger.info("Finished converting the transformers (no transformers existing).")
             return
+
+        if self.clip_small_x_values:
+            # apply rule of min. X of 0.05 Ohm from UCTE-DEF
+            trafos.loc[(trafos.x >= 0.0) & (trafos.x < 0.05) , "x"] = +0.05 
+            trafos.loc[(trafos.x > -0.05) & (trafos.x < 0.0) , "x"] = -0.05
+        else:
+            # being close to the PF approach
+            trafos.loc[trafos.x == 0, "x"] = 1e-3
+
         # create the in_service column from the UCTE status
         status_map = dict({0: True, 1: True, 8: False, 9: False})
         trafos["in_service"] = trafos["status"].map(status_map)
@@ -444,7 +448,7 @@ class UCTE2pandapower:
         # calculate the relative short-circuit voltage
         trafos["vk_percent"] = (
             np.sign(trafos.x)
-            * (abs(trafos.r) ** 2 + abs(trafos.x) ** 2) ** 0.5
+            * (trafos.r ** 2 + trafos.x ** 2) ** 0.5
             * (trafos.s * 1e3)
             / (10.0 * trafos.voltage1**2)
         )
@@ -465,17 +469,17 @@ class UCTE2pandapower:
             / trafos.s
         )
 
-        # phase and angle regulation have to be split up into 5 cases:
-        # only phase regulated -> pr
-        # only angle regulated symmetrical model -> ars
-        # only angle regulated asymmetrical model -> ara
-        # phase and angle regulated symmetrical model -> pars
-        # phase and angle regulated asymmetrical model -> para
-        # set values for only phase regulated transformers (pr)
-        has_phase_values = (
-            (~trafos.phase_reg_delta_u.isnull())
-            & (~trafos.phase_reg_n.isnull())
-            & (~trafos.phase_reg_n2.isnull())
+        trafos = trafos.fillna({'i0_percent': 0.0, 'pfe_kw': 0.0})
+        
+        # phase data in UCTE represent an effect to vm only
+        # angle data in UCTE represent an effect to va (and maybe vm too)
+
+        # phase and angle regulation have to be split up into several cases
+
+        has_missing_phase_values = (
+            trafos.phase_reg_delta_u.isnull()
+            | trafos.phase_reg_n.isnull()
+            | trafos.phase_reg_n2.isnull()
         )
         has_missing_angle_values = (
             trafos.angle_reg_delta_u.isnull()
@@ -483,114 +487,85 @@ class UCTE2pandapower:
             | trafos.angle_reg_n.isnull()
             | trafos.angle_reg_n2.isnull()
         )
-        pr = trafos.loc[has_phase_values & has_missing_angle_values].index
+        has_phase_values = ~has_missing_phase_values
+        has_angle_values = ~has_missing_angle_values
+        has_2nd_tap_changer = has_phase_values & has_angle_values
 
-        trafos.loc[pr, "tap_min"] = -trafos["phase_reg_n"]
-        trafos.loc[pr, "tap_max"] = trafos["phase_reg_n"]
-        trafos.loc[pr, "tap_pos"] = trafos["phase_reg_n2"]
-        trafos.loc[pr, "tap_step_percent"] = trafos.loc[pr, "phase_reg_delta_u"].abs()
-        trafos.loc[pr, "tap_changer_type"] = "Ratio"
+        symm = trafos.angle_reg_type == "SYMM" # data for symm transformers is included in the angle values
+        asym = trafos.angle_reg_type == "ASYM" # data for asym transformers is included in the angle values
+        # but there might be a second tap changer
+        generic = ~(symm | asym) | has_2nd_tap_changer # data for generic transformers is included in the phase values
 
-        # set values for only angle regulated transformers symmetrical and asymmetrical
-        has_missing_phase_values = (
-            trafos.phase_reg_delta_u.isnull()
-            & trafos.phase_reg_n.isnull()
-            & trafos.phase_reg_n2.isnull()
-        )
-        has_angle_values = (
-            (~trafos.angle_reg_delta_u.isnull())
-            & (~trafos.angle_reg_theta.isnull())
-            & (~trafos.angle_reg_n.isnull())
-            & (~trafos.angle_reg_n2.isnull())
-        )
-        ar = trafos.loc[has_missing_phase_values & has_angle_values].index
+        trafos["tap_changer_type"] = "Ratio"
+        
+        trafos.loc[generic, "tap_min"] = -trafos["phase_reg_n"]
+        trafos.loc[generic, "tap_max"] = trafos["phase_reg_n"]
+        trafos.loc[generic, "tap_pos"] = trafos["phase_reg_n2"]
+        trafos.loc[generic, "tap_step_percent"] = trafos.loc[generic, "phase_reg_delta_u"]
 
-        symm = trafos.angle_reg_type == "SYMM"
-        ars = trafos.loc[has_missing_phase_values & has_angle_values & symm].index
-        trafos.loc[ars, "tap_min"] = -trafos.loc[ar, "angle_reg_n"]
-        trafos.loc[ars, "tap_max"] = trafos.loc[ar, "angle_reg_n"]
-        trafos.loc[ars, "tap_pos"] = trafos.loc[ar, "angle_reg_n2"]
-        trafos.loc[ars, "tap_step_percent"] = np.nan
-        # trafos.loc[ars, 'phase_reg_n'] = trafos.loc[ar, 'angle_reg_n']
-        trafos.loc[ars, "tap_changer_type"] = "Ideal"
-        trafos.loc[
-            ars, "tap_step_degree"
-        ] = self._calculate_tap_step_degree_symmetrical(trafos.loc[ars])
+        idx = trafos.loc[asym & ~(has_2nd_tap_changer)].index
+        trafos.loc[idx, "tap_min"] = -trafos.loc[idx, "angle_reg_n"]
+        trafos.loc[idx, "tap_max"] = trafos.loc[idx, "angle_reg_n"]
+        trafos.loc[idx, "tap_pos"] = trafos.loc[idx, "angle_reg_n2"]
+        trafos.loc[idx, "tap_step_percent"] = trafos.loc[idx, "angle_reg_delta_u"]
+        trafos.loc[idx, "tap_step_degree"] = trafos.loc[idx, "angle_reg_theta"]
 
-        asym = (trafos.angle_reg_type == "ASYM") | (trafos.angle_reg_type == "")
-        ara = trafos.loc[has_missing_phase_values & has_angle_values & asym].index
-        trafos.loc[ara, "tap2_min"] = -trafos.loc[ar, "angle_reg_n"]
-        trafos.loc[ara, "tap2_max"] = trafos.loc[ar, "angle_reg_n"]
-        trafos.loc[ara, "tap2_pos"] = trafos.loc[ar, "angle_reg_n2"]
-        trafos.loc[ara, "tap2_neutral"] = 0
-        trafos.loc[ara, "tap2_step_percent"] = np.nan
-        trafos.loc[ara, "tap2_changer_type"] = "Ideal"
-        trafos.loc[
-            ara, "tap2_step_degree"
-        ] = self._calculate_tap_step_degree_asymmetrical(trafos.loc[ara])
+        idx = trafos.loc[asym & has_2nd_tap_changer].index
+        trafos.loc[idx, "tap2_changer_type"] = "Ratio"
+        trafos.loc[idx, "tap2_min"] = -trafos.loc[idx, "angle_reg_n"]
+        trafos.loc[idx, "tap2_max"] = trafos.loc[idx, "angle_reg_n"]
+        trafos.loc[idx, "tap2_pos"] = trafos.loc[idx, "angle_reg_n2"]
+        trafos.loc[idx, "tap2_step_percent"] = trafos.loc[idx, "angle_reg_delta_u"]
+        trafos.loc[idx, "tap2_step_degree"] = trafos.loc[idx, "angle_reg_theta"]
+        
+        idx = trafos.loc[symm & ~(has_2nd_tap_changer)].index
+        trafos.loc[idx, "tap_changer_type"] = "Symmetrical"
+        trafos.loc[idx, "tap_min"] = -trafos.loc[idx, "angle_reg_n"]
+        trafos.loc[idx, "tap_max"] = trafos.loc[idx, "angle_reg_n"]
+        trafos.loc[idx, "tap_pos"] = trafos.loc[idx, "angle_reg_n2"]
+        trafos.loc[idx, "tap_step_percent"] = trafos.loc[idx, "angle_reg_delta_u"]
+        trafos.loc[idx, "tap_step_degree"] = trafos.loc[idx, "angle_reg_theta"] # has to be 90.0°
 
-        trafos.loc[ara, "tap_min"] = -trafos.loc[ara, "angle_reg_n"]
-        trafos.loc[ara, "tap_max"] = trafos.loc[ara, "angle_reg_n"]
-        trafos.loc[ara, "tap_pos"] = trafos.loc[ara, "angle_reg_n2"]
-        trafos.loc[ara, "tap_changer_type"] = "Ratio"
-        trafos.loc[
-            ara, "tap_step_percent"
-        ] = self._calculate_tap_step_percent_asymmetrical(trafos.loc[ara])
-
-        # get phase and angle regulated transformers symmetrical and asymmetrical
-        par = trafos.loc[has_phase_values & has_angle_values].index
-
-        trafos.loc[par, "tap_step_percent"] = trafos.loc[par, "phase_reg_delta_u"].abs()
-        trafos.loc[par, "tap_min"] = -trafos.loc[par, "phase_reg_n"]
-        trafos.loc[par, "tap_max"] = trafos.loc[par, "phase_reg_n"]
-        trafos.loc[par, "tap_pos"] = trafos.loc[par, "phase_reg_n2"]
-        trafos.loc[par, "tap_changer_type"] = "Ratio"
-
-        trafos.loc[par, "tap2_min"] = -trafos.loc[par, "angle_reg_n"]
-        trafos.loc[par, "tap2_max"] = trafos.loc[par, "angle_reg_n"]
-        trafos.loc[par, "tap2_neutral"] = 0
-        trafos.loc[par, "tap2_pos"] = trafos.loc[par, "angle_reg_n2"]
-        trafos.loc[par, "tap2_step_percent"] = np.nan
-        trafos.loc[par, "tap2_changer_type"] = "Ideal"
-
-        pars = trafos.loc[has_phase_values & has_angle_values & symm].index
-        trafos.loc[
-            pars, "tap2_step_degree"
-        ] = self._calculate_tap_step_degree_symmetrical(trafos.loc[pars])
-
-        para = trafos.loc[has_phase_values & has_angle_values & asym].index
-        trafos.loc[
-            para, "tap2_step_degree"
-        ] = self._calculate_tap_step_degree_asymmetrical(trafos.loc[para])
-        trafos.loc[para, "tap_step_percent"] = trafos.loc[
-            para, "tap_step_percent"
-        ] + self._calculate_tap_step_percent_asymmetrical(trafos.loc[para])
-
-        # change signs of tap pos for negative degree or percentage values, since pp only allows positive values
-        # trafos.loc[trafos.tap_step_percent < 0, ['tap_pos', 'tap_step_percent']] = trafos.loc[trafos.tap_step_percent < 0, ['tap_pos', 'tap_step_percent']] * -1
-        # trafos.loc[trafos.tap_step_degree < 0, ['tap_pos', 'tap_step_degree']] = trafos.loc[trafos.tap_step_degree < 0, ['tap_pos', 'tap_step_degree']] * -1
-        # trafos.loc[trafos.tap2_step_degree < 0, ['tap2_pos', 'tap2_step_degree']] = trafos.loc[trafos.tap2_step_degree < 0, ['tap2_pos', 'tap2_step_degree']] * -1
+        idx = trafos.loc[symm & has_2nd_tap_changer].index
+        # ToDo: in PF, a 2nd tap changer cannot be symmetrical; thus, it is inspected as asymetrical
+        # trafos.loc[idx, "tap2_changer_type"] = "Symmetrical"
+        trafos.loc[idx, "tap2_changer_type"] = "Ratio"
+        trafos.loc[idx, "tap2_min"] = -trafos.loc[idx, "angle_reg_n"]
+        trafos.loc[idx, "tap2_max"] = trafos.loc[idx, "angle_reg_n"]
+        trafos.loc[idx, "tap2_pos"] = trafos.loc[idx, "angle_reg_n2"]
+        trafos.loc[idx, "tap2_step_percent"] = trafos.loc[idx, "angle_reg_delta_u"]
+        trafos.loc[idx, "tap2_step_degree"] = trafos.loc[idx, "angle_reg_theta"] # has to be 90.0°
 
         # set the hv and lv voltage sides to voltage1 and voltage2 (The non-regulated transformer side is currently
         # voltage1, not the hv side!)
         trafos["vn_hv_kv"] = trafos[["voltage1", "voltage2"]].max(axis=1)
         trafos["vn_lv_kv"] = trafos[["voltage1", "voltage2"]].min(axis=1)
-        # swap the 'fid_node_start' and 'fid_node_end' if need
+        
+        # swap the 'hv_node' and 'lv_node' if need
         trafos["swap"] = trafos["vn_hv_kv"] != trafos["voltage1"]
+        # to be consistent with PF
+        trafos["swap"] = trafos["swap"] | (trafos["vn_hv_kv"]==trafos["vn_lv_kv"])
+        
         # copy the 'fid_node_start' and 'fid_node_end'
         trafos["hv_bus2"] = trafos["hv_bus"].copy()
         trafos["lv_bus2"] = trafos["lv_bus"].copy()
         trafos.loc[trafos.swap, "hv_bus"] = trafos.loc[trafos.swap, "lv_bus2"]
         trafos.loc[trafos.swap, "lv_bus"] = trafos.loc[trafos.swap, "hv_bus2"]
-        # set the tap side, default is lv Correct it for other windings
+        
+        # set the tap side, default is lv correct it for other windings
         trafos["tap_side"] = "lv"
         trafos["tap2_side"] = "lv"
         trafos.loc[trafos.swap, "tap_side"] = "hv"
         trafos.loc[trafos.swap, "tap2_side"] = "hv"
-        # now set it to nan for not existing tap changers
-        trafos.loc[trafos.phase_reg_n.isnull(), "tap_side"] = None
+        
         trafos["tap_neutral"] = 0
-        trafos.loc[trafos.phase_reg_n.isnull(), "tap_neutral"] = np.nan
+        trafos.loc[trafos.tap_min.isnull(), "tap_side"] = None
+        trafos.loc[trafos.tap_min.isnull(), "tap_neutral"] = np.nan
+        trafos.loc[trafos.tap_min.isnull(), "tap_changer_type"] = None
+        trafos["tap2_neutral"] = 0
+        trafos.loc[trafos.tap2_min.isnull(), "tap2_side"] = None
+        trafos.loc[trafos.tap2_min.isnull(), "tap2_neutral"] = np.nan
+
         trafos["shift_degree"] = 0
         trafos["parallel"] = 1
         self._fill_empty_names(trafos, "0_x")
