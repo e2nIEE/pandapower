@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
 - [ADDED] added more functions to diagnostic
 - [ADDED] check to check if vkr_percent values are reasonable (see issue #786).
 - [FIXED] cim2pp shift_lv_degree was translated from wrong entry
