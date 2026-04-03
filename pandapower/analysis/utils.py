@@ -9,8 +9,7 @@ import pandas as pd
 import pandapower as pp
 from typing import Tuple
 
-# from pandapower.analysis.sensitivity_dc import _get_dc_profile_perturb
-#from pandapower.analysis.PTDF import _get_dc_profile_with_PTDF
+# from pandapower.analysis.PTDF import _get_dc_profile_with_PTDF, _get_dc_profile_perturb
 
 import logging
 
@@ -147,66 +146,6 @@ def branch_dict_to_ppci_branch_list(net, branch_dict):
             s = t
 
     return branch_id_ppci, ppci_branch_lookup
-
-
-# All functions should be called from external
-def run_dc_profile(
-    net,
-    profiles: dict,
-    result_side=0,
-    distributed_slack: bool = True,
-    perturb: bool = False,
-    extra_data_points: list = None,
-    ptdf: dict = None,
-):
-    """
-    this function runs a dc profile simulation with ptdf
-    :param net: A pandapower network
-    :param profiles: a dict of p profiles of pp elements as dataframe:
-        {(element ("load", "sgen", "gen", "storage"), "p_mw"):
-         pd.DataFrame(index=calculation_steps, columns=element_index, data=profile_data)}
-            all the profiles must have the same index, the columns could be a subset of the element,
-            the default value of not selected elements in pandapower networks is used in profile simulation
-    :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
-    :param distributed_slack: Set True if p distribution amount distributed wished, or else slacks are
-         only all voltage references! For non-perturb only True possible!!
-    :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
-        only a few elements on large networks, if a lot of elements required please set to False
-    :param extra_data_points: Extra data points from pandapower as a list of tuples (perturb Only!)
-        e.g. [("bus", "va_degree"), ("load", "p_mw")]
-    :param ptdf: precalculated ptdf matrix to accelerate the calculation (Only required in the non-perturb version)
-    :return: {(res_{branch_type}, p_{side}_mw):
-        DataFrame(data=p_side_mw, index=calc_ix, columns=outage_branch_pp_index)}
-    if extra_data_points defined, further pp data points also returned
-    """
-    if perturb or extra_data_points is not None or not distributed_slack:
-        if extra_data_points is not None:
-            logger.info(f"Extra data points: {extra_data_points} required, using perturb method!")
-        if not distributed_slack:
-            logger.info("distributed_slack deactivated! Distirbuted slacks are used as Vref! Only Perturb Possible")
-        res = _get_dc_profile_perturb(
-            net,
-            profiles,
-            result_side=result_side,
-            distributed_slack=distributed_slack,
-            extra_data_points=extra_data_points,
-        )
-    else:
-        res = _get_dc_profile_with_PTDF(net, profiles, result_side=result_side, ptdf=ptdf)
-
-    res_renamed = {}
-    THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
-    for br_type, value in res.items():
-        if isinstance(br_type, str):
-            if not br_type.startswith("trafo3w"):
-                side = THIS_RES_BR_SIDE_MAPPING[br_type]
-            else:
-                side = br_type.split("_")[-1]
-            res_renamed[(f"res_{br_type}", f"p_{side}_mw")] = value
-        else:
-            # rename extra data points
-            res_renamed[(f"res_{br_type[0]}", br_type[1])] = value
-    return res_renamed
 
 
 def get_dist_slack(net, pf_required=True) -> Tuple[pd.DataFrame, dict]:
