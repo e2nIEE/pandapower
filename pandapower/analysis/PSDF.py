@@ -15,7 +15,7 @@ from pandapower.pypower.idx_bus import BUS_TYPE, REF
 from pandapower.pypower.makeBdc import calc_b_from_branch
 from numpy import ones, r_, real, int64, arange, flatnonzero as find, isscalar
 
-from typing import Union, List, Dict, Tuple
+from typing import Union, List, Dict, Tuple, Optional
 
 import pandas as pd
 import numpy as np
@@ -27,7 +27,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def makePSDF(baseMVA, PTDF, bus, branch, using_sparse_solver=False, branch_id=None, reduced=False, slack=None):
+def makePSDF(
+        baseMVA: float,
+        PTDF: np.ndarray,
+        bus: np.ndarray,
+        branch: np.ndarray,
+        using_sparse_solver: bool=False,
+        branch_id: Optional[int]=None,
+        reduced: bool=False,
+        slack: Union[int, np.ndarray]=None
+):
     """Builds the DC PSDF matrix based on the DC PTDF
     Returns the DC PSDF matrix . The matrix is
     C{nbr x nbr}, where C{nbr} is the number of branches. The DC PSDF is independent from the selected slack.
@@ -80,12 +89,12 @@ def makePSDF(baseMVA, PTDF, bus, branch, using_sparse_solver=False, branch_id=No
 
 
 def _get_PSDF_direct(
-    net,
-    phase_shift_branch_type,
-    phase_shift_branch_ix=None,
-    using_sparse_solver=True,
+    net: pandapowerNet,
+    phase_shift_branch_type: str,
+    phase_shift_branch_ix: ELE_IX_TYPE=None,
+    using_sparse_solver: bool=True,
     random_verify=False,
-    branch_dict=None,
+    branch_dict: Optional[dict]=None,
     reduced=True,
 ):
     """

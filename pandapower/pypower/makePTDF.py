@@ -21,8 +21,16 @@ from .idx_bus import BUS_TYPE, REF, BUS_I
 from .makeBdc import makeBdc
 
 
-def makePTDF(baseMVA, bus, branch, slack=None,
-             result_side=0, using_sparse_solver=False, branch_id=None, reduced=False):
+def makePTDF(
+        baseMVA, # TODO: implement
+        bus,
+        branch,
+        slack=None,
+        result_side: int=0,
+        using_sparse_solver: bool=False,
+        branch_id=None,
+        reduced: bool=False
+):
     """Builds the DC PTDF matrix for a given choice of slack.
     Returns the DC PTDF matrix for a given choice of slack. The matrix is
     C{nbr x nb}, where C{nbr} is the number of branches and C{nb} is the

@@ -22,12 +22,20 @@ from pandapower.pypower.idx_bus import BUS_I
 # replace pandapower makePTDF with custom function
 from pandapower.pypower.makePTDF import makePTDF
 from pandapower.analysis.utils import get_dist_slack, get_ppci_dist_slack, LOAD_REFRENCE
+from pandapower.auxiliary import pandapowerNet
 
 import logging
 logger = logging.getLogger(__name__)
 
+
 def _get_PTDF_direct(
-    net, source_bus=None, result_side=0, using_sparse_solver=True, random_verify=True, branch_dict=None, reduced=True
+        net: pandapowerNet,
+        source_bus: Union[int, np.ndarray]=None,
+        result_side=0,
+        using_sparse_solver: bool=True,
+        random_verify: bool=True,
+        branch_dict=None,
+        reduced: bool=True
 ):
     """
     this function calculates PTDF (ratio without unit) of bus to a pp branch
@@ -77,7 +85,7 @@ def _get_PTDF_direct(
     return ptdf
 
 
-def _get_PTDF_perturb(net, source_bus=None, result_side=0, distributed_slack=True):
+def _get_PTDF_perturb(net: pandapowerNet, source_bus: Union[int, np.ndarray]=None, result_side=0, distributed_slack: bool=True):
     """
     this function calculates PTDF (ratio without unit) of bus to
     a pp branch with perturb method (brute-force)

@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Union, List, Dict, Tuple
+from typing import Union, List, Dict, Tuple, Optional, Any
 from copy import deepcopy
 from itertools import product
 
@@ -31,7 +31,7 @@ def _get_LODF_direct(
     random_verify=True,
     branch_dict=None,
     reduced=True,
-):
+) -> dict:
     """
     this function calculate LODF (ratio without unit) of a pp branch from the outage of a pp branch
     with pypower matrix function.
@@ -107,7 +107,11 @@ def _get_LODF_direct(
     return lodf
 
 
-def _init_LODF_pp_np(net, outage_branch_type, num_outage_branch):
+def _init_LODF_pp_np(
+        net: pandapowerNet,
+        outage_branch_type: str,
+        num_outage_branch: int
+) -> dict:
     lodf_pp = {}
     for br_type in ("line", "dcline", "trafo", "impedance"):
         if not net[br_type].empty:
@@ -123,7 +127,11 @@ def _init_LODF_pp_np(net, outage_branch_type, num_outage_branch):
     return lodf_pp
 
 
-def _LODF_ppci_to_pp(net, lodf_ppci, branch_ppci_lookup=None):
+def _LODF_ppci_to_pp(
+        net: pandapowerNet,
+        lodf_ppci: np.ndarray,
+        branch_ppci_lookup: Optional[np.ndarray]=None
+):
     # convert the branch sensitivity of the ppci layer to pandapower net layer
     if branch_ppci_lookup is not None:
         pp_ppci_branch_lookups = {
@@ -162,13 +170,19 @@ def _LODF_ppci_to_pp(net, lodf_ppci, branch_ppci_lookup=None):
     return results
 
 
-def _LODF_pp_np_to_df(net, res_pp_np, outage_branch_type=None, outage_branch_ix=None, branch_dict=None):
+def _LODF_pp_np_to_df(
+        net: pandapowerNet,
+        res_pp_np,
+        outage_branch_type: Optional[str]=None,
+        outage_branch_ix: ELE_IX_TYPE=None,
+        branch_dict=None
+) -> dict:
     res = {}
     for key, data in res_pp_np.items():
         data = res_pp_np[key]
 
         # Avoid inf
-        data[np.isinf(data)] = np.NaN
+        data[np.isinf(data)] = np.nan
         # Find "columns" contains only NaN
         # ATTENTION: following two lines need to be commented out to neglect LODF of isolated lines
         # only_nan_mask = np.all(np.isnan(data), axis=0)
@@ -196,9 +210,9 @@ def _LODF_pp_np_to_df(net, res_pp_np, outage_branch_type=None, outage_branch_ix=
 def _get_LODF_perturb(
     net: pandapowerNet,
     outage_branch_type: str,
-    outage_branch_ix: ELE_IX_TYPE = None,
+    outage_branch_ix: ELE_IX_TYPE=None,
     distributed_slack=True,
-    recycle="lodf",
+    recycle: Optional[dict[str, Any]]="lodf",
 ) -> Dict[Tuple[str, str], pd.DataFrame]:
     """
     this function calculate LODF (ratio without unit) of a pp branch from the outage of a pp branch
@@ -326,7 +340,13 @@ def _get_LODF_perturb(
 
 
 # Example application function with LODF
-def _get_dc_n1_with_LODF(net, outage_branch_type, outage_branch_ix=None, result_side=0, lodf=None):
+def _get_dc_n1_with_LODF(
+        net: pandapowerNet,
+        outage_branch_type,
+        outage_branch_ix: ELE_IX_TYPE=None,
+        result_side: int=0,
+        lodf: Optional[dict]=None
+):
     """
     this function calculate p_mw of a side of branch under the outage
     of another branch with LODF method
@@ -381,7 +401,7 @@ def run_LODF(
     outage_branch_ix: ELE_IX_TYPE = None,
     distributed_slack: bool = True,
     perturb: bool = False,
-    recycle: Union[str, None] = None,
+    recycle: Optional[str] = None,
     using_sparse_solver: bool = True,
     random_verify: bool = False,
     branch_dict: Dict[str, Union[List[int], None]] = None,
@@ -409,6 +429,7 @@ def run_LODF(
     :param branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
         restricted to the branch indices given in the dict
     :param reduced: if True, the output is reduced to the branches given in branch_dict
+    :param recycle: if True, recycles the previous
     :return: {(goal_branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"),
                outage_branch_type (("line", "trafo", "impedance")):
         DataFrame(data=lodf, index=goal_branch_pp_index, columns=outage_branch_ix)}

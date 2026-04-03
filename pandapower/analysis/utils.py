@@ -3,13 +3,11 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Union
+from typing import Union, Optional, Tuple
 import numpy as np
 import pandas as pd
 import pandapower as pp
-from typing import Tuple
-
-# from pandapower.analysis.PTDF import _get_dc_profile_with_PTDF, _get_dc_profile_perturb
+from pandapower.auxiliary import pandapowerNet
 
 import logging
 
@@ -31,7 +29,8 @@ LOAD_REFRENCE = ("load", "storage")
 ELE_IX_TYPE = Union[int, list, np.ndarray]
 PP_SLACK_PRIO_COL = "slack_weight"
 
-def _get_source_bus_ix(net, source_bus=None):
+
+def _get_source_bus_ix(net: pandapowerNet, source_bus: Union[int, np.ndarray]=None):
     if source_bus is None:
         return net.bus.index.to_numpy()
 
@@ -47,7 +46,11 @@ def _get_source_bus_ix(net, source_bus=None):
     return unique_source_bus if unique_source_bus.size < source_bus.size else source_bus
 
 
-def _get_outage_branch_ix(net, outage_branch_type, outage_branch_ix=None):
+def _get_outage_branch_ix(
+        net: pandapowerNet,
+        outage_branch_type: str,
+        outage_branch_ix: ELE_IX_TYPE=None
+) -> np.ndarray:
     assert outage_branch_type in ("line", "dcline", "trafo", "impedance", "trafo3w"), (
         outage_branch_type + " as outage branch type not supported!"
     )
@@ -67,7 +70,7 @@ def _get_outage_branch_ix(net, outage_branch_type, outage_branch_ix=None):
     return unique_outage_branch_ix if unique_outage_branch_ix.size < outage_branch_ix.size else outage_branch_ix
 
 
-def _get_bus_lookup(net):
+def _get_bus_lookup(net: pandapowerNet) -> np.ndarray:
     pp_ppci_bus_lookup = net._pd2ppc_lookups["bus"]
     # Set out-of-service bus index to -1 (for padded array)
     bus_in_service_mask = np.in1d(np.arange(pp_ppci_bus_lookup.shape[0]), net._is_elements["bus_is_idx"])
@@ -75,7 +78,7 @@ def _get_bus_lookup(net):
     return pp_ppci_bus_lookup
 
 
-def _get_branch_lookup(net, branch_type):
+def _get_branch_lookup(net: pandapowerNet, branch_type) -> Optional[np.ndarray]:
     # Find the branch lookup table from pandapower net of ppci layer
     assert branch_type in ("line", "trafo", "trafo3w", "impedance"), "Branch Type not supported for lookup creation"
 
@@ -99,7 +102,7 @@ def _get_branch_lookup(net, branch_type):
         return None
 
 
-def _get_trafo3w_lookup(net):
+def _get_trafo3w_lookup(net: pandapowerNet) -> Optional[dict]:
     pp_ppci_trafo3w_lookup = _get_branch_lookup(net, "trafo3w")
     if pp_ppci_trafo3w_lookup is not None:
         trafo3w_keys = ["trafo3w_hv", "trafo3w_mv", "trafo3w_lv"]
@@ -113,7 +116,7 @@ def _get_trafo3w_lookup(net):
         return None
 
 
-def branch_dict_to_ppci_branch_list(net, branch_dict):
+def branch_dict_to_ppci_branch_list(net: pandapowerNet, branch_dict: dict) -> Tuple[list, dict]:
     """
     This function transforms a dictionary with branches of a net into a list of the corresponding internal ppci indices
     and produces a lookup for tha branch type intervals.
@@ -148,7 +151,7 @@ def branch_dict_to_ppci_branch_list(net, branch_dict):
     return branch_id_ppci, ppci_branch_lookup
 
 
-def get_dist_slack(net, pf_required=True) -> Tuple[pd.DataFrame, dict]:
+def get_dist_slack(net: pandapowerNet, pf_required: bool=True) -> Tuple[pd.DataFrame, dict]:
     """
     Find active slacks of a pp net and check multi area
     of the grid
@@ -184,9 +187,9 @@ def get_dist_slack(net, pf_required=True) -> Tuple[pd.DataFrame, dict]:
 
     # Check slack df plausibility
     assert not slack_df.empty, "No slack in network available! Calculation not possible!"
-    if slack_df.priority.isna().any():
+    if slack_df['priority'].isna().any():
         logger.warning("Some slack has NaN as priority! Force priority to equally distributed!")
-        slack_df.priority = 1.0
+        slack_df['priority'] = 1.0
 
     # Sort and normalization
     slack_df.sort_values(by="priority", ascending=False, inplace=True)
@@ -198,7 +201,7 @@ def get_dist_slack(net, pf_required=True) -> Tuple[pd.DataFrame, dict]:
     return slack_df, pp_area_bus_mapping
 
 
-def get_ppci_dist_slack(net, ppci, slack_df):
+def get_ppci_dist_slack(net: pandapowerNet, ppci: dict, slack_df: pd.DataFrame) -> np.ndarray:
     """ Convert the priority defined in slack_df to a numpy array required for
         pypower ptdf calculation
     """
@@ -214,7 +217,7 @@ def get_ppci_dist_slack(net, ppci, slack_df):
     return ppci_slack_mask
 
 
-def _check_multi_area(net, slack_df) -> dict:
+def _check_multi_area(net: pandapowerNet, slack_df: pd.DataFrame) -> dict:
     """ Check the multi grid areas of a pandapower networks with distributed slack
         and update the area and priority area in slack_df
         return dict: {area: bus_in_area}
