@@ -9,7 +9,8 @@ import pandas as pd
 import pandapower as pp
 from typing import Tuple
 
-from sensitivity_dc import _get_dc_profile_perturb, _get_dc_profile_with_PTDF
+# from pandapower.analysis.sensitivity_dc import _get_dc_profile_perturb
+#from pandapower.analysis.PTDF import _get_dc_profile_with_PTDF
 
 import logging
 
@@ -29,14 +30,14 @@ BR_NAN_CHECK = {
 }
 LOAD_REFRENCE = ("load", "storage")
 ELE_IX_TYPE = Union[int, list, np.ndarray]
-
+PP_SLACK_PRIO_COL = "slack_weight"
 
 def _get_source_bus_ix(net, source_bus=None):
     if source_bus is None:
         return net.bus.index.to_numpy()
 
     if np.isscalar(source_bus):
-        source_bus = np.array([source_bus]).astype(np.int)
+        source_bus = np.array([source_bus]).astype(int)
     if isinstance(source_bus, np.ndarray):
         # Convert to 1d np array
         source_bus = source_bus.ravel()
@@ -87,7 +88,7 @@ def _get_branch_lookup(net, branch_type):
         num_active_branch = np.sum(branch_in_service_mask)
 
         # Initialize branch lookups as empty integer array
-        pp_ppci_br_lookup = np.zeros(br_ix_end - br_ix_start, dtype=np.int)
+        pp_ppci_br_lookup = np.zeros(br_ix_end - br_ix_start, dtype=int)
         # Find lookup index of in_service branch
         pp_ppci_br_lookup[branch_in_service_mask] = np.arange(
             ppci_ix_start_offset, ppci_ix_start_offset + num_active_branch
@@ -263,13 +264,13 @@ def get_ppci_dist_slack(net, ppci, slack_df):
         pypower ptdf calculation
     """
     # Check number of slacks
-    pp_slack = slack_df["bus_id"].to_numpy(dtype=np.int)
+    pp_slack = slack_df["bus_id"].to_numpy(dtype=int)
     assert np.all(np.isin(pp_slack, net["_is_elements"]["bus_is_idx"])), \
         "Some selected slacks are out of service"
     ppci_slack = net["_pd2ppc_lookups"]["bus"][pp_slack]
     ppci_slack_priority = slack_df["priority"].to_numpy()
 
-    ppci_slack_mask = np.zeros(ppci["bus"].shape[0], dtype=np.float)
+    ppci_slack_mask = np.zeros(ppci["bus"].shape[0], dtype=float)
     ppci_slack_mask[ppci_slack] = ppci_slack_priority
     return ppci_slack_mask
 
@@ -308,7 +309,8 @@ def _check_multi_area(net, slack_df) -> dict:
     # Update slack priority in area
     sum_priority_in_area = slack_df.groupby("area")["priority"].sum()
     slack_df["priority_in_area"] = 0.0
-    for i, val in sum_priority_in_area.iteritems():
+    # for i, val in sum_priority_in_area.iteritems():
+    for i, val in sum_priority_in_area.items():
         slack_df.loc[slack_df.area == i, "priority_in_area"] = \
             slack_df.loc[slack_df.area == i, "priority_in_area"] / val if sum_priority_in_area.at[i] != 0.0 else 0.0
 

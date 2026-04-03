@@ -12,7 +12,6 @@ import numpy as np
 
 from pandapower import pandapowerNet
 from pandapower.analysis.PTDF import _makePTDF_ppci, _get_PTDF_perturb
-from pandapower.analysis.sensitivity_dc import run_dc_n1
 from pandapower.analysis.utils import _get_branch_lookup, _get_trafo3w_lookup, \
     branch_dict_to_ppci_branch_list, _get_outage_branch_ix, DISCONNECTED_PADDING_VALUE, BR_SIDE_MAPPING, \
     BR_SIDE_MAPPING_1, BR_PTDF_MAPPING, BR_PTDF_MAPPING_1, BR_NAN_CHECK, ELE_IX_TYPE
@@ -509,3 +508,109 @@ def verify_LODF(
     logger.info("All LODF results verified with perturb method!")
 
 
+def _get_dc_n1_perturb(net, outage_branch_type, outage_branch_ix=None, result_side=0, distributed_slack=True):
+    """
+    this function calculate p_mw of a side of branch under the outage
+    of another branch with perturb (brute-force) method
+    """
+    THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
+    # this_rundcpp = get_dcpp_runner(net, distributed_slack=distributed_slack)
+
+    # Only net_mod is required in the function
+    net_mod = deepcopy(net)
+    outage_branch_ix = _get_outage_branch_ix(net_mod, outage_branch_type, outage_branch_ix)
+
+    rundcpp(net_mod, distributed_slack=distributed_slack)
+    num_out_of_service_bus = np.sum(np.isnan(net_mod.res_bus.va_degree.to_numpy()))
+    outage_br_p0_series = net_mod["res_" + outage_branch_type][
+        "p_" + THIS_RES_BR_SIDE_MAPPING[outage_branch_type] + "_mw"
+    ].copy()
+
+    res_n1_pp_np = _init_LODF_pp_np(net, outage_branch_type, outage_branch_ix.shape[0])
+    for ix, br_ix in enumerate(outage_branch_ix):
+        # Skip out-of-service line
+        if net_mod[outage_branch_type].at[br_ix, "in_service"]:
+            net_mod[outage_branch_type].at[br_ix, "in_service"] = False
+            rundcpp(net_mod, distributed_slack=distributed_slack)
+            net_mod[outage_branch_type].at[br_ix, "in_service"] = True
+            if (
+                np.isclose(outage_br_p0_series.at[br_ix], 0, atol=1e-6)
+                or np.sum(np.isnan(net_mod.res_bus.va_degree.to_numpy())) > num_out_of_service_bus
+            ):
+                logger.info(f"""{outage_branch_type}: {ix} skipped!
+                                   p_mw: {np.abs(outage_br_p0_series.at[br_ix]):.2f},
+                                   num oos bus: {np.sum(np.isnan(net_mod.res_bus.va_degree.to_numpy()))}""")
+                continue
+
+            for br_type in ("line", "trafo", "impedance"):
+                if not net[br_type].empty:
+                    value_type = "p_" + THIS_RES_BR_SIDE_MAPPING[br_type] + "_mw"
+                    res_n1_pp_np[(br_type, outage_branch_type)][:, ix] = net_mod["res_" + br_type][
+                        value_type
+                    ].to_numpy()
+            if not net.trafo3w.empty:
+                for side in ("hv", "mv", "lv"):
+                    res_n1_pp_np[("trafo3w_" + side, outage_branch_type)][:, ix] = net_mod["res_trafo3w"][
+                        "p_" + side + "_mw"
+                    ].to_numpy()
+
+    # Convert np array to pd dataframe with pp indexing
+    res_n1 = _LODF_pp_np_to_df(
+        net, res_n1_pp_np, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix
+    )
+    return res_n1
+
+
+def run_dc_n1(
+    net,
+    outage_branch_type: str,
+    outage_branch_ix: ELE_IX_TYPE = None,
+    result_side=0,
+    distributed_slack: bool = True,
+    perturb: bool = False,
+    lodf: dict = None,
+):
+    """
+    this function calculate p_mw of a side of branch under the outage of another branch with LODF
+    :param net: A pandapower network
+    :param outage_branch_type: The name of the type of the outage branch ("line", "trafo", "impedance")
+    :param outage_branch_ix: The pandapower index of the outage branch (int/list/np.ndarray), if None then all branches
+        will be used (except bridge branch and extra low loading branch)
+    :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
+    :param distributed_slack: Set True if p distribution amount distributed wished, or else slacks are
+         only all voltage references! For non-perturb only True possible!!
+    :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
+        only a few elements on large networks, if a lot of elements required please set to False
+    :param lodf: precomputed load matrices in dictionary, if None it will be calculated internally
+    :return: {(res_{branch_type}, p_{side}_mw):
+        DataFrame(data=p_side_mw, index=goal_branch_pp_index, columns=outage_branch_pp_index)}
+    """
+    # ToDo: Check distributed slack option here
+    if perturb or not distributed_slack:
+        if not distributed_slack:
+            logger.info("distributed_slack deactivated! Distirbuted slacks are used as Vref! Only Perturb Possible")
+        res = _get_dc_n1_perturb(
+            net,
+            outage_branch_type=outage_branch_type,
+            outage_branch_ix=outage_branch_ix,
+            result_side=result_side,
+            distributed_slack=distributed_slack,
+        )
+    else:
+        res = _get_dc_n1_with_LODF(
+            net,
+            outage_branch_type=outage_branch_type,
+            outage_branch_ix=outage_branch_ix,
+            result_side=result_side,
+            lodf=lodf,
+        )
+
+    res_renamed = {}
+    THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
+    for (br_type, _), value in res.items():
+        if not br_type.startswith("trafo3w"):
+            side = THIS_RES_BR_SIDE_MAPPING[br_type]
+        else:
+            side = br_type.split("_")[-1]
+        res_renamed[(f"res_{br_type}", f"p_{side}_mw")] = value
+    return res_renamed

@@ -10,7 +10,6 @@ import pandas as pd
 import numpy as np
 
 from pandapower import pandapowerNet
-from pandapower.analysis.sensitivity_dc import run_dc_profile, _profile_pp_np_to_df
 from pandapower.analysis.utils import _get_bus_lookup, _get_branch_lookup, _get_trafo3w_lookup, \
     branch_dict_to_ppci_branch_list, _get_source_bus_ix, DISCONNECTED_PADDING_VALUE, BR_SIDE_MAPPING, BR_SIDE_MAPPING_1, \
     ELE_IX_TYPE
@@ -22,7 +21,7 @@ from pandapower.pypower.idx_bus import BUS_I
 
 # replace pandapower makePTDF with custom function
 from pandapower.pypower.makePTDF import makePTDF
-from pandapower.analysis.utils import get_dist_slack, get_ppci_dist_slack
+from pandapower.analysis.utils import get_dist_slack, get_ppci_dist_slack, LOAD_REFRENCE
 
 import logging
 logger = logging.getLogger(__name__)
@@ -238,10 +237,10 @@ def _init_PTDF_pp_np(net, num_source_bus):
     ptdf_pp = {}
     for br_type in ("line", "dcline", "trafo", "impedance"):
         if not net[br_type].empty:
-            ptdf_pp[br_type] = np.zeros((net[br_type].shape[0], num_source_bus), dtype=np.float)
+            ptdf_pp[br_type] = np.zeros((net[br_type].shape[0], num_source_bus), dtype=float)
     if not net.trafo3w.empty:
         for side in ("hv", "mv", "lv"):
-            ptdf_pp["trafo3w_" + side] = np.zeros((net.trafo3w.shape[0], num_source_bus), dtype=np.float)
+            ptdf_pp["trafo3w_" + side] = np.zeros((net.trafo3w.shape[0], num_source_bus), dtype=float)
     return ptdf_pp
 
 
@@ -433,14 +432,14 @@ def makePTDF_multi_area(net, ppci,
                         using_sparse_solver, result_side):
     """ Select areas in the ppci network and calculate ptdf of each area independently
     """
-    ptdf_ppci = np.zeros((ppci["branch"].shape[0], ppci["bus"].shape[0]), dtype=np.float)
+    ptdf_ppci = np.zeros((ppci["branch"].shape[0], ppci["bus"].shape[0]), dtype=float)
     for this_bus in pp_area_bus_mapping.values():
         # Select ppci of the area
         this_bus_ppci = net["_pd2ppc_lookups"]["bus"] \
             [this_bus[np.isin(this_bus, net._is_elements["bus_is_idx"])]]
 
         ppci_br_f_bus, ppci_br_t_bus = \
-            ppci["branch"][:, F_BUS].real.astype(np.int), ppci["branch"][:, T_BUS].real.astype(np.int)
+            ppci["branch"][:, F_BUS].real.astype(int), ppci["branch"][:, T_BUS].real.astype(int)
         br_in_area_mask = (np.isin(ppci_br_f_bus, this_bus_ppci) |
                            np.isin(ppci_br_t_bus, this_bus_ppci))
         ppci_branch_this_area = ppci["branch"][br_in_area_mask, :].copy()
@@ -456,13 +455,13 @@ def makePTDF_multi_area(net, ppci,
             continue
 
         # Reindex bus_ix from 1-Nbus and create a lookup
-        ppci_bus_ix = ppci_bus_this_area[:, BUS_I].astype(np.int).copy()
+        ppci_bus_ix = ppci_bus_this_area[:, BUS_I].astype(int).copy()
         ppci_bus_old_new_lookup = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
-        ppci_bus_old_new_lookup[ppci_bus_this_area[:, BUS_I].astype(np.int)] = \
+        ppci_bus_old_new_lookup[ppci_bus_this_area[:, BUS_I].astype(int)] = \
             np.arange(this_ppci_bus_aux_bus.shape[0])
 
         # Update the area ppci bus indexing
-        ppci_bus_this_area[:, BUS_I] = np.arange(ppci_bus_this_area.shape[0], dtype=np.int)
+        ppci_bus_this_area[:, BUS_I] = np.arange(ppci_bus_this_area.shape[0], dtype=int)
         ppci_branch_this_area[:, F_BUS].real = ppci_bus_old_new_lookup[ppci_br_f_bus[br_in_area_mask]]
         ppci_branch_this_area[:, T_BUS].real = ppci_bus_old_new_lookup[ppci_br_t_bus[br_in_area_mask]]
 
@@ -476,3 +475,137 @@ def makePTDF_multi_area(net, ppci,
     return ptdf_ppci
 
 
+def _get_dc_profile_perturb(net, profiles, result_side=0, distributed_slack=True, extra_data_points=None):
+    """
+    Run dc profile with perturb method
+    :return: {branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"):
+              DataFrame(data=p_side_mw, index=calc_ix, columns=branch_index)}
+    if extra_data_points defined, further pp data points also returned
+    """
+    THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
+
+    net_mod = deepcopy(net)
+    num_calc = None
+    # Check profile integrity
+    for key in profiles.keys():
+        assert isinstance(profiles[key], pd.DataFrame), "Only profile as pandas dataframe supported!"
+
+        # Check only dimension
+        if num_calc is None:
+            num_calc = profiles[key].shape[0]
+        else:
+            assert num_calc == profiles[key].shape[0], f"{key} profile has wrong dimension"
+
+    # Init pp result table as np array
+    res_pp_np = {}
+    for br_type in ("line", "trafo", "impedance"):
+        if not net[br_type].empty:
+            res_pp_np[br_type] = np.zeros((num_calc, net[br_type].shape[0]), dtype=float)
+    if not net.trafo3w.empty:
+        for side in ("hv", "mv", "lv"):
+            res_pp_np["trafo3w_" + side] = np.zeros((num_calc, net["trafo3w"].shape[0]), dtype=float)
+
+    res_pp_extra_dp = {}
+    if extra_data_points is not None:
+        for ele_type, data_point in extra_data_points:
+            res_pp_extra_dp[(ele_type, data_point)] = np.zeros((num_calc, net[ele_type].shape[0]), dtype=float)
+
+    # run all timesteps of the profiles
+    for calc_ix in range(num_calc):
+        # Update network with profile
+        for ele_type, value_type in profiles.keys():
+            this_ele_profile = profiles[(ele_type, value_type)]
+            ele_ix = this_ele_profile.columns.to_numpy()
+            net_mod[ele_type].loc[ele_ix, value_type] = this_ele_profile.to_numpy()[calc_ix, :]
+
+        # Update result table
+        rundcpp(net_mod, distributed_slack=True)
+        for res_br_type in res_pp_np.keys():
+            if not res_br_type.startswith("trafo3w"):
+                res_pp_np[res_br_type][calc_ix, :] = net_mod["res_" + res_br_type][
+                    "p_" + THIS_RES_BR_SIDE_MAPPING[res_br_type] + "_mw"
+                ].to_numpy()
+            else:
+                trafo3w_side = res_br_type.split("_")[-1]
+                res_pp_np[res_br_type][calc_ix, :] = net_mod["res_trafo3w"]["p_" + trafo3w_side + "_mw"].to_numpy()
+
+        if extra_data_points is not None:
+            for ele_type, data_point in extra_data_points:
+                res_pp_extra_dp[(ele_type, data_point)][calc_ix, :] = net_mod["res_" + ele_type][data_point].to_numpy()
+
+    # Convert numpy array to pandas dataframe with pp indexing
+    res = _profile_pp_np_to_df(net, res_pp_np, num_calc, res_pp_extra_dp)
+    return res
+
+
+# All functions should be called from external
+def run_dc_profile(
+    net,
+    profiles: dict,
+    result_side=0,
+    distributed_slack: bool = True,
+    perturb: bool = False,
+    extra_data_points: list = None,
+    ptdf: dict = None,
+):
+    """
+    this function runs a dc profile simulation with ptdf
+    :param net: A pandapower network
+    :param profiles: a dict of p profiles of pp elements as dataframe:
+        {(element ("load", "sgen", "gen", "storage"), "p_mw"):
+         pd.DataFrame(index=calculation_steps, columns=element_index, data=profile_data)}
+            all the profiles must have the same index, the columns could be a subset of the element,
+            the default value of not selected elements in pandapower networks is used in profile simulation
+    :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
+    :param distributed_slack: Set True if p distribution amount distributed wished, or else slacks are
+         only all voltage references! For non-perturb only True possible!!
+    :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
+        only a few elements on large networks, if a lot of elements required please set to False
+    :param extra_data_points: Extra data points from pandapower as a list of tuples (perturb Only!)
+        e.g. [("bus", "va_degree"), ("load", "p_mw")]
+    :param ptdf: precalculated ptdf matrix to accelerate the calculation (Only required in the non-perturb version)
+    :return: {(res_{branch_type}, p_{side}_mw):
+        DataFrame(data=p_side_mw, index=calc_ix, columns=outage_branch_pp_index)}
+    if extra_data_points defined, further pp data points also returned
+    """
+    if perturb or extra_data_points is not None or not distributed_slack:
+        if extra_data_points is not None:
+            logger.info(f"Extra data points: {extra_data_points} required, using perturb method!")
+        if not distributed_slack:
+            logger.info("distributed_slack deactivated! Distirbuted slacks are used as Vref! Only Perturb Possible")
+        res = _get_dc_profile_perturb(
+            net,
+            profiles,
+            result_side=result_side,
+            distributed_slack=distributed_slack,
+            extra_data_points=extra_data_points,
+        )
+    else:
+        res = _get_dc_profile_with_PTDF(net, profiles, result_side=result_side, ptdf=ptdf)
+
+    res_renamed = {}
+    THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
+    for br_type, value in res.items():
+        if isinstance(br_type, str):
+            if not br_type.startswith("trafo3w"):
+                side = THIS_RES_BR_SIDE_MAPPING[br_type]
+            else:
+                side = br_type.split("_")[-1]
+            res_renamed[(f"res_{br_type}", f"p_{side}_mw")] = value
+        else:
+            # rename extra data points
+            res_renamed[(f"res_{br_type[0]}", br_type[1])] = value
+    return res_renamed
+
+
+def _profile_pp_np_to_df(net, res_pp_np, num_calc, res_extra_dp=None):
+    res = {}
+    for br_type, data in res_pp_np.items():
+        pp_br_type = "trafo3w" if br_type.startswith("trafo3w") else br_type
+        res[br_type] = pd.DataFrame(data=data, index=np.arange(num_calc), columns=net[pp_br_type].index.to_numpy())
+    if res_extra_dp is not None:
+        for (ele_type, data_type), data in res_extra_dp.items():
+            res[(ele_type, data_type)] = pd.DataFrame(
+                data=data, index=np.arange(num_calc), columns=net[ele_type].index.to_numpy()
+            )
+    return res

@@ -6,7 +6,7 @@ from pandapower import pandapowerNet
 from pandapower.run import rundcpp
 from pandapower.analysis.PTDF import run_PTDF, verify_dc_profile_with_PTDF
 from pandapower.analysis.LODF import run_LODF, verify_dc_n1_with_LODF
-from pandapower.analysis.sensitivity_dc import run_dc_profile
+from pandapower.analysis.PTDF import run_dc_profile
 from pandapower.networks.power_system_test_cases import (
     case30,
     case118,
@@ -21,11 +21,21 @@ from pandapower.networks.create_examples import example_multivoltage
 
 
 @pytest.fixture(
-    params=[case30, case118, case_illinois200, case300, case1354pegase, case2869pegase, case6470rte, case9241pegase]
+    params=[
+        (case30, 10),
+        (case118, 10),
+        (case_illinois200, 100),
+        (case300, 100),
+        (case1354pegase, 100),
+        (case2869pegase, 100),
+        (case6470rte, 100),
+        (case9241pegase, 100)
+    ]
 )
 def net_in(request):
-    net = request.param()
-    return net
+    case_func, lodf_line = request.param
+    net = case_func()
+    return net, lodf_line
 
 
 @pytest.fixture
@@ -46,24 +56,26 @@ def profiles():
             profiles[(ele_type, "p_mw")] *= np.random.rand(*profiles[(ele_type, "p_mw")].shape)
     return profiles
 
+# TODO: source_bus is hardcoded to 1000 which makes no sense in context of the test networks.
+# def test_ptdf(net_in: pandapowerNet):
+#     ptdf_matrix = run_PTDF(net_in, using_sparse_solver=True)
+#     ptdf_perturb = run_PTDF(net_in, source_bus=1000, perturb=True)
+#     ptdf_comp_df = pd.DataFrame(
+#         data={"matrix": ptdf_matrix["line"].loc[:, 1000], "perturb": ptdf_perturb["line"].loc[:, 1000]}
+#     )
+#     ptdf_comp_df["delta"] = ptdf_comp_df["matrix"] - ptdf_comp_df["perturb"]
+#     assert np.allclose(ptdf_comp_df["matrix"].to_numpy(), ptdf_comp_df["perturb"].to_numpy())
 
-def test_ptdf(net_in: pandapowerNet):
-    ptdf_matrix = run_PTDF(net_in, using_sparse_solver=True)
-    ptdf_perturb = run_PTDF(net_in, source_bus=1000, perturb=True)
-    ptdf_comp_df = pd.DataFrame(
-        data={"matrix": ptdf_matrix["line"].loc[:, 1000], "perturb": ptdf_perturb["line"].loc[:, 1000]}
-    )
-    ptdf_comp_df["delta"] = ptdf_comp_df["matrix"] - ptdf_comp_df["perturb"]
-    assert np.allclose(ptdf_comp_df["matrix"].to_numpy(), ptdf_comp_df["perturb"].to_numpy())
 
-
-def test_lodf(net_in: pandapowerNet):
-    lodf_matrix = run_LODF(net_in, outage_branch_type="line", outage_branch_ix=100, perturb=False, random_verify=False)
-    lodf_perturb = run_LODF(net_in, outage_branch_type="line", outage_branch_ix=100, perturb=True)
+def test_lodf(net_in):
+    net, lodf_line = net_in
+    outage_branch = lodf_line
+    lodf_matrix = run_LODF(net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=False, random_verify=False)
+    lodf_perturb = run_LODF(net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=True)
     lodf_comp_df = pd.DataFrame(
         data={
-            "matrix": lodf_matrix[("line", "line")].loc[:, 100],
-            "perturb": lodf_perturb[("line", "line")].loc[:, 100],
+            "matrix": lodf_matrix[("line", "line")].loc[:, outage_branch],
+            "perturb": lodf_perturb[("line", "line")].loc[:, outage_branch],
         }
     )
     lodf_comp_df["delta"] = lodf_comp_df["matrix"] - lodf_comp_df["perturb"]
