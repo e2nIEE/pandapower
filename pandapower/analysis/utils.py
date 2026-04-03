@@ -1,5 +1,19 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 from typing import Union
 import numpy as np
+import pandas as pd
+import pandapower as pp
+from typing import Tuple
+
+from sensitivity_dc import _get_dc_profile_perturb, _get_dc_profile_with_PTDF
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 DISCONNECTED_PADDING_VALUE = np.nan
 BR_SIDE_MAPPING = {"line": "from", "dcline": "from", "trafo": "hv", "impedance": "from", "trafo3w": "hv"}
@@ -193,3 +207,111 @@ def run_dc_profile(
             res_renamed[(f"res_{br_type[0]}", br_type[1])] = value
     return res_renamed
 
+
+def get_dist_slack(net, pf_required=True) -> Tuple[pd.DataFrame, dict]:
+    """
+    Find active slacks of a pp net and check multi area
+    of the grid
+    return: A dataframe contains info to distributed slack and
+            A dict to area_bus_mapping
+    """
+    if pf_required:
+        pp.rundcpp(net)
+
+    slack_df = pd.DataFrame(columns=["ele_type", "ele_id", "bus_id", "priority", "new_ele_type", "new_ele_id"])
+
+    # select all possible slacks of pp net
+    all_pp_slack = {"gen": net.gen.loc[net.gen.slack == True],
+                    "ext_grid": net.ext_grid}
+    for ele_type, ele_slack_df in all_pp_slack.items():
+        if ele_slack_df.empty:
+            continue
+
+        for ix, slack in ele_slack_df.iterrows():
+            if not np.isnan(net.res_bus.at[net[ele_type].at[ix, "bus"], "va_degree"]) \
+                    and net[ele_type].at[ix, "in_service"]:
+                # Skip out-of-service slack
+                this_priority = net[ele_type].at[ix, PP_SLACK_PRIO_COL] \
+                    if PP_SLACK_PRIO_COL in net[ele_type].columns else 1.0
+                # slack_df = slack_df.append({"ele_type": ele_type, "ele_id": ix,
+                #                             "bus_id": slack.bus, "priority": this_priority,
+                #                             "new_ele_type": "", "new_ele_id":-1}, ignore_index=True)
+                slack_df = pd.concat([slack_df,
+                                      pd.DataFrame({"ele_type": ele_type, "ele_id": ix,
+                                                    "bus_id": slack.bus, "priority": this_priority,
+                                                    "new_ele_type": "", "new_ele_id": -1}, index=[0])],
+                                     ignore_index=True, axis=0)
+
+    # Check slack df plausibility
+    assert not slack_df.empty, "No slack in network available! Calculation not possible!"
+    if slack_df.priority.isna().any():
+        logger.warning("Some slack has NaN as priority! Force priority to equally distributed!")
+        slack_df.priority = 1.0
+
+    # Sort and normalization
+    slack_df.sort_values(by="priority", ascending=False, inplace=True)
+    # Initialize area and priority in area variable
+    slack_df["area"], slack_df["priority_in_area"] = 0, 0.0
+
+    # detect multi area
+    pp_area_bus_mapping = _check_multi_area(net, slack_df)
+    return slack_df, pp_area_bus_mapping
+
+
+def get_ppci_dist_slack(net, ppci, slack_df):
+    """ Convert the priority defined in slack_df to a numpy array required for
+        pypower ptdf calculation
+    """
+    # Check number of slacks
+    pp_slack = slack_df["bus_id"].to_numpy(dtype=np.int)
+    assert np.all(np.isin(pp_slack, net["_is_elements"]["bus_is_idx"])), \
+        "Some selected slacks are out of service"
+    ppci_slack = net["_pd2ppc_lookups"]["bus"][pp_slack]
+    ppci_slack_priority = slack_df["priority"].to_numpy()
+
+    ppci_slack_mask = np.zeros(ppci["bus"].shape[0], dtype=np.float)
+    ppci_slack_mask[ppci_slack] = ppci_slack_priority
+    return ppci_slack_mask
+
+
+def _check_multi_area(net, slack_df) -> dict:
+    """ Check the multi grid areas of a pandapower networks with distributed slack
+        and update the area and priority area in slack_df
+        return dict: {area: bus_in_area}
+    """
+    # Set all active slacks to out-of-service
+    for ix, slack in slack_df.iterrows():
+        net[slack.ele_type].at[slack.ele_id, "in_service"] = False
+
+    area_ix = 0
+    pp_area_bus_mapping = {}
+    updated_slack_mask = np.zeros(slack_df.shape[0], dtype=bool)
+    # Set selected slack to in-service and identify grid area
+    for ix, slack in slack_df.iterrows():
+        if not updated_slack_mask[ix]:
+            net[slack.ele_type].at[slack.ele_id, "in_service"] = True
+            pp.rundcpp(net)
+            net[slack.ele_type].at[slack.ele_id, "in_service"] = False
+
+            bus_this_area = net.bus.index.to_numpy()[~np.isnan(net.res_bus.va_degree)]
+            slack_in_area = np.isin(slack_df.bus_id.to_numpy(), bus_this_area)
+            updated_slack_mask[slack_in_area] = True
+            slack_df.loc[slack_in_area, "area"] = area_ix
+            pp_area_bus_mapping.update({area_ix: bus_this_area})
+            area_ix += 1
+
+    # Restore all active slacks to in-service
+    for ix, slack in slack_df.iterrows():
+        net[slack.ele_type].at[slack.ele_id, "in_service"] = True
+    pp.rundcpp(net)
+
+    # Update slack priority in area
+    sum_priority_in_area = slack_df.groupby("area")["priority"].sum()
+    slack_df["priority_in_area"] = 0.0
+    for i, val in sum_priority_in_area.iteritems():
+        slack_df.loc[slack_df.area == i, "priority_in_area"] = \
+            slack_df.loc[slack_df.area == i, "priority_in_area"] / val if sum_priority_in_area.at[i] != 0.0 else 0.0
+
+    # slack_df["priority_in_area"] = slack_df.apply(lambda slack: slack.priority/sum_priority_in_area.at[slack.area],
+    #                                               axis=1)
+    return pp_area_bus_mapping

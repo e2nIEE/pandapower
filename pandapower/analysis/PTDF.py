@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 from typing import Union, List, Dict
 from copy import deepcopy
 
@@ -5,16 +10,19 @@ import pandas as pd
 import numpy as np
 
 from pandapower import pandapowerNet
-from pandapower.analysis.sensitivity_dc import run_dc_profile
+from pandapower.analysis.sensitivity_dc import run_dc_profile, _profile_pp_np_to_df
 from pandapower.analysis.utils import _get_bus_lookup, _get_branch_lookup, _get_trafo3w_lookup, \
     branch_dict_to_ppci_branch_list, _get_source_bus_ix, DISCONNECTED_PADDING_VALUE, BR_SIDE_MAPPING, BR_SIDE_MAPPING_1, \
     ELE_IX_TYPE
 from pandapower.run import rundcpp
 from pandapower.create import create_load
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_bus import BUS_I
 
 # replace pandapower makePTDF with custom function
 from pandapower.pypower.makePTDF import makePTDF
+from pandapower.analysis.utils import get_dist_slack, get_ppci_dist_slack
 
 import logging
 logger = logging.getLogger(__name__)
@@ -418,4 +426,53 @@ def verify_dc_profile_with_PTDF(net, profiles: dict, result_side=0, ptdf=None):
         assert np.allclose(res_profile_ptdf[key], res_profile_perturb[key], atol=1e-8), f"{key} verification failed!"
         logger.info(str(key) + " profile verified!")
     logger.info("Run dc profile with PTDF verified!")
+
+
+def makePTDF_multi_area(net, ppci,
+                        pp_area_bus_mapping, ppci_slack_mask_with_prio,
+                        using_sparse_solver, result_side):
+    """ Select areas in the ppci network and calculate ptdf of each area independently
+    """
+    ptdf_ppci = np.zeros((ppci["branch"].shape[0], ppci["bus"].shape[0]), dtype=np.float)
+    for this_bus in pp_area_bus_mapping.values():
+        # Select ppci of the area
+        this_bus_ppci = net["_pd2ppc_lookups"]["bus"] \
+            [this_bus[np.isin(this_bus, net._is_elements["bus_is_idx"])]]
+
+        ppci_br_f_bus, ppci_br_t_bus = \
+            ppci["branch"][:, F_BUS].real.astype(np.int), ppci["branch"][:, T_BUS].real.astype(np.int)
+        br_in_area_mask = (np.isin(ppci_br_f_bus, this_bus_ppci) |
+                           np.isin(ppci_br_t_bus, this_bus_ppci))
+        ppci_branch_this_area = ppci["branch"][br_in_area_mask, :].copy()
+        # Update ppci bus
+        this_ppci_bus_aux_bus = np.unique(np.r_[ppci_br_f_bus[br_in_area_mask],
+        ppci_br_t_bus[br_in_area_mask]])
+        bus_in_area_mask = np.isin(np.arange(ppci["bus"].shape[0]),
+                                   this_ppci_bus_aux_bus)
+        ppci_bus_this_area = ppci["bus"][bus_in_area_mask, :].copy()
+
+        # if no busses in area --> skip area
+        if len(ppci_bus_this_area) < 1:
+            continue
+
+        # Reindex bus_ix from 1-Nbus and create a lookup
+        ppci_bus_ix = ppci_bus_this_area[:, BUS_I].astype(np.int).copy()
+        ppci_bus_old_new_lookup = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
+        ppci_bus_old_new_lookup[ppci_bus_this_area[:, BUS_I].astype(np.int)] = \
+            np.arange(this_ppci_bus_aux_bus.shape[0])
+
+        # Update the area ppci bus indexing
+        ppci_bus_this_area[:, BUS_I] = np.arange(ppci_bus_this_area.shape[0], dtype=np.int)
+        ppci_branch_this_area[:, F_BUS].real = ppci_bus_old_new_lookup[ppci_br_f_bus[br_in_area_mask]]
+        ppci_branch_this_area[:, T_BUS].real = ppci_bus_old_new_lookup[ppci_br_t_bus[br_in_area_mask]]
+
+        # Calculate ptdf of this area and update ptdf matrix
+        ptdf_ppci_this_area = makePTDF(ppci["baseMVA"], ppci_bus_this_area, ppci_branch_this_area,
+                                       slack=ppci_slack_mask_with_prio[bus_in_area_mask],
+                                       using_sparse_solver=using_sparse_solver,
+                                       result_side=result_side)
+        for ix, bus in enumerate(ppci_bus_ix):
+            ptdf_ppci[br_in_area_mask, bus] = ptdf_ppci_this_area[:, ix]
+    return ptdf_ppci
+
 

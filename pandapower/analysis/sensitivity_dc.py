@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 from copy import deepcopy
 
 import pandas as pd
@@ -8,12 +12,6 @@ from pandapower.analysis.LODF import _get_dc_n1_with_LODF, _LODF_pp_np_to_df, _i
 from pandapower.analysis.PTDF import _get_dc_profile_with_PTDF
 from pandapower.analysis.utils import _get_outage_branch_ix, BR_SIDE_MAPPING, BR_SIDE_MAPPING_1, ELE_IX_TYPE
 from pandapower.run import rundcpp
-
-#from lib_powerflow.dc_distributed_slack import (
-#    get_dist_slack,
-#    makePTDF_multi_area,
-#    get_ppci_dist_slack,
-#)
 
 # basic logging setups
 import logging

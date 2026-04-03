@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 from typing import Union, List, Dict, Tuple
 from copy import deepcopy
 from itertools import product
@@ -34,6 +39,7 @@ def _get_LODF_direct(
     """
     if net.bus.shape[0] > 3000 and not using_sparse_solver:
         logger.warning("Calculating lodf for large network, switched to sparse solver!")
+        using_sparse_solver = True
 
     # If branch_dict not None compute list of ppci branch indices and its branch type intervals as lookup
     branch_ppci_lookup = None
