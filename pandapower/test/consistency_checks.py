@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -42,7 +42,7 @@ def runpp_pgm_3ph_with_consistency_checks(net):
     return True
 
 
-def consistent_b2b_vsc(net, rtol):
+def consistent_vsc_stacked(net, rtol):
     pass
 
 
@@ -50,7 +50,7 @@ def consistency_checks(net, rtol=1e-3, test_q=True):
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net, rtol)
     element_power_consistent_with_bus_power(net, rtol, test_q)
-    # consistent_b2b_vsc(net, rtol)  # todo
+    # consistent_vsc_stacked(net, rtol)  # todo
 
 
 def indices_consistent(net):
@@ -156,11 +156,11 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         bus_q.at[tab.bus] += net.res_vsc.q_mvar.at[idx]
         bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
 
-    for idx, tab in net.b2b_vsc.iterrows():
-        bus_p.at[tab.bus] += net.res_b2b_vsc.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_b2b_vsc.q_mvar.at[idx]
-        bus_p_dc.at[tab.bus_dc_plus] += net.res_b2b_vsc.p_dc_mw_p.at[idx]
-        bus_p_dc.at[tab.bus_dc_minus] += net.res_b2b_vsc.p_dc_mw_m.at[idx]
+    for idx, tab in net.vsc_stacked.iterrows():
+        bus_p.at[tab.bus] += net.res_vsc_stacked.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_vsc_stacked.q_mvar.at[idx]
+        bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_stacked.p_dc_mw_p.at[idx]
+        bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_stacked.p_dc_mw_m.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)

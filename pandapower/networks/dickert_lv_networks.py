@@ -140,24 +140,16 @@ def create_dickert_lv_feeders(net, busbar_index, feeders_range='short', linetype
     By default, the load powers are calculated with coincidence factor, derived with normal \
     distributed peak system demand.
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network to that the feeder will be connected to
+    Parameters:
+        net (pandapowerNet) The pandapower network to that the feeder will be connected to
+        busbar_index (int) The bus index of busbar, the feeders should be connected to
+        feeders_range (str, 'short'): feeder length, which can be ('short', 'middle', 'long')
+        linetype (str, 'cable'): the are different feeders provided for 'cable' or 'C&OHL'
+        customer (str, 'single'): type of customers ('single' or 'multiple') supplied by the feeders
+        case (str, 'good'): case of supply mission, which can be ('good', 'average', 'worse')
 
-        **busbar_index** (int) - The bus index of busbar, the feeders should be connected to
-
-    OPTIONAL:
-
-        **feeders_range** (str, 'short') - feeder length, which can be ('short', 'middle', 'long')
-
-        **linetype** (str, 'cable') - the are different feeders provided for 'cable' or 'C&OHL'
-
-        **customer** (str, 'single') - type of customers ('single' or 'multiple') supplied by the
-            feeders
-
-        **case** (str, 'good') - case of supply mission, which can be ('good', 'average', 'worse')
-
-    EXAMPLE:
-        >>> from pandapower.networks.dickert_lv_networks import create_dickert_lv_feeders, create_dickert_lv_networks
+    Example:
+        >>> from pandapower.networks.dickert_lv_networks import create_dickert_lv_feeders, create_dickert_lv_network
         >>> net = create_dickert_lv_network()
         >>> create_dickert_lv_feeders(net, busbar_index=1, customer='multiple')
     """
@@ -234,25 +226,17 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
     - P_max1 = 10 kW
     - powerfactor = 0.95 ind. (in range of 0.9 to 1)
 
-    OPTIONAL:
+    Parameters:
+        feeders_range: feeder length, which can be ('short', 'middle', 'long')
+        linetype: the are different feeders provided for 'cable' or 'C&OHL'
+        customer: type of customers ('single' or 'multiple') supplied by the feeders
+        case: case of supply mission, which can be ('good', 'average', 'bad')
+        trafo_type_name: name of the HV-MV-Trafo standard type
+        trafo_type_data: if 'trafo_type_name' is not in pandapower standard types, the data of this new trafo types must
+            be given here in pandapower trafo type way
 
-        **feeders_range** (str, 'short') - feeder length, which can be ('short', 'middle', 'long')
-
-        **linetype** (str, 'cable') - the are different feeders provided for 'cable' or 'C&OHL'
-
-        **customer** (str, 'single') - type of customers ('single' or 'multiple') supplied by the \
-            feeders
-
-        **case** (str, 'good') - case of supply mission, which can be ('good', 'average', 'bad')
-
-        **trafo_type_name** (str, '0.4 MVA 20/0.4 kV') - name of the HV-MV-Trafo standard type
-
-        **trafo_type_data** (dict, None) - if 'trafo_type_name' is not in pandapower standard \
-            types, the data of this new trafo types must be given here in pandapower trafo type way
-
-    OUTPUT:
-
-        **net** (pandapowerNet) - Returns the required dickert lv network
+    Returns:
+        pandapowerNet: The required dickert lv network
 
     EXAMPLE:
         >>> from pandapower.networks.dickert_lv_networks import create_dickert_lv_network
@@ -279,22 +263,3 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
                               linetype=linetype, customer=customer, case=case)
 
     return net
-
-
-if __name__ == "__main__":
-    if 0:
-        feeders_range = 'middle'
-        linetype = 'C&OHL'
-        customer = 'multiple'
-        case = 'bad'
-        trafo_type_name = '0.4 MVA 20/0.4 kV'
-        trafo_type_data = None
-        net = create_dickert_lv_network(feeders_range=feeders_range, linetype=linetype,
-                                        customer=customer, case=case,
-                                        trafo_type_name=trafo_type_name,
-                                        trafo_type_data=trafo_type_data)
-        from pandapower.plotting import simple_plot
-
-        simple_plot(net)
-    else:
-        pass

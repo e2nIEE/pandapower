@@ -1,8 +1,62 @@
 Change Log
 =============
 
-[upcoming release] - 2025-..-..
+[upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
+- [ADDED] added more functions to diagnostic
+- [ADDED] check to check if vkr_percent values are reasonable (see issue #786).
+- [FIXED] cim2pp shift_lv_degree was translated from wrong entry
+- [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
+- [ADDED] LTDS support
+- [FIXED] ucte2pp: voltage setpoints from gens connected to the same busbar are now averaged
+- [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
+- [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
+- [FIXED] ucte2pp: prevent nan values for impedances and transformers for B/G/P_fe/i0
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
+- [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
+- [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
+- [ADDED] highlighting feature and hovering functionality to :code:`simple_plot()`
+
+[3.4.0] - 2026-02-09
+-------------------------------
+- [FIXED] `mag0_percent` is treated as a percent instead of ratio, consistent with its name.
+- [CHANGED] setup: remove extra dependencies from `all` set.
+- [ADDED] setup: add `dev` set for all dependencies required for development.
+- [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
+- [CHANGED] runpp: expanded enforce_q_lims functionality to consider max & min q limits for sgen elements (from either net.sgen.min/max_q_mvar parameters or reactive power capability curves)
+- [FIXED] cim2pp: prevent crash with comments in xml, by dropping them via library
+- [FIXED] cim2pp: ACLineSegments with invalid terminals no longer cause all valid lines to be discarded
+- [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
+- [ADDED] rundcpp: Added DC elements to DC powerflow
+- [ADDED] python: support for version 3.14 added to the test pipelines
+- [FIXED] renamed b2b_vsc to vsc_stacked
+- [ADDED] Station Controller support for power factor control and tangens control
+- [CHANGED] attribute voltage_ctrl in Station Controller to control_modus to select new control modi. Changed the type from boolean to enum class
+
+[3.3.2] - 2026-01-13
+-------------------------------
+- [FIXED] fixing the scipy version to <1.16 since python 3.10 is only compatible with scipy 1.15
+
+[3.3.1] - 2026-01-13
+-------------------------------
+- [FIXED] short circuit calculation failed, bug in scipy did calculate zbus = inv(ybus) incorrectly.
+
+[3.3.0] - 2025-12-15
+-------------------------------
+- [ADDED] network_structure, load_create, sgen_create: seperate nominal mva attributes for each phase `sn_a_mva`, `sn_b_mva`, `sn_c_mva`. While existing total nominal mva `sn_mva` is also retained.
+- [FIXED] julia implementation, now using juliacall
+- [CHANGED] diagnostics restructured for better extensibility
+- [FIXED] implausible impedance test results never showing in report
+- [ADDED] load_case_engine for matpower converter
+- [FIXED] added a check for droop controller that ensure the correct convergence for VDroop controller and Q(U) controller
+- [FIXED] typo in ieee_european_lv_asymmetric
+- [ADDED] pf2pp: added possibility to export pf_area and pf_zone to busses
+- [FIXED] remove not used method in test_rundcpp
+- [FIXED] add missing tests for runpp_3ph parameters
+- [FIXED] remove never used parameter from runpp_3ph method signature
+- [CHANGED] Documentation configuration to support custom keywords
+- [CHANGED] Offset for weighted marker legend
 - [ADDED] pf2pp: possibility to convert a specific variant and scenario
 - [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
 - [ADDED] Static Var Compensator with Voltage Control
@@ -82,6 +136,10 @@ Change Log
 - [FIXED] fixed convert_format for missing information (in gen, sgen, shunt) and tables (q_capability_characteristic, q_capability_curve_table, id_characteristic_table, step_dependency_table)
 - [ADDED] added tests for q_capability_curve_table in cim2pp and convert_format.py for format_version 3.1.0
 - [FIXED] deserialising q_capability_characteristic in from_excel and added test for it
+- [ADDED] pf2pp: possibility to convert a specific varaint and scenario
+- [ADDED] Static Var Compensator with Voltage Control
+- [ADDED] pf2pp: min/max q_mvar and min/max p_mw limits for sgens and gen will be converted
+- [ADDED] Static Var Compensator with Voltage Control
 - [FIXED] make network structure more accessible, including needed adaptation in pandapowerNet constructor
 - [FIXED] cim2pp: add more dtype parameters, fix some tests
 - [FIXED] convert_format fix check when net version is below format version
@@ -754,7 +812,7 @@ Change Log
 
 [1.6.0] - 2018-09-18
 ----------------------
-- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
+- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (https://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
 - [ADDED] OPF data (controllable, max_loading, costs, min_p_kw, ...) in Power System Test Cases
 - [ADDED] case_ieee30, case5, case_illinois200
 - [FIXED] 1 additional Trafo in case39, vn_kv change in case118, sgen indices in polynomial_cost in case 1888rte, case2848rte
