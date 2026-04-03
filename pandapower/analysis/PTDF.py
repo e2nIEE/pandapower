@@ -30,12 +30,12 @@ logger = logging.getLogger(__name__)
 
 def _get_PTDF_direct(
         net: pandapowerNet,
-        source_bus: Union[int, np.ndarray]=None,
+        source_bus: Union[int, np.ndarray] | None = None,
         result_side=0,
-        using_sparse_solver: bool=True,
-        random_verify: bool=True,
-        branch_dict=None,
-        reduced: bool=True
+        using_sparse_solver: bool = True,
+        random_verify: bool = True,
+        branch_dict: dict[str, Union[list[int], None]] | None = None,
+        reduced: bool = True
 ):
     """
     this function calculates PTDF (ratio without unit) of bus to a pp branch
@@ -85,7 +85,12 @@ def _get_PTDF_direct(
     return ptdf
 
 
-def _get_PTDF_perturb(net: pandapowerNet, source_bus: Union[int, np.ndarray]=None, result_side=0, distributed_slack: bool=True):
+def _get_PTDF_perturb(
+        net: pandapowerNet,
+        source_bus: Union[int, np.ndarray] | None = None,
+        result_side: int = 0,
+        distributed_slack: bool=True
+):
     """
     this function calculates PTDF (ratio without unit) of bus to
     a pp branch with perturb method (brute-force)
@@ -327,13 +332,13 @@ def _PTDF_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
 
 def run_PTDF(
     net: pandapowerNet,
-    source_bus: ELE_IX_TYPE = None,
+    source_bus: Union[int, np.ndarray] | None = None,
     distributed_slack: bool = True,
-    result_side=0,
+    result_side: int = 0,
     perturb: bool = False,
     using_sparse_solver: bool = True,
     random_verify: bool = False,
-    branch_dict: Dict[str, Union[List[int], None]] = None,
+    branch_dict: dict[str, Union[list[int], None]] | None = None,
     reduced: bool = True,
 ):
     """
@@ -389,7 +394,12 @@ def run_PTDF(
     return ptdf
 
 
-def verify_PTDF(net, source_bus: ELE_IX_TYPE = None, result_side=0, using_sparse_solver=True, ptdf=None):
+def verify_PTDF(
+        net: pandapowerNet,
+        source_bus: ELE_IX_TYPE | None = None,
+        result_side: int = 0,
+        using_sparse_solver: bool = True,
+        ptdf: dict | None = None):
     """
     this function verifies the result of PTDF and perturb method,
     raise AssertionError on mismatches!
@@ -553,8 +563,8 @@ def run_dc_profile(
     result_side=0,
     distributed_slack: bool = True,
     perturb: bool = False,
-    extra_data_points: list = None,
-    ptdf: dict = None,
+    extra_data_points: list | None = None,
+    ptdf: dict | None = None,
 ):
     """
     this function runs a dc profile simulation with ptdf

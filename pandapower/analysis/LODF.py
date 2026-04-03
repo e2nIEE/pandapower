@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Union, List, Dict, Tuple, Optional, Any
+from typing import Union, Tuple
 from copy import deepcopy
 from itertools import product
 
@@ -29,7 +29,7 @@ def _get_LODF_direct(
     outage_branch_ix=None,
     using_sparse_solver=True,
     random_verify=True,
-    branch_dict=None,
+    branch_dict: dict[str, Union[list[int], None]] | None = None,
     reduced=True,
 ) -> dict:
     """
@@ -66,11 +66,11 @@ def _get_LODF_direct(
         lodf_ppci = makeLODF(ppci["branch"], ptdf_ppci)
 
     # Set results to default value of bridge branch
-    lodf_ppci[:, bridge_branch_mask] = np.NaN
+    lodf_ppci[:, bridge_branch_mask] = np.nan
     if branch_id is not None and not reduced:
         branch_id_complement = [x for x in range(list(branch_ppci_lookup.values())[-1][1]) if x not in branch_id]
-        lodf_ppci[:, branch_id_complement] = np.NaN
-        lodf_ppci[branch_id_complement, :] = np.NaN
+        lodf_ppci[:, branch_id_complement] = np.nan
+        lodf_ppci[branch_id_complement, :] = np.nan
 
     # Checkout ppci lodf to pp level
     if reduced:
@@ -130,7 +130,7 @@ def _init_LODF_pp_np(
 def _LODF_ppci_to_pp(
         net: pandapowerNet,
         lodf_ppci: np.ndarray,
-        branch_ppci_lookup: Optional[np.ndarray]=None
+        branch_ppci_lookup: dict | None=None
 ):
     # convert the branch sensitivity of the ppci layer to pandapower net layer
     if branch_ppci_lookup is not None:
@@ -173,9 +173,9 @@ def _LODF_ppci_to_pp(
 def _LODF_pp_np_to_df(
         net: pandapowerNet,
         res_pp_np,
-        outage_branch_type: Optional[str]=None,
-        outage_branch_ix: ELE_IX_TYPE=None,
-        branch_dict=None
+        outage_branch_type: str | None = None,
+        outage_branch_ix: ELE_IX_TYPE | None = None,
+        branch_dict: dict[str, Union[list[int], None]] | None = None
 ) -> dict:
     res = {}
     for key, data in res_pp_np.items():
@@ -210,10 +210,10 @@ def _LODF_pp_np_to_df(
 def _get_LODF_perturb(
     net: pandapowerNet,
     outage_branch_type: str,
-    outage_branch_ix: ELE_IX_TYPE=None,
+    outage_branch_ix: ELE_IX_TYPE | None = None,
     distributed_slack=True,
-    recycle: Optional[dict[str, Any]]="lodf",
-) -> Dict[Tuple[str, str], pd.DataFrame]:
+    recycle: str | None = "lodf",
+) -> dict[Tuple[str, str], pd.DataFrame]:
     """
     this function calculate LODF (ratio without unit) of a pp branch from the outage of a pp branch
     with perturb method (brute-force)
@@ -343,9 +343,9 @@ def _get_LODF_perturb(
 def _get_dc_n1_with_LODF(
         net: pandapowerNet,
         outage_branch_type,
-        outage_branch_ix: ELE_IX_TYPE=None,
+        outage_branch_ix: ELE_IX_TYPE | None = None,
         result_side: int=0,
-        lodf: Optional[dict]=None
+        lodf: dict | None = None
 ):
     """
     this function calculate p_mw of a side of branch under the outage
@@ -398,15 +398,15 @@ def _get_dc_n1_with_LODF(
 def run_LODF(
     net: pandapowerNet,
     outage_branch_type: str,
-    outage_branch_ix: ELE_IX_TYPE = None,
+    outage_branch_ix: ELE_IX_TYPE | None = None,
     distributed_slack: bool = True,
     perturb: bool = False,
-    recycle: Optional[str] = None,
+    recycle: str | None = None,
     using_sparse_solver: bool = True,
     random_verify: bool = False,
-    branch_dict: Dict[str, Union[List[int], None]] = None,
+    branch_dict: dict[str, Union[list[int], None]] | None = None,
     reduced: bool = True,
-) -> Dict[Tuple[str, str], pd.DataFrame]:
+) -> dict[Tuple[str, str], pd.DataFrame]:
     """
     this function is a wrapper of calculating LODF (ratio without unit) of a pp branch from the outage of a pp branch
     with pypower matrix function or perturb function.
@@ -478,7 +478,11 @@ def run_LODF(
 
 
 def verify_dc_n1_with_LODF(
-    net, outage_branch_type: str, outage_branch_ix: ELE_IX_TYPE = None, result_side=0, lodf=None
+        net: pandapowerNet,
+        outage_branch_type: str,
+        outage_branch_ix: ELE_IX_TYPE | None = None,
+        result_side: int = 0,
+        lodf: dict | None = None
 ):
     """
     this function verifies the result of dc_n1 with LODF and perturb method,
@@ -501,7 +505,11 @@ def verify_dc_n1_with_LODF(
 
 
 def verify_LODF(
-    net, outage_branch_type: str, outage_branch_ix: ELE_IX_TYPE = None, using_sparse_solver=True, lodf=None
+        net: pandapowerNet,
+        outage_branch_type: str,
+        outage_branch_ix: ELE_IX_TYPE | None = None,
+        using_sparse_solver: bool = True,
+        lodf: dict | None = None
 ):
     """
     this function verifies the result of LODF and perturb method,
@@ -529,7 +537,13 @@ def verify_LODF(
     logger.info("All LODF results verified with perturb method!")
 
 
-def _get_dc_n1_perturb(net, outage_branch_type, outage_branch_ix=None, result_side=0, distributed_slack=True):
+def _get_dc_n1_perturb(
+        net: pandapowerNet,
+        outage_branch_type: str,
+        outage_branch_ix: ELE_IX_TYPE | None = None,
+        result_side: int = 0,
+        distributed_slack: bool = True
+):
     """
     this function calculate p_mw of a side of branch under the outage
     of another branch with perturb (brute-force) method
@@ -583,13 +597,13 @@ def _get_dc_n1_perturb(net, outage_branch_type, outage_branch_ix=None, result_si
 
 
 def run_dc_n1(
-    net,
+    net: pandapowerNet,
     outage_branch_type: str,
-    outage_branch_ix: ELE_IX_TYPE = None,
-    result_side=0,
+    outage_branch_ix: ELE_IX_TYPE | None = None,
+    result_side: int = 0,
     distributed_slack: bool = True,
     perturb: bool = False,
-    lodf: dict = None,
+    lodf: dict | None = None,
 ):
     """
     this function calculate p_mw of a side of branch under the outage of another branch with LODF

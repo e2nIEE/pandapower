@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Union, Optional, Tuple
+from typing import Union, Tuple
 import numpy as np
 import pandas as pd
 import pandapower as pp
@@ -30,7 +30,10 @@ ELE_IX_TYPE = Union[int, list, np.ndarray]
 PP_SLACK_PRIO_COL = "slack_weight"
 
 
-def _get_source_bus_ix(net: pandapowerNet, source_bus: Union[int, np.ndarray]=None):
+def _get_source_bus_ix(
+        net: pandapowerNet,
+        source_bus: Union[int, np.ndarray] | None = None
+):
     if source_bus is None:
         return net.bus.index.to_numpy()
 
@@ -49,7 +52,7 @@ def _get_source_bus_ix(net: pandapowerNet, source_bus: Union[int, np.ndarray]=No
 def _get_outage_branch_ix(
         net: pandapowerNet,
         outage_branch_type: str,
-        outage_branch_ix: ELE_IX_TYPE=None
+        outage_branch_ix: np.ndarray | None = None
 ) -> np.ndarray:
     assert outage_branch_type in ("line", "dcline", "trafo", "impedance", "trafo3w"), (
         outage_branch_type + " as outage branch type not supported!"
@@ -78,7 +81,7 @@ def _get_bus_lookup(net: pandapowerNet) -> np.ndarray:
     return pp_ppci_bus_lookup
 
 
-def _get_branch_lookup(net: pandapowerNet, branch_type) -> Optional[np.ndarray]:
+def _get_branch_lookup(net: pandapowerNet, branch_type) -> np.ndarray | None:
     # Find the branch lookup table from pandapower net of ppci layer
     assert branch_type in ("line", "trafo", "trafo3w", "impedance"), "Branch Type not supported for lookup creation"
 
@@ -102,7 +105,7 @@ def _get_branch_lookup(net: pandapowerNet, branch_type) -> Optional[np.ndarray]:
         return None
 
 
-def _get_trafo3w_lookup(net: pandapowerNet) -> Optional[dict]:
+def _get_trafo3w_lookup(net: pandapowerNet) -> dict | None:
     pp_ppci_trafo3w_lookup = _get_branch_lookup(net, "trafo3w")
     if pp_ppci_trafo3w_lookup is not None:
         trafo3w_keys = ["trafo3w_hv", "trafo3w_mv", "trafo3w_lv"]
@@ -116,7 +119,10 @@ def _get_trafo3w_lookup(net: pandapowerNet) -> Optional[dict]:
         return None
 
 
-def branch_dict_to_ppci_branch_list(net: pandapowerNet, branch_dict: dict) -> Tuple[list, dict]:
+def branch_dict_to_ppci_branch_list(
+        net: pandapowerNet,
+        branch_dict: dict[str, Union[list[int], None]]
+) -> Tuple[list, dict]:
     """
     This function transforms a dictionary with branches of a net into a list of the corresponding internal ppci indices
     and produces a lookup for tha branch type intervals.

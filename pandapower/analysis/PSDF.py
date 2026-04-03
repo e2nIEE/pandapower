@@ -15,7 +15,7 @@ from pandapower.pypower.idx_bus import BUS_TYPE, REF
 from pandapower.pypower.makeBdc import calc_b_from_branch
 from numpy import ones, r_, real, int64, arange, flatnonzero as find, isscalar
 
-from typing import Union, List, Dict, Tuple, Optional
+from typing import Union, Tuple
 
 import pandas as pd
 import numpy as np
@@ -32,10 +32,10 @@ def makePSDF(
         PTDF: np.ndarray,
         bus: np.ndarray,
         branch: np.ndarray,
-        using_sparse_solver: bool=False,
-        branch_id: Optional[int]=None,
-        reduced: bool=False,
-        slack: Union[int, np.ndarray]=None
+        using_sparse_solver: bool = False,
+        branch_id: int | None = None,
+        reduced: bool = False,
+        slack: Union[int, np.ndarray] | None = None
 ):
     """Builds the DC PSDF matrix based on the DC PTDF
     Returns the DC PSDF matrix . The matrix is
@@ -91,10 +91,10 @@ def makePSDF(
 def _get_PSDF_direct(
     net: pandapowerNet,
     phase_shift_branch_type: str,
-    phase_shift_branch_ix: ELE_IX_TYPE=None,
-    using_sparse_solver: bool=True,
+    phase_shift_branch_ix: ELE_IX_TYPE | None = None,
+    using_sparse_solver: bool = True,
     random_verify=False,
-    branch_dict: Optional[dict]=None,
+    branch_dict: dict[str, Union[list[int], None]] | None = None,
     reduced=True,
 ):
     """
@@ -160,10 +160,10 @@ def _get_PSDF_direct(
 def _get_PSDF_perturb(
     net: pandapowerNet,
     phase_shift_branch_type: str,
-    phase_shift_branch_ix: ELE_IX_TYPE = None,
+    phase_shift_branch_ix: ELE_IX_TYPE | None = None,
     distributed_slack=True,
     recycle="lodf",
-) -> Dict[Tuple[str, str], pd.DataFrame]:
+) -> dict[Tuple[str, str], pd.DataFrame]:
     """
     this function calculates PSDF (ratio without unit) of branch to
     a pp branch with perturb method (brute-force)
@@ -174,14 +174,14 @@ def _get_PSDF_perturb(
 def run_PSDF(
     net: pandapowerNet,
     phase_shift_branch_type: Union[None, str],
-    phase_shift_branch_ix: ELE_IX_TYPE = None,
+    phase_shift_branch_ix: ELE_IX_TYPE | None = None,
     distributed_slack: bool = True,
     perturb: bool = False,
     recycle: Union[str, None] = None,
     using_sparse_solver: bool = True,
-    branch_dict: Dict[str, Union[List[int], None]] = None,
+    branch_dict: dict[str, Union[list[int], None]] | None = None,
     reduced: bool = True,
-) -> Dict[Tuple[str, str], pd.DataFrame]:
+) -> dict[Tuple[str, str], pd.DataFrame]:
     """
     this function is a wrapper of calculating PSDF of a pp branch from the phase shift through a pp branch
     with pypower matrix function or perturb function.
