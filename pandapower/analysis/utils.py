@@ -251,7 +251,7 @@ def _check_multi_area(net, slack_df) -> dict:
     # for i, val in sum_priority_in_area.iteritems():
     for i, val in sum_priority_in_area.items():
         slack_df.loc[slack_df.area == i, "priority_in_area"] = \
-            slack_df.loc[slack_df.area == i, "priority_in_area"] / val if sum_priority_in_area.at[i] != 0.0 else 0.0
+            slack_df.loc[slack_df.area == i, "priority_in_area"] / val if np.isclose(sum_priority_in_area.at[i], 0.0) else 0.0
 
     # slack_df["priority_in_area"] = slack_df.apply(lambda slack: slack.priority/sum_priority_in_area.at[slack.area],
     #                                               axis=1)
