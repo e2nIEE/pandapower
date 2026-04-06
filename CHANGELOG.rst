@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] toolbox: :code:`compute_switch_flows` computes power flow through zero-impedance bus-bus switches via nodal balance
 - [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
 - [ADDED] added more functions to diagnostic
 - [ADDED] check to check if vkr_percent values are reasonable (see issue #786).

@@ -47,6 +47,8 @@ Result Information
 
 .. autofunction:: pandapower.toolbox.clear_result_tables
 
+.. autofunction:: pandapower.toolbox.compute_switch_flows
+
 .. autofunction:: pandapower.toolbox.res_power_columns
 
 ====================================
