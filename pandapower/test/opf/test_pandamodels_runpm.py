@@ -16,7 +16,7 @@ from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import create_storage, create_shunt, create_pwl_cost, create_poly_cost, create_empty_network, \
-    create_bus, create_line, create_gen, create_load, create_transformer3w_from_parameters, create_sgen, \
+    create_bus, create_line, create_gen, create_load, create_transformer3w_from_parameters, create_sgen, create_switch,\
     create_transformer3w
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import case5, case9, case14, case30, case39, case57, case118, \
@@ -767,6 +767,16 @@ def test_ac_opf_differnt_snmva():
     for i in res.columns:
         assert res[i].values.min() - res[i].values.max() < 1e-10
 
+
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_switches():
+    net = case5()
+
+    create_switch(net, bus=0, element=1, et='b')
+    create_switch(net, bus=2, element=1, et='b', z_ohm=1e-3, closed=True, in_ka=1000.)
+    create_switch(net, bus=2, element=3, et='b')
+
+    runpm_ac_opf(net)
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
