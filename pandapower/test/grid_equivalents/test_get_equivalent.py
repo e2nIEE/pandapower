@@ -218,7 +218,6 @@ def test_basic_usecases(eq_type):
         check_elements_amount(net1, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
                                      "line": 3, "impedance": 3}, check_all_pp_elements=True)
         check_res_bus(net, net1)
-        # assert np.allclose(net1.bus.min_vm_pu.to_numpy(), np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
         assert np.allclose(net1.bus.min_vm_pu.to_numpy(), np.array([0.9, 0.91, 0., 0., 0.93]))
         check_elements_amount(net2, {"bus": 3, "load": 3, "sgen": 0, "shunt": 3, "ext_grid": 0,
                                      "line": 0, "impedance": 2}, check_all_pp_elements=True)
