@@ -190,7 +190,7 @@ class TrafoController(Controller):
     #     self.tap_pos = net[self.element].at[self.element_index, "tap_pos"]
 
     def __repr__(self):
-        return '%s of %s %s' % (self.__class__.__name__, self.element, self.element_index)
+        return f'{self.__class__.__name__} of {self.element} {self.element_index}'
 
     def __str__(self):
-        return '%s of %s %s' % (self.__class__.__name__, self.element, self.element_index)
+        return f'{self.__class__.__name__} of {self.element} {self.element_index}'

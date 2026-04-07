@@ -24,7 +24,7 @@ import sys
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
-sys.path.append(os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath(".."))
 sys.path.append(os.path.abspath(".\\_themes"))
 sys.path.append(os.path.abspath("..\\tests"))
 sys.path.append(os.path.abspath("..\\network_generator"))

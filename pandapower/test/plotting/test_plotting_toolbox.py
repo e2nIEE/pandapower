@@ -87,5 +87,15 @@ def test_set_line_geodata_from_bus_geodata():
     set_line_geodata_from_bus_geodata(net)
 
 
+def test_simple_hl_plot():
+    # test that plotting works with case9 file
+    net = case9()
+    load_buses = net.load.bus.values
+    load_lines = net.line.loc[net.line.from_bus.isin(load_buses) | net.line.to_bus.isin(load_buses)].index
+    ax = simple_plot(net, highlight_lines=load_lines, highlight_buses=load_buses)
+
+    assert ax is not None
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
