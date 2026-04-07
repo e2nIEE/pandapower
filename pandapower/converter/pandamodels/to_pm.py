@@ -185,6 +185,9 @@ def convert_to_pm_structure(
         logger.error("pandapower optimal_powerflow does not support voltage depend loads.")
     net["OPF_converged"] = False
     net["converged"] = False
+
+    add_switches_to_pm = bool(kwargs.get('add_switches_to_pm', False))
+
     _add_auxiliary_elements(net)
     if net["_options"].get("init_results"):
         verify_results(net, mode=net["_options"]["mode"])
@@ -193,7 +196,7 @@ def convert_to_pm_structure(
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
-    pm = ppc_to_pm(net, ppci)
+    pm = ppc_to_pm(net, ppci, add_switches_to_pm)
     # todo: somewhere here should RATE_A be converted to 0., because only PowerModels uses 0 as no limits (pypower opf converts the zero to inf)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
@@ -295,7 +298,7 @@ def create_pm_lookups(net, pm_lookup):
     return net
 
 
-def ppc_to_pm(net, ppci):
+def ppc_to_pm(net, ppci, add_switches_to_pm=False):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     # "per_unit == True" means that the grid data in PowerModels are per-unit values. In this
     # ppc-to-pm process, the grid data schould be transformed according to baseMVA = 1.
@@ -377,6 +380,9 @@ def ppc_to_pm(net, ppci):
 
         # the bus-bus switches are added to the end of the ppci, +1 since we use 1-indexing.
         if idx > (n_lines - n_bb_switches + 1):
+            if not add_switches_to_pm:
+                continue
+
             switch = {
                 "index": idx,
                 "f_bus": int(row[F_BUS].real) + 1,
