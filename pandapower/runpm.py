@@ -87,7 +87,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                      pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
                      opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -131,7 +131,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      correct_pm_network_data=correct_pm_network_data, silence=silence, pm_time_limits=pm_time_limits,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
 
@@ -165,7 +165,7 @@ def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_a
                      pm_mip_solver=pm_mip_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
                      opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
     read_tnep_results(net)
 
 
@@ -194,7 +194,8 @@ def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_an
                      pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
                      opf_flow_lim="S", pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode,
+           add_switches_to_pm=True, **kwargs)
     read_ots_results(net)
 
 def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angles=True,
@@ -250,7 +251,7 @@ def runpm_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      correct_pm_network_data=correct_pm_network_data, silence=silence, pm_time_limits=pm_time_limits,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
 def runpm_multi_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -300,7 +301,7 @@ def runpm_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      correct_pm_network_data=correct_pm_network_data, silence=silence, pm_time_limits=pm_time_limits,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
 def runpm_multi_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -355,7 +356,7 @@ def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      correct_pm_network_data=correct_pm_network_data, silence=silence, pm_time_limits=pm_time_limits,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
 def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -382,7 +383,7 @@ def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                      correct_pm_network_data=correct_pm_network_data, silence=silence, pm_time_limits=pm_time_limits,
                      pm_log_level=pm_log_level, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
 def runpm_pf(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
@@ -407,4 +408,4 @@ def runpm_pf(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_ang
                      pm_nl_solver=pm_nl_solver, pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
                      opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
 
-    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
