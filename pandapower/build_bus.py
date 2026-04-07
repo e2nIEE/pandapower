@@ -274,7 +274,7 @@ def create_bus_lookup(net, bus_index, bus_is_idx, numba):
     if switches_with_pos_z_ohm.any():
         net._impedance_bb_switches = closed_bb_switch_mask & switches_with_pos_z_ohm
     else:
-        net._impedance_bb_switches = np.zeros(switches_with_pos_z_ohm.shape)
+        net._impedance_bb_switches = np.zeros(switches_with_pos_z_ohm.shape).astype(bool)
 
     if numba:
         bus_lookup, merged_bus = create_bus_lookup_numba(net, bus_index, bus_is_idx)

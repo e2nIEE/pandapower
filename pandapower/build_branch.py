@@ -1329,6 +1329,8 @@ def _calc_switch_parameter(net, ppc):
                 Numpy array. with the following order:
                 0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
+    if "_impedance_bb_switches" not in net or not (net._impedance_bb_switches).any():
+        return
     rx_ratio = net["_options"]["switch_rx_ratio"]
     rz_ratio = rx_ratio / np.sqrt(1 + rx_ratio ** 2)
     xz_ratio = 1 / np.sqrt(1 + rx_ratio ** 2)
