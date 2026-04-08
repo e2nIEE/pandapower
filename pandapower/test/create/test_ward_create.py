@@ -6,12 +6,37 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 
-from pandapower.create import create_empty_network, create_bus, create_ward, create_wards
+from pandapower.create import create_empty_network, create_bus, create_ward, create_wards, create_xward
 from pandapower.toolbox import nets_equal
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
-def test_create_ward(): raise NotImplementedError()
+def test_create_ward():
+    net = create_empty_network()
+    bus = create_bus(net, 110)
+
+    ward_id = create_ward(net, bus, ps_mw=1.0, qs_mvar=0.5, pz_mw=0.2, qz_mvar=0.1)
+
+    assert ward_id == 0
+    assert net.ward.bus.at[0] == bus
+    assert net.ward.ps_mw.at[0] == 1.0
+    assert net.ward.qs_mvar.at[0] == 0.5
+    assert net.ward.pz_mw.at[0] == 0.2
+    assert net.ward.qz_mvar.at[0] == 0.1
+    assert net.ward.in_service.at[0]
+
+    # Test with all parameters
+    bus2 = create_bus(net, 110)
+    ward_id2 = create_ward(net, bus2, 2.0, 1.0, 0.4, 0.2, name="test_ward", in_service=False)
+
+    assert ward_id2 == 1
+    assert net.ward.bus.at[1] == bus2
+    assert net.ward.ps_mw.at[1] == 2.0
+    assert net.ward.qs_mvar.at[1] == 1.0
+    assert net.ward.pz_mw.at[1] == 0.4
+    assert net.ward.qz_mvar.at[1] == 0.2
+    assert net.ward.at[1, "name"] == "test_ward"
+    assert not net.ward.in_service.at[1]
 
 
 def test_create_wards():
@@ -56,4 +81,54 @@ def test_create_wards():
     validate_network(net)
 
 
-def test_create_xward(): raise NotImplementedError()
+def test_create_xward():
+    net = create_empty_network()
+    bus = create_bus(net, 110)
+
+    xward_id = create_xward(
+        net, bus,
+        ps_mw=1.0,
+        qs_mvar=0.5,
+        pz_mw=0.2,
+        qz_mvar=0.1,
+        r_ohm=10.0,
+        x_ohm=5.0,
+        vm_pu=1.0
+    )
+
+    assert xward_id == 0
+    assert net.xward.bus.at[0] == bus
+    assert net.xward.ps_mw.at[0] == 1.0
+    assert net.xward.qs_mvar.at[0] == 0.5
+    assert net.xward.pz_mw.at[0] == 0.2
+    assert net.xward.qz_mvar.at[0] == 0.1
+    assert net.xward.r_ohm.at[0] == 10.0
+    assert net.xward.x_ohm.at[0] == 5.0
+    assert net.xward.vm_pu.at[0] == 1.0
+    assert net.xward.in_service.at[0]
+    assert net.xward.slack_weight.at[0] == 0.0
+
+    # Test with all parameters
+    bus2 = create_bus(net, 110)
+    xward_id2 = create_xward(
+        net, bus2,
+        ps_mw=2.0, qs_mvar=1.0,
+        pz_mw=0.4, qz_mvar=0.2,
+        r_ohm=20.0, x_ohm=10.0, vm_pu=1.02,
+        name="test_xward",
+        in_service=False,
+        slack_weight=1.5
+    )
+
+    assert xward_id2 == 1
+    assert net.xward.bus.at[1] == bus2
+    assert net.xward.ps_mw.at[1] == 2.0
+    assert net.xward.qs_mvar.at[1] == 1.0
+    assert net.xward.pz_mw.at[1] == 0.4
+    assert net.xward.qz_mvar.at[1] == 0.2
+    assert net.xward.r_ohm.at[1] == 20.0
+    assert net.xward.x_ohm.at[1] == 10.0
+    assert net.xward.vm_pu.at[1] == 1.02
+    assert net.xward.name.at[1] == "test_xward"
+    assert not net.xward.in_service.at[1]
+    assert net.xward.slack_weight.at[1] == 1.5
