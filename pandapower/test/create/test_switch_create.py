@@ -10,6 +10,9 @@ from pandapower.create import (
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
+def test_create_switch(): raise NotImplementedError()
+
+
 def test_create_switches():
     net = create_empty_network()
     # standard

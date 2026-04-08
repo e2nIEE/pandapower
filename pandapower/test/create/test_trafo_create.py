@@ -30,6 +30,9 @@ def test_tap_changer_type_default():
     validate_network(net)
 
 
+def test_create_transformer_from_parameters(): raise NotImplementedError()
+
+
 def test_create_transformers_from_parameters():
     # standard
     net = create_empty_network()
@@ -201,7 +204,6 @@ def test_create_transformers_raise_errorexcept():
     validate_network(net)
 
 
-
 def test_create_transformer_raises_errorexcept1():
     net = create_empty_network()
     b1 = create_bus(net, 10)
@@ -343,6 +345,9 @@ def test_trafos_2_tap_changers_parameters():
     validate_network(net)
 
 
+def test_create_transformer(): raise NotImplementedError()
+
+
 def test_create_transformers():
     net = create_empty_network()
     b1 = create_bus(net, 10)
@@ -439,6 +444,9 @@ def test_create_transformers_for_single():
     validate_network(net)
 
 
+def test_create_transformer3w(): raise NotImplementedError()
+
+
 def test_create_transformers3w():
     net = create_empty_network()
     b1 = create_bus(net, 110)
@@ -528,6 +536,9 @@ def net_transformer3w_from_parameters(**kwargs):
         **kwargs,
     )
     return net, b1, b2, b3
+
+
+def test_create_transformer3w_from_parameters(): raise NotImplementedError()
 
 
 def test_create_transformers3w_from_parameters():
@@ -730,4 +741,3 @@ def test_create_transformers3w_raise_errorexcept():
         )
 
     validate_network(net)
-

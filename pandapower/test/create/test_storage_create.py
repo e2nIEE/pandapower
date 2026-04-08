@@ -8,6 +8,9 @@ from pandapower.toolbox import nets_equal
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
+def test_create_storage(): raise NotImplementedError()
+
+
 def test_create_storages():
     net = create_empty_network()
     b1 = create_bus(net, 110)

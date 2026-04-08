@@ -6,6 +6,8 @@ import pytest
 from pandapower.create import create_empty_network, create_bus, create_gen, create_gens
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
+def test_create_gen(): raise NotImplementedError()
+
 
 def test_create_gens():
     net = create_empty_network()

@@ -11,6 +11,9 @@ from pandapower.toolbox import nets_equal
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
+def test_create_ward(): raise NotImplementedError()
+
+
 def test_create_wards():
     net = create_empty_network()
     b1 = create_bus(net, 110)
@@ -51,3 +54,6 @@ def test_create_wards():
     assert nets_equal(net, net_bulk)
 
     validate_network(net)
+
+
+def test_create_xward(): raise NotImplementedError()

@@ -10,7 +10,7 @@ from pandapower.create import (
     create_empty_network, create_bus, create_ext_grid, create_line_from_parameters, create_transformer_from_parameters,
     create_load, create_sgen, create_dcline, create_gen, create_ward, create_xward, create_shunt, create_line,
     create_transformer, create_transformer3w, create_transformer3w_from_parameters, create_impedance, create_switch,
-    create_buses,
+    create_buses, create_bus_dc, create_buses_dc
 )
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -141,6 +141,20 @@ def test_nonexistent_bus():
     validate_network(net)
 
 
+def test_create_bus():
+    net = create_empty_network()
+    # default
+    b1 = create_bus(net, 110, test_kwargs="dummy_string")
+    # with geodata
+    b2 = create_bus(net, 110, geodata=(10, 20))
+
+    assert len(net.bus) == 2
+    assert net.bus.test_kwargs.at[b1] == "dummy_string"
+    assert net.bus.at[b2, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
+
+    validate_network(net)
+
+
 def test_create_buses():
     net = create_empty_network()
     # standard
@@ -161,3 +175,37 @@ def test_create_buses():
 
     validate_network(net)
 
+
+def test_create_bus_dc():
+    net = create_empty_network()
+    # default
+    b1 = create_bus_dc(net, 110, test_kwargs="dummy_string")
+    # with geodata
+    b2 = create_bus_dc(net, 110, geodata=(10, 20))
+
+    assert len(net.bus_dc) == 2
+    assert net.bus_dc.test_kwargs.at[b1] == "dummy_string"
+    assert net.bus_dc.at[b2, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
+
+    validate_network(net)
+
+
+def test_create_buses_dc():
+    net = create_empty_network()
+    # standard
+    b1 = create_buses_dc(net, 3, 110, test_kwargs="dummy_string")
+    # with geodata
+    b2 = create_buses_dc(net, 3, 110, geodata=(10, 20))
+    # with geodata as array
+    geodata = [(10, 20), (20, 30), (30, 40)]
+    b3 = create_buses_dc(net, 3, 110, geodata=geodata)
+
+    assert len(net.bus_dc) == 9
+    assert net.bus_dc.test_kwargs.at[b1[0]] == "dummy_string"
+
+    for i in b2:
+        assert net.bus_dc.at[i, "geo"] == geojson.dumps(geojson.Point((10, 20)), sort_keys=True)
+    for i, ind in enumerate(b3):
+        assert net.bus_dc.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
+
+    validate_network(net)

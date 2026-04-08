@@ -7,6 +7,9 @@ from pandapower.create import create_empty_network, create_bus, create_loads
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
+def test_create_load(): raise NotImplementedError()
+
+
 def test_create_loads():
     net = create_empty_network()
     # standard
@@ -101,3 +104,11 @@ def test_create_loads_raise_errorexcept():
 
     validate_network(net)
 
+
+def test_create_asymmetric_load(): raise NotImplementedError()
+
+
+def test_create_load_from_cosphi(): raise NotImplementedError()
+
+
+def test_create_load_dc(): raise NotImplementedError()

@@ -7,6 +7,9 @@ from pandapower.create import create_empty_network, create_bus, create_sgen, cre
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
+def test_create_sgen(): raise NotImplementedError()
+
+
 def test_create_sgens():
     net = create_empty_network()
     # standard
@@ -144,3 +147,9 @@ def test_create_sgens_raise_errorexcept():
         )
 
     validate_network(net)
+
+
+def test_create_asymmetric_sgen(): raise NotImplementedError()
+
+
+def test_create_sgen_from_cosphi(): raise NotImplementedError()

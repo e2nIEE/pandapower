@@ -38,6 +38,9 @@ def test_create_line_conductance():
     validate_network(net)
 
 
+def test_create_line(): raise NotImplementedError()
+
+
 def test_create_lines():
     # standard
     net = create_empty_network()
@@ -162,6 +165,9 @@ def test_create_lines():
     assert net.line.at[l[1], "parallel"] == 1
 
     validate_network(net)
+
+
+def test_create_line_form_parameters(): raise NotImplementedError()
 
 
 def test_create_lines_from_parameters():
@@ -436,3 +442,17 @@ def test_create_line_alpha_temperature():
 
     validate_network(net)
 
+
+def test_create_line_dc(): raise NotImplementedError()
+
+
+def test_create_lines_dc(): raise NotImplementedError()
+
+
+def test_create_line_dc_from_parameters(): raise NotImplementedError()
+
+
+def test_create_lines_dc_from_parameters(): raise NotImplementedError()
+
+
+def test_create_dcline(): raise NotImplementedError()
