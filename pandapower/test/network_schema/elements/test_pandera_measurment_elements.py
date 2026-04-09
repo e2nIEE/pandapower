@@ -32,14 +32,13 @@ class TestMeasurementRequiredFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
+                itertools.product(["name"], [pd.NA, *strings]),
                 itertools.product(["measurement_type"], valid_measurement_types),
                 itertools.product(["element_type"], valid_element_types),
                 itertools.product(["value"], all_allowed_floats),
                 itertools.product(["std_dev"], all_allowed_floats),
                 itertools.product(["element"], all_allowed_ints),
-                itertools.product(["check_existing"], bools),
-                itertools.product(["side"], strings),
+                itertools.product(["side"], [pd.NA, *strings]),
             )
         ),
     )
@@ -59,7 +58,6 @@ class TestMeasurementRequiredFields:
                 "std_dev": [0.1],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -100,7 +98,6 @@ class TestMeasurementRequiredFields:
                 "std_dev": [0.1],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -126,7 +123,6 @@ class TestMeasurementOptionalFields:
                 "value": [5.0],
                 "std_dev": [0.2],
                 "element": [0],
-                "check_existing": [False],
                 "side": ["from"],
             }
         )
@@ -152,7 +148,6 @@ class TestMeasurementOptionalFields:
                 "std_dev": [0.05],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
                 "side": ["to"],
             }
         )
@@ -177,7 +172,6 @@ class TestMeasurementOptionalFields:
                 "std_dev": [0.01],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -203,7 +197,6 @@ class TestMeasurementForeignKey:
                 "std_dev": [0.1],
                 "bus": [b0],
                 "element": [b0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
