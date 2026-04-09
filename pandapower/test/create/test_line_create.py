@@ -7,7 +7,8 @@ import numpy as np
 
 from pandapower.create import (
     create_empty_network, create_bus, create_line_from_parameters, create_line, create_buses, create_lines,
-    create_lines_from_parameters,
+    create_lines_from_parameters, create_bus_dc, create_line_dc, create_lines_dc, create_line_dc_from_parameters,
+    create_lines_dc_from_parameters, create_dcline
 )
 from pandapower.std_types import create_std_type
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -38,7 +39,68 @@ def test_create_line_conductance():
     validate_network(net)
 
 
-def test_create_line(): raise NotImplementedError()
+def test_create_line():
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+
+    # Test basic creation with required parameters
+    line_id = create_line(net, b1, b2, length_km=10.0, std_type="48-AL1/8-ST1A 10.0")
+
+    assert line_id == 0
+    assert net.line.at[line_id, "from_bus"] == b1
+    assert net.line.at[line_id, "to_bus"] == b2
+    assert net.line.at[line_id, "length_km"] == 10.0
+    assert net.line.at[line_id, "std_type"] == "48-AL1/8-ST1A 10.0"
+    assert net.line.at[line_id, "in_service"]
+    assert net.line.at[line_id, "df"] == 1.0  # default value
+    assert net.line.at[line_id, "parallel"] == 1  # default value
+
+    # Test with all optional parameters
+    b3 = create_bus(net, 110)
+    b4 = create_bus(net, 110)
+    line_id2 = create_line(
+        net, b3, b4,
+        length_km=5.0,
+        std_type="48-AL1/8-ST1A 10.0",
+        name="test_line",
+        in_service=False,
+        df=0.8,
+        parallel=2,
+        max_loading_percent=100.0,
+        geodata=[(1, 1), (2, 2)]
+    )
+
+    assert line_id2 == 1
+    assert net.line.at[line_id2, "from_bus"] == b3
+    assert net.line.at[line_id2, "to_bus"] == b4
+    assert net.line.at[line_id2, "length_km"] == 5.0
+    assert net.line.at[line_id2, "name"] == "test_line"
+    assert not net.line.at[line_id2, "in_service"]
+    assert net.line.at[line_id2, "df"] == 0.8
+    assert net.line.at[line_id2, "parallel"] == 2
+    assert net.line.at[line_id2, "max_loading_percent"] == 100.0
+
+    # Test with custom index
+    b5 = create_bus(net, 110)
+    b6 = create_bus(net, 110)
+    line_id3 = create_line(net, b5, b6, length_km=3.0, std_type="48-AL1/8-ST1A 10.0", index=5)
+
+    assert line_id3 == 5
+
+    # Test with kwargs
+    b7 = create_bus(net, 110)
+    b8 = create_bus(net, 110)
+    line_id4 = create_line(
+        net, b7, b8,
+        length_km=2.0,
+        std_type="48-AL1/8-ST1A 10.0",
+        test_custom_attr="custom_value"
+    )
+
+    assert net.line.at[line_id4, "test_custom_attr"] == "custom_value"
+
+    validate_network(net)
 
 
 def test_create_lines():
@@ -167,7 +229,132 @@ def test_create_lines():
     validate_network(net)
 
 
-def test_create_line_form_parameters(): raise NotImplementedError()
+def test_create_line_form_parameters():
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+
+    # Test basic creation with required parameters
+    line_id = create_line_from_parameters(
+        net,
+        b1, b2,
+        length_km=10.0,
+        r_ohm_per_km=0.1,
+        x_ohm_per_km=0.05,
+        c_nf_per_km=10.0,
+        max_i_ka=0.5
+    )
+
+    assert line_id == 0
+    assert net.line.at[line_id, "from_bus"] == b1
+    assert net.line.at[line_id, "to_bus"] == b2
+    assert net.line.at[line_id, "length_km"] == 10.0
+    assert net.line.at[line_id, "r_ohm_per_km"] == 0.1
+    assert net.line.at[line_id, "x_ohm_per_km"] == 0.05
+    assert net.line.at[line_id, "c_nf_per_km"] == 10.0
+    assert net.line.at[line_id, "max_i_ka"] == 0.5
+    assert net.line.at[line_id, "in_service"]
+    assert net.line.at[line_id, "df"] == 1.0
+    assert net.line.at[line_id, "parallel"] == 1
+
+    # Test with all optional parameters
+
+    # tdpf kwargs:
+    tdpf_args = {
+        "endtemp_degree": 100.0,
+        "tdpf": True,
+        "wind_speed_m_per_s": 2.,
+        "wind_angle_degree": 3.,
+        "conductor_outer_diameter_m": 4.,
+        "air_temperature_degree_celsius": 5.,
+        "reference_temperature_degree_celsius": 6.,
+        "solar_radiation_w_per_sq_m": 7.,
+        "solar_absorptivity": 8.,
+        "emissivity": 9.,
+        "r_theta_kelvin_per_mw": 10.,
+        "c_joule_per_m_k": 11.,
+    }
+    b3 = create_bus(net, 110)
+    b4 = create_bus(net, 110)
+    line_id2 = create_line_from_parameters(
+        net, b3, b4,
+        length_km=5.0,
+        r_ohm_per_km=0.2,
+        x_ohm_per_km=0.1,
+        c_nf_per_km=20.0,
+        max_i_ka=0.3,
+        name="test_line_params",
+        in_service=False,
+        df=0.8,
+        parallel=2,
+        type="cs",
+        g_us_per_km=0.0,
+        max_loading_percent=100.0,
+        alpha=0.004,
+        temperature_degree_celsius=80,
+        r0_ohm_per_km=0.15,
+        x0_ohm_per_km=0.08,
+        c0_nf_per_km=5.0,
+        g0_us_per_km=0.0,
+        **tdpf_args
+    )
+
+    validate_network(net)
+
+    assert line_id2 == 1
+    assert net.line.at[line_id2, "from_bus"] == b3
+    assert net.line.at[line_id2, "to_bus"] == b4
+    assert net.line.at[line_id2, "r_ohm_per_km"] == 0.2
+    assert net.line.at[line_id2, "x_ohm_per_km"] == 0.1
+    assert net.line.at[line_id2, "c_nf_per_km"] == 20.0
+    assert net.line.at[line_id2, "max_i_ka"] == 0.3
+    assert net.line.at[line_id2, "name"] == "test_line_params"
+    assert not net.line.at[line_id2, "in_service"]
+    assert net.line.at[line_id2, "df"] == 0.8
+    assert net.line.at[line_id2, "parallel"] == 2
+    assert net.line.at[line_id2, "type"] == "cs"
+    assert net.line.at[line_id2, "g_us_per_km"] == 0.0
+    assert net.line.at[line_id2, "max_loading_percent"] == 100.0
+    assert net.line.at[line_id2, "alpha"] == 0.004
+    assert net.line.at[line_id2, "temperature_degree_celsius"] == 80.0
+    assert net.line.at[line_id2, "r0_ohm_per_km"] == 0.15
+    assert net.line.at[line_id2, "x0_ohm_per_km"] == 0.08
+    assert net.line.at[line_id2, "c0_nf_per_km"] == 5.0
+    assert net.line.at[line_id2, "g0_us_per_km"] == 0.0
+    # assert net.line.at[line_id2, "endtemp_degree"] == 100.0
+
+    # Test with geodata
+    b5 = create_bus(net, 110)
+    b6 = create_bus(net, 110)
+    line_id3 = create_line_from_parameters(
+        net, b5, b6,
+        length_km=3.0,
+        r_ohm_per_km=0.3,
+        x_ohm_per_km=0.15,
+        c_nf_per_km=5.0,
+        max_i_ka=0.2,
+        geodata=[(1, 1), (2, 2), (3, 3)]
+    )
+
+    assert line_id3 == 2
+    assert "geo" in net.line.columns
+
+    # Test with custom kwargs
+    b7 = create_bus(net, 110)
+    b8 = create_bus(net, 110)
+    line_id4 = create_line_from_parameters(
+        net, b7, b8,
+        length_km=2.0,
+        r_ohm_per_km=0.4,
+        x_ohm_per_km=0.2,
+        c_nf_per_km=2.0,
+        max_i_ka=0.1,
+        custom_attr="test_value"
+    )
+
+    assert net.line.at[line_id4, "custom_attr"] == "test_value"
+
+    validate_network(net)
 
 
 def test_create_lines_from_parameters():
@@ -443,16 +630,284 @@ def test_create_line_alpha_temperature():
     validate_network(net)
 
 
-def test_create_line_dc(): raise NotImplementedError()
+def test_create_line_dc():
+    net = create_empty_network()
+    b1 = create_bus_dc(net, 110)
+    b2 = create_bus_dc(net, 110)
+
+    # Test basic creation with required parameters
+    line_id = create_line_dc(net, b1, b2, length_km=10.0, std_type="95-CU")
+
+    assert line_id == 0
+    assert net.line_dc.at[line_id, "from_bus_dc"] == b1
+    assert net.line_dc.at[line_id, "to_bus_dc"] == b2
+    assert net.line_dc.at[line_id, "length_km"] == 10.0
+    assert net.line_dc.at[line_id, "std_type"] == "95-CU"
+    assert net.line_dc.at[line_id, "in_service"]
+    assert net.line_dc.at[line_id, "df"] == 1.0  # default value
+    assert net.line_dc.at[line_id, "parallel"] == 1  # default value
+
+    # Test with all optional parameters
+    b3 = create_bus(net, 110, bus_type="dc")
+    b4 = create_bus(net, 110, bus_type="dc")
+    line_id2 = create_line_dc(
+        net, b3, b4,
+        length_km=5.0,
+        std_type="95-CU",
+        name="test_line_dc",
+        in_service=False,
+        df=0.8,
+        parallel=2,
+        max_loading_percent=100.0,
+        geodata=[(1, 1), (2, 2)]
+    )
+
+    assert line_id2 == 1
+    assert net.line_dc.at[line_id2, "from_bus_dc"] == b3
+    assert net.line_dc.at[line_id2, "to_bus_dc"] == b4
+    assert net.line_dc.at[line_id2, "length_km"] == 5.0
+    assert net.line_dc.at[line_id2, "name"] == "test_line_dc"
+    assert not net.line_dc.at[line_id2, "in_service"]
+    assert net.line_dc.at[line_id2, "df"] == 0.8
+    assert net.line_dc.at[line_id2, "parallel"] == 2
+    assert net.line_dc.at[line_id2, "max_loading_percent"] == 100.0
+
+    validate_network(net)
 
 
-def test_create_lines_dc(): raise NotImplementedError()
+def test_create_lines_dc():
+    net = create_empty_network()
+    b1 = create_bus_dc(net, 110)
+    b2 = create_bus_dc(net, 110)
+    b3 = create_bus_dc(net, 110)
+    b4 = create_bus_dc(net, 110)
+
+    # Test basic creation
+    line_ids = create_lines_dc(
+        net,
+        from_buses_dc=[b1, b3],
+        to_buses_dc=[b2, b4],
+        length_km=10.0,
+        std_type="95-CU"
+    )
+
+    assert len(line_ids) == 2
+    assert line_ids[0] == 0
+    assert line_ids[1] == 1
+    assert net.line_dc.at[0, "from_bus_dc"] == b1
+    assert net.line_dc.at[0, "to_bus_dc"] == b2
+    assert net.line_dc.at[1, "from_bus_dc"] == b3
+    assert net.line_dc.at[1, "to_bus_dc"] == b4
+
+    # Test with different lengths
+    net2 = create_empty_network()
+    b1 = create_bus_dc(net2, 110)
+    b2 = create_bus_dc(net2, 110)
+    b3 = create_bus_dc(net2, 110)
+    b4 = create_bus_dc(net2, 110)
+
+    line_ids2 = create_lines_dc(
+        net2,
+        from_buses_dc=[b1, b3],
+        to_buses_dc=[b2, b4],
+        length_km=[5.0, 15.0],
+        std_type="95-CU",
+        name=["line_dc_1", "line_dc_2"],
+        in_service=[True, False],
+        df=0.9
+    )
+
+    assert net2.line_dc.at[0, "length_km"] == 5.0
+    assert net2.line_dc.at[1, "length_km"] == 15.0
+    assert net2.line_dc.at[0, "name"] == "line_dc_1"
+    assert net2.line_dc.at[1, "name"] == "line_dc_2"
+    assert net2.line_dc.at[0, "in_service"]
+    assert not net2.line_dc.at[1, "in_service"]
+
+    validate_network(net)
+    validate_network(net2)
 
 
-def test_create_line_dc_from_parameters(): raise NotImplementedError()
+def test_create_line_dc_from_parameters():
+    net = create_empty_network()
+    b1 = create_bus_dc(net, 110)
+    b2 = create_bus_dc(net, 110)
+
+    # Test basic creation with required parameters
+    line_id = create_line_dc_from_parameters(
+        net,
+        b1, b2,
+        length_km=10.0,
+        r_ohm_per_km=0.1,
+        max_i_ka=0.5
+    )
+
+    assert line_id == 0
+    assert net.line_dc.at[line_id, "from_bus_dc"] == b1
+    assert net.line_dc.at[line_id, "to_bus_dc"] == b2
+    assert net.line_dc.at[line_id, "length_km"] == 10.0
+    assert net.line_dc.at[line_id, "r_ohm_per_km"] == 0.1
+    assert net.line_dc.at[line_id, "max_i_ka"] == 0.5
+    assert net.line_dc.at[line_id, "in_service"]
+    assert net.line_dc.at[line_id, "df"] == 1.0
+    assert net.line_dc.at[line_id, "parallel"] == 1
+
+    # Test with all optional parameters
+    b3 = create_bus_dc(net, 110)
+    b4 = create_bus_dc(net, 110)
+    line_id2 = create_line_dc_from_parameters(
+        net, b3, b4,
+        length_km=5.0,
+        r_ohm_per_km=0.2,
+        max_i_ka=0.3,
+        name="test_line_dc_params",
+        in_service=False,
+        df=0.8,
+        parallel=2,
+        type="ol",
+        max_loading_percent=100.0,
+        g_us_per_km=0.0
+    )
+
+    assert line_id2 == 1
+    assert net.line_dc.at[line_id2, "from_bus_dc"] == b3
+    assert net.line_dc.at[line_id2, "to_bus_dc"] == b4
+    assert net.line_dc.at[line_id2, "r_ohm_per_km"] == 0.2
+    assert net.line_dc.at[line_id2, "max_i_ka"] == 0.3
+    assert net.line_dc.at[line_id2, "name"] == "test_line_dc_params"
+    assert not net.line_dc.at[line_id2, "in_service"]
+    assert net.line_dc.at[line_id2, "df"] == 0.8
+    assert net.line_dc.at[line_id2, "parallel"] == 2
+    assert net.line_dc.at[line_id2, "type"] == "ol"
+
+    validate_network(net)
 
 
-def test_create_lines_dc_from_parameters(): raise NotImplementedError()
+def test_create_lines_dc_from_parameters():
+    net = create_empty_network()
+    b1 = create_bus_dc(net, 110)
+    b2 = create_bus_dc(net, 110)
+    b3 = create_bus_dc(net, 110)
+    b4 = create_bus_dc(net, 110)
+
+    # Test basic creation
+    line_ids = create_lines_dc_from_parameters(
+        net,
+        from_buses_dc=[b1, b3],
+        to_buses_dc=[b2, b4],
+        length_km=10.0,
+        r_ohm_per_km=0.1,
+        max_i_ka=0.5
+    )
+
+    assert len(line_ids) == 2
+    assert line_ids[0] == 0
+    assert line_ids[1] == 1
+    assert net.line_dc.at[0, "from_bus_dc"] == b1
+    assert net.line_dc.at[0, "to_bus_dc"] == b2
+    assert net.line_dc.at[0, "r_ohm_per_km"] == 0.1
+    assert net.line_dc.at[1, "from_bus_dc"] == b3
+    assert net.line_dc.at[1, "to_bus_dc"] == b4
+
+    # Test with array parameters
+    net2 = create_empty_network()
+    b1 = create_bus_dc(net2, 110)
+    b2 = create_bus_dc(net2, 110)
+    b3 = create_bus_dc(net2, 110)
+    b4 = create_bus_dc(net2, 110)
+
+    line_ids2 = create_lines_dc_from_parameters(
+        net2,
+        from_buses_dc=[b1, b3],
+        to_buses_dc=[b2, b4],
+        length_km=[5.0, 15.0],
+        r_ohm_per_km=[0.1, 0.2],
+        max_i_ka=[0.3, 0.4],
+        name=["line_dc_1", "line_dc_2"],
+        in_service=[True, False],
+        df=[0.9, 0.95],
+        parallel=[1, 2]
+    )
+
+    assert net2.line_dc.at[0, "length_km"] == 5.0
+    assert net2.line_dc.at[1, "length_km"] == 15.0
+    assert net2.line_dc.at[0, "r_ohm_per_km"] == 0.1
+    assert net2.line_dc.at[1, "r_ohm_per_km"] == 0.2
+    assert net2.line_dc.at[0, "max_i_ka"] == 0.3
+    assert net2.line_dc.at[1, "max_i_ka"] == 0.4
+    assert net2.line_dc.at[0, "name"] == "line_dc_1"
+    assert net2.line_dc.at[1, "name"] == "line_dc_2"
+    assert net2.line_dc.at[0, "in_service"]
+    assert not net2.line_dc.at[1, "in_service"]
+    assert net2.line_dc.at[0, "parallel"] == 1
+    assert net2.line_dc.at[1, "parallel"] == 2
+
+    validate_network(net)
+    validate_network(net2)
 
 
-def test_create_dcline(): raise NotImplementedError()
+def test_create_dcline():
+    net = create_empty_network()
+    b1 = create_bus(net, 380)
+    b2 = create_bus(net, 110)
+
+    # Test basic creation with required parameters
+    dcline_id = create_dcline(
+        net,
+        from_bus=b1,
+        to_bus=b2,
+        p_mw=1000,
+        loss_percent=2.0,
+        loss_mw=20,
+        vm_from_pu=1.0,
+        vm_to_pu=1.0
+    )
+
+    assert dcline_id == 0
+    assert net.dcline.at[dcline_id, "from_bus"] == b1
+    assert net.dcline.at[dcline_id, "to_bus"] == b2
+    assert net.dcline.at[dcline_id, "p_mw"] == 1000
+    assert net.dcline.at[dcline_id, "loss_percent"] == 2.0
+    assert net.dcline.at[dcline_id, "loss_mw"] == 20
+    assert net.dcline.at[dcline_id, "vm_from_pu"] == 1.0
+    assert net.dcline.at[dcline_id, "vm_to_pu"] == 1.0
+    assert net.dcline.at[dcline_id, "in_service"]
+
+    # Test with all optional parameters
+    b3 = create_bus(net, 380)
+    b4 = create_bus(net, 110)
+    dcline_id2 = create_dcline(
+        net,
+        from_bus=b3,
+        to_bus=b4,
+        p_mw=2000,
+        loss_percent=1.5,
+        loss_mw=30,
+        vm_from_pu=1.02,
+        vm_to_pu=0.98,
+        name="test_dcline",
+        in_service=False,
+        max_p_mw=3000,
+        min_q_from_mvar=-100,
+        max_q_from_mvar=100,
+        min_q_to_mvar=-50,
+        max_q_to_mvar=50
+    )
+
+    assert dcline_id2 == 1
+    assert net.dcline.at[dcline_id2, "from_bus"] == b3
+    assert net.dcline.at[dcline_id2, "to_bus"] == b4
+    assert net.dcline.at[dcline_id2, "p_mw"] == 2000
+    assert net.dcline.at[dcline_id2, "loss_percent"] == 1.5
+    assert net.dcline.at[dcline_id2, "loss_mw"] == 30
+    assert net.dcline.at[dcline_id2, "vm_from_pu"] == 1.02
+    assert net.dcline.at[dcline_id2, "vm_to_pu"] == 0.98
+    assert net.dcline.at[dcline_id2, "name"] == "test_dcline"
+    assert not net.dcline.at[dcline_id2, "in_service"]
+    assert net.dcline.at[dcline_id2, "max_p_mw"] == 3000
+    assert net.dcline.at[dcline_id2, "min_q_from_mvar"] == -100
+    assert net.dcline.at[dcline_id2, "max_q_from_mvar"] == 100
+    assert net.dcline.at[dcline_id2, "min_q_to_mvar"] == -50
+    assert net.dcline.at[dcline_id2, "max_q_to_mvar"] == 50
+
+    validate_network(net)
