@@ -8,6 +8,7 @@ import pandas as pd
 from pandapower.create import (
     create_empty_network, create_bus, create_transformer_from_parameters, create_transformer, create_transformers,
     create_transformers_from_parameters, create_transformers3w_from_parameters, create_transformers3w, load_std_type,
+    create_transformer3w, create_transformer3w_from_parameters
 )
 from pandapower.std_types import create_std_type
 from pandapower.toolbox import dataframes_equal
@@ -30,8 +31,115 @@ def test_tap_changer_type_default():
     validate_network(net)
 
 
-def test_create_transformer_from_parameters(): raise NotImplementedError()
+def test_create_transformer_from_parameters():
+    # Test basic transformer creation from parameters
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer_from_parameters(
+        net,
+        hv_bus=b1,
+        lv_bus=b2,
+        sn_mva=40,
+        vn_hv_kv=110,
+        vn_lv_kv=20,
+        vkr_percent=0.5,
+        vk_percent=10,
+        pfe_kw=30,
+        i0_percent=0.1,
+        name="test_trafo",
+    )
 
+    assert len(net.trafo) == 1
+    assert net.trafo.at[t, "name"] == "test_trafo"
+    assert net.trafo.at[t, "hv_bus"] == b1
+    assert net.trafo.at[t, "lv_bus"] == b2
+    assert net.trafo.at[t, "sn_mva"] == 40
+    assert net.trafo.at[t, "vn_hv_kv"] == 110
+    assert net.trafo.at[t, "vn_lv_kv"] == 20
+    assert net.trafo.at[t, "vk_percent"] == 10
+    assert net.trafo.at[t, "vkr_percent"] == 0.5
+    assert net.trafo.at[t, "pfe_kw"] == 30
+    assert net.trafo.at[t, "i0_percent"] == 0.1
+
+    # Test with tap changer
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer_from_parameters(
+        net,
+        hv_bus=b1,
+        lv_bus=b2,
+        sn_mva=40,
+        vn_hv_kv=110,
+        vn_lv_kv=20,
+        vkr_percent=0.5,
+        vk_percent=10,
+        pfe_kw=30,
+        i0_percent=0.1,
+        tap_side="hv",
+        tap_pos=5,
+        tap_neutral=0,
+        tap_max=10,
+        tap_min=-10,
+        tap_step_percent=1.0,
+    )
+
+    assert net.trafo.at[t, "tap_side"] == "hv"
+    assert net.trafo.at[t, "tap_pos"] == 5
+    assert net.trafo.at[t, "tap_neutral"] == 0
+    assert net.trafo.at[t, "tap_max"] == 10
+    assert net.trafo.at[t, "tap_min"] == -10
+    assert net.trafo.at[t, "tap_step_percent"] == 1.0
+
+    # Test with zero sequence parameters
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer_from_parameters(
+        net,
+        hv_bus=b1,
+        lv_bus=b2,
+        sn_mva=40,
+        vn_hv_kv=110,
+        vn_lv_kv=20,
+        vkr_percent=0.5,
+        vk_percent=10,
+        pfe_kw=30,
+        i0_percent=0.1,
+        vk0_percent=10,
+        vkr0_percent=0.5,
+        mag0_percent=100,
+        mag0_rx=0.1,
+        vector_group="Dyn",
+    )
+
+    assert net.trafo.at[t, "vk0_percent"] == 10
+    assert net.trafo.at[t, "vkr0_percent"] == 0.5
+    assert net.trafo.at[t, "mag0_percent"] == 100
+    assert net.trafo.at[t, "mag0_rx"] == 0.1
+    assert net.trafo.at[t, "vector_group"] == "Dyn"
+
+    # Test with in_service=False
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer_from_parameters(
+        net,
+        hv_bus=b1,
+        lv_bus=b2,
+        sn_mva=40,
+        vn_hv_kv=110,
+        vn_lv_kv=20,
+        vkr_percent=0.5,
+        vk_percent=10,
+        pfe_kw=30,
+        i0_percent=0.1,
+        in_service=False,
+    )
+    assert not net.trafo.at[t, "in_service"]
+
+    validate_network(net)
 
 def test_create_transformers_from_parameters():
     # standard
@@ -345,8 +453,62 @@ def test_trafos_2_tap_changers_parameters():
     validate_network(net)
 
 
-def test_create_transformer(): raise NotImplementedError()
+def test_create_transformer():
+    # Test basic transformer creation from std_type
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", name="test_trafo")
 
+    assert len(net.trafo) == 1
+    assert net.trafo.at[t, "name"] == "test_trafo"
+    assert net.trafo.at[t, "hv_bus"] == b1
+    assert net.trafo.at[t, "lv_bus"] == b2
+    assert net.trafo.at[t, "std_type"] == "40 MVA 110/20 kV"
+
+    std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
+    assert net.trafo.at[t, "sn_mva"] == std_type["sn_mva"]
+    assert net.trafo.at[t, "vn_hv_kv"] == std_type["vn_hv_kv"]
+    assert net.trafo.at[t, "vn_lv_kv"] == std_type["vn_lv_kv"]
+    assert net.trafo.at[t, "vk_percent"] == std_type["vk_percent"]
+
+    # Test with custom index
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", index=5)
+    assert t == 5
+    assert 5 in net.trafo.index
+
+    # Test with in_service=False
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", in_service=False)
+    assert not net.trafo.at[t, "in_service"]
+
+    # Test with tap_pos
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", tap_pos=5)
+    assert net.trafo.at[t, "tap_pos"] == 5
+
+    # Test with max_loading_percent
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", max_loading_percent=80)
+    assert net.trafo.at[t, "max_loading_percent"] == 80
+
+    # Test error case - non-existent bus
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    with pytest.raises(UserWarning, match=r"Trafo \d tries to attach to non-existing bus\(es\) \{\d\}"):
+        create_transformer(net, hv_bus=b1, lv_bus=5, std_type="40 MVA 110/20 kV")
+
+    validate_network(net)
 
 def test_create_transformers():
     net = create_empty_network()
@@ -444,8 +606,112 @@ def test_create_transformers_for_single():
     validate_network(net)
 
 
-def test_create_transformer3w(): raise NotImplementedError()
+def test_create_transformer3w():
+    # Test basic 3-winding transformer creation from std_type
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        std_type="63/25/38 MVA 110/20/10 kV",
+        name="test_trafo3w",
+    )
 
+    assert len(net.trafo3w) == 1
+    assert net.trafo3w.at[t, "name"] == "test_trafo3w"
+    assert net.trafo3w.at[t, "hv_bus"] == b1
+    assert net.trafo3w.at[t, "mv_bus"] == b2
+    assert net.trafo3w.at[t, "lv_bus"] == b3
+    assert net.trafo3w.at[t, "std_type"] == "63/25/38 MVA 110/20/10 kV"
+
+    std_type = load_std_type(net, "63/25/38 MVA 110/20/10 kV", "trafo3w")
+    assert net.trafo3w.at[t, "sn_hv_mva"] == std_type["sn_hv_mva"]
+    assert net.trafo3w.at[t, "sn_mv_mva"] == std_type["sn_mv_mva"]
+    assert net.trafo3w.at[t, "sn_lv_mva"] == std_type["sn_lv_mva"]
+    assert net.trafo3w.at[t, "vn_hv_kv"] == std_type["vn_hv_kv"]
+    assert net.trafo3w.at[t, "vn_mv_kv"] == std_type["vn_mv_kv"]
+    assert net.trafo3w.at[t, "vn_lv_kv"] == std_type["vn_lv_kv"]
+
+    # Test with custom index
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        std_type="63/25/38 MVA 110/20/10 kV",
+        index=10,
+    )
+    assert t == 10
+    assert 10 in net.trafo3w.index
+
+    # Test with in_service=False
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        std_type="63/25/38 MVA 110/20/10 kV",
+        in_service=False,
+    )
+    assert not net.trafo3w.at[t, "in_service"]
+
+    # Test with tap_pos
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        std_type="63/25/38 MVA 110/20/10 kV",
+        tap_pos=5,
+    )
+    assert net.trafo3w.at[t, "tap_pos"] == 5
+
+    # Test with max_loading_percent
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        std_type="63/25/38 MVA 110/20/10 kV",
+        max_loading_percent=80,
+    )
+    assert net.trafo3w.at[t, "max_loading_percent"] == 80
+
+    # Test error case - non-existent bus
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    with pytest.raises(UserWarning, match=r"Trafo tries to attach to bus 5"):
+        create_transformer3w(
+            net,
+            hv_bus=b1,
+            mv_bus=b2,
+            lv_bus=5,
+            std_type="63/25/38 MVA 110/20/10 kV",
+        )
+
+    validate_network(net)
 
 def test_create_transformers3w():
     net = create_empty_network()
@@ -538,8 +804,221 @@ def net_transformer3w_from_parameters(**kwargs):
     return net, b1, b2, b3
 
 
-def test_create_transformer3w_from_parameters(): raise NotImplementedError()
+def test_create_transformer3w_from_parameters():
+    # Test basic 3-winding transformer creation from parameters
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        sn_hv_mva=63,
+        sn_mv_mva=25,
+        sn_lv_mva=38,
+        vn_hv_kv=110,
+        vn_mv_kv=20,
+        vn_lv_kv=10,
+        vk_hv_percent=10.4,
+        vk_mv_percent=10.4,
+        vk_lv_percent=10.4,
+        vkr_hv_percent=0.28,
+        vkr_mv_percent=0.32,
+        vkr_lv_percent=0.35,
+        pfe_kw=35,
+        i0_percent=0.89,
+        name="test_trafo3w",
+    )
 
+    assert len(net.trafo3w) == 1
+    assert net.trafo3w.at[t, "name"] == "test_trafo3w"
+    assert net.trafo3w.at[t, "hv_bus"] == b1
+    assert net.trafo3w.at[t, "mv_bus"] == b2
+    assert net.trafo3w.at[t, "lv_bus"] == b3
+    assert net.trafo3w.at[t, "sn_hv_mva"] == 63
+    assert net.trafo3w.at[t, "sn_mv_mva"] == 25
+    assert net.trafo3w.at[t, "sn_lv_mva"] == 38
+    assert net.trafo3w.at[t, "vn_hv_kv"] == 110
+    assert net.trafo3w.at[t, "vn_mv_kv"] == 20
+    assert net.trafo3w.at[t, "vn_lv_kv"] == 10
+    assert net.trafo3w.at[t, "vk_hv_percent"] == 10.4
+    assert net.trafo3w.at[t, "vk_mv_percent"] == 10.4
+    assert net.trafo3w.at[t, "vk_lv_percent"] == 10.4
+    assert net.trafo3w.at[t, "vkr_hv_percent"] == 0.28
+    assert net.trafo3w.at[t, "vkr_mv_percent"] == 0.32
+    assert net.trafo3w.at[t, "vkr_lv_percent"] == 0.35
+    assert net.trafo3w.at[t, "pfe_kw"] == 35
+    assert net.trafo3w.at[t, "i0_percent"] == 0.89
+
+    # Test with shift angles
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        sn_hv_mva=63,
+        sn_mv_mva=25,
+        sn_lv_mva=38,
+        vn_hv_kv=110,
+        vn_mv_kv=20,
+        vn_lv_kv=10,
+        vk_hv_percent=10.4,
+        vk_mv_percent=10.4,
+        vk_lv_percent=10.4,
+        vkr_hv_percent=0.28,
+        vkr_mv_percent=0.32,
+        vkr_lv_percent=0.35,
+        pfe_kw=35,
+        i0_percent=0.89,
+        shift_mv_degree=30,
+        shift_lv_degree=150,
+    )
+
+    assert net.trafo3w.at[t, "shift_mv_degree"] == 30
+    assert net.trafo3w.at[t, "shift_lv_degree"] == 150
+
+    # Test with tap changer
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        sn_hv_mva=63,
+        sn_mv_mva=25,
+        sn_lv_mva=38,
+        vn_hv_kv=110,
+        vn_mv_kv=20,
+        vn_lv_kv=10,
+        vk_hv_percent=10.4,
+        vk_mv_percent=10.4,
+        vk_lv_percent=10.4,
+        vkr_hv_percent=0.28,
+        vkr_mv_percent=0.32,
+        vkr_lv_percent=0.35,
+        pfe_kw=35,
+        i0_percent=0.89,
+        tap_side="hv",
+        tap_pos=5,
+        tap_neutral=0,
+        tap_max=10,
+        tap_min=-10,
+        tap_step_percent=1.0,
+    )
+
+    assert net.trafo3w.at[t, "tap_side"] == "hv"
+    assert net.trafo3w.at[t, "tap_pos"] == 5
+    assert net.trafo3w.at[t, "tap_neutral"] == 0
+    assert net.trafo3w.at[t, "tap_max"] == 10
+    assert net.trafo3w.at[t, "tap_min"] == -10
+    assert net.trafo3w.at[t, "tap_step_percent"] == 1.0
+
+    # Test with zero sequence parameters
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        sn_hv_mva=63,
+        sn_mv_mva=25,
+        sn_lv_mva=38,
+        vn_hv_kv=110,
+        vn_mv_kv=20,
+        vn_lv_kv=10,
+        vk_hv_percent=10.4,
+        vk_mv_percent=10.4,
+        vk_lv_percent=10.4,
+        vkr_hv_percent=0.28,
+        vkr_mv_percent=0.32,
+        vkr_lv_percent=0.35,
+        pfe_kw=35,
+        i0_percent=0.89,
+        vk0_hv_percent=10,
+        vk0_mv_percent=10,
+        vk0_lv_percent=10,
+        vkr0_hv_percent=0.28,
+        vkr0_mv_percent=0.32,
+        vkr0_lv_percent=0.35,
+        vector_group="YNd11",
+    )
+
+    assert net.trafo3w.at[t, "vk0_hv_percent"] == 10
+    assert net.trafo3w.at[t, "vk0_mv_percent"] == 10
+    assert net.trafo3w.at[t, "vk0_lv_percent"] == 10
+    assert net.trafo3w.at[t, "vkr0_hv_percent"] == 0.28
+    assert net.trafo3w.at[t, "vkr0_mv_percent"] == 0.32
+    assert net.trafo3w.at[t, "vkr0_lv_percent"] == 0.35
+    assert net.trafo3w.at[t, "vector_group"] == "YNd11"
+
+    # Test with in_service=False
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    t = create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b3,
+        sn_hv_mva=63,
+        sn_mv_mva=25,
+        sn_lv_mva=38,
+        vn_hv_kv=110,
+        vn_mv_kv=20,
+        vn_lv_kv=10,
+        vk_hv_percent=10.4,
+        vk_mv_percent=10.4,
+        vk_lv_percent=10.4,
+        vkr_hv_percent=0.28,
+        vkr_mv_percent=0.32,
+        vkr_lv_percent=0.35,
+        pfe_kw=35,
+        i0_percent=0.89,
+        in_service=False,
+    )
+    assert not net.trafo3w.at[t, "in_service"]
+
+    # Test error case - non-existent bus
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 10)
+    with pytest.raises(UserWarning, match=r"Trafo tries to attach to non-existent bus 5"):
+        create_transformer3w_from_parameters(
+            net,
+            hv_bus=b1,
+            mv_bus=b2,
+            lv_bus=5,
+            sn_hv_mva=63,
+            sn_mv_mva=25,
+            sn_lv_mva=38,
+            vn_hv_kv=110,
+            vn_mv_kv=20,
+            vn_lv_kv=10,
+            vk_hv_percent=10.4,
+            vk_mv_percent=10.4,
+            vk_lv_percent=10.4,
+            vkr_hv_percent=0.28,
+            vkr_mv_percent=0.32,
+            vkr_lv_percent=0.35,
+            pfe_kw=35,
+            i0_percent=0.89,
+        )
+
+    validate_network(net)
 
 def test_create_transformers3w_from_parameters():
     # setting params as single value

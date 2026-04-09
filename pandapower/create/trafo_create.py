@@ -99,13 +99,12 @@ def create_transformer(
     Example:
         >>> create_transformer(net, hv_bus=0, lv_bus=1, std_type="0.4 MVA 10/0.4 kV", name="trafo1")
     """
-
     from pandapower.convert_format import convert_trafo_pst_logic
+
+    index = _get_index_with_check(net, "trafo", index, name="transformer")
 
     # Check if bus exist to attach the trafo to
     _check_branch_element(net, "Trafo", index, hv_bus, lv_bus)
-
-    index = _get_index_with_check(net, "trafo", index, name="transformer")
 
     if df <= 0:
         raise ValueError(f"derating factor 'df' must be positive: df = {df:.3f}")
