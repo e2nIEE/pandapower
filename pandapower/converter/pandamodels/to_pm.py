@@ -380,21 +380,19 @@ def ppc_to_pm(net, ppci, add_switches_to_pm=False):
 
         # the bus-bus switches are added to the end of the ppci, +1 since we use 1-indexing.
         if idx > (n_lines - n_bb_switches + 1):
-            if not add_switches_to_pm:
-                continue
-
-            switch = {
-                "index": idx,
-                "f_bus": int(row[F_BUS].real) + 1,
-                "t_bus": int(row[T_BUS].real) + 1,
-                "status": 1,
-                "state": 1,
-                "thermal_rating": np.inf,
-                "psw": 0.,
-                "qsw": 0.,
-            }
-            pm["switch"][str(idx - n_lines)] = switch
-            continue
+            if add_switches_to_pm:
+                switch = {
+                    "index": idx,
+                    "f_bus": int(row[F_BUS].real) + 1,
+                    "t_bus": int(row[T_BUS].real) + 1,
+                    "status": 1,
+                    "state": 1,
+                    "thermal_rating": np.inf,
+                    "psw": 0.,
+                    "qsw": 0.,
+                }
+                pm["switch"][str(idx - n_lines)] = switch
+            # continue
 
         branch = {}
         branch["index"] = idx
