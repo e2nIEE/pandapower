@@ -4,9 +4,14 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 # Builds the DC PSDF matrix based on the DC PTDF
-import scipy as sp
+import logging
 from math import pi
+
+import scipy as sp
 from scipy.sparse import csr_matrix, csc_matrix
+import pandas as pd
+import numpy as np
+import numpy.typing as npt
 
 from pandapower.analysis.LODF import _LODF_ppci_to_pp, _LODF_pp_np_to_df
 from pandapower.analysis.PTDF import _makePTDF_ppci
@@ -14,37 +19,31 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, REF
 from pandapower.pypower.makeBdc import calc_b_from_branch
 from numpy import ones, r_, real, int64, arange, flatnonzero as find, isscalar
-
-from typing import Union, Tuple
-
-import pandas as pd
-import numpy as np
-
 from pandapower import pandapowerNet
 from pandapower.analysis.utils import branch_dict_to_ppci_branch_list, _get_outage_branch_ix, ELE_IX_TYPE
 
-import logging
 logger = logging.getLogger(__name__)
-
 
 def makePSDF(
         baseMVA: float,
-        PTDF: np.ndarray,
-        bus: np.ndarray,
-        branch: np.ndarray,
+        PTDF: npt.NDArray,
+        bus: npt.NDArray,
+        branch: npt.NDArray,
         using_sparse_solver: bool = False,
         branch_id: int | None = None,
         reduced: bool = False,
-        slack: Union[int, np.ndarray] | None = None
+        slack: int | npt.NDArray | None = None
 ):
-    """Builds the DC PSDF matrix based on the DC PTDF
+    """
+    Builds the DC PSDF matrix based on the DC PTDF
+
     Returns the DC PSDF matrix . The matrix is
     C{nbr x nbr}, where C{nbr} is the number of branches. The DC PSDF is independent from the selected slack.
     To restrict the PSDF computation to a subset of branches, supply a list of ppci branch indices in C{branch_id}.
     If C{reduced==True}, the output is reduced to the branches given in C{branch_id}, otherwise the complement rows are set to NaN.
     @see: L{makeLODF}
     """
-    if reduced and not branch_id:
+    if reduced and branch_id is None:
         raise ValueError("'reduced=True' is only valid if branch_id is not None")
 
     ## Select csc/csr B matrix
@@ -52,8 +51,7 @@ def makePSDF(
 
     ## use reference bus for slack by default
     if slack is None:
-        slack = find(bus[:, BUS_TYPE] == REF)
-        slack = slack[0]
+        slack = find(bus[:, BUS_TYPE] == REF)[0]
 
     ## set the slack bus to be used to compute initial PTDF
     if isscalar(slack):
@@ -90,11 +88,11 @@ def makePSDF(
 
 def _get_PSDF_direct(
     net: pandapowerNet,
-    phase_shift_branch_type: str,
+    phase_shift_branch_type: str | None,
     phase_shift_branch_ix: ELE_IX_TYPE | None = None,
     using_sparse_solver: bool = True,
     random_verify=False,
-    branch_dict: dict[str, Union[list[int], None]] | None = None,
+    branch_dict: dict[str, list[int] | None] | None = None,
     reduced=True,
 ):
     """
@@ -105,8 +103,8 @@ def _get_PSDF_direct(
         logger.warning("Calculating lodf for large network, switched to sparse solver!")
 
     # If branch_dict not None compute list of ppci branch indices and its branch type intervals as lookup
-    branch_ppci_lookup = None
-    branch_id = None
+    branch_ppci_lookup: dict | None = None
+    branch_id: int | None = None
     if branch_dict is not None:
         branch_id, branch_ppci_lookup = branch_dict_to_ppci_branch_list(net=net, branch_dict=branch_dict)
     else:
@@ -159,11 +157,11 @@ def _get_PSDF_direct(
 
 def _get_PSDF_perturb(
     net: pandapowerNet,
-    phase_shift_branch_type: str,
+    phase_shift_branch_type: str | None,
     phase_shift_branch_ix: ELE_IX_TYPE | None = None,
     distributed_slack=True,
-    recycle="lodf",
-) -> dict[Tuple[str, str], pd.DataFrame]:
+    recycle: str | None = "lodf",
+) -> dict[tuple[str, str], pd.DataFrame]:
     """
     this function calculates PSDF (ratio without unit) of branch to
     a pp branch with perturb method (brute-force)
@@ -173,15 +171,15 @@ def _get_PSDF_perturb(
 
 def run_PSDF(
     net: pandapowerNet,
-    phase_shift_branch_type: Union[None, str],
+    phase_shift_branch_type: str | None,
     phase_shift_branch_ix: ELE_IX_TYPE | None = None,
     distributed_slack: bool = True,
     perturb: bool = False,
-    recycle: Union[str, None] = None,
+    recycle: str | None = None,
     using_sparse_solver: bool = True,
-    branch_dict: dict[str, Union[list[int], None]] | None = None,
+    branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
-) -> dict[Tuple[str, str], pd.DataFrame]:
+) -> dict[tuple[str, str], pd.DataFrame]:
     """
     this function is a wrapper of calculating PSDF of a pp branch from the phase shift through a pp branch
     with pypower matrix function or perturb function.
@@ -207,10 +205,10 @@ def run_PSDF(
         DataFrame(data=psdf, index=goal_branch_pp_index, columns=phase_shift_branch_ix)}
     """
     # ToDo: check if distributed slack makes any difference
-    if perturb and phase_shift_branch_type is None:
-        logger.info("If a lot of branch required in psdf, please set perturb to False!")
 
     if perturb:
+        if phase_shift_branch_type is None:
+            logger.info("If a lot of branch required in psdf, please set perturb to False!")
         if recycle == "lodf" and distributed_slack == True:
             logger.warning("distributed_slack deactivated! recycling does not allow distributed slack")
         psdf = _get_PSDF_perturb(

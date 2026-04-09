@@ -2,14 +2,13 @@
 
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-from typing import Union, List, Dict
 from copy import deepcopy
 
 import pandas as pd
 import numpy as np
+import numpy.typing as npt
 
-from pandapower import pandapowerNet
+from pandapower.auxiliary import pandapowerNet
 from pandapower.analysis.utils import _get_bus_lookup, _get_branch_lookup, _get_trafo3w_lookup, \
     branch_dict_to_ppci_branch_list, _get_source_bus_ix, DISCONNECTED_PADDING_VALUE, BR_SIDE_MAPPING, BR_SIDE_MAPPING_1, \
     ELE_IX_TYPE
@@ -22,7 +21,6 @@ from pandapower.pypower.idx_bus import BUS_I
 # replace pandapower makePTDF with custom function
 from pandapower.pypower.makePTDF import makePTDF
 from pandapower.analysis.utils import get_dist_slack, get_ppci_dist_slack, LOAD_REFRENCE
-from pandapower.auxiliary import pandapowerNet
 
 import logging
 logger = logging.getLogger(__name__)
@@ -30,11 +28,11 @@ logger = logging.getLogger(__name__)
 
 def _get_PTDF_direct(
         net: pandapowerNet,
-        source_bus: Union[int, np.ndarray] | None = None,
+        source_bus: int | npt.NDArray | None = None,
         result_side=0,
         using_sparse_solver: bool = True,
         random_verify: bool = True,
-        branch_dict: dict[str, Union[list[int], None]] | None = None,
+        branch_dict: dict[str, list[int] | None] | None = None,
         reduced: bool = True
 ):
     """
@@ -87,7 +85,7 @@ def _get_PTDF_direct(
 
 def _get_PTDF_perturb(
         net: pandapowerNet,
-        source_bus: Union[int, np.ndarray] | None = None,
+        source_bus: int | npt.NDArray | None = None,
         result_side: int = 0,
         distributed_slack: bool=True
 ):
@@ -332,13 +330,13 @@ def _PTDF_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
 
 def run_PTDF(
     net: pandapowerNet,
-    source_bus: Union[int, np.ndarray] | None = None,
+    source_bus: int | npt.NDArray | None = None,
     distributed_slack: bool = True,
     result_side: int = 0,
     perturb: bool = False,
     using_sparse_solver: bool = True,
     random_verify: bool = False,
-    branch_dict: dict[str, Union[list[int], None]] | None = None,
+    branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ):
     """

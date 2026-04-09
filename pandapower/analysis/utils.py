@@ -5,6 +5,7 @@
 
 from typing import Union, Tuple
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import pandapower as pp
 from pandapower.auxiliary import pandapowerNet
@@ -12,6 +13,8 @@ from pandapower.auxiliary import pandapowerNet
 import logging
 
 logger = logging.getLogger(__name__)
+
+ELE_IX_TYPE = int | list | npt.NDArray
 
 DISCONNECTED_PADDING_VALUE = np.nan
 BR_SIDE_MAPPING = {"line": "from", "dcline": "from", "trafo": "hv", "impedance": "from", "trafo3w": "hv"}
@@ -26,34 +29,34 @@ BR_NAN_CHECK = {
     "trafo3w": "va_hv_degree",
 }
 LOAD_REFRENCE = ("load", "storage")
-ELE_IX_TYPE = Union[int, list, np.ndarray]
 PP_SLACK_PRIO_COL = "slack_weight"
 
 
 def _get_source_bus_ix(
         net: pandapowerNet,
         source_bus: Union[int, np.ndarray] | None = None
-):
+) -> npt.NDArray:
     if source_bus is None:
         return net.bus.index.to_numpy()
 
     if np.isscalar(source_bus):
         source_bus = np.array([source_bus]).astype(int)
+    assert type(source_bus) is np.ndarray  # force mypy type narrowing to ndarray
     if isinstance(source_bus, np.ndarray):
         # Convert to 1d np array
         source_bus = source_bus.ravel()
     else:
         source_bus = np.array([source_bus]).ravel()
 
-    unique_source_bus = np.unique(source_bus)
+    unique_source_bus: npt.NDArray = np.unique(source_bus)
     return unique_source_bus if unique_source_bus.size < source_bus.size else source_bus
 
 
 def _get_outage_branch_ix(
         net: pandapowerNet,
         outage_branch_type: str,
-        outage_branch_ix: np.ndarray | None = None
-) -> np.ndarray:
+        outage_branch_ix: npt.NDArray | None = None
+) -> npt.NDArray:
     assert outage_branch_type in ("line", "dcline", "trafo", "impedance", "trafo3w"), (
         outage_branch_type + " as outage branch type not supported!"
     )
@@ -69,14 +72,17 @@ def _get_outage_branch_ix(
         # if index in list/tuple or similar data structures
         outage_branch_ix = np.array(outage_branch_ix).ravel()
 
-    unique_outage_branch_ix = np.unique(outage_branch_ix)
+    unique_outage_branch_ix: npt.NDArray = np.unique(outage_branch_ix)
     return unique_outage_branch_ix if unique_outage_branch_ix.size < outage_branch_ix.size else outage_branch_ix
 
 
 def _get_bus_lookup(net: pandapowerNet) -> np.ndarray:
     pp_ppci_bus_lookup = net._pd2ppc_lookups["bus"]
     # Set out-of-service bus index to -1 (for padded array)
-    bus_in_service_mask = np.in1d(np.arange(pp_ppci_bus_lookup.shape[0]), net._is_elements["bus_is_idx"])
+    if "_is_elements" not in net or net._is_elements is None:
+        raise UserWarning("can not lookup bus, net._is_elements is missing or None")
+    assert type(net._is_elements) is pd.DataFrame  # force mypy type narrowing
+    bus_in_service_mask = np.isin(np.arange(pp_ppci_bus_lookup.shape[0]), net._is_elements["bus_is_idx"])
     pp_ppci_bus_lookup[~bus_in_service_mask] = -1
     return pp_ppci_bus_lookup
 
@@ -90,7 +96,7 @@ def _get_branch_lookup(net: pandapowerNet, branch_type) -> np.ndarray | None:
 
         branch_in_service_mask = net["_ppc"]["internal"]["branch_is"][br_ix_start:br_ix_end]
         ppci_ix_start_offset = np.sum(net["_ppc"]["internal"]["branch_is"][:br_ix_start]) if br_ix_start > 0 else 0
-        num_active_branch = np.sum(branch_in_service_mask)
+        num_active_branch: int = np.sum(branch_in_service_mask)
 
         # Initialize branch lookups as empty integer array
         pp_ppci_br_lookup = np.zeros(br_ix_end - br_ix_start, dtype=int)
@@ -121,8 +127,8 @@ def _get_trafo3w_lookup(net: pandapowerNet) -> dict | None:
 
 def branch_dict_to_ppci_branch_list(
         net: pandapowerNet,
-        branch_dict: dict[str, Union[list[int], None]]
-) -> Tuple[list, dict]:
+        branch_dict: dict[str, list[int] | None]
+) -> tuple[list, dict]:
     """
     This function transforms a dictionary with branches of a net into a list of the corresponding internal ppci indices
     and produces a lookup for tha branch type intervals.
@@ -131,26 +137,29 @@ def branch_dict_to_ppci_branch_list(
                         for each key a list of indices.
     :return: list of ppci branch indices, dict for branch type ppci lookup
     """
-
     branch_id_ppci = []
     ppci_branch_lookup = {}
     s = 0
     t = 0
     for br_type in ("line", "trafo", "impedance", "trafo3w"):
-        if branch_dict.get(br_type, None) is not None:
+        br_list: list[int] | None = branch_dict.get(br_type, None)
+        if br_list is not None:
             branches = list(net[br_type].index)
-            branch_id = [branches.index(x) for x in branch_dict[br_type]]
+            branch_id = [branches.index(x) for x in br_list]
             t += len(branch_id)
             if br_type == "trafo3w":
                 trafo3w_lookup = _get_trafo3w_lookup(net)
-                for type in ["trafo3w_hv", "trafo3w_mv", "trafo3w_lv"]:
-                    branch_id_ppci += list(trafo3w_lookup[type][branch_id])
-                    ppci_branch_lookup[type] = [s, t]
-                    s = t
-                    t += len(branch_id)
+                if trafo3w_lookup is not None:
+                    for type in ["trafo3w_hv", "trafo3w_mv", "trafo3w_lv"]:
+                        branch_id_ppci += list(trafo3w_lookup[type][branch_id])
+                        ppci_branch_lookup[type] = [s, t]
+                        s = t
+                        t += len(branch_id)
             else:
-                branch_id_ppci += list(_get_branch_lookup(net, br_type)[branch_id])
-                ppci_branch_lookup[br_type] = [s, t]
+                br_lookup: npt.NDArray | None = _get_branch_lookup(net, br_type)
+                if br_lookup is not None:
+                    branch_id_ppci += list(br_lookup[branch_id])
+                    ppci_branch_lookup[br_type] = [s, t]
 
             s = t
 
@@ -234,7 +243,7 @@ def _check_multi_area(net: pandapowerNet, slack_df: pd.DataFrame) -> dict:
 
     area_ix = 0
     pp_area_bus_mapping = {}
-    updated_slack_mask = np.zeros(slack_df.shape[0], dtype=bool)
+    updated_slack_mask: npt.NDArray = np.zeros(slack_df.shape[0], dtype=bool)
     # Set selected slack to in-service and identify grid area
     for ix, slack in slack_df.iterrows():
         if not updated_slack_mask[ix]:

@@ -9,6 +9,7 @@ from itertools import product
 
 import pandas as pd
 import numpy as np
+import numpy.typing as npt
 
 from pandapower import pandapowerNet
 from pandapower.analysis.PTDF import _makePTDF_ppci, _get_PTDF_perturb
@@ -29,7 +30,7 @@ def _get_LODF_direct(
     outage_branch_ix=None,
     using_sparse_solver=True,
     random_verify=True,
-    branch_dict: dict[str, Union[list[int], None]] | None = None,
+    branch_dict: dict[str, list[int] | None] | None = None,
     reduced=True,
 ) -> dict:
     """
@@ -41,8 +42,8 @@ def _get_LODF_direct(
         using_sparse_solver = True
 
     # If branch_dict not None compute list of ppci branch indices and its branch type intervals as lookup
-    branch_ppci_lookup = None
-    branch_id = None
+    branch_ppci_lookup: dict | None = None
+    branch_id: list | None = None
     if branch_dict is not None:
         branch_id, branch_ppci_lookup = branch_dict_to_ppci_branch_list(net=net, branch_dict=branch_dict)
     else:
@@ -68,6 +69,7 @@ def _get_LODF_direct(
     # Set results to default value of bridge branch
     lodf_ppci[:, bridge_branch_mask] = np.nan
     if branch_id is not None and not reduced:
+        assert branch_ppci_lookup is not None # force mypy type narrowing
         branch_id_complement = [x for x in range(list(branch_ppci_lookup.values())[-1][1]) if x not in branch_id]
         lodf_ppci[:, branch_id_complement] = np.nan
         lodf_ppci[branch_id_complement, :] = np.nan
@@ -123,7 +125,7 @@ def _init_LODF_pp_np(
             )
 
     for data in lodf_pp.values():
-        data[:] = np.NaN
+        data[:] = np.nan
     return lodf_pp
 
 
@@ -134,12 +136,12 @@ def _LODF_ppci_to_pp(
 ):
     # convert the branch sensitivity of the ppci layer to pandapower net layer
     if branch_ppci_lookup is not None:
-        pp_ppci_branch_lookups = {
+        pp_ppci_branch_lookups: dict[str, npt.NDArray | range | None] = {
             br_type: range(branch_ppci_lookup[br_type][0], branch_ppci_lookup[br_type][1])
             for br_type in ("line", "trafo", "impedance")
             if br_type in branch_ppci_lookup.keys()
         }
-        pp_ppci_trafo3w_lookups = {
+        pp_ppci_trafo3w_lookups: dict[str, npt.NDArray | range] | None = {
             type: range(branch_ppci_lookup[type][0], branch_ppci_lookup[type][1])
             for type in ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
             if type in branch_ppci_lookup.keys()
@@ -237,7 +239,7 @@ def _get_LODF_perturb(
     )
 
     # number of out of service buses
-    num_out_of_service_bus = np.sum(np.isnan(net_mod.res_bus.va_degree.to_numpy()))
+    num_out_of_service_bus: int = np.sum(np.isnan(net_mod.res_bus.va_degree.to_numpy()))
     # list with the indices of out of service buses
     # list_out_of_service_bus = list(net_mod.res_bus.va_degree[np.isnan(net_mod.res_bus.va_degree.to_numpy())].index)
 
@@ -556,7 +558,7 @@ def _get_dc_n1_perturb(
     outage_branch_ix = _get_outage_branch_ix(net_mod, outage_branch_type, outage_branch_ix)
 
     rundcpp(net_mod, distributed_slack=distributed_slack)
-    num_out_of_service_bus = np.sum(np.isnan(net_mod.res_bus.va_degree.to_numpy()))
+    num_out_of_service_bus: int = np.sum(np.isnan(net_mod.res_bus.va_degree.to_numpy()))
     outage_br_p0_series = net_mod["res_" + outage_branch_type][
         "p_" + THIS_RES_BR_SIDE_MAPPING[outage_branch_type] + "_mw"
     ].copy()
