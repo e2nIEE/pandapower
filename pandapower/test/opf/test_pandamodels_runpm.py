@@ -11,13 +11,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower import pp_dir
+from pandapower import pp_dir, create_ext_grid
 from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import create_storage, create_shunt, create_pwl_cost, create_poly_cost, create_empty_network, \
     create_bus, create_line, create_gen, create_load, create_transformer3w_from_parameters, create_sgen, create_switch,\
-    create_transformer3w
+    create_transformer3w, create_line_from_parameters, create_transformer_from_parameters
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import case5, case9, case14, case30, case39, case57, case118, \
     case145, case300
@@ -768,15 +768,63 @@ def test_ac_opf_differnt_snmva():
         assert res[i].values.min() - res[i].values.max() < 1e-10
 
 
+@pytest.mark.xfail
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_switches():
-    net = case5()
+    net = create_empty_network("case5_sw", f_hz=50, sn_mva=100)
 
-    create_switch(net, bus=0, element=1, et='b')
-    create_switch(net, bus=2, element=1, et='b', z_ohm=1e-3, closed=True, in_ka=1000.)
-    create_switch(net, bus=2, element=3, et='b')
+    create_bus(net, vn_kv=230., name='0', min_vm_pu=0.9, max_vm_pu=1.1, zone='1')
+    create_bus(net, vn_kv=230., name='1', min_vm_pu=0.9, max_vm_pu=1.1, zone='1')
+    create_bus(net, vn_kv=230., name='2', min_vm_pu=0.9, max_vm_pu=1.1, zone='1')
+    create_bus(net, vn_kv=230., name='3', min_vm_pu=0.9, max_vm_pu=1.1, zone='1')
+    create_bus(net, vn_kv=230., name='9', min_vm_pu=0.9, max_vm_pu=1.1, zone='1')
 
-    runpm_ac_opf(net)
+    create_load(net, name='0', bus=1, p_mw=300., q_mvar=98.61)
+    create_load(net, name='1', bus=2, p_mw=300., q_mvar=98.61)
+    create_load(net, name='2', bus=3, p_mw=400., q_mvar=131.47)
+
+    create_sgen(net, name='0', bus=0, p_mw=170., q_mvar=127., min_p_mw=0., max_p_mw=170., controllable=True, sn_mva=100., min_q_mvar=-127.5, max_q_mvar=127.)
+
+    create_gen(net, name='0', bus=0, p_mw=40.,  vm_pu=1.0, min_q_mvar=-30.,  max_q_mvar=30.,  controllable=True, max_p_mw=40.,  min_p_mw=0.)
+    create_gen(net, name='1', bus=2, p_mw=324., vm_pu=1.0, min_q_mvar=-390., max_q_mvar=390., controllable=True, max_p_mw=520., min_p_mw=0.)
+    create_gen(net, name='2', bus=4, p_mw=470., vm_pu=1.0, min_q_mvar=-450., max_q_mvar=450., controllable=True, max_p_mw=600., min_p_mw=0.)
+
+    create_shunt(net, bus=1, q_mvar=-10., p_mw=5., vn_kv=230.)
+
+    create_ext_grid(net, bus=3, vm_pu=1.0, va_degree=0.0, min_p_mw=0., max_p_mw=200., min_q_mvar=-150., max_q_mvar=150.)
+
+    create_line_from_parameters(net, name='0', from_bus=0, to_bus=3, length_km=1.0, r_ohm_per_km=1.60816,
+                                x_ohm_per_km=16.0816, c_nf_per_km=32.994314, g_us_per_km=0., max_i_ka=1.069353,
+                                max_loading_percent=100.)
+    create_line_from_parameters(net, name='1', from_bus=0, to_bus=4, length_km=1.0, r_ohm_per_km=0.33856,
+                                x_ohm_per_km=3.3856, c_nf_per_km=156.748063, g_us_per_km=0., max_i_ka=1.069353,
+                                max_loading_percent=100.)
+
+    create_line_from_parameters(net, name='0', from_bus=3, to_bus=4, length_km=1.0, r_ohm_per_km=1.57113,
+                                x_ohm_per_km=15.7113, c_nf_per_km=33.796607, g_us_per_km=0., max_i_ka=0.602452,
+                                max_loading_percent=100.)
+
+    create_transformer_from_parameters(net, hv_bus=2, lv_bus=3, sn_mva=426., vn_hv_kv=230., vn_lv_kv=230., pfe_kw=0.0,
+                                       vk_percent=12.715304, vkr_percent=1.26522, i0_percent=0.158216, shift_degree=1.0,
+                                       tap_side='hv', tap_neutral=0., tap_step_percent=5., tap_pos=1.0, parallel=2,
+                                       tap_changer_type='Ratio', max_loading_percent=100.)
+
+    create_transformer_from_parameters(net, hv_bus=2, lv_bus=3, sn_mva=426., vn_hv_kv=230., vn_lv_kv=230., pfe_kw=0.0,
+                                       vk_percent=12.715304, vkr_percent=1.26522, i0_percent=0.158216, shift_degree=-1.0,
+                                       tap_side='hv', tap_neutral=0., tap_step_percent=5., tap_pos=1.0,
+                                       tap_changer_type='Ratio', max_loading_percent=100.)
+
+    create_poly_cost(net, element=0, et='gen', cp0_eur=0., cp1_eur_per_mw=14.)
+    create_poly_cost(net, element=0, et='sgen', cp0_eur=0., cp1_eur_per_mw=15.)
+    create_poly_cost(net, element=1, et='gen', cp0_eur=0., cp1_eur_per_mw=30.)
+    create_poly_cost(net, element=0, et='ext_grid', cp0_eur=0., cp1_eur_per_mw=40.)
+    create_poly_cost(net, element=2, et='gen', cp0_eur=0., cp1_eur_per_mw=10.)
+
+    create_switch(net, bus=0, element=1, et='b', closed=True)
+    create_switch(net, bus=2, element=1, et='b', z_ohm=1e-3, closed=False, in_ka=1000.)
+    create_switch(net, bus=2, element=3, et='b', closed=False)
+
+    runpm_ots(net)
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
