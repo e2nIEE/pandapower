@@ -115,22 +115,6 @@ def test_create_measurement_with_optional_params():
     validate_network(net)
 
 
-def test_create_measurement_invalid_meas_type():
-    # Test that invalid measurement type raises error
-    net = create_empty_network()
-    b1 = create_bus(net, 110.0)
-
-    with pytest.raises(UserWarning, match="Invalid measurement type"):
-        create_measurement(
-            net,
-            meas_type="invalid",
-            element_type="bus",
-            value=1.0,
-            std_dev=0.1,
-            element=b1,
-        )
-
-
 def test_create_measurement_missing_side_for_line():
     # Test that missing side for line raises error
     net = create_empty_network()

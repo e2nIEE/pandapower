@@ -10,7 +10,82 @@ from pandapower.create import (
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
-def test_create_switch(): raise NotImplementedError()
+def test_create_switch():
+    net = create_empty_network()
+    # Create buses
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 15)
+    b4 = create_bus(net, 15)
+    b5 = create_bus(net, 0.9)
+    b6 = create_bus(net, 0.4)
+
+    # Create elements (line, trafo, trafo3w)
+    l1 = create_line(net, b1, b2, length_km=1, std_type="48-AL1/8-ST1A 10.0")
+    t1 = create_transformer(net, b2, b3, std_type="160 MVA 380/110 kV")
+    t3w1 = create_transformer3w_from_parameters(
+        net,
+        hv_bus=b4,
+        mv_bus=b5,
+        lv_bus=b6,
+        vn_hv_kv=15.0,
+        vn_mv_kv=0.9,
+        vn_lv_kv=0.45,
+        sn_hv_mva=0.6,
+        sn_mv_mva=0.5,
+        sn_lv_mva=0.4,
+        vk_hv_percent=1.0,
+        vk_mv_percent=1.0,
+        vk_lv_percent=1.0,
+        vkr_hv_percent=0.3,
+        vkr_mv_percent=0.3,
+        vkr_lv_percent=0.3,
+        pfe_kw=0.2,
+        i0_percent=0.3,
+    )
+
+    # Test bus-line switch
+    sw1 = create_switch(net, bus=b1, element=l1, et="l", type="LS", name="switch1")
+    assert net.switch.bus.at[sw1] == b1
+    assert net.switch.element.at[sw1] == l1
+    assert net.switch.et.at[sw1] == "l"
+    assert net.switch.type.at[sw1] == "LS"
+    assert net.switch.name.at[sw1] == "switch1"
+    assert net.switch.closed.at[sw1] == True  # default
+
+    # Test bus-transformer switch
+    sw2 = create_switch(net, bus=b2, element=t1, et="t", closed=False, type="CB")
+    assert net.switch.bus.at[sw2] == b2
+    assert net.switch.element.at[sw2] == t1
+    assert net.switch.et.at[sw2] == "t"
+    assert net.switch.type.at[sw2] == "CB"
+    assert net.switch.closed.at[sw2] == False
+
+    # Test bus-bus switch with z_ohm
+    sw3 = create_switch(net, bus=b3, element=b4, et="b", z_ohm=0.5, in_ka=1.5)
+    assert net.switch.bus.at[sw3] == b3
+    assert net.switch.element.at[sw3] == b4
+    assert net.switch.et.at[sw3] == "b"
+    assert net.switch.z_ohm.at[sw3] == 0.5
+    assert net.switch.in_ka.at[sw3] == 1.5
+
+    # Test bus-transformer3w switch
+    sw4 = create_switch(net, bus=b4, element=t3w1, et="t3")
+    assert net.switch.bus.at[sw4] == b4
+    assert net.switch.element.at[sw4] == t3w1
+    assert net.switch.et.at[sw4] == "t3"
+
+    # Test custom index
+    sw5 = create_switch(net, bus=b1, element=l1, et="l", index=10)
+    assert sw5 == 10
+    assert net.switch.bus.at[10] == b1
+    assert net.switch.element.at[10] == l1
+
+    # Test additional kwargs
+    sw6 = create_switch(net, bus=b2, element=t1, et="t", test_kwargs="custom_value")
+    assert net.switch.test_kwargs.at[sw6] == "custom_value"
+
+    validate_network(net)
 
 
 def test_create_switches():
