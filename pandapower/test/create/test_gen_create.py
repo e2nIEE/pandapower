@@ -6,7 +6,133 @@ import pytest
 from pandapower.create import create_empty_network, create_bus, create_gen, create_gens
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
-def test_create_gen(): raise NotImplementedError()
+def test_create_gen():
+    # Test basic generator creation with required parameters
+    net = create_empty_network()
+    b1 = create_bus(net, 110.0)
+
+    # Create generator with required parameters (bus, p_mw)
+    gidx = create_gen(
+        net,
+        bus=b1,
+        p_mw=50.0,
+    )
+
+    assert len(net.gen) == 1
+    assert net.gen.at[gidx, "bus"] == b1
+    assert net.gen.at[gidx, "p_mw"] == 50.0
+    assert net.gen.at[gidx, "vm_pu"] == 1.0  # default value
+    assert net.gen.at[gidx, "scaling"] == 1.0  # default value
+    assert net.gen.at[gidx, "in_service"]  # default value
+    assert not net.gen.at[gidx, "slack"]  # default value
+
+    validate_network(net)
+
+
+def test_create_gen_with_optional_params():
+    # Test generator creation with optional parameters
+    net = create_empty_network()
+    b1 = create_bus(net, 110.0)
+
+    gidx = create_gen(
+        net,
+        bus=b1,
+        p_mw=120.0,
+        vm_pu=1.02,
+        sn_mva=150.0,
+        name="test_generator",
+        scaling=0.8,
+        type="sync",
+        slack=True,
+        max_p_mw=150.0,
+        min_p_mw=20.0,
+        max_q_mvar=50.0,
+        min_q_mvar=-50.0,
+        min_vm_pu=0.9,
+        max_vm_pu=1.1,
+        vn_kv=10.5,
+        xdss_pu=0.2,
+        rdss_ohm=0.01,
+        cos_phi=0.85,
+        pg_percent=10.0,
+        in_service=True,
+        slack_weight=1.0,
+        test_kwargs="dummy_string",
+    )
+
+    assert len(net.gen) == 1
+    assert net.gen.at[gidx, "bus"] == b1
+    assert net.gen.at[gidx, "p_mw"] == 120.0
+    assert net.gen.at[gidx, "vm_pu"] == 1.02
+    assert net.gen.at[gidx, "sn_mva"] == 150.0
+    assert net.gen.at[gidx, "name"] == "test_generator"
+    assert net.gen.at[gidx, "scaling"] == 0.8
+    assert net.gen.at[gidx, "type"] == "sync"
+    assert net.gen.at[gidx, "slack"] is True
+    assert net.gen.at[gidx, "max_p_mw"] == 150.0
+    assert net.gen.at[gidx, "min_p_mw"] == 20.0
+    assert net.gen.at[gidx, "max_q_mvar"] == 50.0
+    assert net.gen.at[gidx, "min_q_mvar"] == -50.0
+    assert net.gen.at[gidx, "min_vm_pu"] == 0.9
+    assert net.gen.at[gidx, "max_vm_pu"] == 1.1
+    assert net.gen.at[gidx, "vn_kv"] == 10.5
+    assert net.gen.at[gidx, "xdss_pu"] == 0.2
+    assert net.gen.at[gidx, "rdss_ohm"] == 0.01
+    assert net.gen.at[gidx, "cos_phi"] == 0.85
+    assert net.gen.at[gidx, "pg_percent"] == 10.0
+    assert net.gen.at[gidx, "in_service"]
+    assert net.gen.at[gidx, "slack_weight"] == 1.0
+    assert net.gen.test_kwargs.at[gidx] == "dummy_string"
+
+    validate_network(net)
+
+
+def test_create_gen_out_of_service():
+    # Test generator creation with in_service=False
+    net = create_empty_network()
+    b1 = create_bus(net, 110.0)
+
+    gidx = create_gen(
+        net,
+        bus=b1,
+        p_mw=50.0,
+        in_service=False,
+    )
+
+    assert len(net.gen) == 1
+    assert not net.gen.at[gidx, "in_service"]
+
+    validate_network(net)
+
+
+def test_create_gen_with_index():
+    # Test generator creation with custom index
+    net = create_empty_network()
+    b1 = create_bus(net, 110.0)
+
+    gidx = create_gen(
+        net,
+        bus=b1,
+        p_mw=50.0,
+        index=5,
+    )
+
+    assert gidx == 5
+    assert len(net.gen) == 1
+
+    validate_network(net)
+
+
+def test_create_gen_nonexistent_bus():
+    # Test that creating a generator with non-existent bus raises an error
+    net = create_empty_network()
+
+    with pytest.raises(Exception):
+        create_gen(
+            net,
+            bus=0,  # Bus doesn't exist
+            p_mw=50.0,
+        )
 
 
 def test_create_gens():
