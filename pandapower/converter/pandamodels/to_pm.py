@@ -8,7 +8,6 @@ import json
 import math
 import os
 import tempfile
-from copy import deepcopy
 
 from os import remove
 from os.path import isfile
