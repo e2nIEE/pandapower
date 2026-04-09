@@ -11,12 +11,37 @@ Introduction
 `PandaModels.jl <https://github.com/e2nIEE/PandaModels.jl>`__ (pandapower + PowerModels.jl) is an interface
 (Julia package) enabling the connection of pandapower and PowerModels in a stable and functional way. Except for calling
 the implemented optimization models in PowerModels, users can create custom optimization models with PandaModels.
-Presently, users can solve some reactive power optimization problems with PandaModels.
+Presently, users can solve a variety of optimization problems with PandaModels.
 
 
 Installation
 --------------
 
+Currently there are several methods to interface julia from python. Before pandapower 3.3.0 we used pycall to interface
+Julia code. This is the **old** method, which can be quite cumbersome, since it relies on a coordination between the Julia
+installation and the Python installation. For example, Julia is based on `libllvm <https://llvm.org/>`__ and
+`Numba <https://numba.pydata.org/>`__ also. Which can pose a problem when different versions Julia and Numba, since both
+depend on a concrete version of libllvm and it is not possible to load different versions of the same library in the same
+process. Therefore the user has to check compatibility, making the whole installation complex.
+
+Since pp 3.3.0 we moved to `PythonCall.jl / juliacall <https://juliapy.github.io/PythonCall.jl/stable/juliacall/>`__,
+which allows for a much simpler installation and maintenance as before, and is therefore recommended.
+
+JuliaCall (new) Installation
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+As stated in `Installation <https://juliapy.github.io/PythonCall.jl/stable/juliacall/#Installation>`__ section, you
+just have to install juliacall through your packet management system (e.g. ``pip install juliacall``) and you should be
+ready to go. During this installation JuliaCall manages all the dependencies, will automatically download a suitable
+version of julia and will install all needed packages (see ``juliapkg.json``). In pandapower we simplified the process
+and julia / juliacall / pandamodels / powermodels can be installed by simply:
+
+.. note:: ``pip install pandapower[pandamodels]``
+
+PyCall (old) Installation
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This section is kept as reference, if possible use the JuliaCall based installation instead.
 If you are not yet using `Julia <https://julialang.org/downloads/>`__, install it. For the interface to work, note that
 you need a version that is supported by PowerModels, PyCall and pyjulia. Currently, Former julia versions are available
 `here <https://julialang.org/downloads/oldreleases/>`__.
@@ -53,7 +78,7 @@ you need a version that is supported by PowerModels, PyCall and pyjulia. Current
 
 
 Additional Solvers
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
 Optional additional solvers, such as `Gurobi <https://www.gurobi.com/>`_ are compatible to PowerModels.jl. To use these solvers, you first have to install the solver itself on your system and then the julia interface. Gurobi is very fast for linear problems such as the DC model and free for academic usage. Let's do this step by step for Gurobi:
 
