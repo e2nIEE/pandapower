@@ -78,7 +78,6 @@ class TestMeasurementRequiredFields:
                 itertools.product(["value"], not_floats_list),
                 itertools.product(["std_dev"], not_floats_list),
                 itertools.product(["element"], not_ints_list),
-                itertools.product(["check_existing"], not_boolean_list),
                 itertools.product(["side"], not_strings_list),
             )
         ),

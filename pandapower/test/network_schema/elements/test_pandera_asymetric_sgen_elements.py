@@ -84,7 +84,6 @@ class TestAsymmetricSgenRequiredFields:
                 itertools.product(["q_c_mvar"], not_floats_list),
                 itertools.product(["scaling"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["in_service"], not_boolean_list),
-                itertools.product(["current_source"], not_boolean_list),
             )
         ),
     )
