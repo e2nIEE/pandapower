@@ -67,4 +67,23 @@ def test_create_poly_cost(element, create_func, create_kwargs, kwargs):
     validate_network(net)
 
 
-def test_create_poly_costs(): raise NotImplementedError()
+def test_create_poly_costs():
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    elms = []
+    ets = []
+    elm_count = len(elements)
+    for et, c_func, c_kwargs, _ in elements:
+        ets.append(et)
+        elms.append(c_func(net, b1, **c_kwargs))
+
+    # Create polynomial costs for all elements
+    cp1_values = [1.0] * elm_count  # linear costs per MW
+    create_poly_costs(net, elms, ets, cp1_eur_per_mw=cp1_values)
+
+    assert len(net.poly_cost) == elm_count
+    for i, elm in enumerate(elms):
+        assert net.poly_cost.at[i, "element"] == elm
+        assert net.poly_cost.at[i, "cp1_eur_per_mw"] == 1.0
+
+    validate_network(net)
