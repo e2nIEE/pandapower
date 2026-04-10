@@ -238,7 +238,7 @@ def df_to_coords(net, item, table):
             net[item].loc[i, "coords"] = coord
 
 
-def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
+def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):    # NOSONAR  # noqa: MC0001
     if net is None:
         net = create_empty_network(add_stdtypes=add_basic_std_types)
     for item, table in dodfs.items():
