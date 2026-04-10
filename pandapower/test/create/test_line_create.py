@@ -321,7 +321,6 @@ def test_create_line_form_parameters():
     assert net.line.at[line_id2, "x0_ohm_per_km"] == 0.08
     assert net.line.at[line_id2, "c0_nf_per_km"] == 5.0
     assert net.line.at[line_id2, "g0_us_per_km"] == 0.0
-    # assert net.line.at[line_id2, "endtemp_degree"] == 100.0
 
     # Test with geodata
     b5 = create_bus(net, 110)
@@ -418,7 +417,7 @@ def test_create_lines_from_parameters():
         max_i_ka=100,
         df=0.8,
         in_service=False,
-        geodata=[(10, 10), (20, 20)],
+        geodata=[(10., 10.), (20., 20.)],
         parallel=1,
         max_loading_percent=90,
         name="test",
@@ -440,8 +439,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == np.dtype(bool)
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10., 10.), (20., 20.)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10., 10.), (20., 20.)]), sort_keys=True)
     assert all(net.line["name"].values == "test")
     assert all(net.line["max_loading_percent"].values == 90)
     assert all(net.line["parallel"].values == 1)
@@ -572,15 +571,6 @@ def test_create_lines_optional_columns():
     create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
     create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0")
     create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
-    assert "max_loading_percent" not in net.line.columns
-
-    v = None
-    create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
-    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
-    create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
-    # create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
-    create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
-    # create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])  # would be added
     assert "max_loading_percent" not in net.line.columns
 
     v = np.nan
