@@ -246,7 +246,10 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=False):
             continue
         elif item == "parameters":
             for c in dodfs["parameters"].columns:
-                net[c] = dodfs["parameters"].at[0, c]
+                val = dodfs["parameters"].at[0, c]
+                if isinstance(val, (bool, np.bool_)):
+                    val = bool(val)
+                net[c] = val
                 if c == "name" and pd.isnull(net[c]):
                     net[c] = ''
             continue
