@@ -46,7 +46,7 @@ def test_create_pwl_costs():
         elms.append(c_func(net, b1, **c_kwargs))
     create_pwl_costs(net, elms, ets, [points]*elm_count)
 
-    assert len(net.pwl_costs) == elm_count
+    assert len(net.pwl_cost) == elm_count
 
     validate_network(net)
 
