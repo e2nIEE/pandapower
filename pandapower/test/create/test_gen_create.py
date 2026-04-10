@@ -58,6 +58,7 @@ def test_create_gen_with_optional_params():
         in_service=True,
         slack_weight=1.0,
         test_kwargs="dummy_string",
+        controllable=True,
     )
 
     assert len(net.gen) == 1
@@ -68,7 +69,7 @@ def test_create_gen_with_optional_params():
     assert net.gen.at[gidx, "name"] == "test_generator"
     assert net.gen.at[gidx, "scaling"] == 0.8
     assert net.gen.at[gidx, "type"] == "sync"
-    assert net.gen.at[gidx, "slack"] is True
+    assert net.gen.at[gidx, "slack"]
     assert net.gen.at[gidx, "max_p_mw"] == 150.0
     assert net.gen.at[gidx, "min_p_mw"] == 20.0
     assert net.gen.at[gidx, "max_q_mvar"] == 50.0
