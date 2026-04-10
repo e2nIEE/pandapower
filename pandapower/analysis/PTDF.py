@@ -73,7 +73,8 @@ def _get_ptdf_direct(
     if random_verify and source_bus.size >= 3:
         # Skip test if too few elements are calculated
         # Select three random buses and verify against perturb method
-        verify_bus = np.random.choice(ptdf["line"].columns.values, 3, replace=False)
+        rng = np.random.default_rng()
+        verify_bus = rng.choice(ptdf["line"].columns.values, size=3, replace=False)
         verify_ptdf(
             net,
             source_bus=verify_bus,
@@ -291,7 +292,7 @@ def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
     # Get bus pp ppci lookup
     pp_ppci_bus_lookup = _get_bus_lookup(net)
 
-    results = dict()
+    results = {}
     # Get branch pp ppci lookup and update the matrix
     for br_type in ("line", "trafo", "impedance"):
         if branch_ppci_lookup is not None:

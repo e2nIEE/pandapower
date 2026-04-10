@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def make_psdf(
         baseMVA: float,
-        PTDF: npt.NDArray,
+        ptdf: npt.NDArray,
         bus: npt.NDArray,
         branch: npt.NDArray,
         using_sparse_solver: bool = False,
@@ -81,7 +81,7 @@ def make_psdf(
 
     Bd = sp.sparse.diags(b.real)
 
-    PSDF = Bd - PTDF[:, noslack] * (Cft.T * Bd)
+    PSDF = Bd - ptdf[:, noslack] * (Cft.T * Bd)
     PSDF = PSDF * (pi / 180 * baseMVA)
     return PSDF
 

@@ -96,7 +96,8 @@ def _get_lodf_direct(
     if random_verify and outage_branch_ix.size >= 3:
         # Skip test if too few elements are calculated
         # Select three random branches and verify against perturb method
-        verify_branch_ix = np.random.choice(outage_branch_ix, 3)
+        rng = np.random.default_rng()
+        verify_branch_ix = rng.choice(a=outage_branch_ix, size=3)
         verify_lodf(
             net,
             outage_branch_type=outage_branch_type,
@@ -151,7 +152,7 @@ def _lodf_ppci_to_pp(
 
     lodf_ppci_padding = np.pad(lodf_ppci, ((0, 1), (0, 1)), mode="constant", constant_values=DISCONNECTED_PADDING_VALUE)
 
-    results = dict()
+    results = {}
     available_branch_types = [br_type for br_type, lookup in pp_ppci_branch_lookups.items() if lookup is not None]
 
     for goal_br_type, source_br_type in product(available_branch_types, repeat=2):

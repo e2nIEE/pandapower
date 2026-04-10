@@ -125,7 +125,7 @@ def test_profile_multiple_elements(profiles):
 def test_run_selected_elements(profiles):
     # Example run profile simulation of only selected elements
     net = case118()
-    profiles_partial = dict()
+    profiles_partial = {}
     num_calc = 100
     load_ix = [2, 3, 5]
     profiles_partial[("load", "p_mw")] = pd.DataFrame(
