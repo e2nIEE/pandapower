@@ -272,7 +272,7 @@ def test_create_line_form_parameters():
         "solar_absorptivity": 8.,
         "emissivity": 9.,
         "r_theta_kelvin_per_mw": 10.,
-        "c_joule_per_m_k": 11.,
+        "mc_joule_per_m_k": 11.,
     }
     b3 = create_bus(net, 110)
     b4 = create_bus(net, 110)
@@ -888,6 +888,7 @@ def test_create_dcline():
         name="test_dcline",
         in_service=False,
         max_p_mw=3000,
+        min_p_mw=500,
         min_q_from_mvar=-100,
         max_q_from_mvar=100,
         min_q_to_mvar=-50,
@@ -905,6 +906,7 @@ def test_create_dcline():
     assert net.dcline.at[dcline_id2, "name"] == "test_dcline"
     assert not net.dcline.at[dcline_id2, "in_service"]
     assert net.dcline.at[dcline_id2, "max_p_mw"] == 3000
+    assert net.dcline.at[dcline_id2, "min_p_mw"] == 500
     assert net.dcline.at[dcline_id2, "min_q_from_mvar"] == -100
     assert net.dcline.at[dcline_id2, "max_q_from_mvar"] == 100
     assert net.dcline.at[dcline_id2, "min_q_to_mvar"] == -50
