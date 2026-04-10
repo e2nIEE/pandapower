@@ -1,5 +1,6 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import copy
 
 import pytest
 
@@ -10,7 +11,8 @@ from pandapower.create import (
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
-def test_create_switch():
+@pytest.fixture(scope="module")
+def _create_test_net():
     net = create_empty_network()
     # Create buses
     b1 = create_bus(net, 110)
@@ -43,6 +45,13 @@ def test_create_switch():
         pfe_kw=0.2,
         i0_percent=0.3,
     )
+
+    return net, (b1, b2, b3, b4, b5), l1, t1, t3w1
+
+
+def test_create_switch(_create_test_net):
+    net, (b1, b2, b3, b4, b5), l1, t1, t3w1 = _create_test_net
+    net = copy.deepcopy(net)
 
     # Test bus-line switch
     sw1 = create_switch(net, bus=b1, element=l1, et="l", type="LS", name="switch1")
@@ -126,38 +135,10 @@ def test_create_switches():
     validate_network(net)
 
 
-def test_create_switches_raise_errorexcept():
-    net = create_empty_network()
-    # standard
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 15)
-    b4 = create_bus(net, 15)
-    b5 = create_bus(net, 0.9)
-    b6 = create_bus(net, 0.4)
-    l1 = create_line(net, b1, b2, length_km=1, std_type="48-AL1/8-ST1A 10.0")
-    t1 = create_transformer(net, b2, b3, std_type="160 MVA 380/110 kV")
-    t3w1 = create_transformer3w_from_parameters(
-        net,
-        hv_bus=b4,
-        mv_bus=b5,
-        lv_bus=b6,
-        vn_hv_kv=15.0,
-        vn_mv_kv=0.9,
-        vn_lv_kv=0.45,
-        sn_hv_mva=0.6,
-        sn_mv_mva=0.5,
-        sn_lv_mva=0.4,
-        vk_hv_percent=1.0,
-        vk_mv_percent=1.0,
-        vk_lv_percent=1.0,
-        vkr_hv_percent=0.3,
-        vkr_mv_percent=0.3,
-        vkr_lv_percent=0.3,
-        pfe_kw=0.2,
-        i0_percent=0.3,
-        #tap_neutral=0.0,  # FIXME: either remove this or add tap_pos and tap_side
-    )
+def test_create_switches_raise_errorexcept(_create_test_net):
+    net, (b1, b2, b3, b4, b5), l1, t1, t3w1 = _create_test_net
+    net = copy.deepcopy(net)
+
     sw = create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.0)
     with pytest.raises(
             UserWarning, match=r"Switches with indexes \[0\] already exist."
