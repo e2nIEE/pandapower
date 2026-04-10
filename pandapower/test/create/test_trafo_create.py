@@ -504,7 +504,7 @@ def test_create_transformer():
     # Test error case - non-existent bus
     net = create_empty_network()
     b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    create_bus(net, 20)
     with pytest.raises(UserWarning, match=r"Trafo \d tries to attach to non-existing bus\(es\) \{\d\}"):
         create_transformer(net, hv_bus=b1, lv_bus=5, std_type="40 MVA 110/20 kV")
 
@@ -701,7 +701,7 @@ def test_create_transformer3w():
     net = create_empty_network()
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    create_bus(net, 10)
     with pytest.raises(UserWarning, match=r"Trafo tries to attach to bus 5"):
         create_transformer3w(
             net,
@@ -995,7 +995,7 @@ def test_create_transformer3w_from_parameters():
     net = create_empty_network()
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    create_bus(net, 10)
     with pytest.raises(UserWarning, match=r"Trafo tries to attach to non-existent bus 5"):
         create_transformer3w_from_parameters(
             net,

@@ -70,8 +70,7 @@ def test_create_wards():
     assert net.ward.qz_mvar.at[1] == 7
     assert net.ward.qz_mvar.at[2] == 11
     assert net.ward.name.at[0] == "asd"
-    # assert net.ward.name.at[1] == None
-    assert pd.isna(net.ward.name.at[1])  #TODO: recheck, if <NA> would also be ok
+    assert pd.isna(net.ward.name.at[1])
     assert net.ward.name.at[2] == "123"
     assert net.ward.in_service.at[0]
     assert not net.ward.in_service.at[1]
