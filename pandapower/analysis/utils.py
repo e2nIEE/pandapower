@@ -150,9 +150,9 @@ def branch_dict_to_ppci_branch_list(
             if br_type == "trafo3w":
                 trafo3w_lookup = _get_trafo3w_lookup(net)
                 if trafo3w_lookup is not None:
-                    for type in ["trafo3w_hv", "trafo3w_mv", "trafo3w_lv"]:
-                        branch_id_ppci += list(trafo3w_lookup[type][branch_id])
-                        ppci_branch_lookup[type] = [s, t]
+                    for trafo_type in ["trafo3w_hv", "trafo3w_mv", "trafo3w_lv"]:
+                        branch_id_ppci += list(trafo3w_lookup[trafo_type][branch_id])
+                        ppci_branch_lookup[trafo_type] = [s, t]
                         s = t
                         t += len(branch_id)
             else:

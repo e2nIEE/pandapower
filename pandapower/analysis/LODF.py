@@ -528,8 +528,8 @@ def verify_lodf(
 
     assert len(lodf) > 0, "Empty lodf, verification not possible!"
     for key in lodf.keys():
-        filter = ~lodf[key].isna().any(axis=0)
-        assert np.allclose(lodf[key].loc[:, filter], lodf_perturb[key].loc[:, filter], atol=1e-8, equal_nan=True), (
+        filter_lodf = ~lodf[key].isna().any(axis=0)
+        assert np.allclose(lodf[key].loc[:, filter_lodf], lodf_perturb[key].loc[:, filter_lodf], atol=1e-8, equal_nan=True), (
             f"{key} LODF results verification failed!"
         )
         logger.info(str(key) + " LODF results verified!")

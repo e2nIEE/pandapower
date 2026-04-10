@@ -62,7 +62,7 @@ def make_psdf(
     ## constants
     nb = bus.shape[0]  ## number of buses
     nl = branch.shape[0]  ## number of lines
-    noref = arange(1, nb)  ## use bus 1 for voltage angle reference
+    # noref = arange(1, nb)  ## use bus 1 for voltage angle reference
     noslack = find(arange(nb) != slack_bus)
 
     ## build connection matrix Cft = Cf - Ct for line and from - to buses
