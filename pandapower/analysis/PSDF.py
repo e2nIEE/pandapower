@@ -13,8 +13,8 @@ import pandas as pd
 import numpy as np
 import numpy.typing as npt
 
-from pandapower.analysis.LODF import _LODF_ppci_to_pp, _LODF_pp_np_to_df
-from pandapower.analysis.PTDF import _makePTDF_ppci
+from pandapower.analysis.LODF import _lodf_ppci_to_pp, _lodf_pp_np_to_df
+from pandapower.analysis.PTDF import _make_ptdf_ppci
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, REF
 from pandapower.pypower.makeBdc import calc_b_from_branch
@@ -24,7 +24,7 @@ from pandapower.analysis.utils import branch_dict_to_ppci_branch_list, _get_outa
 
 logger = logging.getLogger(__name__)
 
-def makePSDF(
+def make_psdf(
         baseMVA: float,
         PTDF: npt.NDArray,
         bus: npt.NDArray,
@@ -86,7 +86,7 @@ def makePSDF(
     return PSDF
 
 
-def _get_PSDF_direct(
+def _get_psdf_direct(
     net: pandapowerNet,
     phase_shift_branch_type: str | None,
     phase_shift_branch_ix: ELE_IX_TYPE | None = None,
@@ -101,16 +101,19 @@ def _get_PSDF_direct(
     """
     if net.bus.shape[0] > 3000 and not using_sparse_solver:
         logger.warning("Calculating lodf for large network, switched to sparse solver!")
+        using_sparse_solver = True
 
     # If branch_dict not None compute list of ppci branch indices and its branch type intervals as lookup
+    # TODO: _makePTDF_ppci only takes a single branch_id, but branch_dict_to_ppci_branch_list returns a list. Probably a loop is needed?
     branch_ppci_lookup: dict | None = None
     branch_id: int | None = None
     if branch_dict is not None:
-        branch_id, branch_ppci_lookup = branch_dict_to_ppci_branch_list(net=net, branch_dict=branch_dict)
+        branch_ids, branch_ppci_lookup = branch_dict_to_ppci_branch_list(net=net, branch_dict=branch_dict)
+        branch_id = branch_ids[0]
     else:
         reduced = False
 
-    ptdf_ppci, ppci = _makePTDF_ppci(
+    ptdf_ppci, ppci = _make_ptdf_ppci(
         net, using_sparse_solver=using_sparse_solver, result_side=0, branch_id=branch_id, reduced=reduced
     )
 
@@ -119,7 +122,7 @@ def _get_PSDF_direct(
 
     # Create psdf ppci with ptdf ppci
 
-    psdf_ppci = makePSDF(
+    psdf_ppci = make_psdf(
         ppci["baseMVA"],
         ptdf_ppci,
         ppci["bus"],
@@ -130,17 +133,15 @@ def _get_PSDF_direct(
     )
 
     # Checkout ppci lodf to pp level
-    if reduced:
-        psdf_pp_np = _LODF_ppci_to_pp(net, psdf_ppci, branch_ppci_lookup=branch_ppci_lookup)
-    else:
-        psdf_pp_np = _LODF_ppci_to_pp(net, psdf_ppci)
-
     # lodf pp contains all data
     # Convert numpy array to pandas dataframe with the pandapower element index
     if reduced:
-        psdf = _LODF_pp_np_to_df(net, psdf_pp_np, branch_dict=branch_dict)
+        psdf_pp_np = _lodf_ppci_to_pp(net, psdf_ppci, branch_ppci_lookup=branch_ppci_lookup)
+        psdf = _lodf_pp_np_to_df(net, psdf_pp_np, branch_dict=branch_dict)
     else:
-        psdf = _LODF_pp_np_to_df(net, psdf_pp_np)
+        psdf_pp_np = _lodf_ppci_to_pp(net, psdf_ppci)
+        psdf = _lodf_pp_np_to_df(net, psdf_pp_np)
+
 
     # Select only required data points according to the outage_branch_type
     if phase_shift_branch_type is not None:
@@ -155,7 +156,7 @@ def _get_PSDF_direct(
     return psdf
 
 
-def _get_PSDF_perturb(
+def _get_psdf_perturb(
     net: pandapowerNet,
     phase_shift_branch_type: str | None,
     phase_shift_branch_ix: ELE_IX_TYPE | None = None,
@@ -169,7 +170,7 @@ def _get_PSDF_perturb(
     raise NotImplementedError()
 
 
-def run_PSDF(
+def run_psdf(
     net: pandapowerNet,
     phase_shift_branch_type: str | None,
     phase_shift_branch_ix: ELE_IX_TYPE | None = None,
@@ -211,7 +212,7 @@ def run_PSDF(
             logger.info("If a lot of branch required in psdf, please set perturb to False!")
         if recycle == "lodf" and distributed_slack == True:
             logger.warning("distributed_slack deactivated! recycling does not allow distributed slack")
-        psdf = _get_PSDF_perturb(
+        psdf = _get_psdf_perturb(
             net,
             phase_shift_branch_type=phase_shift_branch_type,
             phase_shift_branch_ix=phase_shift_branch_ix,
@@ -221,7 +222,7 @@ def run_PSDF(
     else:
         if distributed_slack:
             logger.warning("distributed_slack deactivated! Distirbuted slacks are used as Vref! Only Perturb Possible")
-        psdf = _get_PSDF_direct(
+        psdf = _get_psdf_direct(
             net,
             phase_shift_branch_type=phase_shift_branch_type,
             phase_shift_branch_ix=phase_shift_branch_ix,

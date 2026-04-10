@@ -26,7 +26,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _get_PTDF_direct(
+def _get_ptdf_direct(
         net: pandapowerNet,
         source_bus: int | npt.NDArray | None = None,
         result_side=0,
@@ -50,19 +50,19 @@ def _get_PTDF_direct(
     else:
         reduced = False
 
-    ptdf_ppci, _ = _makePTDF_ppci(
+    ptdf_ppci, _ = _make_ptdf_ppci(
         net, using_sparse_solver=using_sparse_solver, result_side=result_side, branch_id=branch_id, reduced=reduced
     )
 
     # Use lookup to convert ppci ptdf to pp
     if reduced:
-        ptdf_pp_np = _PTDF_ppci_to_pp(net, ptdf_ppci, result_side=result_side, branch_ppci_lookup=branch_ppci_lookup)
+        ptdf_pp_np = _ptdf_ppci_to_pp(net, ptdf_ppci, result_side=result_side, branch_ppci_lookup=branch_ppci_lookup)
     else:
-        ptdf_pp_np = _PTDF_ppci_to_pp(net, ptdf_ppci, result_side=result_side)
+        ptdf_pp_np = _ptdf_ppci_to_pp(net, ptdf_ppci, result_side=result_side)
 
     # Convert numpy array to pandas dataframe with the pp element index
     # All bus data points are available no definition of perturb bus needed
-    ptdf = _PTDF_pp_np_to_df(net, ptdf_pp_np, source_bus=None, branch_dict=branch_dict, reduced=reduced)
+    ptdf = _ptdf_pp_np_to_df(net, ptdf_pp_np, source_bus=None, branch_dict=branch_dict, reduced=reduced)
 
     # Select only required source buses
     source_bus = _get_source_bus_ix(net, source_bus)
@@ -74,7 +74,7 @@ def _get_PTDF_direct(
         # Skip test if too few elements are calculated
         # Select three random buses and verify against perturb method
         verify_bus = np.random.choice(ptdf["line"].columns.values, 3, replace=False)
-        verify_PTDF(
+        verify_ptdf(
             net,
             source_bus=verify_bus,
             result_side=result_side,
@@ -83,7 +83,7 @@ def _get_PTDF_direct(
     return ptdf
 
 
-def _get_PTDF_perturb(
+def _get_ptdf_perturb(
         net: pandapowerNet,
         source_bus: int | npt.NDArray | None = None,
         result_side: int = 0,
@@ -99,7 +99,7 @@ def _get_PTDF_perturb(
     source_bus = _get_source_bus_ix(net, source_bus)
 
     # Init ptdf numpy array
-    ptdf_pp_np = _init_PTDF_pp_np(net, source_bus.shape[0])
+    ptdf_pp_np = _init_ptdf_pp_np(net, source_bus.shape[0])
 
     rundcpp(net, distributed_slack=distributed_slack)
     # Using new net_mod object to do perturb
@@ -124,11 +124,11 @@ def _get_PTDF_perturb(
                 )
 
     # Convert numpy array to pandas dataframe with the pp element index
-    ptdf = _PTDF_pp_np_to_df(net, ptdf_pp_np, source_bus=source_bus)
+    ptdf = _ptdf_pp_np_to_df(net, ptdf_pp_np, source_bus=source_bus)
     return ptdf
 
 
-def _get_dc_profile_with_PTDF(net, profiles, result_side=0, ptdf=None):
+def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
     """
     Run dc profile with ptdf method, if ptdf not given will be recalculated
     :return: {branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"):
@@ -139,7 +139,7 @@ def _get_dc_profile_with_PTDF(net, profiles, result_side=0, ptdf=None):
     slack_df, _ = get_dist_slack(net, pf_required=True)
 
     if ptdf is None:
-        ptdf = _get_PTDF_direct(net, result_side=result_side)
+        ptdf = _get_ptdf_direct(net, result_side=result_side)
 
     net_mod = deepcopy(net)
     num_calc = None
@@ -218,7 +218,7 @@ def _get_dc_profile_with_PTDF(net, profiles, result_side=0, ptdf=None):
 
 
 # Convert data in numpy array to pandas dataframe with pp index
-def _PTDF_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict=None, reduced=False):
+def _ptdf_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict=None, reduced=False):
     res = {}
     for br_type, data in res_pp.items():
         if nan_to_num:
@@ -244,7 +244,7 @@ def _PTDF_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict
 
 
 # Init result numpy array filled with zeros
-def _init_PTDF_pp_np(net, num_source_bus):
+def _init_ptdf_pp_np(net, num_source_bus):
     ptdf_pp = {}
     for br_type in ("line", "dcline", "trafo", "impedance"):
         if not net[br_type].empty:
@@ -255,14 +255,14 @@ def _init_PTDF_pp_np(net, num_source_bus):
     return ptdf_pp
 
 
-def _makePTDF_ppci(net, using_sparse_solver, result_side, branch_id=None, reduced=False):
+def _make_ptdf_ppci(net, using_sparse_solver, result_side, branch_id=None, reduced=False):
     # Select subnet areas
     slack_df, pp_area_bus_mapping = get_dist_slack(net)
     _, ppci = _pd2ppc(net)
     # Make PTDF of the ppci data stucture
     ppci_slack_mask_with_prio = get_ppci_dist_slack(net, ppci, slack_df)
     if len(pp_area_bus_mapping) > 1:
-        ptdf_ppci = makePTDF_multi_area(
+        ptdf_ppci = make_ptdf_multi_area(
             net,
             ppci,
             pp_area_bus_mapping,
@@ -284,7 +284,7 @@ def _makePTDF_ppci(net, using_sparse_solver, result_side, branch_id=None, reduce
     return ptdf_ppci, ppci
 
 
-def _PTDF_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
+def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
     # Padding the sensitivity matrix for out-of-service elements
     ptdf_ppci_padding = np.pad(ptdf_ppci, ((0, 1), (0, 1)), mode="constant", constant_values=DISCONNECTED_PADDING_VALUE)
 
@@ -328,7 +328,7 @@ def _PTDF_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
     return results
 
 
-def run_PTDF(
+def run_ptdf(
     net: pandapowerNet,
     source_bus: int | npt.NDArray | None = None,
     distributed_slack: bool = True,
@@ -369,11 +369,11 @@ def run_PTDF(
     if perturb:  # or not distributed_slack:
         # if not distributed_slack:
         #     logger.info("distributed_slack deactivated! Distirbuted slacks are used as Vref! Only Perturb Possible")
-        ptdf = _get_PTDF_perturb(
+        ptdf = _get_ptdf_perturb(
             net, source_bus=source_bus, result_side=result_side, distributed_slack=distributed_slack
         )
     else:
-        ptdf = _get_PTDF_direct(
+        ptdf = _get_ptdf_direct(
             net,
             source_bus=source_bus,
             result_side=result_side,
@@ -392,7 +392,7 @@ def run_PTDF(
     return ptdf
 
 
-def verify_PTDF(
+def verify_ptdf(
         net: pandapowerNet,
         source_bus: ELE_IX_TYPE | None = None,
         result_side: int = 0,
@@ -405,7 +405,7 @@ def verify_PTDF(
     net = deepcopy(net)
     # ToDo: Verify what the distributed_slack options does for both functions (perturb and classic)
     if ptdf is None:
-        ptdf = run_PTDF(
+        ptdf = run_ptdf(
             net,
             source_bus=source_bus,
             result_side=result_side,
@@ -414,7 +414,7 @@ def verify_PTDF(
             random_verify=False,
             distributed_slack=False,
         )
-    ptdf_perturb = run_PTDF(net, source_bus=source_bus, result_side=result_side, distributed_slack=False, perturb=True)
+    ptdf_perturb = run_ptdf(net, source_bus=source_bus, result_side=result_side, distributed_slack=False, perturb=True)
 
     assert len(ptdf) > 0, "Empty ptdf, verification not possible!"
     for key in ptdf.keys():
@@ -425,16 +425,16 @@ def verify_PTDF(
     logger.info("All PTDF results verified with perturb method!")
 
 
-def verify_dc_profile_with_PTDF(net, profiles: dict, result_side=0, ptdf=None):
+def verify_dc_profile_with_ptdf(net, profiles: dict, result_side=0, ptdf=None):
     """
     this function verifies the result of run profile with PTDF and perturb method,
     raise AssertionError on mismatches!
     """
     # ToDo: Verify what the distributed_slack options does for both functions (perturb and classic)
-    res_profile_ptdf = run_dc_profile(
+    res_profile_ptdf = run_ptdf_dc_profile(
         net, profiles, result_side=result_side, perturb=False, ptdf=ptdf, distributed_slack=False
     )
-    res_profile_perturb = run_dc_profile(net, profiles, result_side=result_side, distributed_slack=False, perturb=True)
+    res_profile_perturb = run_ptdf_dc_profile(net, profiles, result_side=result_side, distributed_slack=False, perturb=True)
 
     assert len(res_profile_ptdf) > 0, "Empty result profile, verification not possible!"
     for key in res_profile_ptdf.keys():
@@ -443,9 +443,9 @@ def verify_dc_profile_with_PTDF(net, profiles: dict, result_side=0, ptdf=None):
     logger.info("Run dc profile with PTDF verified!")
 
 
-def makePTDF_multi_area(net, ppci,
-                        pp_area_bus_mapping, ppci_slack_mask_with_prio,
-                        using_sparse_solver, result_side):
+def make_ptdf_multi_area(net, ppci,
+                         pp_area_bus_mapping, ppci_slack_mask_with_prio,
+                         using_sparse_solver, result_side):
     """ Select areas in the ppci network and calculate ptdf of each area independently
     """
     ptdf_ppci = np.zeros((ppci["branch"].shape[0], ppci["bus"].shape[0]), dtype=float)
@@ -555,7 +555,7 @@ def _get_dc_profile_perturb(net, profiles, result_side=0, distributed_slack=True
 
 
 # All functions should be called from external
-def run_dc_profile(
+def run_ptdf_dc_profile(
     net,
     profiles: dict,
     result_side=0,
@@ -597,7 +597,7 @@ def run_dc_profile(
             extra_data_points=extra_data_points,
         )
     else:
-        res = _get_dc_profile_with_PTDF(net, profiles, result_side=result_side, ptdf=ptdf)
+        res = _get_dc_profile_with_ptdf(net, profiles, result_side=result_side, ptdf=ptdf)
 
     res_renamed = {}
     THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1

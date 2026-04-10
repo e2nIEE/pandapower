@@ -12,7 +12,7 @@ import numpy as np
 import numpy.typing as npt
 
 from pandapower import pandapowerNet
-from pandapower.analysis.PTDF import _makePTDF_ppci, _get_PTDF_perturb
+from pandapower.analysis.PTDF import _make_ptdf_ppci, _get_ptdf_perturb
 from pandapower.analysis.utils import _get_branch_lookup, _get_trafo3w_lookup, \
     branch_dict_to_ppci_branch_list, _get_outage_branch_ix, DISCONNECTED_PADDING_VALUE, BR_SIDE_MAPPING, \
     BR_SIDE_MAPPING_1, BR_PTDF_MAPPING, BR_PTDF_MAPPING_1, BR_NAN_CHECK, ELE_IX_TYPE
@@ -24,9 +24,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _get_LODF_direct(
-    net,
-    outage_branch_type,
+def _get_lodf_direct(
+    net: pandapowerNet,
+    outage_branch_type: str,
     outage_branch_ix=None,
     using_sparse_solver=True,
     random_verify=True,
@@ -49,7 +49,7 @@ def _get_LODF_direct(
     else:
         reduced = False
 
-    ptdf_ppci, ppci = _makePTDF_ppci(
+    ptdf_ppci, ppci = _make_ptdf_ppci(
         net, using_sparse_solver=using_sparse_solver, result_side=0, branch_id=branch_id, reduced=reduced
     )
 
@@ -75,17 +75,14 @@ def _get_LODF_direct(
         lodf_ppci[branch_id_complement, :] = np.nan
 
     # Checkout ppci lodf to pp level
-    if reduced:
-        lodf_pp_np = _LODF_ppci_to_pp(net, lodf_ppci, branch_ppci_lookup=branch_ppci_lookup)
-    else:
-        lodf_pp_np = _LODF_ppci_to_pp(net, lodf_ppci)
-
     # lodf pp contains all data
     # Convert numpy array to pandas dataframe with the pandapower element index
     if reduced:
-        lodf = _LODF_pp_np_to_df(net, lodf_pp_np, branch_dict=branch_dict)
+        lodf_pp_np = _lodf_ppci_to_pp(net, lodf_ppci, branch_ppci_lookup=branch_ppci_lookup)
+        lodf = _lodf_pp_np_to_df(net, lodf_pp_np, branch_dict=branch_dict)
     else:
-        lodf = _LODF_pp_np_to_df(net, lodf_pp_np)
+        lodf_pp_np = _lodf_ppci_to_pp(net, lodf_ppci)
+        lodf = _lodf_pp_np_to_df(net, lodf_pp_np)
 
     # Select only required data points according to the outage_branch_type
     if outage_branch_type is not None:
@@ -100,7 +97,7 @@ def _get_LODF_direct(
         # Skip test if too few elements are calculated
         # Select three random branches and verify against perturb method
         verify_branch_ix = np.random.choice(outage_branch_ix, 3)
-        verify_LODF(
+        verify_lodf(
             net,
             outage_branch_type=outage_branch_type,
             outage_branch_ix=verify_branch_ix,
@@ -109,7 +106,7 @@ def _get_LODF_direct(
     return lodf
 
 
-def _init_LODF_pp_np(
+def _init_lodf_pp_np(
         net: pandapowerNet,
         outage_branch_type: str,
         num_outage_branch: int
@@ -129,7 +126,7 @@ def _init_LODF_pp_np(
     return lodf_pp
 
 
-def _LODF_ppci_to_pp(
+def _lodf_ppci_to_pp(
         net: pandapowerNet,
         lodf_ppci: np.ndarray,
         branch_ppci_lookup: dict | None=None
@@ -172,7 +169,7 @@ def _LODF_ppci_to_pp(
     return results
 
 
-def _LODF_pp_np_to_df(
+def _lodf_pp_np_to_df(
         net: pandapowerNet,
         res_pp_np,
         outage_branch_type: str | None = None,
@@ -209,7 +206,7 @@ def _LODF_pp_np_to_df(
     return res
 
 
-def _get_LODF_perturb(
+def _get_lodf_perturb(
     net: pandapowerNet,
     outage_branch_type: str,
     outage_branch_ix: ELE_IX_TYPE | None = None,
@@ -231,7 +228,7 @@ def _get_LODF_perturb(
     outage_branch_ix = _get_outage_branch_ix(net_mod, outage_branch_type, outage_branch_ix)
 
     # Init lodf array, Using Numpy array for better performance
-    lodf_pp_np = _init_LODF_pp_np(net_mod, outage_branch_type, outage_branch_ix.shape[0])
+    lodf_pp_np = _init_lodf_pp_np(net_mod, outage_branch_type, outage_branch_ix.shape[0])
 
     outage_res_table, outage_res_type = (
         "res_" + outage_branch_type,
@@ -256,7 +253,7 @@ def _get_LODF_perturb(
 
                 # If the branch flow close to zero
                 # Fix low loading branch with ptdf
-                this_ptdf = _get_PTDF_perturb(
+                this_ptdf = _get_ptdf_perturb(
                     net_mod, source_bus=[bus_0, bus_1], distributed_slack=distributed_slack
                 )  # distributed slack is default True
                 if np.abs(this_ptdf[outage_branch_type + BR_PTDF_MAPPING[outage_branch_type]].at[br_ix, bus_0]) > 0.1:
@@ -337,12 +334,12 @@ def _get_LODF_perturb(
                     ] = np.nan
 
     # lodf pp contains only a subset
-    lodf = _LODF_pp_np_to_df(net, lodf_pp_np, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix)
+    lodf = _lodf_pp_np_to_df(net, lodf_pp_np, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix)
     return lodf
 
 
 # Example application function with LODF
-def _get_dc_n1_with_LODF(
+def _get_dc_n1_with_lodf(
         net: pandapowerNet,
         outage_branch_type,
         outage_branch_ix: ELE_IX_TYPE | None = None,
@@ -357,11 +354,11 @@ def _get_dc_n1_with_LODF(
     THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
 
     if lodf is None:
-        lodf = _get_LODF_direct(net, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix)
+        lodf = _get_lodf_direct(net, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix)
 
     outage_branch_ix = _get_outage_branch_ix(net, outage_branch_type, outage_branch_ix)
 
-    res_n1_pp_np = _init_LODF_pp_np(net, outage_branch_type, outage_branch_ix.shape[0])
+    res_n1_pp_np = _init_lodf_pp_np(net, outage_branch_type, outage_branch_ix.shape[0])
 
     rundcpp(net, distributed_slack=True)
     outage_br_p0_series = net["res_" + outage_branch_type][
@@ -392,12 +389,12 @@ def _get_dc_n1_with_LODF(
                     net["res_trafo3w"]["p_" + side + "_mw"] + this_lodf * outage_br_p0_series.at[br_ix]
                 )
 
-    res_n1 = _LODF_pp_np_to_df(
+    res_n1 = _lodf_pp_np_to_df(
         net, res_n1_pp_np, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix
     )
     return res_n1
 
-def run_LODF(
+def run_lodf(
     net: pandapowerNet,
     outage_branch_type: str,
     outage_branch_ix: ELE_IX_TYPE | None = None,
@@ -443,7 +440,7 @@ def run_LODF(
     if perturb:
         if recycle == "lodf" and distributed_slack == True:
             logger.warning("distributed_slack deactivated! recycling does not allow distributed slack")
-        lodf = _get_LODF_perturb(
+        lodf = _get_lodf_perturb(
             net,
             outage_branch_type=outage_branch_type,
             outage_branch_ix=outage_branch_ix,
@@ -453,7 +450,7 @@ def run_LODF(
     else:
         if distributed_slack:
             logger.warning("distributed_slack deactivated! Distirbuted slacks are used as Vref! Only Perturb Possible")
-        lodf = _get_LODF_direct(
+        lodf = _get_lodf_direct(
             net,
             outage_branch_type=outage_branch_type,
             outage_branch_ix=outage_branch_ix,
@@ -479,7 +476,7 @@ def run_LODF(
     return lodf
 
 
-def verify_dc_n1_with_LODF(
+def verify_dc_n1_with_lodf(
         net: pandapowerNet,
         outage_branch_type: str,
         outage_branch_ix: ELE_IX_TYPE | None = None,
@@ -491,8 +488,8 @@ def verify_dc_n1_with_LODF(
     raise AssertionError on mismatches!
     """
     net = deepcopy(net)
-    res_n1_lodf = run_dc_n1(net, outage_branch_type, outage_branch_ix, result_side, perturb=False, lodf=lodf)
-    res_n1_perturb = run_dc_n1(
+    res_n1_lodf = run_lodf_dc_n1(net, outage_branch_type, outage_branch_ix, result_side, perturb=False, lodf=lodf)
+    res_n1_perturb = run_lodf_dc_n1(
         net, outage_branch_type, outage_branch_ix, result_side, distributed_slack=True, perturb=True
     )
 
@@ -506,7 +503,7 @@ def verify_dc_n1_with_LODF(
     logger.info("Run dc n-1 with LODF verified!")
 
 
-def verify_LODF(
+def verify_lodf(
         net: pandapowerNet,
         outage_branch_type: str,
         outage_branch_ix: ELE_IX_TYPE | None = None,
@@ -519,7 +516,7 @@ def verify_LODF(
     """
     net = deepcopy(net)
     if lodf is None:
-        lodf = run_LODF(
+        lodf = run_lodf(
             net,
             outage_branch_type,
             outage_branch_ix,
@@ -527,7 +524,7 @@ def verify_LODF(
             using_sparse_solver=using_sparse_solver,
             random_verify=False,
         )
-    lodf_perturb = run_LODF(net, outage_branch_type, outage_branch_ix, distributed_slack=True, perturb=True)
+    lodf_perturb = run_lodf(net, outage_branch_type, outage_branch_ix, distributed_slack=True, perturb=True)
 
     assert len(lodf) > 0, "Empty lodf, verification not possible!"
     for key in lodf.keys():
@@ -563,7 +560,7 @@ def _get_dc_n1_perturb(
         "p_" + THIS_RES_BR_SIDE_MAPPING[outage_branch_type] + "_mw"
     ].copy()
 
-    res_n1_pp_np = _init_LODF_pp_np(net, outage_branch_type, outage_branch_ix.shape[0])
+    res_n1_pp_np = _init_lodf_pp_np(net, outage_branch_type, outage_branch_ix.shape[0])
     for ix, br_ix in enumerate(outage_branch_ix):
         # Skip out-of-service line
         if net_mod[outage_branch_type].at[br_ix, "in_service"]:
@@ -592,13 +589,13 @@ def _get_dc_n1_perturb(
                     ].to_numpy()
 
     # Convert np array to pd dataframe with pp indexing
-    res_n1 = _LODF_pp_np_to_df(
+    res_n1 = _lodf_pp_np_to_df(
         net, res_n1_pp_np, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix
     )
     return res_n1
 
 
-def run_dc_n1(
+def run_lodf_dc_n1(
     net: pandapowerNet,
     outage_branch_type: str,
     outage_branch_ix: ELE_IX_TYPE | None = None,
@@ -634,7 +631,7 @@ def run_dc_n1(
             distributed_slack=distributed_slack,
         )
     else:
-        res = _get_dc_n1_with_LODF(
+        res = _get_dc_n1_with_lodf(
             net,
             outage_branch_type=outage_branch_type,
             outage_branch_ix=outage_branch_ix,

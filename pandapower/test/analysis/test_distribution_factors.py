@@ -4,9 +4,9 @@ import pytest
 import copy
 from pandapower import pandapowerNet
 from pandapower.run import rundcpp
-from pandapower.analysis.PTDF import run_PTDF, verify_dc_profile_with_PTDF
-from pandapower.analysis.LODF import run_LODF, verify_dc_n1_with_LODF
-from pandapower.analysis.PTDF import run_dc_profile
+from pandapower.analysis.PTDF import run_ptdf, verify_dc_profile_with_ptdf
+from pandapower.analysis.LODF import run_lodf, verify_dc_n1_with_lodf
+from pandapower.analysis.PTDF import run_ptdf_dc_profile
 from pandapower.networks.power_system_test_cases import (
     case30,
     case118,
@@ -70,8 +70,8 @@ def profiles():
 def test_lodf(net_in):
     net, lodf_line = net_in
     outage_branch = lodf_line
-    lodf_matrix = run_LODF(net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=False, random_verify=False)
-    lodf_perturb = run_LODF(net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=True)
+    lodf_matrix = run_lodf(net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=False, random_verify=False)
+    lodf_perturb = run_lodf(net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=True)
     lodf_comp_df = pd.DataFrame(
         data={
             "matrix": lodf_matrix[("line", "line")].loc[:, outage_branch],
@@ -110,16 +110,16 @@ def test_random_outage_of_element():
 def test_trafo3w():
     # Example net with trafo3w
     net = example_multivoltage()
-    ptdf_t3w = run_PTDF(net)
-    lodf_t3w = run_LODF(net, outage_branch_type="line")
+    ptdf_t3w = run_ptdf(net)
+    lodf_t3w = run_lodf(net, outage_branch_type="line")
 
 
 def test_profile_multiple_elements(profiles):
     # Example run profile of multiple element types
     net = case118()
-    res_profiles_ptdf = run_dc_profile(net, profiles=profiles)
-    res_profiles_full = run_dc_profile(net, profiles=profiles, extra_data_points=[("bus", "va_degree")])
-    verify_dc_profile_with_PTDF(net, profiles)
+    res_profiles_ptdf = run_ptdf_dc_profile(net, profiles=profiles)
+    res_profiles_full = run_ptdf_dc_profile(net, profiles=profiles, extra_data_points=[("bus", "va_degree")])
+    verify_dc_profile_with_ptdf(net, profiles)
 
 
 def test_run_selected_elements(profiles):
@@ -135,9 +135,9 @@ def test_run_selected_elements(profiles):
     )
     profiles_partial[("load", "p_mw")] *= np.random.rand(*profiles_partial[("load", "p_mw")].shape)
 
-    res_profiles_partial = run_dc_profile(net, profiles_partial)
-    verify_dc_profile_with_PTDF(net, profiles=profiles, result_side=1)
-    verify_dc_n1_with_LODF(net, outage_branch_type="line")
+    res_profiles_partial = run_ptdf_dc_profile(net, profiles_partial)
+    verify_dc_profile_with_ptdf(net, profiles=profiles, result_side=1)
+    verify_dc_n1_with_lodf(net, outage_branch_type="line")
 
 
 if __name__ == "__main__":
