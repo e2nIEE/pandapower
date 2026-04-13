@@ -46,11 +46,11 @@ def _create_test_net():
         i0_percent=0.3,
     )
 
-    return net, (b1, b2, b3, b4, b5), l1, t1, t3w1
+    return net, (b1, b2, b3, b4), l1, t1, t3w1
 
 
 def test_create_switch(_create_test_net):
-    net, (b1, b2, b3, b4, b5), l1, t1, t3w1 = _create_test_net
+    net, (b1, b2, b3, b4), l1, t1, t3w1 = _create_test_net
     net = copy.deepcopy(net)
 
     # Test bus-line switch
@@ -136,7 +136,7 @@ def test_create_switches():
 
 
 def test_create_switches_raise_errorexcept(_create_test_net):
-    net, (b1, b2, b3, b4, b5), l1, t1, t3w1 = _create_test_net
+    net, (b1, b2, b3, b4), l1, t1, t3w1 = _create_test_net
     net = copy.deepcopy(net)
 
     sw = create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.0)

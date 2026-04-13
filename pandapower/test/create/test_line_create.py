@@ -806,7 +806,7 @@ def test_create_lines_dc_from_parameters():
     b3 = create_bus_dc(net2, 110)
     b4 = create_bus_dc(net2, 110)
 
-    line_ids2 = create_lines_dc_from_parameters(
+    create_lines_dc_from_parameters(
         net2,
         from_buses_dc=[b1, b3],
         to_buses_dc=[b2, b4],

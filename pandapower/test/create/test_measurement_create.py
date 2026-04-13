@@ -177,7 +177,7 @@ def test_create_measurement_voltage_on_non_bus():
 def test_create_measurement_nonexistent_element():
     # Test that measurement on non-existent element raises error
     net = create_empty_network()
-    b1 = create_bus(net, 110.0)
+    create_bus(net, 110.0)
 
     with pytest.raises(UserWarning, match="load with index=5 does not exist"):
         create_measurement(

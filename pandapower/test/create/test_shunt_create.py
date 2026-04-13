@@ -543,7 +543,7 @@ def test_create_vsc():
 
 def test_create_vsc_stacked_nonexistent_bus():
     net = create_empty_network()
-    b1 = create_bus(net, 110)
+    create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
     b_dc_minus = create_bus_dc(net, -100)
 
@@ -569,7 +569,7 @@ def test_create_vsc_stacked_nonexistent_dc_buses():
 
 def test_create_vsc_bipolar_nonexistent_bus():
     net = create_empty_network()
-    b1 = create_bus(net, 110)
+    create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
     b_dc_minus = create_bus_dc(net, -100)
 
