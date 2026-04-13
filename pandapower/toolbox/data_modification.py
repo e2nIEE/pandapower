@@ -148,6 +148,11 @@ def reindex_buses(net, bus_lookup):
                      str(not_fitting_bus_lookup_keys))
 
     missing_bus_indices = sorted(set(net.bus.index) - set(bus_lookup.keys()))
+    duplicate_indices = set(missing_bus_indices) & set(bus_lookup.values())
+    if len(duplicate_indices):
+        logger.error("These bus indices are already used and not being updated. Thus they cannot be used: " +
+                     str(duplicate_indices))
+
     if len(missing_bus_indices):
         bus_lookup.update({b: b for b in missing_bus_indices})
 

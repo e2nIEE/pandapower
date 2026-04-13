@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import logging
 
 import numpy as np
 import pandas as pd
@@ -96,6 +97,18 @@ def test_reindex_buses():
                 assert all(np.array(list(net[elm].index)) == np.array(list(
                     net_orig[elm].index)) + to_add)
 
+def test_reindex_buses__create_duplicate_index(caplog):
+    caplog.set_level(logging.ERROR)
+    net = example_simple()
+    bus_lookup = dict(zip(range(2,7), range(0,5)))
+
+    reindex_buses(net, bus_lookup)
+
+    assert any(
+        record.levelname == "ERROR" and "These bus indices are already used and not being updated." +
+        " Thus they cannot be used: {0, 1}" in record.message
+        for record in caplog.records
+    )
 
 def test_continuos_bus_numbering():
     net = create_empty_network()
