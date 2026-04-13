@@ -814,7 +814,7 @@ def create_lines_from_parameters(
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
     type: LineType | Iterable[str] | None = None,
-    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
+    geodata: Iterable[Iterable[tuple[float, float]]] | Iterable[tuple[float, float]] | None = None,
     in_service: bool | Iterable[bool] = get_default_value("line", "in_service"),
     df: float | Iterable[float] = get_default_value("line", "df"),
     parallel: int | Iterable[int] = get_default_value("line", "parallel"),

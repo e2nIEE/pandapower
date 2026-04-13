@@ -60,8 +60,7 @@ def diag_params():
 
 @pytest.fixture(scope="module")
 def test_net():
-    net = example_multivoltage()
-    return net
+    return example_multivoltage()
 
 
 @pytest.fixture(scope="module")

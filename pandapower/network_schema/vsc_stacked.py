@@ -32,7 +32,7 @@ vsc_stacked_schema = pa.DataFrameSchema(
         ),
         "control_mode_ac": pa.Column(
             str,
-            pa.Check.isin(["vm_pu", "q_mvar", "slack"]),
+            pa.Check.isin(["vm_pu", "q_mvar", "slack", "p_mw"]),
             description="the control mode of the AC side of the vsc_stacked",
             metadata={"default": "p_mw"},
         ),

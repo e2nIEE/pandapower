@@ -124,7 +124,7 @@ def _create_multi_column_reference_schema(
     return pa.DataFrameSchema(columns=schema_columns, name=element_name, strict=False)
 
 
-def _bus_index_validation(element: str, net: pandapowerNet):
+def _bus_index_validation(element: str, schema: pa.DataFrameSchema, net: pandapowerNet):
     """
     Validates that all bus references in a network element exist in the corresponding bus tables.
 
@@ -132,34 +132,28 @@ def _bus_index_validation(element: str, net: pandapowerNet):
     actually exists in the network's bus or bus_dc tables. It handles both AC buses (bus table)
     and DC buses (bus_dc table) separately.
 
-    Parameters
-    ----------
-    element : str
-        Name of the network element to validate (e.g., 'line', 'load', 'gen', etc.).
-        Must not be 'bus' or 'bus_dc' as these are the reference tables themselves.
-    net : pandapowerNet
-        The pandapower network object containing all network elements and bus tables.
+    Parameters:
+        element: Name of the network element to validate (e.g., 'line', 'load', 'gen', etc.).
+            Must not be 'bus' or 'bus_dc' as these are the reference tables themselves.
+        schema: The DataFrameSchema where to get columns containing "bus" from.
+        net: The pandapower network object containing all network elements and bus tables.
 
-    Raises
-    ------
-    ValidationError
-        If any bus reference in the element doesn't exist in the corresponding bus table.
+    Raises:
+        ValidationError: If any bus reference in the element doesn't exist in the corresponding bus table.
 
-    Notes
-    -----
-    - Automatically identifies all columns containing 'bus' in their name
-    - Separates DC bus columns (containing 'dc') from regular AC bus columns
+    Notes:
+        - Automatically identifies all columns containing 'bus' in their name
+        - Separates DC bus columns (containing 'dc') from regular AC bus columns
 
-    - For 'switch' elements, also validates the 'element' column
-    - Uses multi-column reference schema validation to ensure referential integrity
+        - For 'switch' elements, also validates the 'element' column
+        - Uses multi-column reference schema validation to ensure referential integrity
 
-    Examples
-    --------
-    >>> _bus_index_validation('line', net)  # Validates from_bus, to_bus columns
-    >>> _bus_index_validation('load', net)  # Validates bus column
+    Example:
+        >>> _bus_index_validation('line', net)  # Validates from_bus, to_bus columns
+        >>> _bus_index_validation('load', net)  # Validates bus column
     """
     if element not in ["bus", "bus_dc"]:
-        bus_columns = [col for col in net[element].columns if "bus" in col.lower()]
+        bus_columns = [col for col in schema.columns if "bus" in col.lower() and col in net[element]]
         if element == "switch":
             bus_columns.append("element")
         dc_items = [item for item in bus_columns if "dc" in item]

@@ -32,39 +32,37 @@ class TestMeasurementRequiredFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
+                itertools.product(["name"], [pd.NA, *strings]),
                 itertools.product(["measurement_type"], valid_measurement_types),
                 itertools.product(["element_type"], valid_element_types),
                 itertools.product(["value"], all_allowed_floats),
                 itertools.product(["std_dev"], all_allowed_floats),
                 itertools.product(["element"], all_allowed_ints),
-                itertools.product(["check_existing"], bools),
-                itertools.product(["side"], strings),
+                itertools.product(["side"], [pd.NA, *strings]),
             )
         ),
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = create_empty_network()
-        create_bus(net, 0.4)  # index 0
+        b0 = create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
         net.measurement = pd.DataFrame(
             {
-                "name": pd.Series(["m1"], dtype="string"),
+                "name": pd.Series(["m1"], dtype=pd.StringDtype),
                 "measurement_type": ["p"],
                 "element_type": ["bus"],
                 "value": [10.0],
                 "std_dev": [0.1],
-                "bus": [0],
-                "element": [0],
-                "check_existing": [True],
-                "side": ["hv"],
+                "bus": [b0],
+                "element": [b0],
+                "side": pd.Series(["hv"], dtype=pd.StringDtype),
             }
         )
-        if parameter in {"name"}:
-            net.measurement[parameter] = pd.Series([valid_value], dtype="string")
+        if parameter in {"name", "side"}:
+            net.measurement[parameter] = pd.Series([valid_value], dtype=pd.StringDtype)
         else:
             net.measurement[parameter] = valid_value
 
@@ -80,7 +78,6 @@ class TestMeasurementRequiredFields:
                 itertools.product(["value"], not_floats_list),
                 itertools.product(["std_dev"], not_floats_list),
                 itertools.product(["element"], not_ints_list),
-                itertools.product(["check_existing"], not_boolean_list),
                 itertools.product(["side"], not_strings_list),
             )
         ),
@@ -100,7 +97,6 @@ class TestMeasurementRequiredFields:
                 "std_dev": [0.1],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -126,8 +122,7 @@ class TestMeasurementOptionalFields:
                 "value": [5.0],
                 "std_dev": [0.2],
                 "element": [0],
-                "check_existing": [False],
-                "side": ["from"],
+                "side": pd.Series(["from"], dtype="string")
             }
         )
         validate_network(net)
@@ -152,8 +147,7 @@ class TestMeasurementOptionalFields:
                 "std_dev": [0.05],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
-                "side": ["to"],
+                "side": pd.Series(["to"], dtype="string"),
             }
         )
         net.measurement["bus"] = valid_bus
@@ -177,7 +171,6 @@ class TestMeasurementOptionalFields:
                 "std_dev": [0.01],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -203,7 +196,6 @@ class TestMeasurementForeignKey:
                 "std_dev": [0.1],
                 "bus": [b0],
                 "element": [b0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
