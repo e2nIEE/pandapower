@@ -31,10 +31,10 @@ def test_create_ward():
 
     assert ward_id2 == 1
     assert net.ward.bus.at[1] == bus2
-    assert net.ward.ps_mw.at[1] == 2.0
-    assert net.ward.qs_mvar.at[1] == 1.0
-    assert net.ward.pz_mw.at[1] == 0.4
-    assert net.ward.qz_mvar.at[1] == 0.2
+    assert np.isclose(net.ward.ps_mw.at[1], 2.0)
+    assert np.isclose(net.ward.qs_mvar.at[1], 1.0)
+    assert np.isclose(net.ward.pz_mw.at[1], 0.4)
+    assert np.isclose(net.ward.qz_mvar.at[1], 0.2)
     assert net.ward.at[1, "name"] == "test_ward"
     assert not net.ward.in_service.at[1]
 

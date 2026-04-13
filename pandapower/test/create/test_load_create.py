@@ -42,14 +42,14 @@ def test_create_load():
         controllable=True,
     )
     assert net.load.at[idx2, "name"] == "test_load"
-    assert net.load.at[idx2, "sn_mva"] == 6.0
-    assert net.load.at[idx2, "scaling"] == 0.8
+    assert np.isclose(net.load.at[idx2, "sn_mva"], 6.0)
+    assert np.isclose(net.load.at[idx2, "scaling"], 0.8)
     assert net.load.at[idx2, "in_service"] == False
     assert net.load.at[idx2, "type"] == "delta"
-    assert net.load.at[idx2, "max_p_mw"] == 6.0
-    assert net.load.at[idx2, "min_p_mw"] == 4.0
-    assert net.load.at[idx2, "max_q_mvar"] == 1.5
-    assert net.load.at[idx2, "min_q_mvar"] == 0.5
+    assert np.isclose(net.load.at[idx2, "max_p_mw"], 6.0)
+    assert np.isclose(net.load.at[idx2, "min_p_mw"], 4.0)
+    assert np.isclose(net.load.at[idx2, "max_q_mvar"], 1.5)
+    assert np.isclose(net.load.at[idx2, "min_q_mvar"], 0.5)
     assert net.load.at[idx2, "controllable"] == True
 
     # Test load with const_z/const_i percent
@@ -212,7 +212,7 @@ def test_create_load_from_cosphi():
         net, bus=b1, sn_mva=10.0, cos_phi=0.9, mode="underexcited"
     )
     assert net.load.at[idx1, "bus"] == b1
-    assert net.load.at[idx1, "sn_mva"] == 10.0
+    assert np.isclose(net.load.at[idx1, "sn_mva"], 10.0)
     assert net.load.at[idx1, "p_mw"] > 0
     assert net.load.at[idx1, "q_mvar"] > 0  # underexcited has positive Q
 
@@ -241,7 +241,7 @@ def test_create_load_dc():
     # Test basic DC load creation
     idx = create_load_dc(net, bus_dc=b1, p_dc_mw=5.0)
     assert net.load_dc.at[idx, "bus_dc"] == b1
-    assert net.load_dc.at[idx, "p_dc_mw"] == 5.0
+    assert np.isclose(net.load_dc.at[idx, "p_dc_mw"], 5.0)
 
     # Test DC load with all optional parameters
     idx2 = create_load_dc(

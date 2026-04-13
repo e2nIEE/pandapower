@@ -21,9 +21,9 @@ def test_create_gen():
 
     assert len(net.gen) == 1
     assert net.gen.at[gidx, "bus"] == b1
-    assert net.gen.at[gidx, "p_mw"] == 50.0
-    assert net.gen.at[gidx, "vm_pu"] == 1.0  # default value
-    assert net.gen.at[gidx, "scaling"] == 1.0  # default value
+    assert np.isclose(net.gen.at[gidx, "p_mw"], 50.0)
+    assert np.isclose(net.gen.at[gidx, "vm_pu"], 1.0)  # default value
+    assert np.isclose(net.gen.at[gidx, "scaling"], 1.0)  # default value
     assert net.gen.at[gidx, "in_service"]  # default value
     assert not net.gen.at[gidx, "slack"]  # default value
 

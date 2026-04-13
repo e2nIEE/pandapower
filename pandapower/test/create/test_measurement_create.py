@@ -54,7 +54,7 @@ def test_create_measurement_bus_voltage():
     assert len(net.measurement) == 1
     assert net.measurement.at[midx, "measurement_type"] == "v"
     assert net.measurement.at[midx, "element_type"] == "bus"
-    assert net.measurement.at[midx, "value"] == 1.02
+    assert np.isclose(net.measurement.at[midx, "value"], 1.02)
 
     validate_network(net)
 
@@ -221,4 +221,4 @@ def test_create_measurement_check_existing():
     # Should have same index (overwritten)
     assert midx1 == midx2
     assert len(net.measurement) == 1
-    assert net.measurement.at[midx1, "value"] == 2.0
+    assert np.isclose(net.measurement.at[midx1, "value"], 2.0)

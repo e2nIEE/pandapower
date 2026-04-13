@@ -89,7 +89,7 @@ def test_create_sgen():
         lrc_pu=0.6,
     )
     assert net.sgen.at[sgen_async, "generator_type"] == "async"
-    assert net.sgen.at[sgen_async, "lrc_pu"] == 0.6
+    assert np.isclose(net.sgen.at[sgen_async, "lrc_pu"], 0.6)
 
     # Test generator_type="async_doubly_fed"
     b4 = create_bus(net, 110)
@@ -102,8 +102,8 @@ def test_create_sgen():
         kappa=1.8,
     )
     assert net.sgen.at[sgen_dfig, "generator_type"] == "async_doubly_fed"
-    assert net.sgen.at[sgen_dfig, "max_ik_ka"] == 3.0
-    assert net.sgen.at[sgen_dfig, "kappa"] == 1.8
+    assert np.isclose(net.sgen.at[sgen_dfig, "max_ik_ka"], 3.0)
+    assert np.isclose(net.sgen.at[sgen_dfig, "kappa"], 1.8)
 
     # Test with custom index
     b5 = create_bus(net, 110)
@@ -153,11 +153,11 @@ def test_create_sgens():
     assert net.sgen.controllable.at[0]
     assert not net.sgen.controllable.at[1]
     assert not net.sgen.controllable.at[2]
-    assert all(net.sgen.max_p_mw.values == 0.2)
+    assert np.allclose(net.sgen.max_p_mw, 0.2)
     assert all(net.sgen.min_p_mw.values == [0, 0.1, 0])
     assert np.allclose(net.sgen.max_q_mvar, 0.2)
     assert all(net.sgen.min_q_mvar.values == [0, 0.1, 0])
-    assert all(net.sgen.k.values == 1.3)
+    assert np.allclose(net.sgen.k.values, 1.3)
     assert np.allclose(net.sgen.rx, 0.4)
     assert all(net.sgen.current_source)
     assert all(net.sgen.test_kwargs == "dummy_string")
@@ -383,7 +383,7 @@ def test_create_sgen_from_cosphi():
 
     assert net.sgen.at[sgen_with_kwargs, "name"] == "cosphi_sgen"
     assert net.sgen.at[sgen_with_kwargs, "in_service"] == False
-    assert net.sgen.at[sgen_with_kwargs, "scaling"] == 0.5
+    assert np.isclose(net.sgen.at[sgen_with_kwargs, "scaling"], 0.5)
     assert net.sgen.at[sgen_with_kwargs, "test_kwargs"] == "dummy_string"
 
     # Verify the power calculation: p = s * cosphi, q = s * sin(arccos(cosphi))

@@ -25,8 +25,8 @@ def test_create_motor():
 
     assert len(net.motor) == 1
     assert net.motor.at[midx, "bus"] == b1
-    assert net.motor.at[midx, "pn_mech_mw"] == 0.5
-    assert net.motor.at[midx, "cos_phi"] == 0.9
+    assert np.isclose(net.motor.at[midx, "pn_mech_mw"], 0.5)
+    assert np.isclose(net.motor.at[midx, "cos_phi"], 0.9)
 
     validate_network(net)
 
@@ -57,8 +57,8 @@ def test_create_motor_with_optional_params():
     assert len(net.motor) == 1
     assert net.motor.at[midx, "bus"] == b1
     assert net.motor.at[midx, "name"] == "test_motor"
-    assert net.motor.at[midx, "pn_mech_mw"] == 0.120
-    assert net.motor.at[midx, "cos_phi"] == 0.9
+    assert np.isclose(net.motor.at[midx, "pn_mech_mw"], 0.120)
+    assert np.isclose(net.motor.at[midx, "cos_phi"], 0.9)
     assert np.isclose(net.motor.at[midx, "efficiency_percent"], 90.0)
     assert np.isclose(net.motor.at[midx, "loading_percent"], 40.0)
     assert np.isclose(net.motor.at[midx, "scaling"], 1.0)

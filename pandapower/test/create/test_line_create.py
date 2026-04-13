@@ -480,14 +480,14 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "length_km"] == 5
     assert net.line.at[l[0], "r_ohm_per_km"] == 1
     assert net.line.at[l[1], "r_ohm_per_km"] == 2
-    assert net.line.at[l[0], "x_ohm_per_km"] == 0.3
-    assert net.line.at[l[1], "x_ohm_per_km"] == 0.5
-    assert net.line.at[l[0], "c_nf_per_km"] == 0.0
-    assert net.line.at[l[1], "c_nf_per_km"] == 0.1
-    assert net.line.at[l[0], "r0_ohm_per_km"] == 0.1
-    assert net.line.at[l[1], "r0_ohm_per_km"] == 0.15
-    assert net.line.at[l[0], "x0_ohm_per_km"] == 0.2
-    assert net.line.at[l[1], "x0_ohm_per_km"] == 0.25
+    assert np.isclose(net.line.at[l[0], "x_ohm_per_km"], 0.3)
+    assert np.isclose(net.line.at[l[1], "x_ohm_per_km"], 0.5)
+    assert np.isclose(net.line.at[l[0], "c_nf_per_km"], 0.0)
+    assert np.isclose(net.line.at[l[1], "c_nf_per_km"], 0.1)
+    assert np.isclose(net.line.at[l[0], "r0_ohm_per_km"], 0.1)
+    assert np.isclose(net.line.at[l[1], "r0_ohm_per_km"], 0.15)
+    assert np.isclose(net.line.at[l[0], "x0_ohm_per_km"], 0.2)
+    assert np.isclose(net.line.at[l[1], "x0_ohm_per_km"], 0.25)
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.in_service.dtype == np.dtype(bool)
@@ -766,7 +766,7 @@ def test_create_line_dc_from_parameters():
     assert net.line_dc.at[line_id2, "max_i_ka"] == 0.3
     assert net.line_dc.at[line_id2, "name"] == "test_line_dc_params"
     assert not net.line_dc.at[line_id2, "in_service"]
-    assert net.line_dc.at[line_id2, "df"] == 0.8
+    assert np.isclose(net.line_dc.at[line_id2, "df"], 0.8)
     assert net.line_dc.at[line_id2, "parallel"] == 2
     assert net.line_dc.at[line_id2, "type"] == "ol"
 
@@ -795,7 +795,7 @@ def test_create_lines_dc_from_parameters():
     assert line_ids[1] == 1
     assert net.line_dc.at[0, "from_bus_dc"] == b1
     assert net.line_dc.at[0, "to_bus_dc"] == b2
-    assert net.line_dc.at[0, "r_ohm_per_km"] == 0.1
+    assert np.isclose(net.line_dc.at[0, "r_ohm_per_km"], 0.1)
     assert net.line_dc.at[1, "from_bus_dc"] == b3
     assert net.line_dc.at[1, "to_bus_dc"] == b4
 
@@ -857,10 +857,10 @@ def test_create_dcline():
     assert net.dcline.at[dcline_id, "from_bus"] == b1
     assert net.dcline.at[dcline_id, "to_bus"] == b2
     assert net.dcline.at[dcline_id, "p_mw"] == 1000
-    assert net.dcline.at[dcline_id, "loss_percent"] == 2.0
+    assert np.isclose(net.dcline.at[dcline_id, "loss_percent"], 2.0)
     assert net.dcline.at[dcline_id, "loss_mw"] == 20
-    assert net.dcline.at[dcline_id, "vm_from_pu"] == 1.0
-    assert net.dcline.at[dcline_id, "vm_to_pu"] == 1.0
+    assert np.isclose(net.dcline.at[dcline_id, "vm_from_pu"], 1.0)
+    assert np.isclose(net.dcline.at[dcline_id, "vm_to_pu"], 1.0)
     assert net.dcline.at[dcline_id, "in_service"]
 
     # Test with all optional parameters

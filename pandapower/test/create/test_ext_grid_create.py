@@ -167,12 +167,12 @@ def test_create_ext_grid_short_circuit_params():
         x0x_max=1.5,
     )
 
-    assert net.ext_grid.at[idx, "s_sc_max_mva"] == 500.0
-    assert net.ext_grid.at[idx, "s_sc_min_mva"] == 200.0
-    assert net.ext_grid.at[idx, "rx_max"] == 0.15
-    assert net.ext_grid.at[idx, "rx_min"] == 0.08
-    assert net.ext_grid.at[idx, "r0x0_max"] == 0.2
-    assert net.ext_grid.at[idx, "x0x_max"] == 1.5
+    assert np.isclose(net.ext_grid.at[idx, "s_sc_max_mva"], 500.0)
+    assert np.isclose(net.ext_grid.at[idx, "s_sc_min_mva"], 200.0)
+    assert np.isclose(net.ext_grid.at[idx, "rx_max"], 0.15)
+    assert np.isclose(net.ext_grid.at[idx, "rx_min"], 0.08)
+    assert np.isclose(net.ext_grid.at[idx, "r0x0_max"], 0.2)
+    assert np.isclose(net.ext_grid.at[idx, "x0x_max"], 1.5)
 
     validate_network(net)
 

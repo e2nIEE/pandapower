@@ -115,9 +115,9 @@ def test_create_transformer_from_parameters():
     )
 
     assert net.trafo.at[t, "vk0_percent"] == 10
-    assert net.trafo.at[t, "vkr0_percent"] == 0.5
+    assert np.isclose(net.trafo.at[t, "vkr0_percent"], 0.5)
     assert net.trafo.at[t, "mag0_percent"] == 100
-    assert net.trafo.at[t, "mag0_rx"] == 0.1
+    assert np.isclose(net.trafo.at[t, "mag0_rx"], 0.1)
     assert net.trafo.at[t, "vector_group"] == "Dyn"
 
     # Test with in_service=False
@@ -911,7 +911,7 @@ def test_create_transformer3w_from_parameters():
     assert net.trafo3w.at[t, "tap_neutral"] == 0
     assert net.trafo3w.at[t, "tap_max"] == 10
     assert net.trafo3w.at[t, "tap_min"] == -10
-    assert net.trafo3w.at[t, "tap_step_percent"] == 1.0
+    assert np.isclose(net.trafo3w.at[t, "tap_step_percent"], 1.0)
 
     # Test with zero sequence parameters
     net = create_empty_network()
