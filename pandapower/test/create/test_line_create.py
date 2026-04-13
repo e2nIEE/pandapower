@@ -53,7 +53,7 @@ def test_create_line():
     assert np.isclose(net.line.at[line_id, "length_km"], 10.0)
     assert net.line.at[line_id, "std_type"] == "48-AL1/8-ST1A 10.0"
     assert net.line.at[line_id, "in_service"]
-    assert net.line.at[line_id, "df"] == 1.0  # default value
+    assert np.isclose(net.line.at[line_id, "df"], 1.0)  # default value
     assert net.line.at[line_id, "parallel"] == 1  # default value
 
     # Test with all optional parameters
@@ -631,10 +631,10 @@ def test_create_line_dc():
     assert line_id == 0
     assert net.line_dc.at[line_id, "from_bus_dc"] == b1
     assert net.line_dc.at[line_id, "to_bus_dc"] == b2
-    assert net.line_dc.at[line_id, "length_km"] == 10.0
+    assert np.isclose(net.line_dc.at[line_id, "length_km"], 10.0)
     assert net.line_dc.at[line_id, "std_type"] == "95-CU"
     assert net.line_dc.at[line_id, "in_service"]
-    assert net.line_dc.at[line_id, "df"] == 1.0  # default value
+    assert np.isclose(net.line_dc.at[line_id, "df"], 1.0)  # default value
     assert net.line_dc.at[line_id, "parallel"] == 1  # default value
 
     # Test with all optional parameters
@@ -655,7 +655,7 @@ def test_create_line_dc():
     assert line_id2 == 1
     assert net.line_dc.at[line_id2, "from_bus_dc"] == b3
     assert net.line_dc.at[line_id2, "to_bus_dc"] == b4
-    assert net.line_dc.at[line_id2, "length_km"] == 5.0
+    assert np.isclose(net.line_dc.at[line_id2, "length_km"], 5.0)
     assert net.line_dc.at[line_id2, "name"] == "test_line_dc"
     assert not net.line_dc.at[line_id2, "in_service"]
     assert np.isclose(net.line_dc.at[line_id2, "df"], 0.8)
@@ -762,8 +762,8 @@ def test_create_line_dc_from_parameters():
     assert line_id2 == 1
     assert net.line_dc.at[line_id2, "from_bus_dc"] == b3
     assert net.line_dc.at[line_id2, "to_bus_dc"] == b4
-    assert net.line_dc.at[line_id2, "r_ohm_per_km"] == 0.2
-    assert net.line_dc.at[line_id2, "max_i_ka"] == 0.3
+    assert np.isclose(net.line_dc.at[line_id2, "r_ohm_per_km"], 0.2)
+    assert np.isclose(net.line_dc.at[line_id2, "max_i_ka"], 0.3)
     assert net.line_dc.at[line_id2, "name"] == "test_line_dc_params"
     assert not net.line_dc.at[line_id2, "in_service"]
     assert np.isclose(net.line_dc.at[line_id2, "df"], 0.8)

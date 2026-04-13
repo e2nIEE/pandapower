@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import numpy as np
 import pytest
 
 from pandapower.create import (
@@ -84,6 +85,6 @@ def test_create_poly_costs():
     assert len(net.poly_cost) == elm_count
     for i, elm in enumerate(elms):
         assert net.poly_cost.at[i, "element"] == elm
-        assert net.poly_cost.at[i, "cp1_eur_per_mw"] == 1.0
+        assert np.isclose(net.poly_cost.at[i, "cp1_eur_per_mw"], 1.0)
 
     validate_network(net)

@@ -24,8 +24,8 @@ def test_create_load():
     # Test basic load creation
     idx = create_load(net, bus=b1, p_mw=10.0, q_mvar=2.0)
     assert net.load.at[idx, "bus"] == b1
-    assert net.load.at[idx, "p_mw"] == 10.0
-    assert net.load.at[idx, "q_mvar"] == 2.0
+    assert np.isclose(net.load.at[idx, "p_mw"], 10.0)
+    assert np.isclose(net.load.at[idx, "q_mvar"], 2.0)
 
     # Test load with all optional parameters
     idx2 = create_load(
@@ -229,7 +229,7 @@ def test_create_load_from_cosphi():
         name="cosphi_load", scaling=1.2
     )
     assert net.load.at[idx3, "name"] == "cosphi_load"
-    assert net.load.at[idx3, "scaling"] == 1.2
+    assert np.isclose(net.load.at[idx3, "scaling"], 1.2)
 
     validate_network(net)
 
@@ -253,7 +253,7 @@ def test_create_load_dc():
         controllable=True,
     )
     assert net.load_dc.at[idx2, "name"] == "dc_load_test"
-    assert net.load_dc.at[idx2, "scaling"] == 0.75
+    assert np.isclose(net.load_dc.at[idx2, "scaling"], 0.75)
     assert net.load_dc.at[idx2, "in_service"] == False
     assert net.load_dc.at[idx2, "type"] == "resistive"
     assert net.load_dc.at[idx2, "controllable"] == True

@@ -68,7 +68,7 @@ def test_create_gen_with_optional_params():
     assert np.isclose(net.gen.at[gidx, "vm_pu"], 1.02)
     assert np.isclose(net.gen.at[gidx, "sn_mva"], 150.0)
     assert net.gen.at[gidx, "name"] == "test_generator"
-    assert net.gen.at[gidx, "scaling"] == 0.8
+    assert np.isclose(net.gen.at[gidx, "scaling"], 0.8)
     assert net.gen.at[gidx, "type"] == "sync"
     assert net.gen.at[gidx, "slack"]
     assert np.isclose(net.gen.at[gidx, "max_p_mw"], 150.0)
@@ -83,7 +83,7 @@ def test_create_gen_with_optional_params():
     assert np.isclose(net.gen.at[gidx, "cos_phi"], 0.85)
     assert np.isclose(net.gen.at[gidx, "pg_percent"], 10.0)
     assert net.gen.at[gidx, "in_service"]
-    assert net.gen.at[gidx, "slack_weight"] == 1.0
+    assert np.isclose(net.gen.at[gidx, "slack_weight"], 1.0)
     assert net.gen.test_kwargs.at[gidx] == "dummy_string"
 
     validate_network(net)

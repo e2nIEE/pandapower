@@ -58,8 +58,8 @@ def test_create_ext_grid_with_optional_params():
     assert idx == 5
     assert len(net.ext_grid) == 1
     assert net.ext_grid.at[idx, "bus"] == b1
-    assert net.ext_grid.at[idx, "vm_pu"] == 1.03
-    assert net.ext_grid.at[idx, "va_degree"] == 5.0
+    assert np.isclose(net.ext_grid.at[idx, "vm_pu"], 1.03)
+    assert np.isclose(net.ext_grid.at[idx, "va_degree"], 5.0)
     assert net.ext_grid.at[idx, "name"] == "external_grid_1"
     assert net.ext_grid.at[idx, "in_service"]
     assert np.isclose(net.ext_grid.at[idx, "s_sc_max_mva"], 1000.0)
@@ -146,7 +146,7 @@ def test_create_ext_grid_opf_limits():
     assert np.isclose(net.ext_grid.at[idx, "max_p_mw"], 100.0)
     assert np.isclose(net.ext_grid.at[idx, "min_p_mw"], 10.0)
     assert np.isclose(net.ext_grid.at[idx, "max_q_mvar"], 50.0)
-    assert net.ext_grid.at[idx, "min_q_mvar"] == -50.0
+    assert np.isclose(net.ext_grid.at[idx, "min_q_mvar"], -50.0)
 
     validate_network(net)
 

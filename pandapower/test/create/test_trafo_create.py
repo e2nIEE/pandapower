@@ -58,9 +58,9 @@ def test_create_transformer_from_parameters():
     assert net.trafo.at[t, "vn_hv_kv"] == 110
     assert net.trafo.at[t, "vn_lv_kv"] == 20
     assert net.trafo.at[t, "vk_percent"] == 10
-    assert net.trafo.at[t, "vkr_percent"] == 0.5
+    assert np.isclose(net.trafo.at[t, "vkr_percent"], 0.5)
     assert net.trafo.at[t, "pfe_kw"] == 30
-    assert net.trafo.at[t, "i0_percent"] == 0.1
+    assert np.isclose(net.trafo.at[t, "i0_percent"], 0.1)
 
     # Test with tap changer
     net = create_empty_network()

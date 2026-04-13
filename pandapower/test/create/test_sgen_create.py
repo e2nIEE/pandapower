@@ -294,7 +294,7 @@ def test_create_asymmetric_sgen():
     assert net.asymmetric_sgen.at[asym_sgen_id, "sn_c_mva"] == 35
     assert net.asymmetric_sgen.at[asym_sgen_id, "sn_mva"] == 100
     assert net.asymmetric_sgen.at[asym_sgen_id, "name"] == "asymmetric_test"
-    assert net.asymmetric_sgen.at[asym_sgen_id, "scaling"] == 0.9
+    assert np.isclose(net.asymmetric_sgen.at[asym_sgen_id, "scaling"], 0.9)
     assert net.asymmetric_sgen.at[asym_sgen_id, "type"] == "delta"
     assert net.asymmetric_sgen.at[asym_sgen_id, "in_service"] == False
     assert net.asymmetric_sgen.at[asym_sgen_id, "test_kwargs"] == "dummy_string"
@@ -322,7 +322,7 @@ def test_create_asymmetric_sgen():
     assert net.asymmetric_sgen.at[asym_sgen_id3, "q_b_mvar"] == 0
     assert net.asymmetric_sgen.at[asym_sgen_id3, "q_c_mvar"] == 0
     assert net.asymmetric_sgen.at[asym_sgen_id3, "in_service"] == True  # default
-    assert net.asymmetric_sgen.at[asym_sgen_id3, "scaling"] == 1.0  # default
+    assert np.isclose(net.asymmetric_sgen.at[asym_sgen_id3, "scaling"], 1.0)  # default
 
     # Test with custom index
     b4 = create_bus(net, 110)

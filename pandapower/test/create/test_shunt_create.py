@@ -118,12 +118,12 @@ def test_create_shunt_as_capacitor():
     # q_mvar should be negative for capacitor, p_mw = abs(q_mvar * loss_factor)
     idx = create_shunt_as_capacitor(net, bus=b1, q_mvar=10.0, loss_factor=0.01)
     assert net.shunt.at[idx, "bus"] == b1
-    assert net.shunt.at[idx, "q_mvar"] == -10.0  # always negative
+    assert np.isclose(net.shunt.at[idx, "q_mvar"], -10.0)  # always negative
     assert net.shunt.at[idx, "p_mw"] == abs(10 * 0.01)
 
     # Test with negative q_mvar input (should use absolute value)
     idx2 = create_shunt_as_capacitor(net, bus=b1, q_mvar=-20.0, loss_factor=0.02)
-    assert net.shunt.at[idx2, "q_mvar"] == -20.0
+    assert np.isclose(net.shunt.at[idx2, "q_mvar"], -20.0)
     assert net.shunt.at[idx2, "p_mw"] == abs(-20 * 0.02)
 
     # Test with additional kwargs passed to create_shunt
@@ -133,10 +133,10 @@ def test_create_shunt_as_capacitor():
         in_service=False, test_kwargs="dummy_string"
     )
     assert net.shunt.at[idx3, "bus"] == b2
-    assert net.shunt.at[idx3, "q_mvar"] == -5.0
-    assert net.shunt.at[idx3, "p_mw"] == 0.025  # abs(5 * 0.005)
+    assert np.isclose(net.shunt.at[idx3, "q_mvar"], -5.0)
+    assert np.isclose(net.shunt.at[idx3, "p_mw"], 0.025)  # abs(5 * 0.005)
     assert net.shunt.at[idx3, "name"] == "capacitor_bank"
-    assert net.shunt.at[idx3, "vn_kv"] == 20.0
+    assert np.isclose(net.shunt.at[idx3, "vn_kv"], 20.0)
     assert net.shunt.at[idx3, "step"] == 3
     assert net.shunt.at[idx3, "max_step"] == 10
     assert net.shunt.at[idx3, "in_service"] == False
@@ -144,8 +144,8 @@ def test_create_shunt_as_capacitor():
 
     # Test with different loss factors
     idx4 = create_shunt_as_capacitor(net, bus=b1, q_mvar=100.0, loss_factor=0.0)
-    assert net.shunt.at[idx4, "q_mvar"] == -100.0
-    assert net.shunt.at[idx4, "p_mw"] == 0.0  # no losses
+    assert np.isclose(net.shunt.at[idx4, "q_mvar"], -100.0)
+    assert np.isclose(net.shunt.at[idx4, "p_mw"], 0.0)  # no losses
 
     validate_network(net)
 
@@ -525,7 +525,7 @@ def test_create_vsc():
     idx3 = create_vsc(
         net, bus=b3, bus_dc=b_dc, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
     )
-    assert net.vsc.at[idx3, "pl_dc_mw"] == 0.0  # default
+    assert np.isclose(net.vsc.at[idx3, "pl_dc_mw"], 0.0)  # default
     assert net.vsc.at[idx3, "control_mode_ac"] == "vm_pu"  # default
     assert np.isclose(net.vsc.at[idx3, "control_value_ac"], 1.0)  # default
     assert net.vsc.at[idx3, "control_mode_dc"] == "p_mw"  # default
