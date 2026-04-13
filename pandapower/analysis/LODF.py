@@ -255,7 +255,7 @@ def _get_lodf_perturb(
                 # If the branch flow close to zero
                 # Fix low loading branch with ptdf
                 this_ptdf = _get_ptdf_perturb(
-                    net_mod, source_bus=[bus_0, bus_1], distributed_slack=distributed_slack
+                    net_mod, source_bus=np.array([bus_0, bus_1]), distributed_slack=distributed_slack
                 )  # distributed slack is default True
                 if np.abs(this_ptdf[outage_branch_type + BR_PTDF_MAPPING[outage_branch_type]].at[br_ix, bus_0]) > 0.1:
                     bus_to_add_load = bus_0
