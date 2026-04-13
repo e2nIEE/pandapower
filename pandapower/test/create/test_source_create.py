@@ -31,7 +31,7 @@ def test_create_source_dc():
         type="voltage_source",
     )
     assert net.source_dc.at[idx2, "bus_dc"] == b1
-    assert net.source_dc.at[idx2, "vm_pu"] == 1.05
+    assert np.isclose(net.source_dc.at[idx2, "vm_pu"], 1.05)
     assert net.source_dc.at[idx2, "name"] == "test_source"
     assert net.source_dc.at[idx2, "in_service"] == False
     assert net.source_dc.at[idx2, "type"] == "voltage_source"

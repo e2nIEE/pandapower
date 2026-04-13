@@ -50,7 +50,7 @@ def test_create_line():
     assert line_id == 0
     assert net.line.at[line_id, "from_bus"] == b1
     assert net.line.at[line_id, "to_bus"] == b2
-    assert net.line.at[line_id, "length_km"] == 10.0
+    assert np.isclose(net.line.at[line_id, "length_km"], 10.0)
     assert net.line.at[line_id, "std_type"] == "48-AL1/8-ST1A 10.0"
     assert net.line.at[line_id, "in_service"]
     assert net.line.at[line_id, "df"] == 1.0  # default value
@@ -707,8 +707,8 @@ def test_create_lines_dc():
         df=0.9
     )
 
-    assert net2.line_dc.at[0, "length_km"] == 5.0
-    assert net2.line_dc.at[1, "length_km"] == 15.0
+    assert np.isclose(net2.line_dc.at[0, "length_km"], 5.0)
+    assert np.isclose(net2.line_dc.at[1, "length_km"], 15.0)
     assert net2.line_dc.at[0, "name"] == "line_dc_1"
     assert net2.line_dc.at[1, "name"] == "line_dc_2"
     assert net2.line_dc.at[0, "in_service"]

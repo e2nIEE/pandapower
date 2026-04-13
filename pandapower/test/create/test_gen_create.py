@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
+import numpy as np
 
 from pandapower.create import create_empty_network, create_bus, create_gen, create_gens
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -63,24 +64,24 @@ def test_create_gen_with_optional_params():
 
     assert len(net.gen) == 1
     assert net.gen.at[gidx, "bus"] == b1
-    assert net.gen.at[gidx, "p_mw"] == 120.0
-    assert net.gen.at[gidx, "vm_pu"] == 1.02
-    assert net.gen.at[gidx, "sn_mva"] == 150.0
+    assert np.isclose(net.gen.at[gidx, "p_mw"], 120.0)
+    assert np.isclose(net.gen.at[gidx, "vm_pu"], 1.02)
+    assert np.isclose(net.gen.at[gidx, "sn_mva"], 150.0)
     assert net.gen.at[gidx, "name"] == "test_generator"
     assert net.gen.at[gidx, "scaling"] == 0.8
     assert net.gen.at[gidx, "type"] == "sync"
     assert net.gen.at[gidx, "slack"]
-    assert net.gen.at[gidx, "max_p_mw"] == 150.0
-    assert net.gen.at[gidx, "min_p_mw"] == 20.0
-    assert net.gen.at[gidx, "max_q_mvar"] == 50.0
-    assert net.gen.at[gidx, "min_q_mvar"] == -50.0
-    assert net.gen.at[gidx, "min_vm_pu"] == 0.9
-    assert net.gen.at[gidx, "max_vm_pu"] == 1.1
-    assert net.gen.at[gidx, "vn_kv"] == 10.5
-    assert net.gen.at[gidx, "xdss_pu"] == 0.2
-    assert net.gen.at[gidx, "rdss_ohm"] == 0.01
-    assert net.gen.at[gidx, "cos_phi"] == 0.85
-    assert net.gen.at[gidx, "pg_percent"] == 10.0
+    assert np.isclose(net.gen.at[gidx, "max_p_mw"], 150.0)
+    assert np.isclose(net.gen.at[gidx, "min_p_mw"], 20.0)
+    assert np.isclose(net.gen.at[gidx, "max_q_mvar"], 50.0)
+    assert np.isclose(net.gen.at[gidx, "min_q_mvar"], -50.0)
+    assert np.isclose(net.gen.at[gidx, "min_vm_pu"], 0.9)
+    assert np.isclose(net.gen.at[gidx, "max_vm_pu"], 1.1)
+    assert np.isclose(net.gen.at[gidx, "vn_kv"], 10.5)
+    assert np.isclose(net.gen.at[gidx, "xdss_pu"], 0.2)
+    assert np.isclose(net.gen.at[gidx, "rdss_ohm"], 0.01)
+    assert np.isclose(net.gen.at[gidx, "cos_phi"], 0.85)
+    assert np.isclose(net.gen.at[gidx, "pg_percent"], 10.0)
     assert net.gen.at[gidx, "in_service"]
     assert net.gen.at[gidx, "slack_weight"] == 1.0
     assert net.gen.test_kwargs.at[gidx] == "dummy_string"

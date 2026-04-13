@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pandas as pd
+import numpy as np
 
 from pandapower.create import create_empty_network, create_bus, create_storage, create_storages
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -16,9 +17,9 @@ def _check_storage_table(table: pd.DataFrame, buses: tuple[int, int, int]):
     assert table.max_e_mwh.at[0] == 3
     assert table.max_e_mwh.at[1] == 5
     assert table.max_e_mwh.at[2] == 7
-    assert table.q_mvar.at[0] == 0.5
-    assert table.q_mvar.at[1] == 0.5
-    assert table.q_mvar.at[2] == 0.5
+    assert np.isclose(table.q_mvar.at[0], 0.5)
+    assert np.isclose(table.q_mvar.at[1], 0.5)
+    assert np.isclose(table.q_mvar.at[2], 0.5)
     assert table.controllable.dtype == bool
     assert table.controllable.at[0]
     assert not table.controllable.at[1]

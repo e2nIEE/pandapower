@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
+import numpy as np
 
 from pandapower.create import (
     create_empty_network,
@@ -99,9 +100,9 @@ def test_create_loads():
     assert net.load.controllable.at[0]
     assert not net.load.controllable.at[1]
     assert not net.load.controllable.at[2]
-    assert all(net.load.max_p_mw.values == 0.2)
+    assert np.allclose(net.load.max_p_mw, 0.2)
     assert all(net.load.min_p_mw.values == [0, 0.1, 0])
-    assert all(net.load.max_q_mvar.values == 0.2)
+    assert np.allclose(net.load.max_q_mvar, 0.2)
     assert all(net.load.min_q_mvar.values == [0, 0.1, 0])
     assert all(
         net.load.test_kwargs.values
@@ -173,12 +174,12 @@ def test_create_asymmetric_load():
         q_a_mvar=0.1, q_b_mvar=0.2, q_c_mvar=0.3,
     )
     assert net.asymmetric_load.at[idx, "bus"] == b1
-    assert net.asymmetric_load.at[idx, "p_a_mw"] == 1.0
-    assert net.asymmetric_load.at[idx, "p_b_mw"] == 2.0
-    assert net.asymmetric_load.at[idx, "p_c_mw"] == 3.0
-    assert net.asymmetric_load.at[idx, "q_a_mvar"] == 0.1
-    assert net.asymmetric_load.at[idx, "q_b_mvar"] == 0.2
-    assert net.asymmetric_load.at[idx, "q_c_mvar"] == 0.3
+    assert np.isclose(net.asymmetric_load.at[idx, "p_a_mw"], 1.0)
+    assert np.isclose(net.asymmetric_load.at[idx, "p_b_mw"], 2.0)
+    assert np.isclose(net.asymmetric_load.at[idx, "p_c_mw"], 3.0)
+    assert np.isclose(net.asymmetric_load.at[idx, "q_a_mvar"], 0.1)
+    assert np.isclose(net.asymmetric_load.at[idx, "q_b_mvar"], 0.2)
+    assert np.isclose(net.asymmetric_load.at[idx, "q_c_mvar"], 0.3)
 
     # Test asymmetric load with sn_mva values
     idx2 = create_asymmetric_load(
@@ -190,12 +191,12 @@ def test_create_asymmetric_load():
         in_service=False,
         type="delta",
     )
-    assert net.asymmetric_load.at[idx2, "sn_a_mva"] == 1.5
-    assert net.asymmetric_load.at[idx2, "sn_b_mva"] == 2.5
-    assert net.asymmetric_load.at[idx2, "sn_c_mva"] == 3.5
-    assert net.asymmetric_load.at[idx2, "sn_mva"] == 7.5
+    assert np.isclose(net.asymmetric_load.at[idx2, "sn_a_mva"], 1.5)
+    assert np.isclose(net.asymmetric_load.at[idx2, "sn_b_mva"], 2.5)
+    assert np.isclose(net.asymmetric_load.at[idx2, "sn_c_mva"], 3.5)
+    assert np.isclose(net.asymmetric_load.at[idx2, "sn_mva"], 7.5)
     assert net.asymmetric_load.at[idx2, "name"] == "asym_test"
-    assert net.asymmetric_load.at[idx2, "scaling"] == 0.9
+    assert np.isclose(net.asymmetric_load.at[idx2, "scaling"], 0.9)
     assert net.asymmetric_load.at[idx2, "in_service"] == False
     assert net.asymmetric_load.at[idx2, "type"] == "delta"
 

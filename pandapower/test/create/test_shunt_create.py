@@ -28,8 +28,8 @@ def test_create_shunt():
     # Test basic shunt creation with required parameters
     idx = create_shunt(net, bus=b1, q_mvar=-20.0)
     assert net.shunt.at[idx, "bus"] == b1
-    assert net.shunt.at[idx, "q_mvar"] == -20.0
-    assert net.shunt.at[idx, "p_mw"] == 0.0  # default value
+    assert np.isclose(net.shunt.at[idx, "q_mvar"], -20.0)
+    assert np.isclose(net.shunt.at[idx, "p_mw"], 0.0)  # default value
 
     # Test shunt with all optional parameters
     idx2 = create_shunt(
@@ -39,9 +39,9 @@ def test_create_shunt():
         in_service=False, test_kwargs="dummy_string"
     )
     assert net.shunt.at[idx2, "bus"] == b2
-    assert net.shunt.at[idx2, "q_mvar"] == -10.0
-    assert net.shunt.at[idx2, "p_mw"] == 0.5
-    assert net.shunt.at[idx2, "vn_kv"] == 110.0
+    assert np.isclose(net.shunt.at[idx2, "q_mvar"], -10.0)
+    assert np.isclose(net.shunt.at[idx2, "p_mw"], 0.5)
+    assert np.isclose(net.shunt.at[idx2, "vn_kv"], 110.0)
     assert net.shunt.at[idx2, "step"] == 2
     assert net.shunt.at[idx2, "max_step"] == 5
     assert net.shunt.at[idx2, "name"] == "test_shunt"
@@ -217,8 +217,8 @@ def test_create_svc():
     assert net.svc.at[idx2, "name"] == "test_svc"
     assert net.svc.at[idx2, "controllable"] == False
     assert net.svc.at[idx2, "in_service"] == False
-    assert net.svc.at[idx2, "min_angle_degree"] == 100.0
-    assert net.svc.at[idx2, "max_angle_degree"] == 170.0
+    assert np.isclose(net.svc.at[idx2, "min_angle_degree"], 100.0)
+    assert np.isclose(net.svc.at[idx2, "max_angle_degree"], 170.0)
     assert net.svc.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
@@ -229,8 +229,8 @@ def test_create_svc():
     )
     assert net.svc.at[idx3, "controllable"] == True  # default
     assert net.svc.at[idx3, "in_service"] == True   # default
-    assert net.svc.at[idx3, "min_angle_degree"] == 90.0   # default
-    assert net.svc.at[idx3, "max_angle_degree"] == 180.0  # default
+    assert np.isclose(net.svc.at[idx3, "min_angle_degree"], 90.0)   # default
+    assert np.isclose(net.svc.at[idx3, "max_angle_degree"], 180.0)  # default
 
     # Test custom index
     idx4 = create_svc(

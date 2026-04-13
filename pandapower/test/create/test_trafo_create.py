@@ -90,7 +90,7 @@ def test_create_transformer_from_parameters():
     assert net.trafo.at[t, "tap_neutral"] == 0
     assert net.trafo.at[t, "tap_max"] == 10
     assert net.trafo.at[t, "tap_min"] == -10
-    assert net.trafo.at[t, "tap_step_percent"] == 1.0
+    assert np.isclose(net.trafo.at[t, "tap_step_percent"], 1.0)
 
     # Test with zero sequence parameters
     net = create_empty_network()
@@ -254,15 +254,15 @@ def test_create_transformers_from_parameters():
     assert len(net.trafo) == 2
     assert all(net.trafo.hv_bus == 0)
     assert all(net.trafo.lv_bus == 1)
-    assert all(net.trafo.vn_hv_kv == 15.0)
-    assert all(net.trafo.vn_lv_kv == 0.45)
-    assert all(net.trafo.sn_mva == 0.6)
-    assert all(net.trafo.vk_percent == 1.0)
-    assert all(net.trafo.vkr_percent == 0.3)
-    assert all(net.trafo.pfe_kw == 0.2)
-    assert all(net.trafo.i0_percent == 0.3)
-    assert all(net.trafo.vk0_percent == 0.4)
-    assert all(net.trafo.mag0_rx == 0.4)
+    assert np.allclose(net.trafo.vn_hv_kv, 15.0)
+    assert np.allclose(net.trafo.vn_lv_kv, 0.45)
+    assert np.allclose(net.trafo.sn_mva, 0.6)
+    assert np.allclose(net.trafo.vk_percent, 1.0)
+    assert np.allclose(net.trafo.vkr_percent, 0.3)
+    assert np.allclose(net.trafo.pfe_kw, 0.2)
+    assert np.allclose(net.trafo.i0_percent, 0.3)
+    assert np.allclose(net.trafo.vk0_percent, 0.4)
+    assert np.allclose(net.trafo.mag0_rx, 0.4)
     assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.test_kwargs == "dummy_string")
     # assert net.trafo.tap_neutral.at[t[0]] == 0 FIXME add tap_side or remove

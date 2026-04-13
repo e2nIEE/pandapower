@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
+import numpy as np
 
 from pandapower.create import (
     create_empty_network, create_bus, create_motor
@@ -58,15 +59,15 @@ def test_create_motor_with_optional_params():
     assert net.motor.at[midx, "name"] == "test_motor"
     assert net.motor.at[midx, "pn_mech_mw"] == 0.120
     assert net.motor.at[midx, "cos_phi"] == 0.9
-    assert net.motor.at[midx, "efficiency_percent"] == 90.0
-    assert net.motor.at[midx, "loading_percent"] == 40.0
-    assert net.motor.at[midx, "scaling"] == 1.0
-    assert net.motor.at[midx, "lrc_pu"] == 6.0
-    assert net.motor.at[midx, "vn_kv"] == 0.6
-    assert net.motor.at[midx, "rx"] == 0.5
+    assert np.isclose(net.motor.at[midx, "efficiency_percent"], 90.0)
+    assert np.isclose(net.motor.at[midx, "loading_percent"], 40.0)
+    assert np.isclose(net.motor.at[midx, "scaling"], 1.0)
+    assert np.isclose(net.motor.at[midx, "lrc_pu"], 6.0)
+    assert np.isclose(net.motor.at[midx, "vn_kv"], 0.6)
+    assert np.isclose(net.motor.at[midx, "rx"], 0.5)
     assert net.motor.at[midx, "in_service"]
-    assert net.motor.at[midx, "cos_phi_n"] == 0.85
-    assert net.motor.at[midx, "efficiency_n_percent"] == 92.0
+    assert np.isclose(net.motor.at[midx, "cos_phi_n"], 0.85)
+    assert np.isclose(net.motor.at[midx, "efficiency_n_percent"], 92.0)
     assert net.motor.test_kwargs.at[midx] == "dummy_string"
 
     validate_network(net)

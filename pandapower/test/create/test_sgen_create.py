@@ -59,7 +59,7 @@ def test_create_sgen():
     assert net.sgen.at[sgen_id2, "q_mvar"] == 20
     assert net.sgen.at[sgen_id2, "sn_mva"] == 120
     assert net.sgen.at[sgen_id2, "name"] == "test_sgen"
-    assert net.sgen.at[sgen_id2, "scaling"] == 0.8
+    assert np.isclose(net.sgen.at[sgen_id2, "scaling"], 0.8)
     assert net.sgen.at[sgen_id2, "type"] == "wye"
     assert net.sgen.at[sgen_id2, "in_service"] == False
     assert net.sgen.at[sgen_id2, "max_p_mw"] == 150

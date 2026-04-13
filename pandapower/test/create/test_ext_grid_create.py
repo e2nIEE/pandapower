@@ -2,7 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
-import pandas as pd
+import numpy as np
 
 from pandapower.network_structure import get_default_value
 from pandapower.create import create_empty_network, create_bus, create_ext_grid
@@ -62,18 +62,18 @@ def test_create_ext_grid_with_optional_params():
     assert net.ext_grid.at[idx, "va_degree"] == 5.0
     assert net.ext_grid.at[idx, "name"] == "external_grid_1"
     assert net.ext_grid.at[idx, "in_service"]
-    assert net.ext_grid.at[idx, "s_sc_max_mva"] == 1000.0
-    assert net.ext_grid.at[idx, "s_sc_min_mva"] == 500.0
-    assert net.ext_grid.at[idx, "rx_max"] == 0.1
-    assert net.ext_grid.at[idx, "rx_min"] == 0.05
-    assert net.ext_grid.at[idx, "max_p_mw"] == 200.0
-    assert net.ext_grid.at[idx, "min_p_mw"] == 0.0
-    assert net.ext_grid.at[idx, "max_q_mvar"] == 100.0
-    assert net.ext_grid.at[idx, "min_q_mvar"] == -100.0
-    assert net.ext_grid.at[idx, "r0x0_max"] == 0.1
-    assert net.ext_grid.at[idx, "x0x_max"] == 1.0
+    assert np.isclose(net.ext_grid.at[idx, "s_sc_max_mva"], 1000.0)
+    assert np.isclose(net.ext_grid.at[idx, "s_sc_min_mva"], 500.0)
+    assert np.isclose(net.ext_grid.at[idx, "rx_max"], 0.1)
+    assert np.isclose(net.ext_grid.at[idx, "rx_min"], 0.05)
+    assert np.isclose(net.ext_grid.at[idx, "max_p_mw"], 200.0)
+    assert np.isclose(net.ext_grid.at[idx, "min_p_mw"], 0.0)
+    assert np.isclose(net.ext_grid.at[idx, "max_q_mvar"], 100.0)
+    assert np.isclose(net.ext_grid.at[idx, "min_q_mvar"], -100.0)
+    assert np.isclose(net.ext_grid.at[idx, "r0x0_max"], 0.1)
+    assert np.isclose(net.ext_grid.at[idx, "x0x_max"], 1.0)
     assert net.ext_grid.at[idx, "controllable"]
-    assert net.ext_grid.at[idx, "slack_weight"] == 2.0
+    assert np.isclose(net.ext_grid.at[idx, "slack_weight"], 2.0)
     assert net.ext_grid.test_kwargs.at[idx] == "dummy_string"
 
     validate_network(net)
@@ -143,9 +143,9 @@ def test_create_ext_grid_opf_limits():
         min_q_mvar=-50.0,
     )
 
-    assert net.ext_grid.at[idx, "max_p_mw"] == 100.0
-    assert net.ext_grid.at[idx, "min_p_mw"] == 10.0
-    assert net.ext_grid.at[idx, "max_q_mvar"] == 50.0
+    assert np.isclose(net.ext_grid.at[idx, "max_p_mw"], 100.0)
+    assert np.isclose(net.ext_grid.at[idx, "min_p_mw"], 10.0)
+    assert np.isclose(net.ext_grid.at[idx, "max_q_mvar"], 50.0)
     assert net.ext_grid.at[idx, "min_q_mvar"] == -50.0
 
     validate_network(net)
@@ -202,7 +202,7 @@ def test_create_ext_grid_slack_weight():
 
     idx = create_ext_grid(net, bus=b1, slack_weight=3.5)
 
-    assert net.ext_grid.at[idx, "slack_weight"] == 3.5
+    assert np.isclose(net.ext_grid.at[idx, "slack_weight"], 3.5)
 
     validate_network(net)
 

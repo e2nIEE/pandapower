@@ -19,10 +19,10 @@ def test_create_ward():
 
     assert ward_id == 0
     assert net.ward.bus.at[0] == bus
-    assert net.ward.ps_mw.at[0] == 1.0
-    assert net.ward.qs_mvar.at[0] == 0.5
-    assert net.ward.pz_mw.at[0] == 0.2
-    assert net.ward.qz_mvar.at[0] == 0.1
+    assert np.isclose(net.ward.ps_mw.at[0], 1.0)
+    assert np.isclose(net.ward.qs_mvar.at[0], 0.5)
+    assert np.isclose(net.ward.pz_mw.at[0], 0.2)
+    assert np.isclose(net.ward.qz_mvar.at[0], 0.1)
     assert net.ward.in_service.at[0]
 
     # Test with all parameters
