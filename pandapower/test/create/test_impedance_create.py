@@ -32,14 +32,14 @@ def test_create_impedance():
     assert len(net.impedance) == 1
     assert net.impedance.at[idx, "from_bus"] == b1
     assert net.impedance.at[idx, "to_bus"] == b2
-    assert net.impedance.at[idx, "rft_pu"] == 0.1
-    assert net.impedance.at[idx, "xft_pu"] == 0.1
-    assert net.impedance.at[idx, "rtf_pu"] == 0.1  # defaults to rft_pu
-    assert net.impedance.at[idx, "xtf_pu"] == 0.1  # defaults to xft_pu
-    assert net.impedance.at[idx, "gf_pu"] == 0.0  # default value
-    assert net.impedance.at[idx, "bf_pu"] == 0.0  # default value
-    assert net.impedance.at[idx, "gt_pu"] == 0.0  # defaults to gf_pu
-    assert net.impedance.at[idx, "bt_pu"] == 0.0  # defaults to bf_pu
+    assert np.isclose(net.impedance.at[idx, "rft_pu"], 0.1)
+    assert np.isclose(net.impedance.at[idx, "xft_pu"], 0.1)
+    assert np.isclose(net.impedance.at[idx, "rtf_pu"], 0.1)  # defaults to rft_pu
+    assert np.isclose(net.impedance.at[idx, "xtf_pu"], 0.1)  # defaults to xft_pu
+    assert np.isclose(net.impedance.at[idx, "gf_pu"], 0.0)  # default value
+    assert np.isclose(net.impedance.at[idx, "bf_pu"], 0.0)  # default value
+    assert np.isclose(net.impedance.at[idx, "gt_pu"], 0.0)  # defaults to gf_pu
+    assert np.isclose(net.impedance.at[idx, "bt_pu"], 0.0)  # defaults to bf_pu
     assert net.impedance.at[idx, "sn_mva"] == 100
     assert net.impedance.at[idx, "in_service"]
 
@@ -116,12 +116,12 @@ def test_create_impedances():
     # First impedance
     assert net.impedance.at[idx[0], "from_bus"] == buses[0]
     assert net.impedance.at[idx[0], "to_bus"] == buses[1]
-    assert net.impedance.at[idx[0], "rft_pu"] == 0.1
+    assert np.isclose(net.impedance.at[idx[0], "rft_pu"], 0.1)
 
     # Second impedance
     assert net.impedance.at[idx[1], "from_bus"] == buses[1]
     assert net.impedance.at[idx[1], "to_bus"] == buses[2]
-    assert net.impedance.at[idx[1], "rft_pu"] == 0.1
+    assert np.isclose(net.impedance.at[idx[1], "rft_pu"], 0.1)
 
     # Test with list/array values
     idx2 = create_impedances(
@@ -189,10 +189,10 @@ def test_create_tcsc():
     assert len(net.tcsc) == 1
     assert net.tcsc.at[idx, "from_bus"] == b1
     assert net.tcsc.at[idx, "to_bus"] == b2
-    assert net.tcsc.at[idx, "x_l_ohm"] == 1.0
-    assert net.tcsc.at[idx, "x_cvar_ohm"] == -10.0
-    assert net.tcsc.at[idx, "set_p_to_mw"] == 50.0
-    assert net.tcsc.at[idx, "thyristor_firing_angle_degree"] == 140.0
+    assert np.isclose(net.tcsc.at[idx, "x_l_ohm"], 1.0)
+    assert np.isclose(net.tcsc.at[idx, "x_cvar_ohm"], -10.0)
+    assert np.isclose(net.tcsc.at[idx, "set_p_to_mw"], 50.0)
+    assert np.isclose(net.tcsc.at[idx, "thyristor_firing_angle_degree"], 140.0)
     assert net.tcsc.at[idx, "in_service"]
     assert net.tcsc.at[idx, "controllable"]
 
@@ -219,8 +219,8 @@ def test_create_tcsc():
     assert net.tcsc.at[idx2, "name"] == "test_tcsc"
     assert not net.tcsc.at[idx2, "controllable"]
     assert not net.tcsc.at[idx2, "in_service"]
-    assert net.tcsc.at[idx2, "min_angle_degree"] == 90.0
-    assert net.tcsc.at[idx2, "max_angle_degree"] == 180.0
+    assert np.isclose(net.tcsc.at[idx2, "min_angle_degree"], 90.0)
+    assert np.isclose(net.tcsc.at[idx2, "max_angle_degree"], 180.0)
 
 
 def test_create_series_reactor_as_impedance():

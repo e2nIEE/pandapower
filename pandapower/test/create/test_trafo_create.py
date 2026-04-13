@@ -232,7 +232,7 @@ def test_create_transformers_from_parameters():
     net = create_empty_network()
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
-    t = create_transformers_from_parameters(
+    create_transformers_from_parameters(
         net,
         hv_buses=[b1, b1],
         lv_buses=[b2, b2],
@@ -246,8 +246,6 @@ def test_create_transformers_from_parameters():
         vk0_percent=[0.4, 0.4],
         mag0_rx=[0.4, 0.4],
         mag0_percent=[30, 30],
-        # tap_neutral=[0.0, 1.0], FIXME add tap_side or remove
-        # tap_pos=[-1, 4],
         test_kwargs=["dummy_string", "dummy_string"],
     )
 
@@ -265,10 +263,6 @@ def test_create_transformers_from_parameters():
     assert np.allclose(net.trafo.mag0_rx, 0.4)
     assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.test_kwargs == "dummy_string")
-    # assert net.trafo.tap_neutral.at[t[0]] == 0 FIXME add tap_side or remove
-    # assert net.trafo.tap_neutral.at[t[1]] == 1
-    # assert net.trafo.tap_pos.at[t[0]] == -1
-    # assert net.trafo.tap_pos.at[t[1]] == 4
 
     validate_network(net)
 
@@ -955,9 +949,9 @@ def test_create_transformer3w_from_parameters():
     assert net.trafo3w.at[t, "vk0_hv_percent"] == 10
     assert net.trafo3w.at[t, "vk0_mv_percent"] == 10
     assert net.trafo3w.at[t, "vk0_lv_percent"] == 10
-    assert net.trafo3w.at[t, "vkr0_hv_percent"] == 0.28
-    assert net.trafo3w.at[t, "vkr0_mv_percent"] == 0.32
-    assert net.trafo3w.at[t, "vkr0_lv_percent"] == 0.35
+    assert np.isclose(net.trafo3w.at[t, "vkr0_hv_percent"], 0.28)
+    assert np.isclose(net.trafo3w.at[t, "vkr0_mv_percent"], 0.32)
+    assert np.isclose(net.trafo3w.at[t, "vkr0_lv_percent"], 0.35)
     assert net.trafo3w.at[t, "vector_group"] == "YNd11"
 
     # Test with in_service=False

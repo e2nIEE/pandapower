@@ -19,7 +19,7 @@ def test_create_source_dc():
     # Test basic source_dc creation
     idx = create_source_dc(net, bus_dc=b1, vm_pu=1.0)
     assert net.source_dc.at[idx, "bus_dc"] == b1
-    assert net.source_dc.at[idx, "vm_pu"] == 1.0
+    assert np.isclose(net.source_dc.at[idx, "vm_pu"], 1.0)
 
     # Test source_dc with all optional parameters
     idx2 = create_source_dc(
@@ -38,7 +38,7 @@ def test_create_source_dc():
 
     # Test default values (vm_pu defaults to 1.0, in_service defaults to True)
     idx3 = create_source_dc(net, bus_dc=b1)
-    assert net.source_dc.at[idx3, "vm_pu"] == 1.0
+    assert np.isclose(net.source_dc.at[idx3, "vm_pu"], 1.0)
     assert net.source_dc.at[idx3, "in_service"] == True
 
     # Test with custom index

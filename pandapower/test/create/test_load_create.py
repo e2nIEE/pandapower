@@ -60,10 +60,10 @@ def test_create_load():
         const_z_q_percent=40.0,
         const_i_q_percent=20.0,
     )
-    assert net.load.at[idx3, "const_z_p_percent"] == 50.0
-    assert net.load.at[idx3, "const_i_p_percent"] == 30.0
-    assert net.load.at[idx3, "const_z_q_percent"] == 40.0
-    assert net.load.at[idx3, "const_i_q_percent"] == 20.0
+    assert np.isclose(net.load.at[idx3, "const_z_p_percent"], 50.0)
+    assert np.isclose(net.load.at[idx3, "const_i_p_percent"], 30.0)
+    assert np.isclose(net.load.at[idx3, "const_z_q_percent"], 40.0)
+    assert np.isclose(net.load.at[idx3, "const_i_q_percent"], 20.0)
 
     validate_network(net)
 

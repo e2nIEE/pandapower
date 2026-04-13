@@ -19,10 +19,10 @@ def test_create_ext_grid():
 
     assert len(net.ext_grid) == 1
     assert net.ext_grid.at[idx, "bus"] == b1
-    assert net.ext_grid.at[idx, "vm_pu"] == 1.0  # default value
-    assert net.ext_grid.at[idx, "va_degree"] == 0.0  # default value
+    assert np.isclose(net.ext_grid.at[idx, "vm_pu"], 1.0)  # default value
+    assert np.isclose(net.ext_grid.at[idx, "va_degree"], 0.0)  # default value
     assert net.ext_grid.at[idx, "in_service"]  # default value
-    assert net.ext_grid.at[idx, "slack_weight"] == 1.0  # default value
+    assert np.isclose(net.ext_grid.at[idx, "slack_weight"], 1.0)  # default value
 
     validate_network(net)
 

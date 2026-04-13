@@ -74,12 +74,12 @@ def test_create_line():
     assert line_id2 == 1
     assert net.line.at[line_id2, "from_bus"] == b3
     assert net.line.at[line_id2, "to_bus"] == b4
-    assert net.line.at[line_id2, "length_km"] == 5.0
+    assert np.isclose(net.line.at[line_id2, "length_km"], 5.0)
     assert net.line.at[line_id2, "name"] == "test_line"
     assert not net.line.at[line_id2, "in_service"]
-    assert net.line.at[line_id2, "df"] == 0.8
+    assert np.isclose(net.line.at[line_id2, "df"], 0.8)
     assert net.line.at[line_id2, "parallel"] == 2
-    assert net.line.at[line_id2, "max_loading_percent"] == 100.0
+    assert np.isclose(net.line.at[line_id2, "max_loading_percent"], 100.0)
 
     # Test with custom index
     b5 = create_bus(net, 110)
@@ -735,11 +735,11 @@ def test_create_line_dc_from_parameters():
     assert line_id == 0
     assert net.line_dc.at[line_id, "from_bus_dc"] == b1
     assert net.line_dc.at[line_id, "to_bus_dc"] == b2
-    assert net.line_dc.at[line_id, "length_km"] == 10.0
-    assert net.line_dc.at[line_id, "r_ohm_per_km"] == 0.1
-    assert net.line_dc.at[line_id, "max_i_ka"] == 0.5
+    assert np.isclose(net.line_dc.at[line_id, "length_km"], 10.0)
+    assert np.isclose(net.line_dc.at[line_id, "r_ohm_per_km"], 0.1)
+    assert np.isclose(net.line_dc.at[line_id, "max_i_ka"], 0.5)
     assert net.line_dc.at[line_id, "in_service"]
-    assert net.line_dc.at[line_id, "df"] == 1.0
+    assert np.isclose(net.line_dc.at[line_id, "df"], 1.0)
     assert net.line_dc.at[line_id, "parallel"] == 1
 
     # Test with all optional parameters
@@ -889,10 +889,10 @@ def test_create_dcline():
     assert net.dcline.at[dcline_id2, "from_bus"] == b3
     assert net.dcline.at[dcline_id2, "to_bus"] == b4
     assert net.dcline.at[dcline_id2, "p_mw"] == 2000
-    assert net.dcline.at[dcline_id2, "loss_percent"] == 1.5
+    assert np.isclose(net.dcline.at[dcline_id2, "loss_percent"], 1.5)
     assert net.dcline.at[dcline_id2, "loss_mw"] == 30
-    assert net.dcline.at[dcline_id2, "vm_from_pu"] == 1.02
-    assert net.dcline.at[dcline_id2, "vm_to_pu"] == 0.98
+    assert np.isclose(net.dcline.at[dcline_id2, "vm_from_pu"], 1.02)
+    assert np.isclose(net.dcline.at[dcline_id2, "vm_to_pu"], 0.98)
     assert net.dcline.at[dcline_id2, "name"] == "test_dcline"
     assert not net.dcline.at[dcline_id2, "in_service"]
     assert net.dcline.at[dcline_id2, "max_p_mw"] == 3000

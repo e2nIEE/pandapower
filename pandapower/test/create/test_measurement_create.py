@@ -30,8 +30,8 @@ def test_create_measurement():
     assert net.measurement.at[midx, "measurement_type"] == "p"
     assert net.measurement.at[midx, "element_type"] == "load"
     assert net.measurement.at[midx, "element"] == 0
-    assert net.measurement.at[midx, "value"] == 1.0
-    assert net.measurement.at[midx, "std_dev"] == 0.05
+    assert np.isclose(net.measurement.at[midx, "value"], 1.0)
+    assert np.isclose(net.measurement.at[midx, "std_dev"], 0.05)
 
     validate_network(net)
 

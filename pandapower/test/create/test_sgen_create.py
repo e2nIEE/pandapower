@@ -67,14 +67,14 @@ def test_create_sgen():
     assert net.sgen.at[sgen_id2, "max_q_mvar"] == 30
     assert net.sgen.at[sgen_id2, "min_q_mvar"] == 5
     assert net.sgen.at[sgen_id2, "controllable"] == True
-    assert net.sgen.at[sgen_id2, "k"] == 1.2
-    assert net.sgen.at[sgen_id2, "rx"] == 0.5
+    assert np.isclose(net.sgen.at[sgen_id2, "k"], 1.2)
+    assert np.isclose(net.sgen.at[sgen_id2, "rx"], 0.5)
     assert net.sgen.at[sgen_id2, "id_q_capability_characteristic"] == 1
     assert net.sgen.at[sgen_id2, "reactive_capability_curve"] == True
     assert net.sgen.at[sgen_id2, "curve_style"] == "straightLineYValues"
     assert net.sgen.at[sgen_id2, "current_source"] == True
     assert net.sgen.at[sgen_id2, "generator_type"] == "current_source"
-    assert net.sgen.at[sgen_id2, "kappa"] == 1.5
+    assert np.isclose(net.sgen.at[sgen_id2, "kappa"], 1.5)
     assert "max_ik_ka" not in net.sgen.columns  # max_ik_ka should only be set for generator_type "async_doubly_fed"
     assert "lrc_pu" not in net.sgen.columns  # lrc_pu should only be set for generator_type "async"
     assert net.sgen.at[sgen_id2, "test_kwargs"] == "dummy_string"
@@ -155,7 +155,7 @@ def test_create_sgens():
     assert not net.sgen.controllable.at[2]
     assert all(net.sgen.max_p_mw.values == 0.2)
     assert all(net.sgen.min_p_mw.values == [0, 0.1, 0])
-    assert all(net.sgen.max_q_mvar.values == 0.2)
+    assert np.allclose(net.sgen.max_q_mvar, 0.2)
     assert all(net.sgen.min_q_mvar.values == [0, 0.1, 0])
     assert all(net.sgen.k.values == 1.3)
     assert np.allclose(net.sgen.rx, 0.4)

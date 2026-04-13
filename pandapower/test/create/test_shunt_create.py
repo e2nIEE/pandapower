@@ -196,10 +196,10 @@ def test_create_svc():
         set_vm_pu=1.0, thyristor_firing_angle_degree=120.0
     )
     assert net.svc.at[idx, "bus"] == b1
-    assert net.svc.at[idx, "x_l_ohm"] == 10.0
-    assert net.svc.at[idx, "x_cvar_ohm"] == -20.0
-    assert net.svc.at[idx, "set_vm_pu"] == 1.0
-    assert net.svc.at[idx, "thyristor_firing_angle_degree"] == 120.0
+    assert np.isclose(net.svc.at[idx, "x_l_ohm"], 10.0)
+    assert np.isclose(net.svc.at[idx, "x_cvar_ohm"], -20.0)
+    assert np.isclose(net.svc.at[idx, "set_vm_pu"], 1.0)
+    assert np.isclose(net.svc.at[idx, "thyristor_firing_angle_degree"], 120.0)
 
     # Test SVC with all optional parameters
     idx2 = create_svc(
@@ -210,10 +210,10 @@ def test_create_svc():
         test_kwargs="dummy_string"
     )
     assert net.svc.at[idx2, "bus"] == b2
-    assert net.svc.at[idx2, "x_l_ohm"] == 5.0
-    assert net.svc.at[idx2, "x_cvar_ohm"] == -15.0
-    assert net.svc.at[idx2, "set_vm_pu"] == 1.02
-    assert net.svc.at[idx2, "thyristor_firing_angle_degree"] == 135.0
+    assert np.isclose(net.svc.at[idx2, "x_l_ohm"], 5.0)
+    assert np.isclose(net.svc.at[idx2, "x_cvar_ohm"], -15.0)
+    assert np.isclose(net.svc.at[idx2, "set_vm_pu"], 1.02)
+    assert np.isclose(net.svc.at[idx2, "thyristor_firing_angle_degree"], 135.0)
     assert net.svc.at[idx2, "name"] == "test_svc"
     assert net.svc.at[idx2, "controllable"] == False
     assert net.svc.at[idx2, "in_service"] == False
