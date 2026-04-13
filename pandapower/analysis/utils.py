@@ -76,12 +76,12 @@ def _get_outage_branch_ix(
     return unique_outage_branch_ix if unique_outage_branch_ix.size < outage_branch_ix.size else outage_branch_ix
 
 
-def _get_bus_lookup(net: pandapowerNet) -> np.ndarray:
+def _get_bus_lookup(net: pandapowerNet) -> npt.NDArray:
     pp_ppci_bus_lookup = net._pd2ppc_lookups["bus"]
     # Set out-of-service bus index to -1 (for padded array)
     if "_is_elements" not in net or net._is_elements is None:
         raise UserWarning("can not lookup bus, net._is_elements is missing or None")
-    assert type(net._is_elements) is pd.DataFrame  # force mypy type narrowing
+
     bus_in_service_mask = np.isin(np.arange(pp_ppci_bus_lookup.shape[0]), net._is_elements["bus_is_idx"])
     pp_ppci_bus_lookup[~bus_in_service_mask] = -1
     return pp_ppci_bus_lookup
