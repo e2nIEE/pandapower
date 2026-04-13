@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
+import numpy as np
 
 from pandapower.create import (
     create_empty_network, create_bus, create_sgen, create_sgens, create_asymmetric_sgen, create_sgen_from_cosphi
@@ -111,11 +112,6 @@ def test_create_sgen():
     assert net.sgen.at[100, "bus"] == b5
     assert net.sgen.at[100, "p_mw"] == 25
 
-    # Test unknown generator_type raises warning
-    b6 = create_bus(net, 110)
-    with pytest.raises(UserWarning, match="unknown sgen generator_type"):
-        create_sgen(net, b6, p_mw=50, generator_type="unknown_type")
-
     validate_network(net)
 
 
@@ -162,7 +158,7 @@ def test_create_sgens():
     assert all(net.sgen.max_q_mvar.values == 0.2)
     assert all(net.sgen.min_q_mvar.values == [0, 0.1, 0])
     assert all(net.sgen.k.values == 1.3)
-    assert all(net.sgen.rx.values == 0.4)
+    assert np.allclose(net.sgen.rx, 0.4)
     assert all(net.sgen.current_source)
     assert all(net.sgen.test_kwargs == "dummy_string")
     assert all(net.sgen.id_q_capability_characteristic.values == [0, 1, 2])

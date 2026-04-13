@@ -48,7 +48,7 @@ positiv_floats: list[float | np.float64] = [1.0, np.float64(1.0)]
 positiv_floats_plus_zero: list[float | np.float64] = [*positiv_floats, *zero_float]
 negativ_floats: list[float | np.float64] = [-1.0, np.float64(-1.0)]
 negativ_floats_plus_zero: list[float | np.float64] = [*negativ_floats, *zero_float]
-all_allowed_floats: list[float | np.float64] = [*zero_float, *positiv_floats, *negativ_floats] # TODO should this contain float('nan')
+all_allowed_floats: list[float | np.float64] = [*zero_float, *positiv_floats, *negativ_floats] # TODO should this contain float('nan')?
 not_allowed_floats: list[float | np.float64 | np.float32 | np.float16] = [
     np.float32(1.0),
     np.float16(1.0),

@@ -53,12 +53,12 @@ def test_create_shunt():
     # Test that vn_kv defaults to bus voltage when not provided
     b3 = create_bus(net, 20.0)
     idx3 = create_shunt(net, bus=b3, q_mvar=-5.0)
-    assert net.shunt.at[idx3, "vn_kv"] == 20.0
+    assert np.isclose(net.shunt.at[idx3, "vn_kv"], 20.0)
 
     # Test custom index
     idx4 = create_shunt(net, bus=b1, q_mvar=-15.0, index=10)
     assert idx4 == 10
-    assert net.shunt.at[10, "q_mvar"] == -15.0
+    assert np.isclose(net.shunt.at[10, "q_mvar"], -15.0)
 
     validate_network(net)
 
@@ -73,9 +73,9 @@ def test_create_shunts():
     indices = create_shunts(net, buses=[b1, b2], q_mvar=-20.0, p_mw=1.0)
     assert len(indices) == 2
     assert net.shunt.at[indices[0], "bus"] == b1
-    assert net.shunt.at[indices[0], "q_mvar"] == -20.0
+    assert np.isclose(net.shunt.at[indices[0], "q_mvar"], -20.0)
     assert net.shunt.at[indices[1], "bus"] == b2
-    assert net.shunt.at[indices[1], "q_mvar"] == -20.0
+    assert np.isclose(net.shunt.at[indices[1], "q_mvar"], -20.0)
 
     # Test creating multiple shunts with list values
     indices2 = create_shunts(
@@ -90,8 +90,8 @@ def test_create_shunts():
         test_kwargs=["dummy1", "dummy2", "dummy3"],
     )
     assert len(indices2) == 3
-    assert net.shunt.at[indices2[0], "q_mvar"] == -10.0
-    assert net.shunt.at[indices2[0], "p_mw"] == 0.5
+    assert np.isclose(net.shunt.at[indices2[0], "q_mvar"], -10.0)
+    assert np.isclose(net.shunt.at[indices2[0], "p_mw"], 0.5)
     assert net.shunt.at[indices2[0], "step"] == 1
     assert net.shunt.at[indices2[0], "max_step"] == 5
     assert net.shunt.at[indices2[0], "name"] == "shunt1"
@@ -99,11 +99,11 @@ def test_create_shunts():
     assert net.shunt.at[indices2[0], "in_service"] == True
     assert net.shunt.at[indices2[0], "test_kwargs"] == "dummy1"
 
-    assert net.shunt.at[indices2[1], "q_mvar"] == -15.0
+    assert np.isclose(net.shunt.at[indices2[1], "q_mvar"], -15.0)
     assert net.shunt.at[indices2[1], "in_service"] == False
     assert net.shunt.at[indices2[1], "test_kwargs"] == "dummy2"
 
-    assert net.shunt.at[indices2[2], "vn_kv"] == 20.0  # defaults to bus voltage
+    assert np.isclose(net.shunt.at[indices2[2], "vn_kv"], 20.0)  # defaults to bus voltage
     assert net.shunt.at[indices2[2], "test_kwargs"] == "dummy3"
 
     validate_network(net)

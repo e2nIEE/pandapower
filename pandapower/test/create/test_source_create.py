@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
+import numpy as np
 
 from pandapower.create import (
     create_empty_network,
@@ -44,7 +45,7 @@ def test_create_source_dc():
     idx4 = create_source_dc(net, bus_dc=b1, vm_pu=0.95, index=42)
     assert idx4 == 42
     assert net.source_dc.at[42, "bus_dc"] == b1
-    assert net.source_dc.at[42, "vm_pu"] == 0.95
+    assert np.isclose(net.source_dc.at[42, "vm_pu"], 0.95)
 
     validate_network(net)
 

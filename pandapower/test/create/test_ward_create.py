@@ -97,15 +97,15 @@ def test_create_xward():
 
     assert xward_id == 0
     assert net.xward.bus.at[0] == bus
-    assert net.xward.ps_mw.at[0] == 1.0
-    assert net.xward.qs_mvar.at[0] == 0.5
-    assert net.xward.pz_mw.at[0] == 0.2
-    assert net.xward.qz_mvar.at[0] == 0.1
-    assert net.xward.r_ohm.at[0] == 10.0
-    assert net.xward.x_ohm.at[0] == 5.0
-    assert net.xward.vm_pu.at[0] == 1.0
+    assert np.isclose(net.xward.ps_mw.at[0], 1.0)
+    assert np.isclose(net.xward.qs_mvar.at[0], 0.5)
+    assert np.isclose(net.xward.pz_mw.at[0], 0.2)
+    assert np.isclose(net.xward.qz_mvar.at[0], 0.1)
+    assert np.isclose(net.xward.r_ohm.at[0], 10.0)
+    assert np.isclose(net.xward.x_ohm.at[0], 5.0)
+    assert np.isclose(net.xward.vm_pu.at[0], 1.0)
     assert net.xward.in_service.at[0]
-    assert net.xward.slack_weight.at[0] == 0.0
+    assert np.isclose(net.xward.slack_weight.at[0], 0.0)
 
     # Test with all parameters
     bus2 = create_bus(net, 110)
@@ -121,13 +121,13 @@ def test_create_xward():
 
     assert xward_id2 == 1
     assert net.xward.bus.at[1] == bus2
-    assert net.xward.ps_mw.at[1] == 2.0
-    assert net.xward.qs_mvar.at[1] == 1.0
-    assert net.xward.pz_mw.at[1] == 0.4
-    assert net.xward.qz_mvar.at[1] == 0.2
-    assert net.xward.r_ohm.at[1] == 20.0
-    assert net.xward.x_ohm.at[1] == 10.0
-    assert net.xward.vm_pu.at[1] == 1.02
+    assert np.isclose(net.xward.ps_mw.at[1], 2.0)
+    assert np.isclose(net.xward.qs_mvar.at[1], 1.0)
+    assert np.isclose(net.xward.pz_mw.at[1], 0.4)
+    assert np.isclose(net.xward.qz_mvar.at[1], 0.2)
+    assert np.isclose(net.xward.r_ohm.at[1], 20.0)
+    assert np.isclose(net.xward.x_ohm.at[1], 10.0)
+    assert np.isclose(net.xward.vm_pu.at[1], 1.02)
     assert net.xward.name.at[1] == "test_xward"
     assert not net.xward.in_service.at[1]
-    assert net.xward.slack_weight.at[1] == 1.5
+    assert np.isclose(net.xward.slack_weight.at[1], 1.5)

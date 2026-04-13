@@ -75,20 +75,20 @@ def test_create_impedance():
     assert idx2 == 1
     assert net.impedance.at[idx2, "name"] == "test_impedance"
     assert not net.impedance.at[idx2, "in_service"]
-    assert net.impedance.at[idx2, "rft_pu"] == 0.2
-    assert net.impedance.at[idx2, "xft_pu"] == 0.3
-    assert net.impedance.at[idx2, "rtf_pu"] == 0.15
-    assert net.impedance.at[idx2, "xtf_pu"] == 0.25
-    assert net.impedance.at[idx2, "rft0_pu"] == 0.01
-    assert net.impedance.at[idx2, "xft0_pu"] == 0.02
-    assert net.impedance.at[idx2, "gf_pu"] == 0.001
-    assert net.impedance.at[idx2, "bf_pu"] == 0.002
-    assert net.impedance.at[idx2, "gt_pu"] == 0.003
-    assert net.impedance.at[idx2, "bt_pu"] == 0.004
-    assert net.impedance.at[idx2, "gf0_pu"] == 0.005
-    assert net.impedance.at[idx2, "bf0_pu"] == 0.006
-    assert net.impedance.at[idx2, "gt0_pu"] == 0.007
-    assert net.impedance.at[idx2, "bt0_pu"] == 0.008
+    assert np.isclose(net.impedance.at[idx2, "rft_pu"], 0.2)
+    assert np.isclose(net.impedance.at[idx2, "xft_pu"], 0.3)
+    assert np.isclose(net.impedance.at[idx2, "rtf_pu"], 0.15)
+    assert np.isclose(net.impedance.at[idx2, "xtf_pu"], 0.25)
+    assert np.isclose(net.impedance.at[idx2, "rft0_pu"], 0.01)
+    assert np.isclose(net.impedance.at[idx2, "xft0_pu"], 0.02)
+    assert np.isclose(net.impedance.at[idx2, "gf_pu"], 0.001)
+    assert np.isclose(net.impedance.at[idx2, "bf_pu"], 0.002)
+    assert np.isclose(net.impedance.at[idx2, "gt_pu"], 0.003)
+    assert np.isclose(net.impedance.at[idx2, "bt_pu"], 0.004)
+    assert np.isclose(net.impedance.at[idx2, "gf0_pu"], 0.005)
+    assert np.isclose(net.impedance.at[idx2, "bf0_pu"], 0.006)
+    assert np.isclose(net.impedance.at[idx2, "gt0_pu"], 0.007)
+    assert np.isclose(net.impedance.at[idx2, "bt0_pu"], 0.008)
 
     validate_network(net)
 
@@ -140,10 +140,10 @@ def test_create_impedances():
     assert len(idx2) == 2
     assert net.impedance.at[idx2[0], "name"] == "imp1"
     assert net.impedance.at[idx2[0], "in_service"]
-    assert net.impedance.at[idx2[0], "rft_pu"] == 0.2
+    assert np.isclose(net.impedance.at[idx2[0], "rft_pu"], 0.2)
     assert net.impedance.at[idx2[1], "name"] == "imp2"
     assert not net.impedance.at[idx2[1], "in_service"]
-    assert net.impedance.at[idx2[1], "rft_pu"] == 0.3
+    assert np.isclose(net.impedance.at[idx2[1], "rft_pu"], 0.3)
 
     # Test with zero-sequence parameters
     idx3 = create_impedances(
@@ -157,10 +157,10 @@ def test_create_impedances():
         xft0_pu=0.02,
     )
 
-    assert net.impedance.at[idx3[0], "rft0_pu"] == 0.01
-    assert net.impedance.at[idx3[0], "xft0_pu"] == 0.02
-    assert net.impedance.at[idx3[0], "rtf0_pu"] == 0.01  # defaults to rft0_pu
-    assert net.impedance.at[idx3[0], "xtf0_pu"] == 0.02  # defaults to xft0_pu
+    assert np.isclose(net.impedance.at[idx3[0], "rft0_pu"], 0.01)
+    assert np.isclose(net.impedance.at[idx3[0], "xft0_pu"], 0.02)
+    assert np.isclose(net.impedance.at[idx3[0], "rtf0_pu"], 0.01)  # defaults to rft0_pu
+    assert np.isclose(net.impedance.at[idx3[0], "xtf0_pu"], 0.02)  # defaults to xft0_pu
 
     validate_network(net)
 

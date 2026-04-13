@@ -203,7 +203,6 @@ def test_create_transformers_from_parameters():
         vkr0_percent=1.7,
         mag0_rx=0.4,
         mag0_percent=30,
-        # tap_neutral=0.0, FIXME add tap_side and tap_pos or remove
         vector_group="Dyn",
         si0_hv_partial=0.1,
         max_loading_percent=80,
@@ -212,21 +211,19 @@ def test_create_transformers_from_parameters():
     assert len(net.trafo) == 2
     assert all(net.trafo.hv_bus == 0)
     assert all(net.trafo.lv_bus == 1)
-    assert all(net.trafo.sn_mva == 0.5)
-    assert all(net.trafo.vn_hv_kv == 15.0)
-    assert all(net.trafo.vn_lv_kv == 0.45)
-    assert all(net.trafo.vk_percent == 1.0)
-    assert all(net.trafo.vkr_percent == 0.3)
-    assert all(net.trafo.pfe_kw == 0.2)
-    assert all(net.trafo.i0_percent == 0.3)
-    assert all(net.trafo.vk0_percent == 0.4)
-    assert all(net.trafo.mag0_rx == 0.4)
+    assert np.allclose(net.trafo.sn_mva, 0.5)
+    assert np.allclose(net.trafo.vn_hv_kv, 15.0)
+    assert np.allclose(net.trafo.vn_lv_kv, 0.45)
+    assert np.allclose(net.trafo.vk_percent, 1.0)
+    assert np.allclose(net.trafo.vkr_percent, 0.3)
+    assert np.allclose(net.trafo.pfe_kw, 0.2)
+    assert np.allclose(net.trafo.i0_percent, 0.3)
+    assert np.allclose(net.trafo.vk0_percent, 0.4)
+    assert np.allclose(net.trafo.mag0_rx, 0.4)
     assert all(net.trafo.mag0_percent == 30)
-    # assert all(net.trafo.tap_neutral == 0.0) FIXME either add tap_side or remove this
-    # assert all(net.trafo.tap_pos == 0.0)
     assert all(net.trafo.vector_group.values == "Dyn")
-    assert all(net.trafo.max_loading_percent == 80.0)
-    assert all(net.trafo.si0_hv_partial == 0.1)
+    assert np.allclose(net.trafo.max_loading_percent, 80.0)
+    assert np.allclose(net.trafo.si0_hv_partial, 0.1)
     assert all(net.trafo.test_kwargs == "dummy_string")
 
     validate_network(net)
@@ -843,14 +840,14 @@ def test_create_transformer3w_from_parameters():
     assert net.trafo3w.at[t, "vn_hv_kv"] == 110
     assert net.trafo3w.at[t, "vn_mv_kv"] == 20
     assert net.trafo3w.at[t, "vn_lv_kv"] == 10
-    assert net.trafo3w.at[t, "vk_hv_percent"] == 10.4
-    assert net.trafo3w.at[t, "vk_mv_percent"] == 10.4
-    assert net.trafo3w.at[t, "vk_lv_percent"] == 10.4
-    assert net.trafo3w.at[t, "vkr_hv_percent"] == 0.28
-    assert net.trafo3w.at[t, "vkr_mv_percent"] == 0.32
-    assert net.trafo3w.at[t, "vkr_lv_percent"] == 0.35
+    assert np.allclose(net.trafo3w.at[t, "vk_hv_percent"], 10.4)
+    assert np.allclose(net.trafo3w.at[t, "vk_mv_percent"], 10.4)
+    assert np.allclose(net.trafo3w.at[t, "vk_lv_percent"], 10.4)
+    assert np.allclose(net.trafo3w.at[t, "vkr_hv_percent"], 0.28)
+    assert np.allclose(net.trafo3w.at[t, "vkr_mv_percent"], 0.32)
+    assert np.allclose(net.trafo3w.at[t, "vkr_lv_percent"], 0.35)
     assert net.trafo3w.at[t, "pfe_kw"] == 35
-    assert net.trafo3w.at[t, "i0_percent"] == 0.89
+    assert np.allclose(net.trafo3w.at[t, "i0_percent"], 0.89)
 
     # Test with shift angles
     net = create_empty_network()
@@ -1027,24 +1024,22 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.hv_bus == 0)
     assert all(net.trafo3w.lv_bus == 1)
     assert all(net.trafo3w.mv_bus == 2)
-    assert all(net.trafo3w.sn_hv_mva == 0.6)
-    assert all(net.trafo3w.sn_mv_mva == 0.5)
-    assert all(net.trafo3w.sn_lv_mva == 0.4)
-    assert all(net.trafo3w.vn_hv_kv == 15.0)
-    assert all(net.trafo3w.vn_mv_kv == 0.9)
-    assert all(net.trafo3w.vn_lv_kv == 0.45)
-    assert all(net.trafo3w.vk_hv_percent == 1.0)
-    assert all(net.trafo3w.vk_mv_percent == 1.0)
-    assert all(net.trafo3w.vk_lv_percent == 1.0)
-    assert all(net.trafo3w.vkr_hv_percent == 0.3)
-    assert all(net.trafo3w.vkr_mv_percent == 0.3)
-    assert all(net.trafo3w.vkr_lv_percent == 0.3)
-    assert all(net.trafo3w.pfe_kw == 0.2)
-    assert all(net.trafo3w.i0_percent == 0.3)
-    assert all(net.trafo3w.mag0_rx == 0.4)
+    assert np.allclose(net.trafo3w.sn_hv_mva, 0.6)
+    assert np.allclose(net.trafo3w.sn_mv_mva, 0.5)
+    assert np.allclose(net.trafo3w.sn_lv_mva, 0.4)
+    assert np.allclose(net.trafo3w.vn_hv_kv, 15.0)
+    assert np.allclose(net.trafo3w.vn_mv_kv, 0.9)
+    assert np.allclose(net.trafo3w.vn_lv_kv, 0.45)
+    assert np.allclose(net.trafo3w.vk_hv_percent, 1.0)
+    assert np.allclose(net.trafo3w.vk_mv_percent, 1.0)
+    assert np.allclose(net.trafo3w.vk_lv_percent, 1.0)
+    assert np.allclose(net.trafo3w.vkr_hv_percent, 0.3)
+    assert np.allclose(net.trafo3w.vkr_mv_percent, 0.3)
+    assert np.allclose(net.trafo3w.vkr_lv_percent, 0.3)
+    assert np.allclose(net.trafo3w.pfe_kw, 0.2)
+    assert np.allclose(net.trafo3w.i0_percent, 0.3)
+    assert np.allclose(net.trafo3w.mag0_rx, 0.4)
     assert all(net.trafo3w.mag0_percent == 30)
-    #assert all(net.trafo3w.tap_neutral == 0.0) FIXME add tap_side or remove this
-    #assert all(net.trafo3w.tap_pos == 0.0)
     assert all(net.trafo3w.test_kwargs == "dummy_string")
 
     # setting params as array
@@ -1071,8 +1066,6 @@ def test_create_transformers3w_from_parameters():
         vkr_lv_percent=[0.3, 0.3],
         pfe_kw=[0.2, 0.1],
         i0_percent=[0.3, 0.2],
-        # tap_neutral=[0.0, 5.0],  FIXME either add tap_side or remove this
-        # tap_pos=[1, 2],
         in_service=[True, False],
         test_kwargs=["foo", "bar"],
     )
@@ -1086,16 +1079,14 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.vn_hv_kv == [15.0, 14.5])
     assert all(net.trafo3w.vn_mv_kv == [0.9, 0.7])
     assert all(net.trafo3w.vn_lv_kv == [0.45, 0.5])
-    assert all(net.trafo3w.vk_hv_percent == 1.0)
-    assert all(net.trafo3w.vk_mv_percent == 1.0)
-    assert all(net.trafo3w.vk_lv_percent == 1.0)
-    assert all(net.trafo3w.vkr_hv_percent == 0.3)
-    assert all(net.trafo3w.vkr_mv_percent == 0.3)
-    assert all(net.trafo3w.vkr_lv_percent == 0.3)
+    assert np.allclose(net.trafo3w.vk_hv_percent, 1.0)
+    assert np.allclose(net.trafo3w.vk_mv_percent, 1.0)
+    assert np.allclose(net.trafo3w.vk_lv_percent, 1.0)
+    assert np.allclose(net.trafo3w.vkr_hv_percent, 0.3)
+    assert np.allclose(net.trafo3w.vkr_mv_percent, 0.3)
+    assert np.allclose(net.trafo3w.vkr_lv_percent, 0.3)
     assert all(net.trafo3w.pfe_kw == [0.2, 0.1])
     assert all(net.trafo3w.i0_percent == [0.3, 0.2])
-    # assert all(net.trafo3w.tap_neutral == [0.0, 5.0]) FIXME either add tap_side or remove
-    # assert all(net.trafo3w.tap_pos == [1, 2])
     assert all(net.trafo3w.in_service == [True, False])
     assert all(net.trafo3w.test_kwargs == ["foo", "bar"])
 
@@ -1128,7 +1119,6 @@ def test_create_transformers3w_raise_errorexcept():
             vkr_lv_percent=0.3,
             pfe_kw=0.2,
             i0_percent=0.3,
-            # tap_neutral=0.0,  FIXME either remove this line or add tap_side and tap_pos
             mag0_rx=0.4,
             mag0_percent=30,
             index=[2, 1],
