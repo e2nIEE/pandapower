@@ -36,7 +36,7 @@ def test_convenience_create_functions():
     )
     runpp(net, init="flat")
 
-    assert net.load.p_mw.at[l0] == 9.5
+    assert np.isclose(net.load.p_mw.at[l0], 9.5)
     assert net.load.q_mvar.at[l0] > 0
     assert np.sqrt(net.load.p_mw.at[l0] ** 2 + net.load.q_mvar.at[l0] ** 2) == 10
     assert np.isclose(net.res_bus.vm_pu.at[b2], 0.99990833838)
@@ -58,7 +58,7 @@ def test_convenience_create_functions():
     )
     runpp(net, init="flat")
     assert np.sqrt(net.sgen.p_mw.at[sg0] ** 2 + net.sgen.q_mvar.at[sg0] ** 2) == 5
-    assert net.sgen.p_mw.at[sg0] == 4.75
+    assert np.isclose(net.sgen.p_mw.at[sg0], 4.75)
     assert net.sgen.q_mvar.at[sg0] > 0
     assert np.isclose(net.res_bus.vm_pu.at[b2], 1.0029376578)
     assert net.sgen.name.at[sg0] == "sgen"

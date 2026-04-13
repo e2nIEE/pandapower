@@ -1,7 +1,9 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 
+import numpy as np
 import pytest
 
 from pandapower.create import (
@@ -75,8 +77,8 @@ def test_create_switch(_create_test_net):
     assert net.switch.bus.at[sw3] == b3
     assert net.switch.element.at[sw3] == b4
     assert net.switch.et.at[sw3] == "b"
-    assert net.switch.z_ohm.at[sw3] == 0.5
-    assert net.switch.in_ka.at[sw3] == 1.5
+    assert np.isclose(net.switch.z_ohm.at[sw3], 0.5)
+    assert np.isclose(net.switch.in_ka.at[sw3], 1.5)
 
     # Test bus-transformer3w switch
     sw4 = create_switch(net, bus=b4, element=t3w1, et="t3")

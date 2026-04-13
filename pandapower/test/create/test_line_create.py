@@ -445,7 +445,7 @@ def test_create_lines_from_parameters():
     assert all(net.line["max_loading_percent"].values == 90)
     assert all(net.line["parallel"].values == 1)
     assert np.allclose(net.line["temperature_degree_celsius"], 20.0)
-    assert all(net.line["alpha"].values == 0.04)
+    assert np.allclose(net.line["alpha"], 0.04)
     assert all(net.line.test_kwargs == "dummy_string")
 
     validate_network(net)
@@ -605,7 +605,7 @@ def test_create_line_alpha_temperature():
     l5 = create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3)
 
     assert "alpha" in net.line.columns
-    assert all(net.line.loc[[l2, l3, l5], "alpha"] == 4.03e-3)
+    assert np.allclose(net.line.loc[[l2, l3, l5], "alpha"], 4.03e-3)
     assert all(net.line.loc[[l1, l4], "alpha"].isnull())
     assert net.line.loc[l2, "temperature_degree_celsius"] == 80
     assert all(net.line.loc[[l1, l3, l4, l5], "temperature_degree_celsius"].isnull())
