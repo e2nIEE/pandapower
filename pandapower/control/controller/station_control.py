@@ -654,10 +654,10 @@ class BinarySearchControl(Controller):
                             f' exceeded maximum Voltage at bus {self.bus_idx_dist[i]}: {vm_pu[i]} < {v_min_pu[i]}\n')
             if len(self.min_q_mvar) == len(self.max_q_mvar) == len(self.output_element_in_service):
 
-                exceed_limit_min = np.where(np.atleast_1d(self.output_values)[np.atleast_1d(self.output_element_in_service)]
-                                            < np.atleast_1d(self.min_q_mvar)[np.atleast_1d(self.output_element_in_service)])[0]
-                exceed_limit_max = np.where(np.atleast_1d(self.output_values)[np.atleast_1d(self.output_element_in_service)]
-                                            > np.atleast_1d(self.max_q_mvar)[np.atleast_1d(self.output_element_in_service)])[0]
+                exceed_limit_min = np.flatnonzero(np.atleast_1d(self.output_values)[np.atleast_1d(self.output_element_in_service)]
+                                        < np.atleast_1d(self.min_q_mvar)[np.atleast_1d(self.output_element_in_service)])
+                exceed_limit_max = np.flatnonzero(np.atleast_1d(self.output_values)[np.atleast_1d(self.output_element_in_service)]
+                                        > np.atleast_1d(self.max_q_mvar)[np.atleast_1d(self.output_element_in_service)])
                 for i in exceed_limit_max:
                     logger.warning(f'Controller {self.index} converged but the Reactive Power Output for Element '
                 f'{self.output_element}: {self.output_element_index[i]} exceeds upper limits: {self.output_values[i]} > {self.max_q_mvar[i]}\n')
@@ -694,7 +694,7 @@ class BinarySearchControl(Controller):
                     logger.warning(
                         f'Mismatched lengths of output elements {self.output_element} and output_values_distribution'
                         f'{len(np.array(self.output_element_in_service))} > {len(self.output_values_distribution)}'
-                        f' in Controller {self.index}.\n' f'Appending values {equal_val} \n')
+                        f' in Controller {self.index}.\n Appending values {equal_val} \n')
                     self.output_values_distribution = (np.append(self.output_values_distribution, [equal_val] *
                                                                  (len(self.output_element_in_service) - len(self.output_values_distribution))))
                 output_element_in_service = np.array(self.output_element_in_service)#ruggedizing code for wrong inputs
@@ -758,8 +758,8 @@ class BinarySearchControl(Controller):
             x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
                 step_diff == 0, 1e-6, step_diff)  #converging
             if any((abs(x) - abs(2 * self.output_values)) > 100): #catching overshoots for calculation, another check before writing into the net
-                x[np.where((abs(x) > abs(100 - abs(self.output_values))))[0]] = np.sign(x[np.where((abs(x) -
-                                                                           abs(2 * self.output_values)) > 100)[0]]) * 100
+                x[np.nonzero((abs(x) > abs(100 - abs(self.output_values))))] = np.sign(x[np.nonzero((abs(x) -
+                                                                           abs(2 * self.output_values)) > 100)]) * 100
             ###calculate the distribution of the output values
             if self.distribution_method == ControlModusEnum.imported: #when importing net from PF for backwards compatibility
                 distribution = output_distribution_values_in_service
@@ -837,14 +837,14 @@ class BinarySearchControl(Controller):
                             busbar_gen_gen = list(np.where(np.bincount(np.array(net.gen['bus'])) > 1)[0]) #gens and gens
                             busbar_gen_gen = False if len(busbar_gen_gen) == 0 else busbar_gen_gen #False if array empty
                             busbar_all = [busbar_gen_gen, busbar_sgen_sgen, busbar_gen_sgen] #merge all indices
-                            if not not any(busbar_all):#not all busbar with multiple output elements?
+                            if any(busbar_all):#not all busbar with multiple output elements?
                                 busbar_all = np.array([x for x in busbar_all if x != False][0]) #delete bools
                                 index_sgen = np.where(np.isin(net.sgen['bus'], busbar_all))[0] #indices of sgens
                                 index_sgen = [index for i, index in enumerate(index_sgen) if list(net.sgen['in_service'])[i]]#check for service
                                 index_gen = np.where(np.isin(net.gen['bus'], busbar_all))[0] #indices of gens
                                 index_gen = [index for i, index in enumerate(index_gen) if list(net.gen['in_service'])[i]] #check for service
                                 if len(index_sgen) + len(index_gen) > 1:
-                                    items_sgen, items_gen, busbar = f"Check Sgen:\n", f"Check gen:\n", f""#initiate strings
+                                    items_sgen, items_gen, busbar = "Check Sgen:\n", "Check gen:\n", ""#initiate strings
                                     for x in index_sgen: items_sgen += f"{net.sgen.name[x]} with index {x}\n"#append sgen names
                                     for x in index_gen: items_gen += f"{net.gen.name[x]} with index {x}\n" #append gen names
                                     for x in busbar_all: busbar += f"{net.bus.name[x]} with index {x}; " #append busbar names
@@ -898,7 +898,7 @@ class BinarySearchControl(Controller):
                                     geo = net.sgen.at[i, 'geo'] if 'geo' in net.sgen.columns else None,
                                     current_source = net.sgen.at[
                                         i, 'current_source'] if 'current_source' in net.sgen.columns else None,
-                                    name = f'temp_gen_{counter}')#type='GEN'
+                                    name = f'temp_gen_{counter}')#type 'GEN'
                             net.sgen.at[i, 'in_service'] = False #disable sgens
                             counter += 1
                     index = np.array([])
@@ -964,8 +964,7 @@ class BinarySearchControl(Controller):
                         x[i] = 0  # reset value to 0 because station is out of service
 
             else:
-                if (not self.distribution_method == ControlModusEnum.max_Q and
-                        not self.distribution_method == ControlModusEnum.rel_V_pu):
+                if self.distribution_method != ControlModusEnum.max_Q and self.distribution_method != ControlModusEnum.rel_V_pu:
                     x = sum(np.atleast_1d(x)) * distribution
 
             if self.output_adjustable is not None and net._options.get('enforce_q_lims', False):  # none if output element is a shunt
@@ -1055,7 +1054,7 @@ class BinarySearchControl(Controller):
     def _normalize_distribution_in_service(self, initial_pf_distribution=None):
         # normalize distribution depending on in service of stations
         if initial_pf_distribution is None:
-            if type(self.output_values_distribution) == str or getattr(self, 'output_values_distribution', None) is None:
+            if isinstance(self.output_values_distribution, str) or getattr(self, 'output_values_distribution', None) is None:
                 distribution = np.ones(len(np.atleast_1d(self.output_element_in_service)))/len(np.atleast_1d(self.output_element_in_service))
             else: distribution = self.output_values_distribution
         else:

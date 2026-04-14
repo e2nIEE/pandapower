@@ -703,5 +703,8 @@ def test_station_ctrl_pf_import_distributions():#test comparability between PF a
     assert(getattr(net.controller.at[3, 'object'].distribution_method, 'value', None) == 'max_Q')
     assert(getattr(net.controller.at[4, 'object'].distribution_method, 'value', None) == 'rel_V_pu')
 
+
+#todo test distributions with enabled q_lims
+
 if __name__ == '__main__':
     pytest.main(['-s', __file__])
