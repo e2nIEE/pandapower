@@ -28,7 +28,7 @@ except ImportError: # pragma: no cover
 @jit(nopython=True)
 def update_LODF_diag(LODF): # pragma: no cover
     for ix in range(LODF.shape[0]):
-        # To preserve the data type of diagnol elments
+        # To preserve the data type of diagonal elements
         LODF[ix, ix] -= (LODF[ix, ix] + 1.)
 
 
