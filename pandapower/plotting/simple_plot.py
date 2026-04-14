@@ -11,7 +11,6 @@ import pandas as pd
 
 try:
     import matplotlib.pyplot as plt
-
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -38,10 +37,92 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 logger = logging.getLogger(__name__)
 
 
+def bus_info(bus):
+    return ("bus", bus)
+
+
+def line_info(line):
+    return ("line", line)
+
+
+def trafo_info(idx):
+    return ("trafo", idx)
+
+
+def trafo3w_info(idx):
+    return ("trafo3w", idx)
+
+
+def hover(event, ax, net, hover_text):
+    """
+    Update the hover text in an interactive pandapower plot based on the mouse position.
+
+    Expects collections to have an `info` attribute containing a list of
+    (element, index) tuples, e.g. ("bus", 3) or ("line", 5).
+
+    Parameters
+    ----------
+    event : matplotlib.backend_bases.MouseEvent
+        Mouse-move event from Matplotlib.
+    ax : matplotlib.axes.Axes
+        Axes object containing the collections.
+    net : pp.pandapowerNet
+        pandapower network with DataFrames (bus, line, trafo, trafo3w, ...).
+    hover_text : matplotlib.text.Text
+        Text artist whose content, position and visibility are updated.
+    """
+    fig = ax.figure
+    visible = hover_text.get_visible()
+
+    if event.inaxes is not ax:
+        if visible:
+            hover_text.set_visible(False)
+            fig.canvas.draw_idle()
+        return
+
+    for collection in ax.collections:
+        info = getattr(collection, "info", None)
+        if not info:
+            continue
+
+        contains, props = collection.contains(event)
+        if not contains or "ind" not in props or len(props["ind"]) == 0:
+            continue
+
+        coll_idx = props["ind"][0]
+        element_info = info[coll_idx]
+
+        if isinstance(element_info, tuple) and len(element_info) == 2:
+            element, idx = element_info
+        else:
+            element, idx = str(element_info), None
+
+        df = getattr(net, element, None)
+
+        if df is not None and idx is not None and idx in df.index and "name" in df.columns:
+            name = df.at[idx, "name"]
+            hover_info = f"{element}: {name} | Index: {idx}"
+        elif idx is not None:
+            hover_info = f"{element} | Index: {idx}"
+        else:
+            hover_info = str(element_info)
+
+        # text and position
+        hover_text.set_text(hover_info)
+        hover_text.set_position((event.xdata, event.ydata))
+        hover_text.set_visible(True)
+        fig.canvas.draw_idle()
+        return
+
+    if visible:
+        hover_text.set_visible(False)
+        fig.canvas.draw_idle()
+
+
 def simple_plot(
         net: pandapowerNet,
         respect_switches: bool = False,
-        line_width: float = 1.0,
+        line_width: float = 2.0,
         bus_size: float = 1.0,
         ext_grid_size: float = 1.0,
         trafo_size: float = 1.0,
@@ -56,11 +137,11 @@ def simple_plot(
         switch_distance: float = 1.0,
         plot_line_switches: bool = False,
         scale_size: bool = True,
-        bus_color="b",
+        bus_color="#1c3f52",
         line_color="grey",
         dcline_color="c",
         trafo_color="k",
-        ext_grid_color="y",
+        ext_grid_color="#179c7d",
         switch_color="k",
         library="igraph",
         show_plot: bool = True,
@@ -71,6 +152,12 @@ def simple_plot(
         line_dc_color="c",
         vsc_size: float = 4.0,
         vsc_color="orange",
+        highlight_buses=None,
+        highlight_lines=None,
+        enable_hover=True,
+        highlight_bus_size_factor=1.5,
+        highlight_line_width_factor=2.0,
+        highlight_color="#f58220"
 ):
     """
         Plots a pandapower network as simple as possible. If no geodata is available, artificial
@@ -108,7 +195,12 @@ def simple_plot(
                 to use igraph package or "networkx" to use networkx package.
             show_plot (bool, True): Shows plot at the end of plotting
             ax (object, None): matplotlib axis to plot to
-
+            highlight_buses (iterable, None): buses, to highlight
+            highlight_lines (iterable, None): lines to highlight
+            enable_hover (bool, True): enable hovering functionality
+            highlight_bus_size_factor (float, 1.5): bus_size for highlighted buses
+            highlight_line_width_factor (float, 2.0): line_width for highlighted lines
+            highlight_color (str, "r"): color for highlighted elements
         Returns:
             axes of figure
     """
@@ -126,9 +218,11 @@ def simple_plot(
         respect_switches = False
 
     # create geocoord if none are available
-    if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (net.line.geo.isna().any() and net.bus.geo.isna().any()):
-        logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
-                       " This may take some time")
+    if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (
+            net.line.geo.isna().any() and net.bus.geo.isna().any()):
+        logger.warning(
+            "No or insufficient geodata available --> Creating artificial coordinates." +
+            " This may take some time")
         create_generic_coordinates(net, respect_switches=respect_switches, library=library)
 
     if scale_size:
@@ -153,10 +247,20 @@ def simple_plot(
         switch_distance = sizes["switch_distance"]
         gen_size = sizes["gen"]
 
-    # create bus collections to plot
-    bc = create_bus_collection(
-        net, net.bus.index, size=bus_size, color=bus_color, zorder=10
-    )
+    bc = create_bus_collection(net, net.bus.index, size=bus_size, color=bus_color,
+                               zorder=10, infofunc=bus_info)
+    collections = [bc]
+
+    if highlight_buses is not None:
+        hl_buses_idx = list(set(highlight_buses) & set(net.bus.index))
+        if len(hl_buses_idx):
+            hbc = create_bus_collection(
+                net, hl_buses_idx,
+                size=bus_size * highlight_bus_size_factor,
+                color=highlight_color,
+                zorder=bc.zorder + 1 if hasattr(bc, "zorder") else 11,
+                infofunc=bus_info)
+            collections.append(hbc)
 
     # if bus geodata is available, but no line geodata
     use_bus_geodata = len(net.line.geo.dropna()) == 0
@@ -170,22 +274,37 @@ def simple_plot(
     plot_dclines = net.dcline.in_service
     plot_lines_dc = net.line_dc.loc[net.line_dc.in_service].index
 
-    # create line collections
     lc = create_line_collection(
         net,
         plot_lines,
         color=line_color,
         linewidths=line_width,
         use_bus_geodata=use_bus_geodata,
-    )
-    collections = [bc, lc]
+        infofunc=line_info)
+    collections.append(lc)
+
+    if highlight_lines is not None:
+        hl_lines_idx = list(set(highlight_lines) & set(plot_lines))
+        if len(hl_lines_idx):
+            hlc = create_line_collection(
+                net,
+                hl_lines_idx,
+                color=highlight_color,
+                linewidths=line_width * highlight_line_width_factor,
+                use_bus_geodata=use_bus_geodata,
+                infofunc=line_info)
+            collections.append(hlc)
 
     # create dcline collections
     if len(net.dcline) > 0:
         dclc = create_dcline_collection(
-            net, plot_dclines, color=dcline_color, linewidths=line_width
+            net,
+            plot_dclines,
+            color=dcline_color,
+            linewidths=line_width
         )
         collections.append(dclc)
+
     # create bus dc collection
     if len(net.bus_dc) > 0:
         bc_dc = create_bus_collection(
@@ -197,12 +316,14 @@ def simple_plot(
             bus_table="bus_dc",
         )
         collections.append(bc_dc)
+
     # create VSC collection
     if len(net.vsc) > 0:
         vsc_ac = create_vsc_collection(
             net, net.vsc.index, size=vsc_size, color=vsc_color, zorder=12
         )
         collections.append(vsc_ac)
+
     # create line_dc collections
     if len(net.line_dc) > 0:
         lc_dc = create_line_collection(
@@ -216,7 +337,6 @@ def simple_plot(
         collections.append(lc_dc)
 
     # create ext_grid collections
-    # eg_buses_with_geo_coordinates = set(net.ext_grid.bus.values) & set(net.bus_geodata.index)
     if len(net.ext_grid) > 0:
         sc = create_ext_grid_collection(
             net,
@@ -236,7 +356,11 @@ def simple_plot(
     ]
     if len(trafo_buses_with_geo_coordinates) > 0:
         tc = create_trafo_collection(
-            net, trafo_buses_with_geo_coordinates, color=trafo_color, size=trafo_size
+            net,
+            trafo_buses_with_geo_coordinates,
+            color=trafo_color,
+            size=trafo_size,
+            infofunc=trafo_info
         )
         collections.append(tc)
 
@@ -249,9 +373,8 @@ def simple_plot(
            trafo3w.lv_bus in net.bus.geo.index
     ]
     if len(trafo3w_buses_with_geo_coordinates) > 0:
-        tc = create_trafo3w_collection(
-            net, trafo3w_buses_with_geo_coordinates, color=trafo_color
-        )
+        tc = create_trafo3w_collection(net, trafo3w_buses_with_geo_coordinates,
+                                       color=trafo_color, infofunc=trafo3w_info)
         collections.append(tc)
 
     if plot_line_switches and len(net.switch):
@@ -298,6 +421,21 @@ def simple_plot(
         collections.append(bsc)
 
     ax = draw_collections(collections, ax=ax)
+
+    if enable_hover:
+        fig = ax.figure
+        hover_text = ax.text(0, 0, "", fontsize=12, fontweight="bold", color='white',
+                             ha='center', va='center', zorder=99,
+                             bbox={"boxstyle": "round",
+                                   "facecolor": '#179c7d',
+                                   "alpha": 1,
+                                   "edgecolor": 'white'})
+        hover_text.set_visible(False)
+        fig.canvas.mpl_connect(
+            "motion_notify_event",
+            lambda event: hover(event, ax, net, hover_text)
+        )
+
     if show_plot:
         if not MATPLOTLIB_INSTALLED:
             soft_dependency_error(

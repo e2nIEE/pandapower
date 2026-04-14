@@ -4,20 +4,35 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import logging
+from copy import deepcopy
+
 import numpy as np
 import pytest
 
-from copy import deepcopy
+import pandapower.pypower.pipsopf_solver as pipsopf_solver_module
 from pandapower.auxiliary import OPFNotConverged
 from pandapower.convert_format import convert_format
-from pandapower.create import create_empty_network, create_bus, create_gen, create_ext_grid, create_load, \
-    create_poly_cost, create_line_from_parameters, create_transformer3w_from_parameters, create_line, create_sgen, \
-    create_transformer_from_parameters, create_transformer3w, create_pwl_cost, create_storage
+from pandapower.create import (
+    create_bus,
+    create_empty_network,
+    create_ext_grid,
+    create_gen,
+    create_line,
+    create_line_from_parameters,
+    create_load,
+    create_poly_cost,
+    create_pwl_cost,
+    create_sgen,
+    create_storage,
+    create_transformer3w,
+    create_transformer3w_from_parameters,
+    create_transformer_from_parameters,
+)
 from pandapower.networks import simple_four_bus_system
-from pandapower.run import runopp, rundcopp, runpp
+from pandapower.pypower.opf_model import opf_model
+from pandapower.run import rundcopp, runopp, runpp
 from pandapower.test.helper_functions import add_grid_connection
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +57,34 @@ def simplest_grid():
 
     return net
 
+def test_runopp_init_results_preserves_model_v0(monkeypatch):
+    net = simplest_grid()
+    runpp(net, calculate_voltage_angles=False)
+
+    captured = {}
+    original_getv = opf_model.getv
+
+    def recording_getv(self):
+        v0, vl, vu = original_getv(self)
+        captured["model_v0"] = v0.copy()
+        return v0, vl, vu
+
+    class StopAfterCapturingX0(RuntimeError):
+        pass
+
+    def recording_pips(f_fcn, x0, A, l, u, xmin, xmax, gh_fcn, hess_fcn, opt):
+        captured["solver_x0"] = x0.copy()
+        raise StopAfterCapturingX0
+
+    monkeypatch.setattr(opf_model, "getv", recording_getv)
+    monkeypatch.setattr(pipsopf_solver_module, "pips", recording_pips)
+
+    with pytest.raises(StopAfterCapturingX0):
+        runopp(net, init="results", calculate_voltage_angles=False)
+
+    assert "model_v0" in captured
+    assert "solver_x0" in captured
+    assert np.allclose(captured["solver_x0"], captured["model_v0"])
 
 @pytest.fixture(scope='session')
 def net_3w_trafo_opf():

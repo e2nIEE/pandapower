@@ -58,6 +58,7 @@ class PowerElectronicsConnection:
                                         sort=False)
         eq_generating_units['type'] = eq_generating_units['type'].fillna('WP')
         eq_generating_units = eq_generating_units.rename(columns={'rdfId': 'PowerElectronicsUnit'})
+        eq_generating_units = eq_generating_units.drop(columns=['name'])
         eqssh_pecs = self.cimConverter.merge_eq_ssh_profile('PowerElectronicsConnection', add_cim_type_column=True)
         eqssh_pecs = pd.merge(eqssh_pecs, eq_generating_units, how='left', on='PowerElectronicsUnit')
         eqssh_pecs = pd.merge(eqssh_pecs, self.cimConverter.bus_merge, how='left', on='rdfId')

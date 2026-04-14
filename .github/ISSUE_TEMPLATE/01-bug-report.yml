@@ -1,7 +1,7 @@
-name: Bug Report
+---
+name: "🐛 Bug report"
 description: Report incorrect behavior in the pandapower library
-title: '[bug] YOUR TITLE'
-labels: bug
+type: bug
 
 body:
   - type: checkboxes
@@ -25,22 +25,6 @@ body:
           required: true
 
   - type: textarea
-    id: example
-    attributes:
-      label: Reproducible Example
-      description: >
-        Please follow [this guide](https://matthewrocklin.com/blog/work/2018/02/28/minimal-bug-reports) on how to
-        provide a minimal, copy-pastable example.
-      placeholder: >
-        from pandapower.create import create_empty_network
-
-        net = create_empty_network()
-
-        ...
-      render: python
-    validations:
-      required: true
-  - type: textarea
     id: problem
     attributes:
       label: Issue Description and Traceback
@@ -57,21 +41,37 @@ body:
     validations:
       required: true
   - type: textarea
+    id: example
+    attributes:
+      label: Reproducible Example
+      description: >
+        Please follow [this guide](https://matthewrocklin.com/blog/work/2018/02/28/minimal-bug-reports) on how to
+        provide a minimal, copy-pastable example.
+      placeholder: >
+        from pandapower.create import create_empty_network
+
+        net = create_empty_network()
+
+        ...
+      render: python
+    validations:
+      required: true
+  - type: textarea
     id: version
     attributes:
       label: Installed Versions
       description: >
         Please paste the output of ``pd.show_versions()``
       value: >
-        * python version:
-        * pandas version: 
-        * networkx version: 
-        * scipy version: 
-        * numpy version: 
-        * packaging version: 
-        * tqdm version: 
-        * deepdiff version: 
-        * Operating System name/version:
+        * Operating System name/version:  
+        * python version:  
+        * pandas version:  
+        * networkx version:  
+        * scipy version:  
+        * numpy version:  
+        * packaging version:  
+        * tqdm version:  
+        * deepdiff version:
     validations:
       required: true
   - type: checkboxes
