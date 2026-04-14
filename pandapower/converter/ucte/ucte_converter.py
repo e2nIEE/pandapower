@@ -28,6 +28,29 @@ class UCTE2pandapower:
         self.slack_as_gen = slack_as_gen
         self.clip_small_x_values = clip_small_x_values
 
+    @staticmethod
+    def _create_empty_network() -> pandapowerNet:
+        net: pandapowerNet = create_empty_network()
+        new_columns: dict[str, dict] = {
+            "trafo": {
+                "tap2_min": int,
+                "tap2_max": int,
+                "tap2_neutral": int,
+                "tap2_pos": int,
+                "tap2_step_percent": float,
+                "tap2_step_degree": float,
+                "tap2_side": str,
+                "tap2_changer_type": str,
+                "amica_name": str,
+            },
+            "line": {"amica_name": str},
+            "bus": {"ucte_country": str},
+        }
+        for pp_element in new_columns.keys():
+            for col, dtype in new_columns[pp_element].items():
+                net[pp_element][col] = pd.Series(dtype=dtype)
+        return net
+
     def convert(self, ucte_dict: Dict) -> pandapowerNet:
         self.logger.info("Converting UCTE data to a pandapower network.")
         time_start = time.time()
