@@ -375,7 +375,7 @@ class BinarySearchControl(Controller):
 
     def initialize_control(self, net):
         try:
-            self.distribution_method = ControlModusEnum(self.distribution_method)
+            self.distribution_method = ControlModusEnum(getattr(self, 'distribution_method', None))
         except ValueError:
             logger.warning(f"Control_modus {getattr(self, 'distribution_method', None)} not recognized,"
                        f" using 'rel_P' from available types 'rel_P', 'max_Q', 'set_Q', 'rel_V_pu' or 'rel_rated_S'\n")
@@ -889,10 +889,10 @@ class BinarySearchControl(Controller):
                                     in_service = net.sgen.at[i, 'in_service'],
                                     sn_mva = net.sgen.at[i, 'sn_mva'] if 'sn_mva' in net.sgen.columns else None,
                                     scaling = net.sgen.at[i, 'scaling'] if 'scaling' in net.sgen.columns else None,
-                                    min_p_mw = net.sgen.at[i, 'min_p_mw'] if 'min_p_mw' in net.sgen.columns else None,
-                                    max_p_mw = net.sgen.at[i, 'max_p_mw'] if 'max_p_mw' in net.sgen.columns else None,
-                                    min_q_mvar = net.sgen.at[i, 'min_q_mvar'] if 'min_q_mvar' in net.sgen.columns else None,
-                                    max_q_mvar = net.sgen.at[i, 'max_q_mvar'] if 'max_q_mvar' in net.sgen.columns else None,
+                                    min_p_mw = net.sgen.at[i, 'min_p_mw'] if 'min_p_mw' in net.sgen.columns else 0, #for value other then inf min and max must be given
+                                    max_p_mw = net.sgen.at[i, 'max_p_mw'] if 'max_p_mw' in net.sgen.columns else 9999,
+                                    min_q_mvar = net.sgen.at[i, 'min_q_mvar'] if 'min_q_mvar' in net.sgen.columns and np.isfinite(net.sgen.at[i, 'min_q_mvar']) else -20,
+                                    max_q_mvar = net.sgen.at[i, 'max_q_mvar'] if 'max_q_mvar' in net.sgen.columns and np.isfinite(net.sgen.at[i, 'max_q_mvar']) else 20,
                                     description = net.sgen.at[i, 'description'] if 'description' in net.sgen.columns else None,
                                     equipment = net.sgen.at[i, 'equipment'] if 'equipment' in net.sgen.columns else None,
                                     geo = net.sgen.at[i, 'geo'] if 'geo' in net.sgen.columns else None,
@@ -1073,25 +1073,25 @@ class BinarySearchControl(Controller):
 
     def _update_min_max_q_mvar(self, net):
         if 'min_q_mvar' in net[self.output_element].columns:
-            if (getattr(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'], "values", -np.inf)
-                and not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values))):
+            if not np.all(np.isnan(pd.array(pd.Series(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic']).values, dtype="Int64"))):
                 qmin, _ = get_min_max_q_mvar_from_characteristics_object(net, self.output_element, self.output_element_index)
                 self.output_min_q_mvar = np.nan_to_num(qmin, nan=-np.inf)
                 net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
             else:
-                self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
+                self.output_min_q_mvar = np.nan_to_num(pd.Series(
+                    net[self.output_element].loc[self.output_element_index, 'min_q_mvar']).values, nan=-np.inf)
                 net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
         else:
             self.output_min_q_mvar = list(np.array([-np.inf]*len(self.output_element_index), dtype=np.float64))
 
         if 'max_q_mvar' in net[self.output_element].columns:
-            if (getattr(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'], "values", np.inf)
-                    and not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values))):
+            if not np.all(np.isnan(pd.array(pd.Series(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic']).values, dtype="Int64"))):
                 _, qmax = get_min_max_q_mvar_from_characteristics_object(net, self.output_element, self.output_element_index)
                 self.output_max_q_mvar = np.nan_to_num(qmax, nan=np.inf)
                 net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar
             else:
-                self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
+                self.output_max_q_mvar = np.nan_to_num(pd.Series(
+                    net[self.output_element].loc[self.output_element_index, 'max_q_mvar']).values, nan=np.inf)
                 net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar
         else:
             self.output_max_q_mvar = list(np.array([np.inf]*len(self.output_element_index), dtype=np.float64))
