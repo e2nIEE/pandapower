@@ -67,6 +67,7 @@ jobs:
           path: ./coverage-${{ matrix.group }}.xml
 
   network_schema:
+    # This tests only the network_schema tests due to the large amount these are only tested on min/max python version
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
