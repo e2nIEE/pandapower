@@ -172,7 +172,7 @@ def from_pickle(filename, convert=True):
     return net
 
 
-def from_excel(filename, convert=True):
+def from_excel(filename, convert=True, add_basic_std_types=True):
     """
     Load a pandapower network from an Excel file
 
@@ -196,9 +196,9 @@ def from_excel(filename, convert=True):
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:
-        net = from_dict_of_dfs(xls)
+        net = from_dict_of_dfs(xls, add_basic_std_types=add_basic_std_types)
     except:
-        net = _from_excel_old(xls)
+        net = _from_excel_old(xls, add_basic_std_types=add_basic_std_types)
     if convert:
         convert_format(net)
 
@@ -208,10 +208,10 @@ def from_excel(filename, convert=True):
     return net
 
 
-def _from_excel_old(xls):
+def _from_excel_old(xls, add_basic_std_types=True):
     par = xls["parameters"]["parameter"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
-    net = create_empty_network(name=name, f_hz=par.at["f_hz"])
+    net = create_empty_network(name=name, f_hz=par.at["f_hz"], add_stdtypes=add_basic_std_types)
     net.update(par)
     for item, table in xls.items():
         if item == "parameters":
