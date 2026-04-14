@@ -1,7 +1,6 @@
 name: Feature Request
 description: Suggest an idea for pandapower
-title: '[feature] YOUR TITLE'
-labels: [Enhancement]
+type: feature
 
 body:
   - type: checkboxes
@@ -16,18 +15,15 @@ body:
             Read the relevant sections of the [documentation](https://pandapower.readthedocs.io/en/latest/about.html)
         - label: >
             Browse the repository, [tutorials](https://github.com/e2nIEE/pandapower/tree/develop/tutorials) and [tests](https://github.com/e2nIEE/pandapower/tree/develop/pandapower/test) for already existing functionalities
-  - type: checkboxes
+  - type: dropdown
     id: feature_checks
     attributes:
       label: Feature Type
-      description: Please check what type of feature request you would like to propose.
+      description: Please select what type of feature you would like to propose.
       options:
-        - label: >
-            Adding new functionality to pandapower
-        - label: >
-            Changing existing functionality in pandapower
-        - label: >
-            Removing existing functionality in pandapower
+        - Adding new functionality
+        - Changing existing functionality
+        - Removing existing functionality
   - type: textarea
     id: description
     attributes:
@@ -55,7 +51,7 @@ body:
     id: label_checks
     attributes:
       label: Label
-      description: Choose `labels` at the right side (e.g. `bug`, `controller`, `OPF`...).
+      description: Choose `labels` at the right side (e.g. `controller`, `OPF`...).
       options:
         - label: >
             Relevant labels are selected
