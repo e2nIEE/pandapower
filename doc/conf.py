@@ -25,12 +25,10 @@ import sys
 #needs_sphinx = '1.0'
 
 sys.path.insert(0, os.path.abspath(".."))
-sys.path.append(os.path.abspath(".\\_themes"))
-sys.path.append(os.path.abspath("..\\tests"))
-sys.path.append(os.path.abspath("..\\network_generator"))
+
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-sys.path.append(os.path.abspath('_exts')) # load custom extensions
+sys.path.append(os.path.abspath('_exts'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
@@ -143,7 +141,7 @@ html_theme_path = ["_themes"]
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = "pics/pp_text.svg"
+html_logo = "pics/pandapower_black.png"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32

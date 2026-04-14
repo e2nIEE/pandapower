@@ -6,7 +6,7 @@ pandapower combines the data analysis library `pandas <https://pandas.pydata.org
 `PYPOWER <https://pypi.org/project/PYPOWER/>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
 
-.. image:: /pics/pp.svg
+.. image:: /pics/pandapower_color.png
     :target: http://pandapower.org/
     :width: 30em
     :align: left
