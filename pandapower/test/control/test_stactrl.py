@@ -243,7 +243,7 @@ def test_qlimits_with_capability_curve_no_reactive_power():
                         output_element_in_service=[True], output_values_distribution=[1],
                         input_element="res_bus", input_variable="vm_pu", input_element_index=[1],
                         set_point=0.98, voltage_ctrl=True, tol=tol)
-    runpp(net, run_control=True, enforce_q_lims=True) #qlims as error, why todo
+    runpp(net, run_control=True, enforce_q_lims=True)
     assert(abs(net.res_sgen.loc[0, 'q_mvar'] + 6.7373132) < tol)
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
