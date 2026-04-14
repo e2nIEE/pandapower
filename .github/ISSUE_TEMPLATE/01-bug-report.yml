@@ -1,4 +1,5 @@
-name: Bug Report
+---
+name: "🐛 Bug report"
 description: Report incorrect behavior in the pandapower library
 type: bug
 
