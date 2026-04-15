@@ -107,7 +107,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        group: [1, 2, 3, 4]
+        group: [1, 2]
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
@@ -125,7 +125,7 @@ jobs:
           uv pip list
       - name: Test with pytest
         run: |
-          uv run pytest --splits 4 --group ${{ matrix.group }} --ignore=pandapower/test/opf --ignore=pandapower/test/network_schema
+          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf --ignore=pandapower/test/network_schema
 
   opf:
     # needs: build
