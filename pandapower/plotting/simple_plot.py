@@ -397,7 +397,7 @@ def simple_plot(
         line_color="grey",
         dcline_color="c",
         trafo_color="k",
-        ext_grid_color="#C7105C",
+        ext_grid_color="#1c3f52",
         switch_color="k",
         library="igraph",
         show_plot: bool = True,
