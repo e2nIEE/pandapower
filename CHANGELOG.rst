@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] `add_basic_std_types` parameter to `from_excel`
 - [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
 - [ADDED] added more functions to diagnostic
 - [ADDED] check to check if vkr_percent values are reasonable (see issue #786).
