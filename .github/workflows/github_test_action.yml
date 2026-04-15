@@ -95,12 +95,12 @@ jobs:
         run: |
           uv pip install pytest-cov numpy~=1.26
           uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
-          cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
+          cp ./coverage.xml ./coverage-net-schema-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-${{ matrix.group }}
-          path: ./coverage-${{ matrix.group }}.xml
+          name: coverage-net-schema-${{ matrix.group }}
+          path: ./coverage-net-schema-${{ matrix.group }}.xml
 
   numpy1-support:
     runs-on: ubuntu-latest
