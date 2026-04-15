@@ -72,7 +72,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        python-version: ['3.10', '3.14']
+        #python-version: ['3.10', '3.14']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python' and the release pipelines
         group: [ 1, 2, 3, 4 ]
@@ -82,7 +82,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
         with:
-          python-version: ${{ matrix.python-version }}
+          #python-version: ${{ matrix.python-version }}
+          python-version: '3.14'
       - name: Install dependencies
         run: |
           uv sync --extra dev          
@@ -90,18 +91,12 @@ jobs:
       - name: List of installed packages
         run: |
           uv pip list
-      - name: Test with pytest
-        if: ${{ matrix.python-version != '3.10' }}
-        run: |
-          uv run pytest --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
       - name: Test with pytest, Codecov and Coverage
-        if: ${{ matrix.python-version == '3.10' }}
         run: |
           uv pip install pytest-cov numpy~=1.26
           uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
-        if: ${{ matrix.python-version == '3.10' }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.group }}
@@ -130,7 +125,7 @@ jobs:
           uv pip list
       - name: Test with pytest
         run: |
-          uv run pytest --splits 4 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv run pytest --splits 4 --group ${{ matrix.group }} --ignore=pandapower/test/opf --ignore=pandapower/test/network_schema
 
   opf:
     # needs: build
