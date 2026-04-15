@@ -38,7 +38,7 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 logger = logging.getLogger(__name__)
 
-# ── color palettes ────────────────────────────────────────────────────────────
+# color palettes
 _LINE_PALETTE: list[str] = ["#b2d235", "#fdb913", "#f58220", "#C7105C"]
 _BUS_PALETTE:  list[str] = ["#005b7f", "#179c7d", "#179c7d", "#fdb913", "#C7105C"]
 
@@ -181,7 +181,6 @@ def hover(event, ax, net, hover_text):
 
 
 # ── colormap helpers ──────────────────────────────────────────────────────────
-
 def _pick_n_colors(n: int, palette: list[str]) -> list[str]:
     """
     Sample *n* colors evenly from *palette* using floor-based index mapping.
@@ -606,8 +605,8 @@ def simple_plot(
     try:
         if net.res_bus.empty or net.res_line.empty:
             logger.info("Result tables empty – running pp.runpp(net) automatically.")
-            import pandapower as pp
-            pp.runpp(net)
+            from pandapower.run import runpp
+            runpp(net)
 
         from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous
 
@@ -653,16 +652,6 @@ def simple_plot(
     if cmap_bc is not None:
         collections.append(cmap_bc)
 
-    if highlight_buses is not None:
-        hl_buses_idx = list(set(highlight_buses) & set(net.bus.index))
-        if len(hl_buses_idx):
-            hbc = create_bus_collection(
-                net, hl_buses_idx,
-                size=bus_size * highlight_bus_size_factor,
-                color=highlight_color, zorder=11, infofunc=bus_info,
-            )
-            collections.append(hbc)
-
     # fall back to bus geodata when no line geodata is present
     use_bus_geodata = len(net.line.geo.dropna()) == 0
     in_service_lines = net.line[net.line.in_service].index
@@ -693,7 +682,17 @@ def simple_plot(
     collections.append(normal_lc)
     if cmap_lc is not None:
         collections.append(cmap_lc)
-    # ─────────────────────────────────────────────────────────────────────────
+
+    #  ── highlighting
+    if highlight_buses is not None:
+        hl_buses_idx = list(set(highlight_buses) & set(net.bus.index))
+        if len(hl_buses_idx):
+            hbc = create_bus_collection(
+                net, hl_buses_idx,
+                size=bus_size * highlight_bus_size_factor,
+                color=highlight_color, zorder=11, infofunc=bus_info,
+            )
+            collections.append(hbc)
 
     if highlight_lines is not None:
         hl_lines_idx = list(set(highlight_lines) & set(plot_lines))
@@ -706,6 +705,7 @@ def simple_plot(
             )
             collections.append(hlc)
 
+    #  ── other collections
     if len(net.dcline) > 0:
         dclc = create_dcline_collection(
             net, plot_dclines, color=dcline_color, linewidths=line_width
