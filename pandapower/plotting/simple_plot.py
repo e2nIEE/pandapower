@@ -599,11 +599,18 @@ def simple_plot(
     # ── colormap setup ────────────────────────────────────────────────────────
     # Always attempt colormap preparation so the mode buttons can be offered.
     cmap_l = norm_l = cmap_b = norm_b = None
-    colormap_ready = False
-    _cl = _cb = None  # resolved cmap_lists needed for tick extraction later
+    cmap_buses_ready = cmap_lines_ready = colormap_ready = False
+    _cl = _cb = None
+
+    has_buses = len(net.bus) > 0
+    has_lines = len(net.line) > 0
 
     try:
-        if net.res_bus.empty or net.res_line.empty:
+        needs_runpp = (
+                (has_buses and net.res_bus.empty)
+                or (has_lines and net.res_line.empty)
+        )
+        if needs_runpp:
             logger.info("Result tables empty – running pp.runpp(net) automatically.")
             from pandapower.run import runpp
             runpp(net)
@@ -611,18 +618,24 @@ def simple_plot(
         from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous
 
         if colormap_type == "discrete":
-            _cl = cmap_lines or _build_cmap_from_limits(line_limits, "discrete", "line")
-            _cb = cmap_buses  or _build_cmap_from_limits(bus_limits,  "discrete", "bus")
-            cmap_l, norm_l = cmap_discrete(_cl)
-            cmap_b, norm_b = cmap_discrete(_cb)
-            colormap_ready = True
+              if has_lines:
+                _cl = cmap_lines or _build_cmap_from_limits(line_limits, "discrete", "line")
+                cmap_l, norm_l = cmap_discrete(_cl)
+                cmap_lines_ready = True
+              if has_buses:
+                _cb = cmap_buses or _build_cmap_from_limits(bus_limits, "discrete", "bus")
+                cmap_b, norm_b = cmap_discrete(_cb)
+                cmap_buses_ready = True
 
         elif colormap_type == "continuous":
-            _cl = cmap_lines or _build_cmap_from_limits(line_limits, "continuous", "line")
-            _cb = cmap_buses  or _build_cmap_from_limits(bus_limits,  "continuous", "bus")
-            cmap_l, norm_l = cmap_continuous(_cl)
-            cmap_b, norm_b = cmap_continuous(_cb)
-            colormap_ready = True
+            if has_lines:
+                _cl = cmap_lines or _build_cmap_from_limits(line_limits, "continuous", "line")
+                cmap_l, norm_l = cmap_continuous(_cl)
+                cmap_lines_ready = True
+            if has_buses:
+                _cb = cmap_buses or _build_cmap_from_limits(bus_limits, "continuous", "bus")
+                cmap_b, norm_b = cmap_continuous(_cb)
+                cmap_buses_ready = True
 
         else:
             logger.error(
@@ -630,31 +643,37 @@ def simple_plot(
                 "Allowed values: 'discrete', 'continuous'. Mode buttons disabled."
             )
 
+        colormap_ready = cmap_buses_ready or cmap_lines_ready  # ← GEÄNDERT
+
     except Exception as exc:
         logger.warning(
             f"Colormap setup failed ({exc!r}). "
             "Mode buttons will not be shown; plotting in Normal mode only."
         )
 
-    # ── bus collections: flat-color (Normal) + colormap (Colormap) ───────────
-    normal_bc = create_bus_collection(
-        net, net.bus.index, size=bus_size,
-        color=bus_color, zorder=10, infofunc=bus_info,
-    )
-    cmap_bc = None
-    if colormap_ready:
-        cmap_bc = create_bus_collection(
+    normal_bc = cmap_bc = None
+    if has_buses:
+        normal_bc = create_bus_collection(
             net, net.bus.index, size=bus_size,
-            cmap=cmap_b, norm=norm_b, zorder=10, infofunc=bus_info,
+            color=bus_color, zorder=10, infofunc=bus_info,
         )
+        if cmap_buses_ready:
+            cmap_bc = create_bus_collection(
+                net, net.bus.index, size=bus_size,
+                cmap=cmap_b, norm=norm_b, zorder=10, infofunc=bus_info,
+            )
 
-    collections = [normal_bc]
+    collections = []
+    if normal_bc is not None:
+        collections.append(normal_bc)
     if cmap_bc is not None:
         collections.append(cmap_bc)
 
     # fall back to bus geodata when no line geodata is present
-    use_bus_geodata = len(net.line.geo.dropna()) == 0
-    in_service_lines = net.line[net.line.in_service].index
+    use_bus_geodata  = not has_lines or len(net.line.geo.dropna()) == 0
+    in_service_lines = (
+        net.line[net.line.in_service].index if has_lines else pd.Index([])
+    )
     nogolines = (
         set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)])
         if respect_switches
@@ -666,27 +685,29 @@ def simple_plot(
 
     # ── line collections: flat-color (Normal) + colormap (Colormap) ──────────
     # named normal_lc / cmap_lc to prevent rebinding by create_load_collection
-    normal_lc = create_line_collection(
-        net, plot_lines,
-        color=line_color, linewidths=line_width,
-        use_bus_geodata=use_bus_geodata, infofunc=line_info,
-    )
-    cmap_lc = None
-    if colormap_ready:
-        cmap_lc = create_line_collection(
+    normal_lc = cmap_lc = None
+    if has_lines:
+        normal_lc = create_line_collection(
             net, plot_lines,
-            cmap=cmap_l, norm=norm_l, linewidths=line_width,
+            color=line_color, linewidths=line_width,
             use_bus_geodata=use_bus_geodata, infofunc=line_info,
         )
+        if cmap_lines_ready:
+            cmap_lc = create_line_collection(
+                net, plot_lines,
+                cmap=cmap_l, norm=norm_l, linewidths=line_width,
+                use_bus_geodata=use_bus_geodata, infofunc=line_info,
+            )
 
-    collections.append(normal_lc)
+    if normal_lc is not None:
+        collections.append(normal_lc)
     if cmap_lc is not None:
         collections.append(cmap_lc)
 
     #  ── highlighting
-    if highlight_buses is not None:
+    if highlight_buses is not None and has_buses:
         hl_buses_idx = list(set(highlight_buses) & set(net.bus.index))
-        if len(hl_buses_idx):
+        if hl_buses_idx:
             hbc = create_bus_collection(
                 net, hl_buses_idx,
                 size=bus_size * highlight_bus_size_factor,
@@ -694,9 +715,9 @@ def simple_plot(
             )
             collections.append(hbc)
 
-    if highlight_lines is not None:
+    if highlight_lines is not None and has_lines:
         hl_lines_idx = list(set(highlight_lines) & set(plot_lines))
-        if len(hl_lines_idx):
+        if hl_lines_idx:
             hlc = create_line_collection(
                 net, hl_lines_idx,
                 color=highlight_color,
@@ -807,72 +828,59 @@ def simple_plot(
     # ── initial visibility: Normal mode ───────────────────────────────────────
     # Must be set AFTER draw_collections so the collections are in the axes,
     # but BEFORE plt.show() fires the first canvas.draw().
-    if colormap_ready:
+    if cmap_bc is not None:
         cmap_bc.set_visible(False)
+    if cmap_lc is not None:
         cmap_lc.set_visible(False)
-    # ─────────────────────────────────────────────────────────────────────────
 
     fig = ax.figure
-
-    # ── record Normal-mode layout (ax still fills full figure width here) ─────
     normal_figsize = tuple(fig.get_size_inches())
-    normal_ax_pos  = list(ax.get_position().bounds)   # [x0, y0, w, h]
-    # ─────────────────────────────────────────────────────────────────────────
+    normal_ax_pos = list(ax.get_position().bounds)
 
-    # ── colorbars + Colormap-mode layout ──────────────────────────────────────
-    _colorbars          : list  = []
-    cmap_ax_pos         : list  = list(normal_ax_pos)
-    cmap_figsize        : tuple = normal_figsize
-    cmap_cbar_positions : list  = []
+    _colorbars: list = []
+    cmap_ax_pos: list = list(normal_ax_pos)
+    cmap_figsize: tuple = normal_figsize
+    cmap_cbar_positions: list = []
 
     if colormap_ready and plot_colorbars:
-        # plt.colorbar(ax=ax) shrinks the main ax to make room for the colorbar
-        cbar_l = plt.colorbar(cmap_lc, ax=ax, label="Line loading [%]")
-        cbar_b = plt.colorbar(cmap_bc, ax=ax, label="Bus voltage [p.u.]")
+        # ← GEÄNDERT: jede Colorbar wird nur erstellt wenn die Collection existiert
+        if cmap_lc is not None:
+            cbar_l = plt.colorbar(cmap_lc, ax=ax, label="Line loading [%]")
+            cbar_l.set_ticks(_extract_cbar_ticks(_cl, colormap_type))
+            _colorbars.append(cbar_l)
+        if cmap_bc is not None:
+            cbar_b = plt.colorbar(cmap_bc, ax=ax, label="Bus voltage [p.u.]")
+            cbar_b.set_ticks(_extract_cbar_ticks(_cb, colormap_type))
+            _colorbars.append(cbar_b)
 
-        # force identical ticks for discrete and continuous (breakpoints only)
-        cbar_l.set_ticks(_extract_cbar_ticks(_cl, colormap_type))
-        cbar_b.set_ticks(_extract_cbar_ticks(_cb, colormap_type))
+        # ← GEÄNDERT: Layout-Berechnung nur wenn mindestens eine Colorbar existiert
+        if _colorbars:
+            cmap_ax_pos = list(ax.get_position().bounds)
+            ax_x1 = cmap_ax_pos[0] + cmap_ax_pos[2]
+            expand = (
+                normal_ax_pos[2] / cmap_ax_pos[2] if cmap_ax_pos[2] > 0 else 1.0
+            )
+            cmap_figsize = (normal_figsize[0] * expand, normal_figsize[1])
 
-        _colorbars = [cbar_l, cbar_b]
+            for cbar in _colorbars:
+                cb = list(cbar.ax.get_position().bounds)
+                gap_abs = (cb[0] - ax_x1) * normal_figsize[0]
+                new_x0 = ax_x1 + gap_abs / cmap_figsize[0]
+                new_w = cb[2] * normal_figsize[0] / cmap_figsize[0]
+                cmap_cbar_positions.append([new_x0, cb[1], new_w, cb[3]])
 
-        # record shrunken ax position that matplotlib chose for Colormap mode
-        cmap_ax_pos = list(ax.get_position().bounds)
-        ax_x1       = cmap_ax_pos[0] + cmap_ax_pos[2]   # right edge of shrunken ax
+            ax.set_position(normal_ax_pos)
+            for cbar in _colorbars:
+                cbar.ax.set_visible(False)
 
-        # expand figure width so the network keeps the same absolute pixel size:
-        #   normal_abs_w  = normal_figsize[0] * normal_ax_pos[2]
-        #   cmap_abs_w    = cmap_figsize[0]   * cmap_ax_pos[2]   <- want equal
-        expand       = normal_ax_pos[2] / cmap_ax_pos[2] if cmap_ax_pos[2] > 0 else 1.0
-        cmap_figsize = (normal_figsize[0] * expand, normal_figsize[1])
-
-        # precompute colorbar bounds for the wider figure:
-        # maintain the same absolute gap (inches) between ax right edge and cbar
-        for cbar in _colorbars:
-            cb      = list(cbar.ax.get_position().bounds)
-            gap_abs = (cb[0] - ax_x1) * normal_figsize[0]     # gap in inches
-            new_x0  = ax_x1 + gap_abs / cmap_figsize[0]
-            new_w   = cb[2] * normal_figsize[0] / cmap_figsize[0]
-            cmap_cbar_positions.append([new_x0, cb[1], new_w, cb[3]])
-
-        # restore Normal mode as the initial display:
-        # ax back to full width, colorbars hidden, figure at normal size
-        ax.set_position(normal_ax_pos)
-        for cbar in _colorbars:
-            cbar.ax.set_visible(False)
-    # ─────────────────────────────────────────────────────────────────────────
-
-    # ── two mode buttons ──────────────────────────────────────────────────────
     if colormap_ready:
         from matplotlib.widgets import Button
 
-        # side-by-side buttons at bottom-left
-        btn_normal_ax   = fig.add_axes([0.02,  0.01, 0.10, 0.04])
+        btn_normal_ax = fig.add_axes([0.02, 0.01, 0.10, 0.04])
         btn_colormap_ax = fig.add_axes([0.135, 0.01, 0.10, 0.04])
 
-        # Normal starts active (magenta); Colormap starts inactive (dark blue)
-        btn_normal = Button(btn_normal_ax,   "Normal",
-                              color=_BTN_INACTIVE_COLOR,   hovercolor=_BTN_ACTIVE_COLOR)
+        btn_normal = Button(btn_normal_ax, "Normal",
+                            color=_BTN_INACTIVE_COLOR, hovercolor=_BTN_ACTIVE_COLOR)
         btn_colormap = Button(btn_colormap_ax, "Colormap",
                               color=_BTN_INACTIVE_COLOR, hovercolor=_BTN_ACTIVE_COLOR)
 
@@ -882,15 +890,16 @@ def simple_plot(
             btn.label.set_fontweight("bold")
 
         _state = {
-            "active"             : "normal",   # "normal" | "colormap"
-            "normal_ax_pos"      : normal_ax_pos,
-            "cmap_ax_pos"        : cmap_ax_pos,
-            "normal_figsize"     : normal_figsize,
-            "cmap_figsize"       : cmap_figsize,
+            "active": "normal",
+            "normal_ax_pos": normal_ax_pos,
+            "cmap_ax_pos": cmap_ax_pos,
+            "normal_figsize": normal_figsize,
+            "cmap_figsize": cmap_figsize,
             "cmap_cbar_positions": cmap_cbar_positions,
         }
-        _normal_colls = [normal_bc, normal_lc]
-        _cmap_colls   = [cmap_bc,   cmap_lc]
+        # ← GEÄNDERT: None herausfiltern – sicher wenn ein Element-Typ fehlt
+        _normal_colls = [c for c in [normal_bc, normal_lc] if c is not None]
+        _cmap_colls = [c for c in [cmap_bc, cmap_lc] if c is not None]
 
         btn_normal.on_clicked(
             lambda e: _set_colormap_mode(
@@ -907,18 +916,16 @@ def simple_plot(
             )
         )
 
-        # strong references on ax prevent garbage collection of the widgets
         ax._simple_plot_refs = {
-            "btn_normal"         : btn_normal,
-            "btn_colormap"       : btn_colormap,
-            "btn_normal_ax"      : btn_normal_ax,
-            "btn_colormap_ax"    : btn_colormap_ax,
-            "state"              : _state,
-            "normal_colls"       : _normal_colls,
-            "cmap_colls"         : _cmap_colls,
-            "colorbars"          : _colorbars,
+            "btn_normal": btn_normal,
+            "btn_colormap": btn_colormap,
+            "btn_normal_ax": btn_normal_ax,
+            "btn_colormap_ax": btn_colormap_ax,
+            "state": _state,
+            "normal_colls": _normal_colls,
+            "cmap_colls": _cmap_colls,
+            "colorbars": _colorbars,
         }
-    # ─────────────────────────────────────────────────────────────────────────
 
     if enable_hover:
         hover_text = ax.text(
