@@ -38,6 +38,7 @@ def _get_coords_from_geojson(gj_str):
         return ast.literal_eval(m)
     return None
 
+
 def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, load_size=1.0,
                          sgen_size=1.0, switch_size=2.0, switch_distance=1.0, gen_size=1.0):
     """
