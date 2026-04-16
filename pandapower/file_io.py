@@ -179,6 +179,8 @@ def from_excel(filename, convert=True, add_basic_std_types=True):
     :param str filename: The absolute or relative path to the input file.
     :param bool convert: If True, converts the format of the net loaded from Excel from
             the older version of pandapower to the newer version format, default True
+    :param bool add_basic_std_types: If True, Adds missing standard-types from pandapower
+            standard type library, default True.
 
     :return: The pandapower network
     :rtype: pandapowerNet

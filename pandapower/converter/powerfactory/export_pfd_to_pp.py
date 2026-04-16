@@ -112,7 +112,9 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
     if sc_name is not None and sc_name in scenario_name_list:
         sc = app.GetProjectFolder('scen').GetContents(sc_name)[0]
         sc.Activate()
-    logger.info(f"Study Case {app.GetActiveScenario().loc_name} is currently active!")
+        logger.info(f"Study Case {app.GetActiveScenario().loc_name} is currently active!")
+    else:
+        logger.info(f"No Study Case is currently active!")
 
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics)
