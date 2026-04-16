@@ -255,9 +255,8 @@ This Docstring can be included in the documentation by adding a section to an ex
 file in the doc folder.
 When creating a new file it needs to be added to a table of content in an existing file (see `.. toctree::` directive).
 
-The Docstring can then be added by adding a reference to the function to the file:
+The Docstring can then be added by adding a reference to the function to the file: ::
 
-.. raw::
     .. autofunction:: pandapower.hello.generate_hello_message
 
 .. note::
