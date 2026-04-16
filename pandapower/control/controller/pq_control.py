@@ -4,13 +4,11 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.control.controller.const_control import ConstControl
-try:
-    from pandaplan.core import pplog
-except:
-    import logging as pplog
+
+import logging
 import numpy as np
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class PQController(ConstControl):
@@ -58,6 +56,8 @@ class PQController(ConstControl):
         super().__init__(net, element=element, variable="p_mw", element_index=element_index,
                          in_service=in_service, order=order, level=level, **kwargs)
 
+        has_name_col = "name" in net[self.element]
+        has_type_col = "type" in net[self.element]
         # read attributes from net
         self.element_index = element_index
         self.element = element
@@ -65,8 +65,8 @@ class PQController(ConstControl):
         self.p_mw = net[self.element]["p_mw"][element_index]
         self.q_mvar = net[self.element]["q_mvar"][element_index]
         self.sn_mva = net[self.element]["sn_mva"][element_index]
-        self.element_names = net[self.element]["name"][element_index]
-        self.gen_type = net[self.element]["type"][element_index]
+        self.element_names = net[self.element]["name"][element_index] if has_name_col else [""]*len(element_index)
+        self.gen_type = net[self.element]["type"][element_index] if has_type_col else [""]*len(element_index)
         self.element_in_service = net[self.element]["in_service"][element_index]
 
         self.sign = 1
