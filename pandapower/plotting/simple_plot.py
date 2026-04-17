@@ -376,6 +376,7 @@ def simple_plot(
         switch_size: float = 2.0,
         switch_distance: float = 1.0,
         plot_line_switches: bool = False,
+        plot_bus_switches: bool = False,
         scale_size: bool = True,
         bus_color="#1c3f52",
         line_color="grey",
@@ -462,6 +463,8 @@ def simple_plot(
         switch_distance (float, optional): Relative switch distance from its
             bus.  Default is ``1.0``.
         plot_line_switches (bool, optional): Draw line switch symbols.
+            Default is ``False``.
+        plot_line_switches (bool, optional): Draw bus switch symbols.
             Default is ``False``.
         scale_size (bool, optional): Scale all symbol sizes relative to the
             mean bus geodistance.  Default is ``True``.
@@ -629,12 +632,12 @@ def simple_plot(
     if has_buses:
         normal_bc = create_bus_collection(
             net, net.bus.index, size=bus_size,
-            color=bus_color, zorder=10, infofunc=bus_info,
+            color=bus_color, zorder=8, infofunc=bus_info,
         )
         if cmap_buses_ready:
             cmap_bc = create_bus_collection(
                 net, net.bus.index, size=bus_size,
-                cmap=cmap_b, norm=norm_b, zorder=10, infofunc=bus_info,
+                cmap=cmap_b, norm=norm_b, zorder=9, infofunc=bus_info,
             )
 
     collections = []
@@ -664,13 +667,13 @@ def simple_plot(
         normal_lc = create_line_collection(
             net, plot_lines,
             color=line_color, linewidths=line_width,
-            use_bus_geodata=use_bus_geodata, infofunc=line_info,
+            use_bus_geodata=use_bus_geodata, zorder=7, infofunc=line_info,
         )
         if cmap_lines_ready:
             cmap_lc = create_line_collection(
                 net, plot_lines,
                 cmap=cmap_l, norm=norm_l, linewidths=line_width,
-                use_bus_geodata=use_bus_geodata, infofunc=line_info,
+                use_bus_geodata=use_bus_geodata, zorder=8, infofunc=line_info,
             )
 
     if normal_lc is not None:
@@ -685,7 +688,7 @@ def simple_plot(
             hbc = create_bus_collection(
                 net, hl_buses_idx,
                 size=bus_size * highlight_bus_size_factor,
-                color=highlight_color, zorder=11, infofunc=bus_info,
+                color=highlight_color, zorder=98, infofunc=bus_info,
             )
             collections.append(hbc)
 
@@ -696,7 +699,7 @@ def simple_plot(
                 net, hl_lines_idx,
                 color=highlight_color,
                 linewidths=line_width * highlight_line_width_factor,
-                use_bus_geodata=use_bus_geodata, infofunc=line_info,
+                use_bus_geodata=use_bus_geodata, zoder=98, infofunc=line_info,
             )
             collections.append(hlc)
 
@@ -731,7 +734,7 @@ def simple_plot(
         sc = create_ext_grid_collection(
             net, size=ext_grid_size, orientation=0,
             ext_grids=net.ext_grid.index,
-            patch_edgecolor=ext_grid_color, zorder=11,
+            patch_edgecolor=ext_grid_color, zorder=12,
         )
         collections.append(sc)
 
@@ -762,7 +765,7 @@ def simple_plot(
     if plot_line_switches and len(net.switch):
         sc = create_line_switch_collection(
             net, size=switch_size, distance_to_bus=switch_distance,
-            use_line_geodata=not use_bus_geodata, zorder=12, color=switch_color,
+            use_line_geodata=not use_bus_geodata, zorder=10, color=switch_color,
         )
         collections.append(sc)
 
@@ -789,8 +792,8 @@ def simple_plot(
         )
         collections.append(load_coll)
 
-    if len(net.switch):
-        bsc = create_bus_bus_switch_collection(net, size=switch_size)
+    if plot_bus_switches and len(net.switch):
+        bsc = create_bus_bus_switch_collection(net, size=switch_size, zorder=10)
         collections.append(bsc)
 
     # copy_collections=False: axes hold the exact Python objects so that
