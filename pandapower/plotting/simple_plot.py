@@ -699,7 +699,7 @@ def simple_plot(
                 net, hl_lines_idx,
                 color=highlight_color,
                 linewidths=line_width * highlight_line_width_factor,
-                use_bus_geodata=use_bus_geodata, zoder=98, infofunc=line_info,
+                use_bus_geodata=use_bus_geodata, zorder=98, infofunc=line_info,
             )
             collections.append(hlc)
 
