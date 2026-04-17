@@ -157,9 +157,8 @@ def hover(event, ax, net, hover_text):
             res_bus = getattr(net, "res_bus", None)
             if res_bus is not None and not res_bus.empty and idx in res_bus.index:
                 if "vm_pu" in res_bus.columns and "va_degree" in res_bus.columns:
-                    precision = 2
                     hover_info += (
-                        f"\nV_m = {res_bus.vm_pu.at[idx].round(precision).astype(str)} p.u."
+                        f"\nV_m = {res_bus.vm_pu.at[idx]:.2f} p.u."
                                    f"\nV_m = {(res_bus.vm_pu.at[idx] * net.bus.vn_kv.at[idx]):.2f} kV"
                                    f"\nV_a = {res_bus.va_degree.at[idx]:.2f} deg")
         elif element == "line" and idx is not None:
@@ -362,7 +361,7 @@ def _set_colormap_mode(
 def simple_plot(
         net: pandapowerNet,
         respect_switches: bool = False,
-        line_width: float = 2.0,
+        line_width: float = 3.0,
         bus_size: float = 1.0,
         ext_grid_size: float = 1.0,
         trafo_size: float = 1.0,
