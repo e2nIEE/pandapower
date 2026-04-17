@@ -17,8 +17,9 @@ Change Log
 - [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
 - [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
 - [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
-- [ADDED] highlighting feature and hovering functionality to :code:`simple_plot()`
+- [ADDED] plotting: highlighting feature and hovering functionality to :code:`simple_plot()`
 - [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
+- [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
 
 [3.4.0] - 2026-02-09
 -------------------------------
