@@ -1,6 +1,8 @@
-# test_asymmetric_sgen.py
+# test_pandera_asymmetric_sgen_elements.py
 
 import itertools
+import numpy as np
+import pandas as pd
 import pandera as pa
 import pytest
 
@@ -41,7 +43,7 @@ class TestAsymmetricSgenRequiredFields:
                 itertools.product(["q_c_mvar"], all_allowed_floats),
                 itertools.product(["scaling"], positiv_floats_plus_zero),
                 itertools.product(["in_service"], bools),
-                itertools.product(["current_source"], bools),
+                # TODO: missing in docu and create function
             )
         ),
     )
@@ -63,7 +65,7 @@ class TestAsymmetricSgenRequiredFields:
             q_c_mvar=0.5,
             scaling=1.0,
             in_service=True,
-            current_source=False,
+            # current_source=False,
             type="PV",
             name="test",
             sn_mva=10.0,
@@ -136,11 +138,17 @@ class TestAsymmetricSgenOptionalFields:
             q_c_mvar=4.0,
             scaling=1.0,
             in_service=True,
-            current_source=True,
+            # current_source=True,
             type="WP",
             name="lorem ipsum",
             sn_mva=25.0,
         )
+
+        # Add phase-specific sn values
+        net.asymmetric_sgen["sn_a_mva"] = 8.0
+        net.asymmetric_sgen["sn_b_mva"] = 9.0
+        net.asymmetric_sgen["sn_c_mva"] = 7.0
+
         validate_network(net)
 
     def test_optional_fields_with_nulls(self):
@@ -159,7 +167,7 @@ class TestAsymmetricSgenOptionalFields:
             q_c_mvar=5.0,
             scaling=1.0,
             in_service=True,
-            current_source=False,
+            # current_source=False,
             name="lorem ipsum",
         )
         create_asymmetric_sgen(
@@ -173,7 +181,7 @@ class TestAsymmetricSgenOptionalFields:
             q_c_mvar=2.5,
             scaling=1.0,
             in_service=False,
-            current_source=True,
+            # current_source=True,
             type="CHP",
         )
         create_asymmetric_sgen(
@@ -187,11 +195,12 @@ class TestAsymmetricSgenOptionalFields:
             q_c_mvar=2.5,
             scaling=1.0,
             in_service=False,
-            current_source=True,
+            # current_source=True,
             sn_mva=15.0,
         )
-        net.asymmetric_sgen["type"].at[0] = None
-        net.asymmetric_sgen["type"].at[2] = None
+        net.asymmetric_sgen["sn_a_mva"] = [float(np.nan), 5.0, float(np.nan)]
+        net.asymmetric_sgen["sn_b_mva"] = [6.0, float(np.nan), float(np.nan)]
+        net.asymmetric_sgen["sn_c_mva"] = [float(np.nan), float(np.nan), 4.0]
 
         validate_network(net)
 
@@ -199,9 +208,12 @@ class TestAsymmetricSgenOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
-                # itertools.product(["type"], [pd.NA, "PV", "WP", "CHP"]),
-                itertools.product(["sn_mva"], positiv_floats),
+                itertools.product(["name"], [pd.NA, *strings]),
+                itertools.product(["type"], [pd.NA, *strings]),
+                itertools.product(["sn_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["sn_a_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["sn_b_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["sn_c_mva"], [float(np.nan), *positiv_floats]),
             )
         ),
     )
@@ -221,7 +233,7 @@ class TestAsymmetricSgenOptionalFields:
             q_c_mvar=5.0,
             scaling=1.0,
             in_service=True,
-            current_source=False,
+            # current_source=False,
             **{parameter: valid_value},
         )
         validate_network(net)
@@ -231,8 +243,11 @@ class TestAsymmetricSgenOptionalFields:
         list(
             itertools.chain(
                 itertools.product(["name"], not_strings_list),
-                itertools.product(["type"], [*not_strings_list]),
+                itertools.product(["type"], not_strings_list),
                 itertools.product(["sn_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["sn_a_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["sn_b_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["sn_c_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
             )
         ),
     )
@@ -252,7 +267,7 @@ class TestAsymmetricSgenOptionalFields:
             q_c_mvar=0.2,
             scaling=1.0,
             in_service=True,
-            current_source=True,
+            # current_source=True,
         )
         net.asymmetric_sgen[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
@@ -278,7 +293,7 @@ class TestAsymmetricSgenForeignKey:
             q_c_mvar=0.5,
             scaling=1.0,
             in_service=True,
-            current_source=False,
+            # current_source=False,
             type="PV",
         )
 
