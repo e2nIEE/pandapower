@@ -1,22 +1,17 @@
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
-
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import sys
 import math
 import logging
 from collections import defaultdict
-
 import pandas as pd
-
 try:
     import matplotlib.pyplot as plt
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
-
 from pandapower.auxiliary import soft_dependency_error, pandapowerNet
 from pandapower.plotting.plotting_toolbox import get_collection_sizes
 from pandapower.plotting.collections import (
@@ -38,100 +33,83 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 
 logger = logging.getLogger(__name__)
 
-# color palettes
+# Color palettes
 _LINE_PALETTE: list[str] = ["#b2d235", "#fdb913", "#f58220", "#C7105C"]
-_BUS_PALETTE:  list[str] = ["#005b7f", "#179c7d", "#179c7d", "#fdb913", "#C7105C"]
-
-# button colors: active (current mode) = magenta, inactive = dark blue
-_BTN_ACTIVE_COLOR   = "#C7105C"
+_BUS_PALETTE: list[str] = ["#005b7f", "#179c7d", "#179c7d", "#fdb913", "#C7105C"]
+# Button colors: active (current mode) = magenta, inactive = dark blue
+_BTN_ACTIVE_COLOR = "#C7105C"
 _BTN_INACTIVE_COLOR = "#1c3f52"
 
 
 def bus_info(bus):
-    """
-    Return an info tuple identifying a bus element.
+    """Return an info tuple identifying a bus element.
 
-    Parameters
-    ----------
-    bus : int
-        Bus index.
+    Args:
+        bus (int): Bus index.
 
-    Returns
-    -------
-    tuple
-        ``("bus", bus)``
+    Returns:
+        tuple: ``("bus", bus)``
     """
     return ("bus", bus)
 
 
 def line_info(line):
-    """
-    Return an info tuple identifying a line element.
+    """Return an info tuple identifying a line element.
 
-    Parameters
-    ----------
-    line : int
-        Line index.
+    Args:
+        line (int): Line index.
 
-    Returns
-    -------
-    tuple
-        ``("line", line)``
+    Returns:
+        tuple: ``("line", line)``
     """
     return ("line", line)
 
 
 def trafo_info(idx):
-    """
-    Return an info tuple identifying a two-winding transformer element.
+    """Return an info tuple identifying a two-winding transformer element.
 
-    Parameters
-    ----------
-    idx : int
-        Transformer index.
+    Args:
+        idx (int): Transformer index.
 
-    Returns
-    -------
-    tuple
-        ``("trafo", idx)``
+    Returns:
+        tuple: ``("trafo", idx)``
     """
     return ("trafo", idx)
 
 
 def trafo3w_info(idx):
-    """
-    Return an info tuple identifying a three-winding transformer element.
+    """Return an info tuple identifying a three-winding transformer element.
 
-    Parameters
-    ----------
-    idx : int
-        Three-winding transformer index.
+    Args:
+        idx (int): Three-winding transformer index.
 
-    Returns
-    -------
-    tuple
-        ``("trafo3w", idx)``
+    Returns:
+        tuple: ``("trafo3w", idx)``
     """
     return ("trafo3w", idx)
 
 
 def hover(event, ax, net, hover_text):
-    """
-    Update the hover text in an interactive pandapower plot based on mouse position.
+    """Update the hover text in an interactive pandapower plot based on mouse position.
 
     Expects collections to have an ``info`` attribute containing a list of
     ``(element, index)`` tuples, e.g. ``("bus", 3)`` or ``("line", 5)``.
 
-    Parameters
-    ----------
-    event : matplotlib.backend_bases.MouseEvent
-        Mouse-move event from Matplotlib.
-    ax : matplotlib.axes.Axes
-        Axes object containing the collections.
-    net : pandapowerNet
-        pandapower network with DataFrames (bus, line, trafo, trafo3w, ...).
-    hover_text : matplotlib.text.Text
-        Text artist whose content, position, and visibility are updated.
+    When the hovered element is a bus or line and the corresponding result
+    table (``net.res_bus`` or ``net.res_line``) is non-empty, the hover label
+    is extended with the following load-flow results:
+
+    * Bus:  ``vm_pu`` and ``va_degree``
+    * Line: ``loading_percent`` and ``i_ka``
+
+    Args:
+        event (matplotlib.backend_bases.MouseEvent): Mouse-move event from
+            Matplotlib.
+        ax (matplotlib.axes.Axes): Axes object containing the collections.
+        net (pandapowerNet): pandapower network with DataFrames
+            (bus, line, trafo, trafo3w, ...).
+        hover_text (matplotlib.text.Text): Text artist whose content,
+            position, and visibility are updated.
     """
     fig = ax.figure
     visible = hover_text.get_visible()
@@ -151,7 +129,7 @@ def hover(event, ax, net, hover_text):
         if not contains or "ind" not in props or len(props["ind"]) == 0:
             continue
 
-        coll_idx     = props["ind"][0]
+        coll_idx = props["ind"][0]
         element_info = info[coll_idx]
 
         if isinstance(element_info, tuple) and len(element_info) == 2:
@@ -161,15 +139,41 @@ def hover(event, ax, net, hover_text):
 
         df = getattr(net, element, None)
 
-        if df is not None and idx is not None and idx in df.index and "name" in df.columns:
-            name       = df.at[idx, "name"]
-            hover_info = f"{element}: {name} | Index: {idx}"
+        if (
+            df is not None
+            and idx is not None
+            and idx in df.index
+            and "name" in df.columns
+        ):
+            name = df.at[idx, "name"]
+            hover_info = f"Element: {element}\nName: {name}\nIndex: {idx}"
         elif idx is not None:
             hover_info = f"{element} | Index: {idx}"
         else:
             hover_info = str(element_info)
 
+        # Append loadflow results when available
+        if element == "bus" and idx is not None:
+            res_bus = getattr(net, "res_bus", None)
+            if res_bus is not None and not res_bus.empty and idx in res_bus.index:
+                if "vm_pu" in res_bus.columns and "va_degree" in res_bus.columns:
+                    precision = 2
+                    hover_info += (
+                        f"\nV_m = {res_bus.vm_pu.at[idx].round(precision).astype(str)} p.u."
+                                   f"\nV_m = {(res_bus.vm_pu.at[idx] * net.bus.vn_kv.at[idx]):.2f} kV"
+                                   f"\nV_a = {res_bus.va_degree.at[idx]:.2f} deg")
+        elif element == "line" and idx is not None:
+            res_line = getattr(net, "res_line", None)
+            if res_line is not None and not res_line.empty and idx in res_line.index:
+                if "loading_percent" in res_line.columns and "i_ka" in res_line.columns:
+                    hover_info += (
+                        f"\nLoading: {res_line.at[idx, 'loading_percent']:.2f} %"
+                        f"\nI_kA: {res_line.at[idx, 'i_ka']:.2f} kA")
+
         hover_text.set_text(hover_info)
+        hover_text.set_ha("left")
+        hover_text.set_va("bottom")
+        hover_text.set_multialignment("left")
         hover_text.set_position((event.xdata, event.ydata))
         hover_text.set_visible(True)
         fig.canvas.draw_idle()
@@ -180,25 +184,21 @@ def hover(event, ax, net, hover_text):
         fig.canvas.draw_idle()
 
 
-# ── colormap helpers ──────────────────────────────────────────────────────────
+# -- Colormap helpers ---------------------------------------------------------
 def _pick_n_colors(n: int, palette: list[str]) -> list[str]:
-    """
-    Sample *n* colors evenly from *palette* using floor-based index mapping.
+    """Sample *n* colors evenly from *palette* using floor-based index mapping.
 
     The first and last palette entries are always included.
 
-    Parameters
-    ----------
-    n : int
-        Number of colors to sample.  Returns an empty list when ``n <= 0``.
-    palette : list of str
-        Source color palette to sample from.
+    Args:
+        n (int): Number of colors to sample.  Returns an empty list when
+            ``n <= 0``.
+        palette (list of str): Source color palette to sample from.
 
-    Returns
-    -------
-    list of str
-        List of *n* hex color strings sampled from *palette*.
-        If ``n >= len(palette)``, the last palette color is repeated as needed.
+    Returns:
+        list of str: List of *n* hex color strings sampled from *palette*.
+            If ``n >= len(palette)``, the last palette color is repeated as
+            needed.
     """
     if n <= 0:
         return []
@@ -215,26 +215,20 @@ def _build_cmap_from_limits(
     colormap_type: str,
     kind: str = "line",
 ) -> list:
-    """
-    Build a pandapower ``cmap_list`` from sorted numeric breakpoints.
+    """Build a pandapower ``cmap_list`` from sorted numeric breakpoints.
 
-    Parameters
-    ----------
-    limits : tuple or list
-        Sorted breakpoints, e.g. ``(0, 25, 50, 75, 100)`` for lines or
-        ``(0.9, 0.95, 1.0, 1.05, 1.1)`` for buses.
-    colormap_type : str
-        ``"discrete"`` for flat color bands or ``"continuous"`` for a smooth
-        gradient.
-    kind : str, optional
-        ``"line"`` uses the line palette; ``"bus"`` uses the bus palette.
-        Default is ``"line"``.
+    Args:
+        limits (tuple or list): Sorted breakpoints, e.g.
+            ``(0, 25, 50, 75, 100)`` for lines or
+            ``(0.9, 0.95, 1.0, 1.05, 1.1)`` for buses.
+        colormap_type (str): ``"discrete"`` for flat color bands or
+            ``"continuous"`` for a smooth gradient.
+        kind (str, optional): ``"line"`` uses the line palette; ``"bus"``
+            uses the bus palette.  Default is ``"line"``.
 
-    Returns
-    -------
-    list
-        Discrete:   ``[((lo, hi), color), ...]``
-        Continuous: ``[(value, color), ...]``
+    Returns:
+        list: Discrete: ``[((lo, hi), color), ...]``
+            Continuous: ``[(value, color), ...]``
     """
     palette = _LINE_PALETTE if kind == "line" else _BUS_PALETTE
     n = len(limits)
@@ -246,24 +240,19 @@ def _build_cmap_from_limits(
 
 
 def _extract_cbar_ticks(cmap_list: list, colormap_type: str) -> list:
-    """
-    Extract tick positions from a ``cmap_list`` at the user-defined breakpoints.
+    """Extract tick positions from a ``cmap_list`` at the user-defined breakpoints.
 
     Ensures that discrete and continuous colorbars show identical tick marks
     regardless of colormap type.
 
-    Parameters
-    ----------
-    cmap_list : list
-        Discrete:   ``[((lo, hi), color), ...]``
-        Continuous: ``[(value, color), ...]``
-    colormap_type : str
-        ``"discrete"`` or ``"continuous"``.
+    Args:
+        cmap_list (list): Discrete: ``[((lo, hi), color), ...]``
+            Continuous: ``[(value, color), ...]``
+        colormap_type (str): ``"discrete"`` or ``"continuous"``.
 
-    Returns
-    -------
-    list
-        Sorted unique tick values derived from the breakpoints in *cmap_list*.
+    Returns:
+        list: Sorted unique tick values derived from the breakpoints in
+            *cmap_list*.
     """
     if colormap_type == "discrete":
         ticks = []
@@ -273,7 +262,7 @@ def _extract_cbar_ticks(cmap_list: list, colormap_type: str) -> list:
             if hi not in ticks:
                 ticks.append(hi)
         return sorted(ticks)
-    # continuous: one value per entry
+    # Continuous: one value per entry
     return [v for v, _ in cmap_list]
 
 
@@ -287,55 +276,51 @@ def _set_colormap_mode(
     btn_normal,
     btn_colormap,
 ):
-    """
-    Switch the figure between ``"normal"`` and ``"colormap"`` display mode.
+    """Switch the figure between ``"normal"`` and ``"colormap"`` display mode.
 
     Calling this function with the mode that is already active is a no-op.
 
-    Parameters
-    ----------
-    mode : str
-        Target display mode: ``"normal"`` or ``"colormap"``.
-    state : dict
-        Mutable layout and mode state built in ``simple_plot``.
-    ax : matplotlib.axes.Axes
-        Main network axes.
-    normal_colls : list of Collection
-        Flat-color bus and line collections used in Normal mode.
-    cmap_colls : list of Collection
-        Colormap bus and line collections used in Colormap mode.
-    colorbars : list of Colorbar
-        Colorbars belonging to the Colormap view.
-    btn_normal : matplotlib.widgets.Button
-        Button that activates Normal mode.
-    btn_colormap : matplotlib.widgets.Button
-        Button that activates Colormap mode.
+    Args:
+        mode (str): Target display mode: ``"normal"`` or ``"colormap"``.
+        state (dict): Mutable layout and mode state built in ``simple_plot``.
+        ax (matplotlib.axes.Axes): Main network axes.
+        normal_colls (list of Collection): Flat-color bus and line collections
+            used in Normal mode.
+        cmap_colls (list of Collection): Colormap bus and line collections
+            used in Colormap mode.
+        colorbars (list of Colorbar): Colorbars belonging to the Colormap
+            view.
+        btn_normal (matplotlib.widgets.Button): Button that activates Normal
+            mode.
+        btn_colormap (matplotlib.widgets.Button): Button that activates
+            Colormap mode.
 
-    Notes
-    -----
-    **Button highlighting**
-    The button representing the currently active mode is always rendered in
-    ``_BTN_ACTIVE_COLOR`` (magenta); the other button uses
-    ``_BTN_INACTIVE_COLOR`` (dark blue), giving the user clear visual feedback
-    about which mode is currently displayed.
+    Note:
+        **Button highlighting**
+        The button representing the currently active mode is always rendered
+        in ``_BTN_ACTIVE_COLOR`` (magenta); the other button uses
+        ``_BTN_INACTIVE_COLOR`` (dark blue), giving the user clear visual
+        feedback about which mode is currently displayed.
 
-    **Why two collections + set_visible (not in-place color patching)**
-    ``ScalarMappable.update_scalarmappable()`` is called on every
-    ``canvas.draw()`` and rewrites ``_facecolors`` from ``_A + _cmap + _norm``.
-    Any in-place color patch via ``set_facecolor`` / ``set_color`` is silently
-    overwritten on the next draw cycle.  Swapping visibility between two fully
-    initialized collections is the only approach that survives repeated
-    ``draw()`` calls.
+        **Why two collections + set_visible (not in-place color patching)**
+        ``ScalarMappable.update_scalarmappable()`` is called on every
+        ``canvas.draw()`` and rewrites ``_facecolors`` from
+        ``_A + _cmap + _norm``.  Any in-place color patch via
+        ``set_facecolor`` / ``set_color`` is silently overwritten on the next
+        draw cycle.  Swapping visibility between two fully initialized
+        collections is the only approach that survives repeated ``draw()``
+        calls.
 
-    **Why ``copy_collections=False`` is required in draw_collections**
-    ``draw_collections`` shallow-copies every collection by default.
-    ``set_visible()`` must target the exact Python objects held in
-    ``ax.collections``; ``copy_collections=False`` guarantees identity.
+        **Why ``copy_collections=False`` is required in draw_collections**
+        ``draw_collections`` shallow-copies every collection by default.
+        ``set_visible()`` must target the exact Python objects held in
+        ``ax.collections``; ``copy_collections=False`` guarantees identity.
 
-    **Why figure resize and ax repositioning is needed**
-    ``plt.colorbar(ax=ax)`` permanently shrinks the main axes.  Restoring
-    the saved ``normal_ax_pos`` and reverting ``fig.set_size_inches`` in
-    Normal mode eliminates the empty strip on the right side of the figure.
+        **Why figure resize and ax repositioning is needed**
+        ``plt.colorbar(ax=ax)`` permanently shrinks the main axes.  Restoring
+        the saved ``normal_ax_pos`` and reverting ``fig.set_size_inches`` in
+        Normal mode eliminates the empty strip on the right side of the
+        figure.
     """
     if state["active"] == mode:
         return  # already in the requested mode – nothing to do
@@ -344,13 +329,13 @@ def _set_colormap_mode(
     is_cmap = (mode == "colormap")
     fig = ax.figure
 
-    # swap collection visibility
+    # Swap collection visibility
     for c in normal_colls:
         c.set_visible(not is_cmap)
     for c in cmap_colls:
         c.set_visible(is_cmap)
 
-    # resize figure and reposition ax + colorbars
+    # Resize figure and reposition axes + colorbars
     if is_cmap:
         fig.set_size_inches(state["cmap_figsize"], forward=True)
         ax.set_position(state["cmap_ax_pos"])
@@ -363,7 +348,7 @@ def _set_colormap_mode(
         ax.set_position(state["normal_ax_pos"])
         fig.set_size_inches(state["normal_figsize"], forward=True)
 
-    # button highlighting: active mode = magenta, inactive mode = dark blue
+    # Button highlighting: active mode = magenta, inactive mode = dark blue
     btn_normal.ax.set_facecolor(
         _BTN_ACTIVE_COLOR if not is_cmap else _BTN_INACTIVE_COLOR
     )
@@ -420,8 +405,7 @@ def simple_plot(
         cmap_buses: list = None,
         plot_colorbars: bool = True,
 ):
-    """
-    Plot a pandapower network as simply as possible.
+    """Plot a pandapower network as simply as possible.
 
     If no geodata is available, artificial geodata is generated automatically.
     For advanced plotting options see the pandapower plotting tutorial.
@@ -444,120 +428,110 @@ def simple_plot(
 
     * Normal mode   – compact figure; axes fill the full width.
     * Colormap mode – figure is widened so the network keeps the same absolute
-
       pixel size; the extra width accommodates the colorbars.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        The pandapower network to plot.
-    respect_switches : bool, optional
-        Respect open switches when creating artificial geodata.
-        Ignored when ``plot_line_switches=True``.  Default is ``False``.
-    line_width : float, optional
-        Width of line segments.  Default is ``2.0``.
-    bus_size : float, optional
-        Relative bus marker size (scaled by mean bus geodistance when
-        ``scale_size=True``).  Default is ``1.0``.
-    ext_grid_size : float, optional
-        Relative external grid symbol size.  Default is ``1.0``.
-    trafo_size : float, optional
-        Relative transformer symbol size.  Default is ``1.0``.
-    plot_loads : bool, optional
-        Draw load symbols.  Default is ``False``.
-    plot_gens : bool, optional
-        Draw generator symbols.  Default is ``False``.
-    plot_sgens : bool, optional
-        Draw static generator symbols.  Default is ``False``.
-    orientation : float or None, optional
-        Base orientation angle in radians for sgen, gen, and load symbols.
-        ``None`` uses the element-specific default.  Default is ``None``.
-    load_size : float, optional
-        Relative load symbol size.  Default is ``1.0``.
-    gen_size : float, optional
-        Relative gen symbol size.  Default is ``1.0``.
-    sgen_size : float, optional
-        Relative sgen symbol size.  Default is ``1.0``.
-    switch_size : float, optional
-        Relative switch symbol size.  Default is ``2.0``.
-    switch_distance : float, optional
-        Relative switch distance from its bus.  Default is ``1.0``.
-    plot_line_switches : bool, optional
-        Draw line switch symbols.  Default is ``False``.
-    scale_size : bool, optional
-        Scale all symbol sizes relative to the mean bus geodistance.
-        Default is ``True``.
-    bus_color : str, optional
-        Flat bus marker color used in Normal mode.  Default is ``"#1c3f52"``.
-    line_color : str, optional
-        Flat line color used in Normal mode.  Default is ``"grey"``.
-    dcline_color : str, optional
-        DC line color.  Default is ``"c"``.
-    trafo_color : str, optional
-        Transformer symbol color.  Default is ``"k"``.
-    ext_grid_color : str, optional
-        External grid symbol color.  Default is ``"#C7105C"``.
-    switch_color : str, optional
-        Switch symbol color.  Default is ``"k"``.
-    library : str, optional
-        Layout library used for generic coordinate generation.
-        ``"igraph"`` or ``"networkx"``.  Default is ``"igraph"``.
-    show_plot : bool, optional
-        Call ``plt.show()`` at the end.  Default is ``True``.
-    ax : matplotlib.axes.Axes or None, optional
-        Existing axes to draw into.  A new figure and axes are created when
-        ``None``.  Default is ``None``.
-    draw_by_type : bool, optional
-        Group sgen and gen symbols by element type.  Default is ``True``.
-    bus_dc_size : float, optional
-        Relative DC bus marker size.  Default is ``1.0``.
-    bus_dc_color : str, optional
-        DC bus marker color.  Default is ``"m"``.
-    line_dc_color : str, optional
-        DC line color.  Default is ``"c"``.
-    vsc_size : float, optional
-        Relative VSC symbol size.  Default is ``4.0``.
-    vsc_color : str, optional
-        VSC symbol color.  Default is ``"orange"``.
-    highlight_buses : iterable or None, optional
-        Bus indices to highlight.  Default is ``None``.
-    highlight_lines : iterable or None, optional
-        Line indices to highlight.  Default is ``None``.
-    enable_hover : bool, optional
-        Enable interactive hover labels.  Default is ``True``.
-    highlight_bus_size_factor : float, optional
-        Size multiplier applied to highlighted bus markers.  Default is ``2.0``.
-    highlight_line_width_factor : float, optional
-        Line-width multiplier applied to highlighted lines.  Default is ``2.5``.
-    highlight_color : str, optional
-        Color used for highlighted elements.  Default is ``"#C7105C"``.
-    colormap_type : str, optional
-        ``"discrete"`` for flat color bands or ``"continuous"`` for a smooth
-        gradient.  Colorbar ticks are placed only at the breakpoints in both
-        cases.  Default is ``"continuous"``.
-    line_limits : tuple, optional
-        Breakpoints for line loading in **%**.  Colors are auto-generated from
-        the line palette.  Entirely overridden by ``cmap_lines`` when provided.
-        Default is ``(0, 25, 50, 75, 100)``.
-    bus_limits : tuple, optional
-        Breakpoints for bus voltage in **p.u.**.  Colors are auto-generated
-        from the bus palette.  Entirely overridden by ``cmap_buses`` when
-        provided.  Default is ``(0.9, 0.95, 1.0, 1.05, 1.1)``.
-    cmap_lines : list or None, optional
-        Full custom colormap definition for lines; overrides ``line_limits``.
-        Discrete:   ``[((min, max), color), ...]``
-        Continuous: ``[(value, color), ...]``
-        Default is ``None``.
-    cmap_buses : list or None, optional
-        Full custom colormap definition for buses; overrides ``bus_limits``.
-        Same format as ``cmap_lines``.  Default is ``None``.
-    plot_colorbars : bool, optional
-        Show colorbars in the Colormap view.  Default is ``True``.
+    Args:
+        net (pandapowerNet): The pandapower network to plot.
+        respect_switches (bool, optional): Respect open switches when creating
+            artificial geodata.  Ignored when ``plot_line_switches=True``.
+            Default is ``False``.
+        line_width (float, optional): Width of line segments.
+            Default is ``2.0``.
+        bus_size (float, optional): Relative bus marker size (scaled by mean
+            bus geodistance when ``scale_size=True``).  Default is ``1.0``.
+        ext_grid_size (float, optional): Relative external grid symbol size.
+            Default is ``1.0``.
+        trafo_size (float, optional): Relative transformer symbol size.
+            Default is ``1.0``.
+        plot_loads (bool, optional): Draw load symbols.  Default is ``False``.
+        plot_gens (bool, optional): Draw generator symbols.
+            Default is ``False``.
+        plot_sgens (bool, optional): Draw static generator symbols.
+            Default is ``False``.
+        orientation (float or None, optional): Base orientation angle in
+            radians for sgen, gen, and load symbols.  ``None`` uses the
+            element-specific default.  Default is ``None``.
+        load_size (float, optional): Relative load symbol size.
+            Default is ``1.0``.
+        gen_size (float, optional): Relative gen symbol size.
+            Default is ``1.0``.
+        sgen_size (float, optional): Relative sgen symbol size.
+            Default is ``1.0``.
+        switch_size (float, optional): Relative switch symbol size.
+            Default is ``2.0``.
+        switch_distance (float, optional): Relative switch distance from its
+            bus.  Default is ``1.0``.
+        plot_line_switches (bool, optional): Draw line switch symbols.
+            Default is ``False``.
+        scale_size (bool, optional): Scale all symbol sizes relative to the
+            mean bus geodistance.  Default is ``True``.
+        bus_color (str, optional): Flat bus marker color used in Normal mode.
+            Default is ``"#1c3f52"``.
+        line_color (str, optional): Flat line color used in Normal mode.
+            Default is ``"grey"``.
+        dcline_color (str, optional): DC line color.  Default is ``"c"``.
+        trafo_color (str, optional): Transformer symbol color.
+            Default is ``"k"``.
+        ext_grid_color (str, optional): External grid symbol color.
+            Default is ``"#C7105C"``.
+        switch_color (str, optional): Switch symbol color.
+            Default is ``"k"``.
+        library (str, optional): Layout library used for generic coordinate
+            generation.  ``"igraph"`` or ``"networkx"``.
+            Default is ``"igraph"``.
+        show_plot (bool, optional): Call ``plt.show()`` at the end.
+            Default is ``True``.
+        ax (matplotlib.axes.Axes or None, optional): Existing axes to draw
+            into.  A new figure and axes are created when ``None``.
+            Default is ``None``.
+        draw_by_type (bool, optional): Group sgen and gen symbols by element
+            type.  Default is ``True``.
+        bus_dc_size (float, optional): Relative DC bus marker size.
+            Default is ``1.0``.
+        bus_dc_color (str, optional): DC bus marker color.
+            Default is ``"m"``.
+        line_dc_color (str, optional): DC line color.  Default is ``"c"``.
+        vsc_size (float, optional): Relative VSC symbol size.
+            Default is ``4.0``.
+        vsc_color (str, optional): VSC symbol color.
+            Default is ``"orange"``.
+        highlight_buses (iterable or None, optional): Bus indices to
+            highlight.  Default is ``None``.
+        highlight_lines (iterable or None, optional): Line indices to
+            highlight.  Default is ``None``.
+        enable_hover (bool, optional): Enable interactive hover labels.
+            Default is ``True``.
+        highlight_bus_size_factor (float, optional): Size multiplier applied
+            to highlighted bus markers.  Default is ``2.0``.
+        highlight_line_width_factor (float, optional): Line-width multiplier
+            applied to highlighted lines.  Default is ``2.5``.
+        highlight_color (str, optional): Color used for highlighted elements.
+            Default is ``"#C7105C"``.
+        colormap_type (str, optional): ``"discrete"`` for flat color bands or
+            ``"continuous"`` for a smooth gradient.  Colorbar ticks are placed
+            only at the breakpoints in both cases.
+            Default is ``"continuous"``.
+        line_limits (tuple, optional): Breakpoints for line loading in **%**.
+            Colors are auto-generated from the line palette.  Entirely
+            overridden by ``cmap_lines`` when provided.
+            Default is ``(0, 25, 50, 75, 100)``.
+        bus_limits (tuple, optional): Breakpoints for bus voltage in **p.u.**.
+            Colors are auto-generated from the bus palette.  Entirely
+            overridden by ``cmap_buses`` when provided.
+            Default is ``(0.9, 0.95, 1.0, 1.05, 1.1)``.
+        cmap_lines (list or None, optional): Full custom colormap definition
+            for lines; overrides ``line_limits``.
+            Discrete: ``[((min, max), color), ...]``
+            Continuous: ``[(value, color), ...]``
+            Default is ``None``.
+        cmap_buses (list or None, optional): Full custom colormap definition
+            for buses; overrides ``bus_limits``.  Same format as
+            ``cmap_lines``.  Default is ``None``.
+        plot_colorbars (bool, optional): Show colorbars in the Colormap view.
+            Default is ``True``.
 
-    Returns
-    -------
-    matplotlib.axes.Axes
-        The axes object containing the network plot.
+    Returns:
+        matplotlib.axes.Axes: The axes object containing the network plot.
     """
     try:
         if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):
@@ -587,14 +561,14 @@ def simple_plot(
             net, bus_size, ext_grid_size, trafo_size,
             load_size, sgen_size, switch_size, switch_distance, gen_size,
         )
-        bus_size        = sizes["bus"]
-        ext_grid_size   = sizes["ext_grid"]
-        trafo_size      = sizes["trafo"]
-        sgen_size       = sizes["sgen"]
-        load_size       = sizes["load"]
-        switch_size     = sizes["switch"]
+        bus_size = sizes["bus"]
+        ext_grid_size = sizes["ext_grid"]
+        trafo_size = sizes["trafo"]
+        sgen_size = sizes["sgen"]
+        load_size = sizes["load"]
+        switch_size = sizes["switch"]
         switch_distance = sizes["switch_distance"]
-        gen_size        = sizes["gen"]
+        gen_size = sizes["gen"]
 
     # ── colormap setup ────────────────────────────────────────────────────────
     # Always attempt colormap preparation so the mode buttons can be offered.
@@ -607,8 +581,8 @@ def simple_plot(
 
     try:
         needs_runpp = (
-                (has_buses and net.res_bus.empty)
-                or (has_lines and net.res_line.empty)
+            (has_buses and net.res_bus.empty)
+            or (has_lines and net.res_line.empty)
         )
         if needs_runpp:
             logger.info("Result tables empty – running pp.runpp(net) automatically.")
@@ -618,11 +592,11 @@ def simple_plot(
         from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous
 
         if colormap_type == "discrete":
-              if has_lines:
+            if has_lines:
                 _cl = cmap_lines or _build_cmap_from_limits(line_limits, "discrete", "line")
                 cmap_l, norm_l = cmap_discrete(_cl)
                 cmap_lines_ready = True
-              if has_buses:
+            if has_buses:
                 _cb = cmap_buses or _build_cmap_from_limits(bus_limits, "discrete", "bus")
                 cmap_b, norm_b = cmap_discrete(_cb)
                 cmap_buses_ready = True
@@ -643,7 +617,7 @@ def simple_plot(
                 "Allowed values: 'discrete', 'continuous'. Mode buttons disabled."
             )
 
-        colormap_ready = cmap_buses_ready or cmap_lines_ready  # ← GEÄNDERT
+        colormap_ready = cmap_buses_ready or cmap_lines_ready
 
     except Exception as exc:
         logger.warning(
@@ -670,7 +644,7 @@ def simple_plot(
         collections.append(cmap_bc)
 
     # fall back to bus geodata when no line geodata is present
-    use_bus_geodata  = not has_lines or len(net.line.geo.dropna()) == 0
+    use_bus_geodata = not has_lines or len(net.line.geo.dropna()) == 0
     in_service_lines = (
         net.line[net.line.in_service].index if has_lines else pd.Index([])
     )
@@ -679,8 +653,8 @@ def simple_plot(
         if respect_switches
         else set()
     )
-    plot_lines    = in_service_lines.difference(nogolines)
-    plot_dclines  = net.dcline.in_service
+    plot_lines = in_service_lines.difference(nogolines)
+    plot_dclines = net.dcline.in_service
     plot_lines_dc = net.line_dc.loc[net.line_dc.in_service].index
 
     # ── line collections: flat-color (Normal) + colormap (Colormap) ──────────
@@ -704,7 +678,7 @@ def simple_plot(
     if cmap_lc is not None:
         collections.append(cmap_lc)
 
-    #  ── highlighting
+    # ── highlighting ----------------------------------------------------------
     if highlight_buses is not None and has_buses:
         hl_buses_idx = list(set(highlight_buses) & set(net.bus.index))
         if hl_buses_idx:
@@ -726,7 +700,7 @@ def simple_plot(
             )
             collections.append(hlc)
 
-    #  ── other collections
+    # ── other collections -----------------------------------------------------
     if len(net.dcline) > 0:
         dclc = create_dcline_collection(
             net, plot_dclines, color=dcline_color, linewidths=line_width
@@ -843,7 +817,6 @@ def simple_plot(
     cmap_cbar_positions: list = []
 
     if colormap_ready and plot_colorbars:
-        # ← GEÄNDERT: jede Colorbar wird nur erstellt wenn die Collection existiert
         if cmap_lc is not None:
             cbar_l = plt.colorbar(cmap_lc, ax=ax, label="Line loading [%]")
             cbar_l.set_ticks(_extract_cbar_ticks(_cl, colormap_type))
@@ -853,7 +826,7 @@ def simple_plot(
             cbar_b.set_ticks(_extract_cbar_ticks(_cb, colormap_type))
             _colorbars.append(cbar_b)
 
-        # ← GEÄNDERT: Layout-Berechnung nur wenn mindestens eine Colorbar existiert
+        # Proceed only when at least one colorbar was created.
         if _colorbars:
             cmap_ax_pos = list(ax.get_position().bounds)
             ax_x1 = cmap_ax_pos[0] + cmap_ax_pos[2]
@@ -897,7 +870,7 @@ def simple_plot(
             "cmap_figsize": cmap_figsize,
             "cmap_cbar_positions": cmap_cbar_positions,
         }
-        # ← GEÄNDERT: None herausfiltern – sicher wenn ein Element-Typ fehlt
+        # Filter out None entries when an element type is absent.
         _normal_colls = [c for c in [normal_bc, normal_lc] if c is not None]
         _cmap_colls = [c for c in [cmap_bc, cmap_lc] if c is not None]
 
@@ -948,35 +921,37 @@ def simple_plot(
     return ax
 
 
-def calculate_unique_angles(net: pandapowerNet) -> dict[int, dict[str, dict[str, float] | float]]:
-    """
-    Calculate patch placement angles for sgen, gen, and load symbols at each bus.
+def calculate_unique_angles(
+    net: pandapowerNet,
+) -> dict[int, dict[str, dict[str, float] | float]]:
+    """Calculate patch placement angles for sgen, gen, and load symbols at each bus.
 
     Only a single patch for all loads at a given bus is currently supported.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        The pandapower network to calculate patch angles for.
+    Args:
+        net (pandapowerNet): The pandapower network to calculate patch angles
+            for.
 
-    Returns
-    -------
-    dict
-        Nested mapping of the form
-        ``{bus_index: {element_type: {sub_type: angle_rad}}}``.
-        Angular offsets are in radians.  For loads the inner value is a plain
-        ``float`` instead of a nested dict, because loads are not grouped by
-        sub-type.
+    Returns:
+        dict: Nested mapping of the form
+            ``{bus_index: {element_type: {sub_type: angle_rad}}}``.
+            Angular offsets are in radians.  For loads the inner value is a
+            plain ``float`` instead of a nested dict, because loads are not
+            grouped by sub-type.
     """
-    sgen_counts = net.sgen.groupby(['bus', 'type'], dropna=False).size().unstack(fill_value=0)
-    gen_counts  = net.gen.groupby(['bus', 'type'],  dropna=False).size().unstack(fill_value=0)
-    loads       = pd.Series(1, index=net.load.bus.unique(), name='load')
+    sgen_counts = (
+        net.sgen.groupby(["bus", "type"], dropna=False).size().unstack(fill_value=0)
+    )
+    gen_counts = (
+        net.gen.groupby(["bus", "type"], dropna=False).size().unstack(fill_value=0)
+    )
+    loads = pd.Series(1, index=net.load.bus.unique(), name="load")
 
-    patch_counts    = pd.concat([sgen_counts, gen_counts, loads], axis=1).fillna(0)
+    patch_counts = pd.concat([sgen_counts, gen_counts, loads], axis=1).fillna(0)
     patches_per_bus = patch_counts.ne(0).sum(axis=1)
 
     patches: dict[int, dict[str, dict[str, float] | float]] = defaultdict(dict)
-    counts:  dict[int, int]                                  = defaultdict(int)
+    counts: dict[int, int] = defaultdict(int)
 
     for df, df_name in [(sgen_counts, "sgen"), (gen_counts, "gen")]:
         index: int
@@ -996,8 +971,8 @@ def calculate_unique_angles(net: pandapowerNet) -> dict[int, dict[str, dict[str,
                     counts[index] += 1
 
     for index, _ in loads.items():
-        patch_angle              = float(2 * math.pi / patches_per_bus[index])
-        patches[index]['load']   = patch_angle * counts[index]
-        counts[index]           += 1
+        patch_angle = float(2 * math.pi / patches_per_bus[index])
+        patches[index]["load"] = patch_angle * counts[index]
+        counts[index] += 1
 
     return patches
