@@ -9,6 +9,7 @@ import copy
 import logging
 import uuid
 from typing import Any, Literal
+from collections.abc import Iterable
 from typing_extensions import deprecated
 
 import numpy as np
@@ -356,7 +357,7 @@ def isin_group(
 def element_associated_groups(
         net: pandapowerNet,
         element_type: str,
-        element_index: str,
+        element_index: Iterable[int],
         return_empties: bool = True,
         drop_empty_lines: bool = True
 ) -> dict[int, list[int]]:
