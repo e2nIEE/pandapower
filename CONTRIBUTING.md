@@ -150,6 +150,10 @@ develop branch to submit your pull request.
    ```
    The pull request will be automatically updated.
 
+> [!IMPORTANT]
+> Do not forget to updated the changelog file with the changes you have done.  
+> Add a line directly under the `[upcoming release]` heading.
+
 
 ## Test Suite
 
