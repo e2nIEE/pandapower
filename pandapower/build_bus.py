@@ -277,10 +277,9 @@ def create_bus_lookup(net, bus_index, bus_is_idx, numba):
         net._impedance_bb_switches = np.zeros(switches_with_pos_z_ohm.shape)
 
     if numba:
-        bus_lookup, merged_bus = create_bus_lookup_numba(net, bus_index, bus_is_idx)
+        return create_bus_lookup_numba(net, bus_index, bus_is_idx)
     else:
-        bus_lookup, merged_bus = create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask)
-    return bus_lookup, merged_bus
+        return create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask)
 
 
 def get_voltage_init_vector(net, init_v, mode, sequence=None):
