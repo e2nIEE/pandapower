@@ -5,6 +5,7 @@
 
 import gc
 import warnings
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -45,27 +46,27 @@ def get_element_index(net, element_type, name, exact_match=True):
         return net[element_type][net[element_type]["name"].str.contains(name)].index
 
 
-def get_element_indices(net, element_type, name, exact_match=True):
+def get_element_indices(
+    net: pandapowerNet,
+    element_type: str | Iterable[str],
+    name: str,
+    exact_match: bool = True
+) -> list[int] | list[pd.Index]:
     """
-    Returns a list of element(s) identified by a name or regex and its element-table -> Wrapper
-    function of get_element_index()
+    Returns a list of element(s) identified by a name or regex and its element-table -> Wrapper function of
+    get_element_index()
 
-    INPUT:
-      **net** - pandapower network
-
-      **element_type** (str, string iterable) - Element table to get indices from
-      ("line", "bus", "trafo" etc.).
-
-      **name** (str) - Name of the element to match.
-
-    OPTIONAL:
-      **exact_match** (boolean, True)
+    Parameters:
+        net: the pandapower network
+        element_type: Element table to get indices from ("line", "bus", "trafo" etc.).
+        name: Name of the element to match.
+        exact_match:
 
           - True: Expects exactly one match, raises UserWarning otherwise.
           - False: returns all indices containing the name
 
-    OUTPUT:
-      **index** (list) - List of the indices of matching element(s).
+    Returns:
+        List of the indices of matching element(s).
 
     EXAMPLE:
         >>> from pandapower.networks.create_examples import example_multivoltage
@@ -95,25 +96,23 @@ def get_element_indices(net, element_type, name, exact_match=True):
     return idx
 
 
-def next_bus(net, bus, element_id, et='line', **kwargs):
+def next_bus(
+    net: pandapowerNet,
+    bus: int,
+    element_id: int,
+    et: str ='line',
+) -> int:
     """
     Returns the index of the second bus an element is connected to, given a
     first one. E.g. the from_bus given the to_bus of a line.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    bus : int
-        index of bus
-    element_id : int
-        index of element
-    et : str, optional
-        which branch element type to consider, by default 'line'
+    Parameters:
+        net: the pandapower net
+        bus: index of bus
+        element_id: index of element
+        et: which branch element type to consider, by default 'line'
 
-    Returns
-    -------
-    int
+    Returns:
         index of next connected bus
     """
     # todo: what to do with trafo3w?
@@ -145,7 +144,7 @@ def get_connected_elements(net, element_type, buses, respect_switches=True, resp
             - False: open switches will be ignored
 
         respect_in_service (bool, False):
-        
+
             - True: in_service status of connected lines will be respected
             - False: in_service status will be ignored
 
