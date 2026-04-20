@@ -855,7 +855,7 @@ def set_group_reference_column(
             net.group.iat[pos, net.group.columns.get_loc("element_index")] = element_index
     if len(dupl_elements):
         raise ValueError(
-            f"In net[*].{"index" if reference_column is None else reference_column} have duplicated or nan values. "
+            f"In net[*].{'index' if reference_column is None else reference_column} have duplicated or nan values. "
             f"* is placeholder for {dupl_elements}."
         )
 
