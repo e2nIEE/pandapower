@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -7,11 +8,13 @@ import math
 import logging
 from collections import defaultdict
 import pandas as pd
+
 try:
     import matplotlib.pyplot as plt
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
+
 from pandapower.auxiliary import soft_dependency_error, pandapowerNet
 from pandapower.plotting.plotting_toolbox import get_collection_sizes
 from pandapower.plotting.collections import (
