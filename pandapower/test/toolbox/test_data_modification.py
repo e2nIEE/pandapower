@@ -102,13 +102,19 @@ def test_reindex_buses__create_duplicate_index(caplog):
     net = example_simple()
     bus_lookup = dict(zip(range(2,7), range(0,5)))
 
-    reindex_buses(net, bus_lookup)
+    with pytest.raises(
+        ValueError,
+        match="These bus indices are already used and not being updated." +
+        " Thus they cannot be used as new index: {0, 1}"
+    ):
+        reindex_buses(net, bus_lookup)
 
-    assert any(
-        record.levelname == "ERROR" and "These bus indices are already used and not being updated." +
-        " Thus they cannot be used: {0, 1}" in record.message
-        for record in caplog.records
-    )
+    bus_lookup = dict(zip(range(7), [0, 1, 2, 3, 0, 1, 2]))
+    with pytest.raises(
+        ValueError,
+        match=r"Duplicate values for new indices not allowed: \[0, 1, 2\]"
+    ):
+        reindex_buses(net, bus_lookup)
 
 def test_continuos_bus_numbering():
     net = create_empty_network()
