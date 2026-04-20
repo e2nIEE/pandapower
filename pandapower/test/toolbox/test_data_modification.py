@@ -96,8 +96,7 @@ def test_reindex_buses():
                 assert all(np.array(list(net[elm].index)) == np.array(list(
                     net_orig[elm].index)) + to_add)
 
-def test_reindex_buses__create_duplicate_index(caplog):
-    caplog.set_level(logging.ERROR)
+def test_reindex_buses__create_duplicate_index():
     net = example_simple()
     bus_lookup = dict(zip(range(2,7), range(0,5)))
 
