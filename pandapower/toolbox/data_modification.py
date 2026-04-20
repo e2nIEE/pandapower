@@ -148,8 +148,8 @@ def reindex_buses(net, bus_lookup, allow_duplicate_index=False):
         logger.error("These bus indices are unknown to net. Thus, they cannot be reindexed: " +
                      str(not_fitting_bus_lookup_keys))
 
+    missing_bus_indices = sorted(set(net.bus.index) - set(bus_lookup.keys()))
     if not allow_duplicate_index:
-        missing_bus_indices = sorted(set(net.bus.index) - set(bus_lookup.keys()))
         duplicate_indices = set(missing_bus_indices) & set(bus_lookup.values())
         if len(duplicate_indices):
             raise ValueError("These bus indices are already used and not being updated. Thus they cannot be used as new index: " +

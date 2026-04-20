@@ -4,7 +4,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-import logging
 
 import numpy as np
 import pandas as pd
