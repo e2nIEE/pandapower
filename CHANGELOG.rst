@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] set_opf_controllable parameter to from_ppc and from_mpc to mark converted external grids and generators as
 - [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
 
 [3.5.4] - 2026-07-08
@@ -194,7 +195,7 @@ Change Log
 - [FIXED] DC OPF bug if verbose = True
 - [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
 - [ADDED] Parellel contingency analysis using multiple cores through a multiprocessing worker pool
-- [Changed] DC-line mode to handle negative values in 2 different ways, inversing the line direction or considering powerflow always to correlate with the given from_bus 
+- [Changed] DC-line mode to handle negative values in 2 different ways, inversing the line direction or considering powerflow always to correlate with the given from_bus
 - [FIXED] type annotations in create methods
 - [CHANGED] drop_inactive_elements performance improvements: using pandas methods instead of looping
 - [ADDED] add a few more tests for the grid modification functions

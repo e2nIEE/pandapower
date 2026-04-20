@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 ppc_elms = ["bus", "branch", "gen"]
 
 
-def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet:
+def from_ppc(ppc, f_hz=50, validate_conversion=False, set_opf_controllable=False, **kwargs) -> pandapowerNet:
     """
     This function converts pypower case files to pandapower net structure.
 
@@ -67,7 +67,11 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
         logger.setLevel(logging.DEBUG)
         if not validate_from_ppc(ppc, net, **kwargs):
             logger.error("Validation failed.")
-
+    if set_opf_controllable:
+        if len(net.ext_grid) > 0:
+            net.ext_grid["controllable"] = True
+        if len(net.gen) > 0:
+            net.gen["controllable"] = True
     return net
 
 
