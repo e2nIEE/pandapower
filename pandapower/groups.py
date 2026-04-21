@@ -357,7 +357,7 @@ def isin_group(
 def element_associated_groups(
         net: pandapowerNet,
         element_type: str,
-        element_index: Iterable[int],
+        element_index: Iterable[int] | int,
         return_empties: bool = True,
         drop_empty_lines: bool = True
 ) -> dict[int, list[int]]:

@@ -382,19 +382,14 @@ def test_group_io():
 def test_count_group_elements(nets_to_test_group):
     net, _, _, idxs = nets_to_test_group
     net = deepcopy(net)
-    pdt.assert_series_equal(
-        count_group_elements(net, idxs[0]),
-        pd.Series({"gen": 2, "sgen": 2}, dtype=np.int64))
-    pdt.assert_series_equal(
-        count_group_elements(net, idxs[1]),
-        pd.Series({"trafo": 3}, dtype=np.int64))
+    pdt.assert_series_equal(count_group_elements(net, idxs[0]), pd.Series({"gen": 2, "sgen": 2}, dtype=np.int64))
+    pdt.assert_series_equal(count_group_elements(net, idxs[1]), pd.Series({"trafo": 3}, dtype=np.int64))
 
 
 def test_isin(nets_to_test_group):
     net, _, _, idxs = nets_to_test_group
     net = deepcopy(net)
-    assert np.all(np.array([False, True, True, False]) == \
-                  isin_group(net, "sgen", [0, 2, 3, 4]))
+    assert np.all(np.array([False, True, True, False]) == isin_group(net, "sgen", [0, 2, 3, 4]))
     assert isin_group(net, "gen", 0)
     assert not isin_group(net, "gen", 0, index=idxs[1])
     assert not isin_group(net, "gen", 6)
@@ -403,11 +398,9 @@ def test_isin(nets_to_test_group):
 def test_element_associated_groups(nets_to_test_group):
     net, *_ = nets_to_test_group
     net = deepcopy(net)
-    assert element_associated_groups(net, "gen", [0, 1, 2, 3]) == \
-           {0: [0], 1: [0], 2: [], 3: []}
+    assert element_associated_groups(net, "gen", [0, 1, 2, 3]) == {0: [0], 1: [0], 2: [], 3: []}
     assert element_associated_groups(net, "gen", [0, 1, 2, 3], return_empties=False) == \
-           element_associated_groups(net, "gen", net.gen.index, return_empties=False) == \
-           {0: [0], 1: [0]}
+           element_associated_groups(net, "gen", net.gen.index, return_empties=False) == {0: [0], 1: [0]}
     assert element_associated_groups(net, "load", [0, 1]) == {0: [], 1: []}
     assert element_associated_groups(net, "trafo", [0, 1, 3]) == {0: [3], 1: [3], 3: []}
     assert element_associated_groups(net, "trafo", 0) == [3]
@@ -417,8 +410,7 @@ def test_elements_connected_to_group():
     # test net
     net = create_empty_network()
     buses = create_buses(net, 12, 20)
-    create_lines(net, [buses[0]] * 6, list(range(1, 7)), length_km=0.5,
-                 std_type="48-AL1/8-ST1A 20.0")
+    create_lines(net, [buses[0]] * 6, list(range(1, 7)), length_km=0.5, std_type="48-AL1/8-ST1A 20.0")
     create_ext_grid(net, 0)
     create_loads(net, buses, 0.3)
     create_switches(net, [0, 0, 6], [0, 1, net.line.index[-1]], "l", closed=[True, False, False])
