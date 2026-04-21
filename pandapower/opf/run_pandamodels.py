@@ -2,6 +2,7 @@ import os
 from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump_pm_json
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower.auxiliary import pandapowerNet
 
 import logging
 logger = logging.getLogger(__name__)
