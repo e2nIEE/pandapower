@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] `allow_duplicate_index` parameter to `reindex_buses` with default to `false`.
+- [ADDED] `add_basic_std_types` parameter to `from_excel`
 - [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
 - [ADDED] added more functions to diagnostic
 - [ADDED] check to check if vkr_percent values are reasonable (see issue #786).
@@ -17,6 +19,7 @@ Change Log
 - [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
 - [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
 - [ADDED] highlighting feature and hovering functionality to :code:`simple_plot()`
+- [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
 
 [3.4.0] - 2026-02-09
 -------------------------------
