@@ -38,7 +38,7 @@ def _build_gen_ppc(net: pandapowerNet, ppc: dict):
     distributed_slack = net["_options"]["distributed_slack"]
 
     _is_elements = net["_is_elements"]
-    gen_order = dict()
+    gen_order: dict[str, tuple[int, int]] = {}
     f = 0
     for element in ["ext_grid", "gen"]:
         f = add_gen_order(gen_order, element, _is_elements, f)

@@ -12,7 +12,7 @@ import copy
 import math
 from functools import partial
 import warnings
-from typing import Any, Optional, Literal
+from typing import Any, Literal, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -170,9 +170,9 @@ def _calc_trafo3w_parameter(net: pandapowerNet, ppc: dict) -> None:
     branch = ppc["branch"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
     trafo_df = _trafo_df_from_trafo3w(net)
-    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
-    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
-    in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
+    hv_bus = get_trafo_values(trafo_df, "hv_bus", raise_on_missing=True).astype(np.int64)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus", raise_on_missing=True).astype(np.int64)
+    in_service = get_trafo_values(trafo_df, "in_service", raise_on_missing=True).astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
     r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
@@ -410,7 +410,22 @@ def _calc_trafo_parameter(net, ppc, sequence=1):
         branch[f:t, RATE_A] = 0. if net["_options"]["mode"] == "opf" else 100.
 
 
-def get_trafo_values(trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA) -> Optional[NDArray]:
+@overload
+def get_trafo_values(
+    trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA, raise_on_missing: Literal[True] = True
+) -> NDArray:
+    ...
+
+@overload
+def get_trafo_values(
+    trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA, raise_on_missing: Literal[False] = False
+) -> NDArray | None:
+    ...
+
+
+def get_trafo_values(
+    trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA, raise_on_missing: bool = False
+) -> NDArray | None:
     """
     Get values from dataframe.
 
@@ -418,18 +433,26 @@ def get_trafo_values(trafo_df: pd.DataFrame | dict, column: str, na_replacement:
         trafo_df: The DataFrame from which to get the column
         column: column name to get.
         na_replacement: Element to replace pd.NA with.
+        raise_on_missing: Raise error if column is not present in trafo_df.
 
     Returns:
         None if column not found in trafo_df or NDArray of the column where pd.NA is replaced by na_replacement.
+
+    Raises:
+        ValueError: if column is not present in trafo_df and raise_on_missing is True.
     """
     if isinstance(trafo_df, dict):
         if column not in trafo_df:
+            if raise_on_missing:
+                raise ValueError(f'Column "{column}" not found in trafo_df.')
             return None
         col = trafo_df[column]
         if na_replacement is not pd.NA:
             col = np.where(pd.isna(col), na_replacement, col)
         return col
     if column not in trafo_df.columns:
+        if raise_on_missing:
+            raise ValueError(f'Column "{column}" not found in trafo_df.')
         return None
     if na_replacement is not pd.NA:
         # astype(object) is required to allow float('nan') as a replacement
@@ -586,11 +609,13 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva) -> ND
     """
 
     baseZ = np.square(vn_lv) / (3*net_sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / net_sn_mva
-    vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
-    pfe_mw = (get_trafo_values(trafo_df, "pfe_kw") * 1e-3) / 3 if mode == 'pf_3ph'\
-        else get_trafo_values(trafo_df, "pfe_kw") * 1e-3
-    parallel = get_trafo_values(trafo_df, "parallel")
-    trafo_sn_mva = get_trafo_values(trafo_df, "sn_mva")
+    vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv", raise_on_missing=True)
+    if mode == 'pf_3ph':
+        pfe_mw = (get_trafo_values(trafo_df, "pfe_kw", raise_on_missing=True) * 1e-3) / 3
+    else:
+        pfe_mw = get_trafo_values(trafo_df, "pfe_kw", raise_on_missing=True) * 1e-3
+    parallel = get_trafo_values(trafo_df, "parallel", raise_on_missing=True)
+    trafo_sn_mva = get_trafo_values(trafo_df, "sn_mva", raise_on_missing=True)
 
     ### Calculate susceptance ###
     vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else vn_lv_kv ** 2
@@ -866,7 +891,7 @@ def _get_vk_values_from_table(
         trafo_df: pd.DataFrame,
         trafo_characteristic_table,
         trafotype: Literal["2W", "3W"] = "2W"
-):
+) -> tuple[str, ...]:
     """
     get vk values from trafo table
 
@@ -882,22 +907,24 @@ def _get_vk_values_from_table(
         UserWarning: if the trafo type is not 2W or 3W
     """
     if trafotype == "2W":
-        vk_variables = ("vk_percent", "vkr_percent")
+        vk_variables: tuple[str, ...] = ("vk_percent", "vkr_percent")
     elif trafotype == "3W":
-        vk_variables = ("vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent",
-                        "vk_lv_percent", "vkr_lv_percent")
+        vk_variables = (
+            "vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent", "vk_lv_percent", "vkr_lv_percent"
+        )
     else:
         raise UserWarning("Unknown trafotype")
 
-    tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table")
+    tap_dependency_table_ = get_trafo_values(trafo_df, "tap_dependency_table", raise_on_missing=True)
     tap_dependency_table = np.array(
-        [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
+        [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table_]
+    )
     if np.any(np.isnan(tap_dependency_table)):
         raise UserWarning("tap_dependent_impedance has NaN values, but must be of type "
                           "bool and set to True or False")
-    tap_pos = get_trafo_values(trafo_df, "tap_pos")
+    tap_pos = get_trafo_values(trafo_df, "tap_pos", raise_on_missing=True)
 
-    vals = ()
+    vals: tuple[str, ...] = ()
 
     for _, vk_var in enumerate(vk_variables):
         vk_value = get_trafo_values(trafo_df, vk_var).copy()
@@ -931,7 +958,7 @@ def _get_vk_values_from_table(
     return vals
 
 
-def _get_vk_values(trafo_df: pd.DataFrame, characteristic, trafotype: Literal["2W", "3W"] = "2W"):
+def _get_vk_values(trafo_df: pd.DataFrame, characteristic, trafotype: Literal["2W", "3W"] = "2W") -> tuple[str, ...]:
     """
     get vk values from trafo table
 
@@ -949,19 +976,21 @@ def _get_vk_values(trafo_df: pd.DataFrame, characteristic, trafotype: Literal["2
         UserWarning: if the trafo type is not 2W or 3W
     """
     if trafotype == "2W":
-        vk_variables = ("vk_percent", "vkr_percent")
+        vk_variables: tuple[str, ...] = ("vk_percent", "vkr_percent")
     elif trafotype == "3W":
-        vk_variables = ("vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent",
-                        "vk_lv_percent", "vkr_lv_percent")
+        vk_variables = (
+            "vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent", "vk_lv_percent", "vkr_lv_percent"
+        )
     else:
         raise UserWarning("Unknown trafotype")
 
     # TODO: "tap_dependent_impedance" deprecated: remove this once support is dropped
     if "tap_dependent_impedance" in trafo_df:
-        tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance")
+        tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance", raise_on_missing=True)
         if np.any(np.isnan(tap_dependent_impedance)):
-            raise UserWarning("tap_dependent_impedance has NaN values, but must be of type "
-                              "bool and set to True or False")
+            raise UserWarning(
+                "tap_dependent_impedance has NaN values, but must be of type bool and set to True or False"
+            )
         tap_pos = get_trafo_values(trafo_df, "tap_pos")
     else:
         tap_dependent_impedance = False
@@ -998,7 +1027,7 @@ def _get_vk_values(trafo_df: pd.DataFrame, characteristic, trafotype: Literal["2
             raise UserWarning(f"At least one characteristic must be defined for {trafotype} "
                               f"trafo: {trafo_index[all_missing]}")
 
-    vals = ()
+    vals: tuple[str, ...] = ()
 
     for _, vk_var in enumerate(vk_variables):
         vk_value = get_trafo_values(trafo_df, vk_var)
@@ -1284,8 +1313,9 @@ def _switch_branches(net: pandapowerNet, ppc):
     neglect_open_switch_branches = net._options["neglect_open_switch_branches"]
     mode = net._options["mode"]
     n_bus = ppc["bus"].shape[0]
-    for et, element in [("l", "line"), ("t", "trafo"), ("t3", "trafo3w")]:
-        switch_mask = ~net.switch.closed.values & (net.switch.et.values == et)
+    element_map: list[tuple[Literal["l", "t", "t3"], str]] = [("l", "line"), ("t", "trafo"), ("t3", "trafo3w")]
+    for et, element in element_map:
+        switch_mask = ~net.switch.closed.values & (net.switch.et.values == et)  # type: ignore[operator]
         if not switch_mask.any():
             continue
         nr_open_switches = np.count_nonzero(switch_mask)
@@ -1301,7 +1331,7 @@ def _switch_branches(net: pandapowerNet, ppc):
             ppc["branch"][sw_branch_index, BR_STATUS] = 0
             continue
 
-        new_buses = np.zeros(shape=(nr_open_switches, ppc["bus"].shape[1]), dtype=float)
+        new_buses: NDArray[float] = np.zeros(shape=(nr_open_switches, ppc["bus"].shape[1]), dtype=float)
         new_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
         new_indices = np.arange(n_bus, n_bus + nr_open_switches)
         new_buses[:, 0] = new_indices
@@ -1400,7 +1430,7 @@ def _branches_with_oos_buses(net: pandapowerNet, ppc, dc: bool = False):
 
         # only if oos_buses are at lines (they could be isolated as well)
         if n_oos_buses_at_lines > 0:
-            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=np.int64)
+            ls_info: NDArray = np.zeros((n_oos_buses_at_lines, 3), dtype=np.int64)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
             ls_info[:, 2] = np.nonzero(np.isin(net[line_table].index, line_is_idx[mask_or]))[0]

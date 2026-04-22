@@ -5,6 +5,7 @@
 
 import gc
 import warnings
+from collections.abc import Collection
 from typing import Iterable
 
 import numpy as np
@@ -48,8 +49,8 @@ def get_element_index(net, element_type, name, exact_match=True):
 
 def get_element_indices(
     net: pandapowerNet,
-    element_type: str | Iterable[str],
-    name: str,
+    element_type: str | Collection[str],
+    name: str | Collection[str],
     exact_match: bool = True
 ) -> list[int] | list[pd.Index]:
     """
@@ -462,7 +463,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
 def get_connected_elements_dict(
         net: pandapowerNet, buses, respect_switches: bool = True, respect_in_service: bool = False,
         include_empty_lists: bool = False,
-        element_types=None, **kwargs) -> dict[str, list]:
+        element_types=None, **kwargs) -> dict[str, Collection]:
     """
     Returns a dict of lists of connected elements.
 
@@ -492,7 +493,7 @@ def get_connected_elements_dict(
             cost_tables=False,
             res_elements=False)
 
-    connected = {}
+    connected: dict[str, Collection] = {}
     for et in element_types:
         if et == "bus":
             conn = get_connected_buses(net, buses, respect_switches=respect_switches,
@@ -501,8 +502,8 @@ def get_connected_elements_dict(
             conn = get_connected_switches(net, buses)
         else:
             conn = get_connected_elements(
-                net, et, buses, respect_switches=respect_switches,
-                respect_in_service=respect_in_service)
+                net, et, buses, respect_switches=respect_switches, respect_in_service=respect_in_service
+            )
         if include_empty_lists or len(conn):
             connected[et] = list(conn)
     return connected

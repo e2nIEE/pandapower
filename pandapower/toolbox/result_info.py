@@ -4,9 +4,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+from collections.abc import Collection
 from itertools import chain
 import logging
-from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -239,12 +239,12 @@ def _determine_costs_dict(net: pandapowerNet, opf_task_overview: dict):
             opf_task_overview["flexibilities_without_costs"][flex_element] = list(idx_without_cost)
 
 
-def _cluster_same_floats(df: pd.DataFrame, subset: Iterable | None = None, **kwargs) -> pd.DataFrame:
+def _cluster_same_floats(df: pd.DataFrame, subset: Collection[str] | None = None, **kwargs) -> pd.DataFrame:
     """
     Clusters indices with close values. The values of df[subset] must be numericals.
 
     Parameters:
-        df (DataFrame)
+        df: DataFrame on which the clustering should be done
         subset: list of columns of df which should be considered to cluster
 
     Keyword Arguments:
@@ -256,28 +256,28 @@ def _cluster_same_floats(df: pd.DataFrame, subset: Iterable | None = None, **kwa
     if df.index.duplicated().any():
         logger.error("There are duplicated indices in df. Clusters will be determined but remain " +
                      "ambiguous.")
-    subset = subset if subset is not None else df.select_dtypes(include=[
-        np.number]).columns.tolist()
-    uniq = ~df.duplicated(subset=subset).values
+    if subset is None:
+        subset = df.select_dtypes(include=[np.number]).columns.tolist()
+    uniq: list[bool] = [not x for x in df.duplicated(subset=subset)]
 
     # prepare cluster_df
-    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + subset)
+    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + list(subset))
     cluster_df["index"] = cluster_df["index"].astype(object)
     cluster_df[subset] = df.loc[uniq, subset].values
 
     if sum(uniq) == df.shape[0]:  # fast return if df has no duplicates
         for i1, idx in enumerate(df.index):
-            cluster_df.at[i1, "index"] = [idx]
-    else:  # determine index clusters
-        i2 = 0
-        for i1, uni in enumerate(uniq):
-            if uni:
-                cluster_df.at[i2, "index"] = list(df.index[np.isclose(
-                    df[subset].values.astype(float),
-                    df[subset].iloc[[i1]].values.astype(float),
-                    equal_nan=True, **kwargs).all(axis=1)])
-                i2 += 1
+            # assignment is safe because "index" column has been converted to object and the index is now added as list
+            cluster_df.at[i1, "index"] = [idx]  # type: ignore[assignment]
+        return cluster_df
 
+    i2 = 0
+    for i1, uni in enumerate(uniq):
+        if uni:
+            cluster_df.at[i2, "index"] = list(df.index[np.isclose(  # type: ignore[assignment] # see comment above
+                df[subset].astype(float), df[subset].iloc[[i1]].astype(float), equal_nan=True, **kwargs
+            ).all(axis=1)])  # type: ignore[call-overload] # for some reason mypy does not like the axis=1 part.
+            i2 += 1
     return cluster_df
 
 
