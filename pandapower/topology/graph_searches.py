@@ -316,10 +316,9 @@ def get_2connected_buses(g, roots):
     """
     Get all buses which have at least two connections to the roots
 
-    INPUT:
-        **g** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network
-
-        **roots** - Roots of the graphsearch
+    Parameters:
+        g (NetworkX graph): NetworkX Graph or MultiGraph that represents a pandapower network
+        roots: Roots of the graphsearch
     """
     char_dict = find_graph_characteristics(g, roots, characteristics=['connected', 'stub_buses'])
     connected, stub_buses = char_dict['connected'], char_dict['stub_buses']
