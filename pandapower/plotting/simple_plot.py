@@ -360,38 +360,74 @@ def _set_colormap_mode(
 
 
 def bus_info(bus):
+    """Return an info tuple identifying a bus element.
+
+    Args:
+        bus (int): Bus index.
+
+    Returns:
+        tuple: ``("bus", bus)``
+    """
     return ("bus", bus)
 
 
 def line_info(line):
+    """Return an info tuple identifying a line element.
+
+    Args:
+        line (int): Line index.
+
+    Returns:
+        tuple: ``("line", line)``
+    """
     return ("line", line)
 
 
 def trafo_info(idx):
+    """Return an info tuple identifying a two-winding transformer element.
+
+    Args:
+        idx (int): Transformer index.
+
+    Returns:
+        tuple: ``("trafo", idx)``
+    """
     return ("trafo", idx)
 
 
 def trafo3w_info(idx):
+    """Return an info tuple identifying a three-winding transformer element.
+
+    Args:
+        idx (int): Three-winding transformer index.
+
+    Returns:
+        tuple: ``("trafo3w", idx)``
+    """
     return ("trafo3w", idx)
 
 
 def hover(event, ax, net, hover_text):
-    """
-    Update the hover text in an interactive pandapower plot based on the mouse position.
+    """Update the hover text in an interactive pandapower plot based on mouse position.
 
-    Expects collections to have an `info` attribute containing a list of
-    (element, index) tuples, e.g. ("bus", 3) or ("line", 5).
+    Expects collections to have an ``info`` attribute containing a list of
+    ``(element, index)`` tuples, e.g. ``("bus", 3)`` or ``("line", 5)``.
 
-    Parameters
-    ----------
-    event : matplotlib.backend_bases.MouseEvent
-        Mouse-move event from Matplotlib.
-    ax : matplotlib.axes.Axes
-        Axes object containing the collections.
-    net : pp.pandapowerNet
-        pandapower network with DataFrames (bus, line, trafo, trafo3w, ...).
-    hover_text : matplotlib.text.Text
-        Text artist whose content, position and visibility are updated.
+    When the hovered element is a bus or line and the corresponding result
+    table (``net.res_bus`` or ``net.res_line``) is non-empty, the hover label
+    is extended with the following load-flow results:
+
+    * Bus:  ``vm_pu`` and ``va_degree``
+    * Line: ``loading_percent`` and ``i_ka``
+
+    Args:
+        event (matplotlib.backend_bases.MouseEvent): Mouse-move event from
+            Matplotlib.
+        ax (matplotlib.axes.Axes): Axes object containing the collections.
+        net (pandapowerNet): pandapower network with DataFrames
+            (bus, line, trafo, trafo3w, ...).
+        hover_text (matplotlib.text.Text): Text artist whose content,
+            position, and visibility are updated.
     """
     fig = ax.figure
     visible = hover_text.get_visible()
@@ -421,16 +457,40 @@ def hover(event, ax, net, hover_text):
 
         df = getattr(net, element, None)
 
-        if df is not None and idx is not None and idx in df.index and "name" in df.columns:
+        if (
+            df is not None
+            and idx is not None
+            and idx in df.index
+            and "name" in df.columns
+        ):
             name = df.at[idx, "name"]
-            hover_info = f"{element}: {name} | Index: {idx}"
+            hover_info = f"Element: {element}\nName: {name}\nIndex: {idx}"
         elif idx is not None:
             hover_info = f"{element} | Index: {idx}"
         else:
             hover_info = str(element_info)
 
-        # text and position
+        # Append loadflow results when available
+        if element == "bus" and idx is not None:
+            res_bus = getattr(net, "res_bus", None)
+            if res_bus is not None and not res_bus.empty and idx in res_bus.index:
+                if "vm_pu" in res_bus.columns and "va_degree" in res_bus.columns:
+                    hover_info += (
+                        f"\nV_m = {res_bus.vm_pu.at[idx]:.2f} p.u."
+                                   f"\nV_m = {(res_bus.vm_pu.at[idx] * net.bus.vn_kv.at[idx]):.2f} kV"
+                                   f"\nV_a = {res_bus.va_degree.at[idx]:.2f} deg")
+        elif element == "line" and idx is not None:
+            res_line = getattr(net, "res_line", None)
+            if res_line is not None and not res_line.empty and idx in res_line.index:
+                if "loading_percent" in res_line.columns and "i_ka" in res_line.columns:
+                    hover_info += (
+                        f"\nLoading: {res_line.at[idx, 'loading_percent']:.2f} %"
+                        f"\nI_kA: {res_line.at[idx, 'i_ka']:.2f} kA")
+
         hover_text.set_text(hover_info)
+        hover_text.set_ha("left")
+        hover_text.set_va("bottom")
+        hover_text.set_multialignment("left")
         hover_text.set_position((event.xdata, event.ydata))
         hover_text.set_visible(True)
         fig.canvas.draw_idle()
@@ -439,6 +499,181 @@ def hover(event, ax, net, hover_text):
     if visible:
         hover_text.set_visible(False)
         fig.canvas.draw_idle()
+
+
+# -- Colormap helpers ---------------------------------------------------------
+def _pick_n_colors(n: int, palette: list[str]) -> list[str]:
+    """Sample *n* colors evenly from *palette* using floor-based index mapping.
+
+    The first and last palette entries are always included.
+
+    Args:
+        n (int): Number of colors to sample.  Returns an empty list when
+            ``n <= 0``.
+        palette (list of str): Source color palette to sample from.
+
+    Returns:
+        list of str: List of *n* hex color strings sampled from *palette*.
+            If ``n >= len(palette)``, the last palette color is repeated as
+            needed.
+    """
+    if n <= 0:
+        return []
+    if n == 1:
+        return [palette[0]]
+    if n >= len(palette):
+        return (list(palette) + [palette[-1]] * (n - len(palette)))[:n]
+    step = (len(palette) - 1) / (n - 1)
+    return [palette[math.floor(i * step)] for i in range(n)]
+
+
+def _build_cmap_from_limits(
+    limits: tuple | list,
+    colormap_type: str,
+    kind: str = "line",
+) -> list:
+    """Build a pandapower ``cmap_list`` from sorted numeric breakpoints.
+
+    Args:
+        limits (tuple or list): Sorted breakpoints, e.g.
+            ``(0, 25, 50, 75, 100)`` for lines or
+            ``(0.9, 0.95, 1.0, 1.05, 1.1)`` for buses.
+        colormap_type (str): ``"discrete"`` for flat color bands or
+            ``"continuous"`` for a smooth gradient.
+        kind (str, optional): ``"line"`` uses the line palette; ``"bus"``
+            uses the bus palette.  Default is ``"line"``.
+
+    Returns:
+        list: Discrete: ``[((lo, hi), color), ...]``
+            Continuous: ``[(value, color), ...]``
+    """
+    palette = _LINE_PALETTE if kind == "line" else _BUS_PALETTE
+    n = len(limits)
+    if colormap_type == "discrete":
+        colors = _pick_n_colors(n - 1, palette)
+        return [((limits[i], limits[i + 1]), colors[i]) for i in range(n - 1)]
+    colors = _pick_n_colors(n, palette)
+    return [(limits[i], colors[i]) for i in range(n)]
+
+
+def _extract_cbar_ticks(cmap_list: list, colormap_type: str) -> list:
+    """Extract tick positions from a ``cmap_list`` at the user-defined breakpoints.
+
+    Ensures that discrete and continuous colorbars show identical tick marks
+    regardless of colormap type.
+
+    Args:
+        cmap_list (list): Discrete: ``[((lo, hi), color), ...]``
+            Continuous: ``[(value, color), ...]``
+        colormap_type (str): ``"discrete"`` or ``"continuous"``.
+
+    Returns:
+        list: Sorted unique tick values derived from the breakpoints in
+            *cmap_list*.
+    """
+    if colormap_type == "discrete":
+        ticks = []
+        for (lo, hi), _ in cmap_list:
+            if lo not in ticks:
+                ticks.append(lo)
+            if hi not in ticks:
+                ticks.append(hi)
+        return sorted(ticks)
+    # Continuous: one value per entry
+    return [v for v, _ in cmap_list]
+
+
+def _set_colormap_mode(
+    mode: str,
+    state: dict,
+    ax,
+    normal_colls: list,
+    cmap_colls: list,
+    colorbars: list,
+    btn_normal,
+    btn_colormap,
+):
+    """Switch the figure between ``"normal"`` and ``"colormap"`` display mode.
+
+    Calling this function with the mode that is already active is a no-op.
+
+    Args:
+        mode (str): Target display mode: ``"normal"`` or ``"colormap"``.
+        state (dict): Mutable layout and mode state built in ``simple_plot``.
+        ax (matplotlib.axes.Axes): Main network axes.
+        normal_colls (list of Collection): Flat-color bus and line collections
+            used in Normal mode.
+        cmap_colls (list of Collection): Colormap bus and line collections
+            used in Colormap mode.
+        colorbars (list of Colorbar): Colorbars belonging to the Colormap
+            view.
+        btn_normal (matplotlib.widgets.Button): Button that activates Normal
+            mode.
+        btn_colormap (matplotlib.widgets.Button): Button that activates
+            Colormap mode.
+
+    Note:
+        **Button highlighting**
+        The button representing the currently active mode is always rendered
+        in ``_BTN_ACTIVE_COLOR`` (magenta); the other button uses
+        ``_BTN_INACTIVE_COLOR`` (dark blue), giving the user clear visual
+        feedback about which mode is currently displayed.
+
+        **Why two collections + set_visible (not in-place color patching)**
+        ``ScalarMappable.update_scalarmappable()`` is called on every
+        ``canvas.draw()`` and rewrites ``_facecolors`` from
+        ``_A + _cmap + _norm``.  Any in-place color patch via
+        ``set_facecolor`` / ``set_color`` is silently overwritten on the next
+        draw cycle.  Swapping visibility between two fully initialized
+        collections is the only approach that survives repeated ``draw()``
+        calls.
+
+        **Why ``copy_collections=False`` is required in draw_collections**
+        ``draw_collections`` shallow-copies every collection by default.
+        ``set_visible()`` must target the exact Python objects held in
+        ``ax.collections``; ``copy_collections=False`` guarantees identity.
+
+        **Why figure resize and ax repositioning is needed**
+        ``plt.colorbar(ax=ax)`` permanently shrinks the main axes.  Restoring
+        the saved ``normal_ax_pos`` and reverting ``fig.set_size_inches`` in
+        Normal mode eliminates the empty strip on the right side of the
+        figure.
+    """
+    if state["active"] == mode:
+        return  # already in the requested mode – nothing to do
+
+    state["active"] = mode
+    is_cmap = (mode == "colormap")
+    fig = ax.figure
+
+    # Swap collection visibility
+    for c in normal_colls:
+        c.set_visible(not is_cmap)
+    for c in cmap_colls:
+        c.set_visible(is_cmap)
+
+    # Resize figure and reposition axes + colorbars
+    if is_cmap:
+        fig.set_size_inches(state["cmap_figsize"], forward=True)
+        ax.set_position(state["cmap_ax_pos"])
+        for cbar, pos in zip(colorbars, state["cmap_cbar_positions"]):
+            cbar.ax.set_visible(True)
+            cbar.ax.set_position(pos)
+    else:
+        for cbar in colorbars:
+            cbar.ax.set_visible(False)
+        ax.set_position(state["normal_ax_pos"])
+        fig.set_size_inches(state["normal_figsize"], forward=True)
+
+    # Button highlighting: active mode = magenta, inactive mode = dark blue
+    btn_normal.ax.set_facecolor(
+        _BTN_ACTIVE_COLOR if not is_cmap else _BTN_INACTIVE_COLOR
+    )
+    btn_colormap.ax.set_facecolor(
+        _BTN_ACTIVE_COLOR if is_cmap else _BTN_INACTIVE_COLOR
+    )
+
+    fig.canvas.draw_idle()
 
 
 def simple_plot(
@@ -801,10 +1036,7 @@ def simple_plot(
     # ── other collections -----------------------------------------------------
     if len(net.dcline) > 0:
         dclc = create_dcline_collection(
-            net,
-            plot_dclines,
-            color=dcline_color,
-            linewidths=line_width
+            net, plot_dclines, color=dcline_color, linewidths=line_width
         )
         collections.append(dclc)
 
