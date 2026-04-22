@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] `allow_duplicate_index` parameter to `reindex_buses` with default to `false`.
 - [ADDED] `add_basic_std_types` parameter to `from_excel`
 - [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
 - [ADDED] added more functions to diagnostic
