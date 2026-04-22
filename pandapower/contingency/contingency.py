@@ -14,14 +14,14 @@ from numpy.typing import NDArray
 logger = logging.getLogger(__name__)
 try:
     import lightsim2grid
-    v = Version(lightsim2grid.__version__)
-    if v < Version("0.9.0"):
+    ls2g_version = Version(lightsim2grid.__version__)
+    if ls2g_version < Version("0.9.0"):
         logger.warning("Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid")
         raise ImportError
 
     from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
     from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
-    if v < Version("0.13.0"):
+    if ls2g_version < Version("0.13.0"):
         from lightsim2grid_cpp import SolverType
     else:
         from lightsim2grid.lightsim2grid_cpp import SolverType
@@ -33,8 +33,8 @@ except ImportError:
 try:
     if not lightsim2grid_installed:
         raise ImportError
-    v = Version(lightsim2grid.__version__)
-    if v < Version("0.13.0"):
+    ls2g_version = Version(lightsim2grid.__version__)
+    if ls2g_version < Version("0.13.0"):
         from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
     else:
         from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
