@@ -9,6 +9,7 @@ from typing import Callable
 
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 try:
@@ -239,17 +240,17 @@ def run_contingency_ls2g(
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
     if tps_flag:
-        net.trafo.tap_phase_shifter = tps
-        net.trafo.tap_pos = tps_tap_pos
-        net.trafo.shift_degree = tps_shift_degree
+        net.trafo["tap_phase_shifter"] = tps
+        net.trafo["tap_pos"] = tps_tap_pos
+        net.trafo["shift_degree"] = tps_shift_degree
     if tct2w_flag:
-        net.trafo.tap_changer_type = tct2w
-        net.trafo.tap_pos = tct2w_tap_pos
-        net.trafo.shift_degree = tct2w_shift_degree
+        net.trafo["tap_changer_type"] = tct2w
+        net.trafo["tap_pos"] = tct2w_tap_pos
+        net.trafo["shift_degree"] = tct2w_shift_degree
     if tct3w_flag:
-        net.trafo3w.tap_changer_type = tct3w
-        net.trafo3w.tap_pos = tct3w_tap_pos
-        net.trafo3w.shift_degree = tct3w_shift_degree
+        net.trafo3w["tap_changer_type"] = tct3w
+        net.trafo3w["tap_pos"] = tct3w_tap_pos
+        net.trafo3w["shift_degree"] = tct3w_shift_degree
 
     n_lines = len(net.line)
     n_lines_cases = len(nminus1_cases.get("line", {}).get("index", []))
@@ -271,7 +272,7 @@ def run_contingency_ls2g(
         s.add_multiple_n1(index)
 
     # s.add_multiple_n1(net.line.index.values.astype(int))
-    v_init = net._ppc["internal"]["V"]
+    v_init = net._ppc["internal"]["V"]  # type: ignore[index]
     s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
     v_res = s.get_voltages()
     s.compute_flows()
@@ -289,8 +290,10 @@ def run_contingency_ls2g(
     net.trafo["max_loading_percent_nminus1"]
     if "max_loading_percent_nminus1" in net.trafo.columns
     else net.trafo["max_loading_percent"] if n_trafos > 0 else []]
-    voltage_all = np.r_[net.bus.loc[net.line.from_bus.values, "vn_kv"].values if n_lines > 0 else [],
-    net.trafo.vn_hv_kv if n_trafos > 0 else []]
+    voltage_all: NDArray = np.r_[
+        net.bus.loc[net.line.from_bus, "vn_kv"].tolist() if n_lines > 0 else [],
+        net.trafo.vn_hv_kv if n_trafos > 0 else []
+    ]
     flows_all_mva = np.nan_to_num(kamps_all * voltage_all * np.sqrt(3))
     flows_limit_all = np.nan_to_num(max_loading_limit_all / 100 * max_i_ka_limit_all * voltage_all * np.sqrt(3))
 
