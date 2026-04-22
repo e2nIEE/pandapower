@@ -29,18 +29,16 @@
 import copy
 import numbers
 import warnings
-from collections.abc import MutableMapping
+from collections.abc import MutableMapping, Iterable, Collection
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as version_str
 from typing import (
     Any,
-    Iterable,
     Literal,
     Type,
     TypeVar,
     overload,
     Final,
-    TYPE_CHECKING
 )
 
 import numpy as np
@@ -813,39 +811,37 @@ def _get_values(
     return v
 
 
-@overload
-def ensure_iterability(var: Iterable[T], len_: int | None = None) -> Iterable[T]:
-    ...
-
-
-@overload
-def ensure_iterability(var: T, len_: int | None = None) -> Iterable[T]:
-    ...
-
-
-def ensure_iterability(var: Any, len_: int | None = None) -> Any:
+def ensure_iterability(var: Collection[T] | T, len_: int | None = None) -> Collection[T]:
     """
     Ensures iterability of a variable (and also the length if given).
 
-    Examples
-    --------
-    >>> ensure_iterability([1, 2])
-    [1, 2]
-    >>> ensure_iterability(1)
-    [1]
-    >>> ensure_iterability("Hi")
-    ["Hi"]
-    >>> ensure_iterability([1, 2], len_=2)
-    [1, 2]
-    >>> ensure_iterability([1, 2], len_=3)
-    ValueError("Length of variable differs from 3.")
+    Parameters:
+        var: any Collection or element
+        len_: expected length of the return value
+
+    Returns:
+        var if var is a Collection or list of var with length len_ (1 by default)
+
+    Raises:
+        ValueError: if len_ is passed together with a collection and length of collection does not match
+
+    Example:
+        >>> ensure_iterability([1, 2])
+        [1, 2]
+        >>> ensure_iterability(1)
+        [1]
+        >>> ensure_iterability("Hi")
+        ["Hi"]
+        >>> ensure_iterability([1, 2], len_=2)
+        [1, 2]
+        >>> ensure_iterability([1, 2], len_=3)
+        ValueError("Length of variable differs from 3.")
     """
-    if hasattr(var, "__iter__") and not isinstance(var, str):
-        if isinstance(len_, int) and len(var) != len_:
-            raise ValueError("Length of variable differs from %i." % len_)
-    else:
+    if isinstance(var, str) or not isinstance(var, Collection):  # str is subclass of collection thus the separate check
         len_ = len_ or 1
         var = [var] * len_
+    if len_ is not None and len(var) != len_:
+        raise ValueError(f"Length of variable differs from {len_}.")
     return var
 
 
