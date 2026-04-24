@@ -3,7 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
-- [ADDED] set_opf_controllable parameter to from_ppc and from_mpc to mark converted external grids and generators as
+- [ADDED] set_opf_controllable parameter in from_mpc to mark converted external grids and generators as controllable
 - [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
 
 [3.5.4] - 2026-07-08

@@ -51,8 +51,8 @@ def from_mpc(
         load_case_engine (object, None): External engine used to call MATPOWER `loadcase` (e.g. Oct2Py() object from
             matpower.start_instance()). Defaults to None. If None, parse data using
             matpowercaseframes.reader.parse_file.
-        set_opf_controllable: If True, marks converted ``ext_grid`` and ``gen`` elements as controllable in the pandapower network.
-            Useful when importing OPF cases where these should be controllable, but get fixed after conversion, which also ignores their limits.
+        set_opf_controllable (bool, False): If True, marks converted ``ext_grid`` and ``gen`` elements as controllable in the pandapower   network.
+            Useful when importing MATPOWER OPF cases as converted ``ext_grid`` elements are fixed by default, but MATPOWER does not imply controllability for any element.
 
     Keyword Arguments:
         any: are passed to :func:`from_ppc`
@@ -70,7 +70,12 @@ def from_mpc(
         ppc = _mat2ppc(mpc_file, casename_mpc_file)
     elif ending == ".m":
         ppc = _m2ppc(mpc_file, load_case_engine=load_case_engine)
-    net = from_ppc(ppc, f_hz=f_hz, validate_conversion=validate_conversion, set_opf_controllable=set_opf_controllable, **kwargs)
+    net = from_ppc(ppc, f_hz=f_hz, validate_conversion=validate_conversion, **kwargs)
+    if set_opf_controllable:
+        if len(net.ext_grid) > 0:
+            net.ext_grid["controllable"] = True
+        if len(net.gen) > 0:
+            net.gen["controllable"] = True
     if "mpc_additional_data" in ppc:
         if "_options" not in net:
             net["_options"] = {}
