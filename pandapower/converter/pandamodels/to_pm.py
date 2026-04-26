@@ -57,7 +57,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel",
                      pm_solver="ipopt",
                      pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8,
-                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, init_vm_pu="flat", init_va_degree="flat", **kwargs):
+                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, init_vm_pu="flat", init_va_degree="flat", init_pq="flat", **kwargs):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -118,7 +118,7 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=voltage_depend_loads, delta=delta,
                      trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
+    _add_opf_options(net, trafo_loading='power', ac=ac, numba=True,
                      pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
                      correct_pm_network_data=correct_pm_network_data, silence=silence,
                      pm_mip_solver=pm_mip_solver,
@@ -155,6 +155,9 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
     # todo: somewhere here should RATE_A be converted to 0., because only PowerModels uses 0 as no limits (pypower opf converts the zero to inf)
+
+    if net["_options"].get("init_pq") == "results":
+        add_pm_gen_start_values_from_results(net, pm)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
     if from_time_step is not None and to_time_step is not None:
@@ -163,7 +166,32 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     net._pm = pm
     return net, pm, ppc, ppci
 
-
+def add_pm_gen_start_values_from_results(net, pm):
+    pm_gens = pm.get("gen", {})
+    if not pm_gens:
+        return pm
+    lookup_table_name= {"ext_grid": "res_ext_grid", "gen": "res_gen", "sgen_controllable": "res_sgen"}
+    for lookup_name, table_name in lookup_table_name.items():
+        if table_name not in net or lookup_name not in net._pd2pm_lookups:
+            return
+        result_table = net[table_name]
+        lookup = net._pd2pm_lookups[lookup_name]
+        if result_table is None or len(result_table) == 0:
+            return
+        for pp_index, row in result_table.iterrows():
+            pm_index = lookup[int(pp_index)]
+            if pm_index is None:
+                continue
+            pm_gen = pm_gens.get(str(pm_index))
+            if pm_gen is None:
+                continue
+            p_mw = row.get("p_mw")
+            if p_mw is not None:
+                pm_gen["pg_start"] = p_mw
+            q_mvar = row.get("q_mvar")
+            if q_mvar is not None:
+                pm_gen["qg_start"] = q_mvar
+        
 def dump_pm_json(pm, buffer_file=None):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
