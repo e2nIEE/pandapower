@@ -37,7 +37,7 @@ def test_motor_min(motor_net):
     net = motor_net
     calc_sc(net, case="min")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:3],
-                       [11.547005315, 0.53709235574, 0.18070949061], rtol=1e-4)
+                       [11.54700538, 0.50921396, 0.17123864], rtol=1e-4)
 
 
 def test_motor_max(motor_net):

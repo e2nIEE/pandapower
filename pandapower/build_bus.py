@@ -277,10 +277,9 @@ def create_bus_lookup(net, bus_index, bus_is_idx, numba):
         net._impedance_bb_switches = np.zeros(switches_with_pos_z_ohm.shape)
 
     if numba:
-        bus_lookup, merged_bus = create_bus_lookup_numba(net, bus_index, bus_is_idx)
+        return create_bus_lookup_numba(net, bus_index, bus_is_idx)
     else:
-        bus_lookup, merged_bus = create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask)
-    return bus_lookup, merged_bus
+        return create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask)
 
 
 def get_voltage_init_vector(net, init_v, mode, sequence=None):
@@ -1113,11 +1112,13 @@ def _add_c_to_ppc(net, ppc):
     if len(lv_buses) > 0:
         lv_tol_percent = net["_options"]["lv_tol_percent"]
         if lv_tol_percent == 10:
-            c_ns = 1.1
+            c_max = 1.1
+            c_min = 0.9
         elif lv_tol_percent == 6:
-            c_ns = 1.05
+            c_max = 1.05
+            c_min = 0.95
         else:
             raise ValueError("Voltage tolerance in the low voltage grid has" +
                              " to be either 6% or 10% according to IEC 60909")
-        ppc["bus"][lv_buses, C_MAX] = c_ns
-        ppc["bus"][lv_buses, C_MIN] = .95
+        ppc["bus"][lv_buses, C_MAX] = c_max
+        ppc["bus"][lv_buses, C_MIN] = c_min
