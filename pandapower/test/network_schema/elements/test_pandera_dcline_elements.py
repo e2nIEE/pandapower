@@ -133,7 +133,6 @@ class TestDclineOptionalFields:
         )
         validate_network(net)
 
-    # TODO failing on dependending columns
     def test_optional_fields_with_nulls(self):
         """Test: dcline with optional fields including nulls is valid"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
@@ -185,7 +184,6 @@ class TestDclineOptionalFields:
 
         validate_network(net)
 
-    # TODO failing on dependending columns
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
