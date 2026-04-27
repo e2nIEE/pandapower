@@ -1,3 +1,5 @@
+# test_pandera_bus_elements.py
+
 import itertools
 import numpy as np
 import pandas as pd
@@ -15,7 +17,10 @@ from pandapower.test.network_schema.elements.helper import (
     not_allowed_floats,
     not_boolean_list,
     negativ_floats,
+    negativ_floats_plus_zero,
     positiv_floats,
+    positiv_floats_plus_zero,
+    zero_float,
 )
 
 
@@ -45,9 +50,9 @@ class TestBusRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], [float(np.nan), *not_strings_list]),
-                itertools.product(["vn_kv"], [float(np.nan), pd.NA, *not_floats_list, *negativ_floats]),
-                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
+                itertools.product(["name"], [np.nan, *not_strings_list]),
+                itertools.product(["vn_kv"], [np.nan, pd.NA, *not_floats_list, *negativ_floats, *zero_float]),
+                itertools.product(["in_service"], [np.nan, pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -74,8 +79,7 @@ class TestBusOptionalFields:
         """Test: Buses with some optional fields is valid"""
         net = pandapowerNet(name="test_buses_with_optional_fields_including_nullvalues")
         create_bus(net, 0.4, zone="nowhere")
-        create_bus(net, 0.4, max_vm_pu=1)
-        create_bus(net, 0.4, min_vm_pu=0.9)
+        create_bus(net, 0.4, max_vm_pu=1.1, min_vm_pu=0.9)
         create_bus(net, 0.4, geodata=(1, 2))
         create_bus(net, 0.4, type="x")
 
@@ -96,7 +100,7 @@ class TestBusOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["min_vm_pu", "max_vm_pu"], [float(np.nan), np.nan, *positiv_floats]),
+                itertools.product(["min_vm_pu", "max_vm_pu"], [np.nan, *positiv_floats]),
                 itertools.product(["type", "zone", "geo"], [pd.NA, *strings]),
             )
         ),
@@ -112,7 +116,8 @@ class TestBusOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["min_vm_pu", "max_vm_pu"], [*not_floats_list, *not_allowed_floats]),
+                itertools.product(["min_vm_pu"], [*negativ_floats, *not_floats_list, *not_allowed_floats]),
+                itertools.product(["max_vm_pu"], [*negativ_floats_plus_zero, *not_floats_list, *not_allowed_floats]),
                 itertools.product(["type", "zone", "geo"], [np.nan, float(np.nan), *not_strings_list]),
             )
         ),
@@ -121,6 +126,12 @@ class TestBusOptionalFields:
         """Test: Invalid optional values are rejected"""
         net = pandapowerNet(name="test_invalid_optional_values")
         create_bus(net, 0.4)
+
+        # For OPF columns, satisfy group dependency so only target parameter triggers failure
+        if parameter in ["min_vm_pu", "max_vm_pu"]:
+            net.bus["min_vm_pu"] = 0.5
+            net.bus["max_vm_pu"] = 1.5
+
         net.bus[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
