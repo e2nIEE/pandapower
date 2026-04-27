@@ -1,6 +1,8 @@
 # test_dcline.py
 
 import itertools
+
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
@@ -71,12 +73,12 @@ class TestDclineRequiredFields:
             itertools.chain(
                 itertools.product(["from_bus"], [*negativ_ints, *not_ints_list]),
                 itertools.product(["to_bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["p_mw"], not_floats_list),
-                itertools.product(["loss_percent"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["loss_mw"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["vm_from_pu"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["vm_to_pu"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["p_mw"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["loss_percent"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["loss_mw"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["vm_from_pu"], [float(np.nan), pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["vm_to_pu"], [float(np.nan), pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -177,6 +179,10 @@ class TestDclineOptionalFields:
             min_q_to_mvar=-40.0,
             max_q_to_mvar=40.0,
         )
+
+        # Set name column with nulls
+        net.dcline["name"] = pd.Series([pd.NA, "lorem schnipsum", pd.NA], dtype=pd.StringDtype())
+
         validate_network(net)
 
     # TODO failing on dependending columns
@@ -198,7 +204,7 @@ class TestDclineOptionalFields:
         net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
-        create_dcline(
+        dc0 = create_dcline(
             net,
             from_bus=b0,
             to_bus=b1,
@@ -216,10 +222,22 @@ class TestDclineOptionalFields:
             min_q_to_mvar=-40.0,
             max_q_to_mvar=40.0,
         )
+        create_dcline(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            p_mw=10.0,
+            loss_percent=1.0,
+            loss_mw=0.1,
+            vm_from_pu=1.02,
+            vm_to_pu=1.01,
+            in_service=True,
+            name="lorem ipsum"
+        )
         if parameter == "name":
             net.dcline[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
         else:
-            net.dcline[parameter] = valid_value
+            net.dcline.loc[dc0, parameter] = valid_value
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -242,10 +260,93 @@ class TestDclineOptionalFields:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
         create_dcline(
-            net, from_bus=b0, to_bus=b1, p_mw=1.0, loss_percent=0.0, loss_mw=0.0, vm_from_pu=1.0, vm_to_pu=1.0
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            p_mw=1.0,
+            loss_percent=0.0,
+            loss_mw=0.0,
+            vm_from_pu=1.0,
+            vm_to_pu=1.0,
+            # Provide complete OPF group so only target parameter triggers failure
+            max_p_mw=20.0,
+            min_p_mw=0.0,
+            min_q_from_mvar=-50.0,
+            max_q_from_mvar=50.0,
+            min_q_to_mvar=-40.0,
+            max_q_to_mvar=40.0,
         )
 
         net.dcline[parameter] = invalid_value
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_opf_group_partial_missing_invalid(self):
+        """Test: OPF group must be complete if any OPF value is set"""
+        net = pandapowerNet(name="test_opf_group_partial_missing_invalid")()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+        create_dcline(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            p_mw=10.0,
+            loss_percent=1.0,
+            loss_mw=0.1,
+            vm_from_pu=1.02,
+            vm_to_pu=1.01,
+            in_service=True,
+        )
+        net.dcline["max_p_mw"] = 100.0
+
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
+class TestDclineForeignKey:
+    """Tests for foreign key constraints"""
+
+    def test_invalid_from_bus_index(self):
+        """Test: from_bus FK must reference an existing bus index"""
+        net = pandapowerNet(name="test_invalid_from_bus_index")()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_dcline(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            p_mw=10.0,
+            loss_percent=1.0,
+            loss_mw=0.1,
+            vm_from_pu=1.02,
+            vm_to_pu=1.01,
+            in_service=True,
+        )
+
+        net.dcline["from_bus"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_invalid_to_bus_index(self):
+        """Test: to_bus FK must reference an existing bus index"""
+        net = pandapowerNet(name="test_invalid_to_bus_index")()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_dcline(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            p_mw=10.0,
+            loss_percent=1.0,
+            loss_mw=0.1,
+            vm_from_pu=1.02,
+            vm_to_pu=1.01,
+            in_service=True,
+        )
+
+        net.dcline["to_bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
