@@ -1,6 +1,8 @@
 import pandas as pd
 import pandera.pandas as pa
 
+from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 
 _bus_dc_columns = {
@@ -23,6 +25,7 @@ _bus_dc_columns = {
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
     "max_vm_pu": pa.Column(
         float,
+        pa.Check.gt(0),
         pa.Check.le(2),
         nullable=True,
         required=False,
