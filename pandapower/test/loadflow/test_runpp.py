@@ -1511,7 +1511,7 @@ def test_lightsim2grid():
         try:
             net_ref = copy.deepcopy(net)
             runpp(net_ref, lightsim2grid=False)
-            runpp_with_consistency_checks(net, lightsim2grid=True)
+            runpp_with_consistency_checks(net, lightsim2grid=True, voltage_depend_loads=False)
             assert_res_equal(net, net_ref)
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
@@ -1527,7 +1527,7 @@ def test_lightsim2grid_case118():
     net = case118()
     net_ref = copy.deepcopy(net)
     runpp(net_ref, lightsim2grid=False)
-    runpp_with_consistency_checks(net, lightsim2grid=True)
+    runpp_with_consistency_checks(net, lightsim2grid=True, voltage_depend_loads=False)
     assert_res_equal(net, net_ref)
 
 
@@ -1540,39 +1540,40 @@ def test_lightsim2grid_zip():
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_qlims():
-    test_minimal_net(lightsim2grid=True, enforce_q_lims=True)
+    test_minimal_net(lightsim2grid=True, enforce_q_lims=True, voltage_depend_loads=False)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_extgrid():
     # multiple ext grids not implemented
     with pytest.raises(NotImplementedError, match="multiple ext_grids"):
-        test_ext_grid_and_gen_at_one_bus(lightsim2grid=True)
+        test_ext_grid_and_gen_at_one_bus(lightsim2grid=True, voltage_depend_loads=False)
 
 
 @pytest.mark.skipif(lightsim2grid_available, reason="only relevant if lightsim2grid is not installed")
 def test_lightsim2grid_option_basic():
     net = simple_four_bus_system()
-    runpp(net)
+    runpp(net, voltage_depend_loads=False)
     assert not net._options["lightsim2grid"]
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_option():
+    # voltage_depend_loads=True will always disable lightsim2grid so it is set to false for all tests
     # basic usage
     net = simple_four_bus_system()
-    runpp(net)
+    runpp(net, voltage_depend_loads=False)
     assert net._options["lightsim2grid"]
 
-    runpp(net, lightsim2grid=False)
+    runpp(net, voltage_depend_loads=False, lightsim2grid=False)
     assert not net._options["lightsim2grid"]
 
     # missing algorithm
-    runpp(net, algorithm="gs")
+    runpp(net, voltage_depend_loads=False, algorithm="gs")
     assert not net._options["lightsim2grid"]
 
     with pytest.raises(NotImplementedError, match=r"algorithm"):
-        runpp(net, algorithm="gs", lightsim2grid=True)
+        runpp(net, voltage_depend_loads=False, algorithm="gs", lightsim2grid=True)
 
     # voltage-dependent loads
     net.load["const_z_p_percent"] = 100.
@@ -1594,17 +1595,17 @@ def test_lightsim2grid_option():
     assert not net._options["lightsim2grid"]
 
     with pytest.raises(NotImplementedError, match=r"multiple ext_grids"):
-        runpp(net, lightsim2grid=True)
+        runpp(net, voltage_depend_loads=False, lightsim2grid=True)
 
     net.ext_grid.at[xg, 'in_service'] = False
-    runpp(net)
+    runpp(net, voltage_depend_loads=False)
     assert net._options["lightsim2grid"]
 
     create_gen(net, 1, 0, 1., slack=True)
     with pytest.raises(NotImplementedError, match=r"multiple ext_grids"):
-        runpp(net, lightsim2grid=True)
+        runpp(net, voltage_depend_loads=False, lightsim2grid=True)
 
-    runpp(net, distributed_slack=True)
+    runpp(net, voltage_depend_loads=False, distributed_slack=True)
     assert net._options["lightsim2grid"]
 
 
