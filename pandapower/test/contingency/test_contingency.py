@@ -1,15 +1,12 @@
-# -*- coding: utf-8 -*-
-import copy
-from typing import Callable
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import copy
+from typing import Callable
 
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
-import time
 import pytest
 
 from pandapower.control import ConstControl
@@ -137,15 +134,15 @@ def test_contingency_timeseries(get_net, contingency_function):
 
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
-def test_with_lightsim2grid(get_net, get_case):
+@pytest.mark.parametrize("case", [0, 1, 2])
+def test_with_lightsim2grid(get_net, case):
     # FIXME: temporary skip for case14 because of error in lightsim2grid
     if get_net.name == "case14":
         pytest.skip(
             "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
         )
     net = get_net
-    case = get_case
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(seed=1)
 
     if case == 0:
         nminus1_cases = {"line": {"index": net.line.index.values}}
@@ -601,11 +598,6 @@ def get_net(request):
         net.line.max_i_ka = 1
 
     return net
-
-
-@pytest.fixture(params=[0, 1, 2])
-def get_case(request):
-    return request.param
 
 
 if __name__ == "__main__":
