@@ -917,7 +917,7 @@ def _get_vk_values_from_table(
     else:
         raise UserWarning("Unknown trafotype")
 
-    tap_dependency_table_ = get_trafo_values(trafo_df, "tap_dependency_table", raise_on_missing=True)
+    tap_dependency_table_ = get_trafo_values(trafo_df, "tap_dependency_table", float('nan'), True)
     tap_dependency_table = np.array(
         [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table_]
     )
