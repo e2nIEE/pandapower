@@ -2142,8 +2142,8 @@ def _init_runpp_options(
     numba &= _check_if_numba_is_installed()
 
     cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
-    # if const parameters are not set voltage_depend_loads is deactivated
-    voltage_depend_loads &= bool(cols.issubset(net.load.columns) and net.load[list(cols)].any().any())
+    if not cols.issubset(net.load.columns) or net.load[list(cols)].isna().any().any():
+        raise AttributeError(f"Network is missing one or more of net.load columns: {cols}")
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
                                                        distributed_slack, tdpf)

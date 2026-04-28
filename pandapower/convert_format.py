@@ -14,6 +14,7 @@ from pandapower._version import __version__, __format_version__
 from pandapower.auxiliary import pandapowerNet
 from pandapower.control import TrafoController, BinarySearchControl, DroopControl
 from pandapower.create import create_empty_network, create_poly_cost
+from pandapower.create._utils import add_column_to_df
 from pandapower.network_structure import get_structure_dict
 from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
 from pandapower.results import reset_results
@@ -41,6 +42,11 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
+    if net_format_version < Version("4.0.0"):
+        cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
+        if not bool(cols.issubset(net.load.columns)):
+            for col in cols:
+                add_column_to_df(net, "load", col)
     if net_format_version < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
     if Version("3.0.0") <= net_format_version < Version("3.1.3"):
