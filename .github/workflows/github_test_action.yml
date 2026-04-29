@@ -52,12 +52,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.10' }}
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=test/opf
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.10' }}
         run: |
           uv pip install pytest-cov numpy~=1.26
-          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} --ignore=test/opf
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         if: ${{ matrix.python-version == '3.10' }}
@@ -89,7 +89,7 @@ jobs:
           uv pip list
       - name: Test with pytest
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=test/opf
 
   opf:
     # needs: build
@@ -135,7 +135,7 @@ jobs:
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          pytest --cov=./ --cov-report=xml pandapower/test/opf
+          pytest --cov=./ --cov-report=xml test/opf
           # uv run python-jl -m pytest --cov=./ --cov-report=xml
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
 
