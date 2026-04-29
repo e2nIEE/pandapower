@@ -39,5 +39,9 @@ class StationSuppliesCim16:
            eqssh_station_supplies['in_service'] = eqssh_station_supplies.connected
         eqssh_station_supplies = eqssh_station_supplies.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'],
                                                                         'index_bus': 'bus', 'p': 'p_mw', 'q': 'q_mvar'})
+        eqssh_station_supplies['const_i_p_percent'] = 0.
+        eqssh_station_supplies['const_z_p_percent'] = 0.
+        eqssh_station_supplies['const_i_q_percent'] = 0.
+        eqssh_station_supplies['const_z_q_percent'] = 0.
         eqssh_station_supplies['scaling'] = 1.
         return eqssh_station_supplies
