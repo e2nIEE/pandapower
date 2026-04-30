@@ -248,7 +248,7 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ign
         logger.info(f"failed to set coordinates of {num_failed} lines")
 
 
-@deprecated("Use of busbar is not by bus_geodata anymore.")
+@deprecated("Use of busbar is not supported by bus geo anymore.")
 def position_on_busbar(net, bus, busbar_coords):
     """
     Checks if the first or the last coordinates of a line are on a bus
