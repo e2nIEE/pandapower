@@ -13,9 +13,10 @@ from pandapower.create import (
     create_ssc
 )
 from pandapower.run import runpp
+from pandapower.networks.facts_case_study_grid import facts_case_study_grid
 
 from test.consistency_checks import runpp_with_consistency_checks
-from test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_ssc_impedance_gen
+from test.loadflow.test_facts import copy_with_impedance, compare_ssc_impedance_gen
 
 
 def test_ssc_minimal():

@@ -6,9 +6,10 @@ import pytest
 from pandapower.create import create_impedance, create_buses, create_tcsc, create_bus, \
     create_empty_network, create_line_from_parameters, create_load, create_ext_grid
 from pandapower.run import runpp
+from pandapower.networks.facts_case_study_grid import facts_case_study_grid
 
 from test.consistency_checks import runpp_with_consistency_checks
-from test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_tcsc_impedance
+from test.loadflow.test_facts import copy_with_impedance, compare_tcsc_impedance
 
 
 def add_tcsc_to_line(net, xl, xc, set_p_mw, from_bus, line, side="from_bus"):
