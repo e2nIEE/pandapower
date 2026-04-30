@@ -13,7 +13,7 @@ import numpy.typing as npt
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.pp_types import Int
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _check_element,
     _check_multiple_elements,
     _get_index_with_check,

@@ -19,8 +19,9 @@ import pandas.testing as pdt
 
 from pandapower.auxiliary import ensure_iterability, log_to_level, pandapowerNet
 from pandapower.create import (
-    create_empty_network, _group_parameter_list, _set_multiple_entries, _check_elements_existence, create_group
+    create_empty_network, create_group
 )
+from pandapower.create.utils import _group_parameter_list, _set_multiple_entries, _check_elements_existence
 from pandapower.toolbox.power_factor import signing_system_value
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict, element_bus_tuples, pp_elements, get_connected_elements_dict

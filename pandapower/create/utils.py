@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -22,10 +20,17 @@ from pandapower.auxiliary import (
     ensure_iterability,
     empty_defaults_per_dtype,
 )
-from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
+
+
+def _is_valid_number(value):
+    try:
+        float_value = float(value)
+        return not (isinstance(value, float) and isnan(float_value))
+    except (ValueError, TypeError):
+        return False
 
 
 def _group_parameter_list(element_types, elements, reference_columns):

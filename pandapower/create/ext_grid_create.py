@@ -11,7 +11,7 @@ from numpy import nan, bool_
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.pp_types import Int
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _check_element,
     _get_index_with_check,
     _set_entries,

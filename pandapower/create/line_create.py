@@ -15,7 +15,7 @@ import numpy.typing as npt
 from pandapower.auxiliary import pandapowerNet
 from pandapower.std_types import load_std_type
 from pandapower.pp_types import Int, LineType
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _add_branch_geodata,
     _add_multiple_branch_geodata,
     _add_to_entries_if_not_nan,

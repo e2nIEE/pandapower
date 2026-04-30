@@ -10,7 +10,7 @@ import logging
 import numpy as np
 
 from pandapower.auxiliary import pandapowerNet
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _check_elements_existence,
     _get_index_with_check,
     _group_parameter_list,

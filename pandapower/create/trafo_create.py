@@ -17,7 +17,7 @@ import numpy.typing as npt
 from pandapower.auxiliary import pandapowerNet
 from pandapower.std_types import load_std_type
 from pandapower.pp_types import HVMVLVType, HVLVType, Int, TapChangerType, TapChangerWithTabularType
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _add_to_entries_if_not_nan,
     _check_branch_element,
     _check_multiple_branch_elements,
