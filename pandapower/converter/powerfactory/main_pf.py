@@ -17,7 +17,6 @@ from pandapower.converter.powerfactory.echo_off import echo_off, echo_on
 from pandapower.converter.powerfactory.pp_import_functions import from_pf
 from pandapower.converter.powerfactory import pf_export_functions as pef
 from pandapower.converter.powerfactory import logger_setup as pflog
-from pandapower.converter.powerfactory import gui
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 
 pandas.set_option('display.width', 1000)
@@ -274,6 +273,7 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
 
 # if called from powerfactory, __name__ is also '__main__'
 if __name__ == '__main__':
+    from pandapower.converter.powerfactory import gui
     try:
         import powerfactory as pf
     except:
