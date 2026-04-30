@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -15,17 +13,6 @@ from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.create import create_poly_cost
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import runopp
-
-try:
-    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
-except ImportError:
-    UnsupportedPythonError = Exception
-
-try:
-    from juliacall import Main # type: ignore
-    julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError) as e:
-    julia_installed = False
 
 from test import test_path
 from test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf

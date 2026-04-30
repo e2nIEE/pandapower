@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -64,7 +62,7 @@ def test_pm_tnep_cigre_dc():
 
     # run power models tnep optimization
 
-    runpm_tnep(net, pm_solver="juniper", pm_model="DCMPPowerModel")  # gurobi is a better option, but not for travis
+    runpm_tnep(net, pm_solver="juniper", pm_model="DCMPPowerModel")  # gurobi is a better option, but not for ci tests
 
     # set lines to be built in service
     lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index

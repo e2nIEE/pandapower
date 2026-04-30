@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -34,9 +32,8 @@ except ImportError:
 
 try:
     from juliacall import Main
-    julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
-    julia_installed = False
+    pytest.skip(allow_module_level=True, reason="juliacall not installed")
 
 from test import test_path
 from test.consistency_checks import consistency_checks
@@ -137,21 +134,18 @@ def assert_pf(net, dc=False):
         assert np.allclose(vm_pm, vm_pp)
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_ac_powerflow_simple():
     net = simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
     assert_pf(net, dc=False)
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_dc_powerflow_simple():
     net = simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
     assert_pf(net, dc=True)
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_ac_powerflow_shunt():
     net = simple_four_bus_system()
     create_shunt(net, 2, q_mvar=-0.5)
@@ -159,7 +153,6 @@ def test_pm_ac_powerflow_shunt():
     assert_pf(net, dc=False)
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_dc_powerflow_shunt():
     net = simple_four_bus_system()
     create_shunt(net, 2, q_mvar=-0.5)
@@ -167,7 +160,6 @@ def test_pm_dc_powerflow_shunt():
     assert_pf(net, dc=True)
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_ac_powerflow_tap():
     net = simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 30.
@@ -175,7 +167,6 @@ def test_pm_ac_powerflow_tap():
     assert_pf(net, dc=False)
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_dc_powerflow_tap():
     net = simple_four_bus_system()
     net.trafo.loc[0, "shift_degree"] = 0.
@@ -187,7 +178,6 @@ def test_pm_dc_powerflow_tap():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_compare_pwl_and_poly(net_3w_trafo_opf):
     net = deepcopy(net_3w_trafo_opf)
     net.ext_grid.loc[:, "min_p_mw"] = -999.
@@ -231,7 +221,6 @@ def test_compare_pwl_and_poly(net_3w_trafo_opf):
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pwl():
     net = create_empty_network()
 
@@ -290,7 +279,6 @@ def test_pwl():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_without_ext_grid():
     net = create_empty_network()
 
@@ -356,7 +344,6 @@ def test_without_ext_grid():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_multiple_ext_grids():
     net = create_empty_network()
     # generate three ext grids
@@ -385,7 +372,6 @@ def test_multiple_ext_grids():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_voltage_angles():
     net = create_empty_network()
     b1, b2, _ = add_grid_connection(net, vn_kv=110.)
@@ -477,7 +463,6 @@ def tnep_grid():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_pm_tnep():
     net = tnep_grid()
     # check if max line loading percent is violated (should be)
@@ -498,7 +483,6 @@ def test_pm_tnep():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 # @pytest.mark.xfail(reason="OTS does not correctly consider net.sn_mva. Probably the impedances [pu]"
 #                    " are not correctly calculated.")
 def test_ots_opt():
@@ -517,8 +501,7 @@ def test_ots_opt():
         assert np.array_equal(np.array([0, 1, 1, 1, 1, 0]).astype(bool), branch_status.astype(bool))
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-@pytest.mark.xfail(reason="not complited yet")
+@pytest.mark.xfail(reason="not completed yet")
 def test_timeseries_pandamodels():
     profiles = pd.DataFrame()
     n_timesteps = 3
@@ -534,7 +517,6 @@ def test_timeseries_pandamodels():
                    run=runpm_dc_opf)
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_vstab():
     net = create_cigre_network_mv(with_der="pv_wind")
     net.sgen.p_mw = net.sgen.p_mw * 8
@@ -578,7 +560,6 @@ def test_runpm_vstab():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_storage_opt():
     json_path = os.path.join(test_path, "opf", "cigre_timeseries_15min.json")
 
@@ -607,7 +588,6 @@ def test_storage_opt():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_multi_vstab():
     net = create_cigre_network_mv(with_der="pv_wind")
     net.load['controllable'] = False
@@ -652,7 +632,6 @@ def test_runpm_multi_vstab():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_qflex_and_multi_qflex():
     net = create_cigre_network_mv(with_der="pv_wind")
     runpp(net)
@@ -700,7 +679,6 @@ def test_runpm_qflex_and_multi_qflex():
     assert np.array(y_multi).max() < 1e-6
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_ploss_loading():
     net = create_cigre_network_mv(with_der="pv_wind")
     net.load['controllable'] = False
@@ -738,7 +716,6 @@ def test_runpm_ploss_loading():
     assert (net.res_line.loading_percent.values - net_org.res_line.loading_percent.values).sum() < 0
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 @pytest.mark.parametrize("net_func", [
     case5,
     case9,
@@ -756,7 +733,6 @@ def test_convergence_dc_opf(net_func, cpnd):
     runpm_dc_opf(net, correct_pm_network_data=cpnd)
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_ac_opf_differnt_snmva():
     net = case9()
     res = pd.DataFrame(columns=net.bus.index.tolist())
