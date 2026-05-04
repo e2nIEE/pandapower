@@ -1456,7 +1456,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
             element_counter += len(value)
             min_r_type = ""
             min_x_type = ""
-            if key in ("line", "line_dc", "xward", "vsc"):
+            if key in ("line", "line_dc", "xward", "vsc", "ward", "trafo", "trafo3w"):
                 min_r_type = self.params["min_r_ohm"]
                 min_x_type = self.params["min_x_ohm"]
             elif key == "impedance":
