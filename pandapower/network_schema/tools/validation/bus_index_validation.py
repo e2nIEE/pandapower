@@ -1,3 +1,6 @@
+"""
+Functions for creating and validating bus index cross-references.
+"""
 import pandas as pd
 import pandera.pandas as pa
 
@@ -13,36 +16,25 @@ def _create_index_validation_check(reference_df: pd.DataFrame, column_name: str,
     to validate foreign key relationships, such as ensuring bus IDs in a transformer
     table exist in the bus table.
 
-    Parameters
-    ----------
-    reference_df : pd.DataFrame
-        The reference dataframe whose index will be used for validation.
-    column_name : str
-        The name of the column being validated. Used for generating specific
-        error messages and determining the reference type (e.g., 'dc' columns
-        reference 'bus_dc' table).
-    element_name : str
-        The name of the element/table being validated. Used in error messages
-        for better debugging.
+    Parameters:
+        reference_df:
+            The reference dataframe whose index will be used for validation.
+        column_name: The name of the column being validated. Used for generating specific error messages and determining
+            the reference type (e.g., 'dc' columns reference 'bus_dc' table).
+        element_name: The name of the element/table being validated. Used in error messages for better debugging.
 
-    Returns
-    -------
-    pa.Check
-        A pandera Check object that can be used in schema validation.
-        The check will raise a ValueError if any values are not found
-        in the reference index.
+    Returns:
+        A pandera Check object that can be used in schema validation. The check will raise a ValueError if any values
+        are not found in the reference index.
 
-    Raises
-    ------
-    ValueError
-        Raised by the returned check function when validation fails,
-        including details about failing values and their indices.
+    Raises:
+        ValueError: Raised by the returned check function when validation fails, including details about failing values
+            and their indices.
 
-    Examples
-    --------
-    >>> bus_df = pd.DataFrame(index=[1, 2, 3])
-    >>> check = _create_index_validation_check(bus_df, 'hv_bus', 'trafo')
-    >>> # This check can now be used to validate that trafo hv_bus values exist in bus_df
+    Examples:
+        >>> bus_df = pd.DataFrame(index=[1, 2, 3])
+        >>> check = _create_index_validation_check(bus_df, 'hv_bus', 'trafo')
+        >>> # This check can now be used to validate that trafo hv_bus values exist in bus_df
     """
     reference_index = set(reference_df.index)
 
@@ -56,7 +48,8 @@ def _create_index_validation_check(reference_df: pd.DataFrame, column_name: str,
             failing_values = series[~mask].unique()
             failing_indices = series.index[~mask].values.tolist()
             raise ValueError(
-                f"The following values for net.{element_name}.{column_name} at index {failing_indices} are not in the index of the {ref_name}-dataframe: {failing_values.tolist()}"
+                f"The following values for net.{element_name}.{column_name} at index {failing_indices} are not in the "
+                f"index of the {ref_name}-dataframe: {failing_values.tolist()}"
             )
         return True
 
@@ -78,40 +71,30 @@ def _create_multi_column_reference_schema(
     columns need to reference the same reference table. Each specified column will be
     validated to ensure all its values exist in the reference dataframe's index.
 
-    Parameters
-    ----------
-    reference_df : pd.DataFrame
-        The reference dataframe whose index serves as the valid value set
-        for all columns being validated.
-    columns_to_validate : list[str]
-        List of column names that should be validated against the reference
-        dataframe's index. All columns will be treated as int64 dtype.
-    element_name : str
-        Name of the element/table being validated. Used for schema naming
-        and error message generation.
+    Parameters:
+        reference_df: The reference dataframe whose index serves as the valid value set
+            for all columns being validated.
+        columns_to_validate: List of column names that should be validated against the reference
+            dataframe's index. All columns will be treated as int64 dtype.
+        element_name: Name of the element/table being validated. Used for schema naming and error message generation.
 
-    Returns
-    -------
-    pa.DataFrameSchema
-        A pandera DataFrameSchema object with validation rules for all
-        specified columns. The schema is non-strict, allowing additional
-        columns not specified in columns_to_validate.
+    Returns:
+        A pandera DataFrameSchema object with validation rules for all specified columns. The schema is non-strict,
+        allowing additional columns not specified in columns_to_validate.
 
-    Notes
-    -----
-    - All validated columns are configured as int64 dtype and non-nullable
-    - The schema uses strict=False, allowing additional columns beyond those specified
+    Notes:
+        - All validated columns are configured as int64 dtype and non-nullable
+        - The schema uses strict=False, allowing additional columns beyond those specified
 
-    - Each column gets its own index validation check via _create_index_validation_check
+        - Each column gets its own index validation check via :func:`_create_index_validation_check`
 
-    Examples
-    --------
-    >>> bus_df = pd.DataFrame(index=[1, 2, 3])
-    >>> schema = _create_multi_column_reference_schema(
-    ...     bus_df, ['from_bus', 'to_bus'], 'line'
-    ... )
-    >>> # This schema can validate that both from_bus and to_bus columns
-    >>> # contain only values that exist in bus_df.index
+    Example:
+        >>> bus_df = pd.DataFrame(index=[1, 2, 3])
+        >>> schema = _create_multi_column_reference_schema(
+        ...     bus_df, ['from_bus', 'to_bus'], 'line'
+        ... )
+        >>> # This schema can validate that both from_bus and to_bus columns
+        >>> # contain only values that exist in bus_df.index
     """
     schema_columns = {}
     for col_name in columns_to_validate:
