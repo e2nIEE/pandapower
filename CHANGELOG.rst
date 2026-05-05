@@ -1,6 +1,10 @@
 Change Log
 =============
 
+[upcoming 4.0.0] - 2026-..-..
+-------------------------------
+- [ADDED] pandera network validation
+
 [upcoming release] - 2026-..-..
 -------------------------------
 - [FIXED] `DiscreteTapControl` to work with `negative tap_step_percent`.
