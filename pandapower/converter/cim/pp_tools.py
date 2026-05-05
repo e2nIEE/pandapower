@@ -34,7 +34,7 @@ def set_pp_col_types(net: Union[pandapowerNet, Dict], ignore_errors: bool = Fals
     :return: The pandapower network with updated data types.
     """
     time_start = time.time()
-    structure_dict = get_structure_dict()
+    structure_dict = get_structure_dict(required_only=False)
     pp_elements = ['bus', 'dcline', 'ext_grid', 'gen', 'impedance', 'line', 'load', 'motor', 'sgen', 'shunt', 'storage',
                    'switch', 'trafo', 'trafo3w', 'ward', 'xward']
     columns = ['bus', 'element', 'to_bus', 'from_bus', 'hv_bus', 'mv_bus', 'lv_bus', 'in_service', 'controllable',
@@ -53,24 +53,30 @@ def set_pp_col_types(net: Union[pandapowerNet, Dict], ignore_errors: bool = Fals
     # some individual things
     if hasattr(net, 'switch'):
         _set_column_to_type(net['switch'], 'closed', structure_dict['switch']['closed'])
-    if hasattr(net, 'trafo'):
-        _set_column_to_type(net['trafo'], 'id_characteristic_table',
+    if hasattr(net, 'trafo')  and 'id_characteristic_table' in net['trafo'].columns:
+        if 'id_characteristic_table' in net['trafo'].columns:
+            _set_column_to_type(net['trafo'], 'id_characteristic_table',
                             structure_dict['trafo']['id_characteristic_table'])
-    if hasattr(net, 'trafo3w'):
+    if hasattr(net, 'trafo3w')  and 'id_characteristic_table' in net['trafo3w'].columns:
         _set_column_to_type(net['trafo3w'], 'id_characteristic_table',
                             structure_dict['trafo3w']['id_characteristic_table'])
     if hasattr(net, 'sgen'):
-        _set_column_to_type(net['sgen'], 'current_source', structure_dict['sgen']['current_source'])
-        _set_column_to_type(net['sgen'], 'id_q_capability_characteristic',
+        if 'current_source' in net['sgen'].columns:
+            _set_column_to_type(net['sgen'], 'current_source', structure_dict['sgen']['current_source'])
+        if 'id_q_capability_characteristic' in net['sgen'].columns:
+            _set_column_to_type(net['sgen'], 'id_q_capability_characteristic',
                             structure_dict['sgen']['id_q_capability_characteristic'])
     if hasattr(net, 'gen'):
         _set_column_to_type(net['gen'], 'slack', structure_dict['gen']['slack'])
-        _set_column_to_type(net['gen'], 'id_q_capability_characteristic',
+        if 'id_q_capability_characteristic' in net['gen'].columns:
+            _set_column_to_type(net['gen'], 'id_q_capability_characteristic',
                             structure_dict['gen']['id_q_capability_characteristic'])
     if hasattr(net, 'shunt'):
         _set_column_to_type(net['shunt'], 'step', structure_dict['shunt']['step'])
-        _set_column_to_type(net['shunt'], 'max_step', structure_dict['shunt']['max_step'])
-        _set_column_to_type(net['shunt'], 'id_characteristic_table',
+        if 'max_step' in net['shunt'].columns:
+            _set_column_to_type(net['shunt'], 'max_step', structure_dict['shunt']['max_step'])
+        if 'id_characteristic_table' in net['shunt'].columns:
+            _set_column_to_type(net['shunt'], 'id_characteristic_table',
                             structure_dict['shunt']['id_characteristic_table'])
     logger.info("Finished setting the data types for the pandapower network in %ss." % (time.time() - time_start))
     return net

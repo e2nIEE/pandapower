@@ -44,5 +44,4 @@ class StationSuppliesCim16:
         eqssh_station_supplies['const_i_q_percent'] = 0.
         eqssh_station_supplies['const_z_q_percent'] = 0.
         eqssh_station_supplies['scaling'] = 1.
-        eqssh_station_supplies['type'] = None
         return eqssh_station_supplies

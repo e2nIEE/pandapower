@@ -12,8 +12,10 @@ import numpy as np
 import numpy.typing as npt
 
 from pandapower.auxiliary import pandapowerNet
+from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int
 from pandapower.create._utils import (
+    _add_to_entries_if_not_nan,
     _check_branch_element,
     _check_multiple_branch_elements,
     _get_index_with_check,
@@ -42,8 +44,8 @@ def create_impedance(
     xft0_pu: float | None = None,
     rtf0_pu: float | None = None,
     xtf0_pu: float | None = None,
-    gf_pu: float | None = 0,
-    bf_pu: float | None = 0,
+    gf_pu: float | None = get_default_value("impedance", "gf_pu"),
+    bf_pu: float | None = get_default_value("impedance", "bf_pu"),
     gt_pu: float | None = None,
     bt_pu: float | None = None,
     gf0_pu: float | None = None,
@@ -213,14 +215,14 @@ def create_impedances(
     rtf_pu: float | Iterable[float] | None = None,
     xtf_pu: float | Iterable[float] | None = None,
     name: Iterable[str] | None = None,
-    in_service: bool | Iterable[str] = True,
+    in_service: bool | Iterable[bool] = True,
     index: Int | Iterable[Int] | None = None,
     rft0_pu: float | Iterable[float] | None = None,
     xft0_pu: float | Iterable[float] | None = None,
     rtf0_pu: float | Iterable[float] | None = None,
     xtf0_pu: float | Iterable[float] | None = None,
-    gf_pu: float | Iterable[float] | None = 0,
-    bf_pu: float | Iterable[float] | None = 0,
+    gf_pu: float | Iterable[float] | None = get_default_value("impedance", "gf_pu"),
+    bf_pu: float | Iterable[float] | None = get_default_value("impedance", "bf_pu"),
     gt_pu: float | Iterable[float] | None = None,
     bt_pu: float | Iterable[float] | None = None,
     gf0_pu: float | Iterable[float] | None = None,
@@ -362,19 +364,20 @@ def create_impedances(
         "in_service": in_service,
         **kwargs,
     }
-    _set_multiple_entries(net, "impedance", index, entries=entries)
 
     if rft0_pu is not None:
-        _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
-        _set_value_if_not_nan(net, index, xft0_pu, "xft0_pu", "impedance")
-        _set_value_if_not_nan(net, index, rtf0_pu, "rtf0_pu", "impedance")
-        _set_value_if_not_nan(net, index, xtf0_pu, "xtf0_pu", "impedance")
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "rft0_pu", rft0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "xft0_pu", xft0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "rtf0_pu", rtf0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "xtf0_pu", xtf0_pu)
 
     if gf0_pu is not None:
-        _set_value_if_not_nan(net, index, gf0_pu, "gf0_pu", "impedance")
-        _set_value_if_not_nan(net, index, bf0_pu, "bf0_pu", "impedance")
-        _set_value_if_not_nan(net, index, gt0_pu, "gt0_pu", "impedance")
-        _set_value_if_not_nan(net, index, bt0_pu, "bt0_pu", "impedance")
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "gf0_pu", gf0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "bf0_pu", bf0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "gt0_pu", gt0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "bt0_pu", bt0_pu)
+
+    _set_multiple_entries(net, "impedance", index, entries=entries)
 
     return index
 
@@ -388,11 +391,11 @@ def create_tcsc(
     set_p_to_mw: float,
     thyristor_firing_angle_degree: float,
     name: str | None = None,
-    controllable: bool = True,
-    in_service: bool = True,
+    controllable: bool = get_default_value("tcsc", "controllable"),
+    in_service: bool = get_default_value("tcsc", "in_service"),
     index: Int | None = None,
-    min_angle_degree: float = 90,
-    max_angle_degree: float = 180,
+    min_angle_degree: float = get_default_value("tcsc", "min_angle_degree"),
+    max_angle_degree: float = get_default_value("tcsc", "max_angle_degree"),
     **kwargs,
 ) -> Int:
     """
@@ -458,7 +461,7 @@ def create_series_reactor_as_impedance(
     x_ohm: float,
     sn_mva: float,
     name: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("impedance", "in_service"),
     index: int | None = None,
     r0_ohm: float | None = None,
     x0_ohm: float | None = None,
@@ -466,7 +469,7 @@ def create_series_reactor_as_impedance(
 ) -> Int:
     """
     Creates a series reactor as per-unit impedance
-    
+
     Parameters:
         net: The pandapower network in which the element is created
         from_bus: starting bus of the series reactor
@@ -477,7 +480,7 @@ def create_series_reactor_as_impedance(
         name:
         in_service:
         index:
-    
+
     Returns:
         index of the created element
     """

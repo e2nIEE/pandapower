@@ -80,7 +80,7 @@ class SwitchesCim16:
         eqssh_switches = eqssh_switches.rename(columns={'rdfId': sc['o_id'], 'index_bus': 'bus', 'index_bus2': 'element',
                                        'rdfId_Terminal': sc['t_bus'], 'rdfId_Terminal2': sc['t_ele']})
         eqssh_switches['et'] = 'b'
-        eqssh_switches['z_ohm'] = 0
+        eqssh_switches['z_ohm'] = 0.
         if self.cimConverter.cim_version == '3.0' and eqssh_switches.index.size > 0:
            eqssh_switches['closed'] = (~eqssh_switches.open & eqssh_switches.connected & eqssh_switches.connected2
                                        & eqssh_switches.inService)

@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 import numpy as np
 
+from pandapower.create._utils import add_column_to_df
 from pandapower.control import Characteristic, SplineCharacteristic, TapDependentImpedance, \
     trafo_characteristic_table_diagnostic
 from pandapower.control.util.diagnostic import shunt_characteristic_table_diagnostic
@@ -136,8 +137,10 @@ def test_trafo_characteristic_table_diagnostic():
          'vkr_percent': [1.3, 1.4, 1.44, 1.5, 1.6], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     # populate id_characteristic_table parameter
-    net.trafo.at[0, 'id_characteristic_table'] = 0
-    net.trafo.at[0, 'tap_dependency_table'] = False
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
+    net.trafo['id_characteristic_table'].at[0] = 0
+    net.trafo['tap_dependency_table'].at[0] = False
     with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     # populate tap_dependency_table parameter
@@ -177,20 +180,22 @@ def test_shunt_characteristic_table_diagnostic():
     create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
 
     # initially no shunt_characteristic_table is available
-    assert shunt_characteristic_table_diagnostic(net) is False
+    assert not shunt_characteristic_table_diagnostic(net)
 
     # add shunt_characteristic_table
     net["shunt_characteristic_table"] = pd.DataFrame(
         {'id_characteristic': [0, 0, 0, 0, 0], 'step': [1, 2, 3, 4, 5], 'q_mvar': [-25, -55, -75, -120, -125],
          'p_mw': [1, 1.5, 3, 4.5, 5]})
     # populate id_characteristic_table parameter
-    net.shunt.at[0, 'id_characteristic_table'] = 0
-    net.shunt.at[0, 'step_dependency_table'] = False
+    add_column_to_df(net, "shunt", "id_characteristic_table")
+    net.shunt.at[0, "id_characteristic_table"] = 0
+    add_column_to_df(net, "shunt", "step_dependency_table")
+    net.shunt.at[0, "step_dependency_table"] = False
     with pytest.warns(UserWarning):
         shunt_characteristic_table_diagnostic(net)
     # populate step_dependency_table parameter
     net.shunt.at[0, 'step_dependency_table'] = True
-    assert shunt_characteristic_table_diagnostic(net) is True
+    assert shunt_characteristic_table_diagnostic(net)
 
     # add shunt_characteristic_table with missing parameter values
     net["shunt_characteristic_table"] = pd.DataFrame(

@@ -162,8 +162,6 @@ class AcLineSegmentsCim16:
         ac_line_segments['g0_us_per_km'] = abs(ac_line_segments.g0ch) * 1e6 / ac_line_segments.length
         ac_line_segments['parallel'] = 1
         ac_line_segments['df'] = 1.
-        ac_line_segments['type'] = None
-        ac_line_segments['std_type'] = None
         ac_line_segments['et'] = 'b'
         if self.cimConverter.kwargs.get('set_switch_impedance', False):
             ac_line_segments['z_ohm'] = (abs(ac_line_segments.r)**2 + abs(ac_line_segments.x)**2)**.5

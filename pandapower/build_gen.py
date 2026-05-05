@@ -7,6 +7,7 @@
 import numpy as np
 import pandas as pd
 
+
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.bustypes import bustypes_dc
 from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
@@ -75,9 +76,7 @@ def add_gen_order(gen_order, element, _is_elements, f):
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
     ppc["gen"] = np.zeros(shape=(nr_gens, gen_cols), dtype=np.float64)
-    ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
-                              1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                              0, 0, 0, 0, 0])
+    ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     q_lim_default = net._options["q_lim_default"]
     p_lim_default = net._options["p_lim_default"]
     ppc["gen"][:, PMAX] = p_lim_default
@@ -236,8 +235,8 @@ def _build_pp_gen(net, ppc, f, t):
 
     ppc["gen"][f:t, PG] = (p_mw * net["gen"]["scaling"].values[gen_is])
 
-    ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is]
-    ppc["gen"][f:t, SL_FAC] = net["gen"]["slack_weight"].values[gen_is]
+    ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is] if "sn_mva" in net["gen"].columns else np.empty(len(gen_buses)) # TODO: sn_mva should not be required
+    ppc["gen"][f:t, SL_FAC] = net["gen"]["slack_weight"].values[gen_is] if "slack_weight" in net["gen"].columns else np.empty(len(gen_buses))# TODO: slack_weight should not be required
     ppc["gen"][f:t, VG] = gen_is_vm
 
     # set bus values for generator buses
@@ -447,15 +446,15 @@ def _different_values_at_one_bus(buses, values):
 
 
 def _gen_xward_mask(net, ppc):
-    gen_mask = ~np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", dict()).get("xward", []))
-    xward_mask = np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", dict()).get("xward", []))
+    gen_mask = ~np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", {}).get("xward", []))
+    xward_mask = np.isin(ppc['gen'][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", {}).get("xward", []))
     return gen_mask, xward_mask
 
 
 def _get_xward_pq_buses(net, ppc):
     # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to
     # the auxiliary PV bus
-    ft = net["_pd2ppc_lookups"].get('branch', dict()).get("xward", [])
+    ft = net["_pd2ppc_lookups"].get('branch', {}).get("xward", [])
     if len(ft) > 0:
         f, t = ft
         xward_pq_buses = ppc['branch'][f:t, F_BUS].real.astype(np.int64)
@@ -526,6 +525,8 @@ def _calculate_qmin_qmax_from_q_capability_characteristics(net, element):
         return None
 
     # Filter rows with True 'reactive_capability_curve'
+    from pandapower.create._utils import add_column_to_df
+    add_column_to_df(net, element, 'reactive_capability_curve')
     element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
 
     if element_data.empty:

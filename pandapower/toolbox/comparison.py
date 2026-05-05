@@ -124,6 +124,7 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
         check_without_results (bool, False): if True, result tables (starting with ``res_``) are ignored for comparison
         exclude_elms (list, None): list of element tables which should be ignored in the comparison
         name_selection (list, None): list of element tables which should be compared
+        assume_geojson_strings (bool, True):
 
     Keyword Arguments:
         any: are passed to :func:`dataframes_equal`

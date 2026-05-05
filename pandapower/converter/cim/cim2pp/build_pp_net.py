@@ -18,6 +18,7 @@ from .. import cim_tools
 from .. import pp_tools
 from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
+from pandapower.network_structure import get_structure_dict
 
 logger = logging.getLogger('cim.cim2pp.build_pp_net')
 
@@ -33,7 +34,7 @@ class CimConverter:
         self.cim_version = cim_version.lower() if cim_version is not None else '2.4.15'
         self.kwargs = kwargs
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
-        self.net: pandapowerNet = create_empty_network()
+        self.net: pandapowerNet = create_empty_network(structure=get_structure_dict(metadata=['cim']))
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
         self.power_trafo3w: pd.DataFrame = pd.DataFrame()

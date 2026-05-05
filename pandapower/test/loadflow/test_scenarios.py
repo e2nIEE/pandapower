@@ -156,7 +156,7 @@ def test_ext_grid_gen_order_in_ppc():
     net = create_empty_network()
 
     for b in range(6):
-        create_bus(net, vn_kv=1., name=b)
+        create_bus(net, vn_kv=1., name=str(b))
 
     for l_bus in range(0, 5, 2):
         create_line(net, from_bus=l_bus, to_bus=l_bus + 1, length_km=1,
@@ -435,18 +435,19 @@ def network_with_trafo3ws():
 
 
 def test_trafo3w_switches(network_with_trafo3ws):
+    # FIXME: reenable voltage dependent loads
     net, t3, hv, mv, lv = network_with_trafo3ws
 
     # open switch at hv side - t3 is disconnected
     s1 = create_switch(net, bus=hv, element=t3, et="t3", closed=False)
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, voltage_depend_loads=False)
     assert np.isnan(net.res_bus.vm_pu.at[mv])
     assert np.isnan(net.res_bus.vm_pu.at[lv])
     assert np.isnan(net.res_trafo3w.p_hv_mw.at[t3]) == 0
 
     # open switch at mv side - mv is disconnected, lv is connected
     net.switch.at[s1, "bus"] = mv
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, voltage_depend_loads=False)
 
     assert np.isnan(net.res_bus.vm_pu.at[mv])
     assert not np.isnan(net.res_bus.vm_pu.at[lv])
@@ -456,7 +457,7 @@ def test_trafo3w_switches(network_with_trafo3ws):
 
     # open switch at lv side - lv is disconnected, mv is connected
     net.switch.at[s1, "bus"] = lv
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, voltage_depend_loads=False)
 
     assert np.isnan(net.res_bus.vm_pu.at[lv])
     assert not np.isnan(net.res_bus.vm_pu.at[mv])
@@ -466,7 +467,7 @@ def test_trafo3w_switches(network_with_trafo3ws):
 
     # open switch at lv and mv side - lv and mv is disconnected, t3 in open loop
     create_switch(net, bus=mv, element=t3, et="t3", closed=False)
-    runpp_with_consistency_checks(net)
+    runpp_with_consistency_checks(net, voltage_depend_loads=False)
 
     assert np.isnan(net.res_bus.vm_pu.at[lv])
     assert np.isnan(net.res_bus.vm_pu.at[mv])

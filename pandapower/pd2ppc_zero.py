@@ -178,7 +178,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         )
 
     for vector_group, trafos in trafo_df.groupby("vector_group"):
-        # TODO Roman: check this/expand this
+        # TODO: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
 
         if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
@@ -367,7 +367,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             if trafo_model == "pi":
                 y = 1 / (z0_mag + z0_k).astype(complex)  # pi model
             else:
-                # y = (YAB_AN + YBN).astype(complex)  # T model
                 y = (YAB + YAB_BN + YBN).astype(complex)  # T model
             y_asym = y * in_service.values * 2
 
@@ -433,7 +432,6 @@ def _add_gen_sc_impedance_zero(net, ppc):
     eg_buses_ppc = bus_lookup[eg_buses]
 
     y0_gen = 1 / (1e3 + 1e3 * 1j)
-    # buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_gen.real, y0_gen.imag)
     ppc["bus"][eg_buses_ppc, GS] += y0_gen.real
     ppc["bus"][eg_buses_ppc, BS] += y0_gen.imag
 
@@ -559,7 +557,7 @@ def _add_impedance_sc_impedance_zero(net, ppc):
 
 
 def _add_trafo3w_sc_impedance_zero(net, ppc):
-    # TODO Roman: check this/expand this
+    # TODO: check this/expand this
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if "trafo3w" not in branch_lookup:
         return

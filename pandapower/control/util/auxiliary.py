@@ -13,6 +13,7 @@ from pandas import Index
 
 from pandapower.auxiliary import soft_dependency_error, ensure_iterability
 from pandapower.control.util.characteristic import SplineCharacteristic, Characteristic
+from pandapower.create._utils import add_column_to_df
 
 try:
     import matplotlib.pyplot as plt
@@ -218,8 +219,9 @@ def create_trafo_characteristic_object(net):
         del net["trafo_characteristic_spline"]
     # 2-winding transformers
     if (net['trafo_characteristic_table'].index.size > 0 and
-            net['trafo']['id_characteristic_table'].notna().any()):
-        time_start = time.time()
+        'id_characteristic_table' in net.trafo.columns and
+        net['trafo']['id_characteristic_table'].notna().any()
+    ):
         logger.info("Creating tap dependent characteristic objects for 2w-trafos.")
         characteristic_df_temp = net['trafo_characteristic_table'][
             ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']]
@@ -232,14 +234,14 @@ def create_trafo_characteristic_object(net):
             y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
             _create_trafo_characteristics(net, "trafo", [trafo_id], variables_filtered,
                                           x_points, y_points)
-        logger.info(f"Finished creating tap dependent characteristic objects for 2w-trafos in "
-                    f"{time.time() - time_start}.")
+        logger.info("Finished creating tap dependent characteristic objects for 2w-trafos.")
     else:
         logger.info("trafo_characteristic_table has no values for 2w-trafos - no characteristic objects created.")
     # 3-winding transformers
     if (net['trafo_characteristic_table'].index.size > 0 and
-            net['trafo3w']['id_characteristic_table'].notna().any()):
-        time_start = time.time()
+        'id_characteristic_table' in net.trafo3w.columns and
+        net['trafo3w']['id_characteristic_table'].notna().any()
+    ):
         logger.info("Creating tap dependent characteristic objects for 3w-trafos.")
         characteristic_df_temp = net['trafo_characteristic_table'][
                 ['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vkr_hv_percent',
@@ -254,8 +256,7 @@ def create_trafo_characteristic_object(net):
             y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
             _create_trafo_characteristics(net, "trafo3w", [trafo_id], variables_filtered,
                                           x_points, y_points)
-        logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos in "
-                    f"{time.time() - time_start}.")
+        logger.info("Finished creating tap dependent characteristic objects for 3w-trafos.")
     else:
         logger.info("trafo_characteristic_table has no values for 3w-trafos - no characteristic objects created.")
 
@@ -389,10 +390,15 @@ def _set_reactive_capability_curve_flag(net, element):
         raise UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
                           f"Please give gen or sgen as an argument of the function")
     # Quick checks for element table and required columns
-    if (len(net[element]) == 0 or
-            not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
-            or (not net[element]['id_q_capability_characteristic'].notna().any() and
-                not net[element]['reactive_capability_curve'].any()) and not net[element]['curve_style'].any()):
+    if (
+            len(net[element]) == 0
+            or not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
+            or (
+                net[element]['id_q_capability_characteristic'].isna().all()
+                and not net[element]['reactive_capability_curve'].any()
+            )
+            and not net[element]['curve_style'].any()
+    ):
         logger.info(f"No {element} with Q capability curve table found.")
     else:
         net[element]['reactive_capability_curve'] = (
@@ -523,7 +529,8 @@ def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
         if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
             logger.warning(f"The reactive_capability_curve of {element} is True, but the relevant "
                            f"characteristic value is None. So default Q limit value has been used in the load flow.")
-
+        add_column_to_df(net, "sgen", "min_q_mvar")
+        add_column_to_df(net, "sgen", "max_q_mvar")
         curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
         curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
         qmin = curve_q.loc[element_index, "min_q_mvar"]

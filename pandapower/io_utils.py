@@ -288,6 +288,7 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
             # convert geodata to geojson
             if item in ["bus", "line"]:
                 if "geo" in table.columns:
+                    table.geo = table.geo.mask(table.geo == '"<NA>"', pd.NA)
                     table.geo = table.geo.apply(
                         lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x
                     )
@@ -767,12 +768,12 @@ def pp_hook(
         omit_modules=None
 ):
     try:
-        if not omit_tables is None:
+        if omit_tables is not None:
             for ot in omit_tables:
                 if ot in d:
                     d[ot].drop(d[ot].index, inplace=True)
         if '_module' in d and '_class' in d:
-            if not omit_modules is None:
+            if omit_modules is not None:
                 for om in omit_modules:
                     if om in d['_module']:
                         return

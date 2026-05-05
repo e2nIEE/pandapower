@@ -11,6 +11,7 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 
+from pandapower.network_structure import get_structure_dict
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
 
@@ -22,38 +23,16 @@ class UCTE2pandapower:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.u_d: dict = {}
-        self.net = self._create_empty_network()
+        self.net = create_empty_network(structure=get_structure_dict(metadata=['ucte']))
         self.net.bus["node_name"] = ""
         self.slack_as_gen = slack_as_gen
         self.clip_small_x_values = clip_small_x_values
-    @staticmethod
-    def _create_empty_network() -> pandapowerNet:
-        net: pandapowerNet = create_empty_network()
-        new_columns: dict[str, dict] = {
-            "trafo": {
-                "tap2_min": int,
-                "tap2_max": int,
-                "tap2_neutral": int,
-                "tap2_pos": int,
-                "tap2_step_percent": float,
-                "tap2_step_degree": float,
-                "tap2_side": str,
-                "tap2_changer_type": str,
-                "amica_name": str,
-            },
-            "line": {"amica_name": str},
-            "bus": {"ucte_country": str},
-        }
-        for pp_element in new_columns.keys():
-            for col, dtype in new_columns[pp_element].items():
-                net[pp_element][col] = pd.Series(dtype=dtype)
-        return net
 
     def convert(self, ucte_dict: Dict) -> pandapowerNet:
         self.logger.info("Converting UCTE data to a pandapower network.")
         time_start = time.time()
         # create a temporary copy from the origin input data
-        self.u_d = dict()
+        self.u_d = {}
         for ucte_element, items in ucte_dict.items():
             self.u_d[ucte_element] = items.copy()
         # first reset the index to get indices for pandapower
@@ -102,9 +81,6 @@ class UCTE2pandapower:
         self._convert_impedances()
         self._convert_switches()
         self._convert_trafos()
-
-        # copy data to the element tables of self.net
-        self.net = self.set_pp_col_types(self.net)
 
         # currently, net.bus.name contains the UCTE node name ("Node"), while
         # net.bus.node_name contains the original node name "Node Name". This is changed now:
@@ -285,7 +261,7 @@ class UCTE2pandapower:
             return  # Acceleration
         # lines = self.u_d['L']
         # create the in_service column from the UCTE status
-        in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
+        in_service_map = {0: True, 1: True, 2: True, 7: False, 8: False, 9: False}
         lines["in_service"] = lines["status"].map(in_service_map)
         # i in A to i in kA
         lines["max_i_ka"] = lines["i"] / 1e3
@@ -335,14 +311,14 @@ class UCTE2pandapower:
 
         if self.clip_small_x_values:
             # apply rule of min. X of 0.05 Ohm from UCTE-DEF
-            impedances.loc[(impedances.x >= 0.0) & (impedances.x < 0.05) , "x"] = +0.05 
+            impedances.loc[(impedances.x >= 0.0) & (impedances.x < 0.05) , "x"] = +0.05
             impedances.loc[(impedances.x > -0.05) & (impedances.x < 0.0) , "x"] = -0.05
         else:
             # being close to the PF approach
             impedances.loc[impedances.x == 0, "x"] = 1e-3
 
         # create the in_service column from the UCTE status
-        in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
+        in_service_map = {0: True, 1: True, 2: True, 7: False, 8: False, 9: False}
         impedances["in_service"] = impedances["status"].map(in_service_map)
         # Convert ohm/km to per unit (pu)
         impedances["sn_mva"] = 10000  # same as PowerFactory
@@ -407,7 +383,7 @@ class UCTE2pandapower:
         switches = self.u_d["L"].loc[lines_rxb_zero | switches_by_status, :]
 
         # create the in_service column from the UCTE status
-        in_service_map = dict({0: True, 1: True, 2: True, 7: False, 8: False, 9: False})
+        in_service_map = {0: True, 1: True, 2: True, 7: False, 8: False, 9: False}
         switches["closed"] = switches["status"].map(in_service_map)
         self._set_column_to_type(switches, "from_bus", int)
         switches["type"] = "LS"
@@ -432,14 +408,14 @@ class UCTE2pandapower:
 
         if self.clip_small_x_values:
             # apply rule of min. X of 0.05 Ohm from UCTE-DEF
-            trafos.loc[(trafos.x >= 0.0) & (trafos.x < 0.05) , "x"] = +0.05 
+            trafos.loc[(trafos.x >= 0.0) & (trafos.x < 0.05) , "x"] = +0.05
             trafos.loc[(trafos.x > -0.05) & (trafos.x < 0.0) , "x"] = -0.05
         else:
             # being close to the PF approach
             trafos.loc[trafos.x == 0, "x"] = 1e-3
 
         # create the in_service column from the UCTE status
-        status_map = dict({0: True, 1: True, 8: False, 9: False})
+        status_map = {0: True, 1: True, 8: False, 9: False}
         trafos["in_service"] = trafos["status"].map(status_map)
         # use same value as in powerfactory for replacing s equals zero values
         trafos.loc[trafos.s == 0, "s"] = 1001
@@ -470,7 +446,7 @@ class UCTE2pandapower:
         )
 
         trafos = trafos.fillna({'i0_percent': 0.0, 'pfe_kw': 0.0})
-        
+
         # phase data in UCTE represent an effect to vm only
         # angle data in UCTE represent an effect to va (and maybe vm too)
 
@@ -497,7 +473,7 @@ class UCTE2pandapower:
         generic = ~(symm | asym) | has_2nd_tap_changer # data for generic transformers is included in the phase values
 
         trafos["tap_changer_type"] = "Ratio"
-        
+
         trafos.loc[generic, "tap_min"] = -trafos["phase_reg_n"]
         trafos.loc[generic, "tap_max"] = trafos["phase_reg_n"]
         trafos.loc[generic, "tap_pos"] = trafos["phase_reg_n2"]
@@ -517,7 +493,7 @@ class UCTE2pandapower:
         trafos.loc[idx, "tap2_pos"] = trafos.loc[idx, "angle_reg_n2"]
         trafos.loc[idx, "tap2_step_percent"] = trafos.loc[idx, "angle_reg_delta_u"]
         trafos.loc[idx, "tap2_step_degree"] = trafos.loc[idx, "angle_reg_theta"]
-        
+
         idx = trafos.loc[symm & ~(has_2nd_tap_changer)].index
         trafos.loc[idx, "tap_changer_type"] = "Symmetrical"
         trafos.loc[idx, "tap_min"] = -trafos.loc[idx, "angle_reg_n"]
@@ -540,24 +516,24 @@ class UCTE2pandapower:
         # voltage1, not the hv side!)
         trafos["vn_hv_kv"] = trafos[["voltage1", "voltage2"]].max(axis=1)
         trafos["vn_lv_kv"] = trafos[["voltage1", "voltage2"]].min(axis=1)
-        
+
         # swap the 'hv_node' and 'lv_node' if need
         trafos["swap"] = trafos["vn_hv_kv"] != trafos["voltage1"]
         # to be consistent with PF
         trafos["swap"] = trafos["swap"] | (trafos["vn_hv_kv"]==trafos["vn_lv_kv"])
-        
+
         # copy the 'fid_node_start' and 'fid_node_end'
         trafos["hv_bus2"] = trafos["hv_bus"].copy()
         trafos["lv_bus2"] = trafos["lv_bus"].copy()
         trafos.loc[trafos.swap, "hv_bus"] = trafos.loc[trafos.swap, "lv_bus2"]
         trafos.loc[trafos.swap, "lv_bus"] = trafos.loc[trafos.swap, "hv_bus2"]
-        
+
         # set the tap side, default is lv correct it for other windings
         trafos["tap_side"] = "lv"
         trafos["tap2_side"] = "lv"
         trafos.loc[trafos.swap, "tap_side"] = "hv"
         trafos.loc[trafos.swap, "tap2_side"] = "hv"
-        
+
         trafos["tap_neutral"] = 0
         trafos.loc[trafos.tap_min.isnull(), "tap_side"] = None
         trafos.loc[trafos.tap_min.isnull(), "tap_neutral"] = np.nan
@@ -645,70 +621,3 @@ class UCTE2pandapower:
 
         amica_names = input_df.loc[:, input_column].map(get_name_from_ucte_string)
         input_df.loc[:, "amica_name"] = amica_names
-
-    def set_pp_col_types(
-        self,
-        net: pandapowerNet,
-        ignore_errors: bool = False,
-    ) -> pandapowerNet:
-        """
-        Set the data types for some columns from pandapower assets. This mainly effects bus columns (to int, e.g.
-        sgen.bus or line.from_bus) and in_service and other boolean columns (to bool, e.g. line.in_service or gen.slack).
-        :param net: The pandapower network to update the data types.
-        :param ignore_errors: Ignore problems if set to True (no warnings displayed). Optional, default: False.
-        :return: The pandapower network with updated data types.
-        """
-        time_start = time.time()
-        pp_elements = [
-            "bus",
-            "dcline",
-            "ext_grid",
-            "gen",
-            "impedance",
-            "line",
-            "load",
-            "sgen",
-            "shunt",
-            "storage",
-            "switch",
-            "trafo",
-            "trafo3w",
-            "ward",
-            "xward",
-        ]
-        to_int = ["bus", "element", "to_bus", "from_bus", "hv_bus", "mv_bus", "lv_bus"]
-        to_bool = ["in_service", "closed"]
-        self.logger.info(
-            "Setting the columns data types for buses to int and in_service to bool for the following elements: "
-            "%s" % pp_elements
-        )
-        int_type = int
-        bool_type = bool
-        for ele in pp_elements:
-            self.logger.info("Accessing pandapower element %s." % ele)
-            if not hasattr(net, ele):
-                if not ignore_errors:
-                    self.logger.warning(
-                        "Missing the pandapower element %s in the input pandapower network!"
-                        % ele
-                    )
-                continue
-            for one_int in to_int:
-                if one_int in net[ele].columns:
-                    self._set_column_to_type(net[ele], one_int, int_type)
-            for one_bool in to_bool:
-                if one_bool in net[ele].columns:
-                    self._set_column_to_type(net[ele], one_bool, bool_type)
-        # some individual things
-        if hasattr(net, "sgen"):
-            self._set_column_to_type(net["sgen"], "current_source", bool_type)
-        if hasattr(net, "gen"):
-            self._set_column_to_type(net["gen"], "slack", bool_type)
-        if hasattr(net, "shunt"):
-            self._set_column_to_type(net["shunt"], "step", int_type)
-            self._set_column_to_type(net["shunt"], "max_step", int_type)
-        self.logger.info(
-            "Finished setting the data types for the pandapower network in %ss."
-            % (time.time() - time_start)
-        )
-        return net

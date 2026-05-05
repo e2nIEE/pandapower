@@ -32,7 +32,7 @@ def simple_test_net():
     net = create_empty_network()
     create_buses(net, 2, vn_kv=20)
     create_ext_grid(net, 0)
-    create_sgen(net, 1, p_mw=2., sn_mva=3, name="DER1")
+    create_sgen(net, 1, p_mw=2., sn_mva=3, name="DER1", type='wye')
     create_line(net, 0, 1, length_km=0.1, std_type="NAYY 4x50 SE")
     return net
 
@@ -41,7 +41,7 @@ def simple_test_net2():
     net = simple_test_net()
     bus = create_bus(net, vn_kv=20)
     create_line(net, 0, bus, 0.1, std_type="NAYY 4x50 SE")
-    create_sgen(net, bus, 2., sn_mva=3., name="DER2")
+    create_sgen(net, bus, 2., sn_mva=3., name="DER2", type='wye')
     return net
 
 

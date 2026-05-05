@@ -6,20 +6,41 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the static generator"),
         "type": pa.Column(
             pd.StringDtype,
-            # pa.Check.isin(["PV", "WP", "CHP"]),
             nullable=True,
             required=False,
             description="type of generator",
+            metadata={"default": "wye"},
         ),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
-        "p_a_mw": pa.Column(float, pa.Check.le(0), description="active power of the static generator : Phase A[MW]"),
-        "q_a_mvar": pa.Column(float, description="reactive power of the static generator : Phase A [MVar]"),
-        "p_b_mw": pa.Column(float, pa.Check.le(0), description="active power of the static generator : Phase B [MW]"),
-        "q_b_mvar": pa.Column(float, description="reactive power of the static generator : Phase B [MVar]"),
-        "p_c_mw": pa.Column(float, pa.Check.le(0), description="active power of the static generator : Phase C [MW]"),
-        "q_c_mvar": pa.Column(float, description="reactive power of the static generator : Phase C [MVar]"),
+        "p_a_mw": pa.Column(
+            float,
+            pa.Check.le(0),
+            description="active power of the static generator : Phase A[MW]",
+            metadata={"default": 0.0},
+        ),
+        "q_a_mvar": pa.Column(
+            float, description="reactive power of the static generator : Phase A [MVar]", metadata={"default": 0.0}
+        ),
+        "p_b_mw": pa.Column(
+            float,
+            pa.Check.le(0),
+            description="active power of the static generator : Phase B [MW]",
+            metadata={"default": 0.0},
+        ),
+        "q_b_mvar": pa.Column(
+            float, description="reactive power of the static generator : Phase B [MVar]", metadata={"default": 0.0}
+        ),
+        "p_c_mw": pa.Column(
+            float,
+            pa.Check.le(0),
+            description="active power of the static generator : Phase C [MW]",
+            metadata={"default": 0.0},
+        ),
+        "q_c_mvar": pa.Column(
+            float, description="reactive power of the static generator : Phase C [MVar]", metadata={"default": 0.0}
+        ),
         "sn_mva": pa.Column(
             float,
             pa.Check.gt(0),
@@ -27,9 +48,37 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
             required=False,
             description="rated power ot the static generator [MVA]",
         ),
-        "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for the active and reactive power"),
-        "in_service": pa.Column(bool, description="specifies if the generator is in service."),
-        "current_source": pa.Column(bool, description=""),  # TODO: missing in docu
+        "sn_a_mva": pa.Column(
+            float,
+            pa.Check.gt(0),
+            nullable=True,
+            required=False,
+            description="Phase A rated power ot the static generator [MVA]",
+        ),
+        "sn_b_mva": pa.Column(
+            float,
+            pa.Check.gt(0),
+            nullable=True,
+            required=False,
+            description="Phase B rated power ot the static generator [MVA]",
+        ),
+        "sn_c_mva": pa.Column(
+            float,
+            pa.Check.gt(0),
+            nullable=True,
+            required=False,
+            description="Phase C rated power ot the static generator [MVA]",
+        ),
+        "scaling": pa.Column(
+            float,
+            pa.Check.ge(0),
+            description="scaling factor for the active and reactive power",
+            metadata={"default": 1.0},
+        ),
+        "in_service": pa.Column(
+            bool, description="specifies if the generator is in service.", metadata={"default": True}
+        ),
+        #"current_source": pa.Column(bool, description=""),  # TODO: missing in docu and create function
     },
     strict=False,
 )

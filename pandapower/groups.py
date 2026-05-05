@@ -3,8 +3,10 @@ Notes:
     Using different reference_columns for the same group and element_type is not supported.
     See check_unique_group_rows()
 """
+
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import logging
 import uuid
@@ -830,13 +832,13 @@ def set_group_reference_column(
         else:
             # fill nan values in net[et][reference_column] with unique names
             if reference_column not in net[et].columns:
-                net[et][reference_column] = pd.Series([None]*net[et].shape[0], dtype=object)
-            if pd.api.types.is_object_dtype(net[et][reference_column]):
-                idxs = net[et].index[net[et][reference_column].isnull()]
-                net[et].loc[idxs, reference_column] = ["%s_%i_%s" % (et, idx, str(
-                    uuid.uuid4())) for idx in idxs]
+                net[et][reference_column] = pd.Series(None, dtype=object)
+            if net[et][reference_column].isna().any():
+                idxs = net[et].index[net[et][reference_column].isna()]
+                net[et].loc[idxs, reference_column] = [f"{et}_{idx}_{uuid.uuid4()}" for idx in idxs]
+
             # determine duplicated values which would corrupt Groups functionality
-            if (net[et][reference_column].duplicated() | net[et][reference_column].isnull()).any():
+            if (net[et][reference_column].duplicated() | net[et][reference_column].isna()).any():
                 dupl_elements.append(et)
 
         # update net.group[["element_index", "reference_column"]] for element_type == et
@@ -854,10 +856,9 @@ def set_group_reference_column(
             net.group.iat[pos, net.group.columns.get_loc("reference_column")] = reference_column  # type: ignore[index]
             net.group.iat[pos, net.group.columns.get_loc("element_index")] = element_index  # type: ignore[index]
     if len(dupl_elements):
-        raise ValueError(
-            f"In net[*].{'index' if reference_column is None else reference_column} have duplicated or nan values. "
-            f"* is placeholder for {dupl_elements}."
-        )
+        if reference_column is None:
+            reference_column = 'index'
+        raise ValueError(f"In tables {dupl_elements} column {reference_column} has duplicate or nan values.")
 
 
 def return_group_as_net(

@@ -73,6 +73,8 @@ try:
     geopandas_available = True
 except ImportError:
     geopandas_available = False
+    # for typing only
+    GeoSeries = object
 
 
 PyPowerNetwork = dict[str, Any]
@@ -84,6 +86,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
+# FIXME: Remove this!
 def log_to_level(
     msg: str,
     passed_logger: logging.Logger,
@@ -108,6 +111,7 @@ def version_check(
     level: Literal["error", "warning", "info", "debug", "UserWarning"] = "UserWarning",
     ignore_not_installed: bool = False
 ) -> None:
+    # FIXME: version should NEVER be defined in code!
     minimum_version = {'plotly': "3.1.1",
                        'numba': "0.25",
                        }
@@ -477,7 +481,7 @@ class pandapowerNet(ADict):
 
     @classmethod
     def create_dataframes(cls, data):
-        for key in data: #TODO: change index dtype to np.uint32
+        for key in data:
             if isinstance(data[key], dict):
                 data[key] = pd.DataFrame(columns=data[key].keys(), index=pd.Index([], dtype=np.int64)).astype(data[key])
         return data
@@ -490,7 +494,7 @@ class pandapowerNet(ADict):
         """
         par = []
         res = []
-        for et in list(self.keys()):
+        for et in self.keys():
             if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
                 n_rows = self[et].shape[0]
                 if 'res_' in et:
@@ -651,6 +655,8 @@ def element_types_to_ets(element_types: ElementType | list[ElementType] | None =
 def empty_defaults_per_dtype(dtype: np.dtype[Any]) -> Any:
     if is_numeric_dtype(dtype):
         return np.nan
+    elif isinstance(dtype, pd.StringDtype):
+        return pd.NA
     elif is_string_dtype(dtype):
         return ""
     elif is_object_dtype(dtype):
@@ -660,12 +666,10 @@ def empty_defaults_per_dtype(dtype: np.dtype[Any]) -> Any:
 
 
 def _preserve_dtypes(df: pd.DataFrame, dtypes: pdt.Series[np.dtype[Any]]) -> None:
-    for item, dtype in list(dtypes.items()):
+    for item, dtype in dtypes.items():
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
-                raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
-                                  f"NaN are casted to True by default, which can lead to errors. "
-                                  f"Replace NaN values with True or False first.")
+                df[item] = df[item].fillna(pd.NA).astype('boolean')
             try:
                 df[item] = df[item].astype(dtype)
             except ValueError:
@@ -993,7 +997,10 @@ def _detect_read_write_flag(
 
 # read functions:
 def _read_from_single_index(net: pandapowerNet, element: str, variable: str, index: np.int64) -> Any:
-    return net[element].at[index, variable]
+    if variable in net[element]:
+        return net[element].at[index, variable]
+    else:
+        return pd.NA
 
 
 def _read_from_all_index(net: pandapowerNet, element: str, variable: str) -> NDArray[Any]:
@@ -1312,11 +1319,10 @@ def _select_is_elements_numba(
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
-    #    mode = net["_options"]["mode"]
     elements_ac = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
                    "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
     elements_dc = ["vsc", "load_dc", "source_dc"]
-    is_elements = dict()
+    is_elements = {}
     for element_table_list, bus_table, bis in zip((elements_ac, elements_dc), ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
         for element_table in element_table_list:
             num_elements = len(net[element_table].index)
@@ -1400,8 +1406,6 @@ def _add_ppc_options(
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
-    # if recycle is None:
-    #     recycle = dict(trafo=False, bus_pq=False, bfsw=False)
 
     init_results = (isinstance(init_vm_pu, str) and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
@@ -1540,13 +1544,11 @@ def _add_sc_options(
 
 
 def _add_options(net: pandapowerNet, options: dict[str, Any]) -> None:
-    # double_parameters = set(net.__internal_options.keys()) & set(options.keys())
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
         raise UserWarning(
             "Parameters always have to be unique! The following parameters where specified " +
             "twice: %s" % double_parameters)
-    # net.__internal_options.update(options)
     net._options.update(options)
 
 
@@ -1949,7 +1951,11 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
         p_mw = np.abs(dctab.p_mw)
         p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw  # type: ignore[operator]
 
-        max_p_mw: float = dctab.max_p_mw  # type: ignore[assignment]
+        max_p_mw: float
+        if hasattr(dctab, 'max_p_mw') and pd.notna(dctab.max_p_mw):
+            max_p_mw = dctab.max_p_mw  # type: ignore[assignment]
+        else:
+            max_p_mw = float('nan')
         p_min: float
         p_max: float
         if np.sign(dctab.p_mw) > 0:
@@ -1963,15 +1969,41 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
             p_max = 0
             p_min = -max_p_mw
 
-        create_gen(net, bus=dctab.to_bus, p_mw=p_to, vm_pu=dctab.vm_to_pu,
-                   min_p_mw=p_min, max_p_mw=p_max,
-                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
-                   in_service=dctab.in_service)
+        kwargs_to = {
+            'bus': dctab.to_bus,
+            'p_mw': p_to,
+            'vm_pu': dctab.vm_to_pu,
+            'in_service': dctab.in_service
+        }
 
-        create_gen(net, bus=dctab.from_bus, p_mw=p_from, vm_pu=dctab.vm_from_pu,
-                   min_p_mw=-p_max, max_p_mw=-p_min,
-                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
-                   in_service=dctab.in_service)
+        if hasattr(dctab, 'min_p_mw'):
+            kwargs_to['min_p_mw'] = p_min
+        if hasattr(dctab, 'max_p_mw'):
+            kwargs_to['max_p_mw'] = p_max
+        if hasattr(dctab, 'max_q_to_mvar'):
+            kwargs_to['max_q_mvar'] = dctab.max_q_to_mvar
+        if hasattr(dctab, 'min_q_to_mvar'):
+            kwargs_to['min_q_mvar'] = dctab.min_q_to_mvar
+
+        create_gen(net, **kwargs_to)
+
+        kwargs_from = {
+            'bus': dctab.from_bus,
+            'p_mw': p_from,
+            'vm_pu': dctab.vm_from_pu,
+            'in_service': dctab.in_service
+        }
+
+        if hasattr(dctab, 'max_p_mw'):
+            kwargs_from['min_p_mw'] = -p_max
+        if hasattr(dctab, 'min_p_mw'):
+            kwargs_from['max_p_mw'] = -p_min
+        if hasattr(dctab, 'max_q_from_mvar'):
+            kwargs_from['max_q_mvar'] = dctab.max_q_from_mvar
+        if hasattr(dctab, 'min_q_from_mvar'):
+            kwargs_from['min_q_mvar'] = dctab.min_q_from_mvar
+
+        create_gen(net, **kwargs_from)
 
 
 def _add_vsc_stacked(net: pandapowerNet):
@@ -2089,7 +2121,7 @@ def _init_runpp_options(
     lightsim2grid = kwargs.get("lightsim2grid", "auto")
 
     # for all the parameters from 'overrule_options' we need to collect them
-    # if they are used for any of the chjecks below:
+    # if they are used for any of the checks below:
     algorithm = overrule_options.get("algorithm", algorithm)
     calculate_voltage_angles = overrule_options.get("calculate_voltage_angles", calculate_voltage_angles)
     init = overrule_options.get("init", init)
@@ -2103,15 +2135,11 @@ def _init_runpp_options(
     # tolerance_mva, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
 
     # check if numba is available and the corresponding flag
-    if numba:
-        numba = _check_if_numba_is_installed()
+    numba &= _check_if_numba_is_installed()
 
-    if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_p_percent"].values)
-                or np.any(net["load"]["const_i_p_percent"].values)
-                or np.any(net["load"]["const_z_q_percent"].values)
-                or np.any(net["load"]["const_i_q_percent"].values)):
-            voltage_depend_loads = False
+    cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
+    if not cols.issubset(net.load.columns) or net.load[list(cols)].isna().any().any():
+        raise AttributeError(f"Network is missing one or more of net.load columns: {cols}")
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
                                                        distributed_slack, tdpf)
@@ -2316,7 +2344,6 @@ def _init_rundcopp_options(
     # scipy spsolve options in NR power flow
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
-    # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,

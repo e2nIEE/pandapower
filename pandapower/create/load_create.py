@@ -8,10 +8,11 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Sequence
 
-from numpy import nan, bool_
+from numpy import nan
 import numpy.typing as npt
 
 from pandapower.auxiliary import pandapowerNet
+from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int, UnderOverExcitedType, WyeDeltaType
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
@@ -32,22 +33,22 @@ def create_load(
     net: pandapowerNet,
     bus: Int,
     p_mw: float,
-    q_mvar: float = 0,
-    const_z_p_percent: float = 0,
-    const_i_p_percent: float = 0,
-    const_z_q_percent: float = 0,
-    const_i_q_percent: float = 0,
+    q_mvar: float = get_default_value("load", "q_mvar"),
+    const_z_p_percent: float = get_default_value("load", "const_z_p_percent"),
+    const_i_p_percent: float = get_default_value("load", "const_i_p_percent"),
+    const_z_q_percent: float = get_default_value("load", "const_z_q_percent"),
+    const_i_q_percent: float = get_default_value("load", "const_i_q_percent"),
     sn_mva: float = nan,
     name: str | None = None,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("load", "scaling"),
     index: Int | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("load", "in_service"),
     type: WyeDeltaType = "wye",
     max_p_mw: float = nan,
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
-    controllable: bool | float = nan,
+    controllable: bool = get_default_value("load", "controllable"),
     **kwargs,
 ) -> Int:
     """
@@ -113,6 +114,7 @@ def create_load(
         "sn_mva": sn_mva,
         "in_service": in_service,
         "type": type,
+        "controllable": controllable,
         **kwargs,
     }
     _set_entries(net, "load", index, True, entries=entries)
@@ -121,7 +123,6 @@ def create_load(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "load")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "load")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "load")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtype=bool_, default_val=False)
 
     return index
 
@@ -130,22 +131,22 @@ def create_loads(
     net: pandapowerNet,
     buses: Sequence,
     p_mw: float | Iterable[float],
-    q_mvar: float | Iterable[float] = 0,
-    const_z_p_percent: float | Iterable[float] = 0,
-    const_i_p_percent: float | Iterable[float] = 0,
-    const_z_q_percent: float | Iterable[float] = 0,
-    const_i_q_percent: float | Iterable[float] = 0,
+    q_mvar: float | Iterable[float] = get_default_value("load", "q_mvar"),
+    const_z_p_percent: float | Iterable[float] = get_default_value("load", "const_z_p_percent"),
+    const_i_p_percent: float | Iterable[float] = get_default_value("load", "const_i_p_percent"),
+    const_z_q_percent: float | Iterable[float] = get_default_value("load", "const_z_q_percent"),
+    const_i_q_percent: float | Iterable[float] = get_default_value("load", "const_i_q_percent"),
     sn_mva: float | Iterable[float] = nan,
     name: Iterable[str] | None = None,
-    scaling: float | Iterable[float] = 1.0,
+    scaling: float | Iterable[float] = get_default_value("load", "scaling"),
     index: Int | Iterable[Int] | None = None,
-    in_service: bool | Iterable[bool] = True,
-    type: WyeDeltaType = "wye",
+    in_service: bool | Iterable[bool] = get_default_value("load", "in_service"),
+    type: WyeDeltaType = get_default_value("load", "type"),
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
-    controllable: bool | Iterable[bool] | float = nan,
+    controllable: bool | Iterable[bool] = get_default_value("load", "controllable"),
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -219,11 +220,16 @@ def create_loads(
     _add_to_entries_if_not_nan(net, "load", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "load", entries, index, "max_q_mvar", max_q_mvar)
     _add_to_entries_if_not_nan(
-        net, "load", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+        net,
+        "load",
+        entries,
+        index,
+        "controllable",
+        controllable,
+        default_val=get_default_value("load", "controllable"),
     )
-    defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, entries=entries)
+    _set_multiple_entries(net, "load", index, entries=entries)
 
     return index
 
@@ -231,21 +237,21 @@ def create_loads(
 def create_asymmetric_load(
     net: pandapowerNet,
     bus: Int,
-    p_a_mw: float = 0,
-    p_b_mw: float = 0,
-    p_c_mw: float = 0,
-    q_a_mvar: float = 0,
-    q_b_mvar: float = 0,
-    q_c_mvar: float = 0,
-    sn_a_mva: float=nan,
-    sn_b_mva: float=nan,
-    sn_c_mva: float=nan,
+    p_a_mw: float = get_default_value("asymmetric_load", "p_a_mw"),
+    p_b_mw: float = get_default_value("asymmetric_load", "p_b_mw"),
+    p_c_mw: float = get_default_value("asymmetric_load", "p_c_mw"),
+    q_a_mvar: float = get_default_value("asymmetric_load", "q_a_mvar"),
+    q_b_mvar: float = get_default_value("asymmetric_load", "q_b_mvar"),
+    q_c_mvar: float = get_default_value("asymmetric_load", "q_c_mvar"),
+    sn_a_mva: float = nan,
+    sn_b_mva: float = nan,
+    sn_c_mva: float = nan,
     sn_mva: float = nan,
     name: str | None = None,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("asymmetric_load", "scaling"),
     index: Int | None = None,
-    in_service: bool = True,
-    type: WyeDeltaType = "wye",
+    in_service: bool = get_default_value("asymmetric_load", "in_service"),
+    type: WyeDeltaType = get_default_value("asymmetric_load", "type"),
     **kwargs,
 ) -> Int:
     """
@@ -399,12 +405,12 @@ def create_load_dc(
     net: pandapowerNet,
     bus_dc: Int,
     p_dc_mw: float,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("load_dc", "scaling"),
     type: str | None = None,
     index: Int | None = None,
     name: str | None = None,
-    in_service: bool = True,
-    controllable: bool = False,
+    in_service: bool = get_default_value("load_dc", "in_service"),
+    controllable: bool = get_default_value("load_dc", "controllable"),
     **kwargs,
 ):
     """

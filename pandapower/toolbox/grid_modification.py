@@ -10,9 +10,11 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+
 from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterability, \
     log_to_level, plural_s
 from pandapower.std_types import change_std_type
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import (
     create_switch, create_line_from_parameters, create_impedance, create_empty_network, create_gen, create_ext_grid,
     create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
@@ -1278,7 +1280,7 @@ def replace_line_by_impedance(
             xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
             gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
             bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p if "c0_nf_per_km" in cols else None,
-            name=line_.name,
+            name=line_["name"], # TODO: should this be line_.name (line index) or line_["name"]
             in_service=line_.in_service))
         i += 1
     _replace_group_member_element_type(net, index, "line", new_index, "impedance",
@@ -1350,10 +1352,14 @@ def replace_ext_grid_by_gen(
 
     # --- create gens
     new_idx = []
-    for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(), gen_indices):
+    for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(name="ExtGrid"), gen_indices):
         p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
             ext_grid.Index, "p_mw"]
-        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
+        if hasattr(ext_grid, "name") and pd.notna(ext_grid.name):
+            name = ext_grid.name
+        else:
+            name = ""
+        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=name,
                          in_service=ext_grid.in_service, controllable=True, index=index)
         new_idx.append(idx)
     net.gen.loc[new_idx, "slack"] = slack
@@ -1699,7 +1705,7 @@ def replace_pq_elmtype(
     # add missing columns to net[new_element_type] which should be kept
     missing_cols_to_keep = existing_cols_to_keep.difference(net[new_element_type].columns)
     for col in missing_cols_to_keep:
-        net[new_element_type][col] = np.nan
+        add_column_to_df(net, new_element_type, col)
 
     # --- create new_element_type
     already_considered_cols = set()

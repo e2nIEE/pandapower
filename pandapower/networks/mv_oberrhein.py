@@ -57,12 +57,8 @@ def mv_oberrhein(
     """
     if include_substations:
         net = from_json(os.path.join(pp_dir, "networks", "mv_oberrhein_substations.json"), **kwargs)
-        # geo.convert_epsg_bus_geodata(net, epsg_out=4326, epsg_in=31467)
-        # geo.convert_geodata_to_geojson(net, lonlat=False)
     else:
         net = from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"), **kwargs)
-        # geo.convert_epsg_bus_geodata(net, epsg_out=4326, epsg_in=31467)
-        # geo.convert_geodata_to_geojson(net, lonlat=False)
     net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw
     net.sgen.q_mvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_mw
 
@@ -93,12 +89,8 @@ def mv_oberrhein(
         runpp(net1)
         net0.name = 'MV Oberrhein 0'
         net1.name = 'MV Oberrhein 1'
-        # TODO: this should be added to the initial data not converted here.
-        # geo.convert_geodata_to_geojson(net0)
-        # geo.convert_geodata_to_geojson(net1)
         return net0, net1
 
     runpp(net)
     net.name = 'MV Oberrhein'
-    # geo.convert_geodata_to_geojson(net)
     return net

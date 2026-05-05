@@ -48,7 +48,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
                            'max_iteration', 'v_debug', 'run_control', 'distributed_slack', 'lightsim2grid',
                            'tdpf', 'tdpf_delay_s', 'tdpf_update_r_theta']
 
-    if overwrite or 'user_pf_options' not in net.keys():
+    if overwrite or 'user_pf_options' not in net:
         net['user_pf_options'] = {}
 
     net.user_pf_options.update({key: val for key, val in kwargs.items()
@@ -261,7 +261,7 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
             - "lc" - Linear current approximation algorithm
             - "lin" - Linear approximation algorithm
 
-        error_tolerance_u_pu (float, 1e-8): error tolerance for voltage in p.u.
+        error_tolerance_vm_pu (float, 1e-8): error tolerance for voltage in p.u.
         max_iterations (int, 20): Maximum number of iterations for algorithms. No effect on linear approximation
             algorithms.
         validate_input (bool, False): Validate input data to be used for power-flow in power-grid-model. It is

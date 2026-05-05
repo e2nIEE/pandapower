@@ -62,10 +62,6 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
     I012_f, _, V012_f, I012_t, _, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
     _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
-    # _get_trafo3w_results(net, ppc, s_ft, i_ft)
-    # _get_impedance_results(net, ppc, i_ft)
-    # _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses)
-    # _get_switch_results(net, i_ft)
 
 
 def _get_branch_flows(ppc):
@@ -614,7 +610,6 @@ def _get_tcsc_results(net, ppc, suffix=None):
         # zeros_
 
     # write to impedance
-    # todo for suffix not None
     res_tcsc_df = net["res_tcsc"] if suffix is None else net["res_tcsc%s" % suffix]
 
     res_tcsc_df.loc[:, "thyristor_firing_angle_degree"] = np.rad2deg(ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real)

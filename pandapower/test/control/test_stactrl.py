@@ -8,6 +8,7 @@ import os
 import logging
 import numpy as np
 from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_empty_network, create_bus, create_buses, create_ext_grid, create_transformer, \
     create_load, create_line, create_sgen, create_impedance
 from pandapower.run import runpp
@@ -18,6 +19,7 @@ from pandapower.control.util.auxiliary import create_q_capability_characteristic
 from numpy import linspace, float64
 
 from pandas import DataFrame
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -190,6 +192,7 @@ def test_qlimits_voltctrl():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
+
 @pytest.mark.parametrize("v", linspace(start=0.98, stop=1.02, num=5, dtype=float64))
 @pytest.mark.parametrize("p", linspace(start=-2.5, stop=2.5, num=10, dtype=float64))
 def test_qlimits_with_capability_curve(v, p):
@@ -202,10 +205,14 @@ def test_qlimits_with_capability_curve(v, p):
         'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
         'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
         'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
-
+    add_column_to_df(net, "sgen", "id_q_capability_characteristic")
+    add_column_to_df(net, "sgen", "reactive_capability_curve")
+    add_column_to_df(net, "sgen", "curve_style")
     net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)
+    # min_q_mvar and max_q_mvar columns required for BinarySearchControl to work correctly
+    #  (see station_control.py _update_min_max_q_mvar function)
     BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                         output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                         output_element_in_service=[True], output_values_distribution=[1],

@@ -6,7 +6,9 @@ switch_schema = pa.DataFrameSchema(
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
-        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the switch"),
+        "name": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="name of the switch", metadata={"cim": True}
+        ),
         "element": pa.Column(
             int,
             pa.Check.ge(0),
@@ -22,8 +24,9 @@ switch_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="type of switch naming conventions:  “CB” - circuit breaker “LS” - load switch “LBS” - load break switch “DS” - disconnecting switch",
+            metadata={"cim": True},
         ),
-        "closed": pa.Column(bool, description="signals the switching state of the switch"),
+        "closed": pa.Column(bool, description="signals the switching state of the switch", metadata={"default": True}),
         "in_ka": pa.Column(
             float,
             pa.Check.gt(0),
@@ -34,6 +37,38 @@ switch_schema = pa.DataFrameSchema(
             float,
             nullable=True,
             description="indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0, the buses will be fused like before, if larger than 0 a branch will be created for the switch which has also effects on the bus mapping",
+            metadata={"default": 0.0},
+        ),
+        "origin_id": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "terminal_bus": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal_to from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "terminal_element": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal_from from converter, not relevant for calculations",
+            metadata={"cim": True},
         ),
     },
     strict=False,

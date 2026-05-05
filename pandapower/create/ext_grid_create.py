@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import logging
 
-from numpy import nan, bool_
+from numpy import nan
 
 from pandapower.auxiliary import pandapowerNet
+from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int
 from pandapower.create._utils import (
     _check_element,
@@ -24,10 +25,10 @@ logger = logging.getLogger(__name__)
 def create_ext_grid(
     net: pandapowerNet,
     bus: Int,
-    vm_pu: float = 1.0,
-    va_degree: float = 0.0,
+    vm_pu: float = get_default_value("ext_grid", "vm_pu"),
+    va_degree: float = get_default_value("ext_grid", "va_degree"),
     name: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("ext_grid", "in_service"),
     s_sc_max_mva: float = nan,
     s_sc_min_mva: float = nan,
     rx_max: float = nan,
@@ -40,7 +41,7 @@ def create_ext_grid(
     r0x0_max: float = nan,
     x0x_max: float = nan,
     controllable: bool | float = nan,
-    slack_weight: float = 1.0,
+    slack_weight: float = get_default_value("ext_grid", "slack_weight"),
     **kwargs,
 ) -> Int:
     """
@@ -108,7 +109,9 @@ def create_ext_grid(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "ext_grid")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "ext_grid")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "ext_grid")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "ext_grid", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(
+        net, index, controllable, "controllable", "ext_grid", default_val=get_default_value("ext_grid", "controllable")
+    )
     # others
     _set_value_if_not_nan(net, index, x0x_max, "x0x_max", "ext_grid")
     _set_value_if_not_nan(net, index, r0x0_max, "r0x0_max", "ext_grid")

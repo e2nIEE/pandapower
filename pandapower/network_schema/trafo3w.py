@@ -5,10 +5,19 @@ from pandapower.network_schema.tools.validation.group_dependency import (
     create_column_group_dependency_validation_func,
     create_column_dependency_checks_from_metadata,
 )
+from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
 
 _trafo3w_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the transformer"),
-    "std_type": pa.Column(pd.StringDtype, nullable=True, required=False, description="transformer standard type name"),
+    "name": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="name of the transformer", metadata={"cim": True}
+    ),
+    "std_type": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="transformer standard type name",
+        metadata={"cim": True},
+    ),
     "hv_bus": pa.Column(
         int,
         pa.Check.ge(0),
@@ -66,28 +75,42 @@ _trafo3w_columns = {
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
     "i0_percent": pa.Column(float, description="open loop losses [%]"),
     "shift_mv_degree": pa.Column(
-        float, description="transformer phase shift angle at the MV side"
+        float, description="transformer phase shift angle at the MV side", metadata={"default": 0.0}
     ),
     "shift_lv_degree": pa.Column(
-        float, description="transformer phase shift angle at the LV side"
+        float, description="transformer phase shift angle at the LV side", metadata={"default": 0.0}
     ),
     "tap_side": pa.Column(
         pd.StringDtype,
-        pa.Check.isin(["hv", "mv", "lv"]), nullable=True, required=False,
+        pa.Check.isin(["hv", "mv", "lv"]),
+        nullable=True,
+        required=False,
         description="defines if tap changer is positioned on high- medium- or low voltage side",
+        metadata={"cim": True},
     ),
-    "tap_neutral": pa.Column(float, nullable=True, required=False, description=""),
-    "tap_min": pa.Column(float, nullable=True, required=False, description="minimum tap position"),
-    "tap_max": pa.Column(float, nullable=True, required=False, description="maximum tap position"),
-    "tap_step_percent": pa.Column(float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]"),
-    "tap_step_degree": pa.Column(float, nullable=True, required=False, description="tap step size for voltage angle"),
+    "tap_neutral": pa.Column(float, nullable=True, required=False, description="", metadata={"cim": True}),
+    "tap_min": pa.Column(
+        float, nullable=True, required=False, description="minimum tap position", metadata={"cim": True}
+    ),
+    "tap_max": pa.Column(
+        float, nullable=True, required=False, description="maximum tap position", metadata={"cim": True}
+    ),
+    "tap_step_percent": pa.Column(
+        float, pa.Check.gt(0), nullable=True, required=False, description="tap step size [%]", metadata={"cim": True}
+    ),
+    "tap_step_degree": pa.Column(
+        float, nullable=True, required=False, description="tap step size for voltage angle", metadata={"cim": True}
+    ),
     "tap_at_star_point": pa.Column(
         pd.BooleanDtype,
         nullable=True,
         required=False,
         description="whether the tap changer is modelled at terminal or at star point",
+        metadata={"default": False, "cim": True},
     ),
-    "tap_pos": pa.Column(float, nullable=True, required=False, description="current position of tap changer"),
+    "tap_pos": pa.Column(
+        float, nullable=True, required=False, description="current position of tap changer", metadata={"cim": True}
+    ),
     "tap_changer_type": pa.Column(
         pd.StringDtype,
         pa.Check.isin(["Ratio", "Symmetrical", "Ideal", "Tabular"]),
@@ -100,7 +123,7 @@ _trafo3w_columns = {
         nullable=True,
         required=False,
         description="whether the transformer parameters (voltage ratio, angle, impedance) are adjusted dependent on the tap position of the transformer",
-        metadata={"tdt": True},
+        metadata={"tdt": True, "cim": True},
     ),
     "id_characteristic_table": pa.Column(
         pd.Int64Dtype,
@@ -108,7 +131,7 @@ _trafo3w_columns = {
         nullable=True,
         required=False,
         description="references the id_characteristic index from the trafo_characteristic_table",
-        metadata={"tdt": True},
+        metadata={"tdt": True, "cim": True},
     ),
     "max_loading_percent": pa.Column(
         float,
@@ -122,7 +145,7 @@ _trafo3w_columns = {
         nullable=True,
         required=False,
         description="vector group of the 3w-transformer",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "vkr0_x": pa.Column(
         float,
@@ -136,9 +159,193 @@ _trafo3w_columns = {
         required=False,
         description="",
     ),
-    "in_service": pa.Column(bool, description="specifies if the transformer is in service."),
+    "in_service": pa.Column(
+        bool, description="specifies if the transformer is in service.", metadata={"default": True}
+    ),
+    "origin_id": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+    ),
+    "origin_class": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+    ),
+    "terminal_hv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_hv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "terminal_mv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_mv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "terminal_lv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_lv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "PowerTransformerEnd_id_hv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="PowerTransformerEnd_id_hv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "PowerTransformerEnd_id_mv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="PowerTransformerEnd_id_mv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "PowerTransformerEnd_id_lv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="PowerTransformerEnd_id_lv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "tapchanger_class": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="tapchanger_class from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "tapchanger_id": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="tapchanger_id from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "description": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="description from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "OperationalLimitType.limitType_hv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="OperationalLimitType.limitType_hv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "OperationalLimitType.limitType_mv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="OperationalLimitType.limitType_mv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "OperationalLimitType.limitType_lv": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="OperationalLimitType.limitType_lv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "vk0_hv_percent": pa.Column(  # TODO: check if really only cim
+        float,
+        nullable=True,
+        required=False,
+        description="vk0_hv_percent from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "vk0_mv_percent": pa.Column(  # TODO: check if really only cim
+        float,
+        nullable=True,
+        required=False,
+        description="vk0_mv_percent from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "vk0_lv_percent": pa.Column(  # TODO: check if really only cim
+        float,
+        nullable=True,
+        required=False,
+        description="vk0_lv_percent from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "vkr0_hv_percent": pa.Column(  # TODO: check if really only cim
+        float,
+        nullable=True,
+        required=False,
+        description="vkr0_hv_percent from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "vkr0_mv_percent": pa.Column(  # TODO: check if really only cim
+        float,
+        nullable=True,
+        required=False,
+        description="vkr0_mv_percent from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "vkr0_lv_percent": pa.Column(  # TODO: check if really only cim
+        float,
+        nullable=True,
+        required=False,
+        description="vkr0_lv_percent from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "CurrentLimit.value_hv": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="CurrentLimit.value_hv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "CurrentLimit.value_mv": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="CurrentLimit.value_mv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "CurrentLimit.value_lv": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="CurrentLimit.value_lv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "OperationalLimitType.acceptableDuration_hv": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="OperationalLimitType.acceptableDuration_hv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "OperationalLimitType.acceptableDuration_mv": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="OperationalLimitType.acceptableDuration_mv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "OperationalLimitType.acceptableDuration_lv": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="OperationalLimitType.acceptableDuration_lv from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
+    "power_station_unit": pa.Column(  # TODO: check if really only cim
+        pd.BooleanDtype,
+        nullable=True,
+        required=False,
+        description="power_station_unit from converter, not relevant for calculations",
+        metadata={"cim": True},
+    ),
 }
-tap_columns = ["tap_pos", "tap_neutral", "tap_side", "tap_step_percent", "tap_step_degree"]
+# FIXME: either tap_step_percent or tap_step_degree for each row
+tap_columns = ["tap_pos", "tap_neutral", "tap_side"]  # , "tap_step_percent", "tap_step_degree"]
 trafo3w_checks = [
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
@@ -153,6 +360,9 @@ trafo3w_checks += create_column_dependency_checks_from_metadata(
     ],
     _trafo3w_columns,
 )
+trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_hv_percent", second_element="vk_hv_percent"))
+trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_mv_percent", second_element="vk_mv_percent"))
+trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_lv_percent", second_element="vk_lv_percent"))
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,

@@ -281,7 +281,7 @@ def dump_to_geojson_node_branch(
         if element:
             props: dict = {}
             for table in [name, f"res_{name}"]:
-                if table not in net.keys():
+                if table not in net:
                     continue
 
                 tempdf = net[table].copy(deep=True)
