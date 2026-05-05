@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 
-from numpy import nan, bool_
+from numpy import nan
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.network_structure import get_default_value

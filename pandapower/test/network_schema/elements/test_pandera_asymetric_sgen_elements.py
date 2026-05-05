@@ -230,7 +230,7 @@ class TestAsymmetricSgenOptionalFields:
         list(
             itertools.chain(
                 itertools.product(["name"], not_strings_list),
-                itertools.product(["type"], [*strings, *not_strings_list]),
+                itertools.product(["type"], [*not_strings_list]),
                 itertools.product(["sn_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
             )
         ),

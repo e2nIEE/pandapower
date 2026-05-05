@@ -15,6 +15,7 @@ _motor_columns = {
     "cos_phi_n": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=1),
+        nullable=True,
         description="cosine phi at rated power of the motor for short-circuit calculation",
         metadata={"sc": True},
     ),
@@ -27,6 +28,7 @@ _motor_columns = {
     "efficiency_n_percent": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=100),
+        nullable=True,
         description="Efficiency in percent at rated power for short-circuit calculation [%]",
         metadata={"sc": True},
     ),
@@ -42,18 +44,21 @@ _motor_columns = {
     "lrc_pu": pa.Column(
         float,
         pa.Check.ge(0),
+        nullable=True,
         description="locked rotor current in relation to the rated motor current [pu]",
         metadata={"sc": True},
     ),
     "rx": pa.Column(
         float,
         pa.Check.ge(0),
+        nullable=True,
         description="R/X ratio of the motor for short-circuit calculation.",
         metadata={"sc": True},
     ),
     "vn_kv": pa.Column(
         float,
         pa.Check.ge(0),
+        nullable=True,
         description="Rated voltage of the motor for short-circuit calculation",
         metadata={"sc": True},
     ),

@@ -380,7 +380,7 @@ tap_columns = [
     "tap_side",
     "tap_step_percent",
     "tap_step_degree",
-]  # TODO: ideally tap_step_percent and tap_step_degree should not exist together
+]
 trafo_checks = [
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),

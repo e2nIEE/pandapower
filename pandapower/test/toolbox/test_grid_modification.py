@@ -697,8 +697,8 @@ def test_impedance_line_replacement():
     assert np.allclose(net3.res_impedance[cols].values, net2.res_line[cols].values)
 
 
-@pytest.mark.parametrize('i', [0, 1])
-def test_replace_ext_grid_gen(i):
+@pytest.mark.parametrize('replace_gen_or_ext_grid', [True, False])
+def test_replace_ext_grid_gen(replace_gen_or_ext_grid):
     net = example_simple()
     net.ext_grid["uuid"] = "test"
     runpp(net, calculate_voltage_angles="auto")
@@ -706,9 +706,9 @@ def test_replace_ext_grid_gen(i):
     create_group(net, ["line", "ext_grid"], [[0], [0]])
 
     # replace_ext_grid_by_gen
-    if i == 0:
+    if replace_gen_or_ext_grid:
         replace_ext_grid_by_gen(net, 0, gen_indices=[4], add_cols_to_keep=["uuid"])
-    elif i == 1:
+    else:
         replace_ext_grid_by_gen(net, [0], gen_indices=[4], cols_to_keep=["uuid", "max_p_mw"])
     assert not net.ext_grid.shape[0]
     assert not net.res_ext_grid.shape[0]
@@ -720,9 +720,9 @@ def test_replace_ext_grid_gen(i):
     assert net.group.element_index.iat[1] == [4]
 
     # replace_gen_by_ext_grid
-    if i == 0:
+    if replace_gen_or_ext_grid:
         replace_gen_by_ext_grid(net)
-    elif i == 1:
+    else:
         replace_gen_by_ext_grid(net, [0, 4], ext_grid_indices=[2, 3])
         assert np.allclose(net.ext_grid.index.values, [2, 3])
     assert not net.gen.shape[0]
@@ -732,8 +732,8 @@ def test_replace_ext_grid_gen(i):
     assert net.res_ext_grid.p_mw.dropna().shape[0] == 2
 
 
-@pytest.mark.parametrize('i', [0, 1])
-def test_replace_gen_sgen(i):
+@pytest.mark.parametrize('replace_gen_or_sgen', [True, False])
+def test_replace_gen_sgen(replace_gen_or_sgen):
     net = case9()
     vm_set = [1.03, 1.02]
     net.gen["vm_pu"] = vm_set
@@ -742,9 +742,9 @@ def test_replace_gen_sgen(i):
     assert list(net.res_gen.index.values) == [0, 1]
 
     # replace_gen_by_sgen
-    if i == 0:
+    if replace_gen_or_sgen:
         replace_gen_by_sgen(net)
-    elif i == 1:
+    else:
         replace_gen_by_sgen(net, [0, 1], sgen_indices=[4, 1], cols_to_keep=[
             "max_p_mw"], add_cols_to_keep=["slack_weight"])  # min_p_mw is not in cols_to_keep
         assert np.allclose(net.sgen.index.values, [4, 1])
@@ -760,9 +760,9 @@ def test_replace_gen_sgen(i):
 
     # replace_sgen_by_gen
     net2 = copy.deepcopy(net)
-    if i == 0:
+    if replace_gen_or_sgen:
         replace_sgen_by_gen(net2, [1])
-    elif i == 1:
+    else:
         replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["slack_weight"])
         assert np.allclose(net2.gen.index.values, [2])
         assert np.allclose(net2.gen.slack_weight.values, 1)
@@ -771,7 +771,7 @@ def test_replace_gen_sgen(i):
     assert net2.gen.shape[0] == 1
     assert net2.res_gen.shape[0] == 1
 
-    if i == 0:
+    if replace_gen_or_sgen:
         replace_sgen_by_gen(net, 1)
         assert nets_equal(net, net2)
 

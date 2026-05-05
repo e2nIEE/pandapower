@@ -15,6 +15,7 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int
 from pandapower.create._utils import (
+    _add_to_entries_if_not_nan,
     _check_branch_element,
     _check_multiple_branch_elements,
     _get_index_with_check,
@@ -214,7 +215,7 @@ def create_impedances(
     rtf_pu: float | Iterable[float] | None = None,
     xtf_pu: float | Iterable[float] | None = None,
     name: Iterable[str] | None = None,
-    in_service: bool | Iterable[str] = True,
+    in_service: bool | Iterable[bool] = True,
     index: Int | Iterable[Int] | None = None,
     rft0_pu: float | Iterable[float] | None = None,
     xft0_pu: float | Iterable[float] | None = None,
@@ -363,19 +364,20 @@ def create_impedances(
         "in_service": in_service,
         **kwargs,
     }
-    _set_multiple_entries(net, "impedance", index, entries=entries)
 
     if rft0_pu is not None:
-        _set_value_if_not_nan(net, index, rft0_pu, "rft0_pu", "impedance")
-        _set_value_if_not_nan(net, index, xft0_pu, "xft0_pu", "impedance")
-        _set_value_if_not_nan(net, index, rtf0_pu, "rtf0_pu", "impedance")
-        _set_value_if_not_nan(net, index, xtf0_pu, "xtf0_pu", "impedance")
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "rft0_pu", rft0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "xft0_pu", xft0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "rtf0_pu", rtf0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "xtf0_pu", xtf0_pu)
 
     if gf0_pu is not None:
-        _set_value_if_not_nan(net, index, gf0_pu, "gf0_pu", "impedance")
-        _set_value_if_not_nan(net, index, bf0_pu, "bf0_pu", "impedance")
-        _set_value_if_not_nan(net, index, gt0_pu, "gt0_pu", "impedance")
-        _set_value_if_not_nan(net, index, bt0_pu, "bt0_pu", "impedance")
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "gf0_pu", gf0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "bf0_pu", bf0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "gt0_pu", gt0_pu)
+        _add_to_entries_if_not_nan(net, "impedance", entries, index, "bt0_pu", bt0_pu)
+
+    _set_multiple_entries(net, "impedance", index, entries=entries)
 
     return index
 

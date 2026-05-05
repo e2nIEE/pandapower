@@ -78,7 +78,7 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
         "in_service": pa.Column(
             bool, description="specifies if the generator is in service.", metadata={"default": True}
         ),
-        "current_source": pa.Column(bool, description=""),  # TODO: missing in docu
+        #"current_source": pa.Column(bool, description=""),  # TODO: missing in docu and create function
     },
     name="asymmetric_sgen",
     strict=False,

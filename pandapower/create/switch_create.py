@@ -139,7 +139,7 @@ def create_switches(
     net: pandapowerNet,
     buses: Sequence,
     elements: Sequence,
-    et: SwitchElementType | Sequence[str],
+    et: SwitchElementType | Sequence[SwitchElementType],
     closed: bool | Iterable[bool] = get_default_value("switch", "closed"),
     type: SwitchType | None = None,
     name: Iterable[str] | None = None,
