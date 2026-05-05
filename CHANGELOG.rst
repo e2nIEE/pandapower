@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] added optional init_pq parameter to the PandaModels opf runpm wrappers for active/reactive power starts
 - [FIXED] `DiscreteTapControl` to work with `negative tap_step_percent`.
 - [CHANGED] updated the contributing file and documentation
 - [ADDED] `allow_duplicate_index` parameter to `reindex_buses` with default to `false`.

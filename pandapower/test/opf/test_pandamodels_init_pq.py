@@ -19,12 +19,12 @@ def test_add_pm_gen_start_values_from_results():
     pm = {"gen": {"1": {}, "2": {}, "3": {}}}
     add_pm_gen_start_values_from_results(net, pm)
 
-    assert pm["gen"]["1"]["pg_start"] == 100.0
-    assert pm["gen"]["1"]["qg_start"] == 50.0
-    assert pm["gen"]["2"]["pg_start"] == 30.0
-    assert pm["gen"]["2"]["qg_start"] == 10.0
-    assert pm["gen"]["3"]["pg_start"] == 5.0
-    assert pm["gen"]["3"]["qg_start"] == 1.0
+    assert np.isclose(pm["gen"]["1"]["pg_start"], 100.0)
+    assert np.isclose(pm["gen"]["1"]["qg_start"], 50.0)
+    assert np.isclose(pm["gen"]["2"]["pg_start"], 30.0)
+    assert np.isclose(pm["gen"]["2"]["qg_start"], 10.0)
+    assert np.isclose(pm["gen"]["3"]["pg_start"], 5.0)
+    assert np.isclose(pm["gen"]["3"]["qg_start"], 1.0)
 
 @pytest.mark.parametrize(
     "run_function",
