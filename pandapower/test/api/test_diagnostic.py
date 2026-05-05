@@ -12,7 +12,8 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_ext_grid, create_switch
 from pandapower.toolbox.grid_modification import drop_trafos, change_std_type
 from pandapower.networks import example_multivoltage, example_simple
-from pandapower.diagnostic import Diagnostic, DiagnosticFunction
+from pandapower.diagnostic.diagnostic import Diagnostic
+from pandapower.diagnostic.diagnostic_helpers import DiagnosticFunction
 from pandapower.diagnostic.diagnostic_functions import (
     InvalidValues,
     NoExtGrid,
