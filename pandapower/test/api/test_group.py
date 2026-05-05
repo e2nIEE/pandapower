@@ -16,11 +16,11 @@ from pandapower.create import (
 )
 from pandapower.file_io import to_json, from_json_string
 from pandapower.groups import (
-    set_group_out_of_service, set_group_in_service, group_element_lists, attach_to_group, detach_from_group,
+    set_group_out_of_service, set_group_in_service, group_element_lists, attach_to_group, detach_from_groups,
     compare_group_elements, group_res_p_mw, group_res_power_per_bus, group_res_q_mvar, count_group_elements, isin_group,
-    element_associated_groups, elements_connected_to_group, group_element_index, groups_equal,
+    element_associated_groups, elements_connected_to_group, group_element_index, groups_equal, return_group_as_net,
     set_group_reference_column, remove_not_existing_group_members, ensure_lists_in_group_element_column,
-    check_unique_group_rows, drop_group_and_elements, return_group_as_net
+    check_unique_group_rows, drop_group_and_elements,
 )
 from pandapower.networks import case24_ieee_rts, create_cigre_network_mv
 from pandapower.run import runpp
@@ -36,10 +36,7 @@ def typed_list(iterable, dtype):
         return [str(it) for it in iterable]
 
 
-@pytest.fixture(scope="module", params=[
-    (None, int),
-    ("name", str)
-])
+@pytest.fixture(scope="module", params=[(None, int), ("name", str)])
 def nets_to_test_group(request):
     reference_column, type_ = request.param
 
@@ -69,21 +66,17 @@ def test_group_create(nets_to_test_group):
     assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element_index"]) == 3
     assert net.group.name.loc[[idxs[1]]].values[0] == 'Group of transformers'
 
-    try:
+    with pytest.raises(
+            UserWarning, match="Cannot create group with xward members Index\(\['?0'?\], dtype='(?:int64|object)'\)\."
+    ):
         # no xward in net
-        create_group_from_dict(net, {
-            "xward": typed_list([0], type_)}, reference_column=rc)
-        assert False
-    except UserWarning:
-        pass
+        create_group_from_dict(net, {"xward": typed_list([0], type_)}, reference_column=rc)
 
-    try:
+    with pytest.raises(
+            UserWarning, match="Cannot create group with sgen members Index\(\['?100'?\], dtype='(?:int64|object)'\)\."
+    ):
         # no sgen 100 in net
-        create_group_from_dict(net, {
-            "sgen": typed_list([3, 100], type_)}, reference_column=rc)
-        assert False
-    except UserWarning:
-        pass
+        create_group_from_dict(net, {"sgen": typed_list([3, 100], type_)}, reference_column=rc)
 
 
 def test_group_element_index(nets_to_test_group):
@@ -200,19 +193,13 @@ def test_check_unique_group_rows():
         ["Gr1", "sgen", [3, 4]],
         ["Gr1", "gen", [2, 5]],
     ], index=[0, 0, 0], columns=["name", "element_type", "element_index"])])
-    try:
+    with pytest.raises(ValueError, match="There are multiple group rows with same index, name and element_type\."):
         check_unique_group_rows(net)
-        assert False, "ValueError expected"
-    except ValueError:
-        pass
 
     # test with different reference_columns
     net.group.iat[0, 3] = "hallo"
-    try:
+    with pytest.raises(ValueError, match="There are multiple group rows with same index, name and element_type\."):
         check_unique_group_rows(net)
-        assert False, "ValueError expected"
-    except ValueError:
-        pass
 
     # test with duplicated group name and index
     net.group = pd.concat([empty_group, pd.DataFrame([
@@ -221,11 +208,8 @@ def test_check_unique_group_rows():
         ["Gr2", "gen", [2, 5]],
         ["Gr3", "line", [0, 1]]
     ], index=[0, 0, 1, 0], columns=["name", "element_type", "element_index"])])
-    try:
+    with pytest.raises(UserWarning, match="Groups with different names have the same index\."):
         check_unique_group_rows(net)
-        assert False, "UserWarning expected"
-    except UserWarning:
-        pass
     check_unique_group_rows(net, raise_error=False, log_level="debug")
 
 
@@ -308,13 +292,11 @@ def test_attach_to_group(nets_to_test_group):
     attach_to_group(net, idxs[1], et0, elm0, rc0)
     assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo"}
 
-    try:
-        # no xward in net
+    with pytest.raises(
+            UserWarning, match="Cannot create group with xward members Index\(\[\'?0\'?\], dtype='(?:int64|object)'\)\."
+    ):
         attach_to_group(net, idxs[1], ["xward"], [typed_list([0], type_)],
                         reference_columns=rc)
-        assert False
-    except UserWarning:
-        pass
 
     attach_to_group(net, idxs[1], ["trafo", "line"],
                     [typed_list([3], type_), typed_list([2], type_)], reference_columns=rc)
@@ -326,21 +308,21 @@ def test_attach_to_group(nets_to_test_group):
 def test_detach_and_compare(nets_to_test_group):
     net, type_, *_ = nets_to_test_group
     net = deepcopy(net)
-    # detach_from_group() & compare_group_elements()
+    # detach_from_groups() & compare_group_elements()
 
     # copy group 3
     et3, elm3, rc3 = group_element_lists(net, 3)
     copy_idx = create_group(net, et3, elm3, reference_columns=rc3, name="copy of group 3")
 
     # drop elements which are not in group 3
-    detach_from_group(net, 3, "xward", [1, 17])
-    detach_from_group(net, 3, "line", 2)
+    detach_from_groups(net, "xward", [1, 17], 3)
+    detach_from_groups(net, "line", 2, 3)
 
     # check that group3 is still the same as the copy
     assert compare_group_elements(net, 3, copy_idx)
 
     # drop some members
-    detach_from_group(net, 3, "trafo", 1)
+    detach_from_groups(net, "trafo", 1, 3)
     assert group_element_lists(net, 3)[0] == ["trafo"]
     assert group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
     assert group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
@@ -400,19 +382,14 @@ def test_group_io():
 def test_count_group_elements(nets_to_test_group):
     net, _, _, idxs = nets_to_test_group
     net = deepcopy(net)
-    pdt.assert_series_equal(
-        count_group_elements(net, idxs[0]),
-        pd.Series({"gen": 2, "sgen": 2}, dtype=np.int64))
-    pdt.assert_series_equal(
-        count_group_elements(net, idxs[1]),
-        pd.Series({"trafo": 3}, dtype=np.int64))
+    pdt.assert_series_equal(count_group_elements(net, idxs[0]), pd.Series({"gen": 2, "sgen": 2}, dtype=np.int64))
+    pdt.assert_series_equal(count_group_elements(net, idxs[1]), pd.Series({"trafo": 3}, dtype=np.int64))
 
 
 def test_isin(nets_to_test_group):
     net, _, _, idxs = nets_to_test_group
     net = deepcopy(net)
-    assert np.all(np.array([False, True, True, False]) == \
-                  isin_group(net, "sgen", [0, 2, 3, 4]))
+    assert np.all(np.array([False, True, True, False]) == isin_group(net, "sgen", [0, 2, 3, 4]))
     assert isin_group(net, "gen", 0)
     assert not isin_group(net, "gen", 0, index=idxs[1])
     assert not isin_group(net, "gen", 6)
@@ -421,11 +398,9 @@ def test_isin(nets_to_test_group):
 def test_element_associated_groups(nets_to_test_group):
     net, *_ = nets_to_test_group
     net = deepcopy(net)
-    assert element_associated_groups(net, "gen", [0, 1, 2, 3]) == \
-           {0: [0], 1: [0], 2: [], 3: []}
+    assert element_associated_groups(net, "gen", [0, 1, 2, 3]) == {0: [0], 1: [0], 2: [], 3: []}
     assert element_associated_groups(net, "gen", [0, 1, 2, 3], return_empties=False) == \
-           element_associated_groups(net, "gen", net.gen.index, return_empties=False) == \
-           {0: [0], 1: [0]}
+           element_associated_groups(net, "gen", net.gen.index, return_empties=False) == {0: [0], 1: [0]}
     assert element_associated_groups(net, "load", [0, 1]) == {0: [], 1: []}
     assert element_associated_groups(net, "trafo", [0, 1, 3]) == {0: [3], 1: [3], 3: []}
     assert element_associated_groups(net, "trafo", 0) == [3]
@@ -435,8 +410,7 @@ def test_elements_connected_to_group():
     # test net
     net = create_empty_network()
     buses = create_buses(net, 12, 20)
-    create_lines(net, [buses[0]] * 6, list(range(1, 7)), length_km=0.5,
-                 std_type="48-AL1/8-ST1A 20.0")
+    create_lines(net, [buses[0]] * 6, list(range(1, 7)), length_km=0.5, std_type="48-AL1/8-ST1A 20.0")
     create_ext_grid(net, 0)
     create_loads(net, buses, 0.3)
     create_switches(net, [0, 0, 6], [0, 1, net.line.index[-1]], "l", closed=[True, False, False])
