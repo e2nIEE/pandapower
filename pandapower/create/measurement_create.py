@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -13,7 +11,6 @@ import pandas as pd
 from pandapower.auxiliary import pandapowerNet
 from pandapower.pp_types import Int, MeasurementElementType, MeasurementType
 from pandapower.create._utils import _get_index_with_check, _set_entries
-from pandapower.network_structure import get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +23,7 @@ def create_measurement(
     std_dev: float,
     element: int,
     side: int | Literal["from", "to"] | Literal["hv", "mv", "lv"] | None = None,
-    check_existing: bool = get_default_value("measurement", "check_existing"),
+    check_existing: bool = False,
     index: Int | None = None,
     name: str | None = None,
     **kwargs,
