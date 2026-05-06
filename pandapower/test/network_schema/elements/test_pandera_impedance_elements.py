@@ -1,3 +1,5 @@
+# test_pandera_impedance_elements.py
+
 import itertools
 import numpy as np
 import pandas as pd
@@ -40,12 +42,13 @@ class TestImpedanceRequiredFields:
                 itertools.product(["bf_pu"], all_allowed_floats),
                 itertools.product(["gt_pu"], all_allowed_floats),
                 itertools.product(["bt_pu"], all_allowed_floats),
-                itertools.product(["sn_mva"], positiv_floats),  # strictly > 0
+                itertools.product(["sn_mva"], positiv_floats),
                 itertools.product(["in_service"], bools),
             )
         ),
     )
     def test_valid_required_values(self, parameter, valid_value):
+        """Test: valid required values are accepted"""
         net = create_empty_network()
         create_bus(net, 0.4, index=0)
         create_bus(net, 0.4, index=1)
@@ -75,20 +78,21 @@ class TestImpedanceRequiredFields:
             itertools.chain(
                 itertools.product(["from_bus"], [*negativ_ints, *not_ints_list]),
                 itertools.product(["to_bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["rft_pu"], not_floats_list),
-                itertools.product(["xft_pu"], not_floats_list),
-                itertools.product(["rtf_pu"], not_floats_list),
-                itertools.product(["xtf_pu"], not_floats_list),
-                itertools.product(["gf_pu"], not_floats_list),
-                itertools.product(["bf_pu"], not_floats_list),
-                itertools.product(["gt_pu"], not_floats_list),
-                itertools.product(["bt_pu"], not_floats_list),
-                itertools.product(["sn_mva"], [*negativ_floats_plus_zero, *not_floats_list]),  # <= 0 invalid
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["rft_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["xft_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["rtf_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["xtf_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["gf_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["bf_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["gt_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["bt_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["sn_mva"], [float(np.nan), pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
     def test_invalid_required_values(self, parameter, invalid_value):
+        """Test: invalid required values are rejected"""
         net = create_empty_network()
         create_bus(net, 0.4)
         create_bus(net, 0.4)
@@ -115,8 +119,8 @@ class TestImpedanceRequiredFields:
 class TestImpedanceOptionalFields:
     """Tests for optional impedance fields"""
 
-    def test_full_optional_fields_validation(self):
-        """Impedance with all optional fields is valid"""
+    def test_all_optional_fields_valid(self):
+        """Test: Impedance with all optional fields is valid"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
@@ -153,7 +157,7 @@ class TestImpedanceOptionalFields:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
-        # Only required fields
+        # Row 1: All optional fields filled
         create_impedance(
             net,
             from_bus=b0,
@@ -168,17 +172,47 @@ class TestImpedanceOptionalFields:
             bt_pu=0.0,
             sn_mva=50.0,
             in_service=True,
+            name="Impedance A",
+            rft0_pu=0.1,
+            xft0_pu=0.2,
+            rtf0_pu=0.3,
+            xtf0_pu=0.4,
         )
 
-        # Set some optionals to NaN/None
-        for col in ["name", "rft0_pu", "xft0_pu", "rtf0_pu", "xtf0_pu", "gf0_pu", "bf0_pu", "gt0_pu", "bt0_pu"]:
-            # Ensure column exists and assign a null
-            if col not in net.impedance.columns:
-                net.impedance[col] = pd.Series([float(np.nan)], index=net.impedance.index)
-            net.impedance[col].iat[0] = pd.NA
+        # Row 2: All optional fields NA/NaN
+        create_impedance(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            rft_pu=0.05,
+            xft_pu=0.06,
+            rtf_pu=0.07,
+            xtf_pu=0.08,
+            gf_pu=0.1,
+            bf_pu=0.1,
+            gt_pu=0.1,
+            bt_pu=0.1,
+            sn_mva=50.0,
+            in_service=False,
+        )
 
-        # Set name dtype properly
-        net.impedance["name"] = net.impedance["name"].astype(pd.StringDtype())
+        # Set nullable columns with mixed values
+        net.impedance["name"] = pd.Series(["Impedance A", pd.NA], dtype=pd.StringDtype())
+        net.impedance["origin_id"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.impedance["origin_class"] = pd.Series(["CIM_Class", pd.NA], dtype=pd.StringDtype())
+        net.impedance["description"] = pd.Series([pd.NA, "Some description"], dtype=pd.StringDtype())
+        net.impedance["terminal_to"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.impedance["terminal_from"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+
+        # Float columns with mixed NaN
+        net.impedance["rft0_pu"] = [0.1, float("nan")]
+        net.impedance["xft0_pu"] = [0.2, float("nan")]
+        net.impedance["rtf0_pu"] = [0.3, float("nan")]
+        net.impedance["xtf0_pu"] = [0.4, float("nan")]
+        net.impedance["gf0_pu"] = [float("nan"), 0.5]
+        net.impedance["bf0_pu"] = [0.6, float("nan")]
+        net.impedance["gt0_pu"] = [float("nan"), float("nan")]
+        net.impedance["bt0_pu"] = [0.7, 0.8]
 
         validate_network(net)
 
@@ -187,10 +221,17 @@ class TestImpedanceOptionalFields:
         list(
             itertools.chain(
                 itertools.product(["name"], [pd.NA, *strings]),
-                itertools.product(["rft0_pu"], positiv_floats),
-                itertools.product(["xft0_pu"], positiv_floats),
-                itertools.product(["rtf0_pu"], positiv_floats),
-                itertools.product(["xtf0_pu"], positiv_floats),
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                itertools.product(["terminal_to"], [pd.NA, *strings]),
+                itertools.product(["terminal_from"], [pd.NA, *strings]),
+                # Nullable float columns (zero-sequence impedance) - include float(np.nan) directly
+                itertools.product(["rft0_pu"], [float(np.nan), *positiv_floats]),
+                itertools.product(["xft0_pu"], [float(np.nan), *positiv_floats]),
+                itertools.product(["rtf0_pu"], [float(np.nan), *positiv_floats]),
+                itertools.product(["xtf0_pu"], [float(np.nan), *positiv_floats]),
+                # Nullable float columns (zero-sequence shunt) - any float allowed
                 itertools.product(["gf0_pu"], [float(np.nan), *positiv_floats_plus_zero, *negativ_floats_plus_zero]),
                 itertools.product(["bf0_pu"], [float(np.nan), *positiv_floats_plus_zero, *negativ_floats_plus_zero]),
                 itertools.product(["gt0_pu"], [float(np.nan), *positiv_floats_plus_zero, *negativ_floats_plus_zero]),
@@ -199,6 +240,7 @@ class TestImpedanceOptionalFields:
         ),
     )
     def test_valid_optional_values(self, parameter, valid_value):
+        """Test: valid optional values are accepted (including null values)"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
@@ -228,6 +270,11 @@ class TestImpedanceOptionalFields:
         list(
             itertools.chain(
                 itertools.product(["name"], not_strings_list),
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                itertools.product(["terminal_to"], not_strings_list),
+                itertools.product(["terminal_from"], not_strings_list),
                 # zero-sequence impedance parts must be > 0 if provided
                 itertools.product(["rft0_pu"], [*negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(["xft0_pu"], [*negativ_floats_plus_zero, *not_floats_list]),
@@ -242,6 +289,7 @@ class TestImpedanceOptionalFields:
         ),
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
+        """Test: invalid optional values are rejected"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
@@ -261,6 +309,62 @@ class TestImpedanceOptionalFields:
             in_service=True,
         )
         net.impedance[parameter] = invalid_value
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
+class TestImpedanceForeignKey:
+    """Tests for foreign key constraints"""
+
+    def test_invalid_from_bus_index(self):
+        """Test: from_bus FK must reference an existing bus index"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_impedance(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            rft_pu=0.01,
+            xft_pu=0.02,
+            rtf_pu=0.03,
+            xtf_pu=0.04,
+            gf_pu=0.0,
+            bf_pu=0.0,
+            gt_pu=0.0,
+            bt_pu=0.0,
+            sn_mva=100.0,
+            in_service=True,
+        )
+
+        net.impedance["from_bus"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_invalid_to_bus_index(self):
+        """Test: to_bus FK must reference an existing bus index"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_impedance(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            rft_pu=0.01,
+            xft_pu=0.02,
+            rtf_pu=0.03,
+            xtf_pu=0.04,
+            gf_pu=0.0,
+            bf_pu=0.0,
+            gt_pu=0.0,
+            bt_pu=0.0,
+            sn_mva=100.0,
+            in_service=True,
+        )
+
+        net.impedance["to_bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
