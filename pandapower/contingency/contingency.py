@@ -70,28 +70,6 @@ def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
         raise e
 
 
-def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
-    """
-    Try to initialize a lightsim2grid model
-
-    Arguments:
-        net: The pandapower network to use in lightsim2grid
-
-    Returns:
-        The initialized lightsim2grid model
-
-    Raises:
-        Any Exception thrown by lightsim2grid is logged and raised again.
-    """
-    try:
-        ls2g_model = init_ls2g(net)
-        return ls2g_model
-    except Exception as e:
-        logger.error(f"Failed to create lightsim2grid model for network: {net.name}")
-        logger.exception(e)
-        raise e
-
-
 def run_contingency(
         net: pandapowerNet,
         nminus1_cases: dict,
