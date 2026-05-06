@@ -233,7 +233,6 @@ class TestGenOptionalFields:
         ),
     )
     def test_valid_optional_values(self, parameter, valid_value):
-        # TODO: bool or pd.BooleanDtype
         """Test: valid optional values are accepted"""
         net = pandapowerNet(name="test_valid_optional_values")
         create_bus(net, 0.4)
@@ -293,7 +292,6 @@ class TestGenOptionalFields:
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
 
         # Set only one OPF column -> should fail due to group dependency
-        # Choose max_p_mw; other OPF columns are present as NaN in net.gen by default
         net.gen["max_p_mw"] = 100.0
 
         with pytest.raises(pa.errors.SchemaError):
@@ -393,6 +391,58 @@ class TestGenOptionalFields:
         )
         net.gen[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
+class TestGenDependencyGroupNullValues:
+    """Tests for nullable dependency group columns - all columns in group set to NA together"""
+
+    # def test_qcc_group_all_null_valid(self):
+    #     """Test: QCC group columns can all be NA together"""
+    #     net = create_empty_network()
+    #     create_bus(net, 0.4)
+    #     create_gen(
+    #         net,
+    #         bus=0,
+    #         p_mw=-1.0,
+    #         vm_pu=0.5,
+    #         scaling=1.0,
+    #         in_service=True,
+    #         slack=True,
+    #     )
+    #     # Set all QCC columns to NA with correct dtypes
+    #     net.gen["id_q_capability_characteristic"] = pd.Series([pd.NA], dtype="Int64")
+    #     net.gen["curve_style"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+    #     net.gen["reactive_capability_curve"] = pd.Series([pd.NA], dtype=pd.BooleanDtype())
+    #
+    #     validate_network(net)
+
+
+    def test_cim_columns_individual_na_valid(self):
+        """Test: CIM columns (not in dependency groups) accept NA individually"""
+        cim_nullable_columns = {
+            "name": pd.StringDtype(),
+            "type": pd.StringDtype(),
+            "origin_id": pd.StringDtype(),
+            "origin_class": pd.StringDtype(),
+            "terminal": pd.StringDtype(),
+            "description": pd.StringDtype(),
+            "RegulatingControl.mode": pd.StringDtype(),
+        }
+
+        for col_name, dtype in cim_nullable_columns.items():
+            net = create_empty_network()
+            create_bus(net, 0.4)
+            create_gen(
+                net,
+                bus=0,
+                p_mw=-1.0,
+                vm_pu=0.5,
+                scaling=1.0,
+                in_service=True,
+                slack=True,
+            )
+            net.gen[col_name] = pd.Series([pd.NA], dtype=dtype)
             validate_network(net)
 
 
