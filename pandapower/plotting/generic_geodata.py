@@ -3,7 +3,7 @@
 
 import sys
 import copy
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
 import geojson
 import networkx
@@ -23,6 +23,9 @@ except ImportError:
     IGRAPH_INSTALLED = False
 
 import logging
+
+if TYPE_CHECKING:
+    import igraph
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +132,7 @@ def _get_switch_mask(net, element, switch_element, open_switches):
     return open_element_mask
 
 def coords_from_igraph(
-        graph: igraph.Graph,
+        graph: "igraph.Graph",
         roots: Iterable,
         meshed: bool = False,
         calculate_meshed: bool = False
