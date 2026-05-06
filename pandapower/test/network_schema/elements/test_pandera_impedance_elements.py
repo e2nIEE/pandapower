@@ -257,7 +257,9 @@ class TestImpedanceOptionalFields:
             sn_mva=10.0,
             in_service=False,
         )
-        if parameter == "name":
+
+        # Handle dtype preservation for nullable columns
+        if parameter in ["name", "origin_id", "origin_class", "description", "terminal_to", "terminal_from"]:
             net.impedance[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
         else:
             net.impedance[parameter] = valid_value
