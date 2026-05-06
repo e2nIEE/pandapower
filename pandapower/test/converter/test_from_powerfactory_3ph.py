@@ -85,7 +85,7 @@ def test_trafo_asym():
             read_pf_results_from_file_to_net(os.path.join(testfiles_path, "pf_combinations_results_trafo.json"), net,
                                              vector_group + "_" + loadtype)
             compare_3ph_pp_pf_results(net)
-    return net
+    # return net
 
 
 def test_line_asym():
@@ -93,7 +93,7 @@ def test_line_asym():
     runpp_3ph(net)
     read_pf_results_from_file_to_net(os.path.join(testfiles_path, "pf_results_line.json"), net)
     compare_3ph_pp_pf_results(net)
-    return net
+    # return net
 
 
 def test_net_asym():
@@ -108,7 +108,7 @@ def test_net_asym():
                 os.path.join(testfiles_path, "pf_combinations_results_net_bus_trafo_line_load_19.10.20.json"), net,
                 vector_group + "_" + loadtype)
             compare_3ph_pp_pf_results(net)
-    return net
+    # return net
 
 
 def initialize_powerfactory(prj_name):
@@ -255,7 +255,7 @@ def get_pf_results(app, net):
 
 def write_pf_results_to_file(app, net, filename, combinations):
     if combinations:
-        pf_results = dict()
+        pf_results = {}
         for loadtype in ["delta", "wye"]:
             for vector_group in ["Dyn", "YNyn", "Yzn"]:
                 study_case_name = "Study Case_%s_%s" % (vector_group, loadtype)

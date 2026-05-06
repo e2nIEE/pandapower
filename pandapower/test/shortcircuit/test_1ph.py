@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -50,7 +50,7 @@ def add_network(net, vector_group):
                         "vn_hv_kv": 110.0, "vk_percent": 11.2, "shift_degree": 150, "vector_group": vector_group,
                         "tap_side": "hv", "tap_neutral": 0, "tap_min": -9, "tap_max": 9, "tap_step_degree": 0,
                         "tap_step_percent": 1.5, "tap_phase_shifter": "Ratio", "vk0_percent": 5, "vkr0_percent": 0.4,
-                        "mag0_percent": 10, "mag0_rx": 0.4, "si0_hv_partial": 0.9}
+                        "mag0_percent": 1000, "mag0_rx": 0.4, "si0_hv_partial": 0.9}
     create_std_type(net, transformer_type, vector_group, "trafo")
     t1 = create_transformer(net, b1, b2, std_type=vector_group, parallel=2, index=get_free_id(net.trafo) + 1)
     create_transformer(net, b1, b2, std_type=vector_group, in_service=False)
@@ -84,26 +84,27 @@ def test_1ph_shortcircuit():
 
 def test_1ph_shortcircuit_3w():
     # vector groups without "N" have no impact on the 1ph
-    # here we check both functions, with Y inversion and with LU factorization for individual buses
+    # here we check both functions, with Y invertion and with LU factorization for individual buses
     # The currents are taken from the calculation with commercial software for reference
     results = {
-        "ddd": [1.5193429, 0, 0],
-        "ddy": [1.5193429, 0, 0],
-        "dyd": [1.5193429, 0, 0],
-        "dyy": [1.5193429, 0, 0],
-        "ydd": [1.5193429, 0, 0],
-        "ydy": [1.5193429, 0, 0],
-        "yyd": [1.5193429, 0, 0],
-        "yyy": [1.5193429, 0, 0],
-        "ynyd": [1.783257, 0, 0],
-        "yndy": [1.79376470, 0, 0],  # ok
-        "yynd": [1.5193429, 3.339398, 0],
-        "ydyn": [1.5193429, 0, 8.836452],  # ok
-        "ynynd": [1.783257, 3.499335, 0],
-        "yndyn": [1.79376470, 0, 9.04238714],  # ok
-        "yndd": [1.843545, 0, 0],
-        "ynyy": [1.5193429, 0, 0]  # ok but why?
-    }
+                "ddd":  [1.5193429, 0, 0],
+                "ddy":  [1.5193429, 0, 0],
+                "dyd":  [1.5193429, 0, 0],
+                "dyy":  [1.5193429, 0, 0],
+                "ydd":  [1.5193429, 0, 0],
+                "ydy":  [1.5193429, 0, 0],
+                "yyd":  [1.5193429, 0, 0],
+                "yyy":  [1.5193429, 0, 0],
+                "ynyd": [1.783257, 0, 0],
+                "yndy": [1.79376470, 0, 0], # ok
+                "yynd": [1.5193429, 3.339398, 0],
+                "ydyn": [1.5193429, 0, 8.836452], # ok
+                "ynynd": [1.783257, 3.499335, 0],
+                "yndyn": [1.79376470, 0, 9.04238714], # ok
+                "yndd": [1.843545, 0, 0],
+                "ynyy": [1.5193429, 0, 0], # ok but why?
+                "dynyn": [1.51934281, 3.4130868, 8.86290334] # Please verify with your commercial software -> results from sc calculations
+               }
 
     for vg, result in results.items():
         net = single_3w_trafo_grid(vg)
@@ -256,7 +257,7 @@ def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
     if with_gen:
         t1 = create_transformer_from_parameters(net, b3, hg2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
                                                 vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, vk0_percent=12,
-                                                vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
+                                                vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.5,
                                                 shift_degree=5, vector_group="Yd", power_station_unit=True)
         create_gen(net, hg2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
                    pg_percent=7.5, slack=True, power_station_trafo=t1)
@@ -271,7 +272,7 @@ def iec_60909_4_t1():
 
     t1 = create_transformer_from_parameters(net, 0, 1, sn_mva=150, pfe_kw=0, i0_percent=0, vn_hv_kv=115., vn_lv_kv=21,
                                             vk_percent=16, vkr_percent=0.5, pt_percent=12, oltc=True, vk0_percent=15.2,
-                                            vkr0_percent=0.5, xn_ohm=22, vector_group="YNd", mag0_percent=100,
+                                            vkr0_percent=0.5, xn_ohm=22, vector_group="YNd", mag0_percent=10000,
                                             mag0_rx=0, si0_hv_partial=0.5, power_station_unit=True)
     create_gen(net, 1, p_mw=0.85 * 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
                power_station_trafo=t1)
@@ -289,7 +290,7 @@ def vde_232():
     create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16, pfe_kw=0, i0_percent=0, tap_step_percent=1,
                                        tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv', vector_group="YNd",
                                        vk0_percent=np.sqrt(np.square(0.95 * 15.99219) + np.square(0.5)),
-                                       vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.9, pt_percent=12,
+                                       vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.9, pt_percent=12,
                                        oltc=True, power_station_unit=True, xn_ohm=22, tap_changer_type="Ratio")
 
     create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0,
@@ -460,7 +461,7 @@ def test_trafo():
 
         t1 = create_transformer_from_parameters(net, 0, 1, sn_mva=150, pfe_kw=10, i0_percent=0.1, vn_hv_kv=115.,
                                                 vn_lv_kv=21, vk_percent=16, vkr_percent=0.5, pt_percent=12,
-                                                vk0_percent=15.2, vkr0_percent=0.5, vector_group=vc, mag0_percent=100,
+                                                vk0_percent=15.2, vkr0_percent=0.5, vector_group=vc, mag0_percent=10000,
                                                 mag0_rx=0, si0_hv_partial=0.5)
         calc_sc(net, fault="1ph", case="max")
         res = net.res_bus_sc.copy()

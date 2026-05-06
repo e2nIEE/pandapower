@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import json
@@ -26,7 +26,7 @@ try:
 
     PSYCOPG2_INSTALLED = True
 except ImportError:
-    psycopg2 = None
+    psycopg2 = None  # type: ignore[assignment]
     PSYCOPG2_INSTALLED = False
 
 try:
@@ -34,7 +34,7 @@ try:
 
     SQLITE_INSTALLED = True
 except ImportError:
-    sqlite3 = None
+    sqlite3 = None  # type: ignore[assignment]
     SQLITE_INSTALLED = False
 
 

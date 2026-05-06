@@ -21,10 +21,7 @@ from pandapower.results_bus import _get_bus_results, _get_bus_dc_results
 from pandapower.results_gen import _get_gen_results
 from pandapower.run import runpp
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

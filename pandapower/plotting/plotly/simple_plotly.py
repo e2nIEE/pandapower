@@ -1,35 +1,29 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-import warnings
-from typing_extensions import overload
 import pandas as pd
+import numpy as np
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_dcline_trace, create_scale_trace,  create_trafo_trace, draw_traces, \
-    _create_node_trace, _create_branch_trace
+    _create_node_trace
 from pandapower.plotting.plotly.mapbox_plot import *
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
 def get_hoverinfo(net, element, precision=3, sub_index=None):
     hover_index = net[element].index
     if element == "bus":
-        # load_str, sgen_str, vsc_str = [], [], []
         load_str, sgen_str = [], []
         for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            load_str.append("Load: {:.3f} MW<br />".format(ln) if ln != 0. else "")
+            load_str.append("Load: {:.3f} MW<br />".format(ln) if not np.isclose(ln, 0.0) else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if s != 0. else "")
+            sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if not np.isclose(s, 0.0) else "")
         # we do not really need vsc result for every bus:
         #for vn in [net.res_vsc.loc[net.vsc.bus == b, "p_mw"].fillna(0).sum() for b in net.bus.index]:
         #    vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
@@ -40,7 +34,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     elif element == "bus_dc":
         vsc_str = []
         for vn in [net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum() for b in net.bus_dc.index]:
-            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
+            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if not np.isclose(vn, 0.0) else "")
         hoverinfo = (
                 "Index: " + net.bus_dc.index.astype(str) + '<br />' +
                 "Name: " + net.bus_dc['name'].astype(str) + '<br />' +
@@ -100,29 +94,8 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     return hoverinfo
 
 
-@overload
 def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
-                  *, map_style='basic', figsize=1.0, aspectratio='auto',
-                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
-                  bus_color="blue", line_color='grey', trafo_color='green',
-                  trafo3w_color='green', ext_grid_color="yellow",
-                  filename='temp-plot.html', auto_open=True, showlegend=True,
-                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'): ...
-
-
-@overload
-@deprecated("projection is deprecated and will be removed in future versions. geojson should always be WGS84.")
-def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
-                  projection='epsg:4326', map_style='basic', figsize=1.0, aspectratio='auto',
-                  line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
-                  bus_color="blue", line_color='grey', trafo_color='green',
-                  trafo3w_color='green', ext_grid_color="yellow",
-                  filename='temp-plot.html', auto_open=True, showlegend=True,
-                  additional_traces=None, zoomlevel=11, auto_draw_traces=True, hvdc_color='cyan'): ...
-
-
-def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
-                  projection=None, map_style='basic', figsize=1.0, aspectratio='auto',
+                  map_style='basic', figsize=1.0, aspectratio='auto',
                   line_width=1.0, bus_size=10.0, ext_grid_size=20.0,
                   bus_color="blue", line_color='grey', trafo_color='green',
                   trafo3w_color='green', ext_grid_color="yellow",
@@ -132,78 +105,57 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
     Plots a pandapower network as simple as possible in plotly.
     If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower format network.
+    Parameters:
+        net (pandapowerNet): The pandapower format network.
+        respect_switches (bool, True): Respect switches when artificial geodata is created
+        use_line_geo (bool, True): defines if lines patches are based on net.line.geo of the lines (True) or on
+            net.bus.geo of the connected buses (False)
+        on_map (bool, False): enables using mapLibre plot in plotly. If provided geodata are not real geo-coordinates in
+            lon/lat form, on_map will be set to False.
+        projection (String, None): defines a projection from which network geo-data will be transformed to lat-long. For
+            each projection a string can be found at https://spatialreference.org/ref/epsg/
+        map_style (str, 'basic'): enables using mapLibre plot in plotly
 
-    OPTIONAL:
-        **respect_switches** (bool, True) - Respect switches when artificial geodata is created
-
-        **use_line_geo** (bool, True) - defines if lines patches are based on
-        net.line.geo of the lines (True) or on net.bus.geo of the connected buses (False)
-
-        **on_map** (bool, False) - enables using mapbox plot in plotly.
-        If provided geodata are not real geo-coordinates in lon/lat form, on_map will be set to False.
-
-        **projection** (String, None) - defines a projection from which network geo-data will be transformed to
-        lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
-
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
-
-            - 'streets'
-            - 'bright'
-            - 'light'
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
             - 'dark'
-            - 'satellite'
+            - 'light'
+            - 'open-street-map'
+            - 'outdoors'           
+            - 'satellite''
+            - 'satellite-streets'
+            - 'streets'
 
-        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
+        figsize (float, 1): aspectratio is multiplied by it in order to get final image size
+        aspectratio (tuple, 'auto'): when 'auto' it preserves original aspect ratio of the network geodata; any custom
+            aspectration can be given as a tuple, e.g. (1.2, 1)
+        line_width (float, 1.0): width of lines
+        bus_size (float, 10.0): size of buses to plot.
+        ext_grid_size (float, 20.0): size of ext_grids to plot. See bus sizes for details. Note: ext_grids are plotted
+            as rectangles
+        bus_color (String, "blue"): Bus Color. Init as first value of color palette.
+        line_color (String, 'grey'): Line Color. Init is grey
+        trafo_color (String, 'green'): Trafo Color. Init is green
+        trafo3w_color (String, 'green'): Trafo 3W Color. Init is blue
+        ext_grid_color (String, 'yellow'): External Grid Color. Init is yellow
+        auto_open (bool, True): automatically open plot in browser
+        showlegend (bool, True): If True, a legend will be shown
+        additional_traces (list, None): List with additional, user-created traces that will be appended to the
+            simple_plotly traces before drawing all traces
+        zoomlevel (int, 11): initial mapLibre-zoomlevel on a map if `on_map=True`. Small values = less zoom / larger
+            area shown
+        auto_draw_traces (bool, True): if True, a figure with the drawn traces is returned. If False, the traces and a
+            dict with settings is returned
+        hvdc_color (str, "cyan"): color for HVDC lines
 
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata;
-        any custom aspectration can be given as a tuple, e.g. (1.2, 1)
-
-        **line_width** (float, 1.0) - width of lines
-
-        **bus_size** (float, 10.0) -  size of buses to plot.
-
-        **ext_grid_size** (float, 20.0) - size of ext_grids to plot.
-
-            See bus sizes for details. Note: ext_grids are plotted as rectangles
-
-        **bus_color** (String, "blue") - Bus Color. Init as first value of color palette.
-
-        **line_color** (String, 'grey') - Line Color. Init is grey
-
-        **trafo_color** (String, 'green') - Trafo Color. Init is green
-
-        **trafo3w_color** (String, 'green') - Trafo 3W Color. Init is blue
-
-        **ext_grid_color** (String, 'yellow') - External Grid Color. Init is yellow
-
-        **auto_open** (bool, True) - automatically open plot in browser
-
-        **showlegend** (bool, True) - If True, a legend will be shown
-
-        **additional_traces** (list, None) - List with additional, user-created traces that will
-        be appended to the simple_plotly traces before drawing all traces
-
-        **zoomlevel** (int, 11) - initial mapbox-zoomlevel on a map if `on_map=True`. Small
-        values = less zoom / larger area shown
-
-        **auto_draw_traces** (bool, True) - if True, a figure with the drawn traces is returned.
-        If False, the traces and a dict with settings is returned
-
-        **hvdc_color** (str, "cyan") - color for HVDC lines
-
-    OUTPUT:
-        **figure** (graph_objs._figure.Figure) figure object
+    Returns:
+        graph_objs._figure.Figure: figure object
     """
-    if projection is not None:
-        warnings.warn(
-            FutureWarning(
-                "projection is deprecated and will be removed in future versions. geojson should always be WGS84."
-            ),
-            stacklevel=2
-        )
-
     settings = dict(
         on_map=on_map,
         map_style=map_style,
@@ -245,9 +197,9 @@ def simple_plotly(net, respect_switches=True, use_line_geo=None, on_map=False,
         for weighted_trace in additional_traces:
             # for weighted_marker_traces "meta" should include information for the "scale legend"
             if ("meta" in weighted_trace) and (weighted_trace["meta"]["show_scale_legend"]):
-                sc_trace = create_scale_trace(net, weighted_trace, down_shift=shift)
+                sc_trace, next_shift = create_scale_trace(net, weighted_trace, down_shift=shift)
                 traces.extend(sc_trace)
-                shift += len(weighted_trace["meta"]["scale_marker_size"])
+                shift += next_shift
 
         traces.extend(additional_traces)
     if auto_draw_traces:
@@ -261,15 +213,6 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
                            node_element, branch_element, trans_element, trans3w_element,
                            branch_trace_func, node_trace_func, hoverinfo_func,
                            hvdc_color="cyan", settings=None, **kwargs):
-
-    if 'projection' in kwargs:
-        warnings.warn(
-            FutureWarning(
-                "projection is deprecated and will not be used. geojson should always be WGS84."
-            ),
-            stacklevel=2
-        )
-        kwargs.pop('projection')
 
     settings_defaults = {  # if no settings are provided, these are used
         'on_map': kwargs.get('on_map', True),
@@ -349,7 +292,9 @@ def _simple_plotly_generic(net, respect_separators, use_branch_geodata, branch_w
     # ----- Ext grid ------
     # get external grid from _create_node_trace
     if 'ext_grid' in net and len(net.ext_grid):
-        marker_type = 'circle' if settings['on_map'] else 'square'  # workaround because doesn't appear on mapbox if square
+        marker_type = 'circle' if settings['on_map'] else 'square'  # better would be square-x
+        # FIXME: if on_map only maki 2.1 Icons are supported as patch_type due to plotly using them.
+        #  Only the circle can be colored and scaled. https://github.com/plotly/plotly.js/issues/6599
         hoverinfo = hoverinfo_func(net, element="ext_grid")
         ext_grid_trace = _create_node_trace(
             net,

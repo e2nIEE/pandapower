@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+import logging
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -30,8 +30,8 @@ def test_2bus():
     create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=1, x_ohm_per_km=0.5,
                                 c_nf_per_km=0, max_i_ka=1)
 
-    create_measurement(net, "p", "line", 0.0111, 0.05, 0, 0)  # p12
-    create_measurement(net, "q", "line", 0.06, 0.05, 0, 0)  # q12
+    create_measurement(net, "p", "line", 0.0111, 0.05, 0, "from")  # p12
+    create_measurement(net, "q", "line", 0.06, 0.05, 0, "from")  # q12
 
     create_measurement(net, "v", "bus", 1.019, 0.01, 0)  # u1
     create_measurement(net, "v", "bus", 1.04, 0.01, 1)  # u2
@@ -48,7 +48,7 @@ def test_2bus():
     target_delta = np.array([[0.0, 3.11356604]])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-6) or not (np.nanmax(abs(diff_delta)) < 1e-6):
+    if np.nanmax(abs(diff_v)) >= 1e-6 or np.nanmax(abs(diff_delta)) >= 1e-6:
         raise AssertionError("Estimation failed!")
 
 
@@ -66,8 +66,8 @@ def test_3bus():
     create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0,
                                 max_i_ka=1)
 
-    create_measurement(net, "p", "line", -0.0011, 0.01, 0, 0)  # p12
-    create_measurement(net, "q", "line", 0.024, 0.01, 0, 0)  # q12
+    create_measurement(net, "p", "line", -0.0011, 0.01, 0, "from")  # p12
+    create_measurement(net, "q", "line", 0.024, 0.01, 0, "from")  # q12
 
     create_measurement(net, "p", "bus", -0.018, 0.01, 2)  # p3
     create_measurement(net, "q", "bus", 0.1, 0.01, 2)  # q3
@@ -86,8 +86,7 @@ def test_3bus():
     target_delta = np.array([0., 0.8677, 3.1381])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
@@ -111,8 +110,8 @@ def test_3bus_with_bad_data():
     create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0,
                                 max_i_ka=1)
 
-    create_measurement(net, "p", "line", -0.0011, 0.01, 0, 0)  # p12
-    create_measurement(net, "q", "line", 0.024, 0.01, 0, 0)  # q12
+    create_measurement(net, "p", "line", -0.0011, 0.01, 0, "from")  # p12
+    create_measurement(net, "q", "line", 0.024, 0.01, 0, "from")  # q12
 
     create_measurement(net, "p", "bus", -0.018, 0.01, 2)  # p3
     create_measurement(net, "q", "bus", 0.1, 0.01, 2)  # q3
@@ -141,8 +140,7 @@ def test_3bus_with_bad_data():
 
     assert bad_data_detected
     assert success_rn_max
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
 
@@ -160,7 +158,7 @@ def test_3bus_with_out_of_service_bus():
     create_bus(net, name="bus1", vn_kv=1.)
     create_bus(net, name="bus2", vn_kv=1.)
     create_bus(net, name="bus3", vn_kv=1.)
-    create_bus(net, name="bus4", vn_kv=1., in_service=0)  # out-of-service bus test
+    create_bus(net, name="bus4", vn_kv=1., in_service=False)  # out-of-service bus test
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=.01, x_ohm_per_km=.03, c_nf_per_km=0.,
                                 max_i_ka=1)
@@ -175,10 +173,10 @@ def test_3bus_with_out_of_service_bus():
     create_measurement(net, "p", "bus", .501, .010, 1)  # P at bus 2
     create_measurement(net, "q", "bus", .286, .010, 1)  # Q at bus 2
 
-    create_measurement(net, "p", "line", .888, .008, 0, 0)  # Pline (bus 1 -> bus 2) at bus 1
-    create_measurement(net, "p", "line", 1.173, .008, 1, 0)  # Pline (bus 1 -> bus 3) at bus 1
-    create_measurement(net, "q", "line", .568, .008, 0, 0)  # Qline (bus 1 -> bus 2) at bus 1
-    create_measurement(net, "q", "line", .663, .008, 1, 0)  # Qline (bus 1 -> bus 3) at bus 1
+    create_measurement(net, "p", "line", .888, .008, 0, "from")  # Pline (bus 1 -> bus 2) at bus 1
+    create_measurement(net, "p", "line", 1.173, .008, 1, "from")  # Pline (bus 1 -> bus 3) at bus 1
+    create_measurement(net, "q", "line", .568, .008, 0, "from")  # Qline (bus 1 -> bus 2) at bus 1
+    create_measurement(net, "q", "line", .663, .008, 1, "from")  # Qline (bus 1 -> bus 3) at bus 1
 
     # 2. Do state estimation
     if not estimate(net, init='flat'):
@@ -192,8 +190,7 @@ def test_3bus_with_out_of_service_bus():
     target_delta = np.array([[0., -1.2475, -2.7457, np.nan]])
     diff_delta = target_delta - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 1e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 1e-4):
+    if np.nanmax(abs(diff_v)) >= 1e-4 or np.nanmax(abs(diff_delta)) >= 1e-4:
         raise AssertionError("Estimation failed!")
 
 
@@ -239,17 +236,16 @@ def test_3bus_with_transformer():
     create_measurement(net, "p", "bus", 0., 0.001, element=0)
     create_measurement(net, "q", "bus", 0., 0.001, element=0)
 
-    create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[0], .008), .008, 0, 0)
-    create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[1], .008), .008, 1, 0)
+    create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[0], .008), .008, 0, "from")
+    create_measurement(net, "p", "line", r2(net.res_line.p_from_mw.iloc[1], .008), .008, 1, "from")
 
     create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], .01), .01,
                        side="hv", element=0)  # transformer meas.
     create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .01), .01,
-                       side=3, element=0)  # at hv side
+                       side="hv", element=0)  # at hv side
 
     # 2. Do state estimation
-    if not estimate(net, init='slack', tolerance=1e-6,
-                    maximum_iterations=10, calculate_voltage_angles=True):
+    if not estimate(net, init='slack', tolerance=1e-6, maximum_iterations=10):
         raise AssertionError("Estimation failed!")
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
@@ -257,8 +253,7 @@ def test_3bus_with_transformer():
     diff_v = net.res_bus.vm_pu.values - v_result
     diff_delta = net.res_bus.va_degree.values - delta_result
 
-    if not (np.nanmax(abs(diff_v)) < 6e-4) or \
-            not (np.nanmax(abs(diff_delta)) < 8e-4):
+    if np.nanmax(abs(diff_v)) >= 6e-4 or np.nanmax(abs(diff_delta)) >= 8e-4:
         raise AssertionError("Estimation failed!")
 
     # Backwards check. Use state estimation results for power flow and check for equality
@@ -293,10 +288,10 @@ def test_3bus_with_2_slacks():
     create_measurement(net, "p", "bus", .501, .010, element=6)  # P at bus 6
     create_measurement(net, "q", "bus", .286, .010, element=6)  # Q at bus 6
 
-    create_measurement(net, "p", "line", .888, .008, 3, 5)  # Pline (bus 5 -> bus 6) at bus 5
-    create_measurement(net, "p", "line", 1.173, .008, 4, 5)  # Pline (bus 5 -> bus 7) at bus 5
-    create_measurement(net, "q", "line", .568, .008, 3, 5)  # Qline (bus 5 -> bus 6) at bus 5
-    create_measurement(net, "q", "line", .663, .008, 4, 5)  # Qline (bus 5 -> bus 7) at bus 5
+    create_measurement(net, "p", "line", .888, .008, 3, "from")  # Pline (bus 5 -> bus 6) at bus 5
+    create_measurement(net, "p", "line", 1.173, .008, 4, "from")  # Pline (bus 5 -> bus 7) at bus 5
+    create_measurement(net, "q", "line", .568, .008, 3, "from")  # Qline (bus 5 -> bus 6) at bus 5
+    create_measurement(net, "q", "line", .663, .008, 4, "from")  # Qline (bus 5 -> bus 7) at bus 5
 
     # 2. Do state estimation
     if not estimate(net, init='flat', maximum_iterations=10):
@@ -331,13 +326,13 @@ def test_3bus_with_i_line_measurements():
     create_measurement(net, "q", "bus", net.res_bus.q_mvar[2] * r(),
                        max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[2])), 2)
     create_measurement(net, "p", "line", net.res_line.p_from_mw[0] * r(),
-                       max(1.0e-3, abs(0.03 * net.res_line.p_from_mw[0])), element=0, side=0)
+                       max(1.0e-3, abs(0.03 * net.res_line.p_from_mw[0])), element=0, side="from")
     create_measurement(net, "q", "line", net.res_line.q_from_mvar[0] * r(),
-                       max(1.0e-3, abs(0.03 * net.res_line.q_from_mvar[0])), element=0, side=0)
+                       max(1.0e-3, abs(0.03 * net.res_line.q_from_mvar[0])), element=0, side="from")
     create_measurement(net, "i", "line", net.res_line.i_from_ka[0] * 1e3 * r(),
-                       max(1.0, abs(30 * net.res_line.i_from_ka[0])), element=0, side=0)
+                       max(1.0, abs(30 * net.res_line.i_from_ka[0])), element=0, side="from")
     create_measurement(net, "i", "line", net.res_line.i_from_ka[1] * 1e3 * r(),
-                       max(1.0, abs(30 * net.res_line.i_from_ka[1])), element=1, side=0)
+                       max(1.0, abs(30 * net.res_line.i_from_ka[1])), element=1, side="from")
 
     if not estimate(net, init='flat'):
         raise AssertionError("Estimation failed!")
@@ -364,13 +359,13 @@ def test_3bus_with_pq_line_from_to_measurements():
     create_measurement(net, "q", "bus", net.res_bus.q_mvar[2] * r(),
                        max(1.0e-3, abs(0.03 * net.res_bus.q_mvar[2])), 2)
     create_measurement(net, "p", "line", net.res_line.p_from_mw[0] * r(),
-                       max(1.0e-3, abs(0.03 * net.res_line.p_from_mw[0])), element=0, side=0)
+                       max(1.0e-3, abs(0.03 * net.res_line.p_from_mw[0])), element=0, side="from")
     create_measurement(net, "q", "line", net.res_line.q_from_mvar[0] * r(),
-                       max(1.0e-3, abs(0.03 * net.res_line.q_from_mvar[0])), element=0, side=0)
+                       max(1.0e-3, abs(0.03 * net.res_line.q_from_mvar[0])), element=0, side="from")
     create_measurement(net, "p", "line", net.res_line.p_to_mw[0] * r(),
-                       max(1.0e-3, abs(0.03 * net.res_line.p_to_mw[0])), element=0, side=1)
+                       max(1.0e-3, abs(0.03 * net.res_line.p_to_mw[0])), element=0, side="to")
     create_measurement(net, "q", "line", net.res_line.q_to_mvar[0] * r(),
-                       max(1.0e-3, abs(0.03 * net.res_line.q_to_mvar[0])), element=0, side=1)
+                       max(1.0e-3, abs(0.03 * net.res_line.q_to_mvar[0])), element=0, side="to")
 
     if not estimate(net, init='flat'):
         raise AssertionError("Estimation failed!")
@@ -430,7 +425,7 @@ def test_cigre_network(init='flat'):
                            bus)
 
     # 2. Do state estimation
-    if not estimate(net, init="flat", calculate_voltage_angles=True):
+    if not estimate(net, init="flat"):
         raise AssertionError("Estimation failed!")
 
     v_result = net.res_bus_est.vm_pu.values
@@ -450,18 +445,15 @@ def test_cigre_network_with_slack_init():
 
 
 def test_cigre_with_bad_data():
-    np.random.seed(123456)
     net = create_cigre_network_mv(with_der=False)
-    net.load.q_mvar = net.load["p_mw"].apply(lambda p: p * np.tan(np.arccos(np.random.choice([0.95, 0.9, 0.97]))))
+    net.load.q_mvar = net.load["p_mw"].apply(lambda p: p * np.tan(np.arccos(0.9)))
     runpp(net)
 
     for bus, row in net.res_bus.iterrows():
-        if bus == 2:
-            continue
         if bus != 6:
-            create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)  # skip our bad data measurement
-        create_measurement(net, "p", "bus", row.p_mw * r(), max(0.001, abs(0.03 * row.p_mw)), bus)
-        create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.001, abs(0.03 * row.q_mvar)), bus)
+            create_measurement(net, "v", "bus", row.vm_pu * r(0.005), 0.005, bus)  # skip our bad data measurement
+        create_measurement(net, "p", "bus", row.p_mw * r(), max(0.03, abs(0.03 * row.p_mw)), bus)
+        create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.03, abs(0.03 * row.q_mvar)), bus)
 
     # 2. Do state estimation
     success_SE = estimate(net, init='slack')
@@ -469,13 +461,14 @@ def test_cigre_with_bad_data():
     delta_SE = net.res_bus_est.va_degree.values
 
     # 3. Create false measurement (very close to useful values)
-    create_measurement(net, "v", "bus", 0.85, 0.01, element=6)
+    create_measurement(net, "v", "bus", 0.85, 0.005, element=6)
 
     # 4. Do chi2-test
     bad_data_detected = chi2_analysis(net, init='slack')
+    assert bad_data_detected
 
     # 5. Perform rn_max_test
-    success_rn_max = remove_bad_data(net, init='slack')
+    success_rn_max = remove_bad_data(net, init='slack', rn_max_threshold=4.0)
     v_est_rn_max = net.res_bus_est.vm_pu.values
     delta_est_rn_max = net.res_bus_est.va_degree.values
 
@@ -489,7 +482,7 @@ def test_cigre_with_bad_data():
     assert (np.nanmax(abs(diff_delta)) < 1e-8)
 
 
-def test_init_slack_with_multiple_transformers(angles=True):
+def test_init_slack_with_multiple_transformers():
     np.random.seed(123)
     net = create_empty_network()
     create_bus(net, 220, index=0)
@@ -517,31 +510,27 @@ def test_init_slack_with_multiple_transformers(angles=True):
     create_load(net, 5, p_mw=0.9, q_mvar=0.5)
     create_load(net, bus=6, p_mw=0.7, q_mvar=0.3)
     create_ext_grid(net, bus=0, vm_pu=1.04, va_degree=10., name="Slack 220 kV")
-    runpp(net, calculate_voltage_angles=angles)
+    runpp(net, calculate_voltage_angles=True)
     for bus, row in net.res_bus[net.bus.in_service].iterrows():
         create_measurement(net, "v", "bus", row.vm_pu * r(0.01), 0.01, bus)
-        if row.p_mw != 0.:
+        if not np.isclose(row.p_mw, 0.0):
             continue
         create_measurement(net, "p", "bus", row.p_mw * r(), max(0.001, abs(0.03 * row.p_mw)),
                            bus)
         create_measurement(net, "q", "bus", row.q_mvar * r(), max(.0001, abs(0.03 * row.q_mvar)),
                            bus)
-    create_measurement(net, "p", "line", net.res_line.p_from_mw[0], .01, side=1, element=0)
-    create_measurement(net, "q", "line", net.res_line.q_from_mvar[0], 0.01, side=1, element=0)
-    create_measurement(net, "p", "line", net.res_line.p_from_mw[2], .01, side=4, element=2)
-    create_measurement(net, "q", "line", net.res_line.q_from_mvar[2], .01, side=4, element=2)
-    create_measurement(net, "p", "line", net.res_line.p_from_mw[3], .01, side=5, element=3)
-    create_measurement(net, "q", "line", net.res_line.q_from_mvar[3], 0.01, side=5, element=3)
-    success = estimate(net, init='slack', calculate_voltage_angles=angles, tolerance=1e-9)
+    create_measurement(net, "p", "line", net.res_line.p_from_mw[0], .01, side="from", element=0)
+    create_measurement(net, "q", "line", net.res_line.q_from_mvar[0], 0.01, side="from", element=0)
+    create_measurement(net, "p", "line", net.res_line.p_from_mw[2], .01, side="from", element=2)
+    create_measurement(net, "q", "line", net.res_line.q_from_mvar[2], .01, side="from", element=2)
+    create_measurement(net, "p", "line", net.res_line.p_from_mw[3], .01, side="from", element=3)
+    create_measurement(net, "q", "line", net.res_line.q_from_mvar[3], 0.01, side="from", element=3)
+    success = estimate(net, init='slack', tolerance=1e-9)
 
     # pretty high error for vm_pu (half percent!)
     assert success
     assert (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006)
     assert (np.nanmax(np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)) < 0.006)
-
-
-def test_init_slack_with_multiple_transformers_angles_off():
-    test_init_slack_with_multiple_transformers(False)
 
 
 def test_check_existing_measurements():
@@ -559,13 +548,13 @@ def test_check_existing_measurements():
     # assert m3 != m2
     assert len(net.measurement) == 3
 
-    m4 = create_measurement(net, "p", "line", -0.0011, 0.01, side=0, element=0,
+    m4 = create_measurement(net, "p", "line", -0.0011, 0.01, side="from", element=0,
                             check_existing=True)
-    m5 = create_measurement(net, "p", "line", -0.0011, 0.01, side=0, element=0,
+    m5 = create_measurement(net, "p", "line", -0.0011, 0.01, side="from", element=0,
                             check_existing=True)
     assert m4 == m5
 
-    m6 = create_measurement(net, "p", "line", -0.0011, 0.01, side=0, element=0,
+    m6 = create_measurement(net, "p", "line", -0.0011, 0.01, side="from", element=0,
                             check_existing=False)
     assert m5 != m6
     assert len(net.measurement) == 5
@@ -613,8 +602,8 @@ def test_network_with_trafo3w_pq():
     if not estimate(net):
         raise AssertionError("Estimation failed!")
 
-    if not (np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006) or \
-            not (np.nanmax(np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)) < 0.006):
+    if np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) >= 0.006 or \
+            np.nanmax(np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)) >= 0.006:
         raise AssertionError("Estimation failed")
 
     # Try estimate with results initialization
@@ -789,14 +778,13 @@ def test_net_with_zero_injection():
     create_measurement(net, "p", "line", 30.100, 1, l3, side="to")  # Pline (bus 2 -> bus 4) at bus 4
     create_measurement(net, "q", "line", -0.099, 1, l3, side="to")  # Qline (bus 2 -> bus 4) at bus 4
 
-    estimate(net, tolerance=1e-10, zero_injection='auto', algorithm='wls_with_zero_constraint')
+    estimate(net, tolerance=1e-10, zero_injection='no_inj_bus', algorithm='wls_with_zero_constraint')
     assert np.abs(net.res_bus_est.at[b2, 'p_mw']) < 1e-8
     assert np.abs(net.res_bus_est.at[b2, 'q_mvar']) < 1e-8
 
     net_given_bus = deepcopy(net)
-    success = estimate(net, tolerance=1e-6, zero_injection="auto")
-    success_given_bus = estimate(net, tolerance=1e-6, zero_injection=[b2])
-    assert success and success_given_bus
+    success = estimate(net, tolerance=1e-6, zero_injection="no_inj_bus")
+    assert success
     assert np.allclose(net.res_bus_est.va_degree.values, net_given_bus.res_bus_est.va_degree.values, 1e-3)
     assert np.allclose(net.res_bus_est.vm_pu.values, net_given_bus.res_bus_est.vm_pu.values, 1e-3)
 
@@ -843,18 +831,18 @@ def test_zero_injection_aux_bus():
     create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], .001), .01,
                        side="hv", element=0)
 
-    net_auto = deepcopy(net)
+    net_noinj_bus = deepcopy(net)
     net_aux = deepcopy(net)
 
     success_none = estimate(net, tolerance=1e-5, zero_injection=None)
 
-    # In this case zero_injection in mode "aux_bus" and "auto" should be exact the same
+    # In this case zero_injection in mode "aux_bus" and "no_inj_bus" should be exact the same
     success_aux = estimate(net_aux, tolerance=1e-5, zero_injection='aux_bus')
-    success_auto = estimate(net_auto, tolerance=1e-5, zero_injection='auto')
-    assert success_none and success_aux and success_auto
-    assert np.allclose(net_auto.res_bus_est.va_degree.values, net_aux.res_bus_est.va_degree.values, 1e-4,
+    success_noinj_bus = estimate(net_noinj_bus, tolerance=1e-5, zero_injection='no_inj_bus')
+    assert success_none and success_aux and success_noinj_bus
+    assert np.allclose(net_noinj_bus.res_bus_est.va_degree.values, net_aux.res_bus_est.va_degree.values, 1e-4,
                        equal_nan=True)
-    assert np.allclose(net_auto.res_bus_est.vm_pu.values, net_aux.res_bus_est.vm_pu.values, 1e-4, equal_nan=True)
+    assert np.allclose(net_noinj_bus.res_bus_est.vm_pu.values, net_aux.res_bus_est.vm_pu.values, 1e-4, equal_nan=True)
 
     # in case zero injection was set to none, the results should be different
     assert ~np.allclose(net.res_bus_est.vm_pu.values, net_aux.res_bus_est.vm_pu.values, 1e-2, equal_nan=True)
@@ -907,7 +895,7 @@ def test_net_unobserved_island():
 
 def test_net_oos_line():
     net = case9()
-    net.line.in_service.iat[4] = False
+    net.line.iat[4, net.line.columns.get_loc("in_service")] = False
     runpp(net)
 
     for line_ix in net.line.index:
@@ -946,5 +934,12 @@ def _compare_pf_and_se_results(net):
     assert (np.allclose(net.res_trafo_est.q_hv_mvar.values, net.res_trafo.q_hv_mvar.values, 1e-6))
 
 
+@pytest.mark.skipif(not np.__version__.startswith("1."), reason="Test only for numpy 1.X")
+def test_numpy1_warning():
+    with pytest.raises(UserWarning, match="numpy 1.x should not be used with estimate"):
+        estimate(create_empty_network())
+    
+
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
+

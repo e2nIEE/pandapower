@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import sys
@@ -21,10 +21,7 @@ try:
 except ImportError:
     IGRAPH_INSTALLED = False
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +48,6 @@ def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_k
     bus_index = net.bus.index if buses is None else np.array(buses)
     nr_buses = len(bus_index)
     g.add_vertices(nr_buses)
-    # g.vs["label"] = [s.encode('unicode-escape') for s in net.bus.name.tolist()]
     g.vs["label"] = list(bus_index)
     pp_bus_mapping = dict(list(zip(bus_index, list(range(nr_buses)))))
     if respect_switches:
@@ -124,7 +120,7 @@ def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
 def _get_switch_mask(net, element, switch_element, open_switches):
     element_switches = net.switch.et.values == switch_element
     open_elements = net.switch.element.values[open_switches & element_switches]
-    open_element_mask = np.in1d(net[element].index, open_elements, invert=True)
+    open_element_mask = np.isin(net[element].index, open_elements, invert=True)
     return open_element_mask
 
 def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
@@ -207,7 +203,7 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     :return: net - pandapower network with added geo coordinates for the buses
 
     :Example:
-        net = create_generic_coordinates(net)
+        >>> net = create_generic_coordinates(net)
     """
 
     _prepare_geodata_table(net, geodata_table, overwrite)

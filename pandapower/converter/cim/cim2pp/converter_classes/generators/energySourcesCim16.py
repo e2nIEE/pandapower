@@ -45,8 +45,8 @@ class EnergySourceCim16:
                                         on='EnergySchedulingType')
         eqssh_energy_sources = pd.merge(eqssh_energy_sources, self.cimConverter.bus_merge, how='left', on='rdfId')
         eqssh_energy_sources = eqssh_energy_sources.drop_duplicates(['rdfId'], keep='first')
-        sgen_type = dict({'WP': 'WP', 'Wind': 'WP', 'PV': 'PV', 'SolarPV': 'PV', 'BioGas': 'BioGas',
-                          'OtherRES': 'OtherRES', 'CHP': 'CHP'})  # todo move?
+        sgen_type = {'WP': 'WP', 'Wind': 'WP', 'PV': 'PV', 'SolarPV': 'PV', 'BioGas': 'BioGas',
+                     'OtherRES': 'OtherRES', 'CHP': 'CHP'}  # todo move?
         eqssh_energy_sources['type'] = eqssh_energy_sources['type'].map(sgen_type)
         eqssh_energy_sources['p_mw'] = -eqssh_energy_sources['activePower']
         eqssh_energy_sources['q_mvar'] = -eqssh_energy_sources['reactivePower']
@@ -56,9 +56,14 @@ class EnergySourceCim16:
         eqssh_energy_sources['scaling'] = 1.
         eqssh_energy_sources['current_source'] = True
         eqssh_energy_sources['generator_type'] = 'current_source'
-        if 'inService' in eqssh_energy_sources.columns:
-            eqssh_energy_sources['connected'] = (eqssh_energy_sources['connected']
-                                                 & eqssh_energy_sources['inService'])
+        eqssh_energy_sources['controllable'] = False
+        eqssh_energy_sources['reactive_capability_curve'] = False
+        if self.cimConverter.cim_version == '3.0':
+           eqssh_energy_sources['in_service'] = eqssh_energy_sources.connected & eqssh_energy_sources.inService
+        elif self.cimConverter.cim_version == 'ltds':
+           eqssh_energy_sources['in_service'] = eqssh_energy_sources.inService
+        else:
+           eqssh_energy_sources['in_service'] = eqssh_energy_sources.connected
         eqssh_energy_sources = eqssh_energy_sources.rename(columns={'rdfId_Terminal': sc['t'], 'rdfId': sc['o_id'],
-                                                                    'connected': 'in_service', 'index_bus': 'bus'})
+                                                                    'index_bus': 'bus'})
         return eqssh_energy_sources

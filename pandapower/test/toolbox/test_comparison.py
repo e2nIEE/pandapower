@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
 
+import pandas as pd
 import pytest
 
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
@@ -66,6 +67,15 @@ def test_nets_equal():
     assert c1 != c2
     assert nets_equal(net1, net2, exclude_elms=["controller"])
     assert not nets_equal(net1, net2)
+
+    # check geo
+    net1 = copy.deepcopy(original)
+    net2 = copy.deepcopy(original)
+    net1.bus["geo"] = pd.Series(index=net1.bus.index, data=[100] * len(net1.bus.index))
+    net2.bus["geo"] = pd.Series(index=net2.bus.index, data=[100] * len(net2.bus.index))
+    assert nets_equal(
+        net1, net2, assume_geojson_strings=False, exclude_elms=set(net.keys()) - {"bus"}
+    )
 
 
 if __name__ == '__main__':

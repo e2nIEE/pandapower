@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -141,8 +141,8 @@ def test_in_service_bool(net):
 
 def test_multiple_levels(net):
     TrafoController(net, 0, side="lv", element="trafo", level=1, tol=1e-6, in_service=True)
-    Controller(net, gid=2, level=[1, 2])
-    Controller(net, gid=2, level=[1, 2])
+    Controller(net, level=[1, 2])
+    Controller(net, level=[1, 2])
     level, order = get_controller_order(net, net.controller)
     # three levels with unspecific controller order => in order of appearance
     # assert order == [[0, 1], [1,2]]
@@ -190,8 +190,8 @@ def test_level_in_service(net):
 
 
 def test_matching_params(net):
-    c0 = DummyController(net)
-    c1 = DummyController(net, order=1, drop_same_existing_ctrl=True)
+    DummyController(net)
+    DummyController(net, order=1, drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([0, 1]))
     c2 = DummyController(net, drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([1, 2]))

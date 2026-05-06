@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -22,9 +22,8 @@ def _get_cases_path(filename=None):
 
 def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
     """
-    This function changes the current reference bus / buses, declared by net.ext_grid.bus towards \
-    the given 'ref_bus_idx'
-    If ext_grid_p is a list, it must be in the same order as net.ext_grid.index.
+    This function changes the current reference bus / buses, declared by net.ext_grid.bus towards the given
+    'ref_bus_idx'. If ext_grid_p is a list, it must be in the same order as net.ext_grid.index.
     """
     # cast ref_bus_idx and ext_grid_p as list
     if not isinstance(ref_bus_idx, list):
@@ -72,12 +71,12 @@ def case4gs(**kwargs):
     """
     This is the 4 bus example from J. J. Grainger and W. D. Stevenson, Power system analysis. \
     McGraw-Hill, 1994.  337-338. Its data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    `PYPOWER <https://pypi.org/project/PYPOWER/>`__.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case4gs
+    Returns:
+         Returns the required ieee network case4gs
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case4gs
          >>> net = case4gs()
     """
@@ -88,52 +87,52 @@ def case4gs(**kwargs):
 def case5(**kwargs):
     """
     This is the 5 bus example from F.Li and R.Bo, "Small Test Systems for Power System Economic \
-    Studies" Its data origin is `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    Studies" Its data origin is `MATPOWER <https://matpower.org/>`_.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case5
+    Returns:
+         Returns the required ieee network case5
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case5
          >>> net = case5()
     """
-    case5 = sorted_from_json(_get_cases_path("case5.json", **kwargs))
+    case5 = sorted_from_json(_get_cases_path("case5.json"), **kwargs)
     return case5
 
 
 def case6ww(**kwargs):
     """
     Calls the json file case6ww.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_. It represents the 6 bus example from  \
+    `PYPOWER <https://pypi.org/project/PYPOWER/>`__. It represents the 6 bus example from  \
     104, 112, 119, 123-124, 549 from A. J. Wood and B. F. Wollenberg, Power generation, operation, \
     and control. John Wiley & Sons, 2012..
 
-    OUTPUT:
-         **net** - Returns the required ieee network case6ww
+    Returns:
+         Returns the required ieee network case6ww
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case6ww
          >>> net = case6ww()
     """
-    case6ww = sorted_from_json(_get_cases_path("case6ww.json", **kwargs))
+    case6ww = sorted_from_json(_get_cases_path("case6ww.json"), **kwargs)
     return case6ww
 
 
 def case9(**kwargs):
     """
     Calls the json file case9.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    `PYPOWER <https://pypi.org/project/PYPOWER/>`__.
     This network was published in Anderson and Fouad's book 'Power System Control and Stability' \
     for the first time in 1980.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case9
+    Returns:
+         Returns the required ieee network case9
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case9
          >>> net = case9()
     """
-    case9 = sorted_from_json(_get_cases_path("case9.json", **kwargs))
+    case9 = sorted_from_json(_get_cases_path("case9.json"), **kwargs)
     # TODO: add converted net to the json and remove this conversion step.
     convert_geodata_to_geojson(case9)
     return case9
@@ -153,34 +152,34 @@ def case11_iwamoto(**kwargs):
     <https://ieeexplore.ieee.org/document/4111178/>`_\
     IEEE  IEEE Transactions on Power Apparatus and Systems, 1982.
 
-    OUTPUT:
-         **net** - Returns the required network case11_iwamoto
+    Returns:
+         Returns the required network case11_iwamoto
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case11_iwamoto
          >>> net = case11_iwamoto()
     """
-    case11 = sorted_from_json(_get_cases_path("case11_iwamoto.json", **kwargs))
+    case11 = sorted_from_json(_get_cases_path("case11_iwamoto.json"), **kwargs)
     return case11
 
 
 def case14(**kwargs):
     """
     Calls the json file case14.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    `PYPOWER <https://pypi.org/project/PYPOWER/>`__.
     This network was converted from IEEE Common Data Format (ieee14cdf.txt) on 20-Sep-2004 by
     cdf2matp, rev. 1.11, to matpower format and finally converted to pandapower format by
     pandapower.converter.from_ppc. The vn_kv was adapted considering the proposed voltage levels in
-    `Washington case 14 <http://www2.ee.washington.edu/research/pstca/pf14/ieee14cdf.txt>`_
+    `Washington case 14 <https://lamarr.ece.uw.edu/research/pstca/pf14/ieee14cdf.txt>`__
 
-    OUTPUT:
-         **net** - Returns the required ieee network case14
+    Returns:
+         Returns the required ieee network case14
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case14
          >>> net = case14()
     """
-    case14 = sorted_from_json(_get_cases_path("case14.json", **kwargs))
+    case14 = sorted_from_json(_get_cases_path("case14.json"), **kwargs)
     return case14
 
 
@@ -189,34 +188,34 @@ def case24_ieee_rts(**kwargs):
     The IEEE 24-bus reliability test system was developed by the IEEE reliability subcommittee \
     and published in 1979.
     Some more information about this network are given by `Illinois University case 24 \
-    <http://icseg.iti.illinois.edu/ieee-24-bus-system/>`_.
-    The data origin for this network data is `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
+    <https://icseg.iti.illinois.edu/ieee-24-bus-system/>`__.
+    The data origin for this network data is `PYPOWER <https://pypi.org/project/PYPOWER/>`__.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case24
+    Returns:
+         Returns the required ieee network case24
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.power_system_test_cases import case24_ieee_rts
         >>> net = case24_ieee_rts()
     """
-    case24 = sorted_from_json(_get_cases_path("case24_ieee_rts.json", **kwargs))
+    case24 = sorted_from_json(_get_cases_path("case24_ieee_rts.json"), **kwargs)
     return case24
 
 
 def case30(**kwargs):
     """
     This function calls the json file case30.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_. The PYPOWER data are derived from
+    `PYPOWER <https://pypi.org/project/PYPOWER/>`__. The PYPOWER data are derived from
     `Washington 30 Bus Dynamic Test Case <https://www2.ee.washington.edu/research/pstca/dyn30/pg_tcadyn30.htm>`_.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case30
+    Returns:
+         Returns the required ieee network case30
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case30
          >>> net = case30()
     """
-    case30 = sorted_from_json(_get_cases_path("case30.json", **kwargs))
+    case30 = sorted_from_json(_get_cases_path("case30.json"), **kwargs)
     # TODO: add converted net to the json and remove this conversion step.
     convert_geodata_to_geojson(case30)
     return case30
@@ -224,60 +223,60 @@ def case30(**kwargs):
 
 def case_ieee30(**kwargs):
     """
-    This function calls the json file case_ieee30.json which data origin is \
-    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_. The MATPOWER data are derived from
-    `Washington IEEE 30 bus Case <http://www2.ee.washington.edu/research/pstca/pf30/pg_tca30bus.htm>`_.
-    Additional information about this network are available at `Illinois University case 30 <http://icseg.iti.illinois.edu/ieee-30-bus-system/>`_.
+    This function calls the JSON file case_ieee30.json which data origin is `MATPOWER <https://matpower.org/>`__.
+    The MATPOWER data are derived from
+    `Washington IEEE 30 bus Case <https://lamarr.ece.uw.edu/research/pstca/pf30/pg_tca30bus.htm>`__.
+    Additional information about this network are available at
+    `Illinois University case 30 <https://icseg.iti.illinois.edu/ieee-30-bus-system/>`__.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case30
+    Returns:
+         Returns the required ieee network case30
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case_ieee30
          >>> net = case_ieee30()
     """
-    case_ieee30 = sorted_from_json(_get_cases_path("case_ieee30.json", **kwargs))
+    case_ieee30 = sorted_from_json(_get_cases_path("case_ieee30.json"), **kwargs)
     return case_ieee30
 
 
 def case33bw(**kwargs):
     """
-    Calls the json file case33bw.json which data is provided by \
-    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `M. Baran, F. Wu, Network reconfiguration in distribution systems \
-    for loss reduction and load balancing \
-    <http://ieeexplore.ieee.org/document/25627/>`_ IEEE Transactions on Power Delivery, 1989.
+    Calls the JSON file case33bw.json which data is provided by `MATPOWER <https://matpower.org/>`__.
+    The data origin is the paper
+    `M. Baran, F. Wu, "Network reconfiguration in distribution systems for loss reduction and load balancing"
+    <https://ieeexplore.ieee.org/document/25627>`__
+    IEEE Transactions on Power Delivery, 1989.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case33bw
+    Returns:
+         Returns the required ieee network case33bw
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.power_system_test_cases import case33bw
         >>> net = case33bw()
     """
-    case33bw = sorted_from_json(_get_cases_path("case33bw.json", **kwargs))
+    case33bw = sorted_from_json(_get_cases_path("case33bw.json"), **kwargs)
     return case33bw
 
 
 def case39(**kwargs):
     """
-    Calls the json file case39.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    This network was published the first time in G. Bills et al., On-line stability analysis \
-    study, RP 90-1, E. P. R. I. North American Rockwell Corporation, Edison Electric Institute, \
-    Ed. IEEE Press, Oct. 1970,. Some more information about this network are given by \
-    `Illinois University case 39 <http://icseg.iti.illinois.edu/ieee-39-bus-system/>`_.
-    Because the Pypower data origin proposes vn_kv=345 for all nodes the transformers connect \
+    Calls the JSON file case39.json which data origin is `PYPOWER <https://pypi.org/project/PYPOWER/>`__.
+    This network was published the first time in G. Bills et al., On-line stability analysis study, RP 90-1, E. P. R. I.
+    North American Rockwell Corporation, Edison Electric Institute, Ed. IEEE Press, Oct. 1970.
+    Some more information about this network are given by
+    `Illinois University case 39 <https://icseg.iti.illinois.edu/ieee-39-bus-system/>`__.
+    Because the Pypower data origin proposes vn_kv=345 for all nodes the transformers connect
     node of the same voltage level.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case39
+    Returns:
+         Returns the required ieee network case39
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case39
          >>> net = case39()
     """
-    case39 = sorted_from_json(_get_cases_path("case39.json", **kwargs))
+    case39 = sorted_from_json(_get_cases_path("case39.json"), **kwargs)
     # TODO: add converted net to the json and remove this conversion step.
     convert_geodata_to_geojson(case39)
     return case39
@@ -286,12 +285,12 @@ def case39(**kwargs):
 def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, vn_kv_area5=230,
            vn_kv_area6=161, **kwargs):
     """
-    This function provides the ieee case57 network with the data origin `PYPOWER case 57 \
-    <https:/pypi.python.org/pypi/PYPOWER>`_.
-    Some more information about this network are given by `Illinois University case 57 \
-    <http://icseg.iti.illinois.edu/ieee-57-bus-system/>`_.
-    Because the Pypower data origin proposes no vn_kv some assumption must be made. There are six \
-    areas with coinciding voltage level. These are:
+    This function provides the ieee case57 network with the data origin
+    `PYPOWER case 57 <https://pypi.org/project/PYPOWER/>`__.
+    Some more information about this network are given by
+    `Illinois University case 57 <https://icseg.iti.illinois.edu/ieee-57-bus-system/>`__.
+    Because the Pypower data origin proposes no vn_kv some assumption must be made. There are six areas with coinciding
+    voltage level. These are:
 
     - area 1 with coinciding voltage level comprises node 1-17
     - area 2 with coinciding voltage level comprises node 18-20
@@ -300,14 +299,14 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
     - area 5 with coinciding voltage level comprises node 41-43 + 56-57
     - area 6 with coinciding voltage level comprises node 52-55 + 26-29
 
-    OUTPUT:
-         **net** - Returns the required ieee network case57
+    Returns:
+         Returns the required ieee network case57
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.power_system_test_cases import case57
-        >>> net = pn.case57()
+        >>> net = case57()
     """
-    case57 = sorted_from_json(_get_cases_path("case57.json", **kwargs))
+    case57 = sorted_from_json(_get_cases_path("case57.json"), **kwargs)
     Idx_area1 = case57.bus[case57.bus.vn_kv == 110].index
     Idx_area2 = case57.bus[case57.bus.vn_kv == 120].index
     Idx_area3 = case57.bus[case57.bus.vn_kv == 125].index
@@ -325,43 +324,40 @@ def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, v
 
 def case89pegase(**kwargs):
     """
-    Calls the json file case89pegase.json which data is provided by \
-    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
-    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and \
-    PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, \
-    F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to overloads in very large \
-    power systems taking into account uncertainty, preventive, and corrective actions, \
-    IEEE Transactions on Power Systems, vol. 28, no. 4,  4909-4917, Nov 2013..
+    Calls the JSON file case89pegase.json which data is provided by `MATPOWER <https://matpower.org/>`__.
+    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER
+    and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`__,`2016 and S. Fliscounakis,
+    P. Panciatici, F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to overloads in very large
+    power systems taking into account uncertainty, preventive, and corrective actions,
+    IEEE Transactions on Power Systems, vol. 28, no. 4, 4909-4917, Nov 2013.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case89pegase
+    Returns:
+         Returns the required ieee network case89pegase
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case89pegase
          >>> net = case89pegase()
     """
-    case89pegase = sorted_from_json(_get_cases_path("case89pegase.json", **kwargs))
+    case89pegase = sorted_from_json(_get_cases_path("case89pegase.json"), **kwargs)
     return case89pegase
 
 
 def case118(**kwargs):
     """
-    Calls the json file case118.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    Some more information about this network are given by `Washington case 118 \
-    <http://www2.ee.washington.edu/research/pstca/pf118/pg_tca118bus.htm>`_ and \
-    `Illinois University case 118 <http://icseg.iti.illinois.edu/ieee-118-bus-system/>`_.
+    Calls the json file case118.json which data origin is `PYPOWER <https://pypi.org/project/PYPOWER/>`__.
+    Some more information about this network are given by
+    `Washington case 118 <https://lamarr.ece.uw.edu/research/pstca/pf118/pg_tca118bus.htm>`__ and
+    `Illinois University case 118 <https://icseg.iti.illinois.edu/ieee-118-bus-system/>`__.
     The PYPOWER case data are corrected at Vm of buses 68 and 116.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case118
+    Returns:
+         Returns the required ieee network case118
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case118
          >>> net = case118()
     """
-    case118 = sorted_from_json(_get_cases_path("case118.json", **kwargs))
+    case118 = sorted_from_json(_get_cases_path("case118.json"), **kwargs)
     # TODO: add converted net to the json and remove this conversion step.
     convert_geodata_to_geojson(case118)
     return case118
@@ -369,106 +365,100 @@ def case118(**kwargs):
 
 def case145(**kwargs):
     """
-    Calls the json file case145.json which data origin is \
-    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    Calls the JSON file case145.json which data origin is `MATPOWER <https://matpower.org/>`__.
     This data is converted by MATPOWER 5.1 using CDF2MPC on 18-May-2016 from 'dd50cdf.txt'.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case145
+    Returns:
+         Returns the required ieee network case145
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case145
          >>> net = case145()
     """
-    case145 = sorted_from_json(_get_cases_path("case145.json", **kwargs))
+    case145 = sorted_from_json(_get_cases_path("case145.json"), **kwargs)
     return case145
 
 
 def case_illinois200(**kwargs):
     """
-    This function calls the json file case_illinois200.json which data origin is \
-    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_. This network was published in \
-    A.B. Birchfield, T. Xu, K.M. Gegner, K.S. Shetye, T.J. Overbye, "Grid Structural Characteristics as Validation Criteria for Synthetic Networks," IEEE Transactions on Power Systems, 2017.
-    Some additional information about this network are available at `Illinois University Illinois 200 <http://icseg.iti.illinois.edu/illinois200/>`_.
+    This function calls the JSON file case_illinois200.json which data origin is `MATPOWER <https://matpower.org/>`__.
+    This network was published in A.B. Birchfield, T. Xu, K.M. Gegner, K.S. Shetye, T.J. Overbye,
+    "Grid Structural Characteristics as Validation Criteria for Synthetic Networks," IEEE Transactions on Power Systems,
+    2017. Some additional information about this network are available at
+    `Illinois University Illinois 200 <https://icseg.iti.illinois.edu/illinois200/>`__.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case30
+    Returns:
+         Returns the required ieee network case30
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case_illinois200
          >>> net = case_illinois200()
     """
-    case_illinois200 = sorted_from_json(_get_cases_path("case_illinois200.json", **kwargs))
+    case_illinois200 = sorted_from_json(_get_cases_path("case_illinois200.json"), **kwargs)
     return case_illinois200
 
 
 def case300(**kwargs):
     """
-    Calls the json file case300.json which data origin is \
-    `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_.
-    Some more information about this network are given by \
-    `Washington case 300 <http://www2.ee.washington.edu/research/pstca/pf300/pg_tca300bus.htm>`_ \
-    and `Illinois University case 300 <http://icseg.iti.illinois.edu/ieee-300-bus-system/>`_.
+    Calls the JSON file case300.json which data origin is `PYPOWER <https://pypi.org/project/PYPOWER/>`__.
+    Some more information about this network are given by
+    `Washington case 300 <https://lamarr.ece.uw.edu/research/pstca/pf300/pg_tca300bus.htm>`__
+    and `Illinois University case 300 <https://icseg.iti.illinois.edu/ieee-300-bus-system/>`__.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case300
+    Returns:
+         Returns the required ieee network case300
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case300
          >>> net = case300()
     """
-    case300 = sorted_from_json(_get_cases_path("case300.json", **kwargs))
+    case300 = sorted_from_json(_get_cases_path("case300.json"), **kwargs)
     return case300
 
 
 def case1354pegase(**kwargs):
     """
-    This grid represents a part of the European high voltage transmission network. The data is \
-    provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
-    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
-    <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
-    and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems \
-    taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
-    Power Systems, vol. 28, no. 4,  4909-4917, Nov 2013..
+    This grid represents a part of the European high voltage transmission network. The data is provided by
+    `MATPOWER <https://matpower.org/>`__. The data origin are the paper
+    `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE
+    snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`__,
+    2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, and L. Wehenkel, Contingency ranking with respect to
+    overloads in very large power systems taking into account uncertainty, preventive, and corrective actions, IEEE
+    Transactions on Power Systems, vol. 28, no. 4, 4909-4917, Nov 2013.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case1354pegase
+    Returns:
+         Returns the required ieee network case1354pegase
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case1354pegase
          >>> net = case1354pegase()
     """
-    case1354pegase = sorted_from_json(_get_cases_path("case1354pegase.json", **kwargs))
+    case1354pegase = sorted_from_json(_get_cases_path("case1354pegase.json"), **kwargs)
     return case1354pegase
 
 
 def case1888rte(ref_bus_idx=1246, **kwargs):
     """
-    This case accurately represents the size and complexity of French very high voltage and high \
-    voltage transmission network. The data is provided by `MATPOWER \
-    <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
-    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
-    <https://arxiv.org/abs/1603.01533>`_, 2016.
+    This case accurately represents the size and complexity of French very high voltage and high voltage transmission
+    network. The data is provided by `MATPOWER <https://matpower.org/>`__. The data origin is the paper
+    `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE
+    snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`__, 2016.
 
-    OPTIONAL:
+    Parameters:
+        ref_bus_idx: Since the MATPOWER case provides a reference bus without connected generator, because a distributed
+            slack is assumed, to convert the data to pandapower, another bus has been assumed as reference bus. Via
+            'ref_bus_idx' the User can choose a reference bus, which should have a generator connected to. Please be
+            aware that by changing the reference bus to another bus than the proposed default value, maybe a powerflow
+            does not converge any more!
 
-        **ref_bus_idx** - Since the MATPOWER case provides a reference bus without connected \
-            generator, because a distributed slack is assumed, to convert the data to pandapower, \
-            another bus has been assumed as reference bus. Via 'ref_bus_idx' the User can choose a \
-            reference bus, which should have a generator connected to. Please be aware that by \
-            changing the reference bus to another bus than the proposed default value, maybe a \
-            powerflow does not converge anymore!
+    Returns:
+         Returns the required ieee network case1888rte
 
-    OUTPUT:
-         **net** - Returns the required ieee network case1888rte
-
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case1888rte
          >>> net = case1888rte()
     """
-    case1888rte = sorted_from_json(_get_cases_path("case1888rte.json", **kwargs))
+    case1888rte = sorted_from_json(_get_cases_path("case1888rte.json"), **kwargs)
     case1888rte.ext_grid.loc[0, ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']] *= 2
 
     if ref_bus_idx != 1246:  # change reference bus
@@ -478,30 +468,26 @@ def case1888rte(ref_bus_idx=1246, **kwargs):
 
 def case2848rte(ref_bus_idx=271, **kwargs):
     """
-    This case accurately represents the size and complexity of French very high voltage and high \
-    voltage transmission network. The data is provided by \
-    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
-    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
-    <https://arxiv.org/abs/1603.01533>`_, 2016.
+    This case accurately represents the size and complexity of French very high voltage and high voltage transmission
+    network. The data is provided by `MATPOWER <https://matpower.org/>`__.
+    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER
+    and QCQP format: iTesla, RTE snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016.
 
-    OPTIONAL:
+    Parameters:
+        ref_bus_idx: Since the MATPOWER case provides a reference bus without connected generator, because a distributed
+            slack is assumed, to convert the data to pandapower, another bus has been assumed as reference bus. Via
+            'ref_bus_idx' the User can choose a reference bus, which should have a generator connected to. Please be
+            aware that by changing the reference bus to another bus than the proposed default value, maybe a powerflow
+            does not converge any more!
 
-        **ref_bus_idx** - Since the MATPOWER case provides a reference bus without connected \
-            generator, because a distributed slack is assumed, to convert the data to pandapower, \
-            another bus has been assumed as reference bus. Via 'ref_bus_idx' the User can choose a \
-            reference bus, which should have a generator connected to. Please be aware that by \
-            changing the reference bus to another bus than the proposed default value, maybe a \
-            powerflow does not converge anymore!
+    Returns:
+         Returns the required ieee network case2848rte
 
-    OUTPUT:
-         **net** - Returns the required ieee network case2848rte
-
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case2848rte
          >>> net = case2848rte()
     """
-    case2848rte = sorted_from_json(_get_cases_path("case2848rte.json", **kwargs))
+    case2848rte = sorted_from_json(_get_cases_path("case2848rte.json"), **kwargs)
     if ref_bus_idx != 271:  # change reference bus
         _change_ref_bus(case2848rte, ref_bus_idx, ext_grid_p=[44.01])
     return case2848rte
@@ -510,7 +496,7 @@ def case2848rte(ref_bus_idx=271, **kwargs):
 def case2869pegase(**kwargs):
     """
     This grid represents a part of the European high voltage transmission network. The data is \
-    provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    provided by `MATPOWER <https://matpower.org/>`__.
     The data origin i the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
     flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
     <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
@@ -518,14 +504,14 @@ def case2869pegase(**kwargs):
     taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
     Power Systems, vol. 28, no. 4,  4909-4917, Nov 2013..
 
-    OUTPUT:
-         **net** - Returns the required ieee network case2869pegase
+    Returns:
+         Returns the required ieee network case2869pegase
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case2869pegase
          >>> net = case2869pegase()
     """
-    case2869pegase = sorted_from_json(_get_cases_path("case2869pegase.json", **kwargs))
+    case2869pegase = sorted_from_json(_get_cases_path("case2869pegase.json"), **kwargs)
     return case2869pegase
 
 
@@ -533,16 +519,16 @@ def case3120sp(**kwargs):
     """
     This case represents the Polish 400, 220 and 110 kV networks during summer 2008 morning peak \
     conditions. The data was provided by Roman Korab <roman.korab@polsl.pl> and to pandapower \
-    converted from `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    converted from `MATPOWER <https://matpower.org/>`__.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case3120sp
+    Returns:
+         Returns the required ieee network case3120sp
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case3120sp
          >>> net = case3120sp()
     """
-    case3120sp = sorted_from_json(_get_cases_path("case3120sp.json", **kwargs))
+    case3120sp = sorted_from_json(_get_cases_path("case3120sp.json"), **kwargs)
     return case3120sp
 
 
@@ -550,28 +536,27 @@ def case6470rte(ref_bus_idx=5988, **kwargs):
     """
     This case accurately represents the size and complexity of French very high voltage and high \
     voltage transmission network. The data is provided by \
-    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    `MATPOWER <https://matpower.org/>`__.
     The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
     flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
     <https://arxiv.org/abs/1603.01533>`_, 2016.
 
-    OPTIONAL:
-
-        **ref_bus_idx** - Since the MATPOWER case provides a reference bus without connected \
+    Parameters:
+        ref_bus_idx: Since the MATPOWER case provides a reference bus without connected \
             generator, because a distributed slack is assumed, to convert the data to pandapower, \
             another bus has been assumed as reference bus. Via 'ref_bus_idx' the User can choose a \
             reference bus, which should have a generator connected to. Please be aware that by \
             changing the reference bus to another bus than the proposed default value, maybe a \
             powerflow does not converge anymore!
 
-    OUTPUT:
-         **net** - Returns the required ieee network case6470rte
+    Returns:
+         Returns the required ieee network case6470rte
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case6470rte
          >>> net = case6470rte()
     """
-    case6470rte = sorted_from_json(_get_cases_path("case6470rte.json", **kwargs))
+    case6470rte = sorted_from_json(_get_cases_path("case6470rte.json"), **kwargs)
     case6470rte.ext_grid.loc[0, ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']] *= 2
     if ref_bus_idx != 5988:  # change reference bus
         _change_ref_bus(case6470rte, ref_bus_idx, ext_grid_p=[-169.41])
@@ -582,14 +567,13 @@ def case6495rte(ref_bus_idx=None, **kwargs):
     """
     This case accurately represents the size and complexity of French very high voltage and high \
     voltage transmission network. The data is provided by \
-    `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
+    `MATPOWER <https://matpower.org/>`__.
     The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
     flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
     <https://arxiv.org/abs/1603.01533>`_, 2016.
 
-    OPTIONAL:
-
-        **ref_bus_idx** - Since the MATPOWER case provides a reference bus without connected \
+    Parameters:
+        ref_bus_idx: Since the MATPOWER case provides a reference bus without connected \
             generator, because a distributed slack is assumed, to convert the data to pandapower, \
             another buses (6077, 6161, 6305, 6306, 6307, 6308) has been assumed as reference bus. \
             Via 'ref_bus_idx' the User can choose a \
@@ -597,15 +581,15 @@ def case6495rte(ref_bus_idx=None, **kwargs):
             changing the reference bus to another bus than the proposed default value, maybe a \
             powerflow does not converge anymore!
 
-    OUTPUT:
-         **net** - Returns the required ieee network case6495rte
+    Returns:
+         Returns the required ieee network case6495rte
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case6495rte
          >>> net = case6495rte()
     """
     ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
-    case6495rte = sorted_from_json(_get_cases_path("case6495rte.json", **kwargs))
+    case6495rte = sorted_from_json(_get_cases_path("case6495rte.json"), **kwargs)
     if ref_bus_idx != [6077, 6161, 6305, 6306, 6307, 6308]:  # change reference bus
         _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[1382.35, 2894.13, 1498.32,
                                                               1498.32, 1493.11, 1493.12])
@@ -614,30 +598,26 @@ def case6495rte(ref_bus_idx=None, **kwargs):
 
 def case6515rte(ref_bus_idx=6171, **kwargs):
     """
-    This case accurately represents the size and complexity of French very high voltage and high \
-    voltage transmission network. The data is provided by `MATPOWER \
-    <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin is the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
-    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
-    <https://arxiv.org/abs/1603.01533>`_, 2016.
+    This case accurately represents the size and complexity of French very high voltage and high voltage transmission
+    network. The data is provided by `MATPOWER <https://matpower.org/>`__. The data origin is the paper
+    `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE
+    snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`__, 2016.
 
-    OPTIONAL:
-
-        **ref_bus_idx** - Since the MATPOWER case provides a reference bus without connected \
-            generator, because a distributed slack is assumed, to convert the data to pandapower, \
-            another bus has been assumed as reference bus. Via 'ref_bus_idx' the User can choose a \
-            reference bus, which should have a generator connected to. Please be aware that by \
-            changing the reference bus to another bus than the proposed default value, maybe a \
+    Parameters:
+        ref_bus_idx: Since the MATPOWER case provides a reference bus without connected generator, because a distributed
+            slack is assumed, to convert the data to pandapower, another bus has been assumed as reference bus. Via
+            'ref_bus_idx' the User can choose a reference bus, which should have a generator connected to. Please be
+            aware that by changing the reference bus to another bus than the proposed default value, maybe a \
             powerflow does not converge anymore!
 
-    OUTPUT:
-         **net** - Returns the required ieee network case6515rte
+    Returns:
+         Returns the required ieee network case6515rte
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case6515rte
          >>> net = case6515rte()
     """
-    case6515rte = sorted_from_json(_get_cases_path("case6515rte.json", **kwargs))
+    case6515rte = sorted_from_json(_get_cases_path("case6515rte.json"), **kwargs)
     if ref_bus_idx != 6171:  # change reference bus
         _change_ref_bus(case6515rte, ref_bus_idx, ext_grid_p=2850.78)
     return case6515rte
@@ -645,82 +625,78 @@ def case6515rte(ref_bus_idx=6171, **kwargs):
 
 def case9241pegase(**kwargs):
     """
-    This grid represents a part of the European high voltage transmission network. The data is \
-    provided by `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_.
-    The data origin are the paper `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power \
-    flow data in MATPOWER and QCQP format: iTesla, RTE snapshots, and PEGASE \
-    <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu, \
-    and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems \
-    taking into account uncertainty, preventive, and corrective actions, IEEE Transactions on \
-    Power Systems, vol. 28, no. 4,  4909-4917, Nov 2013..
+    This grid represents a part of the European high voltage transmission network. The data is provided by
+    `MATPOWER <https://matpower.org/>`__. The data origin are the paper
+    `C. Josz, S. Fliscounakis, J. Maenght, P. Panciatici, AC power flow data in MATPOWER and QCQP format: iTesla, RTE
+    snapshots, and PEGASE <https://arxiv.org/abs/1603.01533>`_, 2016 and S. Fliscounakis, P. Panciatici, F. Capitanescu,
+    and L. Wehenkel, Contingency ranking with respect to overloads in very large power systems taking into account
+    uncertainty, preventive, and corrective actions, IEEE Transactions on Power Systems, vol. 28, no. 4,  4909-4917,
+    Nov 2013.
 
-    OUTPUT:
-         **net** - Returns the required ieee network case9241pegase
+    Returns:
+         Returns the required ieee network case9241pegase
 
-    EXAMPLE:
-
+    Example:
          >>> from pandapower.networks.power_system_test_cases import case9241pegase
          >>> net = case9241pegase()
     """
-    case9241pegase = sorted_from_json(_get_cases_path("case9241pegase.json", **kwargs))
+    case9241pegase = sorted_from_json(_get_cases_path("case9241pegase.json"), **kwargs)
     return case9241pegase
 
 
 def GBreducednetwork(**kwargs):
     """
-    Calls the json file GBreducednetwork.json which data is provided by `W. A. Bukhsh, Ken \
-    McKinnon, Network data of real transmission networks, April 2013  \
-    <http://www.maths.ed.ac.uk/optenergy/NetworkData/reducedGB/>`__.
-    This data is a representative model of electricity transmission network in Great Britain (GB). \
+    Calls the JSON file GBreducednetwork.json which data is provided by
+    `W. A. Bukhsh, Ken McKinnon, Network data of real transmission networks, April 2013
+    <https://webhomes.maths.ed.ac.uk/OptEnergy/NetworkData/reducedGB/>`__.
+    This data is a representative model of electricity transmission network in Great Britain (GB).
     It was originally developed at the University of Strathclyde in 2010.
 
-    OUTPUT:
-         **net** - Returns the required ieee network GBreducednetwork
+    Returns:
+         Returns the required ieee network GBreducednetwork
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import GBreducednetwork
          >>> net = GBreducednetwork()
     """
-    GBreducednetwork = sorted_from_json(_get_cases_path("GBreducednetwork.json", **kwargs))
+    GBreducednetwork = sorted_from_json(_get_cases_path("GBreducednetwork.json"), **kwargs)
     return GBreducednetwork
 
 
 def GBnetwork(**kwargs):
     """
-    Calls the json file GBnetwork.json which data is provided by `W. A. Bukhsh, Ken McKinnon, \
-    Network data of real transmission networks, April 2013  \
-    <http://www.maths.ed.ac.uk/optenergy/NetworkData/fullGB/>`_.
-    This data represents detailed model of electricity transmission network of Great Britian (GB). \
-    It consists of 2224 nodes, 3207 branches and 394 generators. This data is obtained from \
-    publically available data on National grid website. The data was originally pointing out by \
-    Manolis Belivanis, University of Strathclyde.
+    Calls the JSON file GBnetwork.json which data is provided by
+    `W. A. Bukhsh, Ken McKinnon, Network data of real transmission networks, April 2013
+    <https://webhomes.maths.ed.ac.uk/OptEnergy/NetworkData/fullGB/>`__.
+    This data represents detailed model of electricity transmission network of Great Britian (GB).
+    It consists of 2224 nodes, 3207 branches and 394 generators. This data is obtained from publically available data on
+    National grid website. The data was originally pointing out by Manolis Belivanis, University of Strathclyde.
 
-    OUTPUT:
-         **net** - Returns the required ieee network GBreducednetwork
+    Returns:
+         Returns the required ieee network GBreducednetwork
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import GBnetwork
          >>> net = GBnetwork()
     """
-    GBnetwork = sorted_from_json(_get_cases_path("GBnetwork.json", **kwargs))
+    GBnetwork = sorted_from_json(_get_cases_path("GBnetwork.json"), **kwargs)
     return GBnetwork
 
 
 def iceland(**kwargs):
     """
-    Calls the json file iceland.json which data is provided by `W. A. Bukhsh, Ken McKinnon, Network \
-    data of real transmission networks, April 2013  \
-    <http://www.maths.ed.ac.uk/optenergy/NetworkData/iceland/>`__.
-    This data represents electricity transmission network of Iceland. It consists of 118 nodes, \
-    206 branches and 35 generators. It was originally developed in PSAT format by Patrick McNabb, \
-    Durham University in January 2011.
+    Calls the JSON file iceland.json which data is provided by
+    `W. A. Bukhsh, Ken McKinnon, Network data of real transmission networks, April 2013
+    <https://webhomes.maths.ed.ac.uk/OptEnergy/NetworkData/iceland/>`__.
+    This data represents electricity transmission network of Iceland. It consists of 118 nodes, 206 branches and 35
+    generators. It was originally developed in PSAT format by Patrick McNabb, Durham University in January 2011.
 
-    OUTPUT:
-         **net** - Returns the required ieee network iceland
+    Returns:
+         Returns the required ieee network iceland
 
-    EXAMPLE:
+    Example:
          >>> from pandapower.networks.power_system_test_cases import iceland
          >>> net = iceland()
     """
-    iceland = sorted_from_json(_get_cases_path("iceland.json", **kwargs))
+    iceland = sorted_from_json(_get_cases_path("iceland.json"), **kwargs)
     return iceland

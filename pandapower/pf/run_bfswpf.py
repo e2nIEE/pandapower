@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -21,7 +21,7 @@ from pandapower.pypower.newtonpf import _evaluate_Fx, _check_for_convergence
 from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pf.run_newton_raphson_pf import _get_Y_bus
 from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 
 def _make_bibc_bcbv(bus, branch, graph):
@@ -89,9 +89,8 @@ def _make_bibc_bcbv(bus, branch, graph):
 
         # #------ building BIBC and BCBV martrices ------
         # branches in trees
-        brchi = 0
         for brch in branches_ordered_bfs:
-            tree_down, predecs = csgraph.breadth_first_order(G_tree, brch[1], directed=True, return_predecessors=True)
+            tree_down, _ = csgraph.breadth_first_order(G_tree, brch[1], directed=True, return_predecessors=True)
             if len(tree_down) == 1:  # If at leaf
                 pass
             if brch in z_brch_dict:
@@ -105,7 +104,7 @@ def _make_bibc_bcbv(bus, branch, graph):
 
         # branches from loops
         for loop_i, brch_loop in enumerate(branches_loops):
-            path_lens, path_preds = csgraph.shortest_path(G_tree, directed=False,
+            _, path_preds = csgraph.shortest_path(G_tree, directed=False,
                                                           indices=brch_loop, return_predecessors=True)
             init, end = brch_loop
             loop = [end]
@@ -132,8 +131,6 @@ def _make_bibc_bcbv(bus, branch, graph):
                     data_BCBV.append(z_brch_dict[brch] * brch_direct)
                 else:
                     data_BCBV.append(z_brch_dict[brch[::-1]] * brch_direct)
-
-                brchi += 1
 
     # construction of the BIBC matrix
     # column indices correspond to buses: assuming root bus is always 0 after ordering indices are subtracted by 1
@@ -344,7 +341,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
         # updating injected currents
         Iinj = np.conj(Sbus / V) - Ysh * V
 
-    return V, converged
+    return V, converged, n_iter
 
 
 def _get_options(options):
@@ -366,13 +363,13 @@ def _run_bfswpf(ppci, options, **kwargs):
 
     :param ppci: matpower-style case data
     :param options: pf options
-    :return: results (pypower style), success (flag about PF convergence)
+    :return: ppci (dict)
     """
     time_start = perf_counter()  # starting pf calculation timing
 
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
-    enforce_q_lims, tolerance_mva, max_iteration, calculate_voltage_angles, numba = _get_options(options)
+    *_, calculate_voltage_angles, numba = _get_options(options)
 
     numba, makeYbus = _import_numba_extensions_if_flag_is_true(numba)
 
@@ -404,12 +401,12 @@ def _run_bfswpf(ppci, options, **kwargs):
     if any_trafo_shift:
         branch_noshift = branch.copy()
         branch_noshift[:, SHIFT] = 0
-        Ybus_noshift, Yf_noshift, _ = makeYbus(baseMVA, bus, branch_noshift)
+        Ybus_noshift, *_ = makeYbus(baseMVA, bus, branch_noshift)
     else:
         Ybus_noshift = Ybus.copy()
 
     # #-----  run the power flow  -----
-    V_final, success = _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus_noshift,
+    V_final, success, iterations = _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus_noshift,
                                Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets,
                                options, **kwargs)
 
@@ -441,13 +438,10 @@ def _run_bfswpf(ppci, options, **kwargs):
             V_final[buses_shifted_from_root] *= np.exp(1j * np.pi / 180 * shift_degree)
 
     # #----- output results to ppc ------
-    ppci["et"] = perf_counter() - time_start  # pf time end
+    et = perf_counter() - time_start  # pf time end
 
     bus, gen, branch = pfsoln(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V_final, ref, ref_gens)
-    # bus, gen, branch = pfsoln_bfsw(baseMVA, bus, gen, branch, V_final, ref, pv, pq, BIBC, ysh_f,ysh_t,Iinj, Sbus)
 
-    ppci["success"] = success
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et)
 
-    ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
-
-    return ppci, success
+    return ppci

@@ -22,9 +22,9 @@ Input Parameters
 
 .. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.15\linewidth}|p{0.40\linewidth}|
 .. csv-table:: 
-   :file: ext_grid_par.csv
-   :delim: ;
-   :widths: 15, 10, 15, 40
+    :file: ext_grid_par.csv
+    :delim: ;
+    :widths: 15, 10, 15, 40
 
 .. |br| raw:: html
 
@@ -38,20 +38,15 @@ Electric Model
 The external grid is modelled as a voltage source in the power flow calculation, which means the node the grid is connected to is treated as a slack node:
 
 .. image:: ext_grid.png
-	:width: 12em
-	:alt: alternate Text
-	:align: center
+    :width: 12em
+    :alt: alternate Text
+    :align: center
 
 with:
     
 .. math::
-   :nowrap:
-   
-   \begin{align*}
     \underline{v}_{bus} &= vm\_pu \cdot e^{j \cdot \theta} \\
-   \theta &= shift\_degree \cdot \frac{\pi}{180}
-   \end{align*}
-
+    \theta &= \mathit{shift}\_degree \cdot \frac{\pi}{180}
 
 ** Unbalanced Load Flow / Single phase short circuit **
 
@@ -59,27 +54,19 @@ The external grid is modelled as a voltage source for positive sequence model, w
 For zero sequence and negative sequence external grid impedance is calculated:
 
 .. image:: ext_grid_3ph.png
-	:width: 22em
-	:alt: alternate Text
-	:align: center
+    :width: 22em
+    :alt: alternate Text
+    :align: center
 
 .. math::
-   :nowrap:
-   
-   \begin{align*}
     \underline{v}_{1} &= vm\_pu \cdot e^{j \cdot \theta} \\
-   \theta &= shift\_degree \cdot \frac{\pi}{180}
-   \end{align*}
-   
-   \begin{align*}
+    \theta &= \mathit{shift}\_degree \cdot \frac{\pi}{180}
+
     \underline{Z}_{0} &= c \cdot \frac{(vm \cdot e^{j \cdot \theta})^2}{S_{sc_mva}} \\
-   \theta &= shift\_degree \cdot \frac{\pi}{180}
-   \end{align*}
-   
-   \begin{align*}
+    \theta &= \mathit{shift}\_degree \cdot \frac{\pi}{180}
+
     \underline{v}_{bus} &= vm\_pu \cdot e^{j \cdot \theta} \\
-   \theta &= shift\_degree \cdot \frac{\pi}{180}
-   \end{align*}
+    \theta &= \mathit{shift}\_degree \cdot \frac{\pi}{180}
    
 
 Result Parameters
@@ -95,12 +82,8 @@ Result Parameters
 Active and reactive power feed-in / consumption at the slack node is a result of the power flow:
    
 .. math::
-   :nowrap:
-   
-   \begin{align*}
     p\_mw &= P_{eg} \\
     q\_mvar &= Q_{eg}
-    \end{align*}
 
 *net.res_ext_grid_3ph*
 
@@ -113,9 +96,5 @@ Active and reactive power feed-in / consumption at the slack node is a result of
 Active and reactive power feed-in / consumption at the slack node is a result of the power flow:
    
 .. math::
-   :nowrap:
-   
-   \begin{align*}
     p\_mw_{phase} &= P_{eg_{phase}} \\
     q\_mvar_{phase} &= Q_{eg_{phase}}
-    \end{align*}

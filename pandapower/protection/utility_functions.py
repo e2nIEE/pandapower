@@ -1,10 +1,7 @@
 # This function includes various function used for general functionalities such as plotting, grid search
 
 import copy
-from typing import List, Tuple
-
-from matplotlib.collections import PatchCollection
-from typing_extensions import deprecated
+from typing import TYPE_CHECKING
 
 import geojson
 import math
@@ -32,6 +29,7 @@ logger = log.getLogger(__name__)
 
 try:
     import matplotlib.pyplot as plt
+    from matplotlib.collections import PatchCollection
 
     MATPLOTLIB_INSTALLED = True
 except ImportError:
@@ -45,10 +43,14 @@ except ImportError:
     MPLCURSORS_INSTALLED = False
     logger.info('could not import mplcursors')
 
+if TYPE_CHECKING:
+    from matplotlib.collections import PatchCollection
+
+
 warnings.filterwarnings('ignore')
 
 
-def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> List[Tuple[float, float]]:
+def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> list[tuple[float, float]]:
     try:
         bl = net.bus.dropna(subset=["geo"]).loc[bus_idx, 'geo']
         if isinstance(bl, pd.Series):
@@ -60,7 +62,7 @@ def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> List[Tupl
     return []
 
 
-def _get_coords_from_line_idx(net: pandapowerNet, line_idx: pd.Index) -> List[Tuple[float, float]]:
+def _get_coords_from_line_idx(net: pandapowerNet, line_idx: pd.Index) -> list[tuple[float, float]]:
     try:
         ll = net.line.dropna(subset=["geo"]).loc[line_idx, 'geo']
         if isinstance(ll, pd.Series):
@@ -234,25 +236,25 @@ def fuse_bus_switches(net, bus_switches):
     return net
 
 
-def get_fault_annotation(net: pandapowerNet, fault_current: float = .0, font_size_bus: float = 0.06) -> PatchCollection:
+def get_fault_annotation(net: pandapowerNet, fault_current: float = .0, font_size_bus: float = 0.06) -> "PatchCollection":
     max_bus_idx = max(net.bus.dropna(subset=['geo']).index)
     fault_text = f'\tI_sc = {fault_current}kA'
 
-    fault_geo_x_y: Tuple[float, float] = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
+    fault_geo_x_y: tuple[float, float] = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
     fault_geo_x_y = (fault_geo_x_y[0], fault_geo_x_y[1] - font_size_bus + 0.02)
 
     # list of new geo data for line (half position of switch)
     fault_annotate: PatchCollection = create_annotation_collection(
         texts=[fault_text],
         coords=[fault_geo_x_y],
-        size=font_size_bus,
+        size=int(font_size_bus),
         prop=None
     )
 
     return fault_annotate
 
 
-def get_sc_location_annotation(net: pandapowerNet, sc_location: float, font_size_bus: float = 0.06) -> PatchCollection:
+def get_sc_location_annotation(net: pandapowerNet, sc_location: float, font_size_bus: float = 0.06) -> "PatchCollection":
     max_bus_idx = max(net.bus.dropna(subset=['geo']).index)
     sc_text = f'\tsc_location: {sc_location * 100}%'
 
@@ -260,7 +262,7 @@ def get_sc_location_annotation(net: pandapowerNet, sc_location: float, font_size
     sc_geo_x_y = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
     sc_geo_x_y = (sc_geo_x_y[0], sc_geo_x_y[1] + 0.02)
 
-    sc_annotate: PatchCollection = create_annotation_collection(
+    sc_annotate: "PatchCollection" = create_annotation_collection(
         texts=[sc_text],
         coords=[sc_geo_x_y],
         size=font_size_bus,
@@ -374,7 +376,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
                                                               respect_in_service=False)
 
             bus_list = list(get_bus_index)
-            bus_coords: List[Tuple[float, float]] = [
+            bus_coords: list[tuple[float, float]] = [
                 geojson.utils.coords(geojson.loads(net.bus.geo.at[bus])) for bus in bus_list
             ]
 
@@ -636,19 +638,6 @@ def calc_line_intersection(m1, b1, m2, b2):
     return xi, yi
 
 
-# get connected lines using bus id
-@deprecated("Use pandapower.get_connected_elements(net, 'line', bus_idx) instead!")
-def get_connected_lines(net, bus_idx):
-    return get_connected_elements(net, "line", bus_idx)
-
-
-# Returns the index of the second bus an element is connected to, given a
-# first one. E.g. the from_bus given the to_bus of a line.
-@deprecated("Use pandapower.next_bus(net, bus, element_id instead!")
-def next_buses(net, bus, element_id):
-    return next_bus(net, bus, element_id)
-
-
 # get the connected bus listr from start to end bus
 def source_to_end_path(net, start_bus, bus_list, bus_order):
     connected_lines = get_connected_elements(net, 'line', start_bus)
@@ -668,36 +657,6 @@ def source_to_end_path(net, start_bus, bus_list, bus_order):
         bus_list.append(bus_order)
 
     return bus_list
-
-
-# get connected switches with bus
-@deprecated("Use pandapower.get_connected_switches(net, buses, consider='l', status='closed') instead!")
-def get_connected_switches(net, buses):
-    return get_connected_switches(net, buses, consider='l', status="closed")
-
-
-# get connected buses with a oven element
-@deprecated(
-    "Use pandapower.get_connected_buses_at_element(net, element, element_type='l', respect_in_service=False) instead!"
-)
-def connected_bus_in_line(net, element):
-    return get_connected_buses_at_element(net, element, element_type='l', respect_in_service=False)
-
-
-@deprecated("Use networkx topological search instead! See pandapower docs.")
-def get_line_path(net, bus_path, sc_line_id=0):
-    """line path from bus path """
-    line_path = []
-    for i in range(len(bus_path) - 1):
-        bus1 = bus_path[i]
-        bus2 = bus_path[i + 1]
-
-        # line=net.line [(net.line.from_bus==bus1) & (net.line.to_bus==bus2)].index.item()
-
-        line_path.extend(net.line[((net.line.from_bus == bus1) & (net.line.to_bus == bus2)) | (
-                (net.line.from_bus == bus2) & (net.line.to_bus == bus1))].index.to_list())
-
-    return line_path
 
 
 def switch_geodatas(net, size, distance_to_bus):
@@ -721,17 +680,17 @@ def switch_geodatas(net, size, distance_to_bus):
 
         pos_sb = _get_coords_from_bus_idx(net, sb)
         if len(pos_sb) > 1:
-            ValueError(f'Bus {sb} has multiple geodata entries: {pos_sb}')
+            raise ValueError(f'Bus {sb} has multiple geodata entries: {pos_sb}')
         if len(pos_sb) == 0:
-            ValueError(f'Bus {sb} has no geodata entry.')
+            raise ValueError(f'Bus {sb} has no geodata entry.')
         pos_sb = pos_sb[0]
         pos_tb = np.zeros(2)
 
         pos_tb = _get_coords_from_bus_idx(net, target_bus)
-        if len(pos_sb) > 1:
-            ValueError(f'Bus {sb} has multiple geodata entries: {pos_sb}')
-        if len(pos_sb) == 0:
-            ValueError(f'Bus {sb} has no geodata entry.')
+        if len(pos_tb) > 1:
+            raise ValueError(f'Bus {target_bus} has multiple geodata entries: {pos_tb}')
+        if len(pos_tb) == 0:
+            raise ValueError(f'Bus {target_bus} has no geodata entry.')
         pos_tb = pos_tb[0]
 
         # position of switch symbol
@@ -846,7 +805,7 @@ def bus_path_from_to_bus(net, radial_start_bus, loop_start_bus, end_bus):
 def get_switches_in_path(net, paths):
     """function calculate the switching times from the  bus path"""
 
-    lines_in_path: List[List] = []
+    lines_in_path: list[list] = []
 
     for path in paths:
         lines_at_path: set = set()

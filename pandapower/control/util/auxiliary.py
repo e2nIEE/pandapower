@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import time
+from typing import overload
+from typing_extensions import deprecated
 
 import numpy as np
 import pandas as pd
 from pandas import Index
 
 from pandapower.auxiliary import soft_dependency_error, ensure_iterability
-from pandapower.control.util.characteristic import SplineCharacteristic
+from pandapower.control.util.characteristic import SplineCharacteristic, Characteristic
 
 try:
     import matplotlib.pyplot as plt
@@ -102,21 +104,15 @@ def _controller_attributes_query(controller, parameters):
 def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
     """ Returns indices of searched controllers. Parameters can specify the search query.
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network
+    Parameters:
+        net (pandapowerNet): The pandapower network
+        controller_type (controller object or string name of controller object):
+        parameters (dict): Dict of parameter names, which are in the controller object or net.controller DataFrame
+        idx (list): list of indices in net.controller to be searched for. If list is empty all indices are considered.
 
-    OPTIONAL:
-        **controller_type** (controller object or string name of controller object)
-
-        **parameters** (None, dict) - Dict of parameter names, which are in the controller object or
-            net.controller DataFrame
-
-        **idx** ([], list) - list of indices in net.controller to be searched for. If list is empty
-            all indices are considered.
-
-    OUTPUT:
-        **idx** (list) - index / indices of controllers in net.controller which are in idx and
-            matches given ctrl_type or parameters
+    Returns:
+        idx (list): index / indices of controllers in net.controller which are in idx and matches given ctrl_type or
+            parameters
     """
     #    logger.debug(ctrl_type, parameters, idx)
     idx = idx if len(idx) else net.controller.index
@@ -139,22 +135,25 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
     return idx
 
 
-def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None,
-                                       **kwargs):
+@overload
+def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None): ...
+
+@overload
+@deprecated("Keyword args are no longer supported for `log_same_type_existing_controllers`")
+def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None, **kwargs):...
+
+def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None, **kwargs):
     """
     Logs same type controllers, if a controller is created.
-    INPUT:
-        **net** - pandapower net
 
-        **this_ctrl_type** (controller object or string name of controller object)
+    Parameters:
+        net: pandapower net
+        this_ctrl_type (controller object or string name of controller object):
+        index (int): index in net.controller of the controller to be created
+        matching_params (dict): parameters, which must be equal if same type controller should be logged.
 
-    OPTIONAL:
-        **index** (int) - index in net.controller of the controller to be created
-
-        **matching_params** (dict) - parameters, which must be equal if same type controller should
-            be logged.
-
-        ****kwargs** - unused arguments, given to avoid unexpected input arguments
+    Keyword Arguments:
+        *deprecated*: unused arguments, given to avoid unexpected input arguments
     """
     index = str(index)
     if isinstance(matching_params, dict):
@@ -254,14 +253,14 @@ def create_trafo_characteristic_object(net):
             x_points = [characteristic_df['step'].to_list()]
             y_points = {col: [characteristic_df[col].tolist()] for col in variables_filtered}
             _create_trafo_characteristics(net, "trafo3w", [trafo_id], variables_filtered,
-                                         x_points, y_points)
+                                          x_points, y_points)
         logger.info(f"Finished creating tap dependent characteristic objects for 3w-trafos in "
                     f"{time.time() - time_start}.")
     else:
         logger.info("trafo_characteristic_table has no values for 3w-trafos - no characteristic objects created.")
 
     # pivot spline characteristic objects to have one row per trafo/trafo3w
-    net["trafo_characteristic_spline"] = net["trafo_characteristic_spline_temp"].applymap(
+    net["trafo_characteristic_spline"] = net["trafo_characteristic_spline_temp"].map(
         lambda x: net["trafo_characteristic_spline"].loc[x, 'object'] if pd.notna(x) else pd.NA).sort_index()
     # create id_characteristic column
     net["trafo_characteristic_spline"]["id_characteristic"] = net["trafo_characteristic_spline"].index
@@ -337,7 +336,7 @@ def create_shunt_characteristic_object(net):
         logger.info("shunt_characteristic_table is empty - no characteristic objects created.")
 
     # pivot spline characteristic objects to have one row per shunt
-    net["shunt_characteristic_spline"] = net["shunt_characteristic_spline_temp"].applymap(
+    net["shunt_characteristic_spline"] = net["shunt_characteristic_spline_temp"].map(
         lambda x: net["shunt_characteristic_spline"].loc[x, 'object'] if pd.notna(x) else pd.NA).sort_index()
     # create id_characteristic column
     net["shunt_characteristic_spline"]["id_characteristic"] = net["shunt_characteristic_spline"].index
@@ -383,3 +382,155 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
             idx = net["shunt"].at[tid, "id_characteristic_spline"]
             # save the index of the new spline characteristic object in the temp table
             net["shunt_characteristic_spline_temp"].at[idx, col] = s.index
+
+
+def _set_reactive_capability_curve_flag(net, element):
+    if element not in ["gen", "sgen"]:
+        raise UserWarning(f"The given {element} type is not valid for setting curve dependency table flag. "
+                          f"Please give gen or sgen as an argument of the function")
+    # Quick checks for element table and required columns
+    if (len(net[element]) == 0 or
+            not {"id_q_capability_characteristic", "reactive_capability_curve", "curve_style"}.issubset(net[element].columns)
+            or (not net[element]['id_q_capability_characteristic'].notna().any() and
+                not net[element]['reactive_capability_curve'].any()) and not net[element]['curve_style'].any()):
+        logger.info(f"No {element} with Q capability curve table found.")
+    else:
+        net[element]['reactive_capability_curve'] = (
+                net[element]['id_q_capability_characteristic'].notna() &
+                (net[element]['id_q_capability_characteristic'] >= 0) &
+                net[element]['curve_style'].isin(["straightLineYValues", "constantYValue"])
+        ).astype(bool)
+
+
+def create_q_capability_characteristics_object(net):
+    # check if element_characteristic_spline table already exists & if so, delete & re-create
+    if "q_capability_characteristic" in net:
+        del net["q_capability_characteristic"]
+
+    # create characteristics
+    if "q_capability_curve_table" in net.keys() and net['q_capability_curve_table'].index.size > 0:
+        time_start = time.time()
+
+        # Set flag reactive_capability_curve
+        _set_reactive_capability_curve_flag(net, "gen")
+        _set_reactive_capability_curve_flag(net, "sgen")
+
+        # Create Q capability curve characteristics dataframe
+        net["q_capability_characteristic"] = pd.DataFrame({
+            "id_q_capability_curve": pd.Series(dtype="Int64"),
+            "q_min_characteristic": pd.Series(dtype="object"),
+            "q_max_characteristic": pd.Series(dtype="object"),
+        })
+
+        net["q_capability_characteristic_temp"] = pd.DataFrame()
+        characteristic_df_temp = net['q_capability_curve_table']
+        mydata_grouped = characteristic_df_temp.groupby('id_q_capability_curve')
+        net["q_capability_characteristic"]["id_q_capability_curve"] = mydata_grouped.size().index
+
+        # Prepare lists
+        element_ids = []
+        q_min_indices = []
+        q_max_indices = []
+
+        # Iterate directly over grouped data
+        for element_id, group_data in mydata_grouped:
+            p_mw_values = np.hstack(group_data['p_mw'])
+            q_min_values = np.hstack(group_data['q_min_mvar'])
+            q_max_values = np.hstack(group_data['q_max_mvar'])
+
+            # Compute Characteristic indices
+            q_min_index = Characteristic(
+                net, p_mw_values, q_min_values, table="q_capability_characteristic_temp").index
+            q_max_index = Characteristic(
+                net, p_mw_values, q_max_values, table="q_capability_characteristic_temp").index
+
+            # Collect results
+            element_ids.append(element_id)
+            q_min_indices.append(q_min_index)
+            q_max_indices.append(q_max_index)
+            logger.debug("Adding characteristic objects for id_q_capability_curve %d" % element_id)
+
+        characteristic_df = pd.DataFrame({
+            "id_q_capability_curve": element_ids,
+            "q_min_characteristic": q_min_indices,
+            "q_max_characteristic": q_max_indices,
+        }).set_index("id_q_capability_curve")
+
+        net["q_capability_characteristic"] = net[
+            "q_capability_characteristic"].combine_first(characteristic_df)
+
+        # Extract the temporary table containing the objects
+        temp_table = net["q_capability_characteristic_temp"]
+
+        # Map the indices in `q_min_index` and `q_max_index` to the corresponding objects in the temporary table
+        if not temp_table.empty:
+            object_map = temp_table["object"]  # Cache the mapping for efficiency
+            net["q_capability_characteristic"]["q_min_characteristic"] = net[
+                "q_capability_characteristic"]["q_min_characteristic"].map(object_map)
+            net["q_capability_characteristic"]["q_max_characteristic"] = net[
+                "q_capability_characteristic"]["q_max_characteristic"].map(object_map)
+        logger.debug(f"Finished creating p dependent q characteristic objects for capability curve in "
+                    f"{time.time() - time_start}.")
+        del net["q_capability_characteristic_temp"]
+
+    else:
+        logger.debug("q_capability_curve_table is empty - no characteristic objects created.")
+
+def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
+    """
+    Calculates the minimum and maximum reactive power (q_mvar) for a given element ('gen' or 'sgen') 
+    using its Q capability characteristic curve.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower network containing the element and characteristic tables.
+    element : str
+        The type of element, either 'gen' or 'sgen'.
+    element_index : int or iterable
+        The index or indices of the element(s) for which to calculate min and max q_mvar.
+
+    Returns
+    -------
+    qmin : numpy.ndarray
+        Array of minimum reactive power values for the specified element(s).
+    qmax : numpy.ndarray
+        Array of maximum reactive power values for the specified element(s).
+    """
+    if element not in ["gen", "sgen", "ext_grid"]:
+        logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
+                       f"of the {element}. Please give gen or sgen as an argument of the function")
+        return
+
+    if len(net[element]) == 0:
+        logger.warning(f"No. of {element} elements is zero.")
+        return [], []
+
+    if 'reactive_capability_curve' in net[element].columns:
+        element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
+
+        q_table_ids = element_data['id_q_capability_characteristic']
+        p_mw_values = element_data['p_mw']
+
+        # Retrieve the q_max and q_min characteristic functions as vectorized callables
+        q_max_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_max_characteristic']
+        q_min_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_min_characteristic']
+
+        # Vectorized function application using NumPy
+        calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
+        calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
+
+        if np.any(pd.isna(calc_q_min)) or np.any(pd.isna(calc_q_max)):
+            logger.warning(f"The reactive_capability_curve of {element} is True, but the relevant "
+                           f"characteristic value is None. So default Q limit value has been used in the load flow.")
+
+        curve_q = net[element][["min_q_mvar", "max_q_mvar"]]
+        curve_q.loc[element_data.index] = np.column_stack((calc_q_min, calc_q_max))
+        qmin = curve_q.loc[element_index, "min_q_mvar"]
+        qmax = curve_q.loc[element_index, "max_q_mvar"]
+    else:
+        logger.info(f"reactive_capability_curve is missing in {element} table, assuming +- np.inf as limits")
+        qmin = [-np.inf]*len(element_index)
+        qmax = [np.inf]*len(element_index)
+
+    return qmin, qmax

@@ -29,7 +29,7 @@ class EquivalentBranchesCim16:
                     (eq_eb.index.size, time.time() - time_start)))
 
     def _prepare_equivalent_branches_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim.keys():
+        if 'sc' in self.cimConverter.cim:
             eqb = self.cimConverter.merge_eq_sc_profile('EquivalentBranch')
         else:
             eqb = self.cimConverter.cim['eq']['EquivalentBranch']
@@ -111,7 +111,14 @@ class EquivalentBranchesCim16:
         eqb['bf_pu'] = 0.
         eqb['gt_pu'] = 0.
         eqb['bt_pu'] = 0.
-        eqb['in_service'] = eqb.connected & eqb.connected2
+        if self.cimConverter.cim_version == '3.0':
+           eqb['in_service'] = eqb.connected & eqb.connected2
+        elif self.cimConverter.cim_version == 'ltds':
+            mapping = self.cimConverter.cim['ssh']['Equipment'][['rdfId', 'inService']]
+            mapping = mapping.set_index('rdfId').to_dict()['inService']
+            eqb['in_service'] = eqb['rdfId'].map(mapping)
+        else:
+           eqb['in_service'] = eqb.connected & eqb.connected2
         eqb = eqb.rename(columns={'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'], 'rdfId': sc['o_id'],
                                   'index_bus': 'from_bus', 'index_bus2': 'to_bus'})
         return eqb
