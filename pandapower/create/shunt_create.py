@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network_structure import get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -30,60 +31,47 @@ def create_shunt(
     net: pandapowerNet,
     bus: Int,
     q_mvar: float,
-    p_mw: float = 0.0,
+    p_mw: float = get_default_value("shunt", "p_mw"),
     vn_kv: float | None = None,
-    step: int = 1,
-    max_step: int = 1,
+    step: int = get_default_value("shunt", "step"),
+    max_step: int = get_default_value("shunt", "max_step"),
     name: str | None = None,
-    step_dependency_table: bool = False,
+    step_dependency_table: bool = get_default_value("shunt", "step_dependency_table"),
     id_characteristic_table: int | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("shunt", "in_service"),
     index: Int | None = None,
     **kwargs,
 ) -> Int:
     """
     Creates a shunt element.
 
-    INPUT:
-        **net** (pandapowerNet) - the pandapower network in which the element is created
+    Parameters:
+        net: the pandapower network in which the element is created
+        bus: index of the bus the shunt is connected to
+        p_mw: shunt active power in MW at v = 1.0 p.u. per step
+        q_mvar: shunt reactive power in MVAr at v = 1.0 p.u. per step
+        vn_kv: rated voltage of the shunt. Defaults to rated voltage of connected bus, since this value is mandatory for
+            powerflow calculations. If it is set to NaN it will be replaced by the bus vn_kv during power flow
+        step: step of shunt with which power values are multiplied
+        max_step: maximum allowed step of shunt
+        name: element name
+        step_dependency_table: True if shunt parameters (p_mw, q_mvar) must be adjusted dependent on the step of the
+            shunt. Requires the additional column "id_characteristic_table". The function
+            pandapower.control.shunt_characteristic_table_diagnostic can be used for sanity checks. The function
+            pandapower.control.create_shunt_characteristic_object can be used to create SplineCharacteristic objects in
+            the net.shunt_characteristic_spline table and add the additional column "id_characteristic_spline" to set up
+            the reference to the spline characteristics.
+        id_characteristic_table: references the index of the characteristic from the lookup table
+            net.shunt_characteristic_table
+        in_service: True for in_service or False for out of service
+        index: force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
 
-        **bus** (int) - index of the bus the shunt is connected to
+    Returns:
+        index: the unique ID of the created shunt
 
-        **p_mw** (float) - shunt active power in MW at v = 1.0 p.u. per step
-
-        **q_mvar** (float) - shunt reactive power in MVAr at v = 1.0 p.u. per step
-
-    OPTIONAL:
-        **vn_kv** (float, None) - rated voltage of the shunt. Defaults to rated voltage of connected bus, since this \
-            value is mandatory for powerflow calculations. If it is set to NaN it will be replaced by the bus vn_kv \
-            during power flow
-
-        **step** (int, 1) - step of shunt with which power values are multiplied
-
-        **max_step** (int, 1) - maximum allowed step of shunt
-
-        **name** (str, None) - element name
-
-        **step_dependency_table** (boolean, False) - True if shunt parameters (p_mw, q_mvar) must be adjusted \
-            dependent on the step of the shunt. Requires the additional column "id_characteristic_table". \
-            The function pandapower.control.shunt_characteristic_table_diagnostic can be used for sanity checks. \
-            The function pandapower.control.create_shunt_characteristic_object can be used to create \
-            SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
-            "id_characteristic_spline" to set up the reference to the spline characteristics.
-
-        **id_characteristic_table** (int, None) - references the index of the characteristic from the lookup table \
-                                                 net.shunt_characteristic_table
-
-        **in_service** (boolean, True) - True for in_service or False for out of service
-
-        **index** (int, None) - force a specified ID if it is available. If None, the index one higher than the \
-                                highest already existing index is selected.
-
-    OUTPUT:
-        **index** (int) - the unique ID of the created shunt
-
-    EXAMPLE:
-        create_shunt(net, 0, 20)
+    Example:
+        >>> create_shunt(net, 0, 20)
     """
     _check_element(net, bus)
 
@@ -107,7 +95,7 @@ def create_shunt(
     }
     _set_entries(net, "shunt", index, entries=entries)
 
-    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "shunt", dtype="Int64")
+    _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "shunt")
 
     return index
 
@@ -116,60 +104,47 @@ def create_shunts(
     net: pandapowerNet,
     buses: Sequence,
     q_mvar: float | Iterable[float],
-    p_mw: float | Iterable[float] = 0.0,
+    p_mw: float | Iterable[float] = get_default_value("shunt", "p_mw"),
     vn_kv: float | Iterable[float] | None = None,
-    step: int | Iterable[int] = 1,
-    max_step: int | Iterable[int] = 1,
+    step: int | Iterable[int] = get_default_value("shunt", "step"),
+    max_step: int | Iterable[int] = get_default_value("shunt", "max_step"),
     name: Iterable[str] | None = None,
-    step_dependency_table: bool | Iterable[bool] = False,
+    step_dependency_table: bool | Iterable[bool] = get_default_value("shunt", "step_dependency_table"),
     id_characteristic_table: int | Iterable[int] | None = None,
-    in_service: bool | Iterable[bool] = True,
+    in_service: bool | Iterable[bool] = get_default_value("shunt", "in_service"),
     index=None,
     **kwargs,
 ) -> npt.NDArray[np.array]:
     """
     Creates a number of shunt elements.
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters:
+        net: The pandapower network in which the element is created
+        buses: bus numbers of buses to which the shunts should be connected to
+        p_mw: shunts' active power in MW at v = 1.0 p.u.
+        q_mvar: shunts' reactive power in MVAr at v = 1.0 p.u.
+        vn_kv: rated voltage of the shunts. Defaults to rated voltage of connected bus, since this value is mandatory
+            for powerflow calculations. If it is set to NaN it will be replaced by the bus vn_kv during power flow
+        step: step of shunts with which power values are multiplied
+        max_step: maximum allowed step of shunts
+        name: element name
+        step_dependency_table: True if shunt parameters (p_mw, q_mvar) must be adjusted dependent on the step of the
+            shunts. Requires the additional column "id_characteristic_table". The function
+            pandapower.control.shunt_characteristic_table_diagnostic can be used for sanity checks. The function
+            pandapower.control.create_shunt_characteristic_object can be used to create SplineCharacteristic objects in
+            the net.shunt_characteristic_spline table and add the additional column "id_characteristic_spline" to set up
+            the reference to the spline characteristics.
+        id_characteristic_table: references the index of the characteristic from the lookup table
+            net.shunt_characteristic_table
+        in_service: True for in_service or False for out of service
+        index: force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
 
-        **buses** (list of ints) - bus numbers of buses to which the shunts should be connected to
+    Returns:
+        index: the list of IDs of the created shunts
 
-        **p_mw** (list of floats, 0) - shunts' active power in MW at v = 1.0 p.u.
-
-        **q_mvar** (list of floats) - shunts' reactive power in MVAr at v = 1.0 p.u.
-
-    OPTIONAL:
-        **vn_kv** (list of floats, None) - rated voltage of the shunts. Defaults to rated voltage of connected bus, since this \
-            value is mandatory for powerflow calculations. If it is set to NaN it will be replaced by the bus vn_kv \
-            during power flow
-
-        **step** (list of ints, 1) - step of shunts with which power values are multiplied
-
-        **max_step** (list of ints, 1) - maximum allowed step of shunts
-
-        **name** (list of strs, None) - element name
-
-        **step_dependency_table** (list of booleans, False) - True if shunt parameters (p_mw, q_mvar) must be \
-            adjusted dependent on the step of the shunts. Requires the additional column "id_characteristic_table". \
-            The function pandapower.control.shunt_characteristic_table_diagnostic can be used for sanity checks. \
-            The function pandapower.control.create_shunt_characteristic_object can be used to create \
-            SplineCharacteristic objects in the net.shunt_characteristic_spline table and add the additional column \
-            "id_characteristic_spline" to set up the reference to the spline characteristics.
-
-        **id_characteristic_table** (list of ints, None) - references the index of the characteristic from the lookup \
-                                                          table net.shunt_characteristic_table
-
-        **in_service** (list of booleans, True) - True for in_service or False for out of service
-
-        **index** (list of ints, None) - force a specified ID if it is available. If None, the \
-                                         index one higher than the highest already existing index is selected.
-
-    OUTPUT:
-        **index** (list of ints) - the list of IDs of the created shunts
-
-    EXAMPLE:
-        create_shunts(net, [0, 2], [20, 30])
+    Example:
+        >>> create_shunts(net, [0, 2], [20, 30])
     """
     _check_multiple_elements(net, buses)
 
@@ -200,21 +175,17 @@ def create_shunt_as_capacitor(net: pandapowerNet, bus: Int, q_mvar: float, loss_
     """
     Creates a shunt element representing a capacitor bank.
 
-    INPUT:
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus: index of the bus the shunt is connected to
+        q_mvar: reactive power of the capacitor bank at rated voltage
+        loss_factor: loss factor tan(delta) of the capacitor bank
 
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Keyword Arguments:
+        any args for create_shunt, keyword arguments are passed to the create_shunt function
 
-        **bus** (int) - index of the bus the shunt is connected to
-
-        **q_mvar** (float) - reactive power of the capacitor bank at rated voltage
-
-        **loss_factor** (float) - loss factor tan(delta) of the capacitor bank
-
-    OPTIONAL:
-        same as in create_shunt, keyword arguments are passed to the create_shunt function
-
-    OUTPUT:
-        **index** (int) - the unique ID of the created shunt
+    Returns:
+        the ID of the created shunt
     """
     q_mvar = -abs(q_mvar)  # q is always negative for capacitor
     p_mw = abs(q_mvar * loss_factor)  # p is always positive for active power losses
@@ -229,11 +200,11 @@ def create_svc(
     set_vm_pu: float,
     thyristor_firing_angle_degree: float,
     name: str | None = None,
-    controllable: bool = True,
-    in_service: bool = True,
+    controllable: bool = get_default_value("svc", "controllable"),
+    in_service: bool = get_default_value("svc", "in_service"),
     index: Int | None = None,
-    min_angle_degree: float = 90,
-    max_angle_degree: float = 180,
+    min_angle_degree: float = get_default_value("svc", "min_angle_degree"),
+    max_angle_degree: float = get_default_value("svc", "max_angle_degree"),
     **kwargs,
 ) -> Int:
     """
@@ -245,38 +216,24 @@ def create_svc(
     min_angle_degree, max_angle_degree are placeholders (ignored in the Newton-Raphson power \
         flow at the moment).
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
-
-        **bus** (int) - connection bus of the svc
-
-        **x_l_ohm** (float) - inductive reactance of the reactor component of svc
-
-        **x_cvar_ohm** (float) - capacitive reactance of the fixed capacitor component of svc
-
-        **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
-
-        **thyristor_firing_angle_degree** (float) - the value of thyristor firing angle of svc (is used directly if
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus: connection bus of the svc
+        x_l_ohm: inductive reactance of the reactor component of svc
+        x_cvar_ohm: capacitive reactance of the fixed capacitor component of svc
+        set_vm_pu: set-point for the bus voltage magnitude at the connection bus
+        thyristor_firing_angle_degree: the value of thyristor firing angle of svc (is used directly if
             controllable==False, otherwise is the starting point in the Newton-Raphson calculation)
+        name: element name
+        controllable: whether the element is considered as actively controlling or as a fixed shunt impedance
+        in_service: True for in_service or False for out of service
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        min_angle_degree: minimum value of the thyristor_firing_angle_degree
+        max_angle_degree: maximum value of the thyristor_firing_angle_degree
 
-    OPTIONAL:
-        **name** (list of strs, None) - element name
-
-        **controllable** (bool, True) - whether the element is considered as actively controlling or
-            as a fixed shunt impedance
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the
-            index one higher than the highest already existing index is selected.
-
-        **min_angle_degree** (float, 90) - minimum value of the thyristor_firing_angle_degree
-
-        **max_angle_degree** (float, 180) - maximum value of the thyristor_firing_angle_degree
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created svc
-
+    Returns:
+        The ID of the created svc
     """
 
     _check_element(net, bus)
@@ -306,12 +263,12 @@ def create_ssc(
     bus: Int,
     r_ohm: float,
     x_ohm: float,
-    set_vm_pu: float = 1.0,
-    vm_internal_pu: float = 1.0,
-    va_internal_degree: float = 0.0,
+    set_vm_pu: float = get_default_value("ssc", "set_vm_pu"),
+    vm_internal_pu: float = get_default_value("ssc", "vm_internal_pu"),
+    va_internal_degree: float = get_default_value("ssc", "va_internal_degree"),
     name: str | None = None,
-    controllable: bool = True,
-    in_service: bool = True,
+    controllable: bool = get_default_value("ssc", "controllable"),
+    in_service: bool = get_default_value("ssc", "in_service"),
     index: Int | None = None,
     **kwargs,
 ) -> Int:
@@ -321,41 +278,25 @@ def create_ssc(
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus: connection bus of the ssc
+        r_ohm: resistance of the coupling transformer component of ssc
+        x_ohm: reactance of the coupling transformer component of ssc
+        set_vm_pu: set-point for the bus voltage magnitude at the connection bus
+        vm_internal_pu:  The voltage magnitude of the voltage source converter VSC at the ssc component. If the
+            amplitude of the VSC output voltage is increased above that of the ac system voltage, the VSC behaves as a
+            capacitor and reactive power is supplied to the ac system, decreasing the output voltage below that of the
+            ac system leads to the VSC consuming reactive power acting as reactor. (source PhD Panosyan)
+        va_internal_degree: The voltage angle of the voltage source converter VSC at the ssc component.
+        name: element name
+        controllable: whether the element is considered as actively controlling or as a fixed shunt impedance
+        in_service: True for in_service or False for out of service
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
-
-        **bus** (int) - connection bus of the ssc
-
-        **r_ohm** (float) - resistance of the coupling transformer component of ssc
-
-        **x_ohm** (float) - reactance of the coupling transformer component of ssc
-
-        **set_vm_pu** (float) - set-point for the bus voltage magnitude at the connection bus
-
-        **vm_internal_pu** (float) -  The voltage magnitude of the voltage source converter VSC at the ssc component.
-                                    if the amplitude of the VSC output voltage is increased above that of the ac system
-                                    voltage, the VSC behaves as a capacitor and reactive power is supplied to the ac
-                                    system, decreasing the output voltage below that of the ac system leads to the VSC
-                                    consuming reactive power acting as reactor.(source PhD Panosyan)
-
-
-        **va_internal_degree** (float) - The voltage angle of the voltage source converter VSC at the ssc component.
-
-    OPTIONAL:
-        **name** (list of strs, None) - element name
-
-        **controllable** (bool, True) - whether the element is considered as actively controlling or
-            as a fixed shunt impedance
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the
-            index one higher than the highest already existing index is selected.
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created ssc
-
+    Returns:
+        The ID of the created ssc
     """
 
     _check_element(net, bus)
@@ -379,7 +320,7 @@ def create_ssc(
     return index
 
 
-def create_b2b_vsc(
+def create_vsc_stacked(
     net: pandapowerNet,
     bus: Int,
     bus_dc_plus: Int,
@@ -387,14 +328,14 @@ def create_b2b_vsc(
     r_ohm: float,
     x_ohm: float,
     r_dc_ohm: float,
-    pl_dc_mw: float = 0.0,
-    control_mode_ac: str = "vm_pu",
-    control_value_ac: float = 1.0,
-    control_mode_dc: str = "p_mw",
-    control_value_dc: float = 0.0,
+    pl_dc_mw: float = get_default_value("vsc_stacked", "pl_dc_mw"),
+    control_mode_ac: str = get_default_value("vsc_stacked", "control_mode_ac"),
+    control_value_ac: float = get_default_value("vsc_stacked", "control_value_ac"),
+    control_mode_dc: str = get_default_value("vsc_stacked", "control_mode_dc"),
+    control_value_dc: float = get_default_value("vsc_stacked", "control_value_dc"),
     name: str | None = None,
-    controllable: bool = True,
-    in_service: bool = True,
+    controllable: bool = get_default_value("vsc_stacked", "controllable"),
+    in_service: bool = get_default_value("vsc_stacked", "in_service"),
     index: Int | None = None,
     **kwargs,
 ) -> Int:
@@ -404,52 +345,35 @@ def create_b2b_vsc(
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus: AC connection of the B2B VSC
+        bus_dc_plus: connection bus of the plus side of the B2B VSC
+        bus_dc_minus: connection bus of the minus side of the B2B VSC
+        r_ohm: resistance of the coupling transformer component of B2B VSC
+        x_ohm: reactance of the coupling transformer component of B2B VSC
+        r_dc_ohm: resistance of the internal dc resistance component of B2B VSC
+        pl_dc_mw: no-load losses of the B2B VSC on the DC side for the shunt R representing the no load losses
+        control_mode_ac: the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+        control_value_ac: the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+        control_mode_dc: the control mode of the dc side of the B2B VSC. it could be "vm_pu" or "p_mw"
+        control_value_dc: the value of the controlled parameter at the dc bus in "p.u." or "MW"
+        name: element name
+        controllable: whether the element is considered as actively controlling or as a fixed voltage source connected
+            via shunt impedance
+        in_service: True for in_service or False for out of service
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
 
-        **bus** (int) - AC connection of the B2B VSC
-
-        **bus_dc_plus** (int) - connection bus of the plus side of the B2B VSC
-
-        **bus_dc_minus** (int) - connection bus of the minus side of the B2B VSC
-
-        **r_ohm** (float) - resistance of the coupling transformer component of B2B VSC
-
-        **x_ohm** (float) - reactance of the coupling transformer component of B2B VSC
-
-        **r_dc_ohm** (float) - resistance of the internal dc resistance component of B2B VSC
-
-        **pl_dc_mw** (float) - no-load losses of the B2B VSC on the DC side for the shunt R representing the no load losses
-
-        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
-
-        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
-
-        **control_mode_dc** (string) - the control mode of the dc side of the B2B VSC. it could be "vm_pu" or "p_mw"
-
-        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
-
-    OPTIONAL:
-        **name** (list of strs, None) - element name
-
-        **controllable** (bool, True) - whether the element is considered as actively controlling or
-            as a fixed voltage source connected via shunt impedance
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the
-            index one higher than the highest already existing index is selected.
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created ssc
-
+    Returns:
+        The ID of the created ssc
     """
 
     _check_element(net, bus)
     _check_element(net, bus_dc_plus, "bus_dc")
     _check_element(net, bus_dc_minus, "bus_dc")
 
-    index = _get_index_with_check(net, "b2b_vsc", index)
+    index = _get_index_with_check(net, "vsc_stacked", index)
 
     entries = {
         "name": name,
@@ -468,12 +392,12 @@ def create_b2b_vsc(
         "in_service": in_service,
         **kwargs,
     }
-    _set_entries(net, "b2b_vsc", index, entries=entries)
+    _set_entries(net, "vsc_stacked", index, entries=entries)
 
     return index
 
 
-def create_bi_vsc(
+def create_vsc_bipolar(
     net: pandapowerNet,
     bus: Int,
     bus_dc_plus: Int,
@@ -481,14 +405,13 @@ def create_bi_vsc(
     r_ohm: float,
     x_ohm: float,
     r_dc_ohm: float,
-    pl_dc_mw: float = 0.0,
-    control_mode_ac: str = "vm_pu",
-    control_value_ac: float = 1.0,
-    control_mode_dc: str = "p_mw",
-    control_value_dc: float = 0.0,
+    pl_dc_mw: float = get_default_value("vsc_bipolar", "pl_dc_mw"),
+    control_mode: str = get_default_value("vsc_bipolar", "control_mode"),
+    control_value_1: float = get_default_value("vsc_bipolar", "control_value_1"),
+    control_value_2: float = get_default_value("vsc_bipolar", "control_value_2"),
     name: str | None = None,
-    controllable: bool = True,
-    in_service: bool = True,
+    controllable: bool = get_default_value("vsc_bipolar", "controllable"),
+    in_service: bool = get_default_value("vsc_bipolar", "in_service"),
     index: Int | None = None,
     **kwargs,
 ) -> Int:
@@ -498,50 +421,34 @@ def create_bi_vsc(
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus: connection bus of the VSC
+        bus_dc_plus: connection dc bus of the VSC
+        bus_dc_minus: connection dc bus of the VSC
+        r_ohm: resistance of the coupling transformer component of VSC
+        x_ohm: reactance of the coupling transformer component of VSC
+        r_dc_ohm: resistance of the internal dc resistance component of VSC
+        pl_dc_mw: no-load losses of the VSC on the DC side for the shunt R representing the no load losses
+        control_mode: the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+        control_value_1: the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+        control_value_2: the value of the controlled parameter at the dc bus in "p.u." or "MW"
+        name: element name
+        controllable: whether the element is considered as actively controlling or as a fixed voltage source connected
+            via shunt impedance
+        in_service: True for in_service or False for out of service
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
 
-        **bus** (int) - connection bus of the VSC
-
-        **bus_dc** (int) - connection bus of the VSC
-
-        **r_ohm** (float) - resistance of the coupling transformer component of VSC
-
-        **x_ohm** (float) - reactance of the coupling transformer component of VSC
-
-        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
-
-        **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
-
-        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
-
-        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
-
-        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
-
-        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
-
-    OPTIONAL:
-        **name** (list of strs, None) - element name
-
-        **controllable** (bool, True) - whether the element is considered as actively controlling or
-            as a fixed voltage source connected via shunt impedance
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the
-            index one higher than the highest already existing index is selected.
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created ssc
-
+    Returns:
+        The ID of the created ssc
     """
 
     _check_element(net, bus)
     _check_element(net, bus_dc_plus, "bus_dc")
     _check_element(net, bus_dc_minus, "bus_dc")
 
-    index = _get_index_with_check(net, "bi_vsc", index)
+    index = _get_index_with_check(net, "vsc_bipolar", index)
 
     entries = {
         "name": name,
@@ -552,15 +459,14 @@ def create_bi_vsc(
         "x_ohm": x_ohm,
         "r_dc_ohm": r_dc_ohm,
         "pl_dc_mw": pl_dc_mw,
-        "control_mode_ac": control_mode_ac,
-        "control_value_ac": control_value_ac,
-        "control_mode_dc": control_mode_dc,
-        "control_value_dc": control_value_dc,
+        "control_mode": control_mode,
+        "control_value_1": control_value_1,
+        "control_value_2": control_value_2,
         "controllable": controllable,
         "in_service": in_service,
         **kwargs,
     }
-    _set_entries(net, "bi_vsc", index, entries=entries)
+    _set_entries(net, "vsc_bipolar", index, entries=entries)
 
     return index
 
@@ -572,14 +478,14 @@ def create_vsc(
     r_ohm: float,
     x_ohm: float,
     r_dc_ohm: float,
-    pl_dc_mw: float = 0.0,
-    control_mode_ac: Literal["vm_pu", "q_mvar"] = "vm_pu",
-    control_value_ac: float = 1.0,
-    control_mode_dc: Literal["vm_pu", "p_mw"] = "p_mw",
-    control_value_dc: float = 0.0,
+    pl_dc_mw: float = get_default_value("vsc", "pl_dc_mw"),
+    control_mode_ac: Literal["vm_pu", "q_mvar", "slack"] = get_default_value("vsc", "control_mode_ac"),
+    control_value_ac: float = get_default_value("vsc", "control_value_ac"),
+    control_mode_dc: Literal["vm_pu", "p_mw"] = get_default_value("vsc", "control_mode_dc"),
+    control_value_dc: float = get_default_value("vsc", "control_value_dc"),
     name: str | None = None,
-    controllable: bool = True,
-    in_service: bool = True,
+    controllable: bool = get_default_value("vsc", "controllable"),
+    in_service: bool = get_default_value("vsc", "in_service"),
     index: Int | None = None,
     ref_bus=None,
     **kwargs,
@@ -590,43 +496,27 @@ def create_vsc(
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus: connection bus of the VSC
+        bus_dc: connection bus of the VSC
+        r_ohm: resistance of the coupling transformer component of VSC
+        x_ohm: reactance of the coupling transformer component of VSC
+        r_dc_ohm: resistance of the internal dc resistance component of VSC
+        pl_dc_mw: no-load losses of the VSC on the DC side for the shunt R representing the no load losses
+        control_mode_ac: the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+        control_value_ac: the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+        control_mode_dc: the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
+        control_value_dc: the value of the controlled parameter at the dc bus in "p.u." or "MW"
+        name: element name
+        controllable: whether the element is considered as actively controlling or as a fixed voltage source connected
+            via shunt impedance
+        in_service: True for in_service or False for out of service
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
 
-        **bus** (int) - connection bus of the VSC
-
-        **bus_dc** (int) - connection bus of the VSC
-
-        **r_ohm** (float) - resistance of the coupling transformer component of VSC
-
-        **x_ohm** (float) - reactance of the coupling transformer component of VSC
-
-        **r_dc_ohm** (float) - resistance of the internal dc resistance component of VSC
-
-        **pl_dc_mw** (float) - no-load losses of the VSC on the DC side for the shunt R representing the no load losses
-
-        **control_mode_ac** (string) - the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
-
-        **control_value_ac** (float) - the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
-
-        **control_mode_dc** (string) - the control mode of the dc side of the VSC. it could be "vm_pu" or "p_mw"
-
-        **control_value_dc** (float) - the value of the controlled parameter at the dc bus in "p.u." or "MW"
-
-    OPTIONAL:
-        **name** (list of strs, None) - element name
-
-        **controllable** (bool, True) - whether the element is considered as actively controlling or
-            as a fixed voltage source connected via shunt impedance
-
-        **in_service** (bool, True) - True for in_service or False for out of service
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the
-            index one higher than the highest already existing index is selected.
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created ssc
-
+    Returns:
+        The ID of the created ssc
     """
 
     _check_element(net, bus)

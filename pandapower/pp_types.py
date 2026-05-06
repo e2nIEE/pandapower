@@ -21,6 +21,7 @@ SwitchElementType = Literal[
     "b",  # bus
     "l",  # line
     "t",  # transformer
+    "t3", # 3 winding transformer
 ]
 SwitchType = Literal[
     "LS",  # load switch

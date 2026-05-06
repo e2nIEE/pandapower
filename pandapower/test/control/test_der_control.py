@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
@@ -32,7 +32,7 @@ def simple_test_net():
     net = create_empty_network()
     create_buses(net, 2, vn_kv=20)
     create_ext_grid(net, 0)
-    create_sgen(net, 1, p_mw=2., sn_mva=3, name="DER1")
+    create_sgen(net, 1, p_mw=2., sn_mva=3, name="DER1", type='wye')
     create_line(net, 0, 1, length_km=0.1, std_type="NAYY 4x50 SE")
     return net
 
@@ -41,7 +41,7 @@ def simple_test_net2():
     net = simple_test_net()
     bus = create_bus(net, vn_kv=20)
     create_line(net, 0, bus, 0.1, std_type="NAYY 4x50 SE")
-    create_sgen(net, bus, 2., sn_mva=3., name="DER2")
+    create_sgen(net, bus, 2., sn_mva=3., name="DER2", type='wye')
     return net
 
 
@@ -192,23 +192,23 @@ def test_cosphi_of_p_timeseries():
 
     # Run timeseries
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_ue.index] = True
+    net.controller.at[DER_ue.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_ue = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_ue2.index] = True
+    net.controller.at[DER_ue2.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_ue2 = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_oe.index] = True
+    net.controller.at[DER_oe.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_oe = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_no_q.index] = True
+    net.controller.at[DER_no_q.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q = deepcopy(ow.output)
     net.controller["in_service"] = False
-    net.controller.in_service.at[DER_no_q2.index] = True
+    net.controller.at[DER_no_q2.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q2 = deepcopy(ow.output)
 
@@ -262,7 +262,7 @@ def test_cosphi_of_p_timeseries():
 
 def test_QModels_with_2Dim_timeseries():
     def define_outputwriters(nets):
-        ows = list()
+        ows = []
         for net in nets:
             ow = OutputWriter(net)
             ow.log_variable("res_sgen", "p_mw")

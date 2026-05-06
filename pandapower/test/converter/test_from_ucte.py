@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -106,7 +106,7 @@ def test_from_ucte(test_case):
     atol_dict = {
         "res_bus": {"vm_pu": 1e-4, "va_degree": 7e-3},
         "res_line": {"p_from_mw": 5e-2, "q_from_mvar": 2e-1},
-        "res_trafo": {"p_hv_mw": 5e-2, "q_hv_mvar": 1e-1},
+        "res_trafo": {"p_hv_mw": 1e-3, "q_hv_mvar": 1e-3},
     }
     if test_case == "test_ucte_xward":
         atol_dict["res_line"]["q_from_mvar"] = 0.8  # xwards are converted as
@@ -145,8 +145,8 @@ def test_from_ucte(test_case):
 
         # --- compare the results itself
         all_close = all([np.allclose(
-            df_after_conversion[col].values,
-            df_target.loc[df_after_conversion.index, col].values, atol=atol) for col, atol in
+            df_after_conversion[col].to_numpy(),
+            df_target.loc[df_after_conversion.index, col].to_numpy(), atol=atol) for col, atol in
             atol_dict[res_et].items()])
         if not all_close:
             logger.error(f"{res_et=} comparison fails due to different values.\n{df_str}")

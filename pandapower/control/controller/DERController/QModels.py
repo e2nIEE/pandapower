@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -162,7 +162,3 @@ class QModelQVCurve(QModel):
     def step(self, vm_pu, p_pu=None):
         q_pu = self.qv_curve.step(vm_pu)
         return q_pu
-
-
-if __name__ == "__main__":
-    pass

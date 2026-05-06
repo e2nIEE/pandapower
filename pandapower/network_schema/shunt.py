@@ -3,18 +3,28 @@ import pandera.pandas as pa
 
 shunt_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the shunt"),
+        "name": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="name of the shunt", metadata={"cim": True}
+        ),
         "bus": pa.Column(
             int,
             pa.Check.ge(0),
             description="index of bus where the impedance starts",
             metadata={"foreign_key": "bus.index"},
         ),
-        "p_mw": pa.Column(float, pa.Check.ge(0), description="shunt active power in MW at v= 1.0 p.u. per step"),
+        "p_mw": pa.Column(
+            float,
+            pa.Check.ge(0),
+            description="shunt active power in MW at v= 1.0 p.u. per step",
+            metadata={"default": 0.0},
+        ),
         "q_mvar": pa.Column(float, description="shunt reactive power in MVAr at v= 1.0 p.u. per step"),
         "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the shunt element"),
         "step": pa.Column(
-            int, pa.Check.ge(1), description="step position of the shunt with which power values are multiplied"
+            float,
+            pa.Check.ge(1),
+            description="step position of the shunt with which power values are multiplied",
+            metadata={"default": 1},
         ),
         "max_step": pa.Column(
             pd.Int64Dtype,
@@ -22,14 +32,15 @@ shunt_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="maximum allowed step of shunt",
-            metadata={"opf": True},
+            metadata={"opf": True, "cim": True, "ucte": True, "default": 1},
         ),
-        "in_service": pa.Column(bool, description="specifies if the shunt is in service"),
+        "in_service": pa.Column(bool, description="specifies if the shunt is in service", metadata={"default": True}),
         "step_dependency_table": pa.Column(
             pd.BooleanDtype,
             nullable=True,
             required=False,
             description="whether the shunt parameters (q_mvar, p_mw) are adjusted dependent on the step of the shunt",
+            metadata={"cim": True, "default": False},
         ),  # TODO: remove since it is implied by id_characteristic_table
         "id_characteristic_table": pa.Column(
             pd.Int64Dtype,
@@ -38,12 +49,41 @@ shunt_schema = pa.DataFrameSchema(
             required=True,  # TODO: switch to false, when step_dependancy_table is gone
             description="references the id_characteristic index from the shunt_characteristic_table",
         ),
+        "origin_id": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True},
+        ),
+        "terminal": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
+        "sVCControlMode": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="sVCControlMode from converter, not relevant for calculations",
+            metadata={"cim": True},
+        ),
     },
     checks=[
         pa.Check(
-            lambda df: (
-                df["step"] <= df["max_step"] if all(col in df.columns for col in ["step", "max_step"]) else True
-            ),
+            lambda df: df["step"] <= df["max_step"] if all(col in df.columns for col in ["step", "max_step"]) else True,
             error="Column 'step' must be <= column 'max_step'",
         )
     ],

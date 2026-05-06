@@ -112,7 +112,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
 def adapt_impedance_params(Z, sign=1, adaption=1e-15):
     """
     In some extreme cases, the created admittance matrix of the
-    zpbn network is singular. The routine is unsolvalbe with it.
+    zpbn network is singular. The routine is unsolvable with it.
     In response, an impedance adaption is created and added.
     """
     rft_pu = Z.real + sign * adaption
@@ -120,22 +120,24 @@ def adapt_impedance_params(Z, sign=1, adaption=1e-15):
     return rft_pu, xft_pu
 
 
+# TODO: This function should be refactored, it is way to big and dos way to many tasks in one.
 def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses,
                      load_separate=False, sgen_separate=True, gen_separate=True,
                      show_computing_time=False, calc_volt_angles=True,
                      runpp_fct=_runpp_except_voltage_angles, **kwargs):
     """
-    The function builds the zero power balance network with
-    calculated impedance and voltage
+    The function builds the zero power balance network with calculated impedance and voltage
 
-    INPUT:
-        **net** - pandapower network
-
-        **boundary_buses** (list) - boundary buses
-
-        **all_internal_buses** - all the internal buses
-
-        **all_external_buses** - all the external buses
+    Parameters:
+        net: pandapower network
+        boundary_buses: boundary buses
+        all_internal_buses: all the internal buses
+        all_external_buses: all the external buses
+        load_separate: flag if all the loads are reserved integrally
+        sgen_separate: flag if all the DER are reserved separately
+        gen_separate: flag if all the gens are reserved separately
+        tolerance_mva: loadflow termination condition referring to P / Q mismatch of node power in MVA.
+            The loadflow hier is to get the admittance matrix of the zpbn network
 
     OPTIONAL:
         **load_separate** (bool, False) - flag if all the loads
@@ -149,7 +151,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
         **tolerance_mva** (float, 1e-3) - loadflow termination
             condition referring to P / Q mismatch of node power
-            in MVA. The loalflow hier is to get the admittance
+            in MVA. The loadflow hier is to get the admittance
             matrix of the zpbn network
 
     OUTPUT:
@@ -171,7 +173,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
     drop_buses(net_zpbn, net_zpbn.res_bus.index[net_zpbn.res_bus.vm_pu.isnull()])
 
     Z, S, v, limits = calc_zpbn_parameters(net_zpbn, boundary_buses, all_external_buses)
-    # --- remove the original load, sgen and gen in exteranl area,
+    # --- remove the original load, sgen and gen in external area,
     #     and creat new buses and impedance
     t_buses, g_buses = [], []
     sn_mva = net_zpbn.sn_mva
@@ -181,74 +183,75 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         if elm == "ext_grid":
             continue
 
-        if not np.isnan(Z[elm + "_ground"].values).all():
-            if separate:
-                Z = Z.drop([elm + "_integrated_total"], axis=1)
-
-                # add buses
-                idxs = Z.index[~np.isnan(Z[elm + "_ground"].values)]
-                vn_kvs = net_zpbn.bus.vn_kv[Z.ext_bus.loc[idxs]]
-                new_g_buses = create_buses(net_zpbn, len(idxs), vn_kvs, name=[
-                    "%s_separate-ground %s" % (elm, str(Z.ext_bus.loc[i])) for i in idxs])
-                new_t_buses = create_buses(net_zpbn, len(idxs), vn_kvs, name=[
-                    "%s_separate-total %s" % (elm, str(Z.ext_bus.loc[i])) for i in idxs],
-                                           max_vm_pu=limits.max_vm_pu.loc[idxs], min_vm_pu=limits.min_vm_pu.loc[idxs])
-
-                # add impedances
-                rft_pu_g, xft_pu_g = adapt_impedance_params(Z[elm + "_ground"].loc[idxs].values)
-                max_idx = net_zpbn.impedance.index.max() if net_zpbn.impedance.shape[0] else 0
-                new_imps_g = pd.DataFrame({
-                    "from_bus": Z.ext_bus.loc[idxs].astype(np.int64).values, "to_bus": new_g_buses,
-                    "rft_pu": rft_pu_g, "xft_pu": xft_pu_g,
-                    "rtf_pu": rft_pu_g, "xtf_pu": xft_pu_g,
-                    "gf_pu": 0, "bf_pu": 0, "gt_pu": 0, "bt_pu": 0},
-                    index=range(max_idx + 1, max_idx + 1 + len(new_g_buses)))
-                new_imps_g["name"] = "eq_impedance_ext_to_ground"
-                new_imps_g["sn_mva"] = sn_mva
-                new_imps_g["in_service"] = True
-
-                rft_pu_t, xft_pu_t = adapt_impedance_params(Z[elm + "_separate_total"].loc[
-                                                                idxs].values)
-                new_imps_t = pd.DataFrame({
-                    "from_bus": new_g_buses, "to_bus": new_t_buses,
-                    "rft_pu": rft_pu_t, "xft_pu": xft_pu_t,
-                    "rtf_pu": rft_pu_t, "xtf_pu": xft_pu_t,
-                    "gf_pu": 0, "bf_pu": 0, "gt_pu": 0, "bt_pu": 0},
-                    index=range(new_imps_g.index.max() + 1,
-                                new_imps_g.index.max() + 1 + len(new_g_buses)))
-                new_imps_t["name"] = "eq_impedance_ground_to_total"
-                new_imps_t["sn_mva"] = sn_mva
-                new_imps_t["in_service"] = True
-
-                net_zpbn["impedance"] = pd.concat([net_zpbn["impedance"], new_imps_g, new_imps_t])
-                g_buses += list(new_g_buses)
-                t_buses += list(new_t_buses)
-            else:
-                Z = Z.drop([elm + "_separate_total"], axis=1)
-                vn_kv = net_zpbn.bus.vn_kv[all_external_buses].values[0]
-                new_g_bus = create_bus(net_zpbn, vn_kv, name=elm + "_integrated-ground ")
-                i_all_integrated = []
-                for i in Z.index[~np.isnan(Z[elm + "_ground"].values)]:
-                    rft_pu, xft_pu = adapt_impedance_params(Z[elm + "_ground"][i])
-                    create_impedance(net_zpbn, Z.ext_bus[i], new_g_bus, rft_pu, xft_pu,
-                                     sn_mva, name="eq_impedance_ext_to_ground")
-                    i_all_integrated.append(i)
-                # in case of integrated, the tightest vm limits are assumed
-                ext_buses = Z.ext_bus[~np.isnan(Z[elm + "_ground"])].values
-                ext_buses_name = "/".join([str(eb) for eb in ext_buses])
-                new_t_bus = create_bus(
-                    net_zpbn, vn_kv, name=elm + "_integrated-total " + ext_buses_name,
-                    max_vm_pu=limits.max_vm_pu.loc[i_all_integrated].min(),
-                    min_vm_pu=limits.min_vm_pu.loc[i_all_integrated].max())
-                rft_pu, xft_pu = adapt_impedance_params(Z[elm + "_integrated_total"][0])
-                create_impedance(net_zpbn, new_g_bus, new_t_bus, rft_pu, xft_pu,
-                                 sn_mva, name="eq_impedance_ground_to_total")
-                g_buses += [new_g_bus.tolist()]
-                t_buses += [new_t_bus.tolist()]
-        else:
+        if np.isnan(Z[elm + "_ground"].values).all():
             Z.drop([elm + "_ground", elm + "_separate_total", elm + "_integrated_total"], axis=1,
                    inplace=True)
+            continue
 
+        if separate:
+            Z = Z.drop([elm + "_integrated_total"], axis=1)
+
+            # add buses
+            idxs = Z.index[~np.isnan(Z[elm + "_ground"].values)]
+            vn_kvs = net_zpbn.bus.vn_kv[Z.ext_bus.loc[idxs]]
+            new_g_buses = create_buses(net_zpbn, len(idxs), vn_kvs, name=[
+                "%s_separate-ground %s" % (elm, str(Z.ext_bus.loc[i])) for i in idxs])
+            new_t_buses = create_buses(net_zpbn, len(idxs), vn_kvs, name=[
+                "%s_separate-total %s" % (elm, str(Z.ext_bus.loc[i])) for i in idxs],
+                                       max_vm_pu=limits.max_vm_pu.loc[idxs], min_vm_pu=limits.min_vm_pu.loc[idxs])
+
+            # add impedances
+            rft_pu_g, xft_pu_g = adapt_impedance_params(Z[elm + "_ground"].loc[idxs].values)
+            max_idx = net_zpbn.impedance.index.max() if net_zpbn.impedance.shape[0] else 0
+            new_imps_g = pd.DataFrame({
+                "from_bus": Z.ext_bus.loc[idxs].astype(np.int64).values, "to_bus": new_g_buses,
+                "rft_pu": rft_pu_g, "xft_pu": xft_pu_g,
+                "rtf_pu": rft_pu_g, "xtf_pu": xft_pu_g,
+                "gf_pu": 0, "bf_pu": 0, "gt_pu": 0, "bt_pu": 0},
+                index=range(max_idx + 1, max_idx + 1 + len(new_g_buses)))
+            new_imps_g["name"] = "eq_impedance_ext_to_ground"
+            new_imps_g["sn_mva"] = sn_mva
+            new_imps_g["in_service"] = True
+
+            rft_pu_t, xft_pu_t = adapt_impedance_params(Z[elm + "_separate_total"].loc[
+                                                            idxs].values)
+            new_imps_t = pd.DataFrame({
+                "from_bus": new_g_buses, "to_bus": new_t_buses,
+                "rft_pu": rft_pu_t, "xft_pu": xft_pu_t,
+                "rtf_pu": rft_pu_t, "xtf_pu": xft_pu_t,
+                "gf_pu": 0, "bf_pu": 0, "gt_pu": 0, "bt_pu": 0},
+                index=range(new_imps_g.index.max() + 1,
+                            new_imps_g.index.max() + 1 + len(new_g_buses)))
+            new_imps_t["name"] = "eq_impedance_ground_to_total"
+            new_imps_t["sn_mva"] = sn_mva
+            new_imps_t["in_service"] = True
+
+            net_zpbn["impedance"] = pd.concat([net_zpbn["impedance"], new_imps_g, new_imps_t])
+            g_buses += list(new_g_buses)
+            t_buses += list(new_t_buses)
+            continue
+
+        Z = Z.drop([elm + "_separate_total"], axis=1)
+        vn_kv = net_zpbn.bus.vn_kv[all_external_buses].values[0]
+        new_g_bus = create_bus(net_zpbn, vn_kv, name=elm + "_integrated-ground ")
+        i_all_integrated = []
+        for i in Z.index[~np.isnan(Z[elm + "_ground"].values)]:
+            rft_pu, xft_pu = adapt_impedance_params(Z[elm + "_ground"][i])
+            create_impedance(net_zpbn, Z.ext_bus[i], new_g_bus, rft_pu, xft_pu,
+                             sn_mva, name="eq_impedance_ext_to_ground")
+            i_all_integrated.append(i)
+        # in case of integrated, the tightest vm limits are assumed
+        ext_buses = Z.ext_bus[~np.isnan(Z[elm + "_ground"])].values
+        ext_buses_name = "/".join([str(eb) for eb in ext_buses])
+        new_t_bus = create_bus(
+            net_zpbn, vn_kv, name=elm + "_integrated-total " + ext_buses_name,
+            max_vm_pu=limits.max_vm_pu.loc[i_all_integrated].min(),
+            min_vm_pu=limits.min_vm_pu.loc[i_all_integrated].max())
+        rft_pu, xft_pu = adapt_impedance_params(Z[elm + "_integrated_total"][0])
+        create_impedance(net_zpbn, new_g_bus, new_t_bus, rft_pu, xft_pu,
+                         sn_mva, name="eq_impedance_ground_to_total")
+        g_buses += [new_g_bus.tolist()]
+        t_buses += [new_t_bus.tolist()]
     # --- create load, sgen and gen
     elm_old = None
     max_load_idx = max(-1, net.load.index[~net.load.bus.isin(all_external_buses)].max() - len(net_zpbn.load))
@@ -335,20 +338,23 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 net_zpbn[elm].loc[elm_idx, ext_grid_cols] = net.ext_grid[ext_grid_cols][
                     net.ext_grid.bus == bus].values[0]
             else:
-                names = elm_org.name[elm_org.bus == bus].values
-                names = [str(n) for n in names]
-                net_zpbn[elm].loc[elm_idx, "name"] = "//".join(names) + "-" + net_zpbn[elm].name[elm_idx]
+                if "name" not in elm_org.columns:
+                    names = [""] * elm_org.shape[1]
+                else:
+                    names = elm_org.name[elm_org.bus == bus].values
+                    names = [str(n) for n in names]
+                net_zpbn[elm].loc[elm_idx, "name"] = f'{"//".join(names)}-{net_zpbn[elm].name[elm_idx]}'
                 if len(names) > 1:
-                    net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = \
+                    net_zpbn[elm].loc[elm_idx, list(other_cols_number)] = (
                         elm_org[list(other_cols_number)][elm_org.bus == bus].sum(axis=0)
+                    )
                     if "voltLvl" in other_cols_number:
-                        net_zpbn[elm].loc[elm_idx, "voltLvl"] = \
-                            net_zpbn.bus.voltLvl[boundary_buses].max()
-                    net_zpbn[elm].loc[elm_idx, list(other_cols_bool)] = \
-                        elm_org[list(other_cols_bool)][elm_org.bus == bus].values.sum(axis=0) > 0
+                        net_zpbn[elm].loc[elm_idx, "voltLvl"] = net_zpbn.bus.voltLvl[boundary_buses].max()
+                    for col in other_cols_bool:
+                        col_values = elm_org.loc[elm_org.bus == bus, col]
+                        net_zpbn[elm].loc[elm_idx, col] = float('nan') if col_values.isna().any() else col_values.any()
 
-                    all_str_values = list(zip(*elm_org[list(other_cols_str)] \
-                                                   [elm_org.bus == bus].values[::-1]))
+                    all_str_values = list(zip(*elm_org[list(other_cols_str)][elm_org.bus == bus].values[::-1]))
                     for asv, colid in zip(all_str_values, other_cols_str):
                         if len(set(asv)) == 1:
                             net_zpbn[elm].loc[elm_idx, colid] = asv[0]
@@ -359,27 +365,23 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                         net_zpbn[elm][ocm] = net_zpbn[elm][ocm].astype("object")
                     net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"
                 else:
-                    net_zpbn[elm].loc[elm_idx, list(other_cols_bool | other_cols_number |
-                                                    other_cols_str | other_cols_none)] = \
-                        elm_org[list(other_cols_bool | other_cols_number |
-                                     other_cols_str | other_cols_none)][
-                            elm_org.bus == bus].values[0]
-                    net_zpbn[elm].loc[elm_idx, list(other_cols)] = elm_org[list(other_cols)][
-                        elm_org.bus == bus].values[0]
+                    columns = list(other_cols_bool | other_cols_number | other_cols_str | other_cols_none)
+                    other_cols = list(other_cols)
+                    net_zpbn[elm].loc[elm_idx, columns] = elm_org[columns][elm_org.bus == bus].values[0]
+                    net_zpbn[elm].loc[elm_idx, other_cols] = elm_org[other_cols][elm_org.bus == bus].values[0]
         elm_old = net_zpbn.bus.name[i].split("_")[0]
 
     # --- match poly_cost to new created elements
     for cost_elm in ["poly_cost", "pwl_cost"]:
         if len(net[cost_elm]):
             df = net_zpbn[cost_elm].copy()
-            df.loc[(df.et == "ext_grid") &
-                   (~df.bus.isin(boundary_buses)), 'et'] = "gen"
-            df.loc[(df.et.isin(["storage", "dcline"]) &
-                    (~df.bus.isin(boundary_buses))), 'et'] = "load"
+            df.loc[(df.et == "ext_grid") & (~df.bus.isin(boundary_buses)), 'et'] = "gen"
+            df.loc[(df.et.isin(["storage", "dcline"]) & (~df.bus.isin(boundary_buses))), 'et'] = "load"
 
-            logger.debug("During the equivalencing, also in polt_cost, " +
-                         "storages and dclines are treated as loads, and" +
-                         "ext_grids are treated as gens ")
+            logger.debug(
+                "During the equivalencing, also in polt_cost, storages and dclines are treated as loads, "
+                "and ext_grids are treated as gens"
+            )
 
             for elm in ["load", "gen", "sgen"]:
                 for idx in net_zpbn[elm].index:
@@ -401,8 +403,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                               (df.et == elm)]
                             if len(pc_idx) > 1:
                                 logger.debug("Attention! There are at least two " + elm + "s connected to a " +
-                                             "common bus. The " + elm + "s with commen bus are modeled as an " +
-                                             "aggreated " + elm + " during the equivalencing. " +
+                                             "common bus. The " + elm + "s with common bus are modeled as an " +
+                                             "aggregated " + elm + " during the equivalencing. " +
                                              "The " + cost_elm + " data of the first " + elm + " is used as the " +
                                              cost_elm + " data of the aggregated " + elm + ". " +
                                              "It is NOT correct at present.")
@@ -414,8 +416,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                 df.loc[pc_idx[0], 'element'] = idx
             net_zpbn[cost_elm] = df
 
-    drop_and_edit_cost_functions(net_zpbn, [], False, True, False)
-    # pp.runpp(net_zpbn)
+    drop_and_edit_cost_functions(net_zpbn, [], False, True)
     runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles,
               tolerance_mva=1e-3, max_iteration=100, **kwargs)
     return net_zpbn, net_internal, net_external
@@ -522,36 +523,35 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                     all_external_buses, show_computing_time=False,
                                     calc_volt_angles=True,
                                     runpp_fct=_runpp_except_voltage_angles, **kwargs):
-    "This function identifies the internal area and the external area"
+    """
+    This function identifies the internal area and the external area
+    """
     t_start = time.perf_counter()
     if not all_internal_buses:
         net_internal = None
     else:
         net_internal = deepcopy(net)
-        drop_measurements_and_controllers(net_internal, all_external_buses, True)
-        drop_and_edit_cost_functions(net_internal,
-                                     all_external_buses + boundary_buses,
-                                     True, True)
+        drop_measurements_and_controllers(net_internal, all_external_buses)
+        drop_and_edit_cost_functions(net_internal, all_external_buses + boundary_buses, True, True)
         drop_buses(net_internal, all_external_buses)
 
     net_external = deepcopy(net)
     if "group" in net_external:
-        net_external.group = net_external.group.drop(net_external.group.index)
-    drop_and_edit_cost_functions(net_external, all_internal_buses,
-                                 True, True)
+        net_external.group = net_external.group[:0]  # clear dataframe
+    drop_and_edit_cost_functions(net_external, all_internal_buses, True, True)
     drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     drop_buses(net_external, all_internal_buses)
     replace_motor_by_load(net_external, all_external_buses)
     #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct, **kwargs)
     #    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
-    _integrate_power_elements_connected_with_switch_buses(net, net_external,
-                                                          all_external_buses)  # for sgens, gens, and loads
+
+    # for sgens, gens, and loads:
+    _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses)
+
     runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("\"get_int_and_ext_nets\" " +
-                    "finished in %s seconds:" % round((t_end - t_start), 2))
-
+        logger.info(f'"get_int_and_ext_nets" finished in {t_end - t_start:.02f} seconds.')
     return net_internal, net_external
 
 

@@ -8,13 +8,14 @@ import pandas as pd
 
 from pandapower.test import test_path
 
-from pandapower.converter.cim.cim2pp.from_cim import from_cim
+from pandapower.converter.cim.cim2pp.from_cim import from_cim, from_cim_dict
+from pandapower.converter.cim.cim_classes import CimParser
 from pandapower.run import runpp
 
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mini_sc_mod():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -22,7 +23,7 @@ def mini_sc_mod():
 
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mini_sc():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -31,7 +32,7 @@ def mini_sc():
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mirco_sc():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -40,7 +41,7 @@ def mirco_sc():
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v2():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -50,7 +51,7 @@ def fullgrid_v2():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v2_spline():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -64,7 +65,7 @@ def fullgrid_v2_spline():
     return net
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v3():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -73,7 +74,7 @@ def fullgrid_v3():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def smallgrid_GL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -83,7 +84,7 @@ def smallgrid_GL():
     return from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def smallgrid_DL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -93,7 +94,7 @@ def smallgrid_DL():
     return from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def realgrid():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -102,25 +103,25 @@ def realgrid():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def SimBench_1_HVMVmixed_1_105_0_sw_modified():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return from_cim(file_list=cgmes_files, run_powerflow=True)
+    return from_cim(file_list=cgmes_files, run_powerflow=True, ignore_errors=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def Simbench_1_EHV_mixed__2_no_sw():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
     cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
 
-    return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
+    return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True, ignore_errors=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def example_multivoltage():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -131,7 +132,7 @@ def example_multivoltage():
     return net
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -140,7 +141,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_node_breaker():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -314,17 +315,29 @@ def test_Simbench_1_EHV_mixed__2_no_sw_res_dcline(Simbench_1_EHV_mixed__2_no_sw)
 
 
 def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw):
-    assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 571
+    assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 1142
     element_0 = Simbench_1_EHV_mixed__2_no_sw.measurement[
-        Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
         Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus[
-                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]
+                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]) &
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['measurement_type'] == 'v')]
     assert element_0['name'].item() == 'EHV Bus 1'
     assert element_0['measurement_type'].item() == 'v'
     assert element_0['element_type'].item() == 'bus'
     assert element_0['value'].item() == pytest.approx(1.0920, abs=0.000001)
     assert element_0['std_dev'].item() == pytest.approx(0.001092, abs=0.000001)
     assert element_0['side'].item() is None
+    element_1 = Simbench_1_EHV_mixed__2_no_sw.measurement[
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
+        Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus[
+                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]) &
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['measurement_type'] == 'angle')]
+    assert element_1['name'].item() == 'EHV Bus 1'
+    assert element_1['measurement_type'].item() == 'angle'
+    assert element_1['element_type'].item() == 'bus'
+    assert element_1['value'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_1['std_dev'].item() == pytest.approx(0.001, abs=0.000001)
+    assert element_1['side'].item() is None
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -1031,21 +1044,16 @@ def test_fullgrid_measurement(fullgrid_v2):
     assert len(fullgrid_v2.measurement.index) == 0  # TODO: analogs
 
 
-def test_fullgrid_load(fullgrid_v2):
+def test_fullgrid_load(fullgrid_v2):  # TODO: test each load type
     assert len(fullgrid_v2.load.index) == 5
     element_0 = fullgrid_v2.load[fullgrid_v2.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']
     assert element_0['name'].item() == 'BE_CL_1'
     assert fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35'
     assert element_0['p_mw'].item() == pytest.approx(0.010, abs=0.000001)
     assert element_0['q_mvar'].item() == pytest.approx(0.010, abs=0.000001)
-    assert element_0['const_z_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_i_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_z_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_i_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
     assert math.isnan(element_0['sn_mva'].item())
     assert element_0['scaling'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_0['in_service'].item()
-    assert None is element_0['type'].item()
     assert element_0['origin_class'].item() == 'ConformLoad'
     assert element_0['terminal'].item() == '_84f6ff75-6bf9-8742-ae06-1481aa3b34de'
 
@@ -1060,7 +1068,6 @@ def test_fullgrid_line(fullgrid_v2):
     assert len(fullgrid_v2.line.index) == 11
     element_0 = fullgrid_v2.line[fullgrid_v2.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']
     assert element_0['name'].item() == 'BE-Line_7'
-    assert None is element_0['std_type'].item()
     assert fullgrid_v2.bus.iloc[element_0['from_bus'].item()]['origin_id'] == '_1fa19c281c8f4e1eaad9e1cab70f923e'
     assert fullgrid_v2.bus.iloc[element_0['to_bus'].item()]['origin_id'] == '_f70f6bad-eb8d-4b8f-8431-4ab93581514e'
     assert element_0['length_km'].item() == pytest.approx(23.0, abs=0.000001)
@@ -1071,7 +1078,6 @@ def test_fullgrid_line(fullgrid_v2):
     assert element_0['max_i_ka'].item() == pytest.approx(1.0620, abs=0.000001)
     assert element_0['df'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_0['parallel'].item() == pytest.approx(1.0, abs=0.000001)
-    assert None is element_0['type'].item()
     assert element_0['in_service'].item()
     assert element_0['origin_class'].item() == 'ACLineSegment'
     assert element_0['terminal_from'].item() == '_57ae9251-c022-4c67-a8eb-611ad54c963c'
@@ -1303,7 +1309,7 @@ def test_fullgrid_bus(fullgrid_v2):
 
     element_2 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_99b219f3-4593-428b-a4da-124a54630178']
     assert element_2['zone'].item() == 'PP_Brussels'
-    assert math.isnan(element_2['geo'].item())
+    assert pd.isna(element_2['geo'].item())
     assert element_2['cim_topnode'].item() == '_99b219f3-4593-428b-a4da-124a54630178'
     assert element_2['ConnectivityNodeContainer_id'].item() == '_b10b171b-3bc5-4849-bb1f-61ed9ea1ec7c'
     assert element_2['Substation_id'].item() == '_37e14a0f-5e34-4647-a062-8bfd9305fa9d'
@@ -1351,7 +1357,7 @@ def test_fullgrid_NB_bus(fullgrid_node_breaker):
 
     element_2 = fullgrid_node_breaker.bus[fullgrid_node_breaker.bus['origin_id'] == '_c38adab3-5168-4004-a83d-28d890dedd36']
     assert element_2['zone'].item() == 'HVDC 1'
-    assert math.isnan(element_2['geo'].item())
+    assert pd.isna(element_2['geo'].item())
     assert element_2['cim_topnode'].item() == '_b01fe92f-68ab-4123-ae45-f22d3e8daad1'
     assert element_2['ConnectivityNodeContainer_id'].item() == '_c68f0a24-46cb-42aa-b91d-0b49b8310cc9'
     assert element_2['Substation_id'].item() == '_9df6213f-c5dc-477c-aab4-74721f7d1fdb'
@@ -1396,6 +1402,164 @@ def test_fullgrid_NB_switch(fullgrid_node_breaker):
     assert element_1['terminal_bus'].item() == '_1c134839-5bad-124e-93a4-b11663025232'
     assert element_1['terminal_element'].item() == '_ea6bb748-b513-0947-a59b-abd50155dad2'
     assert element_1['description'].item() == 'BE_LB_1'
+
+
+def test_acline_segment_with_only_rdf_id_should_not_empty_all_lines():
+    """
+    Test that an ACLineSegment with only rdf:id set (no other attributes, no terminals)
+    does not cause all valid lines to be removed from the resulting net.line dataframe.
+
+    This is a regression test for a bug where the converter empties the entire
+    net.line dataframe when any ACLineSegment has missing terminals, instead of
+    just skipping the problematic segment.
+
+    The bug is in _prepare_ac_line_segments_cim16() which sets:
+        ac_line_segments = ac_line_segments[0:0]
+    when ANY ACLineSegment doesn't have exactly 2 terminals, instead of just
+    removing the problematic segments.
+    """
+    # Create CimParser and get an empty cim data structure
+    cim_parser = CimParser(cgmes_version='2.4.15')
+    cim = cim_parser.get_cim_data_structure()
+
+    # Create base voltage
+    cim['eq']['BaseVoltage'] = pd.DataFrame({
+        'rdfId': ['_bv1'],
+        'name': ['110kV'],
+        'nominalVoltage': [110.0]
+    })
+
+    # Create substation and voltage level
+    cim['eq']['GeographicalRegion'] = pd.DataFrame({
+        'rdfId': ['_geo1'],
+        'name': ['Region1']
+    })
+    cim['eq']['SubGeographicalRegion'] = pd.DataFrame({
+        'rdfId': ['_subgeo1'],
+        'name': ['SubRegion1'],
+        'Region': ['_geo1']
+    })
+    cim['eq']['Substation'] = pd.DataFrame({
+        'rdfId': ['_sub1'],
+        'name': ['Substation1'],
+        'Region': ['_subgeo1']
+    })
+    cim['eq']['VoltageLevel'] = pd.DataFrame({
+        'rdfId': ['_vl1'],
+        'name': ['VL1'],
+        'shortName': ['VL1'],
+        'BaseVoltage': ['_bv1'],
+        'Substation': ['_sub1']
+    })
+
+    # Create connectivity nodes (buses)
+    cim['eq']['ConnectivityNode'] = pd.DataFrame({
+        'rdfId': ['_cn1', '_cn2'],
+        'name': ['CN1', 'CN2'],
+        'description': ['Node 1', 'Node 2'],
+        'ConnectivityNodeContainer': ['_vl1', '_vl1']
+    })
+
+    # Create topological nodes
+    cim['tp']['TopologicalNode'] = pd.DataFrame({
+        'rdfId': ['_tn1', '_tn2'],
+        'name': ['TN1', 'TN2'],
+        'description': ['TopNode 1', 'TopNode 2'],
+        'ConnectivityNodeContainer': ['_vl1', '_vl1'],
+        'BaseVoltage': ['_bv1', '_bv1']
+    })
+    cim['tp']['ConnectivityNode'] = pd.DataFrame({
+        'rdfId': ['_cn1', '_cn2'],
+        'TopologicalNode': ['_tn1', '_tn2']
+    })
+
+    # Create one valid ACLineSegment with all required attributes
+    valid_line_id = '_valid_line'
+    # Create one ACLineSegment with only rdf:id (this is the problematic element)
+    invalid_line_id = '_invalid_line_only_rdf_id'
+
+    cim['eq']['ACLineSegment'] = pd.DataFrame({
+        'rdfId': [valid_line_id, invalid_line_id],
+        'name': ['ValidLine', np.nan],
+        'description': ['A valid line', np.nan],
+        'length': [10.0, np.nan],
+        'r': [0.1, np.nan],
+        'x': [0.4, np.nan],
+        'bch': [1e-6, np.nan],
+        'gch': [0.0, np.nan],
+        'r0': [0.3, np.nan],
+        'x0': [1.2, np.nan],
+        'b0ch': [0.5e-6, np.nan],
+        'g0ch': [0.0, np.nan],
+        'shortCircuitEndTemperature': [80.0, np.nan],
+        'BaseVoltage': ['_bv1', np.nan],
+        'EquipmentContainer': ['_vl1', np.nan]
+    })
+
+    # Create terminals ONLY for the valid line (the invalid line has no terminals)
+    cim['eq']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term1', '_term2'],
+        'name': ['Terminal1', 'Terminal2'],
+        'ConnectivityNode': ['_cn1', '_cn2'],
+        'ConductingEquipment': [valid_line_id, valid_line_id],
+        'sequenceNumber': [1, 2]
+    })
+    cim['ssh']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term1', '_term2'],
+        'connected': [True, True]
+    })
+    cim['tp']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term1', '_term2'],
+        'TopologicalNode': ['_tn1', '_tn2']
+    })
+
+    # Create empty operational limit sets and current limits (required by converter)
+    cim['eq']['OperationalLimitSet'] = pd.DataFrame({
+        'rdfId': pd.Series([], dtype='object'),
+        'name': pd.Series([], dtype='object'),
+        'Terminal': pd.Series([], dtype='object')
+    })
+    cim['eq']['CurrentLimit'] = pd.DataFrame({
+        'rdfId': pd.Series([], dtype='object'),
+        'name': pd.Series([], dtype='object'),
+        'OperationalLimitSet': pd.Series([], dtype='object'),
+        'OperationalLimitType': pd.Series([], dtype='object'),
+        'value': pd.Series([], dtype='float64')
+    })
+
+    # Set the cim dict and prepare
+    cim_parser.set_cim_dict(cim)
+    cim_parser.prepare_cim_net()
+    cim_parser.set_cim_data_types()
+
+    # Convert to pandapower - this should NOT raise an exception
+    # and should produce a net with the valid line preserved
+    try:
+        net = from_cim_dict(cim_parser, ignore_errors=True)
+    except Exception as e:
+        # If we get here, the conversion crashed - which is also a bug manifestation
+        pytest.fail(
+            f"Conversion crashed with exception: {e}\n"
+            "This is caused by the bug where all ACLineSegments are removed when any "
+            "single ACLineSegment has invalid terminals, leaving an empty dataframe "
+            "that causes downstream processing errors."
+        )
+
+    # The valid line SHOULD be present in net.line
+    # This assertion will FAIL with the current bug because the entire net.line
+    # dataframe is empty when any ACLineSegment has missing terminals
+    assert len(net.line) >= 1, (
+        f"Expected at least 1 line in net.line, but got {len(net.line)}. "
+        "An ACLineSegment with only rdf:id set should not cause all valid lines to be removed."
+    )
+
+    # Verify the valid line was converted
+    valid_lines = net.line[net.line['origin_id'] == valid_line_id]
+    assert len(valid_lines) == 1, (
+        f"Expected the valid ACLineSegment '{valid_line_id}' to be converted, "
+        f"but it was not found in net.line."
+    )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

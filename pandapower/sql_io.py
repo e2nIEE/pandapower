@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import Optional
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,6 +14,7 @@ try:
     import psycopg2
     import psycopg2.extras
     import psycopg2.errors
+    import psycopg2.sql as psql
 
     PSYCOPG2_INSTALLED = True
 except ImportError:
@@ -111,8 +112,7 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
 
     # Create a list of tuples from the dataframe values
     if len(id_columns.keys()) > 0:
-        tuples = [(*tuple(x), *id_columns.values())
-                  for x in table[table_columns].itertuples(index=tuples_index)]
+        tuples = [(*tuple(x), *id_columns.values()) for x in table[table_columns].itertuples(index=tuples_index)]
     else:
         tuples = [tuple(x) for x in table[table_columns].itertuples(index=tuples_index)]
     # Replace pd.NA values with None for conversion to postgres NULL
@@ -123,7 +123,6 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
     sql_column_types = [index_type,
                         *[match_sql_type(t) for t in table[table_columns].dtypes.astype(str).values],
                         *[match_sql_type(np.result_type(type(v)).name) for v in id_columns.values()]]
-    placeholders = ",".join(['%s'] * len(sql_columns))
 
     # check if all columns already exist and if not, add more columns
     existing_columns = get_sql_table_columns(cursor, table_name)
@@ -139,8 +138,13 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
         add_timestamp_column(conn, cursor, table_name)
 
     # SQL query to execute
-    columns = ['"%s"' % c for c in sql_columns]
-    query = f"INSERT INTO {table_name}({','.join(columns)}) VALUES({placeholders})"
+    columns = [psql.Identifier(c.replace('%', '%%')) for c in sql_columns]
+    query = psql.SQL("INSERT INTO {tbl}({fields}) VALUES({placeholders})").format(
+        tbl=psql.Identifier(*table_name.split('.')),
+        fields=psql.SQL(',').join(columns),
+        placeholders=psql.SQL(',').join(psql.Placeholder() * len(sql_columns))
+    )
+    
     # batch_size = 1000
     # for chunk in tqdm(chunked(tuples, batch_size)):
     #     cursor.executemany(query, chunk)
@@ -300,7 +304,7 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
     """
     Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
     are created if they do not exist.
-    JSON serialization (e.g. for controller objects) is not implemented yet.
+    TODO: JSON serialization (e.g. for controller objects) is not implemented yet.
 
     Parameters
     ----------
@@ -381,7 +385,7 @@ def from_sqlite(filename):
     with sqlite3.connect(filename) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        dodfs = dict()
+        dodfs = {}
         for t, in cursor.fetchall():
             table = pd.read_sql_query("SELECT * FROM '%s'" % t, conn, index_col="index")
             table.index.name = None
@@ -469,7 +473,7 @@ def from_postgresql(
     if not PSYCOPG2_INSTALLED:
         raise UserWarning("install the package psycopg2 to use PostgreSQL I/O in pandapower")
 
-    with psycopg2.connect(host=host, user=user, password=password, database=database) as conn:
+    with psycopg2.connect(host=host, user=user, password=password, database=database, port=port) as conn:
         net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name, empty_dict_like_object, grid_tables)
 
     return net

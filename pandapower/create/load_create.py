@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -8,10 +8,11 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Sequence
 
-from numpy import nan, bool_
+from numpy import nan
 import numpy.typing as npt
 
 from pandapower.auxiliary import pandapowerNet
+from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int, UnderOverExcitedType, WyeDeltaType
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
@@ -32,22 +33,22 @@ def create_load(
     net: pandapowerNet,
     bus: Int,
     p_mw: float,
-    q_mvar: float = 0,
-    const_z_p_percent: float = 0,
-    const_i_p_percent: float = 0,
-    const_z_q_percent: float = 0,
-    const_i_q_percent: float = 0,
+    q_mvar: float = get_default_value("load", "q_mvar"),
+    const_z_p_percent: float = get_default_value("load", "const_z_p_percent"),
+    const_i_p_percent: float = get_default_value("load", "const_i_p_percent"),
+    const_z_q_percent: float = get_default_value("load", "const_z_q_percent"),
+    const_i_q_percent: float = get_default_value("load", "const_i_q_percent"),
     sn_mva: float = nan,
     name: str | None = None,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("load", "scaling"),
     index: Int | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("load", "in_service"),
     type: WyeDeltaType = "wye",
     max_p_mw: float = nan,
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
-    controllable: bool | float = nan,
+    controllable: bool = get_default_value("load", "controllable"),
     **kwargs,
 ) -> Int:
     """
@@ -57,66 +58,38 @@ def create_load(
     negative active power. Please pay attention to the correct signing of the reactive power as
     well.
 
-    INPUT:
-        **net** - The net within this load should be created
+    Parameters:
+        net: The net within this load should be created
+        bus: The bus id to which the load is connected
+        p_mw: The active power of the load
 
-        **bus** (int) - The bus id to which the load is connected
+            - positive value -> load
+            - negative value -> generation
 
-        **p_mw** (float) - The active power of the load
+        q_mvar: The reactive power of the load
+        const_z_p_percent: percentage of p_mw that will be associated to constant impedance load at rated voltage
+        const_i_p_percent: percentage of p_mw that will be associated to constant current load at rated voltage
+        const_z_q_percent: percentage of q_mvar that will be associated to constant impedance load at rated voltage
+        const_i_q_percent: percentage of q_mvar that will be associated to constant current load at rated voltage
+        sn_mva: Nominal power of the load
+        name: The name for this load
+        scaling: An OPTIONAL scaling factor. Multiplies with p_mw and q_mvar.
+        type: type variable to classify the load: wye/delta
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        in_service: True for in_service or False for out of service
+        max_p_mw: Maximum active power load - necessary for controllable loads in for OPF
+        min_p_mw: Minimum active power load - necessary for controllable loads in for OPF
+        max_q_mvar: Maximum reactive power load - necessary for controllable loads in for OPF
+        min_q_mvar: Minimum reactive power load - necessary for controllable loads in OPF
+        controllable: States, whether a load is controllable or not. Only respected for OPF; defaults to False if
+            "controllable" column exists in DataFrame
 
-        - positive value -> load
-        - negative value -> generation
+    Return:
+        The ID of the created load
 
-    OPTIONAL:
-        **q_mvar** (float, default 0) - The reactive power of the load
-
-        **const_z_p_percent** (float, default 0) - percentage of p_mw that will be \
-            associated to constant impedance load at rated voltage
-
-        **const_i_p_percent** (float, default 0) - percentage of p_mw that will be \
-            associated to constant current load at rated voltage
-
-        **const_z_q_percent** (float, default 0) - percentage of q_mvar that will be \
-            associated to constant impedance load at rated voltage
-
-        **const_i_q_percent** (float, default 0) - percentage of q_mvar that will be \
-            associated to constant current load at rated voltage
-
-        **sn_mva** (float, default NaN) - Nominal power of the load
-
-        **name** (string, default None) - The name for this load
-
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor.
-        Multiplies with p_mw and q_mvar.
-
-        **type** (string, 'wye') -  type variable to classify the load: wye/delta
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **max_p_mw** (float, default NaN) - Maximum active power load - necessary for controllable \
-            loads in for OPF
-
-        **min_p_mw** (float, default NaN) - Minimum active power load - necessary for controllable \
-            loads in for OPF
-
-        **max_q_mvar** (float, default NaN) - Maximum reactive power load - necessary for \
-            controllable loads in for OPF
-
-        **min_q_mvar** (float, default NaN) - Minimum reactive power load - necessary for \
-            controllable loads in OPF
-
-        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
-            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created element
-
-    EXAMPLE:
-        create_load(net, bus=0, p_mw=10., q_mvar=2.)
-
+    Example:
+        >>> create_load(net, bus=0, p_mw=10., q_mvar=2.)
     """
     _check_element(net, bus)
 
@@ -141,6 +114,7 @@ def create_load(
         "sn_mva": sn_mva,
         "in_service": in_service,
         "type": type,
+        "controllable": controllable,
         **kwargs,
     }
     _set_entries(net, "load", index, True, entries=entries)
@@ -149,7 +123,6 @@ def create_load(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "load")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "load")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "load")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "load", dtype=bool_, default_val=False)
 
     return index
 
@@ -158,22 +131,22 @@ def create_loads(
     net: pandapowerNet,
     buses: Sequence,
     p_mw: float | Iterable[float],
-    q_mvar: float | Iterable[float] = 0,
-    const_z_p_percent: float | Iterable[float] = 0,
-    const_i_p_percent: float | Iterable[float] = 0,
-    const_z_q_percent: float | Iterable[float] = 0,
-    const_i_q_percent: float | Iterable[float] = 0,
+    q_mvar: float | Iterable[float] = get_default_value("load", "q_mvar"),
+    const_z_p_percent: float | Iterable[float] = get_default_value("load", "const_z_p_percent"),
+    const_i_p_percent: float | Iterable[float] = get_default_value("load", "const_i_p_percent"),
+    const_z_q_percent: float | Iterable[float] = get_default_value("load", "const_z_q_percent"),
+    const_i_q_percent: float | Iterable[float] = get_default_value("load", "const_i_q_percent"),
     sn_mva: float | Iterable[float] = nan,
     name: Iterable[str] | None = None,
-    scaling: float | Iterable[float] = 1.0,
+    scaling: float | Iterable[float] = get_default_value("load", "scaling"),
     index: Int | Iterable[Int] | None = None,
-    in_service: bool | Iterable[bool] = True,
-    type: WyeDeltaType = "wye",
+    in_service: bool | Iterable[bool] = get_default_value("load", "in_service"),
+    type: WyeDeltaType = get_default_value("load", "type"),
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
-    controllable: bool | Iterable[bool] | float = nan,
+    controllable: bool | Iterable[bool] = get_default_value("load", "controllable"),
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -183,68 +156,38 @@ def create_loads(
     negative active power. Please pay attention to the correct signing of the reactive power as
     well.
 
-    INPUT:
-        **net** - The net within this load should be created
+    Parameters:
+        net: The net within this load should be created
+        buses: A list of bus ids to which the loads are connected
+        p_mw: The active power of the loads
 
-        **buses** (list of int) - A list of bus ids to which the loads are connected
+            - positive value   -> load
+            - negative value  -> generation
 
-        **p_mw** (list of floats) - The active power of the loads
+        q_mvar: The reactive power of the loads
+        const_z_p_percent: percentage of p_mw that will be associated to constant impedance loads at rated voltage
+        const_i_p_percent: percentage of p_mw that will be associated to constant current load at rated voltage
+        const_z_q_percent: percentage of q_mvar that will be associated to constant impedance loads at rated voltage
+        const_i_q_percent: percentage of q_mvar that will be associated to constant current load at rated voltage
+        sn_mva: Nominal power of the loads
+        name: The name for this load
+        scaling: An OPTIONAL custom scaling factor. Multiplies with p_mw and q_mvar.
+        type: type variable to classify the load
+        index: Force a specified ID if it is available. If None, the index is set to a range between one higher than the
+            highest already existing index and the length of loads that shall be created.
+        in_service: True for in_service or False for out of service
+        max_p_mw: Maximum active power load - necessary for controllable loads in for OPF
+        min_p_mw: Minimum active power load - necessary for controllable loads in for OPF
+        max_q_mvar: Maximum reactive power load - necessary for controllable loads in for OPF
+        min_q_mvar: Minimum reactive power load - necessary for controllable loads in OPF
+        controllable: States, whether a load is controllable or not. Only respected for OPF Defaults to False if
+            "controllable" column exists in DataFrame
 
-        - positive value   -> load
-        - negative value  -> generation
+    Returns:
+        The IDs of the created loads
 
-    OPTIONAL:
-        **q_mvar** (list of floats, default 0) - The reactive power of the loads
-
-        **const_z_p_percent** (list of floats, default 0) - percentage of p_mw that will \
-            be associated to constant impedance loads at rated voltage
-
-        **const_i_p_percent** (list of floats, default 0) - percentage of p_mw that will \
-            be associated to constant current load at rated voltage
-
-        **const_z_q_percent** (list of floats, default 0) - percentage of q_mvar that will \
-            be associated to constant impedance loads at rated voltage
-
-        **const_i_q_percent** (list of floats, default 0) - percentage of q_mvar that will \
-            be associated to constant current load at rated voltage
-
-        **sn_mva** (list of floats, default None) - Nominal power of the loads
-
-        **name** (list of strings, default None) - The name for this load
-
-        **scaling** (list of floats, default 1.) - An OPTIONAL scaling factor to be set customly.
-        Multiplies with p_mw and q_mvar.
-
-        **type** (string, None) -  type variable to classify the load
-
-        **index** (list of int, None) - Force a specified ID if it is available. If None, the index\
-            is set to a range between one higher than the highest already existing index and the \
-            length of loads that shall be created.
-
-        **in_service** (list of boolean) - True for in_service or False for out of service
-
-        **max_p_mw** (list of floats, default NaN) - Maximum active power load - necessary for \
-            controllable loads in for OPF
-
-        **min_p_mw** (list of floats, default NaN) - Minimum active power load - necessary for \
-            controllable loads in for OPF
-
-        **max_q_mvar** (list of floats, default NaN) - Maximum reactive power load - necessary for \
-            controllable loads in for OPF
-
-        **min_q_mvar** (list of floats, default NaN) - Minimum reactive power load - necessary for \
-            controllable loads in OPF
-
-        **controllable** (list of boolean, default NaN) - States, whether a load is controllable \
-            or not. Only respected for OPF
-            Defaults to False if "controllable" column exists in DataFrame
-
-    OUTPUT:
-        **index** (numpy.ndarray (int)) - The unique IDs of the created elements
-
-    EXAMPLE:
-        create_loads(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
-
+    Example:
+        >>> create_loads(net, buses=[0, 2], p_mw=[10., 5.], q_mvar=[2., 0.])
     """
     _check_multiple_elements(net, buses)
 
@@ -277,11 +220,16 @@ def create_loads(
     _add_to_entries_if_not_nan(net, "load", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "load", entries, index, "max_q_mvar", max_q_mvar)
     _add_to_entries_if_not_nan(
-        net, "load", entries, index, "controllable", controllable, dtype=bool_, default_val=False
+        net,
+        "load",
+        entries,
+        index,
+        "controllable",
+        controllable,
+        default_val=get_default_value("load", "controllable"),
     )
-    defaults_to_fill = [("controllable", False)]
 
-    _set_multiple_entries(net, "load", index, defaults_to_fill=defaults_to_fill, entries=entries)
+    _set_multiple_entries(net, "load", index, entries=entries)
 
     return index
 
@@ -289,18 +237,21 @@ def create_loads(
 def create_asymmetric_load(
     net: pandapowerNet,
     bus: Int,
-    p_a_mw: float = 0,
-    p_b_mw: float = 0,
-    p_c_mw: float = 0,
-    q_a_mvar: float = 0,
-    q_b_mvar: float = 0,
-    q_c_mvar: float = 0,
+    p_a_mw: float = get_default_value("asymmetric_load", "p_a_mw"),
+    p_b_mw: float = get_default_value("asymmetric_load", "p_b_mw"),
+    p_c_mw: float = get_default_value("asymmetric_load", "p_c_mw"),
+    q_a_mvar: float = get_default_value("asymmetric_load", "q_a_mvar"),
+    q_b_mvar: float = get_default_value("asymmetric_load", "q_b_mvar"),
+    q_c_mvar: float = get_default_value("asymmetric_load", "q_c_mvar"),
+    sn_a_mva: float = nan,
+    sn_b_mva: float = nan,
+    sn_c_mva: float = nan,
     sn_mva: float = nan,
     name: str | None = None,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("asymmetric_load", "scaling"),
     index: Int | None = None,
-    in_service: bool = True,
-    type: WyeDeltaType = "wye",
+    in_service: bool = get_default_value("asymmetric_load", "in_service"),
+    type: WyeDeltaType = get_default_value("asymmetric_load", "type"),
     **kwargs,
 ) -> Int:
     """
@@ -310,44 +261,31 @@ def create_asymmetric_load(
     negative active power. Please pay attention to the correct signing of the reactive power as
     well.
 
-    INPUT:
-        **net** - The net within this load should be created
+    Parameters:
+        net: The net within this load should be created
+        bus: The bus id to which the load is connected
+        p_a_mw: The active power for Phase A load
+        p_b_mw: The active power for Phase B load
+        p_c_mw: The active power for Phase C load
+        q_a_mvar: The reactive power for Phase A load
+        q_b_mvar: The reactive power for Phase B load
+        q_c_mvar: The reactive power for Phase C load
+        sn_a_mva: Nominal power for Phase A load
+        sn_b_mva: Nominal power for Phase B load
+        sn_c_mva: Nominal power for Phase C load
+        sn_mva: Nominal power of the load
+        name: The name for this load
+        scaling: An OPTIONAL custom scaling factor. Multiplies with p_mw and q_mvar of all phases.
+        type:  type variable to classify three ph load: delta/wye
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        in_service: True for in_service or False for out of service
 
-        **bus** (int) - The bus id to which the load is connected
+    Returns:
+        The ID of the created asymmetric load
 
-    OPTIONAL:
-        **p_a_mw** (float, default 0) - The active power for Phase A load
-
-        **p_b_mw** (float, default 0) - The active power for Phase B load
-
-        **p_c_mw** (float, default 0) - The active power for Phase C load
-
-        **q_a_mvar** float, default 0) - The reactive power for Phase A load
-
-        **q_b_mvar** float, default 0) - The reactive power for Phase B load
-
-        **q_c_mvar** (float, default 0) - The reactive power for Phase C load
-
-        **sn_mva** (float, default: NaN) - Nominal power of the load
-
-        **name** (string, default: None) - The name for this load
-
-        **scaling** (float, default: 1.) - An OPTIONAL scaling factor to be set customly
-        Multiplies with p_mw and q_mvar of all phases.
-
-        **type** (string,default: wye) -  type variable to classify three ph load: delta/wye
-
-        **index** (int,default: None) - Force a specified ID if it is available. If None, the index\
-            one higher than the highest already existing index is selected.
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created element
-
-    EXAMPLE:
-        **create_asymmetric_load(net, bus=0, p_c_mw=9., q_c_mvar=1.8)**
-
+    Example:
+        >>> create_asymmetric_load(net, bus=0, p_c_mw=9., q_c_mvar=1.8)
     """
     _check_element(net, bus)
 
@@ -363,6 +301,9 @@ def create_asymmetric_load(
         "q_a_mvar": q_a_mvar,
         "q_b_mvar": q_b_mvar,
         "q_c_mvar": q_c_mvar,
+        "sn_a_mva": sn_a_mva,
+        "sn_b_mva": sn_b_mva,
+        "sn_c_mva": sn_c_mva,
         "sn_mva": sn_mva,
         "in_service": in_service,
         "type": type,
@@ -435,29 +376,26 @@ def create_load_from_cosphi(  # no index ?
     """
     Creates a load element from rated power and power factor cos(phi).
 
-    INPUT:
-        **net** - The net within this static generator should be created
+    Parameters:
+        net: The net within this static generator should be created
+        bus: The bus id to which the load is connected
+        sn_mva: rated power of the load
+        cos_phi: power factor cos_phi
+        mode:
 
-        **bus** (int) - The bus id to which the load is connected
+            - "underexcited" (Q absorption, decreases voltage)
+            - "overexcited" (Q injection, increases voltage)
 
-        **sn_mva** (float) - rated power of the load
+        **kwargs: any parameter from create_load, as these get passed to the create_load function
 
-        **cos_phi** (float) - power factor cos_phi
-
-        **mode** (str) - "underexcited" (Q absorption, decreases voltage) or "overexcited"
-                         (Q injection, increases voltage)
-
-    OPTIONAL:
-        same as in create_load, keyword arguments are passed to the create_load function
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created load
+    Returns:
+        The ID of the created load
 
     Load elements are modeled from a consumer point of view. Active power will therefore always be
     positive, reactive power will be positive for underexcited behavior (Q absorption, decreases voltage) and negative
     for overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox import pq_from_cosphi
+    from pandapower.toolbox.power_factor import pq_from_cosphi
 
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="load")
     return create_load(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
@@ -467,41 +405,31 @@ def create_load_dc(
     net: pandapowerNet,
     bus_dc: Int,
     p_dc_mw: float,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("load_dc", "scaling"),
     type: str | None = None,
     index: Int | None = None,
     name: str | None = None,
-    in_service: bool = True,
-    controllable: bool = False,
+    in_service: bool = get_default_value("load_dc", "in_service"),
+    controllable: bool = get_default_value("load_dc", "controllable"),
     **kwargs,
 ):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
-    INPUT:
 
-        **net** (pandapowerNet) - The pandapower network in which the element is created
+    Parameters:
+        net: The pandapower network in which the element is created
+        bus_dc: index of the dc bus the dc load is connected to
+        p_dc_mw: The power of the load
+        name: element name
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing index is selected.
+        in_service: True for in service or False for out of service.
+        scaling: An OPTIONAL scaling factor, is multiplied with p_dc_mw.
+        type: A string describing the type.
+        controllable: States, whether a load is controllable or not. Only respected for OPF; defaults to False if
+            "controllable" column exists in DataFrame
 
-        **bus_dc** (int) - index of the dc bus the dc load is connected to
-
-        **p_dc_mw** (float) - The power of the load
-
-    OPTIONAL:
-        **name** (str, None) - element name
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **in_service** (bool, True) - True for in service or False for out of service.
-
-        **scaling** (float, default 1.) - An OPTIONAL scaling factor, is multiplied with p_dc_mw.
-
-        **type** (str) - A string describing the type.
-
-        **controllable** (boolean, default NaN) - States, whether a load is controllable or not. \
-            Only respected for OPF; defaults to False if "controllable" column exists in DataFrame
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created svc
+    Returns:
+        The ID of the created svc
 
     """
     _check_element(net, bus_dc, element="bus_dc")

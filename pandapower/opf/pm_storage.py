@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 def add_storage_opf_settings(net, ppci, pm):

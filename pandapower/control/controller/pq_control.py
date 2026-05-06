@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.control.controller.const_control import ConstControl
@@ -150,7 +150,7 @@ class PQController(ConstControl):
 
             if not self.ts_absolute:
                 if self.sn_mva.isnull().any():
-                    logger.error(f"There are PQ controlled elements with NaN sn_mva values.")
+                    logger.error("There are PQ controlled elements with NaN sn_mva values.")
                 self.p_mw = self.p_mw * self.sn_mva
                 self.q_mvar = self.q_mvar * self.sn_mva
 

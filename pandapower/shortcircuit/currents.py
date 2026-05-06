@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import warnings
 
@@ -144,7 +144,7 @@ def _current_source_current(net, ppci, bus_idx):
     # _is_elements_final exists for some reason, and weirdly it can be different than _is_elements. 
     # it is not documented anywhere why it exists and I don't have any time to find out, but this here fixes the problem.
 
-    if np.all(net.sgen.current_source.values):
+    if "current_source" not in net.sgen.columns or np.all(net.sgen.current_source.values):
         sgen = net.sgen[net._is_elements_final["sgen"]]
     else:
         sgen = net.sgen[net._is_elements_final["sgen"] & net.sgen.current_source]
@@ -225,7 +225,7 @@ def _calc_ith(net, ppci):
     f = 50
     n = 1
     m = (np.exp(4 * f * tk_s * np.log(kappa - 1)) - 1) / (2 * f * tk_s * np.log(kappa - 1))
-    m[np.where(kappa > 1.99)] = 0
+    m[np.nonzero(kappa > 1.99)] = 0
     ppci["bus"][:, M] = m
     ith = (ppci["bus"][:, IKSS1] + ppci["bus"][:, IKSS2]) * np.sqrt(m + n)
     ppci["bus"][:, ITH] = ith

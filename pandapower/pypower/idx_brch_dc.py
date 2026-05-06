@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -56,8 +56,8 @@ DC_IF          = 9   # current injected at "from" bus end (p.u.)
 DC_PT          = 10   # real power injected at "to" bus end (MW)
 DC_IT          = 11   # current injected at "to" bus end (p.u.)
 
-DC_BR_R_ASYM = 12   # todo Roman check if necessary
-DC_BR_X_ASYM = 13   # todo Roman check if necessary
+DC_BR_R_ASYM = 12   # todo check if necessary
+DC_BR_X_ASYM = 13   # todo check if necessary
 
 DC_TDPF = 14  ### TDPF not implemented for DC lines
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -9,12 +9,10 @@ import logging
 from operator import itemgetter
 from typing import Iterable, Sequence
 
-from numpy import nan, isnan, any as np_any, bool_, all as np_all, float64
 import numpy.typing as npt
+from numpy import nan, isnan, any as np_any, all as np_all
 
 from pandapower.auxiliary import pandapowerNet
-from pandapower.std_types import load_std_type
-from pandapower.pp_types import Int, LineType
 from pandapower.create._utils import (
     _add_branch_geodata,
     _add_multiple_branch_geodata,
@@ -27,6 +25,9 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network_structure import get_default_value
+from pandapower.pp_types import Int, LineType
+from pandapower.std_types import load_std_type
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +41,9 @@ def create_line(
     name: str | None = None,
     index: Int | None = None,
     geodata: Iterable[tuple[float, float]] | None = None,
-    df: float = 1.0,
-    parallel: int = 1,
-    in_service: bool = True,
+    df: float = get_default_value("line", "df"),
+    parallel: int = get_default_value("line", "parallel"),
+    in_service: bool = get_default_value("line", "in_service"),
     max_loading_percent: float = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
@@ -52,83 +53,48 @@ def create_line(
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
 
+    Parameters:
+        net: The net within this line should be created
+        from_bus: ID of the bus on one side which the line will be connected with
+        to_bus: ID of the bus on the other side which the line will be connected with
+        length_km: The line length in km
+        std_type: Name of a standard line type:
+            - Pre-defined in standard_linetypes
+            - Customized std_type made using **create_std_type()**
+        name: A custom name for this line
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        geodata: Iterable[Tuple[int, int]|Tuple[float, float]], The geodata of the line. The first element should be the
+            coordinates of from_bus and the last should be the coordinates of to_bus. The points in the middle represent
+            the bending points of the line
+        in_service: True for in_service or False for out of service
+        df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
+        parallel: number of parallel line systems
+        max_loading_percent: maximum current loading (only needed for OPF)
+        alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
+        temperature_degree_celsius: line temperature for which line resistance is adjusted
 
-    INPUT:
-        **net** - The net within this line should be created
+    Keyword arguments:
+        tdpf (bool): whether the line is considered in the TDPF calculation
+        wind_speed_m_per_s (float): wind speed at the line in m/s (TDPF)
+        wind_angle_degree (float): angle of attack between the wind direction and the line (TDPF)
+        conductor_outer_diameter_m (float): outer diameter of the line conductor in m (TDPF)
+        air_temperature_degree_celsius (float): ambient temperature in °C (TDPF)
+        reference_temperature_degree_celsius (float): reference temperature in °C for which r_ohm_per_km for the line is
+            specified (TDPF)
+        solar_radiation_w_per_sq_m (float): solar radiation on horizontal plane in W/m² (TDPF)
+        solar_absorptivity: Albedo factor for absorptivity of the lines (TDPF)
+        emissivity (float): Albedo factor for emissivity of the lines (TDPF)
+        r_theta_kelvin_per_mw (float): thermal resistance of the line (TDPF, only for simplified method)
+        mc_joule_per_m_k (float): specific mass of the conductor multiplied by the specific thermal capacity of the
+            material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-        **from_bus** (int) - ID of the bus on one side which the line will be connected with
+    Returns:
+        The unique ID of the created line
 
-        **to_bus** (int) - ID of the bus on the other side which the line will be connected with
-
-        **length_km** (float) - The line length in km
-
-        **std_type** (string) - Name of a standard line type:
-
-                                - Pre-defined in standard_linetypes
-
-                                **or**
-
-                                - Customized std_type made using **create_std_type()**
-
-    OPTIONAL:
-        **name** (string, None) - A custom name for this line
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **geodata**
-        (Iterable[Tuple[int, int]|Tuple[float, float]], default None) -
-        The geodata of the line. The first element should be the coordinates
-        of from_bus and the last should be the coordinates of to_bus. The points
-        in the middle represent the bending points of the line
-
-        **in_service** (boolean, True) - True for in_service or False for out of service
-
-        **df** (float, 1) - derating factor: maximum current of line in relation to nominal current\
-            of line (from 0 to 1)
-
-        **parallel** (integer, 1) - number of parallel line systems
-
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
-
-        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
-
-        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
-
-        **tdpf (bool)** - whether the line is considered in the TDPF calculation
-
-        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
-
-        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
-
-        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
-
-        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
-
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
-            r_ohm_per_km for the line is specified (TDPF)
-
-        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
-
-        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
-
-        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
-
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
-            simplified method)
-
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
-            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
-                tdpf_delay_s parameter)
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created line
-
-    EXAMPLE:
-        create_line(net, from_bus=0, to_bus=1, length_km=0.1,  std_type="NAYY 4x50 SE", name="line1")
-
+    Example:
+        >>> create_line(net, from_bus=0, to_bus=1, length_km=0.1,  std_type="NAYY 4x50 SE", name="line1")
     """
-
     # check if bus exist to attach the line to
     _check_branch_element(net, "Line", index, from_bus, to_bus)
 
@@ -171,7 +137,7 @@ def create_line(
     if "type" in lineparam:
         entries["type"] = lineparam["type"]
 
-    # if net.line column already has alpha, add it from std_type
+    # only add alpha from std_type if any line already has an alpha # TODO inconsistent behavior: Document this CLEARLY!
     if "alpha" in net.line.columns and "alpha" in lineparam:
         entries["alpha"] = lineparam["alpha"]
 
@@ -181,9 +147,9 @@ def create_line(
     _set_value_if_not_nan(net, index, alpha, "alpha", "line")
     _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line", float64)
+        _set_value_if_not_nan(net, index, value, column, "line")
 
     _add_branch_geodata(net, geodata, index)
 
@@ -199,9 +165,9 @@ def create_line_dc(
     name: str | None = None,
     index: Int | None = None,
     geodata: Iterable[tuple[float, float]] | None = None,
-    df: float = 1.0,
-    parallel: int = 1,
-    in_service: bool = True,
+    df: float = get_default_value("line", "df"),
+    parallel: int = get_default_value("line", "parallel"),
+    in_service: bool = get_default_value("line", "in_service"),
     max_loading_percent: float = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
@@ -211,81 +177,46 @@ def create_line_dc(
     Creates a line element in net["line_dc"]
     The line_dc parameters are defined through the standard type library.
 
+    Parameters:
+        net: The net within this line should be created
+        from_bus_dc: ID of the bus_dc on one side which the line will be connected with
+        to_bus_dc: ID of the bus_dc on the other side which the line will be connected with
+        length_km: The line length in km
+        std_type: Name of a standard line type:
+            - Pre-defined in standard_linetypes
+            - Customized std_type made using **create_std_type()**
+        name: A custom name for this line_dc
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        geodata: The line geodata of the line_dc. The first row should be the coordinates of bus a and the last should
+            be the coordinates of bus b. The points in the middle represent the bending points of the line
+        in_service: True for in_service or False for out of service
+        df: derating factor, maximum current of line_dc in relation to nominal current of line (from 0 to 1)
+        parallel: number of parallel line systems
+        max_loading_percent: maximum current loading (only needed for OPF)
+        alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
+        temperature_degree_celsius: line temperature for which line resistance is adjusted
 
-    INPUT:
-        **net** - The net within this line should be created
+    Keyword Arguments:
+        tdpf (bool): whether the line is considered in the TDPF calculation
+        wind_speed_m_per_s (float): wind speed at the line in m/s (TDPF)
+        wind_angle_degree (float): angle of attack between the wind direction and the line (TDPF)
+        conductor_outer_diameter_m (float): outer diameter of the line conductor in m (TDPF)
+        air_temperature_degree_celsius (float): ambient temperature in °C (TDPF)
+        reference_temperature_degree_celsius (float): reference temperature in °C for which r_ohm_per_km for the line_dc
+            is specified (TDPF)
+        solar_radiation_w_per_sq_m (float): solar radiation on horizontal plane in W/m² (TDPF)
+        solar_absorptivity (float): Albedo factor for absorptivity of the lines (TDPF)
+        emissivity (float): Albedo factor for emissivity of the lines (TDPF)
+        r_theta_kelvin_per_mw (float): thermal resistance of the line (TDPF, only for simplified method)
+        mc_joule_per_m_k (float): specific mass of the conductor multiplied by the specific thermal capacity of the
+            material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-        **from_bus_dc** (int) - ID of the bus_dc on one side which the line will be connected with
+    Returns:
+        The ID of the created dc line
 
-        **to_bus_dc** (int) - ID of the bus_dc on the other side which the line will be connected with
-
-        **length_km** (float) - The line length in km
-
-        **std_type** (string) - Name of a standard line type :
-
-                                - Pre-defined in standard_linetypes
-
-                                **or**
-
-                                - Customized std_type made using **create_std_type()**
-
-    OPTIONAL:
-        **name** (string, None) - A custom name for this line_dc
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **geodata**
-        (array, default None, shape= (,2L)) -
-        The line geodata of the line_dc. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
-        in the middle represent the bending points of the line
-
-        **in_service** (boolean, True) - True for in_service or False for out of service
-
-        **df** (float, 1) - derating factor: maximum current of line_dc in relation to nominal current\
-            of line (from 0 to 1)
-
-        **parallel** (integer, 1) - number of parallel line systems
-
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
-
-        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
-
-        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
-
-        **tdpf (bool)** - whether the line is considered in the TDPF calculation
-
-        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
-
-        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
-
-        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
-
-        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
-
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
-            r_ohm_per_km for the line_dc is specified (TDPF)
-
-        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
-
-        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
-
-        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
-
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
-            simplified method)
-
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
-            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
-                tdpf_delay_s parameter)
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created dc line
-
-    EXAMPLE:
-        create_line_dc(net, from_bus_dc=0, to_bus_dc=1, length_km=0.1,  std_type="NAYY 4x50 SE", name="line_dc1")
-
+    Example:
+        >>> create_line_dc(net, from_bus_dc=0, to_bus_dc=1, length_km=0.1,  std_type="NAYY 4x50 SE", name="line_dc1")
     """
 
     # check if bus exist to attach the line to
@@ -344,9 +275,9 @@ def create_line_dc(
     _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
     _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line_dc")
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+        _set_value_if_not_nan(net, index, value, column, "line_dc")
 
     _add_branch_geodata(net, geodata, index, "line_dc")
 
@@ -361,90 +292,60 @@ def create_lines(
     std_type: str | Iterable[str],
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
-    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-    df: float | Iterable[float] = 1.0,
-    parallel: int | Iterable[int] = 1,
-    in_service: bool | Iterable[bool] = True,
+    geodata: Iterable[Iterable[tuple[float, float]]] | Iterable[tuple[float, float]] | None = None,
+    df: float | Iterable[float] = get_default_value("line", "df"),
+    parallel: int | Iterable[int] = get_default_value("line", "parallel"),
+    in_service: bool | Iterable[bool] = get_default_value("line", "in_service"),
     max_loading_percent: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
-    """ Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
-        must be arrays of equal length. Other parameters may be either arrays of the same length or
-        single or values. In any case the line parameters are defined through a single standard
-        type, so all lines have the same standard type.
+    """
+    Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
+    must be arrays of equal length. Other parameters may be either arrays of the same length or
+    single or values. In any case the line parameters are defined through a single standard
+    type, so all lines have the same standard type.
 
 
-        INPUT:
-            **net** - The net within this line should be created
+    Parameters:
+        net: The net within this line should be created
+        from_buses: ID of the bus on one side which the line will be connected with
+        to_buses: ID of the bus on the other side which the line will be connected with
+        length_km: The line length in km
+        std_type: The line type of the lines.
+        name: A custom name for this line
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        geodata: The geodata of the line. The first element should be the coordinates of from_bus and the last should be
+            the coordinates of to_bus. The points in the middle represent the bending points of the line
+        in_service: True for in_service or False for out of service
+        df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
+        parallel: number of parallel line systems
+        max_loading_percent: maximum current loading (only needed for OPF)
 
-            **from_buses** (list of int) - ID of the bus on one side which the line will be \
-                connected with
+    Keyword Arguments:
+        alpha (float): temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
+        temperature_degree_celsius (float): line temperature for which line resistance is adjusted
+        tdpf (bool): whether the line is considered in the TDPF calculation
+        wind_speed_m_per_s (float): wind speed at the line in m/s (TDPF)
+        wind_angle_degree (float): angle of attack between the wind direction and the line (TDPF)
+        conductor_outer_diameter_m (float): outer diameter of the line conductor in m (TDPF)
+        air_temperature_degree_celsius (float): ambient temperature in °C (TDPF)
+        reference_temperature_degree_celsius (float): reference temperature in °C for which r_ohm_per_km for the line is
+            specified (TDPF)
+        solar_radiation_w_per_sq_m (float): solar radiation on horizontal plane in W/m² (TDPF)
+        solar_absorptivity (float): Albedo factor for absorptivity of the lines (TDPF)
+        emissivity (float): Albedo factor for emissivity of the lines (TDPF)
+        r_theta_kelvin_per_mw (float): thermal resistance of the line (TDPF, only for simplified method)
+        mc_joule_per_m_k (float): specific mass of the conductor multiplied by the specific thermal capacity of the
+            material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-            **to_buses** (list of int) - ID of the bus on the other side which the line will be \
-                connected with
+        Returns:
+            The unique ID of the created lines
 
-            **length_km** (list of float) - The line length in km
-
-            **std_type** (string) - The line type of the lines.
-
-        OPTIONAL:
-            **name** (list of string, None) - A custom name for this line
-
-            **index** (list of int, None) - Force a specified ID if it is available. If None, the\
-                index one higher than the highest already existing index is selected.
-
-            **geodata**
-            (Iterable[Iterable[Tuple[x, y]]] or Iterable[Tuple[x, y]], default None) -
-            The geodata of the line. The first element should be the coordinates
-            of from_bus and the last should be the coordinates of to_bus. The points
-            in the middle represent the bending points of the line
-
-            **in_service** (list of boolean, True) - True for in_service or False for out of service
-
-            **df** (list of float, 1) - derating factor: maximum current of line in relation to \
-                nominal current of line (from 0 to 1)
-
-            **parallel** (list of integer, 1) - number of parallel line systems
-
-            **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
-
-            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
-
-            **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
-
-            **tdpf (bool)** - whether the line is considered in the TDPF calculation
-
-            **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
-
-            **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
-
-            **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
-
-            **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
-
-            **reference_temperature_degree_celsius (float)** - reference temperature in °C for \
-                which r_ohm_per_km for the line is specified (TDPF)
-
-            **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
-
-            **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
-
-            **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
-
-            **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
-                simplified method)
-
-            **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the \
-                specific thermal capacity of the material (TDPF, only for thermal inertia \
-                consideration with tdpf_delay_s parameter)
-
-        OUTPUT:
-            **index** (list of int) - The unique ID of the created lines
-
-        EXAMPLE:
-            create_lines(net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE",
-                         name=["line1", "line2"])
-
+        Example:
+            >>> create_lines(
+            >>>   net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE", name=["line1", "line2"]
+            >>> )
     """
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
 
@@ -484,7 +385,7 @@ def create_lines(
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent", max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = (
         "wind_speed_m_per_s",
         "wind_angle_degree",
@@ -499,11 +400,9 @@ def create_lines(
     )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value)
 
     _set_multiple_entries(net, "line", index, entries=entries)
-    if "geo" in net.bus.columns:
-        net.line.loc[net.line.geo == "", "geo"] = None  # overwrite
 
     _add_multiple_branch_geodata(net, geodata, index)
 
@@ -519,89 +418,59 @@ def create_lines_dc(
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
     geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-    df: float | Iterable[float] = 1.0,
-    parallel: int | Iterable[int] = 1,
-    in_service: bool | Iterable[bool] = True,
+    df: float | Iterable[float] = get_default_value("line", "df"),
+    parallel: int | Iterable[int] = get_default_value("line", "parallel"),
+    in_service: bool | Iterable[bool] = get_default_value("line", "in_service"),
     max_loading_percent: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
-    """ Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
-        must be arrays of equal length. Other parameters may be either arrays of the same length or
-        single or values. In any case the dc line parameters are defined through a single standard
-        type, so all lines have the same standard type.
+    """
+    Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
+    must be arrays of equal length. Other parameters may be either arrays of the same length or
+    single or values. In any case the dc line parameters are defined through a single standard
+    type, so all lines have the same standard type.
 
 
-        INPUT:
-            **net** - The net within this dc line should be created
+    Parameters:
+        net: The net within this dc line should be created
+        from_buses_dc: ID of the dc buses on one side which the dc lines will be connected with
+        to_buses_dc: ID of the dc buses on the other side which the dc lines will be connected with
+        length_km: The dc line length in km
+        std_type: The dc line type of the dc lines.
+        name: A custom name for these dc lines
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        geodata: The linegeodata of the dc line. The first row should be the coordinates of dc bus a and the last should
+            be the coordinates of dc bus b. The points in the middle represent the bending points of the dc line
+        in_service: True for in_service or False for out of service
+        df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
+        parallel: number of parallel line systems
+        max_loading_percent: maximum current loading (only needed for OPF)
 
-            **from_buses_dc** (list of int) - ID of the dc buses on one side which the dc lines will be \
-                connected with
+    Keyword Arguments:
+        alpha (float): temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
+        temperature_degree_celsius (float): line temperature for which line resistance is adjusted
+        tdpf (bool): whether the line is considered in the TDPF calculation
+        wind_speed_m_per_s (float): wind speed at the line in m/s (TDPF)
+        wind_angle_degree (float): angle of attack between the wind direction and the line (TDPF)
+        conductor_outer_diameter_m (float): outer diameter of the line conductor in m (TDPF)
+        air_temperature_degree_celsius (float): ambient temperature in °C (TDPF)
+        reference_temperature_degree_celsius (float): reference temperature in °C for which r_ohm_per_km for the line is
+            specified (TDPF)
+        solar_radiation_w_per_sq_m (float): solar radiation on horizontal plane in W/m² (TDPF)
+        solar_absorptivity (float): Albedo factor for absorptivity of the lines (TDPF)
+        emissivity (float): Albedo factor for emissivity of the lines (TDPF)
+        r_theta_kelvin_per_mw (float): thermal resistance of the line (TDPF, only for simplified method)
+        mc_joule_per_m_k (float): specific mass of the conductor multiplied by the specific thermal capacity of the
+            material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-            **to_buses_dc** (list of int) - ID of the dc buses on the other side which the dc lines will be \
-                connected with
+    Returns:
+        The unique ID of the created dc lines
 
-            **length_km** (list of float) - The dc line length in km
-
-            **std_type** (list of strings) - The dc line type of the dc lines.
-
-        OPTIONAL:
-            **name** (list of string, None) - A custom name for these dc lines
-
-            **index** (list of int, None) - Force a specified ID if it is available. If None, the\
-                index one higher than the highest already existing index is selected.
-
-            **geodata**
-            (list of arrays, default None, shape of arrays (,2L)) -
-            The linegeodata of the dc line. The first row should be the coordinates
-            of dc bus a and the last should be the coordinates of dc bus b. The points
-            in the middle represent the bending points of the dc line
-
-            **in_service** (list of boolean, True) - True for in_service or False for out of service
-
-            **df** (list of float, 1) - derating factor: maximum current of line in relation to \
-                nominal current of line (from 0 to 1)
-
-            **parallel** (list of integer, 1) - number of parallel line systems
-
-            **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
-
-            **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
-
-            **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
-
-            **tdpf (bool)** - whether the line is considered in the TDPF calculation
-
-            **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
-
-            **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
-
-            **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
-
-            **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
-
-            **reference_temperature_degree_celsius (float)** - reference temperature in °C for \
-                which r_ohm_per_km for the line is specified (TDPF)
-
-            **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
-
-            **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
-
-            **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
-
-            **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
-                simplified method)
-
-            **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the \
-                specific thermal capacity of the material (TDPF, only for thermal inertia \
-                consideration with tdpf_delay_s parameter)
-
-        OUTPUT:
-            **index** (list of int) - The unique ID of the created dc lines
-
-        EXAMPLE:
-            create_lines_dc(net, from_buses_dc=[0,1], to_buses_dc=[2,3], length_km=0.1,
-            std_type="Not specified yet", name=["line_dc1","line_dc2"])
-
+    Example:
+        >>> create_lines_dc(net, from_buses_dc=[0,1], to_buses_dc=[2,3], length_km=0.1,
+        >>>   std_type="Not specified yet", name=["line_dc1","line_dc2"]
+        >>> )
     """
     _check_multiple_branch_elements(
         net, from_buses_dc, to_buses_dc, "Lines_dc", node_name="bus_dc", plural="(all dc buses)"
@@ -639,7 +508,7 @@ def create_lines_dc(
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent", max_loading_percent)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = (
         "wind_speed_m_per_s",
         "wind_angle_degree",
@@ -654,7 +523,7 @@ def create_lines_dc(
     )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value)
 
     _set_multiple_entries(net, "line_dc", index, entries=entries)
 
@@ -676,111 +545,72 @@ def create_line_from_parameters(
     index: Int | None = None,
     type: LineType | None = None,
     geodata: Iterable[tuple[float, float]] | None = None,
-    in_service: bool = True,
-    df: float = 1.0,
-    parallel: int = 1,
-    g_us_per_km: float = 0.0,
+    in_service: bool = get_default_value("line", "in_service"),
+    df: float = get_default_value("line", "df"),
+    parallel: int = get_default_value("line", "parallel"),
+    g_us_per_km: float = get_default_value("line", "g_us_per_km"),
     max_loading_percent: float = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
     r0_ohm_per_km: float = nan,
     x0_ohm_per_km: float = nan,
     c0_nf_per_km: float = nan,
-    g0_us_per_km: float = 0,
+    g0_us_per_km: float = get_default_value("line", "g0_us_per_km"),
     endtemp_degree: float = nan,
     **kwargs,
 ) -> Int:
     """
     Creates a line element in net["line"] from line parameters.
 
-    INPUT:
-        **net** - The net within this line should be created
+    Parameters:
+        net: The net within this line should be created
+        from_bus: ID of the bus on one side which the line will be connected with
+        to_bus: ID of the bus on the other side which the line will be connected with
+        length_km: The line length in km
+        r_ohm_per_km: line resistance in ohm per km
+        x_ohm_per_km: line reactance in ohm per km
+        c_nf_per_km: line capacitance (line-to-earth) in nano Farad per km
+        r0_ohm_per_km: zero sequence line resistance in ohm per km
+        x0_ohm_per_km: zero sequence line reactance in ohm per km
+        c0_nf_per_km: zero sequence line capacitance in nano Farad per km
+        max_i_ka: maximum thermal current in kilo Ampere
+        name: A custom name for this line
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        in_service: True for in_service or False for out of service
+        type: type of line ("ol" for overhead line or "cs" for cable system)
+        df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
+        g_us_per_km: dielectric conductance in micro Siemens per km
+        g0_us_per_km: zero sequence dielectric conductance in micro Siemens per km
+        parallel: number of parallel line systems
+        geodata: The geodata of the line. The first row should be the coordinates of bus a and the last should be the
+            coordinates of bus b. The points in the middle represent the bending points of the line
+        max_loading_percent: maximum current loading (only needed for OPF)
+        alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+        temperature_degree_celsius: line temperature for which line resistance is adjusted
 
-        **from_bus** (int) - ID of the bus on one side which the line will be connected with
+    Keyword Arguments:
+        tdpf: whether the line is considered in the TDPF calculation
+        wind_speed_m_per_s: wind speed at the line in m/s (TDPF)
+        wind_angle_degree: angle of attack between the wind direction and the line (TDPF)
+        conductor_outer_diameter_m: outer diameter of the line conductor in m (TDPF)
+        air_temperature_degree_celsius: ambient temperature in °C (TDPF)
+        reference_temperature_degree_celsius: reference temperature in °C for which r_ohm_per_km for the line is
+            specified (TDPF)
+        solar_radiation_w_per_sq_m: solar radiation on horizontal plane in W/m² (TDPF)
+        solar_absorptivity: Albedo factor for absorptivity of the lines (TDPF)
+        emissivity: Albedo factor for emissivity of the lines (TDPF)
+        r_theta_kelvin_per_mw: thermal resistance of the line (TDPF, only for simplified method)
+        mc_joule_per_m_k: specific mass of the conductor multiplied by the specific thermal capacity of the material
+            (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-        **to_bus** (int) - ID of the bus on the other side which the line will be connected with
+    Returns:
+        The unique ID of the created line
 
-        **length_km** (float) - The line length in km
-
-        **r_ohm_per_km** (float) - line resistance in ohm per km
-
-        **x_ohm_per_km** (float) - line reactance in ohm per km
-
-        **c_nf_per_km** (float) - line capacitance (line-to-earth) in nano Farad per km
-
-        **r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
-
-        **x0_ohm_per_km** (float) - zero sequence line reactance in ohm per km
-
-        **c0_nf_per_km** (float) - zero sequence line capacitance in nano Farad per km
-
-        **max_i_ka** (float) - maximum thermal current in kilo Ampere
-
-    OPTIONAL:
-        **name** (string, None) - A custom name for this line
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **in_service** (boolean, True) - True for in_service or False for out of service
-
-        **type** (str, None) - type of line ("ol" for overhead line or "cs" for cable system)
-
-        **df** (float, 1) - derating factor: maximum current of line in relation to nominal current\
-            of line (from 0 to 1)
-
-        **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
-
-        **g0_us_per_km** (float, 0) - zero sequence dielectric conductance in micro Siemens per km
-
-        **parallel** (integer, 1) - number of parallel line systems
-
-        **geodata**
-        (array, default None, shape= (,2)) -
-        The geodata of the line. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
-        in the middle represent the bending points of the line
-
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
-
-        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
-
-        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
-
-        **tdpf (bool)** - whether the line is considered in the TDPF calculation
-
-        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
-
-        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
-
-        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
-
-        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
-
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
-            r_ohm_per_km for the line is specified (TDPF)
-
-        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
-
-        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
-
-        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
-
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
-            simplified method)
-
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
-            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
-            tdpf_delay_s parameter)
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created line
-
-    EXAMPLE:
-        create_line_from_parameters(net, from_bus=0, to_bus=1, length_km=0.1,
-        r_ohm_per_km=.01, x_ohm_per_km=0.05, c_nf_per_km=10,
-        max_i_ka=0.4, name="line1")
-
+    Example:
+        >>> create_line_from_parameters(net, from_bus=0, to_bus=1, length_km=0.1,
+        >>>   r_ohm_per_km=.01, x_ohm_per_km=0.05, c_nf_per_km=10, max_i_ka=0.4, name="line1"
+        >>> )
     """
 
     # check if bus exist to attach the line to
@@ -826,7 +656,9 @@ def create_line_from_parameters(
         _set_value_if_not_nan(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
         _set_value_if_not_nan(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
-        _set_value_if_not_nan(net, index, g0_us_per_km, "g0_us_per_km", "line", default_val=0.0)
+        _set_value_if_not_nan(
+            net, index, g0_us_per_km, "g0_us_per_km", "line", default_val=get_default_value("line", "g0_us_per_km")
+        )
     elif not np_all(nan_0_values):
         logger.warning(
             "Zero sequence values are given for only some parameters. Please specify "
@@ -839,9 +671,9 @@ def create_line_from_parameters(
     _set_value_if_not_nan(net, index, endtemp_degree, "endtemp_degree", "line")
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line", float64)
+        _set_value_if_not_nan(net, index, value, column, "line")
 
     _add_branch_geodata(net, geodata, index)
     return index
@@ -858,95 +690,62 @@ def create_line_dc_from_parameters(
     index: Int | None = None,
     type: LineType | None = None,
     geodata: Iterable[tuple[float, float]] | None = None,
-    in_service: bool = True,
-    df: float = 1.0,
-    parallel: int = 1,
+    in_service: bool = get_default_value("line_dc", "in_service"),
+    df: float = get_default_value("line_dc", "df"),
+    parallel: int = get_default_value("line_dc", "parallel"),
     max_loading_percent: float = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
-    g_us_per_km: float = 0.0,
+    g_us_per_km: float = get_default_value("line_dc", "g_us_per_km"),
     **kwargs,
 ) -> Int:
     """
     Creates a dc line element in net["line_dc"] from dc line parameters.
 
-    INPUT:
-        **net** - The net within this dc line should be created
+    Parameters:
+        net: The net within this dc line should be created
+        from_bus_dc: ID of the dc bus on one side which the dc line will be connected with
+        to_bus_dc: ID of the dc bus on the other side which the dc line will be connected with
+        length_km: The dc line length in km
+        r_ohm_per_km: dc line resistance in ohm per km
+        max_i_ka: maximum thermal current in kilo Ampere
+        name: A custom name for this line
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        in_service: True for in_service or False for out of service
+        type: type of dc line ("ol" for overhead dc line or "cs" for cable system)
+        df: derating factor: maximum current of dc line in relation to nominal current of line (from 0 to 1)
+        g_us_per_km: dielectric conductance in micro Siemens per km
+        g0_us_per_km: zero sequence dielectric conductance in micro Siemens per km
+        parallel: number of parallel line systems
+        geodata: The linegeodata of the dc line. The first row should be the coordinates of dc bus a and the last should
+            be the coordinates of dc bus b. The points in the middle represent the bending points of the line
+        max_loading_percent: maximum current loading (only needed for OPF)
+        alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+        temperature_degree_celsius: line temperature for which line resistance is adjusted
 
-        **from_bus_dc** (int) - ID of the dc bus on one side which the dc line will be connected with
+    Keyword Arguments:
+        tdpf: whether the line is considered in the TDPF calculation
+        wind_speed_m_per_s: wind speed at the line in m/s (TDPF)
+        wind_angle_degree: angle of attack between the wind direction and the line (TDPF)
+        conductor_outer_diameter_m: outer diameter of the line conductor in m (TDPF)
+        air_temperature_degree_celsius: ambient temperature in °C (TDPF)
+        reference_temperature_degree_celsius: reference temperature in °C for which r_ohm_per_km for the line is
+            specified (TDPF)
+        solar_radiation_w_per_sq_m: solar radiation on horizontal plane in W/m² (TDPF)
+        solar_absorptivity: Albedo factor for absorptivity of the lines (TDPF)
+        emissivity: Albedo factor for emissivity of the lines (TDPF)
+        r_theta_kelvin_per_mw: thermal resistance of the line (TDPF, only for simplified method)
+        mc_joule_per_m_k: specific mass of the conductor multiplied by the specific thermal capacity of the material
+            (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-        **to_bus_dc** (int) - ID of the dc bus on the other side which the dc line will be connected with
+    Returns:
+        The ID of the created line
 
-        **length_km** (float) - The dc line length in km
-
-        **r_ohm_per_km** (float) - dc line resistance in ohm per km
-
-        **max_i_ka** (float) - maximum thermal current in kilo Ampere
-
-    OPTIONAL:
-        **name** (string, None) - A custom name for this line
-
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **in_service** (boolean, True) - True for in_service or False for out of service
-
-        **type** (str, None) - type of dc line ("ol" for overhead dc line or "cs" for cable system)
-
-        **df** (float, 1) - derating factor: maximum current of dc line in relation to nominal current\
-            of line (from 0 to 1)
-
-        **g_us_per_km** (float, 0) - dielectric conductance in micro Siemens per km
-
-        **g0_us_per_km** (float, 0) - zero sequence dielectric conductance in micro Siemens per km
-
-        **parallel** (integer, 1) - number of parallel line systems
-
-        **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the dc line. The first row should be the coordinates
-        of dc bus a and the last should be the coordinates of dc bus b. The points
-        in the middle represent the bending points of the line
-
-        **max_loading_percent (float)** - maximum current loading (only needed for OPF)
-
-        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
-
-        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
-
-        **tdpf (bool)** - whether the line is considered in the TDPF calculation
-
-        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
-
-        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
-
-        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
-
-        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
-
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
-            r_ohm_per_km for the line is specified (TDPF)
-
-        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
-
-        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
-
-        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
-
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
-            simplified method)
-
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
-            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
-            tdpf_delay_s parameter)
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created line
-
-    EXAMPLE:
-        create_line_dc_from_parameters(net, from_bus_dc=0, to_bus_dc=1, length_km=0.1,
-        r_ohm_per_km=.01, max_i_ka=0.4, name="line_dc1")
-
+    Example:
+        >>> create_line_dc_from_parameters(
+        >>>   net, from_bus_dc=0, to_bus_dc=1, length_km=0.1, r_ohm_per_km=.01, max_i_ka=0.4, name="line_dc1"
+        >>> )
     """
 
     # check if bus exist to attach the dc line to
@@ -994,9 +793,9 @@ def create_line_dc_from_parameters(
     _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line_dc")
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc", bool_)
+    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc")
     for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line_dc", float64)
+        _set_value_if_not_nan(net, index, value, column, "line_dc")
 
     _add_branch_geodata(net, geodata, index, "line_dc")
 
@@ -1015,11 +814,11 @@ def create_lines_from_parameters(
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
     type: LineType | Iterable[str] | None = None,
-    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-    in_service: bool | Iterable[bool] = True,
-    df: float | Iterable[float] = 1.0,
-    parallel: int | Iterable[int] = 1,
-    g_us_per_km: float | Iterable[float] = 0.0,
+    geodata: Iterable[Iterable[tuple[float, float]]] | Iterable[tuple[float, float]] | None = None,
+    in_service: bool | Iterable[bool] = get_default_value("line", "in_service"),
+    df: float | Iterable[float] = get_default_value("line", "df"),
+    parallel: int | Iterable[int] = get_default_value("line", "parallel"),
+    g_us_per_km: float | Iterable[float] = get_default_value("line", "g_us_per_km"),
     max_loading_percent: float | Iterable[float] = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
@@ -1031,97 +830,59 @@ def create_lines_from_parameters(
 ) -> npt.NDArray[Int]:
     """
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
-        must be arrays of equal length. Other parameters may be either arrays of the same length or
-        single or values.
+    must be arrays of equal length. Other parameters may be either arrays of the same length or
+    single or values.
 
-    INPUT:
-        **net** - The net within this line should be created
+    Parameters:
+        net: The net within this line should be created
+        from_buses: ID of the buses on one side which the lines will be connected with
+        to_buses: ID of the buses on the other side which the lines will be connected with
+        length_km: The line length in km
+        r_ohm_per_km: line resistance in ohm per km
+        x_ohm_per_km: line reactance in ohm per km
+        c_nf_per_km: line capacitance in nano Farad per kma
+        r0_ohm_per_km: zero sequence line resistance in ohm per km
+        x0_ohm_per_km: zero sequence line reactance in ohm per km
+        c0_nf_per_km: zero sequence line capacitance in nano Farad per km
+        max_i_ka: maximum thermal current in kilo Ampere
+        name: A custom name for this line
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        in_service: True for in_service or False for out of service
+        type: type of line ("ol" for overhead line or "cs" for cable system)
+        df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
+        g_us_per_km: dielectric conductance in micro Siemens per km
+        g0_us_per_km: zero sequence dielectric conductance in micro Siemens per km
+        parallel: number of parallel line systems
+        geodata: The geodata of the line. The first row should be the coordinates of bus a and the last should be the
+            coordinates of bus b. The points in the middle represent the bending points of the line
+        max_loading_percent: maximum current loading (only needed for OPF)
+        alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+        temperature_degree_celsius: line temperature for which line resistance is adjusted
 
-        **from_buses** (list of int) - ID of the buses on one side which the lines will be connected with
+    Keyword Arguments:
+        tdpf (bool): whether the line is considered in the TDPF calculation
+        wind_speed_m_per_s (float): wind speed at the line in m/s (TDPF)
+        wind_angle_degree (float): angle of attack between the wind direction and the line (TDPF)
+        conductor_outer_diameter_m (float): outer diameter of the line conductor in m (TDPF)
+        air_temperature_degree_celsius (float): ambient temperature in °C (TDPF)
+        reference_temperature_degree_celsius (float): reference temperature in °C for which r_ohm_per_km for the line is
+            specified (TDPF)
+        solar_radiation_w_per_sq_m (float): solar radiation on horizontal plane in W/m² (TDPF)
+        solar_absorptivity (float): Albedo factor for absorptivity of the lines (TDPF)
+        emissivity (float): Albedo factor for emissivity of the lines (TDPF)
+        r_theta_kelvin_per_mw (float): thermal resistance of the line (TDPF, only for simplified method)
+        mc_joule_per_m_k (float): specific mass of the conductor multiplied by the specific thermal capacity of the
+            material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-        **to_buses** (list of int) - ID of the buses on the other side which the lines will be connected\
-            with
+    Returns:
+        The ID of the created lines
 
-        **length_km** (list of float) - The line length in km
-
-        **r_ohm_per_km** (list of float) - line resistance in ohm per km
-
-        **x_ohm_per_km** (list of float) - line reactance in ohm per km
-
-        **c_nf_per_km** (list of float) - line capacitance in nano Farad per km
-
-        **r0_ohm_per_km** (list of float) - zero sequence line resistance in ohm per km
-
-        **x0_ohm_per_km** (list of float) - zero sequence line reactance in ohm per km
-
-        **c0_nf_per_km** (list of float) - zero sequence line capacitance in nano Farad per km
-
-        **max_i_ka** (list of float) - maximum thermal current in kilo Ampere
-
-    OPTIONAL:
-        **name** (list of string, None) - A custom name for this line
-
-        **index** (list of int, None) - Force a specified ID if it is available. If None, the\
-            index one higher than the highest already existing index is selected.
-
-        **in_service** (list of boolean, True) - True for in_service or False for out of service
-
-        **type** (list of string, None) - type of line ("ol" for overhead line or "cs" for cable system)
-
-        **df** (list of float, 1) - derating factor: maximum current of line in relation to nominal current\
-            of line (from 0 to 1)
-
-        **g_us_per_km** (list of float, 0) - dielectric conductance in micro Siemens per km
-
-        **g0_us_per_km** (list of float, 0) - zero sequence dielectric conductance in micro Siemens per km
-
-        **parallel** (list of integer, 1) - number of parallel line systems
-
-        **geodata**
-        (array, default None, shape= (,2)) -
-        The geodata of the line. The first row should be the coordinates
-        of bus a and the last should be the coordinates of bus b. The points
-        in the middle represent the bending points of the line
-
-        **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
-
-        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
-
-        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
-
-        **tdpf (bool)** - whether the line is considered in the TDPF calculation
-
-        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
-
-        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
-
-        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
-
-        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
-
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
-            r_ohm_per_km for the line is specified (TDPF)
-
-        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
-
-        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
-
-        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
-
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
-            simplified method)
-
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
-            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
-            tdpf_delay_s parameter)
-
-    OUTPUT:
-        **index** (list of int) - The unique ID of the created lines
-
-    EXAMPLE:
-        create_lines_from_parameters(net, from_buses=[0,1], to_buses=[2,3], length_km=0.1,
-        r_ohm_per_km=.01, x_ohm_per_km=0.05, c_nf_per_km=10, max_i_ka=0.4, name=["line1","line2"])
-
+    Example:
+        >>> create_lines_from_parameters(
+        >>>   net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, r_ohm_per_km=.01, x_ohm_per_km=0.05, c_nf_per_km=10,
+        >>>   max_i_ka=0.4, name=["line1","line2"]
+        >>> )
     """
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
 
@@ -1153,7 +914,7 @@ def create_lines_from_parameters(
     _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = (
         "wind_speed_m_per_s",
         "wind_angle_degree",
@@ -1168,7 +929,7 @@ def create_lines_from_parameters(
     )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line", entries, index, column, value)
 
     _set_multiple_entries(net, "line", index, entries=entries)
 
@@ -1188,10 +949,10 @@ def create_lines_dc_from_parameters(
     index: Int | Iterable[Int] | None = None,
     type: LineType | Iterable[str] | None = None,
     geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
-    in_service: bool | Iterable[bool] = True,
-    df: float | Iterable[float] = 1.0,
-    parallel: int | Iterable[int] = 1,
-    g_us_per_km: float | Iterable[float] = 0.0,
+    in_service: bool | Iterable[bool] = get_default_value("line_dc", "in_service"),
+    df: float | Iterable[float] = get_default_value("line_dc", "df"),
+    parallel: int | Iterable[int] = get_default_value("line_dc", "parallel"),
+    g_us_per_km: float | Iterable[float] = get_default_value("line_dc", "g_us_per_km"),
     max_loading_percent: float | Iterable[float] = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
@@ -1202,82 +963,49 @@ def create_lines_dc_from_parameters(
         must be arrays of equal length. Other parameters may be either arrays of the same length or
         single or values.
 
-    INPUT:
-        **net** - The net within this dc lines should be created
+    Parameters:
+        net: The net within this dc lines should be created
+        from_buses_dc: ID of the dc buses on one side which the dc lines will be connected with
+        to_buses_dc: ID of the dc buses on the other side which the dc lines will be connected with
+        length_km: The dc line length in km
+        r_ohm_per_km: dc line resistance in ohm per km
+        max_i_ka: maximum thermal current in kilo Ampere
+        name: A custom name for this dc line
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        in_service: True for in_service or False for out of service
+        type: type of dc line ("ol" for overhead dc line or "cs" for cable system)
+        df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
+        g_us_per_km: dielectric conductance in micro Siemens per km
+        parallel: number of parallel line systems
+        geodata: The line geodata of the dc lines. The first row should be the coordinates of dc bus a and the last
+            should be the coordinates of dc bus b. The points in the middle represent the bending points of the line
+        max_loading_percent: maximum current loading (only needed for OPF)
+        alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+        temperature_degree_celsius: line temperature for which line resistance is adjusted
 
-        **from_buses_dc** (list of int) - ID of the dc buses on one side which the dc lines will be connected with
+    Keyword Arguments:
+        tdpf (bool): whether the line is considered in the TDPF calculation
+        wind_speed_m_per_s (float): wind speed at the line in m/s (TDPF)
+        wind_angle_degree (float): angle of attack between the wind direction and the line (TDPF)
+        conductor_outer_diameter_m (float): outer diameter of the line conductor in m (TDPF)
+        air_temperature_degree_celsius (float): ambient temperature in °C (TDPF)
+        reference_temperature_degree_celsius (float): reference temperature in °C for which r_ohm_per_km for the line is
+            specified (TDPF)
+        solar_radiation_w_per_sq_m (float): solar radiation on horizontal plane in W/m² (TDPF)
+        solar_absorptivity (float): Albedo factor for absorptivity of the lines (TDPF)
+        emissivity (float): Albedo factor for emissivity of the lines (TDPF)
+        r_theta_kelvin_per_mw (float): thermal resistance of the line (TDPF, only for simplified method)
+        mc_joule_per_m_k (float): specific mass of the conductor multiplied by the specific thermal capacity of the
+            material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-        **to_buses_dc** (list of int) - ID of the dc buses on the other side which the dc lines will be connected\
-            with
+    Return:
+        List of IDs of the created dc lines
 
-        **length_km** (list of float) - The dc line length in km
-
-        **r_ohm_per_km** (list of float) - dc line resistance in ohm per km
-
-        **max_i_ka** (list of float) - maximum thermal current in kilo Ampere
-
-    OPTIONAL:
-        **name** (list of string, None) - A custom name for this dc line
-
-        **index** (list of int, None) - Force a specified ID if it is available. If None, the\
-            index one higher than the highest already existing index is selected.
-
-        **in_service** (list of boolean, True) - True for in_service or False for out of service
-
-        **type** (list of str, None) - type of dc line ("ol" for overhead dc line or "cs" for cable system)
-
-        **df** (list of float, 1) - derating factor: maximum current of line in relation to nominal current\
-            of line (from 0 to 1)
-
-        **g_us_per_km** (list of float, 0) - dielectric conductance in micro Siemens per km
-
-        **parallel** (list of integer, 1) - number of parallel line systems
-
-        **geodata**
-        (array, default None, shape= (,2L)) -
-        The linegeodata of the dc lines. The first row should be the coordinates
-        of dc bus a and the last should be the coordinates of dc bus b. The points
-        in the middle represent the bending points of the line
-
-        **max_loading_percent (list of float)** - maximum current loading (only needed for OPF)
-
-        **alpha (float)** - temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
-
-        **temperature_degree_celsius (float)** - line temperature for which line resistance is adjusted
-
-        **tdpf (bool)** - whether the line is considered in the TDPF calculation
-
-        **wind_speed_m_per_s (float)** - wind speed at the line in m/s (TDPF)
-
-        **wind_angle_degree (float)** - angle of attack between the wind direction and the line (TDPF)
-
-        **conductor_outer_diameter_m (float)** - outer diameter of the line conductor in m (TDPF)
-
-        **air_temperature_degree_celsius (float)** - ambient temperature in °C (TDPF)
-
-        **reference_temperature_degree_celsius (float)** - reference temperature in °C for which \
-            r_ohm_per_km for the line is specified (TDPF)
-
-        **solar_radiation_w_per_sq_m (float)** - solar radiation on horizontal plane in W/m² (TDPF)
-
-        **solar_absorptivity (float)** - Albedo factor for absorptivity of the lines (TDPF)
-
-        **emissivity (float)** - Albedo factor for emissivity of the lines (TDPF)
-
-        **r_theta_kelvin_per_mw (float)** - thermal resistance of the line (TDPF, only for \
-            simplified method)
-
-        **mc_joule_per_m_k (float)** - specific mass of the conductor multiplied by the specific \
-            thermal capacity of the material (TDPF, only for thermal inertia consideration with \
-            tdpf_delay_s parameter)
-
-    OUTPUT:
-        **index** (list of int) - The list of IDs of the created dc lines
-
-    EXAMPLE:
-        create_lines_dc_from_parameters(net, from_buses_dc=[0,1], to_buses_dc=[2,3], length_km=0.1,
-        r_ohm_per_km=.01, max_i_ka=0.4, name=["line_dc1","line_dc2"])
-
+    Example:
+        >>> create_lines_dc_from_parameters(net, from_buses_dc=[0,1], to_buses_dc=[2,3], length_km=0.1,
+        >>>   r_ohm_per_km=.01, max_i_ka=0.4, name=["line_dc1","line_dc2"]
+        >>> )
     """
     _check_multiple_branch_elements(
         net, from_buses_dc, to_buses_dc, "Lines_dc", node_name="bus_dc", plural="(all dc buses)"
@@ -1305,7 +1033,7 @@ def create_lines_dc_from_parameters(
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
-    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"), bool_)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"))
     tdpf_columns = (
         "wind_speed_m_per_s",
         "wind_angle_degree",
@@ -1320,7 +1048,7 @@ def create_lines_dc_from_parameters(
     )
     tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
     for column, value in tdpf_parameters.items():
-        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value, float64)
+        _add_to_entries_if_not_nan(net, "line_dc", entries, index, column, value)
 
     _set_multiple_entries(net, "line_dc", index, entries=entries)
 
@@ -1345,52 +1073,37 @@ def create_dcline(
     min_q_to_mvar: float = nan,
     max_q_from_mvar: float = nan,
     max_q_to_mvar: float = nan,
-    in_service: bool = True,
+    in_service: bool = get_default_value("dcline", "in_service"),
     **kwargs,
 ) -> Int:
     """
     Creates a dc line.
 
-    INPUT:
-        **from_bus** (int) - ID of the bus on one side which the line will be connected with
+    Parameters:
+        from_bus: ID of the bus on one side which the line will be connected with
+        to_bus: ID of the bus on the other side which the line will be connected with
+        p_mw: Active power transmitted from 'from_bus' to 'to_bus'
+        loss_percent: Relative transmission loss in percent of active power transmission
+        loss_mw: Total transmission loss in MW
+        vm_from_pu: Voltage set point at from bus
+        vm_to_pu: Voltage set point at to bus
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        name: A custom name for this dc line
+        in_service: True for in_service or False for out of service
+        max_p_mw: Maximum active power flow. Only respected for OPF
+        min_q_from_mvar: Minimum reactive power at from bus. Necessary for OPF
+        min_q_to_mvar: Minimum reactive power at to bus. Necessary for OPF
+        max_q_from_mvar: Maximum reactive power at from bus. Necessary for OPF
+        max_q_to_mvar: Maximum reactive power at to bus. Necessary for OPF
 
-        **to_bus** (int) - ID of the bus on the other side which the line will be connected with
+    Return:
+        ID of the created element
 
-        **p_mw** - (float) Active power transmitted from 'from_bus' to 'to_bus'
-
-        **loss_percent** - (float) Relative transmission loss in percent of active power
-            transmission
-
-        **loss_mw** - (float) Total transmission loss in MW
-
-        **vm_from_pu** - (float) Voltage set point at from bus
-
-        **vm_to_pu** - (float) Voltage set point at to bus
-
-    OPTIONAL:
-        **index** (int, None) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **name** (str, None) - A custom name for this dc line
-
-        **in_service** (boolean) - True for in_service or False for out of service
-
-        **max_p_mw** - Maximum active power flow. Only respected for OPF
-
-        **min_q_from_mvar** - Minimum reactive power at from bus. Necessary for OPF
-
-        **min_q_to_mvar** - Minimum reactive power at to bus. Necessary for OPF
-
-        **max_q_from_mvar** - Maximum reactive power at from bus. Necessary for OPF
-
-        **max_q_to_mvar** - Maximum reactive power at to bus. Necessary for OPF
-
-    OUTPUT:
-        **index** (int) - The unique ID of the created element
-
-    EXAMPLE:
-        create_dcline(net, from_bus=0, to_bus=1, p_mw=1e4, loss_percent=1.2, loss_mw=25, \
-            vm_from_pu=1.01, vm_to_pu=1.02)
+    Example:
+        >>> create_dcline(
+        >>>     net, from_bus=0, to_bus=1, p_mw=1e4, loss_percent=1.2, loss_mw=25, vm_from_pu=1.01, vm_to_pu=1.02
+        >>> )
     """
     index = _get_index_with_check(net, "dcline", index)
 

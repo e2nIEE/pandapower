@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -17,14 +17,12 @@ from pandapower.run import runpp, runopp
 from pandapower.runpm import runpm_ac_opf
 
 try:
-    from julia.core import UnsupportedPythonError
+    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
-try:
-    from julia.api import Julia
 
-    Julia(compiled_modules=False)
-    from julia import Main
+try:
+    from juliacall import Main
 
     julia_installed = True
 except (ImportError, RuntimeError, UnsupportedPythonError) as e:
@@ -98,10 +96,10 @@ def test_case5_pm_pd2ppc():
     assert net.bus.max_vm_pu[net.ext_grid.bus].values[0] == vmax
 
     assert net.ext_grid["in_service"].values.dtype == bool
-    assert net.ext_grid["bus"].values.dtype == "uint32"
+    assert net.ext_grid["bus"].values.dtype == "int64"
     create_ext_grid(net, bus=4, vm_pu=net.res_bus.vm_pu.loc[4], controllable=False)
 
-    assert net.ext_grid["bus"].values.dtype == "uint32"
+    assert net.ext_grid["bus"].values.dtype == "int64"
     assert net.ext_grid["in_service"].values.dtype == bool
 
     ppc = _pd2ppc(net)

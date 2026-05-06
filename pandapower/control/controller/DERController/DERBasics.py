@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -131,7 +131,3 @@ class CosphiPCurve:
     def step(self, p_pu):
         cosphi = cosphi_from_pos(np.interp(p_pu, self.p_points_pu, self.cosphi_pos))
         return np.tan(np.arccos(cosphi)) * p_pu
-
-
-if __name__ == "__main__":
-    pass

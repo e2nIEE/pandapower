@@ -2,7 +2,8 @@
 Built-in plot functions
 #############################
 
-In order to get idea about interactive plot features and possibilities see the `tutorial <http://nbviewer.jupyter.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`_.
+In order to get idea about interactive plot features and possibilities see the
+`tutorial <https://nbviewer.org/github/e2nIEE/pandapower/blob/develop/tutorials/plotly_built-in.ipynb>`__.
 
 =============================
 Simple Plotting
@@ -70,7 +71,8 @@ Example plot with mv_oberrhein network from the pandapower.networks package::
 Power Flow results
 =============================
 
-The function :func:`pf_res_plotly()` is used to plot a network according to power flow results where a colormap is used to represent line loading and voltage magnitudes. For advanced possibilities see the tutorials.
+The function :func:`pf_res_plotly()` is used to plot a network according to power flow results where a colormap is used
+to represent line loading and voltage magnitudes. For advanced possibilities see the tutorials.
 
 .. _pf_res_plotly:
 

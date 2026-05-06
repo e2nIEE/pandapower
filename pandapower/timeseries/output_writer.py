@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import functools
@@ -47,31 +47,26 @@ class OutputWriter(JSONSerializableClass):
     of the line loading in a time step or the mean values. Check the "advanced time series example" jupyter notebook
     for an example.
 
-    INPUT:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
+        time_steps (list): time_steps to calculate as a list (or range)
+        output_path (string, None): Path to a folder where the output is written to.
+        output_file_type (string, ".p"): output filetype to use. Allowed file extensions: [.xls, .xlsx, .csv, .csv.*,
+            .p, .json]
+            
+            .. note::
+            
+                XLS has a maximum number of 256 rows.
+                
+                CSV files can be saved in a compressed format like `.csv.zip`.
 
-        **time_steps** (list) - time_steps to calculate as a list (or range)
+        csv_separator (string, ";"): The separator used when writing to a csv file
+        write_time (int, None): Time to save periodically to disk in minutes. Deactivated by default
+        log_variables (list, None): list of tuples with (table, column) values to  be logged by output writer. Defaults
+            are: res_bus.vm_pu and res_line.loading_percent. Additional variables can be added later on with
+            ow.log_variable or removed with ow.remove_log_variable
 
-    OPTIONAL:
-
-        **output_path** (string, None) - Path to a folder where the output is written to.
-
-        **output_file_type** (string, ".p") - output filetype to use.
-        Allowed file extensions: [.xls, .xlsx, .csv, .csv.*, .p, .json]
-        Note: XLS has a maximum number of 256 rows.
-        Note: CSV files can be saved in a compressed format like `.csv.zip`.
-
-        **csv_separator** (string, ";") - The separator used when writing to a csv file
-
-        **write_time** (int, None) - Time to save periodically to disk in minutes. Deactivated by default
-
-        **log_variables** (list, None) - list of tuples with (table, column) values to  be logged by output writer.
-        Defaults are: res_bus.vm_pu and res_line.loading_percent. Additional variables can be added later on
-        with ow.log_variable or removed with ow.remove_log_variable
-
-
-
-    EXAMPLE:
+    Example:
         >>> from pandapower.timeseries.output_writer import OutputWriter
         >>> from pandapower.networks as nw
         >>> net = nw.simple_four_bus_system()
@@ -82,9 +77,6 @@ class OutputWriter(JSONSerializableClass):
         >>> def cost_logging(result, n_columns=2):
         >>>      return array([result[i][0][2] for i in range(len(result))])
         >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
-
-
-
     """
 
     def __init__(self, net, time_steps=None, output_path=None, output_file_type=".p", write_time=None,
@@ -103,9 +95,9 @@ class OutputWriter(JSONSerializableClass):
             self.write_time *= 60.0  # convert to seconds
 
         # init the matrix and the list of output functions
-        self.output = dict()
+        self.output = {}
         # internal results stored as numpy arrays in dict. Is created from output_list
-        self.np_results = dict()
+        self.np_results = {}
         # output list contains functools.partial with tables, variables, index...
         self.output_list = []
         # real time is tracked to save results to disk regularly
@@ -128,7 +120,6 @@ class OutputWriter(JSONSerializableClass):
         # Saves all parameters as object attributes to store in JSON
 
     def __str__(self):
-        # return self.__class__.__name__
         return self.__repr__()
 
     def __repr__(self):
@@ -145,7 +136,7 @@ class OutputWriter(JSONSerializableClass):
 
     def _add_log_defaults(self):
         if self.log_variables is None:
-            self.log_variables = list()
+            self.log_variables = []
             self.log_variables = copy.copy(self.default_log_variables)
         if not isinstance(self.log_variables, list):
             raise TypeError("log_variables must be None or a list of tuples like [('res_bus', 'vm_pu')]")
@@ -167,19 +158,18 @@ class OutputWriter(JSONSerializableClass):
 
     def init_all(self, net):
         if isinstance(self.time_steps, Iterable):
-            self.output = dict()
-            self.np_results = dict()
-            self.output_list = list()
+            self.output = {}
+            self.np_results = {}
+            self.output_list = []
             self.init_log_variables(net)
             self.init_timesteps(self.time_steps)
             self._init_np_results()
             self._init_output()
-
         else:
             logger.debug("Time steps not set at init ")
 
     def _init_output(self):
-        self.output = dict()
+        self.output = {}
         # init parameters
         self.output["Parameters"] = pd.DataFrame(data={
             "time_step": self.time_steps,
@@ -189,7 +179,7 @@ class OutputWriter(JSONSerializableClass):
 
     def _init_np_results(self):
         # inits numpy array (contains results)
-        self.np_results = dict()
+        self.np_results = {}
         for partial_func in self.output_list:
             self._init_np_array(partial_func)
 
@@ -235,7 +225,8 @@ class OutputWriter(JSONSerializableClass):
         Save the output to separate files in output_path with the file_type output_file_type. This is called after
         the time series simulation by default.
 
-           **append** (bool, False) - Option for appending instead of overwriting the file
+        Parameters:
+           append (bool, False): Option for appending instead of overwriting the file
         """
         save_single = False
         self._np_to_pd()
@@ -310,47 +301,37 @@ class OutputWriter(JSONSerializableClass):
         """
         removes a logged variable from outputs
 
-        INPUT:
-        **table** (str) - name of the DataFrame table (example: "res_bus")
-
-        OPTIONAL:
-        **variable** (str, None) - column name of the DataFrame table (example: "vm_pu"). If None all are variables of
-        table are removed
-
+        Parameters:
+            table (str): name of the DataFrame table (example: "res_bus")
+            variable (str, None): column name of the DataFrame table (example: "vm_pu"). If None all are variables of table
+                are removed
         """
         # remove variables from list
         if variable is not None:
             self.output_list = [o for o in self.output_list if not (o.args[0] == table and o.args[1] == variable)]
             self.log_variables = [o for o in self.log_variables if not (o[0] == table and o[1] == variable)]
         else:
-            self.output_list = [o for o in self.output_list if not (o.args[0] == table)]
-            self.log_variables = [o for o in self.log_variables if not (o[0] == table)]
+            self.output_list = [o for o in self.output_list if (o.args[0] != table)]
+            self.log_variables = [o for o in self.log_variables if (o[0] != table)]
         # init output container again
         self._init_np_results()
 
     def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         """
         Adds a variable to log during simulation and appends it to output_list.
-        INPUT:
+        
+        Parameters:
+            table (str): The DataFrame table where the variable is located as a string (e.g. "res_bus")
+            variable (str): variable that should be logged as string (e.g. "p_mw")
+            index (iterable, None): Can be either one index or a list of indices, or a numpy array of indices, or a
+                pandas Index, or a pandas Series (e.g. net.load.bus) for which the variable will be logged. If no index
+                is given, the variable will be logged for all elements in the table
+            eval_function (function, None): A function to be applied on the table / variable / index combination.
+                example: pd.min or pd.mean
+            eval_name (str, None): The name for an applied function. It *must* be unique. If the name is None the name
+                consists of the table, variable, index and eval function. example: "max_load_p_mw_values"
 
-        **table** (str) - The DataFrame table where the variable is located as a string (e.g. "res_bus")
-
-        **variable** (str) -  variable that should be logged as string (e.g. "p_mw")
-
-        OPTIONAL:
-
-        **index** (iterable, None) - Can be either one index or a list of indices, or a numpy array of indices,
-        or a pandas Index, or a pandas Series (e.g. net.load.bus) for which
-        the variable will be logged. If no index is given, the variable will be logged for all elements in the table
-
-        **eval_function** (function, None) - A function to be applied on the table / variable / index combination.
-        example: pd.min or pd.mean
-
-        **eval_name** (str, None) - The name for an applied function. It *must* be unique.
-                                    If the name is None the name consists of the table, variable, index and eval function
-                                    example: "max_load_p_mw_values"
-
-        EXAMPLE:
+        Example:
             >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
             >>> ow.log_variable('res_line', 'loading_percent', index=[0, 2, 5]) # add logging for line loading of lines with indices 0, 2, 5
             >>> ow.log_variable('res_line', 'loading_percent', eval_function=pd.max) # get the highest line loading only
@@ -359,9 +340,8 @@ class OutputWriter(JSONSerializableClass):
             >>> def cost_logging(result, n_columns=2):
             >>>      return array([result[i][0][2] for i in range(len(result))])
             >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
-
         """
-        del_indices = list()
+        del_indices = []
         append_args = set()
         append = True
         # check if new log_variable is already in log_variables. If so either append or delete
@@ -400,10 +380,10 @@ class OutputWriter(JSONSerializableClass):
         ppc = net["_ppc"]
         if ppc is None:
             # if no ppc is in net-> create one
-            options = dict(algorithm='nr', calculate_voltage_angles=True, init="auto",
-                           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
-                           trafo_loading="current", enforce_q_lims=False, check_connectivity=True,
-                           voltage_depend_loads=True, consider_line_temperature=False)
+            options = {'algorithm': 'nr', 'calculate_voltage_angles': True, 'init': "auto", 'max_iteration': "auto",
+                       'tolerance_mva': 1e-8, 'trafo_model': "t", 'trafo_loading': "current", 'enforce_p_lims': False,
+                       'enforce_q_lims': False, 'check_connectivity': True, 'voltage_depend_loads': True,
+                       'consider_line_temperature': False}
             _init_runpp_options(net, **options)
             ppc, _ = _pd2ppc(net)
             net["_ppc"] = ppc
@@ -437,7 +417,6 @@ class OutputWriter(JSONSerializableClass):
                                 "'%s', " % eval_name + "eval_name is neglected.")
                     eval_name = None
 
-        # var_name = self._get_hash((table, variable, index, eval_function))
         var_name = self._get_output_name(table, variable)
         idx = self._get_same_log_variable_partial_func_idx(table, variable, eval_function,
                                                            eval_name)
@@ -517,7 +496,6 @@ class OutputWriter(JSONSerializableClass):
 
         for partial_func in self.output_list:
             (table, variable, net, index, eval_func, eval_name) = partial_func.args
-            # res_name = self._get_hash(table, variable)
             res_name = self._get_output_name(table, variable)
             np_name = self._get_np_name(partial_func.args)
             columns = index
@@ -578,23 +556,23 @@ class OutputWriter(JSONSerializableClass):
             # vm, va is without out of service elements
             vm, va = self.output["ppc_bus.vm"], self.output["ppc_bus.va"]
             _, s_abs, i_abs = v_to_i_s(net, vm, va)
-            results = dict()
-            new_output_list = list()
+            results = {}
+            new_output_list = []
             for table, variable in recycle_options["batch_read"]:
                 if table == "res_line" and "res_line" not in results:
                     i_ka, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(net, i_abs)
-                    results["res_line"] = dict(i_ka=i_ka, i_from_ka=i_from_ka, i_to_ka=i_to_ka,
-                                               loading_percent=loading_percent)
+                    results["res_line"] = {'i_ka': i_ka, 'i_from_ka': i_from_ka, 'i_to_ka': i_to_ka,
+                                           'loading_percent': loading_percent}
                 elif table == "res_trafo" and "res_trafo" not in results:
-                    i_ka, i_hv_ka, i_lv_ka, s_mva, loading_percent = get_batch_trafo_results(net, i_abs, s_abs)
-                    results["res_trafo"] = dict(i_ka=i_ka, i_hv_ka=i_hv_ka, i_lv_ka=i_lv_ka,
-                                                loading_percent=loading_percent)
+                    i_ka, i_hv_ka, i_lv_ka, _, loading_percent = get_batch_trafo_results(net, i_abs, s_abs)
+                    results["res_trafo"] = {'i_ka': i_ka, 'i_hv_ka': i_hv_ka, 'i_lv_ka': i_lv_ka,
+                                            'loading_percent': loading_percent}
                 elif table == "res_trafo3w":
                     i_h, i_m, i_l, loading_percent = get_batch_trafo3w_results(net, i_abs, s_abs)
-                    results["res_trafo3w"] = dict(i_h=i_h, i_m=i_m, i_l=i_l, loading_percent=loading_percent)
+                    results["res_trafo3w"] = {'i_h': i_h, 'i_m': i_m, 'i_l': i_l, 'loading_percent': loading_percent}
                 elif table == "res_bus" and "res_bus" not in results:
                     vm_full, va_full = get_batch_bus_results(net, vm, va)
-                    results["res_bus"] = dict(vm_pu=vm_full, va_degree=va_full)
+                    results["res_bus"] = {'vm_pu': vm_full, 'va_degree': va_full}
                 else:
                     raise ValueError("Something went wrong")
                 output_name = "%s.%s" % (table, variable)

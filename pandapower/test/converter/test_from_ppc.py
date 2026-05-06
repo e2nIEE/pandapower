@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -9,7 +9,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from pandapower import pp_dir
+from pandapower import pp_dir, reset_results
 from pandapower.file_io import from_json
 from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.comparison import nets_equal
@@ -74,26 +74,27 @@ def test_validate_from_ppc_simple_against_target():
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
-def test_ppc_testgrids():
+@pytest.mark.parametrize('case_name', ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6',
+                  'case14', 'case57'])
+def test_ppc_testgrids(case_name):
     # check ppc_testgrids
-    case_names = ['case2_1', 'case2_2', 'case2_3', 'case2_4', 'case3_1', 'case3_2', 'case6',
-                  'case14', 'case57']
-    for case_name in case_names:
-        ppc = get_testgrids('ppc_testgrids', case_name+'.json')
-        net = from_ppc(ppc, f_hz=60)
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
-        logger.info(f'{case_name} has been checked successfully.')
+    ppc = get_testgrids('ppc_testgrids', case_name+'.json')
+    net = from_ppc(ppc, f_hz=60)
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+    logger.info(f'{case_name} has been checked successfully.')
 
 
 @pytest.mark.slow
-def test_pypower_cases():
+@pytest.mark.parametrize('case_name', ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39', 'case118']) # 'case300'
+def test_pypower_cases(case_name):
     # check pypower cases
-    case_names = ['case4gs', 'case6ww', 'case24_ieee_rts', 'case30', 'case39', 'case118'] # 'case300'
-    for case_name in case_names:
-        ppc = get_testgrids('pypower_cases', case_name+'.json')
-        net = from_ppc(ppc, f_hz=60)
-        assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
-        logger.info(f'{case_name} has been checked successfully.')
+    ppc = get_testgrids('pypower_cases', case_name+'.json')
+    net = from_ppc(ppc, f_hz=60)
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+    logger.info(f'{case_name} has been checked successfully.')
+
+
+def test_case9_not_in_matpower():
     # --- Because there is a pypower power flow failure in generator results in case9 (which is not
     # in matpower) another max_diff_values must be used to receive an successful validation
     max_diff_values2 = {"bus_vm_pu": 1e-6, "bus_va_degree": 1e-5, "branch_p_mw": 1e-3,
@@ -106,7 +107,7 @@ def test_pypower_cases():
 def test_to_and_from_ppc():
     net9 = case9()
     net24 = case24_ieee_rts()
-    net24.trafo.tap_side.iat[1] = "hv"
+    net24.trafo.iat[1, net24.trafo.columns.get_loc("tap_side")] = "hv"
 
     for i, net in enumerate([net24, net9]):
 
@@ -124,6 +125,11 @@ def test_to_and_from_ppc():
         net2 = from_ppc(ppc, f_hz=net.f_hz, tap_side=net.trafo.tap_side.values)
         # again add max_loading_percent to enable valid comparison
         net2.line["max_loading_percent"] = 100
+
+        # TODO: remove after https://github.com/e2nIEE/pandapower/pull/2813:
+        #  reset 3ph results (new columns not in net but in ppc, would be solved by 3ph powerflow, so not relevant)
+        reset_results(net, "pf_3ph")
+        reset_results(net2, "pf_3ph")
 
         # compare loadflow results
         runpp(net)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
@@ -16,37 +16,35 @@ logger = logging.getLogger(__name__)
 
 
 def create_empty_network(
-    name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True
+    name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True, structure: dict | None = None
 ) -> pandapowerNet:
     """
-    This function initializes the pandapower datastructure.
+    This function initializes the pandapower data structure.
 
-    OPTIONAL:
-        **f_hz** (float, 50.) - power system frequency in hertz
+    Parameters:
+        f_hz: power system frequency in hertz
+        name: name for the network
+        sn_mva: reference apparent power for per unit system
+        add_stdtypes: Includes standard types to net
+        structure: can contain dict from which the network structure is created, when columns that are not relevant
+         for the loadflow are required
 
-        **name** (string, None) - name for the network
+    Returns:
+        net: pandapower attrdict with empty tables
 
-        **sn_mva** (float, 1) - reference apparent power for per unit system
-
-        **add_stdtypes** (boolean, True) - Includes standard types to net
-
-    OUTPUT:
-        **net** (attrdict) - PANDAPOWER attrdict with empty tables:
-
-    EXAMPLE:
-        net = create_empty_network()
+    Example:
+        >>> net = create_empty_network()
 
     """
-    network_structure_dict = get_structure_dict()
+    if structure is None:
+        network_structure_dict = get_structure_dict()
+    else:
+        network_structure_dict = structure
     network_structure_dict["name"] = name
     network_structure_dict["f_hz"] = f_hz
     network_structure_dict["sn_mva"] = sn_mva
 
     net = pandapowerNet(pandapowerNet.create_dataframes(network_structure_dict))
-
-    net._empty_res_load_3ph = net._empty_res_load
-    net._empty_res_sgen_3ph = net._empty_res_sgen
-    net._empty_res_storage_3ph = net._empty_res_storage
 
     if add_stdtypes:
         add_basic_std_types(net)

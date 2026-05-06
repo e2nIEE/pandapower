@@ -6,20 +6,34 @@ from pandapower.network_schema.tools.validation.group_dependency import create_c
 _bus_dc_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc bus"),
     "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the dc bus [kV]"),
-    "type": pa.Column(pd.StringDtype, nullable=True, required=False, description="type variable to classify buses"),
+    "type": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="type variable to classify buses",
+        metadata={"default": "b"},
+    ),
     "zone": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="can be used to group dc buses, for example network groups / regions",
     ),
-    "in_service": pa.Column(bool, description="specifies if the dc bus is in service"),
+    "in_service": pa.Column(bool, description="specifies if the dc bus is in service", metadata={"default": True}),
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
     "max_vm_pu": pa.Column(
-        float, description="Maximum dc bus voltage in p.u. - necessary for OPF", metadata={"opf": True}
+        float,
+        nullable=True,
+        required=False,
+        description="Maximum dc bus voltage in p.u. - necessary for OPF",
+        metadata={"opf": True, "default": 2.0},
     ),
     "min_vm_pu": pa.Column(
-        float, description="Minimum dc bus voltage in p.u. - necessary for OPF", metadata={"opf": True}
+        float,
+        nullable=True,
+        required=False,
+        description="Minimum dc bus voltage in p.u. - necessary for OPF",
+        metadata={"opf": True, "default": 0.0},
     ),
 }
 bus_dc_schema = pa.DataFrameSchema(

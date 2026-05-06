@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -13,26 +13,17 @@ class DiscreteTapControl(TrafoController):
     """
     Trafo Controller with local tap changer voltage control.
 
-    INPUT:
-        **net** (attrdict) - Pandapower struct
-
-        **element_index** (int) - ID of the trafo that is controlled
-
-        **vm_lower_pu** (float) - Lower voltage limit in pu
-
-        **vm_upper_pu** (float) - Upper voltage limit in pu
-
-    OPTIONAL:
-
-        **side** (string, "lv") - Side of the transformer where the voltage is controlled (hv or lv)
-
-        **element** (string, "trafo") - Trafo type ("trafo" or "trafo3w")
-
-        **tol** (float, 0.001) - Voltage tolerance band at bus in Percent (default: 1% = 0.01pu)
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of the same type and with the same matching parameters (e.g. at same element) should be dropped
+    Parameters:
+        net (ADict): Pandapower struct
+        element_index (int): ID of the trafo that is controlled
+        vm_lower_pu (float): Lower voltage limit in pu
+        vm_upper_pu (float): Upper voltage limit in pu
+        side (string, "lv"): Side of the transformer where the voltage is controlled (hv or lv)
+        element (string, "trafo"): Trafo type ("trafo" or "trafo3w")
+        tol (float, 0.001): Voltage tolerance band at bus in Percent (default: 1% = 0.01pu)
+        in_service (bool, True): Indicates if the controller is currently in_service
+        drop_same_existing_ctrl (bool, False): Indicates if already existing controllers of the same type and with the
+            same matching parameters (e.g. at same element) should be dropped
     """
 
     def __init__(self, net, element_index, vm_lower_pu, vm_upper_pu, side="lv", element="trafo",
@@ -49,7 +40,7 @@ class DiscreteTapControl(TrafoController):
         self.vm_lower_pu = vm_lower_pu
         self.vm_upper_pu = vm_upper_pu
 
-        self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
+        self.vm_delta_pu = np.abs(self.tap_step_percent) / 100. * .5 + self.tol
         self.vm_set_pu = kwargs.get("vm_set_pu")
         self.hunting_limit = hunting_limit
         self._hunting_taps = np.array([], dtype=np.float64)
@@ -65,12 +56,10 @@ class DiscreteTapControl(TrafoController):
 
         >>> c = DiscreteTapControl.from_tap_step_percent(net, element_index, vm_set_pu)
 
-        INPUT:
-            **net** (attrdict) - Pandapower struct
-
-            **element_index** (int) - ID of the trafo that is controlled
-
-            **vm_set_pu** (float) - Voltage setpoint in pu
+        Parameters:
+            net (ADict): Pandapower struct
+            element_index (int): ID of the trafo that is controlled
+            vm_set_pu (float): Voltage setpoint in pu
         """
         self = cls(net, element_index=element_index, vm_lower_pu=None, vm_upper_pu=None, side=side,
                    element=element, tol=tol,
@@ -94,7 +83,7 @@ class DiscreteTapControl(TrafoController):
     def initialize_control(self, net):
         super().initialize_control(net)
         if hasattr(self, 'vm_set_pu') and self.vm_set_pu is not None:
-            self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
+            self.vm_delta_pu = np.abs(self.tap_step_percent) / 100. * .5 + self.tol
         if hasattr(self.element_index, "__iter__"):
             self._hunting_taps = np.full(shape=len(self.element_index), fill_value=np.nan,
                                          dtype=np.float64)
@@ -110,7 +99,7 @@ class DiscreteTapControl(TrafoController):
 
         vm_pu = read_from_net(net, "res_bus", self.trafobus, "vm_pu", self._read_write_flag)
         self.tap_pos = read_from_net(
-            net, self.element, self.element_index, "tap_pos", self._read_write_flag)
+            net, self.element, self.element_index, "tap_pos", self._read_write_flag).copy()
 
         increment = np.where(
             self.tap_side_coeff * self.tap_sign == 1,
@@ -141,7 +130,6 @@ class DiscreteTapControl(TrafoController):
         is_nan = np.isnan(vm_pu)
         self.tap_pos = read_from_net(
             net, self.element, self.element_index, "tap_pos", self._read_write_flag)
-
         reached_limit = np.where(self.tap_side_coeff * self.tap_sign == 1,
                                  (vm_pu < self.vm_lower_pu) & (self.tap_pos == self.tap_min) |
                                  (vm_pu > self.vm_upper_pu) & (self.tap_pos == self.tap_max),
@@ -151,3 +139,56 @@ class DiscreteTapControl(TrafoController):
         converged = np.logical_or(reached_limit, np.logical_and(self.vm_lower_pu < vm_pu, vm_pu < self.vm_upper_pu))
 
         return np.all(np.logical_or(converged, is_nan))
+
+    def __eq__(self, other):
+        """
+        Checks if two DiscreteTapControl instances are equal.
+        """
+        """
+            Checks if two DiscreteTapControl instances are equal by comparing all relevant attributes.
+
+            Args:
+                other: Another object to compare with
+
+            Returns:
+                bool: True if controllers are equal, False otherwise
+            """
+        if not isinstance(other, DiscreteTapControl):
+            return False
+
+        # Compare inherited attributes from TrafoController
+        if not (self.element_index == other.element_index and
+                self.side == other.side and
+                self.element == other.element and
+                self.tol == other.tol):
+            return False
+
+        # Compare DiscreteTapControl specific attributes
+        if not (np.isclose(self.vm_lower_pu, other.vm_lower_pu) and
+                np.isclose(self.vm_upper_pu, other.vm_upper_pu) and
+                np.isclose(self.vm_delta_pu, other.vm_delta_pu) and
+                self.hunting_limit == other.hunting_limit):
+            return False
+
+        def compare_attribute(self, other, attr_name):
+            self_value = getattr(self, attr_name, None)
+            other_value = getattr(other, attr_name, None)
+
+            if self_value is None and other_value is None:
+                return True
+            elif self_value is not None and other_value is not None:
+                return np.isclose(self_value, other_value)
+            else:
+                return False
+
+        for ele in ["vm_set_pu", "tap_pos"]:
+            if not compare_attribute(self, other, ele):
+                return False
+
+        # Compare hunting_taps arrays
+        if self._hunting_taps.shape != other._hunting_taps.shape:
+            return False
+        if not np.allclose(self._hunting_taps, other._hunting_taps, equal_nan=True):
+            return False
+
+        return True
