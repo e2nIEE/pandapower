@@ -1,6 +1,7 @@
 # test_pandera_line_dc_elements.py
 
 import itertools
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
@@ -80,15 +81,15 @@ class TestLineDcRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["from_bus_dc"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["to_bus_dc"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["length_km"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["r_ohm_per_km"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["g_us_per_km"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["max_i_ka"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["parallel"], [*negativ_ints_plus_zero, *not_ints_list]),
-                itertools.product(["df"], [*df_invalid_range, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["from_bus_dc"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["to_bus_dc"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["length_km"], [float(np.nan), pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["r_ohm_per_km"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["g_us_per_km"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["max_i_ka"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["parallel"], [float(np.nan), pd.NA, *negativ_ints_plus_zero, *not_ints_list]),
+                itertools.product(["df"], [float(np.nan), pd.NA, *df_invalid_range, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -124,7 +125,7 @@ class TestLineDcOptionalFields:
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
-        create_line_dc(
+        create_line_dc_from_parameters(
             net,
             from_bus_dc=b0,
             to_bus_dc=b1,
@@ -147,7 +148,7 @@ class TestLineDcOptionalFields:
         net.line_dc["temperature_degree_celsius"] = 25.0
 
         # TDPF group (must be complete if any is set)
-        net.line_dc["tdpf"] = pd.Series([True], dtype="boolean")
+        net.line_dc["tdpf"] = pd.Series([True], dtype=pd.BooleanDtype())
         net.line_dc["wind_speed_m_per_s"] = 5.0
         net.line_dc["wind_angle_degree"] = 90.0
         net.line_dc["conductor_outer_diameter_m"] = 0.03
@@ -213,10 +214,11 @@ class TestLineDcOptionalFields:
             temperature_degree_celsius=30.0,
         )
 
-        # Allow pd.NA in strings
-        net.line_dc["std_type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype())
-        net.line_dc["type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype())
-        net.line_dc["geo"] = pd.Series(data=pd.NA, dtype=pd.StringDtype())
+        # Set nullable string columns with mixed values including NA
+        net.line_dc["name"] = pd.Series(["Line 1", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.line_dc["std_type"] = pd.Series([pd.NA, pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.line_dc["type"] = pd.Series(["ol", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.line_dc["geo"] = pd.Series([pd.NA, pd.NA, pd.NA], dtype=pd.StringDtype())
 
         validate_network(net)
 
@@ -225,8 +227,6 @@ class TestLineDcOptionalFields:
         net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid")
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
-
-        # Case 1: tdpf flag only -> invalid
         create_line_dc_from_parameters(
             net,
             from_bus_dc=b0,
@@ -287,13 +287,16 @@ class TestLineDcOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
-                itertools.product(["std_type"], strings),
-                itertools.product(["type"], strings),
-                itertools.product(["geo"], strings),
-                itertools.product(["alpha"], all_allowed_floats),
-                itertools.product(["temperature_degree_celsius"], all_allowed_floats),
-                itertools.product(["max_loading_percent"], positiv_floats),
+                # Nullable string columns - include pd.NA directly
+                itertools.product(["name"], [pd.NA, *strings]),
+                itertools.product(["std_type"], [pd.NA, *strings]),
+                itertools.product(["type"], [pd.NA, *strings]),
+                itertools.product(["geo"], [pd.NA, *strings]),
+                # Nullable float columns (not in TDPF group) - include float(np.nan) directly
+                itertools.product(["alpha"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["temperature_degree_celsius"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["max_loading_percent"], [float(np.nan), *positiv_floats]),
+                # TDPF group columns - test non-NA values only here (NA tested separately)
                 itertools.product(["tdpf"], bools),
                 itertools.product(["wind_speed_m_per_s"], all_allowed_floats),
                 itertools.product(["wind_angle_degree"], all_allowed_floats),
@@ -340,10 +343,11 @@ class TestLineDcOptionalFields:
         net.line_dc["r_theta_kelvin_per_mw"] = 2.0
         net.line_dc["mc_joule_per_m_k"] = 3600.0
 
-        if parameter in {"name", "std_type", "type", "geo"}:
-            net.line_dc[parameter] = pd.Series([valid_value], dtype="string")
+        # Handle dtype preservation for nullable columns
+        if parameter in ["name", "std_type", "type", "geo"]:
+            net.line_dc[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
         elif parameter == "tdpf":
-            net.line_dc[parameter] = pd.Series([valid_value], dtype="boolean")
+            net.line_dc[parameter] = pd.Series([valid_value], dtype=pd.BooleanDtype())
         else:
             net.line_dc[parameter] = valid_value
 
@@ -353,13 +357,16 @@ class TestLineDcOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
+                # String columns - invalid types
                 itertools.product(["name"], not_strings_list),
                 itertools.product(["std_type"], not_strings_list),
                 itertools.product(["type"], not_strings_list),
                 itertools.product(["geo"], not_strings_list),
+                # Float columns - invalid types
                 itertools.product(["alpha"], not_floats_list),
                 itertools.product(["temperature_degree_celsius"], not_floats_list),
                 itertools.product(["max_loading_percent"], [*negativ_floats_plus_zero, *not_floats_list]),
+                # TDPF group columns - invalid types
                 itertools.product(["tdpf"], not_boolean_list),
                 itertools.product(["wind_speed_m_per_s"], not_floats_list),
                 itertools.product(["wind_angle_degree"], not_floats_list),
@@ -394,7 +401,7 @@ class TestLineDcOptionalFields:
         )
 
         # Provide complete TDPF group so only the target parameter triggers failure
-        net.line_dc["tdpf"] = pd.Series([True], dtype="boolean")
+        net.line_dc["tdpf"] = pd.Series([True], dtype=pd.BooleanDtype())
         net.line_dc["wind_speed_m_per_s"] = 2.0
         net.line_dc["wind_angle_degree"] = 90.0
         net.line_dc["conductor_outer_diameter_m"] = 0.03
@@ -409,6 +416,106 @@ class TestLineDcOptionalFields:
         net.line_dc[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+
+class TestLineDcDependencyGroupNullValues:
+    """Tests for nullable dependency group columns - all columns in group set to NA together"""
+
+    def test_tdpf_group_all_null_valid(self):
+        """Test: TDPF group columns can all be NA/NaN together"""
+        net = pandapowerNet(name="test_tdpf_group_all_null_valid")
+        b0 = create_bus_dc(net, 0.4)
+        b1 = create_bus_dc(net, 0.4)
+
+        create_line_dc_from_parameters(
+            net,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
+            length_km=1.0,
+            r_ohm_per_km=0.1,
+            g_us_per_km=0.0,
+            max_i_ka=0.2,
+            parallel=1,
+            df=0.5,
+            in_service=True,
+        )
+
+        # Set all TDPF columns to NA/NaN with correct dtypes
+        net.line_dc["tdpf"] = pd.Series([pd.NA], dtype=pd.BooleanDtype())
+        net.line_dc["wind_speed_m_per_s"] = float("nan")
+        net.line_dc["wind_angle_degree"] = float("nan")
+        net.line_dc["conductor_outer_diameter_m"] = float("nan")
+        net.line_dc["air_temperature_degree_celsius"] = float("nan")
+        net.line_dc["reference_temperature_degree_celsius"] = float("nan")
+        net.line_dc["solar_radiation_w_per_sq_m"] = float("nan")
+        net.line_dc["solar_absorptivity"] = float("nan")
+        net.line_dc["emissivity"] = float("nan")
+        net.line_dc["r_theta_kelvin_per_mw"] = float("nan")
+        net.line_dc["mc_joule_per_m_k"] = float("nan")
+
+        validate_network(net)
+
+    def test_mixed_null_and_valid_values_in_rows(self):
+        """Test: Multiple rows with mixed NA and valid values"""
+        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
+        b0 = create_bus_dc(net, 0.4)
+        b1 = create_bus_dc(net, 0.4)
+
+        # Row 1: all optional fields filled, TDPF group complete
+        create_line_dc_from_parameters(
+            net,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
+            length_km=1.0,
+            r_ohm_per_km=0.1,
+            g_us_per_km=0.0,
+            max_i_ka=0.2,
+            parallel=1,
+            df=0.5,
+            in_service=True,
+            name="Line A",
+            alpha=0.003,
+        )
+
+        # Row 2: all optional fields NA/NaN
+        create_line_dc_from_parameters(
+            net,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
+            length_km=2.0,
+            r_ohm_per_km=0.2,
+            g_us_per_km=0.1,
+            max_i_ka=0.3,
+            parallel=1,
+            df=0.8,
+            in_service=False,
+        )
+
+        # Set nullable columns with mixed values
+        net.line_dc["name"] = pd.Series(["Line A", pd.NA], dtype=pd.StringDtype())
+        net.line_dc["std_type"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.line_dc["type"] = pd.Series(["ol", pd.NA], dtype=pd.StringDtype())
+        net.line_dc["geo"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+
+        # Float columns with mixed NaN
+        net.line_dc["alpha"] = [0.003, float("nan")]
+        net.line_dc["temperature_degree_celsius"] = [float("nan"), float("nan")]
+        net.line_dc["max_loading_percent"] = [100.0, float("nan")]
+
+        # TDPF group - Row 1 has values, Row 2 has all NaN
+        net.line_dc["tdpf"] = pd.Series([True, pd.NA], dtype=pd.BooleanDtype())
+        net.line_dc["wind_speed_m_per_s"] = [5.0, float("nan")]
+        net.line_dc["wind_angle_degree"] = [90.0, float("nan")]
+        net.line_dc["conductor_outer_diameter_m"] = [0.03, float("nan")]
+        net.line_dc["air_temperature_degree_celsius"] = [20.0, float("nan")]
+        net.line_dc["reference_temperature_degree_celsius"] = [20.0, float("nan")]
+        net.line_dc["solar_radiation_w_per_sq_m"] = [200.0, float("nan")]
+        net.line_dc["solar_absorptivity"] = [0.5, float("nan")]
+        net.line_dc["emissivity"] = [0.9, float("nan")]
+        net.line_dc["r_theta_kelvin_per_mw"] = [2.0, float("nan")]
+        net.line_dc["mc_joule_per_m_k"] = [3600.0, float("nan")]
+
+        validate_network(net)
 
 
 class TestLineDcForeignKey:
@@ -434,6 +541,29 @@ class TestLineDcForeignKey:
         )
 
         net.line_dc["from_bus_dc"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_invalid_to_bus_dc_index(self):
+        """Test: to_bus_dc must reference existing bus_dc indices"""
+        net = pandapowerNet(name="test_invalid_to_bus_dc_index")
+        b0 = create_bus_dc(net, 0.4)
+        b1 = create_bus_dc(net, 0.4)
+
+        create_line_dc_from_parameters(
+            net,
+            from_bus_dc=b0,
+            to_bus_dc=b1,
+            length_km=1.0,
+            r_ohm_per_km=0.1,
+            g_us_per_km=0.0,
+            max_i_ka=0.2,
+            parallel=1,
+            df=0.5,
+            in_service=True,
+        )
+
+        net.line_dc["to_bus_dc"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
