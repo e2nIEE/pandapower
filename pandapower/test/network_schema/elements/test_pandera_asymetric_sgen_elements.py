@@ -84,7 +84,7 @@ class TestAsymmetricSgenRequiredFields:
                 itertools.product(["q_c_mvar"], not_floats_list),
                 itertools.product(["scaling"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["in_service"], not_boolean_list),
-                itertools.product(["current_source"], not_boolean_list),
+                # itertools.product(["current_source"], not_boolean_list), # TODO: disabled in schema so also disabled here
             )
         ),
     )
@@ -105,7 +105,7 @@ class TestAsymmetricSgenRequiredFields:
             q_c_mvar=0.5,
             scaling=1.0,
             in_service=True,
-            current_source=False,
+            # current_source=False, # See todo above, this is treated as custom currently
             type="PV",
             name="test",
             sn_mva=10.0,
