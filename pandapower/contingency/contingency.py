@@ -45,7 +45,6 @@ except ImportError:
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create._utils import add_column_to_df
 from pandapower.run import runpp
-from pandapower.auxiliary import pandapowerNet
 
 
 def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
