@@ -140,7 +140,7 @@ jobs:
         python-version: ['3.14']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python' and the release pipelines
-        groups: [1, 2, 3]
+        group: [1, 2, 3]
     steps:
       #      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - uses: actions/checkout@v6
@@ -151,6 +151,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --extra dev
+          uv pip install pytest-cov numpy~=1.26
           uv pip install pytest-split
           uv pip uninstall juliacall
       - name: List of installed packages
@@ -158,8 +159,7 @@ jobs:
           uv pip list
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv pip install pytest-cov numpy~=1.26
-          uv run pytest --splits 3 --group ${{ matrix.group }} --cov=./ --cov-report=xml pandapower/test/network_schema
+          uv run pytest --cov=./ --cov-report=xml --splits 3 --group ${{ matrix.group }} pandapower/test/network_schema
           cp ./coverage.xml ./coverage-${{ matrix.group }}-network_schema.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
