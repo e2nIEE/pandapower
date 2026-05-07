@@ -1,4 +1,7 @@
+# test_pandera_load_elements.py
+
 import itertools
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
@@ -24,7 +27,6 @@ from pandapower.test.network_schema.elements.helper import (
 )
 
 # ZIP percentage ranges
-
 percent_valid = [0.0, 50.0, 100.0]
 percent_invalid = [-0.1, 100.1]
 
@@ -60,11 +62,11 @@ class TestLoadRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["p_mw"], not_floats_list),
-                itertools.product(["q_mvar"], not_floats_list),
-                itertools.product(["scaling"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["p_mw"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["q_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["scaling"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -111,13 +113,19 @@ class TestLoadOptionalFields:
         net.load["const_z_q_percent"] = 10.0
         net.load["const_i_q_percent"] = 40.0
 
-        # nullable boolean
+        # controllable (optional but not nullable)
         net.load["controllable"] = pd.Series([True], dtype=bool)
 
-        # ensure string dtypes for string columns
-        net.load["name"] = net.load["name"].astype("string")
-        net.load["type"] = net.load["type"].astype("string")
-        net.load["zone"] = net.load["zone"].astype("string")
+        # CIM columns
+        net.load["origin_id"] = pd.Series(["cim_id_1"], dtype=pd.StringDtype())
+        net.load["origin_class"] = pd.Series(["EnergyConsumer"], dtype=pd.StringDtype())
+        net.load["terminal"] = pd.Series(["term_1"], dtype=pd.StringDtype())
+        net.load["description"] = pd.Series(["Test load"], dtype=pd.StringDtype())
+
+        # Ensure string dtypes for string columns
+        net.load["name"] = net.load["name"].astype(pd.StringDtype())
+        net.load["type"] = net.load["type"].astype(pd.StringDtype())
+        net.load["zone"] = net.load["zone"].astype(pd.StringDtype())
 
         validate_network(net)
 
@@ -132,10 +140,30 @@ class TestLoadOptionalFields:
         create_load(net, bus=b0, p_mw=2.0, q_mvar=0.2, scaling=1.1, in_service=False)
 
         # Assign optional fields with nulls
-        net.load["name"] = pd.Series(["L1", pd.NA, "L3"], dtype="string")
-        net.load["zone"] = pd.Series(["Z1", pd.NA, "Z3"], dtype="string")
-        net.load["type"] = pd.Series([pd.NA, "delta", pd.NA], dtype="string")
-        net.load["sn_mva"] = [None, 2.0, None]
+        net.load["name"] = pd.Series(["L1", pd.NA, "L3"], dtype=pd.StringDtype())
+        net.load["zone"] = pd.Series(["Z1", pd.NA, "Z3"], dtype=pd.StringDtype())
+        net.load["type"] = pd.Series([pd.NA, "delta", pd.NA], dtype=pd.StringDtype())
+        net.load["sn_mva"] = [float("nan"), 2.0, float("nan")]
+
+        # CIM columns with mixed nulls
+        net.load["origin_id"] = pd.Series(["cim_1", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.load["origin_class"] = pd.Series([pd.NA, pd.NA, "EnergyConsumer"], dtype=pd.StringDtype())
+        net.load["terminal"] = pd.Series([pd.NA, pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.load["description"] = pd.Series([pd.NA, "Desc 2", pd.NA], dtype=pd.StringDtype())
+
+        validate_network(net)
+
+    def test_zip_group_complete_valid(self):
+        """Test: ZIP group with all columns present is valid"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        # Set complete ZIP group
+        net.load["const_z_p_percent"] = 20.0
+        net.load["const_i_p_percent"] = 30.0
+        net.load["const_z_q_percent"] = 10.0
+        net.load["const_i_q_percent"] = 40.0
 
         validate_network(net)
 
@@ -143,15 +171,24 @@ class TestLoadOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
+                # Nullable string columns - include pd.NA directly
+                itertools.product(["name"], [pd.NA, *strings]),
+                itertools.product(["zone"], [pd.NA, *strings]),
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                # type has isin constraint - test valid values only (NA tested separately)
                 itertools.product(["type"], ["wye", "delta"]),
-                itertools.product(["zone"], strings),
-                itertools.product(["sn_mva"], positiv_floats),  # gt(0)
+                # Nullable float columns - include float(np.nan) directly
+                itertools.product(["sn_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["max_p_mw"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["min_p_mw"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["max_q_mvar"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["min_q_mvar"], [float(np.nan), *all_allowed_floats]),
+                # controllable is optional but NOT nullable
                 itertools.product(["controllable"], bools),
-                itertools.product(["max_p_mw"], all_allowed_floats),
-                itertools.product(["min_p_mw"], all_allowed_floats),
-                itertools.product(["max_q_mvar"], all_allowed_floats),
-                itertools.product(["min_q_mvar"], all_allowed_floats),
+                # ZIP group columns - test non-NA values only here (NA tested separately)
                 itertools.product(["const_z_p_percent"], percent_valid),
                 itertools.product(["const_i_p_percent"], percent_valid),
                 itertools.product(["const_z_q_percent"], percent_valid),
@@ -166,14 +203,21 @@ class TestLoadOptionalFields:
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
 
-        # Satisfy ZIP group to avoid dependency failures when setting any ZIP-related column
-        net.load["const_z_p_percent"] = 20.0
-        net.load["const_i_p_percent"] = 30.0
-        net.load["const_z_q_percent"] = 10.0
-        net.load["const_i_q_percent"] = 40.0
+        # ZIP group columns
+        zip_columns = ["const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"]
 
-        if parameter in {"name", "type", "zone"}:
-            net.load[parameter] = pd.Series([valid_value], dtype="string")
+        # Satisfy ZIP group for ZIP-related parameters
+        if parameter in zip_columns:
+            net.load["const_z_p_percent"] = 20.0
+            net.load["const_i_p_percent"] = 30.0
+            net.load["const_z_q_percent"] = 10.0
+            net.load["const_i_q_percent"] = 40.0
+
+        # Handle dtype preservation for nullable columns
+        nullable_string_columns = ["name", "zone", "origin_id", "origin_class", "terminal", "description", "type"]
+
+        if parameter in nullable_string_columns:
+            net.load[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
         elif parameter == "controllable":
             net.load[parameter] = pd.Series([valid_value], dtype=bool)
         else:
@@ -185,19 +229,29 @@ class TestLoadOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
+                # String columns - invalid types
                 itertools.product(["name"], not_strings_list),
-                itertools.product(["type"], [*strings, *not_strings_list]),  # anything but 'wye'/'delta'
                 itertools.product(["zone"], not_strings_list),
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["terminal"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                # type - anything but 'wye'/'delta' (and non-strings)
+                itertools.product(["type"], [*strings, *not_strings_list]),
+                # sn_mva must be > 0 if provided
                 itertools.product(["sn_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["controllable"], not_boolean_list),
+                # P/Q limits are just floats (any value allowed)
                 itertools.product(["max_p_mw"], not_floats_list),
                 itertools.product(["min_p_mw"], not_floats_list),
                 itertools.product(["max_q_mvar"], not_floats_list),
                 itertools.product(["min_q_mvar"], not_floats_list),
-                itertools.product(["const_z_p_percent"], [*percent_invalid, *not_floats_list]),
-                itertools.product(["const_i_p_percent"], [*percent_invalid, *not_floats_list]),
-                itertools.product(["const_z_q_percent"], [*percent_invalid, *not_floats_list]),
-                itertools.product(["const_i_q_percent"], [*percent_invalid, *not_floats_list]),
+                # controllable is NOT nullable
+                itertools.product(["controllable"], [float(np.nan), pd.NA, *not_boolean_list]),
+                # ZIP columns must be in [0, 100]
+                itertools.product(["const_z_p_percent"], [float(np.nan), pd.NA, *percent_invalid, *not_floats_list]),
+                itertools.product(["const_i_p_percent"], [float(np.nan), pd.NA, *percent_invalid, *not_floats_list]),
+                itertools.product(["const_z_q_percent"], [float(np.nan), pd.NA, *percent_invalid, *not_floats_list]),
+                itertools.product(["const_i_q_percent"], [float(np.nan), pd.NA, *percent_invalid, *not_floats_list]),
             )
         ),
     )
@@ -219,6 +273,155 @@ class TestLoadOptionalFields:
             validate_network(net)
 
 
+class TestLoadDependencyGroupNullValues:
+    """Tests for nullable dependency group columns - all columns in group set to NA together"""
+
+    def test_all_nullable_string_columns_na_valid(self):
+        """Test: All nullable string columns can be NA"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        # Set all nullable string columns to NA
+        net.load["name"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.load["zone"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.load["type"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.load["origin_id"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.load["origin_class"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.load["terminal"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.load["description"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+
+        validate_network(net)
+
+    def test_all_nullable_float_columns_nan_valid(self):
+        """Test: All nullable float columns (not in ZIP group) can be NaN"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        # Set non-group nullable float columns to NaN
+        net.load["sn_mva"] = float("nan")
+        net.load["max_p_mw"] = float("nan")
+        net.load["min_p_mw"] = float("nan")
+        net.load["max_q_mvar"] = float("nan")
+        net.load["min_q_mvar"] = float("nan")
+
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "column_name",
+        ["name", "zone", "type", "origin_id", "origin_class", "terminal", "description"],
+    )
+    def test_individual_nullable_string_column_na_valid(self, column_name):
+        """Test: Each nullable string column accepts NA individually"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        net.load[column_name] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "column_name",
+        ["sn_mva", "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"],
+    )
+    def test_individual_nullable_float_column_nan_valid(self, column_name):
+        """Test: Each nullable float column (not in ZIP group) accepts NaN individually"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        net.load[column_name] = float("nan")
+        validate_network(net)
+
+    def test_mixed_null_and_valid_values_in_rows(self):
+        """Test: Multiple rows with mixed NA and valid values"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+
+        # Row 1: all optional string fields filled, ZIP group complete
+        create_load(
+            net,
+            bus=b0,
+            p_mw=1.0,
+            q_mvar=0.1,
+            scaling=1.0,
+            in_service=True,
+            name="Load A",
+            sn_mva=1.0,
+            type="wye",
+            zone="zone-1",
+        )
+
+        # Row 2: all optional fields NA/NaN (including ZIP group all NaN)
+        create_load(
+            net,
+            bus=b0,
+            p_mw=2.0,
+            q_mvar=0.2,
+            scaling=0.8,
+            in_service=False,
+        )
+
+        # Row 3: some fields filled
+        create_load(
+            net,
+            bus=b0,
+            p_mw=0.5,
+            q_mvar=0.05,
+            scaling=1.2,
+            in_service=True,
+            type="delta",
+        )
+
+        # Set nullable columns with mixed values
+        net.load["name"] = pd.Series(["Load A", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.load["zone"] = pd.Series(["zone-1", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.load["type"] = pd.Series(["wye", pd.NA, "delta"], dtype=pd.StringDtype())
+        net.load["sn_mva"] = [1.0, float("nan"), float("nan")]
+
+        # CIM columns with mixed values
+        net.load["origin_id"] = pd.Series(["cim_1", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.load["origin_class"] = pd.Series([pd.NA, pd.NA, "EnergyConsumer"], dtype=pd.StringDtype())
+
+        # Float columns with mixed NaN
+        net.load["max_p_mw"] = [2.0, float("nan"), float("nan")]
+        net.load["min_p_mw"] = [-1.0, float("nan"), float("nan")]
+
+        validate_network(net)
+
+    def test_cim_columns_all_na_valid(self):
+        """Test: All CIM-related columns can be NA"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        # CIM columns from schema metadata
+        cim_string_columns = ["name", "origin_id", "origin_class", "terminal", "description"]
+
+        for col in cim_string_columns:
+            net.load[col] = pd.Series([pd.NA], dtype=pd.StringDtype())
+
+        validate_network(net)
+
+    def test_type_column_na_valid(self):
+        """Test: type column can be NA (despite isin constraint)"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        # type is nullable despite having isin constraint
+        net.load["type"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+
+        validate_network(net)
+
+
 class TestLoadForeignKey:
     """Tests for foreign key constraints"""
 
@@ -231,6 +434,19 @@ class TestLoadForeignKey:
         net.load["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_load(net, bus=10, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+        create_load(net, bus=42, p_mw=2.0, q_mvar=0.2, scaling=0.9, in_service=True)
+        create_load(net, bus=100, p_mw=0.5, q_mvar=0.05, scaling=1.1, in_service=False)
+
+        validate_network(net)
 
 
 class TestLoadResults:
