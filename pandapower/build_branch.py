@@ -1386,7 +1386,8 @@ def _trafo_df_from_trafo3w(net, sequence=1):
         if mode != "sc":
             raise NotImplementedError(
                 "0 seq impedance calculation only implemented for short-circuit calculation!")
-        _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2,)
+        case = net._options.get("case", 'max')
+        _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2, case)
     else:
         raise UserWarning("Unsupported sequence for trafo3w convertion")
     _calculate_3w_tap_changers(t3, trafo2, sides)
@@ -1463,7 +1464,7 @@ def _calculate_sc_voltages_of_equivalent_transformers(
     t2["sn_mva"] = {"hv": sn[0, :], "mv": sn[1, :], "lv": sn[2, :]}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
+def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2, case):
     vk_3w = np.stack([t3.vk_hv_percent.values, t3.vk_mv_percent.values, t3.vk_lv_percent.values])
     vkr_3w = np.stack([t3.vkr_hv_percent.values, t3.vkr_mv_percent.values, t3.vkr_lv_percent.values])
     vk0_3w = np.stack([t3.vk0_hv_percent.values, t3.vk0_mv_percent.values, t3.vk0_lv_percent.values])
@@ -1475,7 +1476,7 @@ def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
 
     # Only for "sc", calculated with positive sequence value
     # TODO for 3wtrafos respect also C_MIN
-    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, "max")
+    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, case)
     vk0_2w_delta *= kt
     vkr0_2w_delta *= kt
 
