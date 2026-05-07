@@ -221,7 +221,8 @@ def create_generic_coordinates(
     Example:
         >>> net = create_generic_coordinates(net)
     """
-
+    if buses is None:
+        buses = net[geodata_table].index.tolist()
     _prepare_geodata_table(net, geodata_table, overwrite, buses)
     if library == "igraph":
         if not IGRAPH_INSTALLED:
@@ -240,23 +241,35 @@ def create_generic_coordinates(
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):
-        net[geodata_table]["geo"] = pd.Series(
-            map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords)),
-            index=net[geodata_table].index if buses is None else buses,
+        net[geodata_table]["geo"][buses] = pd.Series(
+            data=map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords)),
+            index=buses,
         )
     return net
 
 
 def _prepare_geodata_table(
-        net: pandapowerNet, geodata_table: str, overwrite: bool, buses: Iterable[int] | None
+        net: pandapowerNet, geodata_table: str, overwrite: bool, elements: Iterable[int] | None
 ) -> None:
     if geodata_table not in net or "geo" not in net[geodata_table]:
-        add_column_to_df(net, geodata_table, "geo")
-    if buses is None:
-        buses = net[geodata_table].index.tolist()
-    if net[geodata_table].loc[buses, "geo"].dropna().shape[0]:
+        try:
+            add_column_to_df(net, geodata_table, "geo")
+        except KeyError as e:
+            logger.warning("Creating geodata for a unknown table")
+            if geodata_table not in net:
+                net[geodata_table] = pd.DataFrame(columns=["geo"], index=elements, dtype=pd.StringDtype())
+            else:
+                net[geodata_table]["geo"] = pd.NA
+    if elements is None:
+        elements = net[geodata_table].index.tolist()
+    try:
+        net[geodata_table].loc[elements]
+    except KeyError as e:
+        logger.error(f"While preparing geodata table for {geodata_table} a nonexistent bus was passed!")
+        raise e
+    if net[geodata_table].loc[elements, "geo"].dropna().shape[0]:
         if overwrite:
-            net[geodata_table].loc[buses, "geo"] = pd.NA
+            net[geodata_table].loc[elements, "geo"] = pd.NA
         else:
             raise UserWarning(f"Table {geodata_table} is not empty - use overwrite=True to overwrite existing geodata")
 
