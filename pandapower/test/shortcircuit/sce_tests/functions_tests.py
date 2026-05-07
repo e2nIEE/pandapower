@@ -199,10 +199,7 @@ def compare_results(columns_to_check, net_df, pf_results):
             f"{column} mismatch for {net_df.loc[~mismatch, 'name'].values[0]}:\n"
             f"pp values: {net_df.loc[~mismatch, column].values[0]}\n"
             f"pf values: {pf_results.loc[~mismatch, column].values[0]}\n"
-            f"diff: {np.round(np.abs(net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0]), 3)}\n"
-            f"diff_percent: {np.nan if pf_results.loc[~mismatch, column].values[0] == 0 else
-                            (net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0]) /
-                            pf_results.loc[~mismatch, column].values[0] * 100}"
+            f"diff_percent: {np.nan if pf_results.loc[~mismatch, column].values[0] == 0 else (net_df.loc[~mismatch, column].values[0] - pf_results.loc[~mismatch, column].values[0]) / pf_results.loc[~mismatch, column].values[0] * 100}"
         )
 
 
@@ -366,14 +363,15 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
     if r_fault_ohm != 0.0 and x_fault_ohm != 0.0:
         selected_sheet = f"{fault}_{case}_fault_{lv_tol_percent}"
 
-    selected_pf_results = dataframes[selected_sheet]
-    modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
+    # selected_pf_results = dataframes[selected_sheet]
+    # modified_pf_results = modify_impedance_values_with_fault_value(selected_pf_results, r_fault_ohm, x_fault_ohm)
+    modified_pf_results = dataframes[selected_sheet]
 
     calc_sc(net, fault_bus=fault_location_bus, fault=fault, case=case, branch_results=branch_results, ip=False,
             r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, lv_tol_percent=lv_tol_percent)
 
     if branch_results:
-        columns_to_check = net.res_line_sc.columns
+        columns_to_check = net.res_line_sc.columns[1:]
         if fault == "LG" or fault == "LLG" or fault == "LL":
             if branch_results:
                 patterns_to_drop = ["ikss_ka"]  # ToDo: Do we need the value ikss_ka ?
@@ -385,18 +383,16 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
         modified_pf_results_selection = modified_pf_results[modified_pf_results['name'].isin(net.res_line_sc['name'])]
         modified_pf_results_selection = clean_small_angles(fault, modified_pf_results_selection)
         net_df = net.res_line_sc.copy()
+        net_df = clean_small_angles_pp(fault, net_df)
         if fault == 'LLL':
             cols_to_drop = net_df.filter(regex=r'_(b|c)_').columns
             net_df = net_df.drop(columns=cols_to_drop)
             columns_to_check = net_df.columns
-            cols = modified_pf_results_selection.columns.str.contains(r'skss_|p_|q_')
-            modified_pf_results_selection.loc[:, cols] /= 3
 
         cols_to_ignore = columns_to_check[columns_to_check.str.contains('skss_')]
         columns_to_check = columns_to_check.drop(cols_to_ignore)
 
     else:
-        columns_to_check = net.res_bus_sc.columns
         net.res_bus_sc.insert(0, "name", net.bus.name)
         net.res_bus_sc.sort_values(by='name', inplace=True)
 
@@ -413,26 +409,36 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
                                                           'rk_ohm': 'rk1_ohm', 'xk_ohm': 'xk1_ohm'}, inplace=True)
             cols_to_ignore = columns_to_check[columns_to_check.str.contains(r'rk0_|xk0_|rk2_|xk2_|degree')]
             columns_to_check = columns_to_check.drop(cols_to_ignore)
-
-            cols = modified_pf_results_selection.columns.str.contains(r'skss_|p_|q_')
-            modified_pf_results_selection.loc[:, cols] /= 3
-
-        if fault == 'LL':
+        elif fault == 'LL':
             cols_to_drop = net_df.filter(regex=r'_(a|c)_').columns
             net_df = net_df.drop(columns=cols_to_drop)
             columns_to_check = net_df.columns
+
             modified_pf_results_selection.rename(columns={'skss_mw': 'skss_b_mva', 'ikss_ka': 'ikss_b_ka'}, inplace=True)
-        if fault == 'LG':
+            cols_to_ignore = columns_to_check[columns_to_check.str.contains(r'degree')]
+            columns_to_check = columns_to_check.drop(cols_to_ignore)
+        elif fault == "LG":
             cols_to_drop = net_df.filter(regex=r'_(b|c)_').columns
             net_df = net_df.drop(columns=cols_to_drop)
             columns_to_check = net_df.columns
-            modified_pf_results_selection.rename(columns={'skss_mw': 'skss_a_mva', 'ikss_ka': 'ikss_a_ka'}, inplace=True)
-        if fault == 'LLG':
-            modified_pf_results_selection.rename(columns={'skss_a_mw': 'skss_a_mva', 'skss_b_mw': 'skss_b_mva', 'skss_c_mw': 'skss_c_mva'}, inplace=True)
 
-        cols_to_ignore = columns_to_check[columns_to_check.str.contains('degree')]
-        columns_to_check = columns_to_check.drop(cols_to_ignore)
+            modified_pf_results_selection.rename(columns={'skss_mw': 'skss_a_mva', 'ikss_ka': 'ikss_a_ka',
+                                                          'rk_ohm': 'rk1_ohm', 'xk_ohm': 'xk1_ohm'}, inplace=True)
+            cols_to_ignore = columns_to_check[columns_to_check.str.contains(r'degree')]
+            columns_to_check = columns_to_check.drop(cols_to_ignore)
+        elif fault == 'LLG':
+            cols_to_drop = net_df.filter(regex=r'_(a)_').columns
+            net_df = net_df.drop(columns=cols_to_drop)
+            columns_to_check = net_df.columns
 
+            modified_pf_results_selection.rename(columns={'skss_b_mw': 'skss_b_mva', 'ikss_b_ka': 'ikss_b_ka',
+                                                          'skss_c_mw': 'skss_c_mva', 'ikss_c_ka': 'ikss_c_ka',}, inplace=True)
+            cols_to_ignore = columns_to_check[columns_to_check.str.contains(r'degree')]
+            columns_to_check = columns_to_check.drop(cols_to_ignore)
+
+    if fault == "LLL":
+        cols = modified_pf_results_selection.columns.str.contains(r'skss_|p_|q_')
+        modified_pf_results_selection.loc[:, cols] /= 3
 
     return columns_to_check, net_df, modified_pf_results_selection
 
@@ -457,6 +463,23 @@ def clean_small_angles(fault, results):
                 ("ikss_a_to_ka", "ikss_a_to_degree"), \
                 ("vm_a_from_pu", "va_a_from_degree"), \
                 ("vm_a_to_pu", "va_a_to_degree"):
+            results[ang][results[mag] < 1e-5] = 0
+
+    return results
+
+
+def clean_small_angles_pp(fault, results):
+    if fault in ["LG", "LLG", "LL"]:
+        for [mag, ang] in ("ikss_a_from_ka", "ikss_a_from_degree"), \
+                ("ikss_b_from_ka", "ikss_b_from_degree"), \
+                ("ikss_c_from_ka", "ikss_c_from_degree"), \
+                ("ikss_a_to_ka", "ikss_a_to_degree"), \
+                ("ikss_b_to_ka", "ikss_b_to_degree"), \
+                ("ikss_c_to_ka", "ikss_c_to_degree"):
+            results[ang][results[mag] < 1e-5] = 0
+    else:
+        for [mag, ang] in ("ikss_a_from_ka", "ikss_a_from_degree"), \
+                ("ikss_a_to_ka", "ikss_a_to_degree"):
             results[ang][results[mag] < 1e-5] = 0
 
     return results

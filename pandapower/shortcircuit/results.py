@@ -573,12 +573,25 @@ def _extract_bus_results(net, ppc_0, ppc_1, ppc_2, bus):
         del net.res_bus_sc[f'p_{phase}_mw']
         del net.res_bus_sc[f'q_{phase}_mvar']
 
-    net.res_bus_sc.loc[bus, "rk0_ohm"] = ppc_0["bus"][ppc_index, R_EQUIV_OHM]
-    net.res_bus_sc.loc[bus, "xk0_ohm"] = ppc_0["bus"][ppc_index, X_EQUIV_OHM]
-    net.res_bus_sc.loc[bus, "rk1_ohm"] = ppc_1["bus"][ppc_index, R_EQUIV_OHM]
-    net.res_bus_sc.loc[bus, "xk1_ohm"] = ppc_1["bus"][ppc_index, X_EQUIV_OHM]
-    net.res_bus_sc.loc[bus, "rk2_ohm"] = ppc_2["bus"][ppc_index, R_EQUIV_OHM]
-    net.res_bus_sc.loc[bus, "xk2_ohm"] = ppc_2["bus"][ppc_index, X_EQUIV_OHM]
+    fault = net._options["fault"]
+    z_fault_pu = net["_options"]["z_fault_pu"]
+    baseZ = ppc_1["bus"][bus, BASE_KV] ** 2 / ppc_1["baseMVA"]
+    z_fault = z_fault_pu * baseZ
+
+    if (fault == "LL"):
+        net.res_bus_sc.loc[bus, "rk0_ohm"] = ppc_0["bus"][ppc_index, R_EQUIV_OHM]
+        net.res_bus_sc.loc[bus, "xk0_ohm"] = ppc_0["bus"][ppc_index, X_EQUIV_OHM]
+        net.res_bus_sc.loc[bus, "rk1_ohm"] = ppc_1["bus"][ppc_index, R_EQUIV_OHM] - z_fault.real/2
+        net.res_bus_sc.loc[bus, "xk1_ohm"] = ppc_1["bus"][ppc_index, X_EQUIV_OHM] - z_fault.imag/2
+        net.res_bus_sc.loc[bus, "rk2_ohm"] = ppc_2["bus"][ppc_index, R_EQUIV_OHM] - z_fault.real/2
+        net.res_bus_sc.loc[bus, "xk2_ohm"] = ppc_2["bus"][ppc_index, X_EQUIV_OHM] - z_fault.imag/2
+    else:
+        net.res_bus_sc.loc[bus, "rk0_ohm"] = ppc_0["bus"][ppc_index, R_EQUIV_OHM] - z_fault.real
+        net.res_bus_sc.loc[bus, "xk0_ohm"] = ppc_0["bus"][ppc_index, X_EQUIV_OHM] - z_fault.imag
+        net.res_bus_sc.loc[bus, "rk1_ohm"] = ppc_1["bus"][ppc_index, R_EQUIV_OHM] - z_fault.real
+        net.res_bus_sc.loc[bus, "xk1_ohm"] = ppc_1["bus"][ppc_index, X_EQUIV_OHM] - z_fault.imag
+        net.res_bus_sc.loc[bus, "rk2_ohm"] = ppc_2["bus"][ppc_index, R_EQUIV_OHM] - z_fault.real
+        net.res_bus_sc.loc[bus, "xk2_ohm"] = ppc_2["bus"][ppc_index, X_EQUIV_OHM] - z_fault.imag  
 
     net.res_bus_sc.drop(net.res_bus_sc.index[np.isnan(net.res_bus_sc["ikss_a_ka"]).values], inplace=True)
 
