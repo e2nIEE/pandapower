@@ -506,6 +506,130 @@ class TestLineDependencyGroupNullValues:
         validate_network(net)
 
 
+class TestLineDependencyGroupNullValues:
+    """Tests for nullable dependency group columns - all columns in group set to NA together"""
+
+    def test_tdpf_group_all_null_valid(self):
+        """Test: TDPF group columns can all be NA/NaN together"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+
+        # Set all TDPF columns to NA/NaN with correct dtypes
+        net.line["tdpf"] = pd.Series([pd.NA], dtype=pd.BooleanDtype())
+        net.line["wind_speed_m_per_s"] = float("nan")
+        net.line["wind_angle_degree"] = float("nan")
+        net.line["conductor_outer_diameter_m"] = float("nan")
+        net.line["air_temperature_degree_celsius"] = float("nan")
+        net.line["reference_temperature_degree_celsius"] = float("nan")
+        net.line["solar_radiation_w_per_sq_m"] = float("nan")
+        net.line["solar_absorptivity"] = float("nan")
+        net.line["emissivity"] = float("nan")
+        net.line["r_theta_kelvin_per_mw"] = float("nan")
+        net.line["mc_joule_per_m_k"] = float("nan")
+        net.line["endtemp_degree"] = float("nan")
+
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "column_name",
+        [
+            "r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km", "g0_us_per_km",
+            "max_loading_percent", "alpha", "temperature_degree_celsius"
+        ],
+    )
+    def test_individual_nullable_float_column_nan_valid(self, column_name):
+        """Test: Each nullable float column (not in TDPF group) accepts NaN individually"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+
+        net.line[column_name] = float("nan")
+        validate_network(net)
+
+    def test_mixed_null_and_valid_values_in_rows(self):
+        """Test: Multiple rows with mixed NA and valid values"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        # Row 1: all optional fields filled, TDPF group complete
+        create_line(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            length_km=1.0,
+            in_service=True,
+            std_type=STD_TYPE,
+            name="Line A",
+            alpha=0.003,
+        )
+
+        # Row 2: all optional fields NA/NaN
+        create_line(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            length_km=2.0,
+            in_service=False,
+            std_type=STD_TYPE,
+        )
+
+        # Set nullable columns with mixed values
+        net.line["name"] = pd.Series(["Line A", pd.NA], dtype=pd.StringDtype())
+        net.line["std_type"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.line["type"] = pd.Series(["ol", pd.NA], dtype=pd.StringDtype())
+        net.line["geo"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.line["origin_id"] = pd.Series(["cim_1", pd.NA], dtype=pd.StringDtype())
+        net.line["origin_class"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+
+        # Float columns with mixed NaN
+        net.line["alpha"] = [0.003, float("nan")]
+        net.line["temperature_degree_celsius"] = [float("nan"), float("nan")]
+        net.line["max_loading_percent"] = [100.0, float("nan")]
+        net.line["r0_ohm_per_km"] = [0.1, float("nan")]
+        net.line["x0_ohm_per_km"] = [0.2, float("nan")]
+
+        # TDPF group - Row 1 has values, Row 2 has all NaN
+        net.line["tdpf"] = pd.Series([True, pd.NA], dtype=pd.BooleanDtype())
+        net.line["wind_speed_m_per_s"] = [5.0, float("nan")]
+        net.line["wind_angle_degree"] = [90.0, float("nan")]
+        net.line["conductor_outer_diameter_m"] = [0.03, float("nan")]
+        net.line["air_temperature_degree_celsius"] = [20.0, float("nan")]
+        net.line["reference_temperature_degree_celsius"] = [20.0, float("nan")]
+        net.line["solar_radiation_w_per_sq_m"] = [200.0, float("nan")]
+        net.line["solar_absorptivity"] = [0.5, float("nan")]
+        net.line["emissivity"] = [0.9, float("nan")]
+        net.line["r_theta_kelvin_per_mw"] = [2.0, float("nan")]
+        net.line["mc_joule_per_m_k"] = [3600.0, float("nan")]
+        net.line["endtemp_degree"] = [40.0, float("nan")]
+
+        validate_network(net)
+
+    def test_cim_columns_all_na_valid(self):
+        """Test: All CIM-related columns can be NA"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+
+        # CIM columns from schema metadata
+        cim_string_columns = [
+            "name", "origin_id", "origin_class", "description",
+            "terminal_to", "terminal_from", "EquipmentContainer_id", "geo"
+        ]
+
+        for col in cim_string_columns:
+            net.line[col] = pd.Series([pd.NA], dtype=pd.StringDtype())
+
+        validate_network(net)
+
+
 class TestLineForeignKey:
     """Tests for foreign key constraints on bus indices"""
 
