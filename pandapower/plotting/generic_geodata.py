@@ -247,9 +247,13 @@ def create_generic_coordinates(
     return net
 
 
-def _prepare_geodata_table(net, geodata_table, overwrite, buses):
+def _prepare_geodata_table(
+        net: pandapowerNet, geodata_table: str, overwrite: bool, buses: Iterable[int] | None
+) -> None:
     if geodata_table not in net or "geo" not in net[geodata_table]:
         add_column_to_df(net, geodata_table, "geo")
+    if buses is None:
+        buses = net[geodata_table].index.tolist()
     if net[geodata_table].loc[buses, "geo"].dropna().shape[0]:
         if overwrite:
             net[geodata_table].loc[buses, "geo"] = pd.NA
