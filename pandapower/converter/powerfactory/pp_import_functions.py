@@ -2132,20 +2132,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         # Check if static gen has a station controller (if not available->None)
         pstac = item.c_pstac
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop and pstac.i_ctrl == 0:
-                av_mode = 'constq'
-            else:
-                if pstac.i_ctrl == 0:
-                    av_mode = 'constq'
-                elif pstac.i_ctrl == 1:
-                    av_mode = 'constq'
-                elif pstac.i_ctrl == 2:
-                    av_mode = 'constq'  # other devices
-                elif pstac.i_ctrl == 3:
-                    av_mode = 'constq'  # implementing other devices?
-                else:
-                    logger.error('Error! av_mode undefined')
-                    return
+            if pstac.i_ctrl not in [0, 1, 2, 3]:
+                logger.error('Error! av_mode undefined')
+                return
+            av_mode = "constq"
 
         if av_mode == 'constv' or av_mode == 'vdroop':  # Case 2: map to gen
             logger.debug('av_mode: %s - creating as gen' % av_mode)
