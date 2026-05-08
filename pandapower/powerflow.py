@@ -47,8 +47,7 @@ def _powerflow(net, **kwargs):
     if net["_options"]["voltage_depend_loads"] and algorithm not in ['nr', 'bfsw'] and not (
             allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0) and
             allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0)):
-        logger.error(("pandapower powerflow does not support voltage depend loads for algorithm "
-                      "'%s'!") % algorithm)
+        logger.error(f"pandapower powerflow does not support voltage depend loads for algorithm '{algorithm}'!")
 
     # clear lookups
     net._pd2ppc_lookups = {"bus": array([], dtype=int64), "bus_dc": array([], dtype=int64),
@@ -143,7 +142,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
         if pq.shape[0] == 0 and pv.shape[0] == 0 and not options['distributed_slack'] \
                 and len(ppci["svc"]) == 0 and len(ppci["tcsc"]) == 0 and len(ppci["ssc"]) == 0 and len(ppci["vsc"]) == 0:
             # ommission not correct if distributed slack is used or facts devices are present
-            result = _bypass_pf_and_set_results(ppci, options)
+            result = _bypass_pf_and_set_results(ppci)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
             result = _run_bfswpf(ppci, options, **kwargs)
         elif algorithm in ['nr', 'iwamoto_nr']:
@@ -181,7 +180,7 @@ def _ppci_to_net(result, net):
     _clean_up(net)
 
 
-def _bypass_pf_and_set_results(ppci, options):
+def _bypass_pf_and_set_results(ppci):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
     baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:, VM]

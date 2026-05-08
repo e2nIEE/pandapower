@@ -104,6 +104,7 @@ def create_pwl_costs(
      - Storage
 
     Parameters:
+        net: the pandapower network
         elements: IDs of the elements in the respective element table
         et: element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"
         points: [[p1, p2, c1], [p2, p3, c2], …] for each element where c(n) defines the costs between p(n) and p(n+1)

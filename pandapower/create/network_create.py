@@ -9,6 +9,6 @@ from pandapower.auxiliary import pandapowerNet
 
 @deprecated('Use the pandapowerNet constructor instead: pandapowerNet(name="Name", ...)')
 def create_empty_network(
-    name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True
+    name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True, structure: dict | None = None
 ) -> pandapowerNet:
     return pandapowerNet(name=name, f_hz=f_hz, sn_mva=sn_mva, add_stdtypes=add_stdtypes)

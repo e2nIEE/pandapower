@@ -81,7 +81,7 @@ class ConstControl(Controller):
             net.controller.at[self.index, 'recycle'] = False
             return
         # these variables determine what is re-calculated during a time series run
-        recycle = dict(trafo=False, gen=False, bus_pq=False)
+        recycle = {'trafo': False, 'gen': False, 'bus_pq': False}
         if self.element in ["sgen", "load", "storage"] and self.variable in ["p_mw", "q_mvar",
                                                                              "scaling"]:
             recycle["bus_pq"] = True

@@ -12,10 +12,16 @@ on:
       - 'CHANGELOG.rst'
       - '**/CHANGELOG.rst'
 
+permissions:
+  contents: read
+
 # https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+env:
+  IGNORES: "--ignore=pandapower/test/opf --ignore=pandapower/test/network_schema"
 
 jobs:
   build:
@@ -28,7 +34,6 @@ jobs:
         # remove it also in pyproject.toml 'requires-python' and the release pipelines
         group: [ 1, 2 ]
     steps:
-#      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
@@ -49,12 +54,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.10' }}
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv run pytest --splits 2 --group ${{ matrix.group }} $IGNORES
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.10' }}
         run: |
           uv pip install pytest-cov numpy~=1.26
-          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} $IGNORES
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         if: ${{ matrix.python-version == '3.10' }}
@@ -86,12 +91,11 @@ jobs:
           uv pip list
       - name: Test with pytest
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=pandapower/test/opf
+          uv run pytest --splits 2 --group ${{ matrix.group }} $IGNORES
 
   opf:
-    # needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     continue-on-error: true
     strategy:
       matrix:
@@ -99,28 +103,16 @@ jobs:
         julia-version: ['1.10']
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
-        group: [ 1 ]
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
-      #- name: Install uv
-      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-      #  with:
-      #    python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          # uv sync --extra dev
           python -m pip install pypower pytest-split pytest-cov juliacall julia
           python -m pip install .[pandamodels,test]
-          # if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-      #- name: Install Julia
-      #  run: |
-      #    ./.install_julia.sh 1.10.4
-      #    uv pip install julia
-      #    uv run python ./.install_pycall.py
       - name: Install PandaModels.jl
         run: |
           julia -e 'using Pkg; Pkg.add("PandaModels")'
@@ -133,12 +125,48 @@ jobs:
       - name: Test with pytest, Codecov and Coverage
         run: |
           pytest --cov=./ --cov-report=xml pandapower/test/opf
-          # uv run python-jl -m pytest --cov=./ --cov-report=xml
-          cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
+          cp ./coverage.xml ./coverage-opf.xml
+      - name: Upload coverage as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-opf
+          path: ./coverage-opf.xml
+
+  network_schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        group: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        with:
+          python-version: '3.14'
+          # Reminder: when removing the support of an old python version here, then don't forget to
+          # remove it also in pyproject.toml 'requires-python' and the release pipelines
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev
+          uv pip uninstall juliacall
+          uv pip install pytest-cov pytest-split
+      - name: List of installed packages
+        run: |
+          uv pip list
+      - name: Test with pytest, Codecov and Coverage
+        run: |
+          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
+          cp ./coverage.xml ./coverage-${{ matrix.group }}-network_schema.xml
+      - name: Upload coverage as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.group }}-network_schema
+          path: ./coverage-${{ matrix.group }}-network_schema.xml
 
   upload-coverage:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, opf, network_schema]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -148,23 +176,29 @@ jobs:
           path: .
           pattern: coverage-*
           merge-multiple: true
-      - name: duplicate reports
+      - name: Generate coverage file list
+        id: coverage-files
         run: |
-          ls -al
-          cp coverage-1.xml codacy-coverage-1.xml
-          cp coverage-2.xml codacy-coverage-2.xml
+          FILES=$(find . -name "coverage-*.xml" | tr '\n' ',' | sed 's/,$//')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+      - name: duplicate reports
+        shell: bash
+        run: |
+          for f in coverage-*.xml; do
+            cp "$f" "codacy-$f"
+          done
       - name: Upload coverage to Codacy
         continue-on-error: true
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 #v1.3
         with:
-          coverage-reports: codacy-coverage-1.xml,codacy-coverage-2.xml
+          coverage-reports: codacy-coverage-*.xml
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 #v5
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 #v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage-1.xml,./coverage-2.xml
+          files: ${{ steps.coverage-files.outputs.files }}
           verbose: true
 
   warnings:

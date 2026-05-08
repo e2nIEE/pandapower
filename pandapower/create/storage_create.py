@@ -23,6 +23,7 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network_structure import get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -32,15 +33,15 @@ def create_storage(
     bus: Int,
     p_mw: float,
     max_e_mwh: float,
-    q_mvar: float = 0,
+    q_mvar: float = get_default_value("storage", "q_mvar"),
     sn_mva: float = nan,
     soc_percent: float = nan,
-    min_e_mwh: float = 0.0,
+    min_e_mwh: float = get_default_value("storage", "min_e_mwh"),
     name: str | None = None,
     index: Int | None = None,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("storage", "scaling"),
     type: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("storage", "in_service"),
     max_p_mw: float = nan,
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
@@ -117,7 +118,9 @@ def create_storage(
     _set_value_if_not_nan(net, index, max_p_mw, "max_p_mw", "storage")
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "storage")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "storage")
-    _set_value_if_not_nan(net, index, controllable, "controllable", "storage", dtype=bool_, default_val=False)
+    _set_value_if_not_nan(
+        net, index, controllable, "controllable", "storage", default_val=get_default_value("storage", "controllable")
+    )
 
     return index
 
@@ -127,15 +130,15 @@ def create_storages(
     buses: Sequence,
     p_mw: float | Iterable[float],
     max_e_mwh: float | Iterable[float],
-    q_mvar: float | Iterable[float] = 0,
+    q_mvar: float | Iterable[float] = get_default_value("storage", "q_mvar"),
     sn_mva: float | Iterable[float] = nan,
     soc_percent: float | Iterable[float] = nan,
-    min_e_mwh: float | Iterable[float] = 0.0,
+    min_e_mwh: float | Iterable[float] = get_default_value("storage", "min_e_mwh"),
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
-    scaling: float | Iterable[float] = 1.0,
+    scaling: float | Iterable[float] = get_default_value("storage", "scaling"),
     type: str | Iterable[str] | None = None,
-    in_service: bool | Iterable[bool] = True,
+    in_service: bool | Iterable[bool] = get_default_value("storage", "in_service"),
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
@@ -209,11 +212,14 @@ def create_storages(
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "storage", entries, index, "max_q_mvar", max_q_mvar)
-    _add_to_entries_if_not_nan(
-        net, "storage", entries, index, "controllable", controllable, dtype=bool_, default_val=False
-    )
-    defaults_to_fill = [("controllable", False)]
+    _add_to_entries_if_not_nan(net, "storage", entries, index, "controllable", controllable)
 
-    _set_multiple_entries(net, "storage", index, defaults_to_fill=defaults_to_fill, entries=entries)
+    _set_multiple_entries(
+        net,
+        "storage",
+        index,
+        defaults_to_fill=[("controllable", get_default_value("storage", "controllable"))],
+        entries=entries,
+    )
 
     return index

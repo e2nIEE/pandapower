@@ -14,6 +14,7 @@ import logging as log
 
 from pandapower import pandapowerNet
 from pandapower.topology.create_graph import create_nxgraph
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_bus, create_line_from_parameters
 from pandapower.plotting.collections import create_annotation_collection, create_line_collection, \
     create_bus_collection, create_line_switch_collection, draw_collections, create_trafo_collection, \
@@ -95,12 +96,15 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     # sim bench grids
     if 's_sc_max_mva' not in net.ext_grid:
         print('input s_sc_max_mva or taking 1000')
+        add_column_to_df(net, "ext_grid", "s_sc_max_mva")
         net.ext_grid['s_sc_max_mva'] = 1000
     if 'rx_max' not in net.ext_grid:
         print('input rx_max or taking 0.1')
+        add_column_to_df(net, "ext_grid", "rx_max")
         net.ext_grid['rx_max'] = 0.1
     if 'k' not in net.sgen and len(net.sgen) != 0:
         print('input  Ratio of nominal current to short circuit current- k or  taking k=1')
+        add_column_to_df(net, "sgen", "k")
         net.sgen['k'] = 1
 
     # set new lines
@@ -380,8 +384,6 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
                 geojson.utils.coords(geojson.loads(net.bus.geo.at[bus])) for bus in bus_list
             ]
 
-            # TODO:
-            #  place annotations on middle of the line
             line_geo_x = (bus_coords[0][0] + bus_coords[1][0]) / 2
             line_geo_y = ((bus_coords[0][1] + bus_coords[1][1]) / 2) + 0.05
 
@@ -413,7 +415,6 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
         # placing bus
         bus_index = [(x[0] - 0.11, x[1] + 0.095) for x in bus_geodata]
 
-        # TODO:
         bus_annotate = create_annotation_collection(texts=bus_text, coords=bus_index, size=0.06, prop=None)
         collection.append(bus_annotate)
 

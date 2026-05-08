@@ -54,9 +54,12 @@ def _get_elements(params, net, element, phase, typ):
     elm = net[element].values
 #   # Trying to find the column no for using numpy filters for active loads
     scaling = net[element].columns.get_loc("scaling")
-    typ_col = net[element].columns.get_loc("type")  # Type = Delta or Wye load
-    # active wye or active delta row selection
-    active = (net["_is_elements"][element]) & (elm[:, typ_col] == typ)
+    if "type" in net[element]:
+        typ_col = net[element].columns.get_loc("type")  # Type = Delta or Wye load
+        # active wye or active delta row selection
+        active = (net["_is_elements"][element]) & (elm[:, typ_col] == typ)
+    else:
+        active = []
     bus = [net[element].columns.get_loc("bus")]
     if len(elm):
         if element == 'load' or element == 'sgen':

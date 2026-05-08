@@ -8,7 +8,7 @@ from pandapower.network_schema.asymmetric_sgen import (
     res_asymmetric_sgen_schema,
     res_asymmetric_sgen_3ph_schema,
 )
-from pandapower.network_schema.vsc_schema import vsc_stacked_schema, res_vsc_stacked_schema
+from pandapower.network_schema.vsc_stacked import vsc_stacked_schema, res_vsc_stacked_schema
 from pandapower.network_schema.vsc_bipolar import vsc_bipolar_schema, res_vsc_bipolar_schema
 from pandapower.network_schema.bus import bus_schema, res_bus_schema, res_bus_3ph_schema
 from pandapower.network_schema.bus_dc import bus_dc_schema, res_bus_dc_schema

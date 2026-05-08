@@ -45,10 +45,10 @@ def test_trafo_phase_shifter():
     runpp(net)
     net_eq = get_equivalent(net, "rei", [4, 8], [0],
                                                 retain_original_internal_indices=True)
-    v, p = get_boundary_vp(net_eq, net_eq.bus_lookups)
+    v, _ = get_boundary_vp(net_eq, net_eq.bus_lookups)
     net.res_bus.vm_pu = net.res_bus.vm_pu.values + 1e-3
     net.res_bus.va_degree = net.res_bus.va_degree.values + 1e-3
-    adaptation_phase_shifter(net, v, p)
+    adaptation_phase_shifter(net, v)
     assert len(net.trafo) == 3
 
 

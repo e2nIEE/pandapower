@@ -160,7 +160,7 @@ class Controller(BasicCtrl):
                  drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
                  matching_params=None): 
         super(Controller, self).__init__(net, index)
-        self.matching_params = dict() if matching_params is None else matching_params
+        self.matching_params = {} if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         # even though this code is repeated in JSONSerializableClass, it is necessary because of how drop_same_existing_controller works
         # it is still needed in JSONSerializableClass because it is used for characteristics

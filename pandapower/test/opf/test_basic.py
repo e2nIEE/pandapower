@@ -4,23 +4,36 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import logging
+from copy import deepcopy
+
 import numpy as np
 import pytest
 
-from copy import deepcopy
+import pandapower.pypower.pipsopf_solver as pipsopf_solver_module
 from pandapower.auxiliary import OPFNotConverged
 from pandapower.convert_format import convert_format
 from pandapower.create import (
-    create_bus, create_gen, create_ext_grid, create_load, create_poly_cost, create_line_from_parameters,
-    create_transformer3w_from_parameters, create_line, create_sgen, create_transformer_from_parameters,
-    create_transformer3w, create_pwl_cost, create_storage
+    create_bus,
+    create_ext_grid,
+    create_gen,
+    create_line,
+    create_line_from_parameters,
+    create_load,
+    create_poly_cost,
+    create_pwl_cost,
+    create_sgen,
+    create_storage,
+    create_transformer3w,
+    create_transformer3w_from_parameters,
+    create_transformer_from_parameters,
 )
 from pandapower.network import pandapowerNet
+from pandapower.create._utils import add_column_to_df
 from pandapower.networks import simple_four_bus_system
-from pandapower.run import runopp, rundcopp, runpp
+from pandapower.pypower.opf_model import opf_model
+from pandapower.run import rundcopp, runopp, runpp
 from pandapower.test.helper_functions import add_grid_connection
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +58,34 @@ def simplest_grid():
 
     return net
 
+def test_runopp_init_results_preserves_model_v0(monkeypatch):
+    net = simplest_grid()
+    runpp(net, calculate_voltage_angles=False)
+
+    captured = {}
+    original_getv = opf_model.getv
+
+    def recording_getv(self):
+        v0, vl, vu = original_getv(self)
+        captured["model_v0"] = v0.copy()
+        return v0, vl, vu
+
+    class StopAfterCapturingX0(RuntimeError):
+        pass
+
+    def recording_pips(f_fcn, x0, A, l, u, xmin, xmax, gh_fcn, hess_fcn, opt):
+        captured["solver_x0"] = x0.copy()
+        raise StopAfterCapturingX0
+
+    monkeypatch.setattr(opf_model, "getv", recording_getv)
+    monkeypatch.setattr(pipsopf_solver_module, "pips", recording_pips)
+
+    with pytest.raises(StopAfterCapturingX0):
+        runopp(net, init="results", calculate_voltage_angles=False)
+
+    assert "model_v0" in captured
+    assert "solver_x0" in captured
+    assert np.allclose(captured["solver_x0"], captured["model_v0"])
 
 @pytest.fixture(scope='session')
 def net_3w_trafo_opf():
@@ -887,12 +928,13 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
     # create two additional slacks with different voltage setpoints
-    create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
-               max_q_mvar=1., slack=True)
-    create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
-               max_q_mvar=1., controllable=False)  # controllable == False -> vm_pu enforced
-    create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
-               min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between
+    create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1., slack=True,
+               controllable=True)
+    create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
+               controllable=False)  # controllable == False -> vm_pu enforced
+    create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
+               controllable=True) # controllable == True -> vm_pu between
+
     # bus voltages
     runpp(net)
     # assert if voltage limits are correct in result in pf an opf
@@ -939,6 +981,10 @@ def test_gen_p_vm_limits(four_bus_net):
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
     create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
                min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
+
     runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
@@ -958,6 +1004,10 @@ def test_gen_violated_p_vm_limits(four_bus_net):
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
     g = create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
                    min_vm_pu=.9, max_vm_pu=1.1, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
+
     runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)

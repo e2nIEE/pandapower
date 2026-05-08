@@ -7,18 +7,43 @@ asymmetric_load_schema = pa.DataFrameSchema(
         "bus": pa.Column(
             int, pa.Check.ge(0), description="	index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
-        "p_a_mw": pa.Column(float, pa.Check.ge(0), description="Phase A active power of the load [MW]"),
-        "p_b_mw": pa.Column(float, pa.Check.ge(0), description="Phase B active power of the load [MW]"),
-        "p_c_mw": pa.Column(float, pa.Check.ge(0), description="Phase C active power of the load [MW]"),
-        "q_a_mvar": pa.Column(float, description="Phase A reactive power of the load [MVar]"),
-        "q_b_mvar": pa.Column(float, description="Phase B reactive power of the load [MVar]"),
-        "q_c_mvar": pa.Column(float, description="Phase C reactive power of the load [MVar]"),
+        "p_a_mw": pa.Column(
+            float, pa.Check.ge(0), description="Phase A active power of the load [MW]", metadata={"default": 0.0}
+        ),
+        "p_b_mw": pa.Column(
+            float, pa.Check.ge(0), description="Phase B active power of the load [MW]", metadata={"default": 0.0}
+        ),
+        "p_c_mw": pa.Column(
+            float, pa.Check.ge(0), description="Phase C active power of the load [MW]", metadata={"default": 0.0}
+        ),
+        "q_a_mvar": pa.Column(
+            float, description="Phase A reactive power of the load [MVar]", metadata={"default": 0.0}
+        ),
+        "q_b_mvar": pa.Column(
+            float, description="Phase B reactive power of the load [MVar]", metadata={"default": 0.0}
+        ),
+        "q_c_mvar": pa.Column(
+            float, description="Phase C reactive power of the load [MVar]", metadata={"default": 0.0}
+        ),
         "sn_mva": pa.Column(
             float, pa.Check.gt(0), nullable=True, required=False, description="rated power of the load [MVA]"
         ),
-        "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
-        "in_service": pa.Column(bool, description="specifies if the load is in service."),
-        "type": pa.Column(str, pa.Check.isin(["wye", "delta"]), description="type of load"),
+        "sn_a_mva": pa.Column(
+            float, pa.Check.gt(0), nullable=True, required=False, description="Phase A rated power of the load [MVA]"
+        ),
+        "sn_b_mva": pa.Column(
+            float, pa.Check.gt(0), nullable=True, required=False, description="Phase B rated power of the load [MVA]"
+        ),
+        "sn_c_mva": pa.Column(
+            float, pa.Check.gt(0), nullable=True, required=False, description="Phase C rated power of the load [MVA]"
+        ),
+        "scaling": pa.Column(
+            float, pa.Check.ge(0), description="scaling factor for active and reactive power", metadata={"default": 1.0}
+        ),
+        "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
+        "type": pa.Column(
+            str, pa.Check.isin(["wye", "delta"]), description="type of load", metadata={"default": "wye"}
+        ),
     },
     strict=False,
 )
@@ -65,12 +90,12 @@ res_asymmetric_load_schema = pa.DataFrameSchema(
 
 res_asymmetric_load_3ph_schema = pa.DataFrameSchema(
     {
-        "p_a_mw": pa.Column(float, nullable=True, description=""),  # not in docu
-        "q_a_mvar": pa.Column(float, nullable=True, description=""),  # not in docu
-        "p_b_mw": pa.Column(float, nullable=True, description=""),  # not in docu
-        "q_b_mvar": pa.Column(float, nullable=True, description=""),  # not in docu
-        "p_c_mw": pa.Column(float, nullable=True, description=""),  # not in docu
-        "q_c_mvar": pa.Column(float, nullable=True, description=""),  # not in docu
+        "p_a_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_a_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_b_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_b_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "p_c_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
+        "q_c_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
     },
     strict=False,
 )

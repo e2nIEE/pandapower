@@ -164,8 +164,9 @@ def empty_res_element(net, element, suffix=None):
     if res_empty_element in net:
         net[res_element] = net[res_empty_element].copy()
     else:
-        net[res_element] = pd.DataFrame(columns=pd.Index([], dtype=object),
-                                        index=pd.Index([], dtype=np.int64))
+        net[res_element] = pd.DataFrame(
+            columns=pd.Index([], dtype=object), index=pd.Index([], dtype=np.int64)
+        )
 
 
 def init_element(net, element, suffix=None):
@@ -174,9 +175,7 @@ def init_element(net, element, suffix=None):
     if len(index):
         # init empty dataframe
         if res_empty_element in net:
-            columns = net[res_empty_element].columns
-            net[res_element] = pd.DataFrame(np.nan, index=index,
-                                            columns=columns, dtype='float')
+            net[res_element] = pd.DataFrame(np.nan, index=index, columns=net[res_empty_element].columns, dtype='float')
         else:
             net[res_element] = pd.DataFrame(index=index, dtype='float')
     else:

@@ -238,15 +238,18 @@ def df_to_coords(net, item, table):
             net[item].loc[i, "coords"] = coord
 
 
-def from_dict_of_dfs(dodfs, net=None):
+def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
     if net is None:
-        net = pandapowerNet(name='')
+        net = pandapowerNet(name='', add_stdtypes=add_basic_std_types)
     for item, table in dodfs.items():
         if item == "dtypes":
             continue
         elif item == "parameters":
             for c in dodfs["parameters"].columns:
-                net[c] = dodfs["parameters"].at[0, c]
+                val = dodfs["parameters"].at[0, c]
+                if isinstance(val, (bool, np.bool_)):
+                    val = bool(val)
+                net[c] = val
                 if c == "name" and pd.isnull(net[c]):
                     net[c] = ''
             continue
@@ -285,6 +288,7 @@ def from_dict_of_dfs(dodfs, net=None):
             # convert geodata to geojson
             if item in ["bus", "line"]:
                 if "geo" in table.columns:
+                    table.geo = table.geo.mask(table.geo == '"<NA>"', pd.NA)
                     table.geo = table.geo.apply(
                         lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x
                     )

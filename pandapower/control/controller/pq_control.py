@@ -150,7 +150,7 @@ class PQController(ConstControl):
 
             if not self.ts_absolute:
                 if self.sn_mva.isnull().any():
-                    logger.error(f"There are PQ controlled elements with NaN sn_mva values.")
+                    logger.error("There are PQ controlled elements with NaN sn_mva values.")
                 self.p_mw = self.p_mw * self.sn_mva
                 self.q_mvar = self.q_mvar * self.sn_mva
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
 
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -12,10 +13,11 @@ from packaging.version import Version
 from pandapower._version import __version__, __format_version__
 from pandapower import pandapowerNet
 from pandapower.control import TrafoController, BinarySearchControl, DroopControl
-from pandapower.create import create_poly_cost
-from pandapower.results import reset_results
+from pandapower.create import create_empty_network, create_poly_cost
+from pandapower.create._utils import add_column_to_df
 from pandapower.network_structure import get_structure_dict
 from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
+from pandapower.results import reset_results
 
 import logging
 
@@ -32,31 +34,37 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
     if Version(str(net.format_version)) > Version(str(net.version).split('.dev')[0]):
         # TODO: create error/warning when pandapower version is older then network
         net.format_version = net.version
-    if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
+    net_format_version = Version(str(net.format_version))
+    if isinstance(net.format_version, str) and net_format_version >= Version(__format_version__):
         return net
     _add_nominal_power(net)
     _add_missing_tables(net)
     _rename_columns(net, elements_to_deserialize)
     _add_missing_columns(net, elements_to_deserialize)
     _create_seperate_cost_tables(net, elements_to_deserialize)
-    if Version(str(net.format_version)) < Version("3.1.0"):
+    if net_format_version < Version("4.0.0"):
+        cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
+        if not bool(cols.issubset(net.load.columns)):
+            for col in cols:
+                add_column_to_df(net, "load", col)
+    if net_format_version < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
-    if Version("3.0.0") <= Version(str(net.format_version)) < Version("3.1.3"):
+    if Version("3.0.0") <= net_format_version < Version("3.1.3"):
         _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata)
-    if Version(str(net.format_version)) < Version("3.0.0"):
+    if net_format_version < Version("3.0.0"):
         _convert_geo_data(net, elements_to_deserialize, drop_invalid_geodata)
         _convert_group_element_index(net)
         _convert_trafo_controller_parameter_names(net)
         convert_trafo_pst_logic(net)
-    if Version(str(net.format_version)) < Version("2.4.0"):
+    if net_format_version < Version("2.4.0"):
         _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize)
-    if Version(str(net.format_version)) < Version("2.0.0"):
+    if net_format_version < Version("2.0.0"):
         _convert_to_generation_system(net, elements_to_deserialize)
         _convert_costs(net)
         _convert_to_mw(net)
         _update_trafo_parameter_names(net, elements_to_deserialize)
         reset_results(net)
-    if Version(str(net.format_version)) < Version("1.6"):
+    if net_format_version < Version("1.6"):
         set_data_type_of_columns_to_default(net)
     _convert_objects(net, elements_to_deserialize)
     _update_characteristics(net, elements_to_deserialize)
@@ -68,6 +76,31 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
     return net
 
 
+def _drop_empty_if_not_required(net):
+    """
+    Removes empty columns and DataFrames if not required by network_structure_dict
+    """
+    net_struct = get_structure_dict()
+    tables_to_drop = []
+    exceptions = ["res_bus_sc"] # TODO: why?
+    for table_name, table in net.items():
+        if isinstance(table, pd.DataFrame):
+            if table_name.startswith("res_"):
+                if table.empty and f"_empty_{table_name}" not in net_struct and table_name not in exceptions:
+                    tables_to_drop.append(table_name)
+                continue
+            if table.empty and table_name not in net_struct:
+                tables_to_drop.append(table_name)
+                continue
+            for col in table.columns:
+                if table[col].isna().all() and col not in net_struct[table_name]:
+                    del table[col]
+
+    # dual loop required because net.items() should not change during iteration
+    for table_name in tables_to_drop:
+        del net[table_name]
+
+
 def _convert_q_capability_characteristic(net: pandapowerNet):
     # rename the q_capability_curve_characteristic table to q_capability_characteristic if exists
     # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
@@ -76,39 +109,36 @@ def _convert_q_capability_characteristic(net: pandapowerNet):
 
 
 def _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata):
-    for element in ['bus', 'bus_dc']:
+    for element in ['bus', 'bus_dc', 'line', 'line_dc']:
         if not _check_elements_to_deserialize(element, elements_to_deserialize):
             continue
         try:
             geo_df = net[element]['geo'].dropna().apply(geojson.loads)
         except TypeError:
             geo_df = net[element]['geo'].dropna()
-        for i, geo in geo_df.items():
-            coords = geo['coordinates']
-            if not drop_invalid_geodata and ((not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1]))):
-                raise ValueError("There exists invalid bus geodata at index %s. Please clean up your data first or "
-                                 "set 'drop_invalid_geodata' to True" % i)
-            elif (not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1])):
-                net[element].loc[i, "geo"] = None
-                logger.warning("bus geodata at index %s is invalid and replaced by None" % i)
+        except KeyError:
+            geo_df = {} # skip if no geo column exists
+        if element in ["bus", "bus_dc"]:
+            for i, geo in geo_df.items():
+                coords = geo['coordinates']
+                if not drop_invalid_geodata and ((not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1]))):
+                    raise ValueError("There exists invalid bus geodata at index %s. Please clean up your data first or "
+                                     "set 'drop_invalid_geodata' to True" % i)
+                elif (not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1])):
+                    net[element].loc[i, "geo"] = None
+                    logger.warning("bus geodata at index %s is invalid and replaced by None" % i)
 
-    for element in ['line', 'line_dc']:
-        if not _check_elements_to_deserialize(element, elements_to_deserialize):
-            continue
-        try:
-            geo_df = net[element]['geo'].dropna().apply(geojson.loads)
-        except TypeError:
-            geo_df = net[element]['geo'].dropna()
-        for i, geo in geo_df.items():
-            for x, y in geo['coordinates']:
-                if not drop_invalid_geodata and ((not _is_valid_number(x)) | (not _is_valid_number(y))):
-                    raise ValueError(
-                        "There exists invalid line geodata at index %s. Please clean up your data first or "
-                        "set 'drop_invalid_geodata' to True" % i)
-                elif (not _is_valid_number(x)) | (not _is_valid_number(y)):
-                    net[element].loc[i, 'geo'] = None
-                    logger.warning("line geodata at index %s is invalid and replaced by None" % i)
-                    break
+        else:
+            for i, geo in geo_df.items():
+                for x, y in geo['coordinates']:
+                    if not drop_invalid_geodata and ((not _is_valid_number(x)) | (not _is_valid_number(y))):
+                        raise ValueError(
+                            "There exists invalid line geodata at index %s. Please clean up your data first or "
+                            "set 'drop_invalid_geodata' to True" % i)
+                    elif (not _is_valid_number(x)) | (not _is_valid_number(y)):
+                        net[element].loc[i, 'geo'] = None
+                        logger.warning("line geodata at index %s is invalid and replaced by None" % i)
+                        break
 
 def _convert_geo_data(net, elements_to_deserialize=None, drop_invalid_geodata=True):
     if ((_check_elements_to_deserialize('bus_geodata', elements_to_deserialize)
@@ -140,30 +170,25 @@ def _restore_index_names(net):
 
 def correct_dtypes(net, error):
     """
-    Corrects all dtypes of pp element tables if possible. If not and error is True, an Error is
-    raised.
+    Corrects all dtypes of pp element tables if possible. If not and error is True, an Error is raised.
     """
-    empty_net = pandapowerNet(name='')
-    not_corrected = []
-    failed = {}
-    for key, table in empty_net.items():
+    structure_dict = get_structure_dict(required_only=False)
+    failed = defaultdict(list)
+    for key, table in net.items():
         if isinstance(table, pd.DataFrame):
-            if key in net.keys() and isinstance(net[key], pd.DataFrame):
-                cols = table.columns.intersection(net[key].columns)
-                diff_cols = cols[~(table.dtypes.loc[cols] == net[key].dtypes.loc[cols])]
-                for col in diff_cols:
+            for col in table.columns:
+                if key not in structure_dict:
+                    # skip unknown/custom dataframes
+                    continue
+                required_dtype = structure_dict[key].get(col, 'Unknown')
+                if required_dtype == 'Unknown':
+                    # skip custom columns
+                    continue
+                if table[col].dtype != required_dtype:
                     try:
-                        net[key][col] = net[key][col].astype(table[col].dtype)
+                        table[col] = table[col].astype(required_dtype)
                     except ValueError:
-                        if key not in failed.keys():
-                            failed[key] = [col]
-                        else:
-                            failed[key].append(col)
-            else:
-                not_corrected.append(key)
-    if not_corrected:
-        logger.warning("These keys were not corrected since they miss or are no dataframes: " + str(
-            not_corrected))
+                        failed[key].append(col)
     if failed:
         msg = "These dtypes could not be corrected: " + str(failed)
         if error:

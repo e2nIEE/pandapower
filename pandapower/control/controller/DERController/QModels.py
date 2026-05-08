@@ -162,7 +162,3 @@ class QModelQVCurve(QModel):
     def step(self, vm_pu, p_pu=None):
         q_pu = self.qv_curve.step(vm_pu)
         return q_pu
-
-
-if __name__ == "__main__":
-    pass

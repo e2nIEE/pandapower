@@ -38,6 +38,14 @@ lightsim2grid is supported if all the following conditions are met:
 1. The lightsim2grid library is installed and available.
 2. The selected power flow algorithm is Newton-Raphson (algorithm='nr').
 3. Voltage-dependent loads are not enabled (voltage_depend_loads=False).
+
+    .. attention::
+        | Voltage-dependent loads have been overhauled and are now used more frequently without explicitly setting the
+          required columns. Due to this change setting :code:`voltage_depend_loads=False` manually is required more
+          frequently to use lightsim2grid.
+        | With :code:`lightsim2grid=True` you will get an error if voltage-dependent loads have not been disabled.
+        | With :code:`lightsim2grid="auto"` you will not be warned when it is disabled due to voltage-dependent loads.
+
 4. Either:
 
     * There is only one slack bus in the network, or

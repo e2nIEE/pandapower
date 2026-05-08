@@ -20,6 +20,7 @@ from pandapower.create import (
     create_impedance, create_storage, create_buses, create_transformer_from_parameters,
     create_transformer3w_from_parameters, create_poly_cost
 )
+from pandapower.create._utils import add_column_to_df
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.networks import create_cigre_network_mv, four_loads_with_branches_out, \
@@ -175,14 +176,13 @@ def test_runpp_init_auxiliary_buses():
                        atol=2)
 
 
-def test_result_iter():
-    for net in result_test_network_generator():
-        try:
-            runpp_with_consistency_checks(net, enforce_q_lims=True)
-        except (AssertionError):
-            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
-        except(LoadflowNotConverged):
-            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+def test_result_iter(result_test_networks):
+    try:
+        runpp_with_consistency_checks(result_test_networks, enforce_q_lims=True, voltage_depend_loads=False) # FIXME: test_oos_bus_with_is_element requires volateg_depend_loads False, this should be addressed.
+    except (AssertionError):
+        raise UserWarning(f"Consistency Error after adding {result_test_networks.last_added_case}")
+    except(LoadflowNotConverged):
+        raise UserWarning(f"Power flow did not converge after adding {result_test_networks.last_added_case}")
 
 
 @pytest.fixture
@@ -337,16 +337,17 @@ def test_two_open_switches():
 
 def test_oos_bus():
     net = pandapowerNet(name="test_oos_bus")
+    # FIXME voltage_depend_loads=False should be removed?
     add_test_oos_bus_with_is_element(net)
-    assert runpp_with_consistency_checks(net)
+    assert runpp_with_consistency_checks(net, voltage_depend_loads=False)
 
     #    test for pq-node result
     create_shunt(net, 6, q_mvar=0.8)
-    assert runpp_with_consistency_checks(net)
+    assert runpp_with_consistency_checks(net, voltage_depend_loads=False)
 
     #   1test for pv-node result
     create_gen(net, 4, p_mw=0.5)
-    assert runpp_with_consistency_checks(net)
+    assert runpp_with_consistency_checks(net, voltage_depend_loads=False)
 
 
 def get_isolated(net):
@@ -388,7 +389,8 @@ def test_connectivity_check_island_without_pv_bus():
     assert np.isclose(iso_p, 350)
     assert np.isclose(iso_q, 30)
     # with pytest.warns(UserWarning):
-    runpp_with_consistency_checks(net, check_connectivity=True)
+    # FIXME: remove voltage_depend_loads=False?
+    runpp_with_consistency_checks(net, check_connectivity=True, voltage_depend_loads=False)
 
 
 def test_connectivity_check_island_with_one_pv_bus():
@@ -407,22 +409,11 @@ def test_connectivity_check_island_with_one_pv_bus():
                 std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine")
     create_line(net, isolated_gen, isolated_bus1, length_km=1,
                 std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLineToGen")
-    # with pytest.warns(UserWarning):
     iso_buses, iso_p, iso_q, *_ = get_isolated(net)
 
-    # assert len(iso_buses) == 0
-    # assert np.isclose(iso_p, 0)
-    # assert np.isclose(iso_q, 0)
-    #
     # create_load(net, isolated_bus1, p_mw=0.200., q_mvar=0.020)
     # create_sgen(net, isolated_bus2, p_mw=0.0150., q_mvar=-0.010)
-    #
-    # iso_buses, iso_p, iso_q = get_isolated(net)
-    # assert len(iso_buses) == 0
-    # assert np.isclose(iso_p, 0)
-    # assert np.isclose(iso_q, 0)
 
-    # with pytest.warns(UserWarning):
     runpp_with_consistency_checks(net, check_connectivity=True)
 
 
@@ -600,8 +591,9 @@ def test_pypower_algorithms_iter():
     for alg in alg_to_test:
         for net in result_test_network_generator(skip_test_impedance=True):
             try:
-                runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg, calculate_voltage_angles="auto")
-                runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg, calculate_voltage_angles="auto")
+                # FIXME: remove voltage_depend_loads?
+                runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg, calculate_voltage_angles="auto", voltage_depend_loads=False)
+                runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg, calculate_voltage_angles="auto", voltage_depend_loads=False)
             except (AssertionError):
                 raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
             except(LoadflowNotConverged):
@@ -1411,6 +1403,8 @@ def test_tap_dependent_impedance():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [5.5, 5.8, 6, 6.2, 6.5],
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
     net.trafo.at[0, 'id_characteristic_table'] = 0
     net.trafo.at[0, 'tap_dependency_table'] = True
     net.trafo.at[1, 'tap_dependency_table'] = False
@@ -1422,6 +1416,8 @@ def test_tap_dependent_impedance():
          'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3], 'vk_lv_percent': [1, 1, 1, 1, 1],
          'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    add_column_to_df(net, "trafo3w", "id_characteristic_table")
+    add_column_to_df(net, "trafo3w", 'tap_dependency_table')
     net.trafo3w.at[0, 'id_characteristic_table'] = 1
     net.trafo3w.at[0, 'tap_dependency_table'] = True
 
@@ -1470,6 +1466,8 @@ def test_tap_table_order():
          'vk_hv_percent': [0.95, 0.98, 1, 1.02, 1.05], 'vkr_hv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
          'vk_mv_percent': [1, 1, 1, 1, 1], 'vkr_mv_percent': [0.3, 0.3, 0.3, 0.3, 0.3],
          'vk_lv_percent': [1, 1, 1, 1, 1], 'vkr_lv_percent': [0.3, 0.3, 0.3, 0.3, 0.3]})
+    add_column_to_df(net, "trafo3w", "id_characteristic_table")
+    add_column_to_df(net, "trafo3w", 'tap_dependency_table')
     net.trafo3w.at[0, 'id_characteristic_table'] = 0
     net.trafo3w.at[0, 'tap_dependency_table'] = True
 
@@ -1480,6 +1478,8 @@ def test_tap_table_order():
          'vkr_percent': [1.4, 1.42, 1.44, 1.46, 1.48, 1.4, 1.42, 1.44, 1.46, 1.48], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
     net["trafo_characteristic_table"] = pd.concat([net["trafo_characteristic_table"], new_rows], ignore_index=True)
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
     net.trafo.at[0, 'id_characteristic_table'] = 2
     net.trafo.at[1, 'id_characteristic_table'] = 1
     net.trafo.at[0, 'tap_dependency_table'] = True
@@ -1517,7 +1517,7 @@ def test_lightsim2grid():
         try:
             net_ref = copy.deepcopy(net)
             runpp(net_ref, lightsim2grid=False)
-            runpp_with_consistency_checks(net, lightsim2grid=True)
+            runpp_with_consistency_checks(net, lightsim2grid=True, voltage_depend_loads=False)
             assert_res_equal(net, net_ref)
         except AssertionError:
             raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
@@ -1533,7 +1533,7 @@ def test_lightsim2grid_case118():
     net = case118()
     net_ref = copy.deepcopy(net)
     runpp(net_ref, lightsim2grid=False)
-    runpp_with_consistency_checks(net, lightsim2grid=True)
+    runpp_with_consistency_checks(net, lightsim2grid=True, voltage_depend_loads=False)
     assert_res_equal(net, net_ref)
 
 
@@ -1546,39 +1546,40 @@ def test_lightsim2grid_zip():
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_qlims():
-    test_minimal_net(lightsim2grid=True, enforce_q_lims=True)
+    test_minimal_net(lightsim2grid=True, enforce_q_lims=True, voltage_depend_loads=False)
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_extgrid():
     # multiple ext grids not implemented
     with pytest.raises(NotImplementedError, match="multiple ext_grids"):
-        test_ext_grid_and_gen_at_one_bus(lightsim2grid=True)
+        test_ext_grid_and_gen_at_one_bus(lightsim2grid=True, voltage_depend_loads=False)
 
 
 @pytest.mark.skipif(lightsim2grid_available, reason="only relevant if lightsim2grid is not installed")
 def test_lightsim2grid_option_basic():
     net = simple_four_bus_system()
-    runpp(net)
+    runpp(net, voltage_depend_loads=False)
     assert not net._options["lightsim2grid"]
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
 def test_lightsim2grid_option():
+    # voltage_depend_loads=True will always disable lightsim2grid so it is set to false for all tests
     # basic usage
     net = simple_four_bus_system()
-    runpp(net)
+    runpp(net, voltage_depend_loads=False)
     assert net._options["lightsim2grid"]
 
-    runpp(net, lightsim2grid=False)
+    runpp(net, voltage_depend_loads=False, lightsim2grid=False)
     assert not net._options["lightsim2grid"]
 
     # missing algorithm
-    runpp(net, algorithm="gs")
+    runpp(net, voltage_depend_loads=False, algorithm="gs")
     assert not net._options["lightsim2grid"]
 
     with pytest.raises(NotImplementedError, match=r"algorithm"):
-        runpp(net, algorithm="gs", lightsim2grid=True)
+        runpp(net, voltage_depend_loads=False, algorithm="gs", lightsim2grid=True)
 
     # voltage-dependent loads
     net.load["const_z_p_percent"] = 100.
@@ -1600,17 +1601,17 @@ def test_lightsim2grid_option():
     assert not net._options["lightsim2grid"]
 
     with pytest.raises(NotImplementedError, match=r"multiple ext_grids"):
-        runpp(net, lightsim2grid=True)
+        runpp(net, voltage_depend_loads=False, lightsim2grid=True)
 
     net.ext_grid.at[xg, 'in_service'] = False
-    runpp(net)
+    runpp(net, voltage_depend_loads=False)
     assert net._options["lightsim2grid"]
 
     create_gen(net, 1, 0, 1., slack=True)
     with pytest.raises(NotImplementedError, match=r"multiple ext_grids"):
-        runpp(net, lightsim2grid=True)
+        runpp(net, voltage_depend_loads=False, lightsim2grid=True)
 
-    runpp(net, distributed_slack=True)
+    runpp(net, voltage_depend_loads=False, distributed_slack=True)
     assert net._options["lightsim2grid"]
 
 
@@ -1684,7 +1685,8 @@ def test_q_capability_curve():
                         0, -265.01001, -134.00999, -0.01000],
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 30, 40,
                         134.0099, 0.01]})
-
+    add_column_to_df(net, "gen", "id_q_capability_characteristic")
+    add_column_to_df(net, "gen", "reactive_capability_curve")
     net.gen.at[0, "id_q_capability_characteristic"] = 0
     net.gen['curve_style'] = "straightLineYValues"
 
@@ -1735,7 +1737,8 @@ def test_q_capability_curve_for_sgen():
                         -265.01001, -134.00999, -0.01000],
          'q_max_mvar': [0.01000, 134.00999,  228.00999, 257.01001, 261.01001, 261.01001, 261.01001, 257.01001, 218.0099945068,
                         134.0099, 0.01]})
-
+    add_column_to_df(net, "sgen", "id_q_capability_characteristic")
+    add_column_to_df(net, "sgen", "reactive_capability_curve")
     net.sgen.at[0, "id_q_capability_characteristic"] = 0
     net.sgen['curve_style'] = "straightLineYValues"
     create_q_capability_characteristics_object(net)

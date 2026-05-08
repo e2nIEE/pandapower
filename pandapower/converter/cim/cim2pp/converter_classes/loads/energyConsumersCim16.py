@@ -44,5 +44,4 @@ class EnergyConsumersCim16:
         eqssh_energy_consumers['const_i_q_percent'] = 0.
         eqssh_energy_consumers['const_z_q_percent'] = 0.
         eqssh_energy_consumers['scaling'] = 1.
-        eqssh_energy_consumers['type'] = None
         return eqssh_energy_consumers

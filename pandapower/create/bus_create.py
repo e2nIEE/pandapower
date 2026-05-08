@@ -8,10 +8,12 @@ from __future__ import annotations
 import logging
 from typing import Iterable
 
+import pandas as pd
 from numpy import nan
 import numpy.typing as npt
 
 from pandapower import pandapowerNet
+from pandapower.network_structure import get_default_value
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import BusType, Int
 from pandapower.create._utils import (
@@ -70,9 +72,9 @@ def create_bus(
     name: str | None = None,
     index: Int | None = None,
     geodata: tuple[float, float] | None = None,
-    type: BusType = "b",
+    type: BusType = get_default_value("bus", "type"),
     zone: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("bus", "in_service"),
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
     coords: list[list[float]] | None = None,
@@ -112,8 +114,16 @@ def create_bus(
     _set_entries(net, "bus", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.0)
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.0)
+    if pd.notna(min_vm_pu) or pd.notna(max_vm_pu) or "min_vm_pu" in net.bus.columns or "max_vm_pu" in net.bus.columns:
+        if "min_vm_pu" not in net.bus.columns or "max_vm_pu" not in net.bus.columns:
+            net.bus["min_vm_pu"] = get_default_value("bus", "min_vm_pu")
+            net.bus["max_vm_pu"] = get_default_value("bus", "max_vm_pu")
+        _set_value_if_not_nan(
+            net, index, min_vm_pu, "min_vm_pu", "bus", default_val=get_default_value("bus", "min_vm_pu")
+        )
+        _set_value_if_not_nan(
+            net, index, max_vm_pu, "max_vm_pu", "bus", default_val=get_default_value("bus", "max_vm_pu")
+        )
 
     return index
 
@@ -124,9 +134,9 @@ def create_bus_dc(
     name: str | None = None,
     index: Int | None = None,
     geodata: tuple[float, float] | None = None,
-    type: BusType = "b",
+    type: BusType = get_default_value("bus_dc", "type"),
     zone: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("bus_dc", "in_service"),
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
     coords: list[list[float]] | None = None,
@@ -167,8 +177,13 @@ def create_bus_dc(
     _set_entries(net, "bus_dc", index, True, entries=entries)
 
     # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.0)
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=2.0)
+    if pd.notna(min_vm_pu) or pd.notna(max_vm_pu) or "min_vm_pu" in net.bus.columns:
+        _set_value_if_not_nan(
+            net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=get_default_value("bus_dc", "min_vm_pu")
+        )
+        _set_value_if_not_nan(
+            net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=get_default_value("bus_dc", "max_vm_pu")
+        )
 
     return index
 
@@ -179,10 +194,10 @@ def create_buses(
     vn_kv: float | Iterable[float],
     index: Int | Iterable[Int] | None = None,
     name: Iterable[str] | None = None,
-    type: BusType | Iterable[BusType] = "b",
+    type: BusType | Iterable[BusType] = get_default_value("bus", "type"),
     geodata: tuple[float, float] | Iterable[tuple[float, float]] | None = None,
     zone: str | Iterable[str] | None = None,
-    in_service: bool | Iterable[bool] = True,
+    in_service: bool | Iterable[bool] = get_default_value("bus", "in_service"),
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
     coords: list[list[list[float]]] | None = None,
@@ -227,11 +242,30 @@ def create_buses(
         geo = _geodata_to_geo_series(geodata, coords, nr_buses)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
-    _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
+
+    min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()
+    max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()
+    if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
+        _add_to_entries_if_not_nan(
+            net,
+            "bus",
+            entries,
+            index,
+            "min_vm_pu",
+            min_vm_pu,
+            default_val=get_default_value("bus", "min_vm_pu"),
+        )
+        _add_to_entries_if_not_nan(
+            net,
+            "bus",
+            entries,
+            index,
+            "max_vm_pu",
+            max_vm_pu,
+            default_val=get_default_value("bus", "max_vm_pu"),
+        )
     _set_multiple_entries(net, "bus", index, entries=entries)
-    if "geo" in net.bus.columns:
-        net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
+
     return index
 
 
@@ -241,10 +275,10 @@ def create_buses_dc(
     vn_kv: float | Iterable[float],
     index: Int | Iterable[Int] | None = None,
     name: Iterable[str] | None = None,
-    type: BusType | Iterable[BusType] = "b",
+    type: BusType | Iterable[BusType] = get_default_value("bus_dc", "type"),
     geodata: Iterable[tuple[float, float]] | None = None,
     zone: str | None = None,
-    in_service: bool | Iterable[bool] = True,
+    in_service: bool | Iterable[bool] = get_default_value("bus_dc", "in_service"),
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
     coords: list[list[list[float]]] | None = None,
@@ -286,13 +320,33 @@ def create_buses_dc(
             geo = _geodata_to_geo_series([geodata], coords, nr_buses_dc)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata, coords, nr_buses)  # type: ignore
+            geo = _geodata_to_geo_series(geodata, coords, nr_buses_dc)
     else:
         geo = _geodata_to_geo_series(geodata, coords, nr_buses_dc)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
-    _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu)
+
+    min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()
+    max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()
+    if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
+        _add_to_entries_if_not_nan(
+            net,
+            "bus_dc",
+            entries,
+            index,
+            "min_vm_pu",
+            min_vm_pu,
+            default_val=get_default_value("bus_dc", "min_vm_pu"),
+        )
+        _add_to_entries_if_not_nan(
+            net,
+            "bus_dc",
+            entries,
+            index,
+            "max_vm_pu",
+            max_vm_pu,
+            default_val=get_default_value("bus_dc", "max_vm_pu"),
+        )
     _set_multiple_entries(net, "bus_dc", index, entries=entries)
 
     return index

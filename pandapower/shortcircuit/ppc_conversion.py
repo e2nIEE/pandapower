@@ -233,6 +233,12 @@ def _add_gen_sc_z_kg_ks(net, ppc):
 
         if np.any(np.isnan(p_t)):
             # TODO: Check if tap is always on HV side
+            if "tap_step_percent" not in ps_trafo:
+                ps_trafo["tap_step_percent"] = float('nan')
+            if "tap_max" not in ps_trafo:
+                ps_trafo["tap_max"] = float('nan')
+            if "tap_neutral" not in ps_trafo:
+                ps_trafo["tap_neutral"] = float('nan')
             p_t[np.isnan(p_t)] =\
                  -(ps_trafo["tap_step_percent"].values *
                    (ps_trafo["tap_max"].values - ps_trafo["tap_neutral"].values))[np.isnan(p_t)] / 100
@@ -321,5 +327,5 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
 
     return non_ps_gen_bus, ppci, bus_ppci
 
-# TODO Roman: correction factor for 1ph cases
+# TODO: correction factor for 1ph cases
 

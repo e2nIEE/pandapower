@@ -22,12 +22,12 @@ class UCTEParser:
         :param config: The configuration dictionary. Optional, default: None. This parameter may be set later.
         """
         self.path_ucte_file: str = path_ucte_file
-        self.config: Dict = config if isinstance(config, dict) else dict()
+        self.config: Dict = config if isinstance(config, dict) else {}
         self.logger = logging.getLogger(self.__class__.__name__)
         self.ucte_elements = ["##C", "##N", "##L", "##T", "##R", "##TT", "##E"]
-        self.data: Dict[str, pd.DataFrame] = dict()
+        self.data: Dict[str, pd.DataFrame] = {}
         self.date: datetime = datetime.now(timezone.utc)
-        self.bus_ucte_countries : list = list()
+        self.bus_ucte_countries : list = []
 
     def parse_file(self, path_ucte_file: str = None) -> bool:
         """
@@ -54,7 +54,7 @@ class UCTEParser:
             self._parse_date_str(self.config["custom"]["date"])
         else:
             self._parse_date_str(os.path.basename(self.path_ucte_file)[:13])
-        raw_input_dict = dict()
+        raw_input_dict = {}
         for ucte_element in self.ucte_elements:
             raw_input_dict[ucte_element] = []
         with open(self.path_ucte_file, "r") as f:
@@ -67,8 +67,8 @@ class UCTEParser:
                 row = row.strip()
                 if row.startswith("##N"):
                     is_in_N = True
-                elif any([row.startswith(other_ucte_element) for other_ucte_element in
-                          self.ucte_elements if other_ucte_element != "##N"]):
+                elif any(row.startswith(other_ucte_element) for other_ucte_element in
+                          self.ucte_elements if other_ucte_element != "##N"):
                     is_in_N = False
                 if row in self.ucte_elements:
                     # the start of a new UCTE element type in the origin file
@@ -93,15 +93,15 @@ class UCTEParser:
 
     def _parse_date_str(self, date_str: str):
         try:
-            self.date = datetime.strptime(date_str, "%Y%m%d_%H%M")
-        except Exception as e:
+            self.date = datetime.datetime.strptime(date_str, "%Y%m%d_%H%M")
+        except Exception:
             self.logger.info(
                 f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
             self.date = datetime.now(timezone.utc)
 
     def _create_df_from_raw(self, raw_input_dict):
         # create DataFrames from the raw_input_dict
-        self.data = dict()
+        self.data = {}
         for ucte_element, items in raw_input_dict.items():
             self.data[ucte_element] = pd.DataFrame(items)
         # make sure that at least some empty data exist
@@ -120,66 +120,56 @@ class UCTEParser:
             if 0 in df.columns:
                 df = df.drop(columns=[0], axis=1)
         # set the data types
-        dtypes = dict()
+        dtypes = {}
         i_t = pd.Int64Dtype()
-        dtypes["##N"] = dict(
-            {
-                "status": i_t,
-                "voltage": float,
-                "p_load": float,
-                "q_load": float,
-                "p_gen": float,
-                "q_gen": float,
-                "min_p_gen": float,
-                "max_p_gen": float,
-                "min_q_gen": float,
-                "max_q_gen": float,
-                "static_primary_control": float,
-                "p_primary_control": float,
-                "three_ph_short_circuit_power": float,
-                "x_r_ratio": float,
-                "node_type": i_t,
-            }
-        )
-        dtypes["##L"] = dict(
-            {"status": i_t, "r": float, "x": float, "b": float, "i": float}
-        )
-        dtypes["##T"] = dict(
-            {
-                "status": i_t,
-                "voltage1": float,
-                "voltage2": float,
-                "s": float,
-                "r": float,
-                "x": float,
-                "b": float,
-                "g": float,
-                "i": float,
-            }
-        )
-        dtypes["##R"] = dict(
-            {
-                "phase_reg_delta_u": float,
-                "phase_reg_n": float,
-                "phase_reg_n2": float,
-                "phase_reg_u": float,
-                "angle_reg_delta_u": float,
-                "angle_reg_theta": float,
-                "angle_reg_n": float,
-                "angle_reg_n2": float,
-                "angle_reg_p": float,
-            }
-        )
-        dtypes["##TT"] = dict(
-            {
-                "tap_position": float,
-                "r": float,
-                "x": float,
-                "delta_u": float,
-                "alpha": float,
-            }
-        )
-        dtypes["##E"] = dict({"p": float})
+        dtypes["##N"] = {
+            "status": i_t,
+            "voltage": float,
+            "p_load": float,
+            "q_load": float,
+            "p_gen": float,
+            "q_gen": float,
+            "min_p_gen": float,
+            "max_p_gen": float,
+            "min_q_gen": float,
+            "max_q_gen": float,
+            "static_primary_control": float,
+            "p_primary_control": float,
+            "three_ph_short_circuit_power": float,
+            "x_r_ratio": float,
+            "node_type": i_t,
+        }
+        dtypes["##L"] = {"status": i_t, "r": float, "x": float, "b": float, "i": float}
+        dtypes["##T"] = {
+            "status": i_t,
+            "voltage1": float,
+            "voltage2": float,
+            "s": float,
+            "r": float,
+            "x": float,
+            "b": float,
+            "g": float,
+            "i": float,
+        }
+        dtypes["##R"] = {
+            "phase_reg_delta_u": float,
+            "phase_reg_n": float,
+            "phase_reg_n2": float,
+            "phase_reg_u": float,
+            "angle_reg_delta_u": float,
+            "angle_reg_theta": float,
+            "angle_reg_n": float,
+            "angle_reg_n2": float,
+            "angle_reg_p": float,
+        }
+        dtypes["##TT"] = {
+            "tap_position": float,
+            "r": float,
+            "x": float,
+            "delta_u": float,
+            "alpha": float,
+        }
+        dtypes["##E"] = {"p": float}
         for ucte_element, one_dtypes in dtypes.items():
             for field, field_type in one_dtypes.items():
                 self.data[ucte_element].loc[
@@ -207,8 +197,6 @@ class UCTEParser:
             self.logger.warning("No nodes in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
-        # if 0 not in df.columns:
-        #     df[0] = ""
         df["node"] = df[0].str[0:8].str.strip()
         df["node_name"] = df[0].str[9:21].str.strip()
         df["status"] = df[0].str[22:23].str.strip()
@@ -348,14 +336,14 @@ class UCTEParser:
         with tempfile.NamedTemporaryFile(delete=False) as f:
             f.close()
             ucte_temp = UCTEParser()
-            ucte_temp.set_config(dict({"custom": {"date": "20200701_1010"}}))
+            ucte_temp.set_config({"custom": {"date": "20200701_1010"}})
             ucte_temp.parse_file(path_ucte_file=f.name)
             data = ucte_temp.get_data()
         if os.path.exists(f.name):
             os.remove(f.name)
-        return_dict = dict()
-        return_dict["element_types"] = dict()
-        return_dict["dtypes"] = dict()
+        return_dict = {}
+        return_dict["element_types"] = {}
+        return_dict["dtypes"] = {}
         for element_type, df in data.items():
             return_dict["element_types"][element_type] = list(df.columns)
             return_dict["dtypes"][element_type] = [str(x) for x in df.dtypes.values]
@@ -374,7 +362,7 @@ class UCTEParser:
             self.logger.warning(
                 "The configuration is not a dictionary! Default configuration is set."
             )
-            self.config = dict()
+            self.config = {}
 
     def get_config(self) -> Dict:
         return self.config
