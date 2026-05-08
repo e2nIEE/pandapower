@@ -4,7 +4,7 @@ from typing import Optional
 import multiprocessing as mp
 from functools import partial
 from pandapower.run import runpp
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 
 import logging
 

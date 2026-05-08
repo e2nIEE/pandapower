@@ -11,7 +11,7 @@ from typing import Iterable, Sequence
 from numpy import nan
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int, UnderOverExcitedType, WyeDeltaType
 from pandapower.create._utils import (
@@ -360,7 +360,7 @@ def create_asymmetric_load(
 #     net.impedance_load.loc[index, ["name", "bus", "r_A","r_B","r_C", "scaling",
 #                       "x_A","x_B","x_C","sn_mva", "in_service", "type"]] = \
 #     [name, bus, r_A,r_B,r_C, scaling,
-#       x_A,x_B,x_C,sn_mva, in_service, type]
+#       x_A,x_B,x_C, sn_mva, in_service, type]
 #
 #     # and preserve dtypes
 #     _preserve_dtypes(net.impedance_load, dtypes)

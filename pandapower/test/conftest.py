@@ -9,7 +9,6 @@ import pytest
 
 from pandapower.create import (
     create_bus,
-    create_empty_network,
     create_ext_grid,
     create_gen,
     create_line,
@@ -17,6 +16,7 @@ from pandapower.create import (
     create_sgen,
     create_transformer
 )
+from pandapower import pandapowerNet
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator
 
 
@@ -41,7 +41,7 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope="session")
 def simple_network():
-    net = create_empty_network()
+    net = pandapowerNet(name='simple_network')
     b1 = create_bus(net, name="bus1", vn_kv=10.)
     create_ext_grid(net, b1)
     b2 = create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)

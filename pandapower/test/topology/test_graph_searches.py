@@ -7,8 +7,9 @@ import networkx as nx
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_ext_grid, create_switch, \
+from pandapower.create import create_bus, create_line, create_ext_grid, create_switch, \
     create_transformer, create_buses, create_impedance
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_simple
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_components, determine_stubs, calc_distance_to_bus, \
@@ -18,7 +19,7 @@ from pandapower.topology.graph_searches import connected_components, determine_s
 
 @pytest.fixture
 def feeder_network():
-    net = create_empty_network()
+    net = pandapowerNet(name="feeder_network")
     current_bus = create_bus(net, vn_kv=20.)
     create_ext_grid(net, current_bus)
     for length in [12, 6, 8]:
@@ -32,7 +33,7 @@ def feeder_network():
 
 @pytest.fixture
 def meshed_network():
-    net = create_empty_network("7bus_system")
+    net = pandapowerNet(name="7bus_system")
 
     # ext grid
     b = [create_bus(net, vn_kv=380., name="exi", geodata=(0, 0))]
@@ -58,7 +59,7 @@ def meshed_network():
 
 @pytest.fixture
 def mixed_network():
-    net = create_empty_network()
+    net = pandapowerNet(name="mixed_network")
     create_buses(net, nr_buses=5, vn_kv=20.)
     connections = [(0, 1), (1, 2), (2, 3), (2, 4)]
     for fb, tb in connections:
@@ -122,7 +123,7 @@ def test_distance(feeder_network):
 
 def test_unsupplied_buses_with_in_service():
     # IS ext_grid --- open switch --- OOS bus --- open switch --- IS bus
-    net = create_empty_network()
+    net = pandapowerNet(name="test_unsupplied_buses_with_in_service 0")
 
     slack_bus = create_bus(net, 0.4)
     create_ext_grid(net, slack_bus)
@@ -137,7 +138,7 @@ def test_unsupplied_buses_with_in_service():
     assert ub == {2}
 
     # OOS ext_grid --- closed switch --- IS bus
-    net = create_empty_network()
+    net = pandapowerNet(name="test_unsupplied_buses_with_in_service 1")
 
     bus_sl = create_bus(net, 0.4)
     create_ext_grid(net, bus_sl, in_service=False)
@@ -150,7 +151,7 @@ def test_unsupplied_buses_with_in_service():
 
 
 def test_unsupplied_buses_with_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_unsupplied_buses_with_switches")
     create_buses(net, 8, 20)
     create_buses(net, 5, 0.4)
     create_ext_grid(net, 0)
@@ -250,7 +251,7 @@ def test_elements_on_path():
 
 
 def test_end_points_of_continuously_connected_lines():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_end_points_of_continuously_connected_lines")
     b0 = create_bus(net, vn_kv=20.)
     b1 = create_bus(net, vn_kv=20.)
     b2 = create_bus(net, vn_kv=20.)

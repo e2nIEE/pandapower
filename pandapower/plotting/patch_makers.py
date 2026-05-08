@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import math
+import logging
+from typing import TYPE_CHECKING
 
 import geojson.utils
 from geojson import Point
@@ -22,15 +24,17 @@ from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, get_angle_list, \
     get_linewidth_list, get_list
 
-import logging
+
+if TYPE_CHECKING:
+    from matplotlib import Patch
 
 logger = logging.getLogger(__name__)
 
 
-def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -> tuple[list[Patch], list]:
+def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -> tuple[list["Patch"], list]:
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list[Patch] = []
+    polys: list["Patch"] = []
     lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
@@ -76,7 +80,7 @@ def wp_patch(
         blade_coord2: float,
         hub_size: float,
         path: any
-) -> tuple[list[Patch], list]:
+) -> tuple[list["Patch"], list]:
     """
     Generate Patch for wind power plant.
 
@@ -98,7 +102,7 @@ def wp_patch(
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list[Patch] = []
+    polys: list["Patch"] = []
     lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
@@ -161,7 +165,7 @@ def pv_patch(node_geo, offset, size, angle, pv_rect_size, pv_tri_size, facecolor
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list[Patch] = []
+    polys: list["Patch"] = []
     lines = []
     mid_rect = node_geo + _rotate_dim2(np.array([0, 2 * size]), angle)
     rect_lbottom = (mid_rect[0] - (pv_rect_size / 4), mid_rect[1])
@@ -432,7 +436,7 @@ def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = Tru
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     lines = []
-    polys: list[Patch] = []
+    polys: list["Patch"] = []
     offset = kwargs.get("offset", 2 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     hub_size = size * 0.15  # Hub size

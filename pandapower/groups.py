@@ -19,15 +19,16 @@ import numpy.typing as npt
 import pandas as pd
 import pandas.testing as pdt
 
-from pandapower.auxiliary import ensure_iterability, log_to_level, pandapowerNet
+from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import (
-    create_empty_network, _group_parameter_list, _set_multiple_entries, _check_elements_existence, create_group
+    _group_parameter_list, _set_multiple_entries, _check_elements_existence, create_group
 )
 from pandapower.toolbox.power_factor import signing_system_value
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict, element_bus_tuples, pp_elements, get_connected_elements_dict
 )
 from pandapower.toolbox.result_info import res_power_columns
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -892,9 +893,10 @@ def return_group_as_net(
                                "dropped now.")
             remove_not_existing_group_members(net, verbose=verbose)
     else:
-        group_net = create_empty_network(
+        group_net = pandapowerNet(
             name=group_name(net, index), f_hz=net.f_hz, sn_mva=net.sn_mva,
-            add_stdtypes=kwargs.get("add_stdtypes", True))
+            add_stdtypes=kwargs.get("add_stdtypes", True)
+        )
         group_net["group"] = net.group.loc[[index]]
         for et in net.group.loc[[index], "element_type"].tolist():
             idx = group_element_index(net, index, et)

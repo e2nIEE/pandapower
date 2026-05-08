@@ -4,10 +4,11 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
+from pathlib import Path
 import time
 from pandapower.converter.ucte.ucte_converter import UCTE2pandapower
 from pandapower.converter.ucte.ucte_parser import UCTEParser
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.toolbox import get_connected_buses
 
 logger = logging.getLogger('ucte.from_ucte')
@@ -24,7 +25,8 @@ def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True, clip_smal
     :rtype: pandapowerNet
 
     """
-    ucte_converter = UCTE2pandapower(slack_as_gen=slack_as_gen, clip_small_x_values=clip_small_x_values)
+    file_name = Path(ucte_parser.path_ucte_file).stem
+    ucte_converter = UCTE2pandapower(slack_as_gen=slack_as_gen, name=file_name, clip_small_x_values=clip_small_x_values)
     net = ucte_converter.convert(ucte_parser.get_data())
     return net
 

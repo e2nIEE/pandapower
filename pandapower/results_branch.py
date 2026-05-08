@@ -5,7 +5,7 @@
 
 
 import numpy as np
-import pandas as pd
+
 from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
 from pandapower.pypower.idx_brch_dc import DC_IF, DC_IT, DC_F_BUS, DC_T_BUS, DC_PF, DC_PT, DC_BR_R, DC_TDPF
