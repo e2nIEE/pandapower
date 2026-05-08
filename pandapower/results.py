@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -191,7 +192,7 @@ def get_relevant_elements(net, mode="pf"):
                "switch", "tcsc", "svc", "ssc", "vsc", "vsc_stacked", "vsc_bipolar"],
         "sc": ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"],
         "se": ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"],
-        "pf_3ph": ["bus", "line", "trafo", "ext_grid", "shunt", "load", "sgen", "gen", "storage",
+        "pf_3ph": ["bus", "line", "trafo", "ext_grid", "shunt", "load", "sgen", "storage",
                    "asymmetric_load", "asymmetric_sgen"]
     }
     elements["opf"] = elements["pf"]

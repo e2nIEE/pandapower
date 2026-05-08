@@ -6,10 +6,10 @@ import os
 import json
 from typing import Dict, List
 import numpy as np
+import pandas as pd
 
 from pandapower.network_structure import get_structure_dict
-from pandapower.auxiliary import pandapowerNet
-import pandas as pd
+from pandapower import pandapowerNet
 
 logger = logging.getLogger(__name__)
 

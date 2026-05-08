@@ -11,8 +11,8 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterability, \
-    log_to_level, plural_s
+from pandapower.auxiliary import _preserve_dtypes, ensure_iterability, log_to_level
+from pandapower.network import pandapowerNet, plural_s
 from pandapower.std_types import change_std_type
 from pandapower.create._utils import add_column_to_df
 from pandapower.create import (
@@ -79,7 +79,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         if not include_results:
             clear_result_tables(p2)
     else:
-        p2 = create_empty_network(add_stdtypes=False)
+        p2 = pandapowerNet(name='', add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
 
         net_parameters = ["name", "f_hz"]
@@ -152,9 +152,9 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
             net.switch[net.switch.et == 'l'].element.isin(p2.line.index),
             net.switch[net.switch.et == 't'].element.isin(p2.trafo.index),
         ], sort=False)
-        ]
+    ]
 
-    return pandapowerNet(p2)
+    return pandapowerNet(net=p2)
 
 
 def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):

@@ -11,7 +11,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int
 from pandapower.create._utils import (

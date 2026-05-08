@@ -12,11 +12,10 @@ from pandapower.toolbox import (
     select_subnet, replace_xward_by_ward, create_continuous_bus_index,
     get_connected_buses_at_element, get_connected_elements
 )
+from pandapower.network import ADict, pandapowerNet
 from pandapower.create import create_impedance, create_switch
 from pandapower.run import runpp, rundcpp
 from pandapower.auxiliary import (
-    ADict,
-    pandapowerNet,
     LoadflowNotConverged,
     OPFNotConverged,
     ControllerNotConverged,

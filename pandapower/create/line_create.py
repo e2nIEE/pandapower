@@ -12,7 +12,9 @@ from typing import Iterable, Sequence
 import numpy.typing as npt
 from numpy import nan, isnan, any as np_any, all as np_all
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
+from pandapower.std_types import load_std_type
+from pandapower.pp_types import Int, LineType
 from pandapower.create._utils import (
     _add_branch_geodata,
     _add_multiple_branch_geodata,

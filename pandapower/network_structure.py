@@ -98,10 +98,12 @@ def get_default_value(table: str, column: str) -> Any:
         return column_info["metadata"]["default"]
     return pd.NA
 
-def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
+def get_structure_dict(required_only: bool = True, metadata: list | None = None) -> dict:
     """
     This function returns the structure dict of the network
     """
+    if metadata is None:
+        metadata = []
     dtypes_dict: dict[str, Any] = {key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()}
     dtypes_dict.update({
         "pwl_cost": {  # TODO: convert to pandera

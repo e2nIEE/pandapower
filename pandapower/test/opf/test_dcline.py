@@ -7,8 +7,10 @@ import pytest
 from numpy import array, allclose, isclose
 
 from pandapower.auxiliary import OPFNotConverged
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_dcline, \
-    create_load, create_pwl_cost, create_poly_cost
+from pandapower.create import (
+    create_bus, create_ext_grid, create_line, create_dcline, create_load, create_pwl_cost, create_poly_cost
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runopp, runpp
 from pandapower.test.consistency_checks import consistency_checks
 
@@ -19,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture
 def dcline_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="dcline_net")
 
     b5 = create_bus(net, 380)
     b3 = create_bus(net, 380)

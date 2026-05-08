@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -16,13 +14,12 @@ from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
-    ADict,
-    pandapowerNet,
     get_free_id,
     _preserve_dtypes,
     ensure_iterability,
     empty_defaults_per_dtype,
 )
+from pandapower.network import pandapowerNet, ADict
 from pandapower.pp_types import Int
 from pandapower.network_structure import get_structure_dict, get_column_info
 
@@ -33,6 +30,14 @@ def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
     """
     Adds column to table if not present, if table not present adds table
     Only works for columns that are defined in the network structure dict
+
+    Parameters:
+        net: ADict object (pandapowerNet)
+        table_name: the DataFrame to which to add the column
+        column_name: the column to add to the DataFrame
+
+    Raises:
+        ValueError: if column is not defined in table schema
     """
     if table_name in net and column_name in net[table_name]:
         return
@@ -260,7 +265,7 @@ def _set_value_if_not_nan(
         default_val: default value to be set for this column (if not passed, attempt to take from pandera)
 
     See Also:
-        _add_to_entries_if_not_nan
+        :func:`_add_to_entries_if_not_nan`
     """
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
@@ -360,19 +365,18 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
         # only get dtypes of columns that are set and that are already present in the table
         dtypes = net[table][intersect1d(net[table].columns, list(entries))].dtypes
 
+    dtype_dict = get_structure_dict(required_only=False)[table]
     for col, val in entries.items():
         val_not_na: bool = pd.notna(val) if pd.api.types.is_scalar(val) else pd.notna(val).any()
         if val_not_na:
             net[table].at[index, col] = val
-            try:
-                dtype = get_structure_dict(required_only=False)[table][col]
-                if (
-                    dtype == bool and net[table][col].isna().any()
-                ):  # default value for bool entries # TODO: check if wanted behaviour
+            # set col dtype:
+            if col in dtype_dict:
+                dtype = dtype_dict[col]
+                # default value for bool entries
+                if dtype == bool and net[table][col].isna().any(): # TODO: check if wanted behaviour
                     net[table][col] = net[table][col].astype(pd.BooleanDtype()).fillna(False)
                 net[table][col] = net[table][col].astype(dtype)
-            except KeyError as e:
-                logger.error(f"column {col} has no dtype in network structure")
 
     # and preserve dtypes
     if preserve_dtypes:

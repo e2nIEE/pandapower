@@ -9,12 +9,13 @@ import copy
 import numpy as np
 import pytest
 
-from pandapower.auxiliary import _check_connectivity, _add_ppc_options, LoadflowNotConverged
-from pandapower.create import (create_empty_network, create_bus, create_transformer, create_transformer3w, create_load,
-                               create_xward, create_switch, create_ext_grid, create_line_from_parameters, create_bus_dc,
-                               create_vsc, create_line_dc_from_parameters)
+from pandapower.auxiliary import LoadflowNotConverged
+from pandapower.create import (
+    create_bus, create_transformer, create_transformer3w, create_load, create_xward, create_switch, create_ext_grid,
+    create_line_from_parameters, create_line_dc_from_parameters, create_bus_dc, create_vsc
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case4gs, case118
-from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import rundcpp, runpp
 from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal
@@ -22,7 +23,7 @@ from pandapower.test.loadflow.result_test_network_generator import result_test_n
 
 
 def test_rundcpp_init():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_rundcpp_init")
     _, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=0.4)
     create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="0.25 MVA 20/0.4 kV")
@@ -30,7 +31,7 @@ def test_rundcpp_init():
 
 
 def test_rundcpp_init_auxiliary_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_rundcpp_init_auxiliary_buses")
     _, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
@@ -61,7 +62,7 @@ def test_result_iter():
 
 
 def test_two_open_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_two_open_switches")
     b1, b2, _ = add_grid_connection(net)
     b3 = create_bus(net, vn_kv=20.)
     l2 = create_test_line(net, b2, b3)
@@ -85,7 +86,7 @@ def test_test_sn_mva():
 
 
 def test_single_bus_network():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_single_bus_network")
     b = create_bus(net, vn_kv=20.)
     create_ext_grid(net, b)
 
@@ -141,7 +142,7 @@ def test_dc_after_ac():
 
 
 def test_dc_vsc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_dc_vsc")
     b1 = create_bus(net, name="AC_B1", vn_kv=380)
     b2 = create_bus(net, name="AC_B2", vn_kv=380)
     b3 = create_bus(net, name="AC_B3", vn_kv=380)
@@ -207,7 +208,7 @@ def test_dc_vsc():
 
 
 def test_dc_vsc_p():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_dc_vsc_p")
     b1 = create_bus(net, name="AC_B1", vn_kv=380)
     b2 = create_bus(net, name="AC_B2", vn_kv=380)
     b3 = create_bus(net, name="AC_B3", vn_kv=380)
@@ -290,7 +291,7 @@ def test_dc_vsc_p():
 
 
 def test_dc_vsc_oos():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_dc_vsc_oos")
     b1 = create_bus(net, name="AC_B1", vn_kv=380)
     b2 = create_bus(net, name="AC_B2", vn_kv=380)
     b3 = create_bus(net, name="AC_B3", vn_kv=380)

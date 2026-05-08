@@ -22,9 +22,9 @@ from pandapower.contingency.contingency import (
     run_contingency_ls2g,
 )
 from pandapower.contingency.contingency_parallel import run_contingency_parallel
+from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9, case118, case14
 from pandapower.create import (
-    create_empty_network,
     create_buses,
     create_ext_grid,
     create_lines,
@@ -212,7 +212,7 @@ def test_case118():
 # @pytest.mark.xfail(reason="remove this xfail when new version of lightsim2grid available")
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_unequal_trafo_hv_lv_impedances():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_unequal_trafo_hv_lv_impedances")
     create_buses(net, 4, 110)
     create_ext_grid(net, 0)
 
@@ -301,7 +301,7 @@ def test_lightsim2grid_distributed_slack():
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_lightsim2grid_phase_shifters():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_lightsim2grid_phase_shifters")
     set_user_pf_options(net, calculate_voltage_angles=True)
     create_buses(net, 4, 110)
     create_gen(net, 0, 0, slack=True, slack_weight=1)

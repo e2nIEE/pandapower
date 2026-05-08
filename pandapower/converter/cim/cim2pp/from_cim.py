@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Union, List, Type, Dict
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from . import build_pp_net
 from . import converter_classes as std_converter_classes
 from .. import cim_classes
@@ -68,8 +68,8 @@ def from_cim_dict(cim_parser: cim_classes.CimParser, log_debug=False, convert_li
     return pp_net
 
 
-def get_converter_classes():
-    converter_classes: Dict[str, classmethod] = {
+def get_converter_classes() -> dict[str, object]:
+    converter_classes: dict[str, object] = {
         'ConnectivityNodesCim16': std_converter_classes.connectivitynodes.connectivityNodesCim16.ConnectivityNodesCim16,
         'externalNetworkInjectionsCim16':
             std_converter_classes.externalnetworks.externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16,

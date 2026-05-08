@@ -61,13 +61,13 @@ def indices_consistent(net):
     for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element].index
-        assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match"%(element, element)
-        assert all(e_idx == res_idx), "%s bus and res_%s indices do not match"%(element, element)
+        assert len(e_idx) == len(res_idx), f"length of {element} bus and res_{element} indices do not match"
+        assert all(e_idx == res_idx), f"{element} bus and res_{element} indices do not match"
 
 
 def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
     """
-    The surpluss of bus feed summed over all buses always has to be equal to the sum of losses in
+    The surplus of bus feed summed over all buses always has to be equal to the sum of losses in
     all branches.
     """
     def safe_sum(net, attr_name, column_name):
@@ -104,15 +104,24 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
     try:
         assert isclose(bus_surplus_p, branch_loss_p, atol=atol)
     except AssertionError:
-        raise AssertionError("Branch losses are %.4f MW, but power generation at the buses exceeds the feedin by %.4f MW"%(branch_loss_p, bus_surplus_p))
+        raise AssertionError(
+            f"Branch losses are {branch_loss_p:.4f} MW, "
+            f"but power generation at the buses exceeds the feedin by {bus_surplus_p:.4f} MW"
+        )
     try:
         assert isclose(bus_dc_surplus_p, branch_dc_loss, atol=atol)
     except AssertionError:
-        raise AssertionError("DC branch losses are %.4f MW, but power generation at the DC buses exceeds the feedin by %.4f MW"%(branch_dc_loss, bus_dc_surplus_p))
+        raise AssertionError(
+            f"DC branch losses are {branch_dc_loss:.4f} MW, "
+            f"but power generation at the DC buses exceeds the feedin by {bus_dc_surplus_p:.4f} MW"
+        )
     try:
         assert isclose(bus_surplus_q, branch_loss_q, atol=atol)
     except AssertionError:
-        raise AssertionError("Branch losses are %.4f MVar, but power generation at the buses exceeds the feedin by %.4f MVar"%(branch_loss_q, bus_surplus_q))
+        raise AssertionError(
+            f"Branch losses are {branch_loss_q:.4f} MVar, "
+            f"but power generation at the buses exceeds the feedin by {bus_surplus_q:.4f} MVar"
+        )
 
 
 def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):

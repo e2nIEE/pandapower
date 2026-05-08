@@ -8,7 +8,8 @@ import random as rd
 
 import pytest
 
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_bus
+from pandapower.network import pandapowerNet
 from pandapower.networks.kerber_networks import (
     _create_empty_network_with_transformer,
     _add_lines_and_loads,
@@ -41,7 +42,7 @@ def test_create_empty_network_with_transformer():
 
 def test_add_lines_and_loads():
     # BUILD:
-    pd_net = create_empty_network()
+    pd_net = pandapowerNet(name="test_add_lines_and_loads")
     busnr1 = create_bus(pd_net, name="startbus", vn_kv=0.4)
     n_lines_add = int(10.0 * rd.random() + 1)
     l_per_line = 0.10 * rd.random()
@@ -64,7 +65,7 @@ def test_add_lines_and_loads():
 
 def test_add_lines_with_branched_loads():
     # BUILD:
-    pd_net = create_empty_network()
+    pd_net = pandapowerNet(name="test_add_lines_with_branched_loads")
     busnr1 = create_bus(pd_net, name="startbus", vn_kv=0.4)
     n_lines_add = int(10.0 * rd.random() + 1)
     l_per_line = 0.10 * rd.random()

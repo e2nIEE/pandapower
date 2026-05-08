@@ -67,8 +67,8 @@ try:
 except ImportError:
     zlib_INSTALLED = False
 
-from pandapower.auxiliary import pandapowerNet, get_free_id, soft_dependency_error, _preserve_dtypes
-from pandapower.create import create_empty_network
+from pandapower.auxiliary import get_free_id, soft_dependency_error, _preserve_dtypes
+from pandapower import pandapowerNet
 from pandapower.network_structure import get_std_type_structure_dict
 
 from functools import singledispatch
@@ -240,7 +240,7 @@ def df_to_coords(net, item, table):
 
 def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
     if net is None:
-        net = create_empty_network(add_stdtypes=add_basic_std_types)
+        net = pandapowerNet(name='', add_stdtypes=add_basic_std_types)
     for item, table in dodfs.items():
         if item == "dtypes":
             continue
@@ -490,8 +490,10 @@ class FromSerializable:
             _class = (class_module[0], '')
             _module = ('', class_module[1])
             if (_class in self.registry) and (_module in self.registry):
-                logger.error('the saved object %s is ambiguous. There are at least two possibilites'
-                             ' to decode the object' % class_module)
+                logger.error(
+                    f"the saved object {class_module} is ambiguous. There are at least two possibilites to decode the "
+                    f"object"
+                )
             elif _class in self.registry:
                 class_module = _class
             elif _module in self.registry:
@@ -616,14 +618,16 @@ class FromSerializableRegistry():
             df.loc[pd.isnull(df[col]), col] = None
         return df
 
+    # removing the pandapower.auxiliary registration is not possible otherwise old networks cannot be loaded anymore
+    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.network')
     @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
-    def pandapowerNet(self):
+    def to_pandapower_net(self):
         if isinstance(self.obj, str):  # backwards compatibility
             from pandapower import from_json_string
             return from_json_string(self.obj)
         else:
             if self.empty_dict_like_object is None:
-                net = create_empty_network()
+                net = pandapowerNet(name='from_serializable')
             else:
                 net = self.empty_dict_like_object
             net.update(self.obj)
@@ -737,8 +741,7 @@ class FromSerializableRegistry():
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
-        # net = pandapowerNet.__new__(pandapowerNet)
-        #        net = create_empty_network()
+        # net = pandapowerNet(name="")
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)
         empty_dict_like_object = kwargs.pop('empty_dict_like_object', None)
         registry_class = kwargs.pop("registry_class", FromSerializableRegistry)
@@ -776,7 +779,7 @@ def pp_hook(
             if omit_modules is not None:
                 for om in omit_modules:
                     if om in d['_module']:
-                        return
+                        return None
             if 'pandas' in d['_module'] and not deserialize_pandas:
                 return json.dumps(d)
             elif "_object" in d:
