@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-from typing import Any
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -25,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 def _set_buses_out_of_service(ppc):
     disco = np.nonzero(ppc["bus"][:, BUS_TYPE] == NONE)[BUS_I]
+    #ppc["bus"][disco, 2:] = np.nan
     ppc["bus"][disco, VM] = np.nan
     ppc["bus"][disco, VA] = np.nan
     ppc["bus"][disco, PD] = 0
@@ -142,17 +141,17 @@ def _get_bus_results_3ph(net, bus_pq):
 
 def write_voltage_dependend_load_results(net, p, q, b):
     load_df = net["load"]
-    _is_elements = net["_is_elements"]
 
     if load_df.empty:
         return p, q, b
-    
+
+    _is_elements = net["_is_elements"]
+
+   # load_is = [1 if x else np.nan for x in _is_elements["load"]]
     load_is = _is_elements["load"]
     scaling = load_df["scaling"].values
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     lidx = bus_lookup[load_df["bus"].values]
-
-    voltage_depend_loads = net["_options"]["voltage_depend_loads"]
 
     cz_p = load_df["const_z_p_percent"].values / 100.
     ci_p = load_df["const_i_p_percent"].values / 100.
@@ -173,20 +172,19 @@ def write_voltage_dependend_load_results(net, p, q, b):
 
     b = np.hstack([b, load_df["bus"].values])
 
-    if voltage_depend_loads:
-        # constant impedance and constant current
-        vm_l = net["_ppc"]["bus"][lidx, 7]
-        volt_depend_p = ci_p * vm_l + cz_p * vm_l ** 2
-        pl = load_df["p_mw"].values * scaling * load_is * volt_depend_p
-        net["res_load"]["p_mw"] += pl
-        p = np.hstack([p, pl])
+    # constant impedance and constant current
+    vm_l = net["_ppc"]["bus"][lidx, 7]
+    volt_depend_p = ci_p * vm_l + cz_p * vm_l ** 2
+    pl = load_df["p_mw"].values * scaling * load_is * volt_depend_p
+    net["res_load"]["p_mw"] += pl
+    p = np.hstack([p, pl])
 
-        volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
-        ql = load_df["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
-        net["res_load"]["q_mvar"] += ql
-        q = np.hstack([q, ql])
+    volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
+    ql = load_df["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
+    net["res_load"]["q_mvar"] += ql
+    q = np.hstack([q, ql])
 
-        b = np.hstack([b, load_df["bus"].values])
+    b = np.hstack([b, load_df["bus"].values])
     return p, q, b
 
 
@@ -197,7 +195,7 @@ def write_pq_results_to_element(
     """
     get p_mw and q_mvar for a specific pq element ("load", "sgen"...).
     This function basically writes values element table to res_element table
-    
+
     Parameter:
         net: the pandapower net
         ppc: a ppc DataFrame
@@ -445,7 +443,7 @@ def get_p_q_b(net, element, suffix=None):
 
 def get_p_q_b_3ph(net, element):
     ac = net["_options"]["ac"]
-    res_ = "res_" + element+ "_3ph"
+    res_ = f"res_{element}_3ph"
 
     # bus values are needed for stacking
     b = net[element]["bus"].values
