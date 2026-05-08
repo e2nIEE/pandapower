@@ -6,7 +6,6 @@
 import pandas as pd
 import pytest
 
-<<<<<<< feature/deprecate-create_empty_entwork
 from pandapower.create import (
     create_bus, create_transformer3w, create_transformer, create_line, create_switch, create_buses, create_gens,
     create_sgens, create_measurement, create_poly_cost
@@ -14,20 +13,10 @@ from pandapower.create import (
 from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9
-from pandapower.toolbox.element_selection import (
-    get_element_indices, next_bus, get_connected_elements, get_connected_buses, false_elm_links_loop,
-    get_connected_buses_at_switches, pp_elements, element_bus_tuples, count_elements, branch_element_bus_dict
-)
-=======
-from pandapower import runpp
-from pandapower.create import create_empty_network, create_bus, create_transformer3w, create_transformer, create_line, \
-    create_switch, create_buses, create_gens, create_sgens, create_measurement, create_poly_cost
-from pandapower.networks.create_examples import example_multivoltage
-from pandapower.networks.power_system_test_cases import case9
+from pandapower.run import runpp
 from pandapower.toolbox.element_selection import get_element_indices, next_bus, get_connected_elements, \
     get_connected_buses, false_elm_links_loop, get_connected_buses_at_switches, pp_elements, element_bus_tuples, \
     count_elements, branch_element_bus_dict, get_all_elements
->>>>>>> release/v4.0.0
 
 
 def test_get_element_indices():

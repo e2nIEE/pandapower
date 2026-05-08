@@ -11,9 +11,7 @@ import numpy as np
 import pandas as pd
 from math import isclose
 
-from pandapower.control.util.characteristic import LogSplineCharacteristic
-from pandapower.toolbox.element_selection  import get_gc_objects_dict
-from pandapower.file_io import from_json_string, to_json, create_empty_network
+from pandapower.file_io import from_json_string, to_json
 from pandapower.create import create_bus, create_lines, create_line, create_buses, create_shunt
 from pandapower.create._utils import add_column_to_df
 from pandapower.auxiliary import get_indices
@@ -23,14 +21,13 @@ from pandapower.timeseries import DFData
 from pandapower.toolbox.element_selection import get_gc_objects_dict
 from pandapower.control import (
     SplineCharacteristic,
-    Characteristic,
     ContinuousTapControl,
     Characteristic,
-    ConstControl,
-    create_trafo_characteristic_object,
+    ConstControl
 )
 from pandapower.control.util.characteristic import LogSplineCharacteristic
 from pandapower.control.util.auxiliary import (
+    create_trafo_characteristic_object,
     create_shunt_characteristic_object,
     _create_trafo_characteristics,
     create_q_capability_characteristics_object,

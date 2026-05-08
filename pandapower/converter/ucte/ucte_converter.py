@@ -23,9 +23,9 @@ class UCTE2pandapower:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.u_d: dict = {}
+        self.net = pandapowerNet(name="UCTE Converter", metadata=["ucte"])
         if name is not None:
             self.net.name = name
-        self.net = pandapowerNet(name="UCTE Converter", metadata=["ucte"])
         self.net.bus["node_name"] = ""
         self.slack_as_gen = slack_as_gen
         self.clip_small_x_values = clip_small_x_values

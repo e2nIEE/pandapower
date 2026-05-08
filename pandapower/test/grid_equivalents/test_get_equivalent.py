@@ -12,7 +12,8 @@ from pandapower.create import (
     create_buses, create_ext_grid, create_poly_cost, create_line, create_load, create_sgen, create_pwl_cost, create_bus,
     create_switch, create_motor, create_group
 )
-from pandapower.create._utils import add_column_to_dffrom pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
+from pandapower.create._utils import add_column_to_df
+from pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.get_equivalent import get_equivalent, merge_internal_net_and_equivalent_external_net
 from pandapower.grid_equivalents.ward_generation import create_passive_external_net_for_ward_admittance
 from pandapower.groups import (

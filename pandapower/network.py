@@ -239,6 +239,7 @@ class pandapowerNet(ADict):
             f_hz: float = 50.,
             sn_mva: float = 1.,
             add_stdtypes: bool = True,
+            metadata: list[str] | None = None,
             custom_data: dict | None = None
     ) -> None: ...
     
@@ -253,6 +254,7 @@ class pandapowerNet(ADict):
             f_hz: float = 50.,
             sn_mva: float = 1.,
             add_stdtypes: bool = True,
+            metadata: list[str] | None = None,
             custom_data: dict | None = None,
             *,
             net: "pandapowerNet | dict | None" = None,
@@ -260,12 +262,12 @@ class pandapowerNet(ADict):
     ) -> None:
         # TODO: remove once deprecations are removed
         if net is not None:
-            if (
-                    name is not None or
-                    not np.isclose(f_hz, 50., rtol=1e-12, atol=1e-12) or
-                    not np.isclose(sn_mva, 1., rtol=1e-12, atol=1e-12) or
-                    not add_stdtypes or
-                    custom_data is not None
+            if (name is not None
+                or not np.isclose(f_hz, 50., rtol=1e-12, atol=1e-12)
+                or not np.isclose(sn_mva, 1., rtol=1e-12, atol=1e-12)
+                or not add_stdtypes
+                or metadata is not None
+                or custom_data is not None
             ):
                 raise AttributeError(
                     'Passing net and other attributes is not supported. Do not pass a net to pandapowerNet()'
@@ -283,7 +285,8 @@ class pandapowerNet(ADict):
             super().__init__(**kwargs)
             if name == "":
                 logger.warning("When calling pandapowerNet() name should not be empty.")
-            network_structure_dict = get_structure_dict()
+
+            network_structure_dict = get_structure_dict(metadata=metadata)
             network_structure_dict["name"] = name
             network_structure_dict["f_hz"] = f_hz
             network_structure_dict["sn_mva"] = sn_mva

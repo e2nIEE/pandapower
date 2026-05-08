@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -22,7 +20,6 @@ from pandapower.auxiliary import (
     empty_defaults_per_dtype,
 )
 from pandapower.network import pandapowerNet, ADict
-from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import Int
 from pandapower.network_structure import get_structure_dict, get_column_info
 
