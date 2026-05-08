@@ -3,6 +3,10 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] differing behavior for :code:`in_service=False` depending on `voltage_depend_loads` has been fixed. Out of Service elements for res_bus now always contain `nan` as result.
+- [FIXED] `DiscreteTapControl` to work with `negative tap_step_percent`.
+- [CHANGED] updated the contributing file and documentation
+- [ADDED] `allow_duplicate_index` parameter to `reindex_buses` with default to `false`.
 - [ADDED] `add_basic_std_types` parameter to `from_excel`
 - [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
 - [ADDED] added more functions to diagnostic
@@ -17,9 +21,10 @@ Change Log
 - [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
 - [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
 - [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
-- [ADDED] highlighting feature and hovering functionality to :code:`simple_plot()`
+- [ADDED] plotting: highlighting feature and hovering functionality to :code:`simple_plot()`
 - [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
 - [FIXED] pf2pp: static generator without a bus does not cause import errors (it is ignored)
+- [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
 
 [3.4.0] - 2026-02-09
 -------------------------------

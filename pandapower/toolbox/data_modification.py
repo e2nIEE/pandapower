@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import uuid
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 import numpy as np
 import pandas as pd
@@ -133,7 +133,7 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def reindex_buses(net, bus_lookup):
+def reindex_buses(net, bus_lookup, allow_duplicate_index=False):
     """
     Changes the index of net.bus and considers the new bus indices in all other pandapower element
     tables.
@@ -141,6 +141,7 @@ def reindex_buses(net, bus_lookup):
     Parameters:
         net: pandapower network
         bus_lookup (dict): the keys are the old bus indices, the values the new bus indices
+        allow_duplicate_index (bool): Flag to allow creation of duplicate bus index, default is false
     """
     not_fitting_bus_lookup_keys = set(bus_lookup.keys()) - set(net.bus.index)
     if len(not_fitting_bus_lookup_keys):
@@ -148,6 +149,15 @@ def reindex_buses(net, bus_lookup):
                      str(not_fitting_bus_lookup_keys))
 
     missing_bus_indices = sorted(set(net.bus.index) - set(bus_lookup.keys()))
+    if not allow_duplicate_index:
+        duplicate_indices = set(missing_bus_indices) & set(bus_lookup.values())
+        if len(duplicate_indices):
+            raise ValueError("These bus indices are already used and not being updated. Thus they cannot be used as new index: " +
+                        str(duplicate_indices))
+        duplicate_indices = [v for v, c in Counter(bus_lookup.values()).items() if c > 1]
+        if len(duplicate_indices):
+            raise ValueError("Duplicate values for new indices not allowed: " + str(duplicate_indices))
+
     if len(missing_bus_indices):
         bus_lookup.update({b: b for b in missing_bus_indices})
 
