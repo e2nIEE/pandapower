@@ -725,13 +725,15 @@ def simple_plot(
         respect_switches = False
 
     # create generic coordinates if no geodata is available
-    if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (
-            net.line.geo.isna().any() and net.bus.geo.isna().any()):
+    if ('geo' not in net.line.columns or 'geo' not in net.bus.columns or
+        (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (
+        net.line.geo.isna().any() and net.bus.geo.isna().any())
+    ):
         logger.warning(
-            "No or insufficient geodata available --> Creating artificial coordinates."
-            " This may take some time"
+            "No or insufficient geodata available --> Creating artificial coordinates. This may take some time"
         )
-        create_generic_coordinates(net, respect_switches=respect_switches, library=library)
+        buses = net.bus.index.tolist() if "geo" not in net.bus else net.bus.index[net.bus.geo.isna()].tolist()
+        create_generic_coordinates(net, respect_switches=respect_switches, library=library, buses=buses)
 
     if scale_size:
         # scale all symbol sizes relative to the mean distance between buses
