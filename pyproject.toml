@@ -92,7 +92,8 @@ typing = [
     "types-networkx~=3.4",
     "types-tqdm~=4.67",
     "scipy-stubs~=1.15",
-    "pandera[mypy]~=0.29.0"
+    "pandera[mypy]~=0.29.0",
+    "matplotlib~=3.10"
 ]
 
 all = ["pandapower[plotting,performance,fileio,converter,pgm,control]"]

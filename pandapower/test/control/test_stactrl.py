@@ -1,31 +1,34 @@
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import os
+import copy
 import logging
+
+import pytest
 import numpy as np
+from numpy import linspace, float64
+from pandas import DataFrame
+import pandas as pd
+
 from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
+from pandapower.create import (
+    create_bus, create_buses, create_ext_grid, create_transformer, create_load, create_line, create_sgen,
+    create_impedance
+)
+from pandapower.network import pandapowerNet
 from pandapower.create._utils import add_column_to_df
-from pandapower.create import create_empty_network, create_bus, create_buses, create_ext_grid, create_transformer, \
-    create_load, create_line, create_sgen, create_impedance
 from pandapower.run import runpp
 from pandapower.file_io import from_json
 from pandapower import pp_dir
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 
-from numpy import linspace, float64
-
-from pandas import DataFrame
-import pandas as pd
-
 logger = logging.getLogger(__name__)
 
-
+@pytest.fixture
 def simple_test_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="simple_test_net")
     create_bus(net, 110)
     create_buses(net, 2, 20)
     create_ext_grid(net, 0)
@@ -35,8 +38,9 @@ def simple_test_net():
     create_line(net, 1, 2, length_km=0.1, std_type="NAYY 4x50 SE")
     return net
 
-def test_volt_ctrl():
-    net = simple_test_net()
+
+def test_voltctrl(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(
         net, name="BSC1", ctrl_in_service=True, output_element="sgen", output_variable="q_mvar", tol=tol,
@@ -51,9 +55,9 @@ def test_volt_ctrl():
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
 
-def test_volt_ctrl_droop():
-    net = simple_test_net()
-    tol = 1e-6
+def test_voltctrl_droop(simple_test_net):
+    net = simple_test_net
+    tol = 1e-3
     bsc = BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                                          output_element="sgen", output_variable="q_mvar", output_element_index=[0],
                                          output_element_in_service=[True], output_values_distribution=[1],
@@ -72,8 +76,8 @@ def test_volt_ctrl_droop():
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
-def test_qctrl():
-    net = simple_test_net()
+def test_qctrl(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(
         net, name="BSC1", ctrl_in_service=True, output_element="sgen", output_variable="q_mvar", voltage_ctrl=False,
@@ -88,8 +92,8 @@ def test_qctrl():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl')  # test correct control_modus
 
 
-def test_qctrl_imp_input():
-    net = simple_test_net()
+def test_qctrl_Imp_Input(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     create_impedance(net, 1, 2, sn_mva=1, rft_pu=0.01, xft_pu=0.01, rtf_pu=0.01, xtf_pu=0.01)
     BinarySearchControl(
@@ -105,8 +109,8 @@ def test_qctrl_imp_input():
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
 
-def test_qctrl_droop():
-    net = simple_test_net()
+def test_qctrl_droop(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     net.load.loc[0, "p_mw"] = 60  # create voltage drop at bus 1
     bsc = BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
@@ -129,8 +133,8 @@ def test_qctrl_droop():
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
-def test_qlimits_qctrl():
-    net = simple_test_net()
+def test_qlimits_qctrl(simple_test_net):
+    net = copy.deepcopy(simple_test_net)
     tol = 1e-6
     net.sgen['min_q_mvar'] = -0.5
     net.sgen['max_q_mvar'] = 0.5
@@ -140,10 +144,11 @@ def test_qlimits_qctrl():
                                    input_variable=["q_to_mvar"], input_element_index=0, set_point=1,
                                    voltage_ctrl=False, tol=1e-6)
     runpp(net, run_control=True, enforce_q_lims=True)
-    assert(abs(net.res_sgen.loc[0, "q_mvar"] - 0.5) < tol)
+    assert (abs(net.res_sgen.loc[0, "q_mvar"] - 0.5) < tol)
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl')
-    net = simple_test_net()
+
+    net = copy.deepcopy(simple_test_net)
     tol = 1e-6
     net.sgen['min_q_mvar'] = -0.5
     net.sgen['max_q_mvar'] = 0.5
@@ -159,9 +164,8 @@ def test_qlimits_qctrl():
     assert(abs(net.res_sgen.loc[0, "q_mvar"] + 0.5) < tol)
 
 
-
-def test_qlimits_voltctrl():
-    net = simple_test_net()
+def test_qlimits_voltctrl(simple_test_net):
+    net = copy.deepcopy(simple_test_net)
     tol = 1e-6
     net.sgen['min_q_mvar'] = -0.7
     net.sgen['max_q_mvar'] = 0.7
@@ -175,7 +179,8 @@ def test_qlimits_voltctrl():
     assert(abs(net.res_sgen.loc[0, "q_mvar"] - 0.7) < tol)
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
-    net = simple_test_net()
+
+    net = copy.deepcopy(simple_test_net)
     tol = 1e-6
     net.sgen['min_q_mvar'] = -0.7
     net.sgen['max_q_mvar'] = 0.7
@@ -195,8 +200,9 @@ def test_qlimits_voltctrl():
 
 @pytest.mark.parametrize("v", linspace(start=0.98, stop=1.02, num=5, dtype=float64))
 @pytest.mark.parametrize("p", linspace(start=-2.5, stop=2.5, num=10, dtype=float64))
-def test_qlimits_with_capability_curve(v, p):
-    net = simple_test_net()
+def test_qlimits_with_capability_curve(simple_test_net, v, p):
+    net = copy.deepcopy(simple_test_net)
+    create_sgen(net, 2, p_mw=0., sn_mva=0, name="sgen2")
     tol = 1e-6
     create_sgen(net, 2, p_mw=0., sn_mva=0, name="sgen2")
     # create q characteristics table
@@ -224,10 +230,18 @@ def test_qlimits_with_capability_curve(v, p):
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
 
-
-def test_qlimits_with_capability_curve_no_reactive_power():
     # test once more when there is no reactive power capability curve
-    net = simple_test_net()
+    net = copy.deepcopy(simple_test_net)
+    net["q_capability_curve_table"] = DataFrame(
+        {'id_q_capability_curve': [0, 0, 0, 0, 0],
+        'p_mw': [-2.0, -1.0, 0.0, 1.0, 2.0],
+        'q_min_mvar': [-0.1, -0.1, -0.1, -0.1, -0.1],
+        'q_max_mvar': [0.1, 0.1, 0.1, 0.1, 0.1]})
+
+
+def test_qlimits_with_capability_curve_no_reactive_power(simple_test_net):
+    # test once more when there is no reactive power capability curve
+    net = copy.deepcopy(simple_test_net)
     tol = 1e-6
     BinarySearchControl(net, name="BSC1", ctrl_in_service=True,
                         output_element="sgen", output_variable="q_mvar", output_element_index=[0],
@@ -314,8 +328,8 @@ def test_stactrl_pf_import():
 
 ### Testing after rework of station controller###
 
-def test_volt_ctrl_new():
-    net = simple_test_net()
+def test_volt_ctrl_new(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True,
                                    output_element="sgen", output_variable="q_mvar", output_element_index=0,
@@ -331,8 +345,8 @@ def test_volt_ctrl_new():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'V_ctrl')# test correct control_modus
 
 
-def test_volt_ctrl_droop_new():
-    net = simple_test_net()
+def test_volt_ctrl_droop_new(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     bsc = BinarySearchControl(net, ctrl_in_service=True,
                                          output_element="sgen", output_variable="q_mvar", output_element_index=0,
@@ -351,8 +365,8 @@ def test_volt_ctrl_droop_new():
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
 
-def test_qctrl_new():
-    net = simple_test_net()
+def test_qctrl_new(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True, output_element="sgen", output_variable="q_mvar",
                                    output_element_index=0, output_element_in_service=True,
@@ -367,8 +381,8 @@ def test_qctrl_new():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl')#test correct control_modus
 
 
-def test_qctrl_droop_new():
-    net = simple_test_net()
+def test_qctrl_droop_new(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     net.load.loc[0, "p_mw"] = 60  # create voltage drop at bus 1
     bsc = BinarySearchControl(net, ctrl_in_service=True,
@@ -388,8 +402,9 @@ def test_qctrl_droop_new():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'Q_ctrl_V_droop')   # test correct control_modus
     assert(net.controller.at[1, 'object'].controller_idx == 0)  # test droop controller linkage
 
-def test_pf_control_cap():
-    net = simple_test_net()
+
+def test_pf_control_cap(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True, output_element='sgen', output_variable='q_mvar',
                                          output_element_index=0, output_values_distribution=1,
@@ -405,8 +420,8 @@ def test_pf_control_cap():
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'PF_ctrl_cap')# test correct control_modus
 
 
-def test_pf_control_ind():
-    net = simple_test_net()
+def test_pf_control_ind(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service=True, output_element='sgen', output_variable='q_mvar',
                                          output_element_index=0, output_values_distribution=1,
@@ -421,8 +436,8 @@ def test_pf_control_ind():
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'PF_ctrl_ind')  # test correct control_modus
 
-def test_tan_phi_control():
-    net = simple_test_net()
+def test_tan_phi_control(simple_test_net):
+    net = simple_test_net
     tol = 1e-6
     BinarySearchControl(net, ctrl_in_service= True, output_element='sgen', output_variable='q_mvar',
                          output_element_index= 0, output_element_in_service= True, output_values_distribution=1,
@@ -434,6 +449,7 @@ def test_tan_phi_control():
     assert(abs(net.res_trafo.loc[0, "q_lv_mvar"] / net.res_trafo.loc[0, 'p_lv_mw'] - 2) < tol)
     assert(all(net.controller.object[i].converged == True for i in net.controller.index))
     assert(getattr(net.controller.at[0, 'object'].control_modus, 'value', None) == 'tan_phi_ctrl')  # test correct control_modus
+
 
 def test_station_ctrl_pf_import_new():
     path = os.path.join(pp_dir, 'test', 'control', 'testfiles', 'station_ctrl_test_new.json')

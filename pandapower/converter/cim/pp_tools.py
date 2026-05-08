@@ -8,7 +8,7 @@ from typing import Union, Dict, List
 
 import pandas as pd
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.create import create_bus, create_ext_grid, create_lines
 from pandapower.network_structure import get_structure_dict
 from pandapower.std_types import create_std_type

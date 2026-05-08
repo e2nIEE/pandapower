@@ -6,13 +6,13 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_ext_grid, create_transformer, \
-    create_switch
+from pandapower.create import create_bus, create_line, create_ext_grid, create_transformer, create_switch
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 def ring_network():
-    net = create_empty_network(sn_mva=2.)
+    net = pandapowerNet(name="ring_network", sn_mva=2.)
     b0 = create_bus(net, 220)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)

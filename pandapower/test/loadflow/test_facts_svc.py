@@ -4,9 +4,10 @@ import numpy as np
 import pytest
 from pandas.testing import assert_frame_equal
 
-from pandapower.create import create_buses, create_svc, create_empty_network, create_line_from_parameters, \
-    create_load, create_shunt, create_ext_grid, create_loads
-
+from pandapower.create import (
+    create_buses, create_svc, create_line_from_parameters, create_load, create_shunt, create_ext_grid, create_loads
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
@@ -63,7 +64,7 @@ def test_svc(vm_set_pu):
 
 @pytest.mark.parametrize("vm_set_pu", [0.96, 1., 1.04])
 def test_2_svcs(vm_set_pu):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_2_svcs")
     create_buses(net, 3, 110)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)

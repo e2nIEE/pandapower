@@ -12,7 +12,7 @@ import pandas as pd
 from numpy import nan
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import BusType, Int

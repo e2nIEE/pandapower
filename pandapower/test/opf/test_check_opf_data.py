@@ -3,7 +3,6 @@ from numpy import nan
 
 from pandapower.create import (
     create_bus,
-    create_empty_network,
     create_buses,
     create_transformer,
     create_line,
@@ -13,6 +12,7 @@ from pandapower.create import (
     create_gen,
     create_sgen,
 )
+from pandapower.network import pandapowerNet
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 
 import logging
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def _opf_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="_opf_net")
     create_bus(net, 20, min_vm_pu=0.85, max_vm_pu=1.15)
     create_buses(net, 3, 0.4, min_vm_pu=0.85, max_vm_pu=1.15)
     create_transformer(net, 0, 1, "0.25 MVA 20/0.4 kV")

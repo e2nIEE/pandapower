@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -16,13 +14,12 @@ from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
-    ADict,
-    pandapowerNet,
     get_free_id,
     _preserve_dtypes,
     ensure_iterability,
     empty_defaults_per_dtype,
 )
+from pandapower.network import pandapowerNet, ADict
 from pandapower.pp_types import Int
 from pandapower.network_structure import get_structure_dict, get_column_info
 
@@ -268,7 +265,7 @@ def _set_value_if_not_nan(
         default_val: default value to be set for this column (if not passed, attempt to take from pandera)
 
     See Also:
-        _add_to_entries_if_not_nan
+        :func:`_add_to_entries_if_not_nan`
     """
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]

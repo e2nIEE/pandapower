@@ -8,7 +8,7 @@ import copy
 import pytest
 import numpy as np
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.create import create_ext_grid, create_switch
 from pandapower.toolbox.grid_modification import drop_trafos, change_std_type
 from pandapower.networks import example_multivoltage, example_simple

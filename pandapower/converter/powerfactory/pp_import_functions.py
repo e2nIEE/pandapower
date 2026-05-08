@@ -4,32 +4,36 @@ import numbers
 import re
 from itertools import combinations
 from typing import Literal, Optional, Union
+import logging
 
 import geojson
 import networkx as nx
 import numpy as np
 from pandas import DataFrame, Series, concat, isna
 
-from pandapower.auxiliary import ADict, get_free_id
-from pandapower.control import ContinuousTapControl, DiscreteTapControl, _create_trafo_characteristics, \
-    BinarySearchControl, DroopControl, VDroopControl_local
-
-from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_load, create_switch, \
-    create_shunt, create_line, create_line_from_parameters, create_line_dc, create_sgen, create_gen, create_ext_grid, \
-    create_asymmetric_sgen, create_line_dc_from_parameters, create_asymmetric_load, create_transformer, \
-    create_transformer_from_parameters, create_transformer3w_from_parameters, create_impedance, create_xward, \
-    create_ward, create_series_reactor_as_impedance, create_vsc as _create_vsc
+from pandapower.auxiliary import get_free_id
+from pandapower.control import (
+    ContinuousTapControl, DiscreteTapControl, BinarySearchControl, DroopControl, VDroopControl_local
+)
+from pandapower.create import (
+    create_bus, create_bus_dc, create_load, create_switch, create_shunt, create_line,
+    create_line_from_parameters, create_line_dc, create_sgen, create_gen, create_ext_grid, create_asymmetric_sgen,
+    create_line_dc_from_parameters, create_asymmetric_load, create_transformer, create_transformer_from_parameters,
+    create_transformer3w_from_parameters, create_impedance, create_xward, create_ward,
+    create_series_reactor_as_impedance, create_vsc as _create_vsc
+)
+from pandapower.network import ADict, pandapowerNet
 from pandapower.results import reset_results
 from pandapower.run import set_user_pf_options
-from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
-    load_std_type
+from pandapower.std_types import (
+    add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, load_std_type
+)
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
-from pandapower.topology import create_nxgraph, calc_distance_to_bus
-from pandapower.control.util.auxiliary import create_q_capability_characteristics_object, \
-    get_min_max_q_mvar_from_characteristics_object
+from pandapower.topology import create_nxgraph
+from pandapower.control.util.auxiliary import (
+    create_q_capability_characteristics_object, get_min_max_q_mvar_from_characteristics_object
+)
 from pandapower.control.util.characteristic import SplineCharacteristic
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +48,7 @@ grf_map = {}
 
 def ga(element, attr):
     return element.GetAttribute(attr)
+
 
 def from_pf(
         dict_net,
@@ -74,7 +79,7 @@ def from_pf(
     logger.debug('collecting grid')
     grid_name = dict_net['ElmNet'].loc_name
     base_sn_mva = dict_net['global_parameters']['base_sn_mva']
-    net = create_empty_network(grid_name, sn_mva=base_sn_mva)
+    net = pandapowerNet(name=grid_name, sn_mva=base_sn_mva)
 
     reset_results(net, mode="pf_3ph")
     if max_iter is not None:

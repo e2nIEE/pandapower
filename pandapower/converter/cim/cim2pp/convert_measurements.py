@@ -7,7 +7,7 @@ import time
 from typing import Dict
 import pandas as pd
 import numpy as np
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from .. import cim_tools
 
 

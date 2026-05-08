@@ -11,7 +11,7 @@ from typing import Iterable, Sequence
 import numpy as np
 from numpy import nan, any as np_any
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.pp_types import Int, SwitchElementType, SwitchType
 from pandapower.create._utils import (
     _check_element,
