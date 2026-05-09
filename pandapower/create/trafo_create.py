@@ -252,18 +252,28 @@ def create_transformers(
 
     std_params = load_std_type(net, std_type, "trafo")
 
-    create_transformers_required_parameters = ("sn_mva", "vn_lv_kv", "vn_hv_kv", "vkr_percent", "vk_percent", "pfe_kw", "i0_percent")
-    missing = [p for p in create_transformers_required_parameters if p not in std_params]
-    if missing:
-        raise ValueError(f"std_type is missing a required value. Required values: {', '.join(create_transformers_required_parameters)}")
-    params = {**std_params, **kwargs}
+    required_params = ("sn_mva", "vn_lv_kv", "vn_hv_kv", "vk_percent", "vkr_percent", "pfe_kw")
 
-    if tap_changer_type is not None:
-        params["tap_changer_type"] = tap_changer_type
+    if not all(param in std_params for param in required_params):
+        raise ValueError(f"std_type is missing a required value. Required values: {', '.join(required_params)}")
+    
+    params_from_std_type = (
+        "i0_percent", "vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", 
+        "si0_hv_partial", "vector_group", "shift_degree", "tap_side", "tap_neutral", 
+        "tap_min", "tap_max", "tap_step_degree", "tap_step_percent", "trafo_characteristic_table",
+        *required_params
+    )
+    
+    params = {param: std_params[param] for param in params_from_std_type if param in std_params}
+
+    if tap_changer_type is None and "tap_changer_type" in std_params:
+        tap_changer_type = std_params["tap_changer_type"]
+        
+    params.update(kwargs)
 
     return create_transformers_from_parameters(
         net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
-        max_loading_percent=max_loading_percent, parallel=parallel, df=df,
+        max_loading_percent=max_loading_percent, parallel=parallel, df=df, tap_changer_type=tap_changer_type,
         tap_dependency_table=tap_dependency_table, id_characteristic_table=id_characteristic_table,
         pt_percent=pt_percent, oltc=oltc, xn_ohm=xn_ohm, tap2_pos=tap2_pos, std_type=std_type,
         **params
