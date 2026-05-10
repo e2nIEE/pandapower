@@ -1,19 +1,16 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 import numpy as np
 import pandas as pd
 from numpy import complex128
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals
-from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BS, BUS_TYPE, BUS_I
+from pandapower.pypower.idx_bus import VM, VA, PD, QD, LAM_P, LAM_Q, BASE_KV, NONE, BUS_TYPE, BUS_I
 from pandapower.pypower.idx_bus_dc import DC_VM, DC_BUS_TYPE, DC_NONE, DC_PD, DC_BUS_I
 
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
-from pandapower.pypower.idx_ssc import SSC_X_CONTROL_VM, SSC_X_CONTROL_VA, SSC_Q, SSC_INTERNAL_BUS
+from pandapower.pypower.idx_ssc import SSC_Q, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
 from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, VSC_INTERNAL_BUS
 
@@ -24,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 def _set_buses_out_of_service(ppc):
     disco = np.nonzero(ppc["bus"][:, BUS_TYPE] == NONE)[BUS_I]
+    #ppc["bus"][disco, 2:] = np.nan
     ppc["bus"][disco, VM] = np.nan
     ppc["bus"][disco, VA] = np.nan
     ppc["bus"][disco, PD] = 0
@@ -140,51 +138,52 @@ def _get_bus_results_3ph(net, bus_pq):
 
 
 def write_voltage_dependend_load_results(net, p, q, b):
-    l = net["load"]
+    load_df = net["load"]
+
+    if load_df.empty:
+        return p, q, b
+
     _is_elements = net["_is_elements"]
 
-    if len(l) > 0:
-        load_is = _is_elements["load"]
-        scaling = l["scaling"].values
-        bus_lookup = net["_pd2ppc_lookups"]["bus"]
-        lidx = bus_lookup[l["bus"].values]
+   # load_is = [1 if x else np.nan for x in _is_elements["load"]]
+    load_is = _is_elements["load"]
+    scaling = load_df["scaling"].values
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    lidx = bus_lookup[load_df["bus"].values]
 
-        voltage_depend_loads = net["_options"]["voltage_depend_loads"]
+    cz_p = load_df["const_z_p_percent"].values / 100.
+    ci_p = load_df["const_i_p_percent"].values / 100.
+    cp = 1. - (cz_p + ci_p)
 
-        cz_p = l["const_z_p_percent"].values / 100.
-        ci_p = l["const_i_p_percent"].values / 100.
-        cp = 1. - (cz_p + ci_p)
+    # constant power
+    pl = load_df["p_mw"].values * scaling * load_is * cp
+    net["res_load"]["p_mw"] = pl
+    p = np.hstack([p, pl])
 
-        # constant power
-        pl = l["p_mw"].values * scaling * load_is * cp
-        net["res_load"]["p_mw"] = pl
-        p = np.hstack([p, pl])
+    cz_q = load_df["const_z_q_percent"].values / 100.
+    ci_q = load_df["const_i_q_percent"].values / 100.
+    cq = 1. - (cz_q + ci_q)
 
-        cz_q = l["const_z_q_percent"].values / 100.
-        ci_q = l["const_i_q_percent"].values / 100.
-        cq = 1. - (cz_q + ci_q)
+    ql = load_df["q_mvar"].values * scaling * load_is * cq
+    net["res_load"]["q_mvar"] = ql
+    q = np.hstack([q, ql])
 
-        ql = l["q_mvar"].values * scaling * load_is * cq
-        net["res_load"]["q_mvar"] = ql
-        q = np.hstack([q, ql])
+    b = np.hstack([b, load_df["bus"].values])
 
-        b = np.hstack([b, l["bus"].values])
+    # constant impedance and constant current
+    vm_l = net["_ppc"]["bus"][lidx, 7]
+    volt_depend_p = ci_p * vm_l + cz_p * vm_l ** 2
+    pl = load_df["p_mw"].values * scaling * load_is * volt_depend_p
+    net["res_load"]["p_mw"] += pl
+    p = np.hstack([p, pl])
 
-        if voltage_depend_loads:
-            # constant impedance and constant current
-            vm_l = net["_ppc"]["bus"][lidx, 7]
-            volt_depend_p = ci_p * vm_l + cz_p * vm_l ** 2
-            pl = l["p_mw"].values * scaling * load_is * volt_depend_p
-            net["res_load"]["p_mw"] += pl
-            p = np.hstack([p, pl])
+    volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
+    ql = load_df["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
+    net["res_load"]["q_mvar"] += ql
+    q = np.hstack([q, ql])
 
-            volt_depend_q = ci_q * vm_l + cz_q * vm_l ** 2
-            ql = l["q_mvar"].values * scaling * load_is * volt_depend_q #* volt_depend
-            net["res_load"]["q_mvar"] += ql
-            q = np.hstack([q, ql])
-
-            b = np.hstack([b, l["bus"].values])
-        return p, q, b
+    b = np.hstack([b, load_df["bus"].values])
+    return p, q, b
 
 
 def write_pq_results_to_element(net, ppc, element, suffix=None):
@@ -427,7 +426,7 @@ def write_pq_results_to_element_3ph(net, element):
 def get_p_q_b(net, element, suffix=None):
     ac = net["_options"]["ac"]
     res_ = "res_" + element
-    if suffix != None:
+    if suffix is not None:
         res_ += "_%s" % suffix
 
     # bus values are needed for stacking
@@ -439,7 +438,7 @@ def get_p_q_b(net, element, suffix=None):
 
 def get_p_q_b_3ph(net, element):
     ac = net["_options"]["ac"]
-    res_ = "res_" + element+"_3ph"
+    res_ = f"res_{element}_3ph"
 
     # bus values are needed for stacking
     b = net[element]["bus"].values
