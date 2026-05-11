@@ -178,7 +178,7 @@ def test_runpp_init_auxiliary_buses():
 
 def test_result_iter(result_test_networks):
     try:
-        runpp_with_consistency_checks(result_test_networks, enforce_q_lims=True, voltage_depend_loads=False) # FIXME: test_oos_bus_with_is_element requires volateg_depend_loads False, this should be addressed.
+        runpp_with_consistency_checks(result_test_networks, enforce_q_lims=True)
     except (AssertionError):
         raise UserWarning(f"Consistency Error after adding {result_test_networks.last_added_case}")
     except(LoadflowNotConverged):
@@ -337,17 +337,16 @@ def test_two_open_switches():
 
 def test_oos_bus():
     net = pandapowerNet(name="test_oos_bus")
-    # FIXME voltage_depend_loads=False should be removed?
     add_test_oos_bus_with_is_element(net)
-    assert runpp_with_consistency_checks(net, voltage_depend_loads=False)
+    assert runpp_with_consistency_checks(net)
 
     #    test for pq-node result
     create_shunt(net, 6, q_mvar=0.8)
-    assert runpp_with_consistency_checks(net, voltage_depend_loads=False)
+    assert runpp_with_consistency_checks(net)
 
     #   1test for pv-node result
     create_gen(net, 4, p_mw=0.5)
-    assert runpp_with_consistency_checks(net, voltage_depend_loads=False)
+    assert runpp_with_consistency_checks(net)
 
 
 def get_isolated(net):
@@ -591,9 +590,8 @@ def test_pypower_algorithms_iter():
     for alg in alg_to_test:
         for net in result_test_network_generator(skip_test_impedance=True):
             try:
-                # FIXME: remove voltage_depend_loads?
-                runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg, calculate_voltage_angles="auto", voltage_depend_loads=False)
-                runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg, calculate_voltage_angles="auto", voltage_depend_loads=False)
+                runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg, calculate_voltage_angles="auto")
+                runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg, calculate_voltage_angles="auto")
             except (AssertionError):
                 raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
             except(LoadflowNotConverged):
