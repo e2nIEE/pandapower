@@ -42,14 +42,9 @@ class TestMotorRequiredFields:
                 itertools.product(["bus"], positiv_ints_plus_zero),
                 itertools.product(["pn_mech_mw"], positiv_floats_plus_zero),
                 itertools.product(["cos_phi"], [*ratio_valid, *zero_float]),
-                itertools.product(["cos_phi_n"], [*ratio_valid, *zero_float]),
                 itertools.product(["efficiency_percent"], [*percent_valid, *positiv_floats_plus_zero]),
-                itertools.product(["efficiency_n_percent"], [*percent_valid, *positiv_floats_plus_zero]),
                 itertools.product(["loading_percent"], [*percent_valid, *positiv_floats_plus_zero]),
                 itertools.product(["scaling"], positiv_floats_plus_zero),
-                itertools.product(["lrc_pu"], positiv_floats_plus_zero),
-                itertools.product(["rx"], positiv_floats_plus_zero),
-                itertools.product(["vn_kv"], positiv_floats_plus_zero),
                 itertools.product(["in_service"], bools),
             )
         ),
@@ -65,14 +60,9 @@ class TestMotorRequiredFields:
             bus=0,
             pn_mech_mw=1.0,
             cos_phi=0.9,
-            cos_phi_n=0.8,
             efficiency_percent=90.0,
-            efficiency_n_percent=92.0,
             loading_percent=50.0,
             scaling=1.0,
-            lrc_pu=6.0,
-            rx=0.1,
-            vn_kv=0.4,
             in_service=True,
             name="M1",
         )
@@ -109,14 +99,9 @@ class TestMotorRequiredFields:
             bus=0,
             pn_mech_mw=1.0,
             cos_phi=0.9,
-            cos_phi_n=0.8,
             efficiency_percent=90.0,
-            efficiency_n_percent=92.0,
             loading_percent=50.0,
             scaling=1.0,
-            lrc_pu=6.0,
-            rx=0.1,
-            vn_kv=0.4,
             in_service=True,
             name="M1",
         )
@@ -159,6 +144,20 @@ class TestMotorOptionalFields:
         net.motor["name"] = pd.Series([pd.NA, "M2"], dtype="string")
         validate_network(net)
 
+
+
+    @pytest.mark.parametrize(
+        "parameter,valid_value",
+        list(
+            itertools.chain(
+                itertools.product(["name"], [pd.NA, *strings]),
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+            )
+        ),
+    )
     def test_all_optional_fields_valid(self):
         """Test: all optional fields can be set to valid values"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
@@ -169,14 +168,39 @@ class TestMotorOptionalFields:
             bus=b0,
             pn_mech_mw=1.0,
             cos_phi=0.9,
-            cos_phi_n=0.8,
             efficiency_percent=90.0,
-            efficiency_n_percent=92.0,
-            loading_percent=50.0,
+            loading_percent=60.0,
             scaling=1.0,
-            lrc_pu=6.0,
-            rx=0.1,
-            vn_kv=0.4,
+            in_service=True,
+            name="M1",
+        )
+        net.motor[parameter] = pd.Series([valid_value], dtype="string")
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "parameter,invalid_value",
+        list(itertools.chain(
+            itertools.product(["name"], [float(np.nan), *not_strings_list]),
+            itertools.product(["origin_id"], [float(np.nan), *not_strings_list]),
+            itertools.product(["origin_class"], [float(np.nan), *not_strings_list]),
+            itertools.product(["terminal"], [float(np.nan), *not_strings_list]),
+            itertools.product(["description"], [float(np.nan), *not_strings_list]),
+        )
+        ),
+    )
+    def test_invalid_optional_values(self, parameter, invalid_value):
+        """Test: invalid optional values are rejected"""
+        net = pandapowerNet(name="test_invalid_optional_values")
+        b0 = create_bus(net, 0.4)
+
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=1.0,
+            cos_phi=0.9,
+            efficiency_percent=90.0,
+            loading_percent=60.0,
+            scaling=1.0,
             in_service=True,
             name="M1",
             origin_id="id1",
@@ -269,7 +293,6 @@ class TestMotorScGroupFields:
             rx=0.1,
             vn_kv=0.4,
             in_service=True,
-            name=None,
         )
         validate_network(net)
 
@@ -281,18 +304,12 @@ class TestMotorScGroupFields:
         create_motor(
             net,
             bus=b0,
-            pn_mech_mw=2.0,
-            cos_phi=0.8,
-            cos_phi_n=0.7,
-            efficiency_percent=85.0,
-            efficiency_n_percent=88.0,
-            loading_percent=40.0,
-            scaling=1.2,
-            lrc_pu=4.0,
-            rx=0.15,
-            vn_kv=0.4,
-            in_service=False,
-            name="M2",
+            pn_mech_mw=1.0,
+            cos_phi=0.9,
+            efficiency_percent=90.0,
+            loading_percent=50.0,
+            scaling=1.0,
+            in_service=True,
         )
 
         # Explicitly set all sc columns to NaN
@@ -335,7 +352,6 @@ class TestMotorScGroupFields:
             rx=0.1,
             vn_kv=0.4,
             in_service=True,
-            name="M1",
         )
 
         net.motor[parameter] = valid_value
@@ -371,9 +387,27 @@ class TestMotorScGroupFields:
             rx=0.1,
             vn_kv=0.4,
             in_service=True,
-            name="ok",
         )
+
         net.motor[parameter] = invalid_value
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_sc_group_partial_invalid(self):
+        """Test: sc group must be complete - only cos_phi_n set is invalid"""
+        net = pandapowerNet(name="test_sc_group_partial_invalid")
+        b0 = create_bus(net, 0.4)
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=1.0,
+            cos_phi=0.9,
+            efficiency_percent=90.0,
+            loading_percent=50.0,
+            scaling=1.0,
+            in_service=True,
+        )
+        net.motor["cos_phi_n"] = 0.8
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
@@ -437,6 +471,57 @@ class TestMotorScGroupFields:
             lrc_pu=6.0,
             rx=0.1,
             vn_kv=0.4,
+            in_service=True,
+        )
+
+        # Row 2: sc group all NaN
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=2.0,
+            cos_phi=0.85,
+            efficiency_percent=88.0,
+            loading_percent=60.0,
+            scaling=1.0,
+            in_service=False,
+        )
+
+        # Row 3: sc group complete again
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=1.5,
+            cos_phi=0.88,
+            cos_phi_n=0.85,
+            efficiency_percent=91.0,
+            efficiency_n_percent=93.0,
+            loading_percent=55.0,
+            scaling=0.9,
+            lrc_pu=5.5,
+            rx=0.15,
+            vn_kv=0.38,
+            in_service=True,
+        )
+
+        validate_network(net)
+
+
+class TestMotorForeignKey:
+    """Tests for foreign key constraints"""
+
+    def test_invalid_bus_index(self):
+        """Test: bus FK must reference an existing bus index"""
+        net = pandapowerNet(name="test_invalid_bus_index")
+        b0 = create_bus(net, 0.4)
+
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=1.0,
+            cos_phi=0.9,
+            efficiency_percent=90.0,
+            loading_percent=50.0,
+            scaling=1.0,
             in_service=True,
         )
 
