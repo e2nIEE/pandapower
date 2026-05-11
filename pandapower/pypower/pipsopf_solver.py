@@ -11,19 +11,19 @@
 """Solves AC optimal power flow using PIPS.
 """
 
-from numpy import flatnonzero as find, ones, zeros, inf, pi, exp, conj, r_, int64
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, RATE_A, PF, QF, PT, QT, MU_SF, MU_ST
-from pandapower.pypower.idx_bus import BUS_TYPE, REF, VM, VA, MU_VMAX, MU_VMIN, LAM_P, LAM_Q
-from pandapower.pypower.idx_cost import MODEL, PW_LINEAR, NCOST
-from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, VG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
+from numpy import conj, exp, inf, int64, ones, pi, r_, zeros
+from numpy import flatnonzero as find
+
+from pandapower.pypower.idx_brch import F_BUS, MU_SF, MU_ST, PF, PT, QF, QT, RATE_A, T_BUS
+from pandapower.pypower.idx_bus import BUS_TYPE, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF, VA, VM
+from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR
+from pandapower.pypower.idx_gen import GEN_BUS, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PG, QG, VG
 from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pypower.opf_consfcn import opf_consfcn
 from pandapower.pypower.opf_costfcn import opf_costfcn
-
-from pandapower.pypower.util import sub2ind
-
 from pandapower.pypower.opf_hessfcn import opf_hessfcn
 from pandapower.pypower.pips import pips
+from pandapower.pypower.util import sub2ind
 
 
 def pipsopf_solver(om, ppopt, out_opt=None):
@@ -115,7 +115,7 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
 
     ## try to select an interior initial point if init is not available from a previous powerflow
-    if init != "pf":
+    if init not in ("pf", "results"):
         ll, uu = xmin.copy(), xmax.copy()
         ll[xmin == -inf] = -1e10   ## replace Inf with numerical proxies
         uu[xmax ==  inf] =  1e10

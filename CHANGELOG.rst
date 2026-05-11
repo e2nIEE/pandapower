@@ -3,11 +3,28 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] differing behavior for :code:`in_service=False` depending on `voltage_depend_loads` has been fixed. Out of Service elements for res_bus now always contain `nan` as result.
+- [FIXED] `DiscreteTapControl` to work with `negative tap_step_percent`.
+- [CHANGED] updated the contributing file and documentation
+- [ADDED] `allow_duplicate_index` parameter to `reindex_buses` with default to `false`.
+- [ADDED] `add_basic_std_types` parameter to `from_excel`
+- [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
+- [ADDED] added more functions to diagnostic
+- [ADDED] check to check if vkr_percent values are reasonable (see issue #786).
 - [FIXED] cim2pp shift_lv_degree was translated from wrong entry
 - [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
 - [FIXED] incompatible network versions (i.e. networks with newer format versions than the currently installed pandapower version) are identified in convert_format and raise an error
 - [ADDED] LTDS support
+- [FIXED] ucte2pp: voltage setpoints from gens connected to the same busbar are now averaged
+- [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
+- [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
+- [FIXED] ucte2pp: prevent nan values for impedances and transformers for B/G/P_fe/i0
 - [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
+- [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
+- [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
+- [ADDED] plotting: highlighting feature and hovering functionality to :code:`simple_plot()`
+- [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
+- [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
 
 [3.4.0] - 2026-02-09
 -------------------------------
@@ -803,7 +820,7 @@ Change Log
 
 [1.6.0] - 2018-09-18
 ----------------------
-- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
+- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (https://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
 - [ADDED] OPF data (controllable, max_loading, costs, min_p_kw, ...) in Power System Test Cases
 - [ADDED] case_ieee30, case5, case_illinois200
 - [FIXED] 1 additional Trafo in case39, vn_kv change in case118, sgen indices in polynomial_cost in case 1888rte, case2848rte

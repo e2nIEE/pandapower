@@ -174,12 +174,16 @@ def from_pickle(filename, convert=True, drop_invalid_geodata=False, ignore_versi
     return net
 
 
-def from_excel(filename, convert=True, drop_invalid_geodata=False, ignore_version_conflicts=False):
+def from_excel(filename, convert=True, add_basic_std_types=True,
+               drop_invalid_geodata=False, ignore_version_conflicts=False):
     """
     Load a pandapower network from an Excel file
 
     :param str filename: The absolute or relative path to the input file.
     :param bool convert: If True, converts the format of the net loaded from Excel from
+            the older version of pandapower to the newer version format, default True
+    :param bool add_basic_std_types: If True, Adds missing standard-types from pandapower
+            standard type library, default True.
         the older version of pandapower to the newer version format, default True
     :param drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
         instead of raising an error, default True
@@ -205,19 +209,19 @@ def from_excel(filename, convert=True, drop_invalid_geodata=False, ignore_versio
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:
-        net = from_dict_of_dfs(xls)
+        net = from_dict_of_dfs(xls, add_basic_std_types=add_basic_std_types)
     except:
-        net = _from_excel_old(xls)
+        net = _from_excel_old(xls, add_basic_std_types=add_basic_std_types)
     if convert:
         convert_format(net, drop_invalid_geodata=drop_invalid_geodata,
                        donot_open_newer=not ignore_version_conflicts)
     return net
 
 
-def _from_excel_old(xls):
+def _from_excel_old(xls, add_basic_std_types=True):
     par = xls["parameters"]["parameter"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
-    net = create_empty_network(name=name, f_hz=par.at["f_hz"])
+    net = create_empty_network(name=name, f_hz=par.at["f_hz"], add_stdtypes=add_basic_std_types)
     net.update(par)
     for item, table in xls.items():
         if item == "parameters":
