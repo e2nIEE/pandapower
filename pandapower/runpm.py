@@ -1,20 +1,24 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-# Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
+from typing import Literal
 
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.pandamodels.from_pm import read_ots_results, read_tnep_results
+from pandapower.network import pandapowerNet
 from pandapower.opf.pm_storage import add_storage_opf_settings
 from pandapower.opf.run_pandamodels import _runpm
 
 
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+          trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+          check_connectivity=True,
           correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
           pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
           delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
-          pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):  # pragma: no cover
+          pdm_dev_mode=False, init_vm_pu: Literal["flat", "results"] | float = "flat",
+          init_va_degree: Literal["dc", "flat", "results"] | float = "flat",
+          **kwargs):  # pragma: no cover
     """
     Runs  optimal power flow from PowerModels.jl via PandaModels.jl
 
@@ -91,10 +95,12 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
 
 
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                 trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+                 check_connectivity=True,
                  correct_pm_network_data=True, silence=True, pm_model="DCPPowerModel", pm_solver="ipopt",
                  pm_time_limits=None, pm_log_level=0, delete_buffer_file=True, pm_file_path = None,
-                 pm_tol=1e-8, pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):
+                 pm_tol=1e-8, pdm_dev_mode=False, init_vm_pu: Literal["flat", "results"] | float = "flat",
+                 init_va_degree: Literal["dc", "flat", "results"] | float = "flat", **kwargs):
     """
     Runs linearized optimal power flow from PowerModels.jl via PandaModels.jl
     """
@@ -113,10 +119,13 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                 trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+                 check_connectivity=True,
                  pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                  pm_time_limits=None, pm_log_level=0, pm_file_path=None, delete_buffer_file=True,
-                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):
+                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False,
+                 init_vm_pu: Literal["flat", "results"] | float = "flat",
+                 init_va_degree: Literal["dc", "flat", "results"] | float = "flat", **kwargs):
     """
     Runs non-linear optimal power flow from PowerModels.jl via PandaModels.jl
     """
@@ -136,7 +145,8 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
-               trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+               trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+               check_connectivity=True,
                pm_model="ACPPowerModel", pm_solver="juniper", correct_pm_network_data=True, silence=True,
                pm_nl_solver="ipopt", pm_mip_solver="highs", pm_time_limits=None, pm_log_level=0,
                delete_buffer_file=True, pm_file_path=None, opf_flow_lim="S", pm_tol=1e-8,
@@ -170,7 +180,8 @@ def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_a
 
 
 def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
-              trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+              trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+              check_connectivity=True,
               pm_model="DCPPowerModel", pm_solver="juniper", pm_nl_solver="ipopt",
               pm_mip_solver="highs", correct_pm_network_data=True, silence=True, pm_time_limits=None,
               pm_log_level=0, delete_buffer_file=True, pm_file_path=None, opf_flow_lim="S", pm_tol=1e-8,
@@ -197,14 +208,32 @@ def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_an
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
     read_ots_results(net)
 
-def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angles=True,
-                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
-                      n_timesteps=24, time_elapsed=1., correct_pm_network_data=True, silence=True,
-                      pm_solver="juniper", pm_mip_solver="highs", pm_nl_solver="ipopt",
-                      pm_model="ACPPowerModel", pm_time_limits=None, pm_log_level=0,
-                      opf_flow_lim="S", charge_efficiency=1., discharge_efficiency=1.,
-                      standby_loss=1e-8, p_loss=1e-8, q_loss=1e-8, pm_tol=1e-4, pdm_dev_mode=False,
-                      delete_buffer_file=True, pm_file_path = None, **kwargs):
+
+def runpm_storage_opf(
+        net: pandapowerNet,
+        from_time_step,
+        to_time_step,
+        calculate_voltage_angles: bool = True,
+        trafo_model: Literal["t", "pi"] = "t",
+        delta=1e-8,
+        trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+        check_connectivity: bool = True,
+        time_elapsed=1.,
+        correct_pm_network_data: bool = True,
+        silence: bool = True,
+        pm_solver: str = "juniper",
+        pm_mip_solver: str = "highs",
+        pm_nl_solver: str = "ipopt",
+        pm_model: str = "ACPPowerModel",
+        pm_time_limits=None,
+        pm_log_level=0,
+        opf_flow_lim: str = "S",
+        pm_tol=1e-4,
+        pdm_dev_mode: bool = False,
+        delete_buffer_file: bool = True,
+        pm_file_path=None,
+        **kwargs
+):
     """
     Runs a non-linear power system optimization with storages and time series using PandaModels.jl.
     """
@@ -232,7 +261,8 @@ def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angle
 
 
 def runpm_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+                check_connectivity=True,
                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                 pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
@@ -254,7 +284,9 @@ def runpm_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_multi_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                      trafo_model: Literal["t", "pi"] = "t", delta=1e-8,
+                      trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+                      check_connectivity=True,
                       pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                       pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
                       opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
@@ -282,7 +314,8 @@ def runpm_multi_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True
 
 
 def runpm_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+                check_connectivity=True,
                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                 pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
@@ -304,7 +337,9 @@ def runpm_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_multi_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                      trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                      trafo_model: Literal["t", "pi"] = "t", delta=1e-8,
+                      trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+                      check_connectivity=True,
                       pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                       pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
                       opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
@@ -332,7 +367,8 @@ def runpm_multi_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True
 
 
 def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+                check_connectivity=True,
                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                 pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
@@ -359,7 +395,8 @@ def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+                  trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+                  check_connectivity=True,
                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                 pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
@@ -386,7 +423,8 @@ def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
 
 def runpm_pf(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
-             trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
+             trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+             check_connectivity=True,
              correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
              pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
              delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,

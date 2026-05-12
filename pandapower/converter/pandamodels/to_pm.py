@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -135,8 +133,12 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_step=None, 
-                            **kwargs):
+def convert_to_pm_structure(
+        net,
+        from_time_step=None,
+        to_time_step=None,
+        **kwargs
+):
     if net["_options"]["voltage_depend_loads"] and not (
             np.allclose(net.load.const_z_p_percent.values, 0) and
             np.allclose(net.load.const_i_p_percent.values, 0) and
