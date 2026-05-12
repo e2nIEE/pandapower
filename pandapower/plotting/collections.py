@@ -1161,7 +1161,10 @@ def _create_gen_or_sgen_collection(
                 f'unique_angles was not passed to create_{attribute}_collection, but draw_by_type was set to True'
             )
         if patch_type is None:
-            patch_type = df.loc[indices, "type"].to_list()
+            if "type" in df:
+                patch_type = df.loc[indices, "type"].to_list()
+            else:
+                patch_type = ["none"] * len(indices)
             angles = [unique_angles[b][attribute][t if pd.notna(t) else "none"] for b, t in zip(buses, patch_type)]
         else:
             angles = [unique_angles[b][attribute][patch_type] for b in buses]
