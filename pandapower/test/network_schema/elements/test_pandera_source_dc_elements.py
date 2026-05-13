@@ -50,9 +50,9 @@ class TestSourceDcRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus_dc"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["vm_pu"], not_floats_list),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus_dc"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["vm_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -66,18 +66,6 @@ class TestSourceDcRequiredFields:
         net.source_dc[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
-
-    @pytest.mark.parametrize("parameter", ["vm_pu", "in_service"])
-    def test_required_fields_nan_invalid(self, parameter):
-        """NaN in required columns is invalid"""
-        net = create_empty_network()
-        b0 = create_bus_dc(net, 0.4)
-        create_source_dc(net, bus_dc=b0, vm_pu=1.0, in_service=True)
-
-        net.source_dc[parameter] = float(np.nan)
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
 
 class TestSourceDcOptionalFields:
     """Tests for optional source_dc fields"""
@@ -129,8 +117,8 @@ class TestSourceDcOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], not_strings_list),
-                itertools.product(["type"], not_strings_list),
+                itertools.product(["name"], [float(np.nan), *not_strings_list]),
+                itertools.product(["type"], [float(np.nan), *not_strings_list]),
             )
         ),
     )
@@ -157,6 +145,19 @@ class TestSourceDcForeignKey:
         net.source_dc["bus_dc"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus_dc FK works with non-sequential bus_dc indices"""
+        net = create_empty_network()
+        create_bus_dc(net, 0.4, index=10)
+        create_bus_dc(net, 0.4, index=42)
+        create_bus_dc(net, 0.4, index=100)
+
+        create_source_dc(net, bus_dc=10, vm_pu=1.0, in_service=True)
+        create_source_dc(net, bus_dc=42, vm_pu=0.98, in_service=True)
+        create_source_dc(net, bus_dc=100, vm_pu=1.02, in_service=False)
+
+        validate_network(net)
 
 
 class TestSourceDcResults:
