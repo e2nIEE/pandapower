@@ -289,7 +289,7 @@ class TestShuntOptionalFields:
             p_mw=0.0,
             in_service=True,
             vn_kv=0.4,
-            step=3.0,
+            step=3,
         )
         net.shunt["max_step"] = pd.Series([3], dtype="Int64")
 
