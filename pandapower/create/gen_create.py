@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Sequence
 
-from numpy import nan, bool_
+from numpy import nan, bool_,isnan
 import numpy.typing as npt
 
 from pandapower.auxiliary import pandapowerNet
@@ -121,7 +121,10 @@ def create_gen(
         >>> create_gen(net, 1, p_mw=120, vm_pu=1.02)
     """
     _check_element(net, bus)
-
+    if isnan(min_vm_pu):
+        min_vm_pu = net.bus.at[bus, "min_vm_pu"]
+    if isnan(max_vm_pu):
+        max_vm_pu = net.bus.at[bus, "max_vm_pu"]
     index = _get_index_with_check(net, "gen", index, name="generator")
 
     entries = {
@@ -277,7 +280,10 @@ def create_gens(
     _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
-
+    if isinstance(min_vm_pu, float) and isnan(min_vm_pu):
+        min_vm_pu = net.bus.loc[buses, "min_vm_pu"].values
+    if isinstance(max_vm_pu, float) and isnan(max_vm_pu):
+        max_vm_pu = net.bus.loc[buses, "max_vm_pu"].values
     entries = {
         "bus": buses,
         "p_mw": p_mw,
