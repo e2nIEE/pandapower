@@ -121,9 +121,9 @@ def create_gen(
         >>> create_gen(net, 1, p_mw=120, vm_pu=1.02)
     """
     _check_element(net, bus)
-    if isnan(min_vm_pu):
+    if isnan(min_vm_pu) and "min_vm_pu" in net.bus.columns:
         min_vm_pu = net.bus.at[bus, "min_vm_pu"]
-    if isnan(max_vm_pu):
+    if isnan(max_vm_pu) and "max_vm_pu" in net.bus.columns:
         max_vm_pu = net.bus.at[bus, "max_vm_pu"]
     index = _get_index_with_check(net, "gen", index, name="generator")
 
@@ -280,9 +280,9 @@ def create_gens(
     _check_multiple_elements(net, buses)
 
     index = _get_multiple_index_with_check(net, "gen", index, len(buses))
-    if isinstance(min_vm_pu, float) and isnan(min_vm_pu):
+    if isinstance(min_vm_pu, float) and isnan(min_vm_pu) and "min_vm_pu" in net.bus.columns:
         min_vm_pu = net.bus.loc[buses, "min_vm_pu"].values
-    if isinstance(max_vm_pu, float) and isnan(max_vm_pu):
+    if isinstance(max_vm_pu, float) and isnan(max_vm_pu) and "max_vm_pu" in net.bus.columns:
         max_vm_pu = net.bus.loc[buses, "max_vm_pu"].values
     entries = {
         "bus": buses,
