@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
-import copy
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import copy
 import numbers
 import warnings
-from collections.abc import MutableMapping, Iterable, Collection
+from collections.abc import Iterable, Collection
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as version_str
 from typing import (
