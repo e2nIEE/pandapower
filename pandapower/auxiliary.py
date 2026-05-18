@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import copy
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -14,7 +14,7 @@ from typing import (
     Type,
     TypeVar,
     overload,
-    Final,
+    Final, Callable,
 )
 
 import numpy as np
@@ -313,6 +313,15 @@ def get_free_id(df: pd.DataFrame) -> np.int64:
     """
     index_values = df.index.get_level_values(0) if isinstance(df.index, pd.MultiIndex) else df.index.values
     return np.int64(0) if len(df) == 0 else index_values.max() + 1
+
+
+def pandapowerRun(func: Callable[[pandapowerNet, ...], None]):
+    def runfunc(net, **kwargs):
+        net_copy = copy.deepcopy(net)
+        func(net_copy, **kwargs)
+        net = net_copy
+
+    return runfunc
 
 
 class ppException(Exception):

@@ -3,12 +3,13 @@
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 
-from pandapower.auxiliary import _add_ppc_options, _add_opf_options
+from pandapower.auxiliary import _add_ppc_options, _add_opf_options, pandapowerRun
 from pandapower.converter.pandamodels.from_pm import read_ots_results, read_tnep_results
 from pandapower.opf.pm_storage import add_storage_opf_settings
 from pandapower.opf.run_pandamodels import _runpm
 
 
+@pandapowerRun
 def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
           trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
           correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
@@ -90,6 +91,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
+@pandapowerRun
 def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  correct_pm_network_data=True, silence=True, pm_model="DCPPowerModel", pm_solver="ipopt",
@@ -112,6 +114,7 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
+@pandapowerRun
 def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  pm_solver="ipopt", correct_pm_network_data=True, silence=True,
@@ -134,7 +137,7 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
-
+@pandapowerRun
 def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
                trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                pm_model="ACPPowerModel", pm_solver="juniper", correct_pm_network_data=True, silence=True,
@@ -169,6 +172,7 @@ def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_a
     read_tnep_results(net)
 
 
+@pandapowerRun
 def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
               trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
               pm_model="DCPPowerModel", pm_solver="juniper", pm_nl_solver="ipopt",
@@ -197,6 +201,8 @@ def runpm_ots(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_an
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
     read_ots_results(net)
 
+
+@pandapowerRun
 def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       n_timesteps=24, time_elapsed=1., correct_pm_network_data=True, silence=True,
@@ -230,7 +236,7 @@ def runpm_storage_opf(net, from_time_step, to_time_step, calculate_voltage_angle
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
-
+@pandapowerRun
 def runpm_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
@@ -253,6 +259,7 @@ def runpm_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
+@pandapowerRun
 def runpm_multi_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
@@ -281,6 +288,7 @@ def runpm_multi_vstab(net, pp_to_pm_callback=None, calculate_voltage_angles=True
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
+@pandapowerRun
 def runpm_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
@@ -303,6 +311,7 @@ def runpm_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
+@pandapowerRun
 def runpm_multi_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                       trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                       pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
@@ -331,6 +340,7 @@ def runpm_multi_qflex(net, pp_to_pm_callback=None, calculate_voltage_angles=True
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
+@pandapowerRun
 def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
@@ -358,6 +368,7 @@ def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
+@pandapowerRun
 def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                 trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                 pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
@@ -385,6 +396,7 @@ def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode)
 
 
+@pandapowerRun
 def runpm_pf(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
              trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
              correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",

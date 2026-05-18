@@ -1,14 +1,18 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import inspect
 
-from pandapower.auxiliary import _check_bus_index_and_print_warning_if_high, \
-    _check_gen_index_and_print_warning_if_high, _init_runpp_options, _init_rundcopp_options, \
-    _init_rundcpp_options, _init_runopp_options, _internal_stored
+from pandapower.auxiliary import (
+    _check_bus_index_and_print_warning_if_high,
+    _check_gen_index_and_print_warning_if_high,
+    _init_runpp_options,
+    _init_rundcopp_options,
+    _init_rundcpp_options,
+    _init_runopp_options,
+    _internal_stored,
+    pandapowerRun
+)
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _powerflow, _recycled_powerflow
 from pandapower.optimal_powerflow import _optimal_powerflow
@@ -65,6 +69,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         net.user_pf_options.update(additional_kwargs)
 
 
+@pandapowerRun
 def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_p_lims=False, enforce_q_lims=False, check_connectivity=True,
@@ -242,6 +247,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         _powerflow(net, **kwargs)
 
 
+@pandapowerRun
 def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8, symmetric=True, validate_input=False):
     """
     Runs powerflow using power-grid-model library
@@ -330,6 +336,7 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
         net[table] = converted_output_data[table]
 
 
+@pandapowerRun
 def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_connectivity=True,
             switch_rx_ratio=2, trafo3w_losses="hv", **kwargs):
     """
@@ -388,6 +395,7 @@ def rundcpp(net, trafo_model="t", trafo_loading="current", recycle=None, check_c
     _powerflow(net, **kwargs)
 
 
+@pandapowerRun
 def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity=True,
            suppress_warnings=True, switch_rx_ratio=2, delta=1e-10, init="flat", numba=True,
            trafo3w_losses="hv", consider_line_temperature=False, **kwargs):
@@ -478,6 +486,7 @@ def runopp(net, verbose=False, calculate_voltage_angles=True, check_connectivity
     _optimal_powerflow(net, verbose, suppress_warnings, **kwargs)
 
 
+@pandapowerRun
 def rundcopp(net, verbose=False, check_connectivity=True, suppress_warnings=True,
              switch_rx_ratio=0.5, delta=1e-10, trafo3w_losses="hv", **kwargs):
     """
