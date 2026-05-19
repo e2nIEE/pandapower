@@ -1,3 +1,5 @@
+# test_pandera_tcsc_elements.py
+
 import itertools
 import numpy as np
 import pandas as pd
@@ -35,7 +37,6 @@ invalid_high_float_range = [x for x in all_floats if x > 180]
 class TestTcscRequiredFields:
     """Tests for required TCSC fields"""
 
-    # david fragen wegen chain
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
@@ -75,14 +76,14 @@ class TestTcscRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["from_bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["to_bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["x_l_ohm"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["x_cvar_ohm"], [*positiv_floats, *not_floats_list]),
-                itertools.product(["set_p_to_mw"], not_floats_list),
-                itertools.product(["thyristor_firing_angle_degree"], not_float_range),
-                itertools.product(["controllable"], not_boolean_list),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["from_bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["to_bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["x_l_ohm"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["x_cvar_ohm"], [float(np.nan), pd.NA, *positiv_floats, *not_floats_list]),
+                itertools.product(["set_p_to_mw"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["thyristor_firing_angle_degree"], [float(np.nan), pd.NA, *not_float_range, *not_floats_list]),
+                itertools.product(["controllable"], [float(np.nan), pd.NA, *not_boolean_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -138,6 +139,7 @@ class TestTcscOptionalFields:
         b0 = create_bus(net, 0.4)  # index 0
         b1 = create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)  # ensure 42 exists for FK-positive tests
+        # Row 1: name set, angles NaN
         create_tcsc(
             net,
             from_bus=b0,
@@ -148,8 +150,9 @@ class TestTcscOptionalFields:
             thyristor_firing_angle_degree=100.0,
             controllable=True,
             in_service=False,
-            name="bye world",
+            name="tcsc1",
         )
+        # Row 2: min_angle only
         create_tcsc(
             net,
             from_bus=b0,
@@ -162,6 +165,7 @@ class TestTcscOptionalFields:
             in_service=False,
             min_angle_degree=100.0,
         )
+        # Row 3: max_angle only
         create_tcsc(
             net,
             from_bus=b0,
@@ -172,12 +176,13 @@ class TestTcscOptionalFields:
             thyristor_firing_angle_degree=100.0,
             controllable=True,
             in_service=False,
-            max_angle_degree=90,
+            max_angle_degree=150.0,
         )
-        net.tcsc["min_angle_degree"].at[0] = float(np.nan)
-        net.tcsc["max_angle_degree"].at[0] = float(np.nan)
-        net.tcsc["max_angle_degree"].at[1] = float(np.nan)
-        net.tcsc["min_angle_degree"].at[2] = float(np.nan)
+
+        # Set nullable columns with mixed values
+        net.tcsc["name"] = pd.Series(["tcsc1", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.tcsc["min_angle_degree"] = [float(np.nan), 100.0, float(np.nan)]
+        net.tcsc["max_angle_degree"] = [float(np.nan), float(np.nan), 150.0]
 
         validate_network(net)
 
@@ -187,8 +192,8 @@ class TestTcscOptionalFields:
             itertools.chain(
                 # name accepts strings and pd.NA
                 itertools.product(["name"], [pd.NA, *strings]),
-                itertools.product(["min_angle_degree"], [90.0, 100.0, 150.0]),
-                itertools.product(["max_angle_degree"], [180.0, 150.0, 100.0]),
+                itertools.product(["min_angle_degree"], [float(np.nan), 90.0, 100.0, 150.0]),
+                itertools.product(["max_angle_degree"], [float(np.nan), 180.0, 150.0, 100.0]),
             )
         ),
     )
@@ -218,9 +223,9 @@ class TestTcscOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], not_strings_list),
-                itertools.product(["min_angle_degree"], [*invalid_low_float_range, *not_floats_list]),
-                itertools.product(["max_angle_degree"], [*invalid_high_float_range, *not_floats_list]),
+                itertools.product(["name"], [float(np.nan), *not_strings_list]),
+                itertools.product(["min_angle_degree"], [pd.NA, *invalid_low_float_range, *not_floats_list]),
+                itertools.product(["max_angle_degree"], [pd.NA, *invalid_high_float_range, *not_floats_list]),
             )
         ),
     )
@@ -265,6 +270,26 @@ class TestTcscOptionalFields:
         net.tcsc["max_angle_degree"] = 150.0
         validate_network(net)
 
+    def test_min_equal_max_check_passes(self):
+        """Test: min_angle_degree == max_angle_degree passes"""
+        net = pandapowerNet(name="test_min_equal_max_check_passes")
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+        create_tcsc(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=False,
+        )
+        net.tcsc["min_angle_degree"] = 120.0
+        net.tcsc["max_angle_degree"] = 120.0
+        validate_network(net)
+
     def test_min_greater_than_max_fails(self):
         net = pandapowerNet(name="test_min_greater_than_max_fails")
         b0 = create_bus(net, 0.4)  # index 0
@@ -285,6 +310,52 @@ class TestTcscOptionalFields:
         net.tcsc["max_angle_degree"] = 150.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+class TestTcscForeignKey:
+    """Tests for foreign key constraints"""
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FKs work with non-sequential bus indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_tcsc(
+            net,
+            from_bus=10,
+            to_bus=42,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=True,
+        )
+        create_tcsc(
+            net,
+            from_bus=42,
+            to_bus=100,
+            x_l_ohm=0.1,
+            x_cvar_ohm=-0.2,
+            set_p_to_mw=1.0,
+            thyristor_firing_angle_degree=110.0,
+            controllable=False,
+            in_service=False,
+        )
+        create_tcsc(
+            net,
+            from_bus=100,
+            to_bus=10,
+            x_l_ohm=0.2,
+            x_cvar_ohm=-0.3,
+            set_p_to_mw=2.0,
+            thyristor_firing_angle_degree=120.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        validate_network(net)
 
 
 class TestTcscResults:
