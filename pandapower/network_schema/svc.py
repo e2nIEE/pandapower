@@ -49,6 +49,7 @@ svc_schema = pa.DataFrameSchema(
             error="Column 'min_angle_degree' must be <= column 'max_angle_degree'",
         )
     ],
+    name="svc",
     strict=False,
 )
 
@@ -63,5 +64,6 @@ res_svc_schema = pa.DataFrameSchema(
         "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude at svc bus [pu]"),
         "va_degree": pa.Column(float, nullable=True, description="voltage angle at svc bus [degree]"),
     },
+    name="res_svc",
     strict=False,
 )

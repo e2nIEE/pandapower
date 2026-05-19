@@ -152,6 +152,7 @@ _line_dc_columns = {
 line_dc_schema = pa.DataFrameSchema(
     _line_dc_columns,
     checks=create_column_dependency_checks_from_metadata(["tdpf"], _line_dc_columns),
+    name="line_dc",
     strict=False,
 )
 
@@ -171,5 +172,6 @@ res_line_dc_schema = pa.DataFrameSchema(
         "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at to dc bus"),
         "loading_percent": pa.Column(float, nullable=True, description="line loading [%]"),
     },
+    name="res_line_dc",
     strict=False,
 )

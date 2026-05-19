@@ -92,7 +92,7 @@ typing = [
     "types-networkx~=3.4",
     "types-tqdm~=4.67",
     "scipy-stubs~=1.15",
-    "pandera[mypy]~=0.27.0",
+    "pandera[mypy]~=0.29.0",
     "matplotlib~=3.10"
 ]
 

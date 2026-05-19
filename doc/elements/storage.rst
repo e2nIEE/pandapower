@@ -15,22 +15,15 @@ Create Function
 .. autofunction:: pandapower.create.create_storage
 .. autofunction:: pandapower.create.create_storages
 
-Input Parameters
+Table Structure
 =====================
 
 *net.storage*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
 .. csv-table::
-   :file: storage_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
-
-.. |br| raw:: html
-
-   <br />
-
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
+    :file: table_structures/storage.csv
+    :header-rows: 1
+    :delim: ,
 
 
 Electric Model
@@ -39,9 +32,9 @@ Electric Model
 Storages are modelled as PQ-buses in the power flow calculation:
 
 .. image:: storage.png
-	:width: 8em
-	:alt: alternate Text
-	:align: center
+    :width: 8em
+    :alt: alternate Text
+    :align: center
 
 The PQ-Values are calculated from the parameter table values as:
 
@@ -57,14 +50,13 @@ The PQ-Values are calculated from the parameter table values as:
 
     The apparent power value sn_mva, state of charge soc and storage capacity max_e_mwh are provided as additional information for usage in controller or other applications based on pandapower. It is not considered in the power flow!
 
-Result Parameters
+Result Table
 ==========================
 *net.res_storage*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
 .. csv-table::
-   :file: storage_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+    :file: table_structures/res_storage.csv
+    :header-rows: 1
+    :delim: ,
 
 The power values in the net.res_storage table are equivalent to :math:`P_{storage}` and :math:`Q_{storage}`.

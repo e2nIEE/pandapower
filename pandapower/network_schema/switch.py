@@ -40,37 +40,38 @@ switch_schema = pa.DataFrameSchema(
             metadata={"default": 0.0},
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
         ),
         "origin_class": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="origin_class rdfId from CIM",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "description": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="description from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "terminal_bus": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="terminal_to from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "terminal_element": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="terminal_from from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
     },
+    name="switch",
     strict=False,
 )
 
@@ -85,5 +86,6 @@ res_switch_schema = pa.DataFrameSchema(
             float, nullable=True, description="loading of switch in percent of maximum current [%]"
         ),
     },
+    name="res_switch",
     strict=False,
 )

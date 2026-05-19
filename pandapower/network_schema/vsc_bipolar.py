@@ -42,6 +42,7 @@ vsc_bipolar_schema = pa.DataFrameSchema(
             bool, description="True for in_service or False for out of service", metadata={"default": True}
         ),
     },
+    name="vsc_bipolar",
     strict=False,
 )
 
@@ -60,5 +61,6 @@ res_vsc_bipolar_schema = pa.DataFrameSchema(
         "vm_dc_pu_p": pa.Column(float, nullable=True, description=""),
         "vm_dc_pu_m": pa.Column(float, nullable=True, description=""),
     },
+    name="res_vsc_bipolar",
     strict=False,
 )

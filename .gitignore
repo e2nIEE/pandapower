@@ -11,6 +11,7 @@ pandapower.egg-info/
 doc/api/
 doc/.build/*
 doc/_build/*
+doc/elements/table_structures/
 *.ipynb_checkpoints
 .cache
 *__pycache__*

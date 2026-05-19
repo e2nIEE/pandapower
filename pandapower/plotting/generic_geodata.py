@@ -241,10 +241,10 @@ def create_generic_coordinates(
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):
-        net[geodata_table]["geo"][buses] = pd.Series(
-            data=map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords)),
-            index=buses,
+        geojson_strings: list[str] = list(
+            map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords))
         )
+        net[geodata_table].loc[buses, "geo"] = pd.Series(data=geojson_strings, index=buses)
     return net
 
 
@@ -287,4 +287,5 @@ def fuse_geodata(net):
                     mean_lon = np.mean([coord[0] for coord in coordinates])
                 else:
                     mean_lon, mean_lat = geo.coordinates
-                net.bus.geo.loc[bus] = geojson.dumps(geojson.Point((mean_lon, mean_lat)))
+                geojson_string: str = geojson.dumps(geojson.Point((mean_lon, mean_lat)))
+                net.bus.at[bus, "geo"] = geojson_string

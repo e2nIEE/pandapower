@@ -78,6 +78,7 @@ class TestMeasurementRequiredFields:
                 itertools.product(["value"], not_floats_list),
                 itertools.product(["std_dev"], not_floats_list),
                 itertools.product(["element"], not_ints_list),
+                itertools.product(["check_existing"], not_boolean_list),
                 itertools.product(["side"], not_strings_list),
             )
         ),
@@ -97,6 +98,7 @@ class TestMeasurementRequiredFields:
                 "std_dev": [0.1],
                 "bus": [0],
                 "element": [0],
+                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -171,6 +173,7 @@ class TestMeasurementOptionalFields:
                 "std_dev": [0.01],
                 "bus": [0],
                 "element": [0],
+                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -196,6 +199,7 @@ class TestMeasurementForeignKey:
                 "std_dev": [0.1],
                 "bus": [b0],
                 "element": [b0],
+                "check_existing": [True],
                 "side": ["hv"],
             }
         )

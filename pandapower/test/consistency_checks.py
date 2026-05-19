@@ -132,6 +132,10 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     bus_q = pd.Series(data=0., index=net.bus.index)
     if "bus_dc" in net and net.bus_dc.shape[0] > 0:
         bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
+        bus_p_dc[~net.bus_dc.in_service] = np.nan
+
+    bus_p[~net.bus.in_service] = np.nan
+    bus_q[~net.bus.in_service] = np.nan
 
     for idx, tab in net.ext_grid.iterrows():
         if tab.in_service:
