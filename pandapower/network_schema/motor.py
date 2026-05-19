@@ -64,29 +64,30 @@ _motor_columns = {
     ),
     "in_service": pa.Column(bool, description="specifies if the motor is in service.", metadata={"default": True}),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "terminal": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="terminal from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "description": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="description from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
 }
 motor_schema = pa.DataFrameSchema(
     _motor_columns,
     checks=create_column_dependency_checks_from_metadata(["sc"], _motor_columns),
+    name="motor",
     strict=False,
 )
 
@@ -96,5 +97,6 @@ res_motor_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, nullable=True, description="resulting active power demand [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="resulting reactive power demand [MVar]"),
     },
+    name="res_motor",
     strict=False,
 )

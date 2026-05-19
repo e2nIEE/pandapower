@@ -34,21 +34,15 @@ Lines can be either created from the standard type library (create_line) or with
 
 .. autofunction:: pandapower.create_line_from_parameters
 
-Input Parameters
+Table Structure
 =============================
 
 *net.line*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-    :file: line_par.csv
-    :delim: ;
-    :widths: 15, 10, 25, 40
-  
-\*necessary for executing a balanced power flow calculation |br|
-\*\*optimal power flow parameter |br|
-\*\*\*short-circuit calculation parameter |br|
-\*\*\*\*necessary for executing a three phase power flow / single phase short circuit
+.. csv-table::
+    :file: table_structures/line.csv
+    :header-rows: 1
+    :delim: ,
 
 .. note::
     Defining a line with length zero leads to a division by zero in the power flow and is therefore not allowed. Lines with a very low impedance might lead to convergence problems in the power flow
@@ -112,16 +106,15 @@ Where the reference voltage :math:`V_{N}` is the nominal voltage at the from bus
     pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.
     If you want to connect different voltage levels, either use a transformer or an impedance element.
     
-Result Parameters
+Result Tables
 ==========================
    
 *net.res_line*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-    :file: line_res.csv
-    :delim: ;
-    :widths: 15, 10, 55
+.. csv-table::
+    :file: table_structures/res_line.csv
+    :header-rows: 1
+    :delim: ,
    
 The power flow results in the net.res_line table are defined as:
 
@@ -143,11 +136,10 @@ The power flow results in the net.res_line table are defined as:
 
 *net.res_line_3ph*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|    
-.. csv-table:: 
-    :file: line_res_3ph.csv
-    :delim: ;
-    :widths: 15, 10, 55
+.. csv-table::
+    :file: table_structures/res_line_3ph.csv
+    :header-rows: 1
+    :delim: ,
    
 The power flow results in the net.res_line_3ph table are defined as:
 
@@ -173,18 +165,16 @@ The power flow results in the net.res_line_3ph table are defined as:
 
 The state estimation results are put into *net.res_line_est* with the same definition as in *net.res_line*.
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-    :file: line_res.csv
-    :delim: ;
-    :widths: 15, 10, 55
+.. csv-table::
+    :file: table_structures/res_line.csv
+    :header-rows: 1
+    :delim: ,
 
 *net.res_line_sc*
 
 The short-circuit (SC) results are put into *net.res_line_sc* with following definitions:
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-    :file: line_res_sc.csv
-    :delim: ;
-    :widths: 15, 10, 55
+.. csv-table::
+    :file: table_structures/res_line_sc.csv
+    :header-rows: 1
+    :delim: ,

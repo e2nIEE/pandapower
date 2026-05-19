@@ -55,6 +55,7 @@ vsc_stacked_schema = pa.DataFrameSchema(
             bool, description="specifies if the vsc_stacked is in service.", metadata={"default": True}
         ),
     },
+    name="vsc_stacked",
     strict=False,
 )
 
@@ -83,4 +84,6 @@ res_vsc_stacked_schema = pa.DataFrameSchema(
             float, nullable=True, description="voltage magnitude at the minus vsc_stacked ac bus [pu]"
         ),
     },
+    name="res_vsc_stacked",
+    strict=False,
 )

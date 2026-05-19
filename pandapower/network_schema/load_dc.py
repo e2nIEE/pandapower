@@ -26,6 +26,7 @@ load_dc_schema = pa.DataFrameSchema(
             description="can be used to group loads, for example network groups / regions",
         ),
     },
+    name="load_dc",
     strict=False,
 )
 
@@ -37,5 +38,6 @@ res_load_dc_schema = pa.DataFrameSchema(
             description="resulting active power demand after scaling and after considering voltage dependence [MW]",
         )
     },
+    name="res_load_dc",
     strict=False,
 )

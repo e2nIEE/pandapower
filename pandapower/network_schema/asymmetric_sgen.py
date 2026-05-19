@@ -80,6 +80,7 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
         ),
         #"current_source": pa.Column(bool, description=""),  # TODO: missing in docu and create function
     },
+    name="asymmetric_sgen",
     strict=False,
 )
 
@@ -107,6 +108,7 @@ res_asymmetric_sgen_schema = pa.DataFrameSchema(
             float, description="resulting reactive power demand after scaling : Phase C [MVar]"
         ),  # TODO: only in docu
     },
+    name="res_asymmetric_sgen",
     strict=False,
 )
 
@@ -120,5 +122,6 @@ res_asymmetric_sgen_3ph_schema = pa.DataFrameSchema(
         "p_c_mw": pa.Column(float, description=""),  # TODO: not in docu
         "q_c_mvar": pa.Column(float, description=""),  # TODO: not in docu
     },
+    name="res_asymmetric_sgen_3ph",
     strict=False,
 )

@@ -53,6 +53,7 @@ vsc_schema = pa.DataFrameSchema(
         "in_service": pa.Column(bool, description="specifies if the VSC is in service.", metadata={"default": True}),
         # "ref_bus": pa.Column(int, pa.Check.ge(0), description=""),  #TODO: implementation currently not finished
     },
+    name="vsc",
     strict=False,
 )
 
@@ -69,5 +70,6 @@ res_vsc_schema = pa.DataFrameSchema(
         "vm_internal_dc_pu": pa.Column(float, nullable=True, description=""),
         "vm_dc_pu": pa.Column(float, nullable=True, description=""),
     },
+    name="res_vsc",
     strict=False,
 )

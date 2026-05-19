@@ -17,7 +17,7 @@ Create Function
 .. autofunction:: pandapower.create.create_load_from_cosphi
 
 
-Input Parameters
+Table Structure
 =====================
 
 *net.load*
@@ -25,9 +25,9 @@ Input Parameters
 .. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
 
 .. csv-table::
-    :file: load_par.csv
-    :delim: ;
-    :widths: 10, 10, 25, 40
+    :file: table_structures/load.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -64,15 +64,13 @@ The load power values are then defines as:
     Q_{load} &= q\_mvar \cdot scaling \cdot (p_{const_q} + z_{const_q} \cdot V^2 + i_{const_q} \cdot V)
 
 
-Result Parameters
+Result Tables
 ==========================    
 *net.res_load*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.45\linewidth}|
 .. csv-table:: 
-   :file: load_res.csv
-   :delim: ;
-   :widths: 10, 10, 45
+    :file: table_structures/res_load.csv
+    :header-rows: 1
+    :delim: ,
    
 The power values in the net.res_load table are equivalent to :math:`P_{load}` and :math:`Q_{load}`.
-

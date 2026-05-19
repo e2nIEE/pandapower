@@ -15,23 +15,16 @@ Create Function
 .. autofunction:: pandapower.create.create_ext_grid
 
 
-Input Parameters
+Table Structure
 =============================
 
 *net.ext_grid*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.15\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-    :file: ext_grid_par.csv
-    :delim: ;
-    :widths: 15, 10, 15, 40
+.. csv-table::
+    :file: table_structures/ext_grid.csv
+    :header-rows: 1
+    :delim: ,
 
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter |br| \*\*\*short-circuit calculation parameter |br| \*\*\*\*Single phase short circuit/Three Phase load flow calculation parameters
-   
 Electric Model
 =================
 ** Balanced Load Flow**
@@ -69,15 +62,14 @@ For zero sequence and negative sequence external grid impedance is calculated:
     \theta &= \mathit{shift}\_degree \cdot \frac{\pi}{180}
    
 
-Result Parameters
+Result Tables
 ==========================    
 *net.res_ext_grid*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: ext_grid_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_ext_grid.csv
+    :header-rows: 1
+    :delim: ,
 
 Active and reactive power feed-in / consumption at the slack node is a result of the power flow:
    
@@ -87,11 +79,10 @@ Active and reactive power feed-in / consumption at the slack node is a result of
 
 *net.res_ext_grid_3ph*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.1\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: ext_grid_res_3ph.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_ext_grid_3ph.csv
+    :header-rows: 1
+    :delim: ,
 
 Active and reactive power feed-in / consumption at the slack node is a result of the power flow:
    

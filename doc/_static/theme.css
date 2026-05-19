@@ -1,0 +1,112 @@
+/* Fraunhofer Corporate Colors */
+:root {
+    /* blues */
+    --fh-1: rgb(212, 230, 244);
+    --fh-2: rgb(136, 188, 226);
+    --fh-3: rgb(31, 130, 192);
+    --fh-4: rgb(0, 90, 148);
+    --fh-5: rgb(0, 52, 107);
+    /* purples */
+    --fh-6: rgb(199, 193, 222);
+    --fh-7: rgb(144, 133, 186);
+    --fh-8: rgb(57, 55, 139);
+    --fh-9: rgb(41, 40, 106);
+    /* reds */
+    --custom-10: rgb(255, 185, 185);
+    --fh-10: rgb(226, 0, 26);
+    --fh-11: rgb(158, 28, 34);
+    --fh-12: rgb(119, 28, 44);
+    /* oranges */
+    --fh-13: rgb(254, 234, 201);
+    --fh-14: rgb(251, 203, 140);
+    --fh-15: rgb(242, 148, 0);
+    --fh-16: rgb(235, 106, 10);
+    /* yellows */
+    --fh-17: rgb(255, 250, 209);
+    --fh-18: rgb(255, 243, 129);
+    --fh-19: rgb(255, 220, 0);
+    --fh-20: rgb(253, 195, 0);
+    /* greens */
+    --fh-21: rgb(238, 239, 177);
+    --fh-22: rgb(209, 221,130);
+    --fh-23: rgb(177, 200, 0);
+    --fh-24: rgb(143, 164, 2);
+    --fh-25: rgb(106, 115, 65);
+    /* teals */
+    --custom-26: rgb(220, 255, 240);
+    --fh-26: rgb(180, 220, 211);
+    --fh-27: rgb(109, 191, 169);
+    --fh-28: rgb(23, 156, 125);
+    /* brows? */
+    --fh-29: rgb(215, 225, 201);
+    --fh-30: rgb(203, 175, 115);
+    --fh-31: rgb(70, 41, 21);
+    --fh-32: rgb(76, 99, 111);
+    /* blues again */
+    --fh-33: rgb(51, 184, 202);
+    --fh-34: rgb(37, 186, 226);
+    --fh-35: rgb(0, 110, 146);
+    /* silver */
+    --fh-36: rgb(199, 202, 204);
+    /* Font */
+    --fh-font: FrutigerLTW02-45Light;
+}
+
+.wy-nav-content {
+    max-width: calc(100vw - 300px);
+}
+
+.wy-side-nav-search {
+    background-color: var(--fh-27) !important;
+}
+
+.sig.py {
+    background-color: var(--custom-26) !important;
+    border-top-color: var(--fh-28) !important;
+}
+
+.admonition {
+    background: var(--custom-26) !important;
+}
+.admonition > .admonition-title {
+    background: var(--fh-28) !important;
+}
+
+.admonition.warning,
+.admonition.attention,
+.admonition.caution,
+.admonition.important {
+    background: var(--fh-13) !important;
+}
+.admonition.warning > .admonition-title,
+.admonition.attention > .admonition-title,
+.admonition.caution > .admonition-title,
+.admonition.important > .admonition-title {
+    background: var(--fh-15) !important;
+}
+
+.admonition.danger,
+.admonition.error {
+    background: var(--custom-10) !important;
+}
+.admonition.danger > .admonition-title,
+.admonition.error > .admonition-title {
+    background: var(--fh-10) !important;
+}
+
+.admonition.hint,
+.admonition.tip {
+    background: var(--fh-21) !important;
+}
+.admonition.hint > .admonition-title,
+.admonition.tip > .admonition-title {
+    background: var(--fh-24) !important;
+}
+
+.highlight {
+    background: var(--fh-17);
+}
+
+.filled {
+    fill: white !important;
+}

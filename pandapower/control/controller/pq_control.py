@@ -1,16 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import pandas as pd
 import numpy as np
 
 from pandapower.control.controller.const_control import ConstControl
-try:
-    from pandaplan.core import pplog
-except:
-    import logging as pplog
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class PQController(ConstControl):

@@ -45,6 +45,7 @@ asymmetric_load_schema = pa.DataFrameSchema(
             str, pa.Check.isin(["wye", "delta"]), description="type of load", metadata={"default": "wye"}
         ),
     },
+    name="asymmetric_load",
     strict=False,
 )
 
@@ -84,6 +85,7 @@ res_asymmetric_load_schema = pa.DataFrameSchema(
             description="resulting Phase C reactive power demand after scaling and after considering voltage dependence [MVar]",
         ),  # TODO: only in docu
     },
+    name="res_asymmetric_load",
     strict=False,
 )
 
@@ -97,5 +99,6 @@ res_asymmetric_load_3ph_schema = pa.DataFrameSchema(
         "p_c_mw": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
         "q_c_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
     },
+    name="res_asymmetric_load_3ph",
     strict=False,
 )

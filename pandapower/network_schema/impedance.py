@@ -111,37 +111,38 @@ impedance_schema = pa.DataFrameSchema(
             bool, description="specifies if the impedance is in service.", metadata={"default": True}
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
         ),
         "origin_class": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="origin_class rdfId from CIM",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "description": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="description from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "terminal_to": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="terminal_to from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "terminal_from": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="terminal_from from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
     },
+    name="impedance",
     strict=False,
 )
 
@@ -163,5 +164,6 @@ res_impedance_schema = pa.DataFrameSchema(
         "i_from_ka": pa.Column(float, nullable=True, description="current at from bus [kA]"),
         "i_to_ka": pa.Column(float, nullable=True, description="current at to bus [kA]"),
     },
+    name="res_impedance",
     strict=False,
 )
