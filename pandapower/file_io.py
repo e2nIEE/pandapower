@@ -386,7 +386,7 @@ def from_json_string(
                     net[key] = json.loads(net[key], cls=PPJSONDecoder)
                 elif not isinstance(net[key], str) or "res_" in key:
                     continue
-                elif 'pandas' in net[key]:
+                elif 'pandas' in net[key] and key in net_dummy:
                     net[key] = net_dummy[key]
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
