@@ -1555,9 +1555,10 @@ def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
         delta_t_degree_celsius = net[element].temperature_degree_celsius.values.astype(np.float64) - 20
 
         if 'alpha' in net[element].columns:
-            alpha = net[element].alpha.values.astype(np.float64)
+            alpha = np.nan_to_num(net[element].alpha.values.astype(np.float64), nan=1.0, copy=True)
         else:
             alpha = 4e-3
+            warnings.warn(f"'alpha' is assumed to {alpha} and required for the calculation of the temperature based resistance.")
 
     r_correction_for_temperature = 1 + alpha * delta_t_degree_celsius
 
