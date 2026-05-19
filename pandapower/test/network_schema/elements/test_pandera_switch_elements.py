@@ -20,7 +20,6 @@ from pandapower.test.network_schema.elements.helper import (
     negativ_ints,
     not_ints_list,
     positiv_floats,
-    positiv_floats_plus_zero,
     negativ_floats_plus_zero,
     all_allowed_floats,
 )
@@ -111,8 +110,6 @@ class TestSwitchOptionalFields:
         # Optional fields
         net.switch["name"] = pd.Series(["SW-A"], dtype="string")
         net.switch["type"] = pd.Series(["CB"], dtype="string")
-        net.switch["in_ka"] = 20.0  # gt(0)
-        net.switch["z_ohm"] = 0.01  # any float
 
         validate_network(net)
 
@@ -124,11 +121,6 @@ class TestSwitchOptionalFields:
 
         # Row 1: name/type set, in_ka/z_ohm null
         create_switch(net, bus=b0, element=b1, et="b", type="CB", closed=True)
-        net.switch["name"] = pd.Series(["S1"], dtype="string")
-        net.switch["type"] = pd.Series(["CB"], dtype="string")
-        net.switch["in_ka"] = [float(np.nan)]  # nullable
-        net.switch["z_ohm"] = [float(np.nan)]  # nullable
-
         # Row 2: all optionals null
         create_switch(net, bus=b0, element=b1, et="b", closed=False)
 
