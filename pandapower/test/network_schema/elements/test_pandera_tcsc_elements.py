@@ -16,11 +16,9 @@ from pandapower.test.network_schema.elements.helper import (
     not_strings_list,
     not_floats_list,
     not_boolean_list,
-    positiv_ints,
     positiv_ints_plus_zero,
     positiv_floats_plus_zero,
     negativ_floats_plus_zero,
-    all_ints,
     negativ_ints,
     not_ints_list,
     negativ_floats,
@@ -190,7 +188,6 @@ class TestTcscOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                # name accepts strings and pd.NA
                 itertools.product(["name"], [pd.NA, *strings]),
                 itertools.product(["min_angle_degree"], [float(np.nan), 90.0, 100.0, 150.0]),
                 itertools.product(["max_angle_degree"], [float(np.nan), 180.0, 150.0, 100.0]),
@@ -273,6 +270,26 @@ class TestTcscOptionalFields:
     def test_min_equal_max_check_passes(self):
         """Test: min_angle_degree == max_angle_degree passes"""
         net = pandapowerNet(name="test_min_equal_max_check_passes")
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+        create_tcsc(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=False,
+        )
+        net.tcsc["min_angle_degree"] = 120.0
+        net.tcsc["max_angle_degree"] = 120.0
+        validate_network(net)
+
+    def test_min_equal_max_check_passes(self):
+        """Test: min_angle_degree == max_angle_degree passes"""
+        net = create_empty_network()
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
         create_tcsc(
