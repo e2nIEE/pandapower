@@ -68,7 +68,7 @@ except ImportError:
     zlib_INSTALLED = False
 
 from pandapower.auxiliary import get_free_id, soft_dependency_error, _preserve_dtypes
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_std_type_structure_dict
 
 from functools import singledispatch

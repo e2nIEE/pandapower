@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.control.controller.const_control import ConstControl
-
 import logging
+
+import pandas as pd
 import numpy as np
+
+from pandapower.control.controller.const_control import ConstControl
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,6 @@ class PQController(ConstControl):
         super().__init__(net, element=element, variable="p_mw", element_index=element_index,
                          in_service=in_service, order=order, level=level, **kwargs)
 
-        has_name_col = "name" in net[self.element]
-        has_type_col = "type" in net[self.element]
         # read attributes from net
         self.element_index = element_index
         self.element = element
@@ -65,8 +63,14 @@ class PQController(ConstControl):
         self.p_mw = net[self.element]["p_mw"][element_index]
         self.q_mvar = net[self.element]["q_mvar"][element_index]
         self.sn_mva = net[self.element]["sn_mva"][element_index]
-        self.element_names = net[self.element]["name"][element_index] if has_name_col else [""]*len(element_index)
-        self.gen_type = net[self.element]["type"][element_index] if has_type_col else [""]*len(element_index)
+        if "name" in net[self.element]:
+            self.element_names = net[self.element]["name"][element_index]
+        else:
+            self.element_names = [f"{self.element}_{i}" for i in self.element_index]
+        if "type" in net[self.element]:
+            self.gen_type = net[self.element]["type"][element_index]
+        else:
+            self.gen_type = [pd.NA] * len(self.element_index)
         self.element_in_service = net[self.element]["in_service"][element_index]
 
         self.sign = 1

@@ -367,7 +367,7 @@ def from_json_string(
             omit_tables=omit_tables,
             omit_modules=omit_modules
         )
-        net_dummy = pandapowerNet(name='')
+        net_dummy = pandapowerNet(name='from_json_string dummy network')
         if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
             raise UserWarning('table selection is only possible for nets above version 2.0.1. '
                               'Convert and save your net first.')

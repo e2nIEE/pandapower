@@ -287,7 +287,8 @@ def _add_nominal_power(net):
 
 
 def _add_missing_tables(net):
-    net_new = pandapowerNet(name='')
+    net_new = pandapowerNet(name='missing_tables_net')
+    net_new.name = ""  # name is set to avoid warnings, then unset here to avoid adding it to any network
     for key in net_new.keys():
         if key.startswith("_empty_res") or key not in net.keys():
             net[key] = net_new[key]

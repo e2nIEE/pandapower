@@ -8,7 +8,7 @@ from pathlib import Path
 import time
 from pandapower.converter.ucte.ucte_converter import UCTE2pandapower
 from pandapower.converter.ucte.ucte_parser import UCTEParser
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.toolbox import get_connected_buses
 
 logger = logging.getLogger('ucte.from_ucte')
