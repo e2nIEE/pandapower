@@ -334,17 +334,6 @@ class pandapowerNet(ADict):
                             "asymmetric_load", "asymmetric_sgen", "source_dc", "switch", "tcsc", "svc", "ssc", "vsc",
                             "vsc_stacked", "vsc_bipolar"
                         ]
-                for element in elements:  # FIXME: is this related to @heckstrahler removing res_ if empty?
-                    res_element = f"res_{element}" if suffix is None else f"res_{element}_{suffix}"
-                    res_empty_element = f"_empty_{f'res_{element}' if suffix == 'est' else res_element}"
-                    if res_empty_element in self:
-                        self[res_element] = self[res_empty_element].copy()
-                    else:
-                        self[res_element] = pd.DataFrame(
-                            columns=pd.Index([], dtype=object), index=pd.Index([], dtype=np.int64)
-                        )
-                if "res_cost" in self.keys():
-                    del self["res_cost"]
             self.user_pf_options: dict = {}
             
 
