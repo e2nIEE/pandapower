@@ -625,8 +625,7 @@ def simple_plot(
         plot_sgens (bool, optional): Draw static generator symbols.
             Default is ``False``.
         orientation (float or None, optional): Base orientation angle in
-            radians for sgen, gen, and load symbols.  ``None`` uses the
-            element-specific default.  Default is ``None``.
+            radians for sgen, gen, and load symbols.  ``None`` uses ``np.pi``.  Default is ``None``.
         load_size (float, optional): Relative load symbol size.
             Default is ``1.0``.
         gen_size (float, optional): Relative gen symbol size.
@@ -723,6 +722,9 @@ def simple_plot(
     # line switches being plotted requires all lines to be visible
     if plot_line_switches:
         respect_switches = False
+
+    if orientation is None:
+        orientation = math.pi
 
     # create generic coordinates if no geodata is available
     if ('geo' not in net.line.columns or 'geo' not in net.bus.columns or
