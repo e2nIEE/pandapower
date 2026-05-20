@@ -499,7 +499,7 @@ class BinarySearchControl(Controller):
         input_values = [] #reactive power q
         p_input_values = [] #active power p for power factor controllers
         counter = 0
-        if self.input_element != 'res_bus':
+        if self.input_element != 'res_bus' and self.input_element != "res_gen":  # and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
             for input_index in self.input_element_index:
                 if self.input_element_in_service[counter]: # input element not in service
                     input_values.append(read_from_net(net, self.input_element, input_index,
