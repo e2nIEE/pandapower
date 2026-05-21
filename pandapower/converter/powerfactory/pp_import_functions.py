@@ -832,7 +832,13 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
         if coords:
             params["geodata"] = coords
         logger.debug('line <%s> has no sections' % params['name'])
-        lid = create_line_normal(net=net, item=item, is_unbalanced=is_unbalanced, ac=ac, **params)
+        # get in_service from overlaying line | line sections can't be in or out of service
+        in_service = not bool(item.outserv)
+        lid = create_line_normal(net=net,
+                                 item=item,
+                                 is_unbalanced=is_unbalanced,
+                                 in_service=in_service,
+                                 ac=ac, **params)
         sid_list = [lid]
         logger.debug('created line <%s> with index <%d>' % (params['name'], lid))
 
@@ -844,8 +850,14 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
             sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
                                             coords=coords, is_unbalanced=is_unbalanced, **params)
         else:
-            lidx = create_line_no_sections(net, item, line_sections, params["bus1"], params["bus2"], coords,
-                                           is_unbalanced, ac)
+            lidx = create_line_no_sections(net,
+                                           item,
+                                           line_sections,
+                                           params["bus1"],
+                                           params["bus2"],
+                                           coords,
+                                           is_unbalanced,
+                                           ac)
             sid_list = [lidx]
         logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
 
@@ -1037,14 +1049,15 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
 
     buses_gen = segment_buses(net, bus1=bus1, bus2=bus2, num_sections=len(item_list),
                               line_name=line_name)
-
+    # line = main_item | item | line_sections doesn't contain outserv!
+    in_service = not bool(line.outserv)
     for item in item_list:
         name = line_name
         section_name = item.loc_name
         bus1 = next(buses_gen)
         bus2 = next(buses_gen)
         sid = create_line_normal(net=net, item=item, bus1=bus1, bus2=bus2, name=name, parallel=parallel,
-                                 is_unbalanced=is_unbalanced, ac=True)
+                                 is_unbalanced=is_unbalanced, ac=True, in_service=in_service)
         sid_list.append(sid)
         net.line.at[sid, "section"] = section_name
         net.res_line.at[sid, "pf_loading"] = line_loading
@@ -1119,15 +1132,30 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
     # alpha_final = [item.alpha / p * w for item, p, w in zip(item_list, parallel, weights)]
     # max_temperature_degree_celsius = min([item.tmax for item in item_list])
     temperature_degree_celsius = max([item.Top for item in item_list])
+    in_service = not bool(main_item.outserv)
 
-    lid = create_line_from_parameters(net=net, from_bus=bus1, to_bus=bus2, length_km=total_len,
-                                      r_ohm_per_km=r_ohm_per_km, x_ohm_per_km=x_ohm_per_km, c_nf_per_km=c_nf_per_km,
-                                      max_i_ka=max_i_ka, name=line_name, type=None, geodata=coords,
-                                      g_us_per_km=g_us_per_km, alpha=alpha, parallel=main_item.nlnum,
+    lid = create_line_from_parameters(net=net,
+                                      from_bus=bus1,
+                                      to_bus=bus2,
+                                      length_km=total_len,
+                                      r_ohm_per_km=r_ohm_per_km,
+                                      x_ohm_per_km=x_ohm_per_km,
+                                      c_nf_per_km=c_nf_per_km,
+                                      max_i_ka=max_i_ka,
+                                      name=line_name,
+                                      type=None,
+                                      geodata=coords,
+                                      in_service=in_service,
+                                      g_us_per_km=g_us_per_km,
+                                      alpha=alpha,
+                                      parallel=main_item.nlnum,
                                       temperature_degree_celsius=temperature_degree_celsius,
-                                      r0_ohm_per_km=r0_ohm_per_km, x0_ohm_per_km=x0_ohm_per_km,
-                                      c0_nf_per_km=c0_nf_per_km, g0_us_per_km=g0_us_per_km,
-                                      endtemp_degree=endtemp_degree)
+                                      r0_ohm_per_km=r0_ohm_per_km,
+                                      x0_ohm_per_km=x0_ohm_per_km,
+                                      c0_nf_per_km=c0_nf_per_km,
+                                      g0_us_per_km=g0_us_per_km,
+                                      endtemp_degree=endtemp_degree
+                                      )
 
     net.line.loc[lid, 'description'] = ' \n '.join(main_item.desc) if len(main_item.desc) > 0 else ''
     if hasattr(main_item, "cimRdfId"):
@@ -1140,14 +1168,14 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
     return lid
 
 
-def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, geodata=None):
+def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, in_service, geodata=None):
     pf_type = item.typ_id
     std_type, type_created = create_line_type(net=net, item=pf_type,
                                               cable_in_air=item.inAir if item.HasAttribute(
                                                   'inAir') else False)
     params = {
         'name': name,
-        'in_service': not bool(item.outserv),
+        'in_service': in_service,
         'length_km': item.dline,
         'df': item.fline,
         'parallel': parallel,
