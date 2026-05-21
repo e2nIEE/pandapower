@@ -40,7 +40,7 @@ class DiscreteTapControl(TrafoController):
         self.vm_lower_pu = vm_lower_pu
         self.vm_upper_pu = vm_upper_pu
 
-        self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
+        self.vm_delta_pu = np.abs(self.tap_step_percent) / 100. * .5 + self.tol
         self.vm_set_pu = kwargs.get("vm_set_pu")
         self.hunting_limit = hunting_limit
         self._hunting_taps = np.array([], dtype=np.float64)
@@ -83,7 +83,7 @@ class DiscreteTapControl(TrafoController):
     def initialize_control(self, net):
         super().initialize_control(net)
         if hasattr(self, 'vm_set_pu') and self.vm_set_pu is not None:
-            self.vm_delta_pu = self.tap_step_percent / 100. * .5 + self.tol
+            self.vm_delta_pu = np.abs(self.tap_step_percent) / 100. * .5 + self.tol
         if hasattr(self.element_index, "__iter__"):
             self._hunting_taps = np.full(shape=len(self.element_index), fill_value=np.nan,
                                          dtype=np.float64)

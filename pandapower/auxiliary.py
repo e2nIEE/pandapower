@@ -1936,7 +1936,7 @@ def SVabc_from_SV012(
 def _add_dcline_gens(net: pandapowerNet) -> None:
     """
     For each HVDC Link create consumption and supply generator
-    
+
     Parameters:
         net: network to add the generators to
 
@@ -1944,7 +1944,7 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
         None
     """
     from pandapower.create import create_gen
-    
+
     for dctab in net.dcline.itertuples():
         p_mw = np.abs(dctab.p_mw)
         p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw  # type: ignore[operator]

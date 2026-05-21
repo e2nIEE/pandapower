@@ -6,6 +6,7 @@ from itertools import combinations
 from typing import Literal, Optional, Union
 
 import geojson
+import json
 import networkx as nx
 import numpy as np
 from pandas import DataFrame, Series, concat, isna
@@ -497,6 +498,32 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
             logger.debug('adding substat %s to descr of bus %s (#%d)' %
                          (substat, params['name'], bid))
             substat_descr = substat.loc_name
+
+            # get geo-coordinates from stations
+            if json.loads(net[table].at[bid, 'geo'])['coordinates'] == [0, 0]:
+
+                if flag_graphics == 'GPS':
+                    x = substat.GetAttribute('e:GPSlon')
+                    y = substat.GetAttribute('e:GPSlat')
+                    logger.warning(
+                        'bus %s has no geodata, geodata of substation %s is used.' % (item,
+                                                                                      substat))
+                    if x == 0 and y == 0:
+                        pass
+                elif flag_graphics == 'graphic objects':
+                    graphic_object = get_graphic_object(substat)
+                    if graphic_object:
+                        x = graphic_object.GetAttribute('rCenterX')
+                        y = graphic_object.GetAttribute('rCenterY')
+                        # add gr coord data
+                    else:
+                        x, y = 0, 0
+                else:
+                    x, y = 0, 0
+
+                geodata = (x, y)
+                net[table].at[
+                    bid, "geo"] = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
         else:
             logger.debug("bus has no substat description")
     else:
@@ -734,7 +761,7 @@ def get_coords_from_item(item):
         c = tuple((x, y) for [y, x] in coords)
     except ValueError:
         try:
-            c = tuple((x, y, z) for [y, x, z] in coords)
+            c = tuple((x, y) for [y, x, z] in coords)
         except ValueError:
             c = []
     return c
@@ -1308,7 +1335,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definit
         bus1, _ = get_connection_nodes(net, item, 1)
     except IndexError:
         logger.error("Cannot add Xnet '%s': not connected" % name)
-        return
+        return None, None
 
     logger.debug('found bus <%d> in net' % bus1)
 
@@ -2203,7 +2230,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 
                 sg = create_sgen(net, **params)
                 element = 'sgen'
-    logger.debug('created sgen at index <%d>' % sg)
+    if sg is not None:
+        logger.debug('created sgen at index <%d>' % sg)
+    else:
+        return
 
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
     add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"},
