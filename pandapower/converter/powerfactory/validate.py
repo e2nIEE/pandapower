@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
-
 import pandas as pd
 import numpy as np
 
 from pandapower.run import runpp
+from pandapower.results import init_element
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.toolbox.grid_modification import replace_zero_branches_with_switches
 
@@ -15,135 +14,102 @@ def _get_pf_results(net, is_unbalanced=False):
     if not net["pf_converged"]:
         raise UserWarning("Load flow didn't converge in PowerFactory, no validation possible!")
 
-    pf_results = None
     if is_unbalanced:
-        pf_results = _get_pf_results_unbalanced(net)
-    else:
-        pf_results = _get_pf_results_balanced(net)
+        return _get_pf_results_unbalanced(net)
 
-    return pf_results
+    return _get_pf_results_balanced(net)
 
 
 def _get_pf_results_balanced(net):
-    pf_switch_status = net.res_switch.pf_closed & \
-               net.res_switch.get("pf_in_service", True) if len(net.switch) > 0 and \
-                                               'res_switch' in net.keys() else pd.Series(dtype=np.float64)
+    pf_switch_status = net.res_switch.pf_closed & net.res_switch.get("pf_in_service", True) if len(
+        net.switch) > 0 and 'res_switch' in net.keys() else pd.Series(dtype=np.float64)
     pf_bus_vm = net.res_bus.pf_vm_pu.replace(0, np.nan)
     pf_bus_va = net.res_bus.pf_va_degree
     pf_bus_dc_vm = net.res_bus_dc.get("pf_vm_pu", pd.Series(name="pf_vm_pu", dtype=np.float64, index=net.bus_dc.index)).replace(0, np.nan)
-    pf_ext_grid_p = net.res_ext_grid.get("pf_p", pd.Series([], dtype=np.float64))
-    pf_ext_grid_q = net.res_ext_grid.get("pf_q", pd.Series([], dtype=np.float64))
-    pf_gen_p = net.res_gen.get("pf_p", pd.Series([], dtype=np.float64))
-    pf_gen_q = net.res_gen.get("pf_q", pd.Series([], dtype=np.float64))
-    pf_ward_p = net.res_ward.get("pf_p", pd.Series([], dtype=np.float64))
-    pf_ward_q = net.res_ward.get("pf_q", pd.Series([], dtype=np.float64))
-    pf_xward_p = net.res_xward.get("pf_p", pd.Series([], dtype=np.float64))
-    pf_xward_q = net.res_xward.get("pf_q", pd.Series([], dtype=np.float64))
-    pf_sgen_p = net.res_sgen.get("pf_p", pd.Series([], dtype=np.float64))
-    pf_sgen_q = net.res_sgen.get("pf_q", pd.Series([], dtype=np.float64))
-    pf_load_p = net.res_load.get("pf_p", pd.Series([], dtype=np.float64))
-    pf_load_q = net.res_load.get("pf_q", pd.Series([], dtype=np.float64))
+
     pf_vsc_p = net.res_vsc.get("pf_p_mw", pd.Series([], dtype=np.float64))
     pf_vsc_q = net.res_vsc.get("pf_q_mvar", pd.Series([], dtype=np.float64))
     pf_vsc_p_dc = net.res_vsc.get("pf_p_dc_mw", pd.Series([], dtype=np.float64))
-    pf_line_loading = net.res_line.get("pf_loading", pd.Series([], dtype=np.float64))
-    pf_line_dc_loading = net.res_line_dc.get("pf_loading", pd.Series([], dtype=np.float64))
-    pf_trafo_loading = net.res_trafo.get("pf_loading", pd.Series([], dtype=np.float64))
-    pf_trafo3w_loading = net.res_trafo3w.get("pf_loading", pd.Series([], dtype=np.float64))
 
     pf_results = {
         "pf_bus_vm": pf_bus_vm, "pf_bus_va": pf_bus_va, "pf_bus_dc_vm": pf_bus_dc_vm,
-        "pf_ext_grid_p": pf_ext_grid_p, "pf_ext_grid_q": pf_ext_grid_q,
-        "pf_gen_p": pf_gen_p, "pf_gen_q": pf_gen_q,
-        "pf_ward_p": pf_ward_p, "pf_ward_q": pf_ward_q,
-        "pf_xward_p": pf_xward_p, "pf_xward_q": pf_xward_q,
-        "pf_sgen_p": pf_sgen_p, "pf_sgen_q": pf_sgen_q,
-        "pf_load_p": pf_load_p, "pf_load_q": pf_load_q,
         "pf_vsc_p": pf_vsc_p, "pf_vsc_q": pf_vsc_q, "pf_vsc_p_dc": pf_vsc_p_dc,
-        "pf_line_loading": pf_line_loading, "pf_line_dc_loading": pf_line_dc_loading,
-        "pf_trafo_loading": pf_trafo_loading, "pf_trafo3w_loading": pf_trafo3w_loading,
         'pf_switch_status': pf_switch_status
     }
+    for element in ["ext_grid", "gen", "ward", "xward", "sgen", "load"]:
+        res_elem = f"res_{element}"
+        if res_elem in net:
+            pf_results[f"pf_{element}_p"] = net[res_elem].get("pf_p", pd.Series([], dtype=np.float64))
+            pf_results[f"pf_{element}_q"] = net[res_elem].get("pf_q", pd.Series([], dtype=np.float64))
+        else:
+            pf_results[f"pf_{element}_p"] = pd.Series([], dtype=np.float64)
+            pf_results[f"pf_{element}_q"] = pd.Series([], dtype=np.float64)
+
+    for element in ["line", "line_dc", "trafo", "trafo3w"]:
+        res_elem = f"res_{element}"
+        if res_elem in net:
+            pf_results[f"pf_{element}_loading"] = net[res_elem].get("pf_loading", pd.Series([], dtype=np.float64))
+        else:
+            pf_results[f"pf_{element}_loading"] = pd.Series([], dtype=np.float64)
     return pf_results
 
 
 def _get_pf_results_unbalanced(net):
-    pf_switch_status = net.res_switch.pf_closed & \
-               net.res_switch.get("pf_in_service", True) if len(net.switch) > 0 and \
-                                               'res_switch' in net.keys() else pd.Series([], dtype=bool)
-    # unbalanced get results
-    pf_bus_vm_a = net.res_bus_3ph.pf_vm_a_pu.replace(0, np.nan)
-    pf_bus_vm_b = net.res_bus_3ph.pf_vm_b_pu.replace(0, np.nan)
-    pf_bus_vm_c = net.res_bus_3ph.pf_vm_c_pu.replace(0, np.nan)
-    pf_bus_va_a = net.res_bus_3ph.pf_va_a_degree.replace(0, np.nan)
-    pf_bus_va_b = net.res_bus_3ph.pf_va_b_degree.replace(0, np.nan)
-    pf_bus_va_c = net.res_bus_3ph.pf_va_c_degree.replace(0, np.nan)
+    pf_results = {}
+    for phase in ["a", "b", "b"]:
+        # unbalanced get results
+        pf_results[f"pf_bus_vm_{phase}"] = net.res_bus_3ph[f"pf_vm_{phase}_pu"].replace(0, np.nan)
+        pf_results[f"pf_bus_va_{phase}"] = net.res_bus_3ph[f"pf_va_{phase}_degree"].replace(0, np.nan)
 
-    pf_ext_grid_p_a = net.res_ext_grid_3ph.pf_p_a
-    pf_ext_grid_p_b = net.res_ext_grid_3ph.pf_p_b
-    pf_ext_grid_p_c = net.res_ext_grid_3ph.pf_p_c
-    pf_ext_grid_q_a = net.res_ext_grid_3ph.pf_q_a
-    pf_ext_grid_q_b = net.res_ext_grid_3ph.pf_q_b
-    pf_ext_grid_q_c = net.res_ext_grid_3ph.pf_q_c
+        for pq in ["p", "q"]:
+            pf_results[f"pf_ext_grid_{pq}_{phase}"] = net.res_ext_grid_3ph[f"pf_{pq}_{phase}"]
+            if len(net.asymmetric_load) > 0:
+                pf_results[f"pf_load_{pq}_{phase}"] = net.res_asymmetric_load_3ph[f"pf_{pq}_{phase}"]
+            else:
+                pf_results[f"pf_load_{pq}_{phase}"] = pd.Series([], dtype=np.float64)
 
-    pf_load_p_a = net.res_asymmetric_load_3ph.pf_p_a if len(net.asymmetric_load) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_p_b = net.res_asymmetric_load_3ph.pf_p_b if len(net.asymmetric_load) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_p_c = net.res_asymmetric_load_3ph.pf_p_c if len(net.asymmetric_load) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_q_a = net.res_asymmetric_load_3ph.pf_q_a if len(net.asymmetric_load) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_q_b = net.res_asymmetric_load_3ph.pf_q_b if len(net.asymmetric_load) > 0 else pd.Series([], dtype=np.float64)
-    pf_load_q_c = net.res_asymmetric_load_3ph.pf_q_c if len(net.asymmetric_load) > 0 else pd.Series([], dtype=np.float64)
+            if len(net.asymmetric_sgen) > 0:
+                pf_results[f"pf_sgen_{pq}_{phase}"] = net.res_asymmetric_sgen_3ph[f"pf_{pq}_{phase}"]
+            else:
+                pf_results[f"pf_sgen_{pq}_{phase}"] = pd.Series([], dtype=np.float64)
 
-    pf_sgen_p_a = net.res_asymmetric_sgen_3ph.pf_p_a if len(net.asymmetric_sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_p_b = net.res_asymmetric_sgen_3ph.pf_p_b if len(net.asymmetric_sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_p_c = net.res_asymmetric_sgen_3ph.pf_p_c if len(net.asymmetric_sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_q_a = net.res_asymmetric_sgen_3ph.pf_q_a if len(net.asymmetric_sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_q_b = net.res_asymmetric_sgen_3ph.pf_q_b if len(net.asymmetric_sgen) > 0 else pd.Series([], dtype=np.float64)
-    pf_sgen_q_c = net.res_asymmetric_sgen_3ph.pf_q_c if len(net.asymmetric_sgen) > 0 else pd.Series([], dtype=np.float64)
+        for dir in ["from", "to"]:
+            suffix = f"i_{phase}_{dir}_ka"
+            if len(net.line) > 0:
+                pf_results[f"pf_line_{suffix}"] = net.res_line_3ph[f"pf_{suffix}"]
+            else:
+                pf_results[f"pf_line_{suffix}"] = pd.Series([], dtype=np.float64)
 
-    pf_line_i_a_from_ka = net.res_line_3ph.pf_i_a_from_ka if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_i_a_to_ka = net.res_line_3ph.pf_i_a_to_ka if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_i_b_from_ka = net.res_line_3ph.pf_i_b_from_ka if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_i_b_to_ka = net.res_line_3ph.pf_i_b_to_ka if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_i_c_from_ka = net.res_line_3ph.pf_i_c_from_ka if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_i_c_to_ka = net.res_line_3ph.pf_i_c_to_ka if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_i_n_from_ka = net.res_line_3ph.pf_i_n_from_ka if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_i_n_to_ka = net.res_line_3ph.pf_i_n_to_ka if len(net.line) > 0 else pd.Series([], dtype=np.float64)
-    pf_line_3ph_loading = net.res_line_3ph.pf_loading_percent if len(net.line) > 0 else pd.Series([], dtype=np.float64)
+        for side in ["hv", "lv"]:
+            suffix = f"i_{phase}_{side}_ka"
+            if len(net.trafo) > 0:
+                pf_results[f"pf_trafo_{suffix}"] = net.res_trafo_3ph[f"pf_{suffix}"]
+            else:
+                pf_results[f"pf_trafo_{suffix}"] = pd.Series([], dtype=np.float64)
 
-    pf_trafo_i_a_hv_ka = net.res_trafo_3ph.pf_i_a_hv_ka if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo_i_a_lv_ka = net.res_trafo_3ph.pf_i_a_lv_ka if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo_i_b_hv_ka = net.res_trafo_3ph.pf_i_b_hv_ka if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo_i_b_lv_ka = net.res_trafo_3ph.pf_i_b_lv_ka if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo_i_c_hv_ka = net.res_trafo_3ph.pf_i_c_hv_ka if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo_i_c_lv_ka = net.res_trafo_3ph.pf_i_c_lv_ka if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-#    pf_trafo_i_n_hv_ka = net.res_trafo_3ph.pf_i_n_hv_ka if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-#    pf_trafo_i_n_lv_ka = net.res_trafo_3ph.pf_i_n_lv_ka if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
-    pf_trafo_3ph_loading = net.res_trafo_3ph.pf_loading_percent if len(net.trafo) > 0 else pd.Series([], dtype=np.float64)
+    if len(net.switch) > 0 and 'res_switch' in net.keys():
+        pf_results["pf_switch_status"] = net.res_switch.pf_closed & net.res_switch.get("pf_in_service", True)
+    else:
+        pf_results["pf_switch_status"] = pd.Series([], dtype=bool)
 
+    if len(net.line) > 0:
+        pf_results["pf_line_i_n_to_ka"] = net.res_line_3ph.pf_i_n_to_ka
+        pf_results["pf_line_i_n_from_ka"] = net.res_line_3ph.pf_i_n_from_ka
+        pf_results["pf_line_3ph_loading"] = net.res_line_3ph.pf_loading_percent
+    else:
+        pf_results["pf_line_i_n_to_ka"] = pd.Series([], dtype=np.float64)
+        pf_results["pf_line_i_n_from_ka"] = pd.Series([], dtype=np.float64)
+        pf_results["pf_line_3ph_loading"] = pd.Series([], dtype=np.float64)
 
-    pf_results = {
-        'pf_switch_status': pf_switch_status,"pf_bus_vm_a": pf_bus_vm_a, "pf_bus_vm_b": pf_bus_vm_b,
-        "pf_bus_vm_c": pf_bus_vm_c, "pf_bus_va_a": pf_bus_va_a, "pf_bus_va_b": pf_bus_va_b,
-        "pf_bus_va_c": pf_bus_va_c,
-        "pf_ext_grid_p_a": pf_ext_grid_p_a, "pf_ext_grid_p_b": pf_ext_grid_p_b,
-        "pf_ext_grid_p_c": pf_ext_grid_p_c, "pf_ext_grid_q_a": pf_ext_grid_q_a,
-        "pf_ext_grid_q_b": pf_ext_grid_q_b, "pf_ext_grid_q_c": pf_ext_grid_q_c,
-        "pf_load_p_a": pf_load_p_a,  "pf_load_p_b": pf_load_p_b,  "pf_load_p_c": pf_load_p_c,
-        "pf_load_q_a": pf_load_q_a, "pf_load_q_b": pf_load_q_b, "pf_load_q_c": pf_load_q_c,
-        "pf_sgen_p_a": pf_sgen_p_a,  "pf_sgen_p_b": pf_sgen_p_b,  "pf_sgen_p_c": pf_sgen_p_c,
-        "pf_sgen_q_a": pf_sgen_q_a, "pf_sgen_q_b": pf_sgen_q_b, "pf_sgen_q_c": pf_sgen_q_c,
-        "pf_i_a_from_ka" : pf_line_i_a_from_ka, "pf_i_a_to_ka" : pf_line_i_a_to_ka,
-        "pf_i_b_from_ka" : pf_line_i_b_from_ka, "pf_i_b_to_ka" : pf_line_i_b_to_ka,
-        "pf_i_c_from_ka" : pf_line_i_c_from_ka, "pf_i_c_to_ka" : pf_line_i_c_to_ka,
-        "pf_i_n_from_ka" : pf_line_i_n_from_ka, "pf_i_n_to_ka" : pf_line_i_n_to_ka,
-        "pf_line_3ph_loading": pf_line_3ph_loading,
-        "pf_i_a_hv_ka" : pf_trafo_i_a_hv_ka, "pf_i_a_lv_ka" : pf_trafo_i_a_lv_ka,
-        "pf_i_b_hv_ka" : pf_trafo_i_b_hv_ka, "pf_i_b_lv_ka" : pf_trafo_i_b_lv_ka,
-        "pf_i_c_hv_ka" : pf_trafo_i_c_hv_ka, "pf_i_c_lv_ka" : pf_trafo_i_c_lv_ka,
-#        "pf_i_n_hv_ka" : pf_trafo_i_n_hv_ka, "pf_i_n_lv_ka" : pf_trafo_i_n_lv_ka,
-        "pf_trafo_3ph_loading": pf_trafo_3ph_loading,
+    if len(net.trafo) > 0:
+        # pf_results["pf_trafo_i_n_hv_ka"] = net.res_trafo_3ph.pf_i_n_hv_ka
+        # pf_results["pf_trafo_i_n_lv_ka"] = net.res_trafo_3ph.pf_i_n_lv_ka
+        pf_results["pf_trafo_3ph_loading"] = net.res_trafo_3ph.pf_loading_percent
+    else:
+        # pf_results["pf_trafo_i_n_hv_ka"] = pd.Series([], dtype=np.float64)
+        # pf_results["pf_trafo_i_n_lv_ka"] = pd.Series([], dtype=np.float64)
+        pf_results["pf_trafo_3ph_loading"] = pd.Series([], dtype=np.float64)
 
-    }
     return pf_results
 
 
@@ -160,79 +126,59 @@ def _set_pf_results_balanced(net, pf_results):
     if 'res_switch' in net.keys():
         net.res_switch['pf_closed'] = pf_results['pf_switch_status']
 
-    net.res_bus["pf_vm_pu"] = pf_results["pf_bus_vm"]
-    net.res_bus["pf_va_degree"] = pf_results["pf_bus_va"]
-    net.res_bus_dc["pf_vm_pu"] = pf_results["pf_bus_dc_vm"]
-    net.res_ext_grid["pf_p"] = pf_results["pf_ext_grid_p"]
-    net.res_ext_grid["pf_q"] = pf_results["pf_ext_grid_q"]
-    net.res_gen["pf_p"] = pf_results["pf_gen_p"]
-    net.res_gen["pf_q"] = pf_results["pf_gen_q"]
-    net.res_ward["pf_p"] = pf_results["pf_ward_p"]
-    net.res_ward["pf_q"] = pf_results["pf_ward_q"]
-    net.res_xward["pf_p"] = pf_results["pf_xward_p"]
-    net.res_xward["pf_q"] = pf_results["pf_xward_q"]
-    net.res_sgen["pf_p"] = pf_results["pf_sgen_p"]
-    net.res_sgen["pf_q"] = pf_results["pf_sgen_q"]
-    net.res_load["pf_p"] = pf_results["pf_load_p"]
-    net.res_load["pf_q"] = pf_results["pf_load_q"]
+    if "res_bus" not in net:
+        init_element(net, "bus")
+    for elem in ["ext_grid", "gen", "ward", "xward", "sgen", "load"]:
+        if f"res_{elem}" not in net:
+            init_element(net, elem)
+        net[f"res_{elem}"]["pf_p"] = pf_results[f"pf_{elem}_p"]
+        net[f"res_{elem}"]["pf_q"] = pf_results[f"pf_{elem}_q"]
+
+    for elem in ["line", "line_dc", "trafo", "trafo3w"]:
+        if f"res_{elem}" not in net:
+            init_element(net, elem)
+        net[f"res_{elem}"]["pf_loading"] = pf_results[f"pf_{elem}_loading"]
+
+    for elem in ["vsc", "bus", "bus_dc"]:
+        if f"res_{elem}" not in net:
+            init_element(net, elem)
     net.res_vsc["pf_p_mw"] = pf_results["pf_vsc_p"]
     net.res_vsc["pf_q_mvar"] = pf_results["pf_vsc_q"]
     net.res_vsc["pf_p_dc_mw"] = pf_results["pf_vsc_p_dc"]
-    net.res_line["pf_loading"] = pf_results["pf_line_loading"]
-    net.res_line_dc["pf_loading"] = pf_results["pf_line_dc_loading"]
-    net.res_trafo["pf_loading"] = pf_results["pf_trafo_loading"]
-    net.res_trafo3w["pf_loading"] = pf_results["pf_trafo3w_loading"]
+
+    net.res_bus["pf_vm_pu"] = pf_results["pf_bus_vm"]
+    net.res_bus["pf_va_degree"] = pf_results["pf_bus_va"]
+    net.res_bus_dc["pf_vm_pu"] = pf_results["pf_bus_dc_vm"]
 
 
 def _set_pf_results_unbalanced(net, pf_results):
     if 'res_switch' in net.keys():
         net.res_switch['pf_closed'] = pf_results['pf_switch_status']
 
+    # init res tables
+    for elem in ["bus", "ext_grid", "asymmetric_load", "asymmetric_sgen", "line", "trafo"]:
+        if f"res_{elem}_3ph" not in net:
+            init_element(net, elem, "3ph")
+
     #unbalanced set results
-    net.res_bus_3ph["pf_vm_a_pu"] = pf_results["pf_bus_vm_a"]
-    net.res_bus_3ph["pf_vm_b_pu"] = pf_results["pf_bus_vm_b"]
-    net.res_bus_3ph["pf_vm_c_pu"] = pf_results["pf_bus_vm_c"]
-    net.res_bus_3ph["pf_va_a_degree"] = pf_results["pf_bus_va_a"]
-    net.res_bus_3ph["pf_va_b_degree"] = pf_results["pf_bus_va_b"]
-    net.res_bus_3ph["pf_va_c_degree"] = pf_results["pf_bus_va_c"]
+    for phase in ["a", "b", "c"]:
+        net.res_bus_3ph[f"pf_vm_{phase}_pu"] = pf_results[f"pf_bus_vm_{phase}"]
+        net.res_bus_3ph[f"pf_va_{phase}_degree"] = pf_results[f"pf_bus_va_{phase}"]
 
-    net.res_ext_grid_3ph["pf_p_a"] = pf_results["pf_ext_grid_p_a"]
-    net.res_ext_grid_3ph["pf_p_b"] = pf_results["pf_ext_grid_p_b"]
-    net.res_ext_grid_3ph["pf_p_c"] = pf_results["pf_ext_grid_p_c"]
-    net.res_ext_grid_3ph["pf_q_a"] = pf_results["pf_ext_grid_q_a"]
-    net.res_ext_grid_3ph["pf_q_b"] = pf_results["pf_ext_grid_q_b"]
-    net.res_ext_grid_3ph["pf_q_c"] = pf_results["pf_ext_grid_q_c"]
+        for pq in ["p", "q"]:
+            net.res_ext_grid_3ph[f"pf_{pq}_{phase}"] = pf_results[f"pf_ext_grid_{pq}_{phase}"]
+            for elem in ["load", "sgen"]:
+                net[f"res_asymmetric_{elem}_3ph"][f"pf_{pq}_{phase}"] = pf_results[f"pf_{elem}_{pq}_{phase}"]
 
-    net.res_asymmetric_load_3ph["pf_p_a"] = pf_results["pf_load_p_a"]
-    net.res_asymmetric_load_3ph["pf_p_b"] = pf_results["pf_load_p_b"]
-    net.res_asymmetric_load_3ph["pf_p_c"] = pf_results["pf_load_p_c"]
-    net.res_asymmetric_load_3ph["pf_q_a"] = pf_results["pf_load_q_a"]
-    net.res_asymmetric_load_3ph["pf_q_b"] = pf_results["pf_load_q_b"]
-    net.res_asymmetric_load_3ph["pf_q_c"] = pf_results["pf_load_q_c"]
+        for direction in ["from", "to"]:
+            net.res_line_3ph[f"pf_i_{phase}_{direction}_ka"] = pf_results[f"pf_i_{phase}_{direction}_ka"]
 
-    net.res_asymmetric_sgen_3ph["pf_p_a"] = pf_results["pf_sgen_p_a"]
-    net.res_asymmetric_sgen_3ph["pf_p_b"] = pf_results["pf_sgen_p_b"]
-    net.res_asymmetric_sgen_3ph["pf_p_c"] = pf_results["pf_sgen_p_c"]
-    net.res_asymmetric_sgen_3ph["pf_q_a"] = pf_results["pf_sgen_q_a"]
-    net.res_asymmetric_sgen_3ph["pf_q_b"] = pf_results["pf_sgen_q_b"]
-    net.res_asymmetric_sgen_3ph["pf_q_c"] = pf_results["pf_sgen_q_c"]
+        for side in ["hv", "lv"]:
+            net.res_trafo_3ph[f"pf_i_{phase}_{side}_ka"] = pf_results[f"pf_i_{phase}_{side}_ka"]
 
-    net.res_line_3ph["pf_i_a_from_ka"] = pf_results["pf_i_a_from_ka"]
-    net.res_line_3ph["pf_i_a_to_ka"] = pf_results["pf_i_a_to_ka"]
-    net.res_line_3ph["pf_i_b_from_ka"] = pf_results["pf_i_b_from_ka"]
-    net.res_line_3ph["pf_i_b_to_ka"] = pf_results["pf_i_b_to_ka"]
-    net.res_line_3ph["pf_i_c_from_ka"] = pf_results["pf_i_c_from_ka"]
-    net.res_line_3ph["pf_i_c_to_ka"] = pf_results["pf_i_c_to_ka"]
     net.res_line_3ph["pf_i_n_from_ka"] = pf_results["pf_i_n_from_ka"]
     net.res_line_3ph["pf_i_n_to_ka"] = pf_results["pf_i_n_to_ka"]
     net.res_line_3ph["pf_loading_percent"] = pf_results["pf_line_3ph_loading"]
-
-    net.res_trafo_3ph["pf_i_a_hv_ka"] = pf_results["pf_i_a_hv_ka"]
-    net.res_trafo_3ph["pf_i_a_lv_ka"] = pf_results["pf_i_a_lv_ka"]
-    net.res_trafo_3ph["pf_i_b_hv_ka"] = pf_results["pf_i_b_hv_ka"]
-    net.res_trafo_3ph["pf_i_b_lv_ka"] = pf_results["pf_i_b_lv_ka"]
-    net.res_trafo_3ph["pf_i_c_hv_ka"] = pf_results["pf_i_c_hv_ka"]
-    net.res_trafo_3ph["pf_i_c_lv_ka"] = pf_results["pf_i_c_lv_ka"]
 #    net.res_trafo_3ph["pf_i_n_hv_ka"] = pf_results["pf_i_n_hv_ka"]
 #    net.res_trafo_3ph["pf_i_n_lv_ka"] = pf_results["pf_i_n_lv_ka"]
     net.res_trafo_3ph["pf_loading_percent"] = pf_results["pf_trafo_3ph_loading"]

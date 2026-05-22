@@ -75,7 +75,7 @@ switch_schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_switch_schema = pa.DataFrameSchema(
+res_switch_schema = res_switch_est_schema = pa.DataFrameSchema(
     {
         "p_from_mw": pa.Column(float, nullable=True, description="active power from bus [MW]"),
         "q_from_mvar": pa.Column(float, nullable=True, description="reactive power from bus [MVAr]"),

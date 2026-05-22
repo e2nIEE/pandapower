@@ -130,9 +130,6 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     """
     bus_p = pd.Series(data=0., index=net.bus.index)
     bus_q = pd.Series(data=0., index=net.bus.index)
-    if "bus_dc" in net and net.bus_dc.shape[0] > 0:
-        bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
-        bus_p_dc[~net.bus_dc.in_service] = np.nan
 
     bus_p[~net.bus.in_service] = np.nan
     bus_q[~net.bus.in_service] = np.nan
@@ -147,37 +144,17 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
             bus_p.at[tab.bus] -= net.res_gen.p_mw.at[idx]
             bus_q.at[tab.bus] -= net.res_gen.q_mvar.at[idx]
 
-    for idx, tab in net.load.iterrows():
-        bus_p.at[tab.bus] += net.res_load.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_load.q_mvar.at[idx]
+    # addition
+    for elem in ["load", "asymmetric_load", "storage", "shunt", "ward", "xward", "vsc", "vsc_stacked"]:
+        for idx, tab in net[elem].iterrows():
+            bus_p.at[tab.bus] += net[f"res_{elem}"].p_mw.at[idx]
+            bus_q.at[tab.bus] += net[f"res_{elem}"].q_mvar.at[idx]
 
-    for idx, tab in net.sgen.iterrows():
-        bus_p.at[tab.bus] -= net.res_sgen.p_mw.at[idx]
-        bus_q.at[tab.bus] -= net.res_sgen.q_mvar.at[idx]
-
-    for idx, tab in net.asymmetric_load.iterrows():
-        bus_p.at[tab.bus] += net.res_asymmetric_load.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_asymmetric_load.q_mvar.at[idx]
-
-    for idx, tab in net.asymmetric_sgen.iterrows():
-        bus_p.at[tab.bus] -= net.res_asymmetric_sgen.p_mw.at[idx]
-        bus_q.at[tab.bus] -= net.res_asymmetric_sgen.q_mvar.at[idx]
-
-    for idx, tab in net.storage.iterrows():
-        bus_p.at[tab.bus] += net.res_storage.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_storage.q_mvar.at[idx]
-
-    for idx, tab in net.shunt.iterrows():
-        bus_p.at[tab.bus] += net.res_shunt.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_shunt.q_mvar.at[idx]
-
-    for idx, tab in net.ward.iterrows():
-        bus_p.at[tab.bus] += net.res_ward.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_ward.q_mvar.at[idx]
-
-    for idx, tab in net.xward.iterrows():
-        bus_p.at[tab.bus] += net.res_xward.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_xward.q_mvar.at[idx]
+    # subtraction
+    for elem in ["sgen", "asymmetric_sgen"]:
+        for idx, tab in net[elem].iterrows():
+            bus_p.at[tab.bus] -= net[f"res_{elem}"].p_mw.at[idx]
+            bus_q.at[tab.bus] -= net[f"res_{elem}"].q_mvar.at[idx]
 
     for idx, tab in net.svc.iterrows():
         bus_q.at[tab.bus] += net.res_svc.q_mvar.at[idx]
@@ -185,22 +162,23 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     for idx, tab in net.ssc.iterrows():
         bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
 
-    for idx, tab in net.vsc.iterrows():
-        bus_p.at[tab.bus] += net.res_vsc.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_vsc.q_mvar.at[idx]
-        bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
-
-    for idx, tab in net.vsc_stacked.iterrows():
-        bus_p.at[tab.bus] += net.res_vsc_stacked.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_vsc_stacked.q_mvar.at[idx]
-        bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_stacked.p_dc_mw_p.at[idx]
-        bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_stacked.p_dc_mw_m.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
-    if "bus_dc" in net and net.bus_dc.shape[0] > 0:
-        assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
     if test_q:
         assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
+
+    if "bus_dc" in net and net.bus_dc.shape[0] > 0:
+        bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
+        bus_p_dc[~net.bus_dc.in_service] = np.nan
+
+        for idx, tab in net.vsc.iterrows():
+            bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
+
+        for idx, tab in net.vsc_stacked.iterrows():
+            bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_stacked.p_dc_mw_p.at[idx]
+            bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_stacked.p_dc_mw_m.at[idx]
+
+        assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
 
 
 def consistency_checks_3ph(net, rtol=2e-3):

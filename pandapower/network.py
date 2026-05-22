@@ -306,34 +306,10 @@ class pandapowerNet(ADict):
                 for key, value in custom_data.items():
                     self[key] = value
         
-            self._empty_res_load_3ph = self._empty_res_load
-            self._empty_res_sgen_3ph = self._empty_res_sgen
-            self._empty_res_storage_3ph = self._empty_res_storage
-        
             if add_stdtypes:
                 add_basic_std_types(self)  # TODO: Test this
             else:
                 self.std_types: StandardTypesDict = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
-            # reset res_… objects:
-            for suffix in [None, "est", "sc", "3ph"]:
-                elements = []
-                match suffix:
-                    case "sc":
-                        elements = ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
-                    case "est":
-                        elements = ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"]
-                    case "3ph":
-                        elements = [
-                            "bus", "line", "trafo", "ext_grid", "shunt", "load", "sgen", "storage", "asymmetric_load",
-                            "asymmetric_sgen"
-                        ]
-                    case None:
-                        elements = [
-                            "bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid", "load",
-                            "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline",
-                            "asymmetric_load", "asymmetric_sgen", "source_dc", "switch", "tcsc", "svc", "ssc", "vsc",
-                            "vsc_stacked", "vsc_bipolar"
-                        ]
             self.user_pf_options: dict = {}
             
 

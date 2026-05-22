@@ -1,11 +1,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Literal
-
 import numpy as np
 import pandas as pd
 
+from network_structure import get_results_structure_dict
 from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
@@ -26,9 +25,58 @@ BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
 suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
 
 
+class _EmptyResultsMeta(type):
+    """
+    Metaclass for attribute access to EmptyResults
+    """
+
+    def __getitem__(cls, name: str) -> pd.DataFrame:
+        instance = cls()  # get singleton instance
+        return instance[name]
+
+
+class EmptyResults(metaclass=_EmptyResultsMeta):
+    """
+    Singleton Class that stores all empty res tables so they can be copied to the net when required.
+
+    Will be created on first call, all subsequent calls will be faster
+    """
+    _instance: EmptyResults = None
+    _data: dict[str, pd.DataFrame] = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(EmptyResults, cls).__new__(cls)
+            # Initialization:
+            # create dataframes from results_structure_dict
+            dataframes = pandapowerNet.create_dataframes(get_results_structure_dict())
+            # set data on instance
+            for key, value in dataframes.items():
+                if not isinstance(value, pd.DataFrame):
+                    raise ValueError(f"EmptyResults got {type(value)} for {key}, expected pandas.DataFrame")
+                cls._instance._data[key] = value
+        return cls._instance
+
+    def __getattr__(self, name: str) -> pd.DataFrame:
+        if name not in self._data:
+            raise KeyError(f"EmptyResults has no key {name}")
+        return self._data[name].copy()  # Always return a copy, prevent modifying the stored DataFrames
+
+    def __getitem__(self, name: str) -> pd.DataFrame:
+        if name not in self._data:
+            raise KeyError(f"EmptyResults has no key {name}")
+        return self._data[name].copy()  # Always return a copy, prevent modifying the stored DataFrames
+
+    def __repr__(self):
+        return self._data.__repr__()
+
+    def __str__(self):
+        return f"EmptyResults({self._data})"
+
 def _overwrite_out_of_service(net: pandapowerNet) -> None:
-    net.res_bus[~net.bus.in_service] = np.nan
-    # TODO: add other out of service elements
+    for elem in ["bus", "bus_dc"]:  # TODO: add other out of service elements
+        if f"res_{elem}" in net:
+            net[f"res_{elem}"][~net[elem].in_service] = np.nan
 
 
 def _extract_results(net, ppc):
@@ -137,7 +185,7 @@ def verify_results(net, mode="pf"):
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
-        res_element, _ = get_result_tables(element, suffix)
+        res_element = get_result_tables(element, suffix)
 
         index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
         if not index_equal:
@@ -155,37 +203,27 @@ def verify_results(net, mode="pf"):
 
 def get_result_tables(element, suffix=None):
     res_element = "res_" + element
-    res_element_with_suffix = res_element if suffix is None else res_element + "_%s" % suffix
-
-    if suffix == suffix_mode.get("se", None):
-        # State estimation used default result table
-        return res_element_with_suffix, "_empty_%s" % res_element
-    else:
-        return res_element_with_suffix, "_empty_%s" % res_element_with_suffix
+    return res_element if suffix is None else f"{res_element}_{suffix}"
 
 
+# TODO: check if it would be better to only use init_element and not use this directly.
+#  init_element creates the res_tables with the index from the relevant element
+#  empty_res_element creates the res_tables without the index, but why should they not get the index?
 def empty_res_element(net, element, suffix=None):
-    res_element, res_empty_element = get_result_tables(element, suffix)
-    if res_empty_element in net:
-        net[res_element] = net[res_empty_element].copy()
-    else:
+    res_element = get_result_tables(element, suffix)
+    try:
+        net[res_element] = EmptyResults[res_element]
+    except KeyError:
         net[res_element] = pd.DataFrame(
             columns=pd.Index([], dtype=object), index=pd.Index([], dtype=np.int64)
         )
 
 
 def init_element(net, element, suffix=None):
-    res_element, res_empty_element = get_result_tables(element, suffix)
-    index = net[element].index
-    if len(index):
-        # init empty dataframe
-        if res_empty_element in net:
-            # columns=net[res_empty_element].columns
-            net[res_element] = pd.DataFrame(np.nan, index=index, columns=list(get_structure_dict()[res_empty_element]), dtype='float')
-        else:
-            net[res_element] = pd.DataFrame(index=index, dtype='float')
-    else:
-        empty_res_element(net, element, suffix)
+    res_element = get_result_tables(element, suffix)
+    empty_res_element(net, element, suffix)
+    if not net[element].empty:
+        net[res_element] = net[res_element].reindex(net[element].index)
 
 
 def get_relevant_elements(net, mode="pf"):

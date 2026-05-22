@@ -106,7 +106,7 @@ load_schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_load_schema = pa.DataFrameSchema(
+res_load_schema = res_load_3ph_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(
             float,

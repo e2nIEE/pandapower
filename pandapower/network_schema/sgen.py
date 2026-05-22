@@ -215,7 +215,7 @@ sgen_schema = pa.DataFrameSchema(
     ),
 )
 
-res_sgen_schema = pa.DataFrameSchema(
+res_sgen_schema = res_sgen_3ph_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, nullable=True, description="resulting active power production after scaling [MW]"),
         "q_mvar": pa.Column(

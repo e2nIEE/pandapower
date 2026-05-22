@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -19,6 +17,7 @@ from pandapower.create import (
     create_switch, create_line_from_parameters, create_impedance, create_empty_network, create_gen, create_ext_grid,
     create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
 )
+from pandapower.results import EmptyResults
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict,
@@ -1356,7 +1355,7 @@ def replace_ext_grid_by_gen(
     # --- create gens
     new_idx = []
     for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(name="ExtGrid"), gen_indices):
-        p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
+        p_mw = 0 if "res_ext_grid" not in net or ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
             ext_grid.Index, "p_mw"]
         if hasattr(ext_grid, "name") and pd.notna(ext_grid.name):
             name = ext_grid.name
@@ -1515,7 +1514,8 @@ def replace_gen_by_sgen(
     # --- create sgens
     new_idx = []
     for gen, index in zip(net.gen.loc[gens].itertuples(), sgen_indices):
-        q_mvar = 0. if gen.Index not in net.res_gen.index else net.res_gen.at[gen.Index, "q_mvar"]
+        q_mvar = 0. if "res_gen" not in net or gen.Index not in net.res_gen.index else net.res_gen.at[
+            gen.Index, "q_mvar"]
         controllable = True if "controllable" not in net.gen.columns else gen.controllable
         idx = create_sgen(net, gen.bus, p_mw=gen.p_mw, q_mvar=q_mvar, name=gen.name,
                           in_service=gen.in_service, controllable=controllable, index=index)
@@ -1957,10 +1957,11 @@ def _replace_group_member_element_type(
 
 
 def _adapt_result_tables_in_replace_functions(
-    net, element_type_old, element_index_old, element_type_new, element_index_new):
+        net, element_type_old, element_index_old, element_type_new, element_index_new
+):
     et_old, et_new = "res_" + element_type_old, "res_" + element_type_new
     if et_new not in net:
-        net[et_new] = net[et_old].head(0).copy()
+        net[et_new] = EmptyResults[et_new]
     idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
     if et_old in net and net[et_old].shape[0]:
         in_res = pd.Series(idx_old).isin(net[et_old].index).values

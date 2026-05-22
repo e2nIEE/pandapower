@@ -146,8 +146,7 @@ impedance_schema = pa.DataFrameSchema(
     strict=False,
 )
 
-
-res_impedance_schema = pa.DataFrameSchema(
+res_impedance_schema = res_impedance_est_schema = pa.DataFrameSchema(
     {
         "p_from_mw": pa.Column(
             float, nullable=True, description="active power flow into the impedance at “from” bus [MW]"

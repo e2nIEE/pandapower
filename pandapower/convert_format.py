@@ -44,6 +44,12 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
         if not bool(cols.issubset(net.load.columns)):
             for col in cols:
                 add_column_to_df(net, "load", col)
+
+        # drop empty res_ tables and _empty_res_ tables
+        for key in list(net.keys()):  # conversion to list required because of dict modification while iteration
+            if key.startswith("_empty_res_") or (key.startswith("res_") and len(net[key]) == 0):
+                del net[key]
+
     if net_format_version < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
     if Version("3.0.0") <= net_format_version < Version("3.1.3"):

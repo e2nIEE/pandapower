@@ -445,7 +445,7 @@ def test_line():
 
     res = net.res_bus_sc.copy()
     calc_sc(net, fault="1ph", case="max")
-    assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6, equal_nan=True)
 
 
 def test_trafo():
@@ -470,7 +470,7 @@ def test_trafo():
 
         net.sn_mva = 123
         calc_sc(net, fault="1ph", case="max")
-        assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6), f"failed for vector group {vc}"
+        assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6, equal_nan=True), f"failed for vector group {vc}"
         assert np.allclose(net.res_bus_sc.ikss_ka, results[vc], rtol=0, atol=1e-6), f"{vc}: inconsistent results"
 
 

@@ -91,8 +91,7 @@ shunt_schema = pa.DataFrameSchema(
     strict=False,
 )
 
-
-res_shunt_schema = pa.DataFrameSchema(
+res_shunt_schema = res_shunt_est_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, nullable=True, description="shunt active power consumption [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="shunt reactive power consumption [MVAr]"),

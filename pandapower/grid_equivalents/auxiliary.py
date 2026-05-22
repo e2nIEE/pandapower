@@ -57,23 +57,23 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
     otherwise, ext_grids are created with vm_pu=1 and va_degreee=0
     """
     orig_slack_gens = net.gen.index[net.gen.slack]
-    buses_to_add_ext_grids = set(boundary_buses) - set(net.ext_grid.bus[net.ext_grid.in_service]) \
-                             - set(net.gen.bus[net.gen.in_service & net.gen.slack])
-    res_buses = set(
-        net.res_bus.index[~net.res_bus[["vm_pu", "va_degree"]].isnull().any(axis=1)])
+    buses_to_add_ext_grids: set[int] = set(boundary_buses) - set(net.ext_grid.bus[net.ext_grid.in_service]) - set(
+        net.gen.bus[net.gen.in_service & net.gen.slack])
+    res_buses: set[int] = set(
+        net.res_bus.index[~net.res_bus[["vm_pu", "va_degree"]].isnull().any(axis=1)]
+    ) if "res_bus" in net else set()
     btaegwr = list(buses_to_add_ext_grids & res_buses)
     add_eg = []
-    vms = pd.Series(np.ones(len(buses_to_add_ext_grids)),
-                    index=buses_to_add_ext_grids)
-    vas = pd.Series(np.zeros(len(buses_to_add_ext_grids)),
-                    index=buses_to_add_ext_grids)
-    vms.loc[btaegwr] = net.res_bus.vm_pu.loc[btaegwr]
-    vms.loc[pd.Index(net.gen.bus.loc[net.gen.in_service]).intersection(vms.index)] = \
-        net.gen.vm_pu.loc[net.gen.in_service & net.gen.bus.isin(vms.index) &
-                          ~net.gen.bus.duplicated()].values  # avoid
-    # different vm_pu setpoints at same buses
-    vas.loc[btaegwr] = net.res_bus.va_degree.loc[btaegwr]
+    vms = pd.Series(data=1., index=list(buses_to_add_ext_grids))
+    vas = pd.Series(data=0., index=list(buses_to_add_ext_grids))
+    if "res_bus" in net:
+        vms.loc[btaegwr] = net.res_bus.vm_pu.loc[btaegwr]
+        # different vm_pu setpoints at same buses
+        vas.loc[btaegwr] = net.res_bus.va_degree.loc[btaegwr]
 
+    vms.loc[pd.Index(net.gen.bus.loc[net.gen.in_service]).intersection(vms.index)] = (
+        net.gen.vm_pu.loc[net.gen.in_service & net.gen.bus.isin(vms.index) & ~net.gen.bus.duplicated()].values  # avoid
+    )
     for ext_bus, vm, va in zip(buses_to_add_ext_grids, vms, vas):
         add_eg += [create_ext_grid(net, ext_bus,
                                    vm, va, name="assist_ext_grid")]
@@ -416,10 +416,11 @@ def _check_network(net):
     Check controller names
     """
     # --- check inactive elements
-    if net.res_bus.vm_pu.isnull().any():
-        logger.info("There are some inactive buses. It is suggested to remove "
-                    "them using 'pandapower.drop_inactive_elements()' "
-                    "before starting the grid equivalent calculation.")
+    if "res_bus" in net and net.res_bus.vm_pu.isnull().any():
+        logger.info(
+            "There are some inactive buses. It is suggested to remove them using 'pandapower.drop_inactive_elements()' "
+            "before starting the grid equivalent calculation."
+        )
 
     # --- check and replace dclines by gens
     if "dcline" in net and len(net.dcline.query("in_service")) > 0:
