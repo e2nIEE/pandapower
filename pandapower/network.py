@@ -306,45 +306,10 @@ class pandapowerNet(ADict):
                 for key, value in custom_data.items():
                     self[key] = value
         
-            self._empty_res_load_3ph = self._empty_res_load
-            self._empty_res_sgen_3ph = self._empty_res_sgen
-            self._empty_res_storage_3ph = self._empty_res_storage
-        
             if add_stdtypes:
                 add_basic_std_types(self)  # TODO: Test this
             else:
                 self.std_types: StandardTypesDict = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
-            # reset res_… objects:
-            for suffix in [None, "est", "sc", "3ph"]:
-                elements = []
-                match suffix:
-                    case "sc":
-                        elements = ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
-                    case "est":
-                        elements = ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"]
-                    case "3ph":
-                        elements = [
-                            "bus", "line", "trafo", "ext_grid", "shunt", "load", "sgen", "storage", "asymmetric_load",
-                            "asymmetric_sgen"
-                        ]
-                    case None:
-                        elements = [
-                            "bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid", "load",
-                            "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward", "xward", "dcline",
-                            "asymmetric_load", "asymmetric_sgen", "source_dc", "switch", "tcsc", "svc", "ssc", "vsc",
-                            "vsc_stacked", "vsc_bipolar"
-                        ]
-                for element in elements:  # FIXME: is this related to @heckstrahler removing res_ if empty?
-                    res_element = f"res_{element}" if suffix is None else f"res_{element}_{suffix}"
-                    res_empty_element = f"_empty_{f'res_{element}' if suffix == 'est' else res_element}"
-                    if res_empty_element in self:
-                        self[res_element] = self[res_empty_element].copy()
-                    else:
-                        self[res_element] = pd.DataFrame(
-                            columns=pd.Index([], dtype=object), index=pd.Index([], dtype=np.int64)
-                        )
-                if "res_cost" in self.keys():
-                    del self["res_cost"]
             self.user_pf_options: dict = {}
             
 

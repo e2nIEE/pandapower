@@ -99,6 +99,7 @@ def test_single_bus_network():
 
 def test_missing_gen():
     net = case4gs()
+    assert not any(key in net for key in ["res_bus", "res_line", "res_ext_grid", "res_load", "res_gen"])
     rundcpp(net)
     res_gen = copy.deepcopy(net.res_gen.values)
     net.pop("res_gen")

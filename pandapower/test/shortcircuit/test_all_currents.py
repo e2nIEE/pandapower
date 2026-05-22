@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from pandapower.create import (
@@ -83,7 +82,8 @@ def net_transformer_simple():
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
     create_transformer_from_parameters(net, b1, b2, vn_hv_kv=10., vn_lv_kv=0.4, vk_percent=6., vkr_percent=0.5,
                                        pfe_kw=14, shift_degree=0.0, tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2,
-                                       tap_pos=0, tap_step_percent=2.5, parallel=1, sn_mva=0.4, i0_percent=0.5, tap_changer_type="Ratio")
+                                       tap_pos=0, tap_step_percent=2.5, parallel=1, sn_mva=0.4, i0_percent=0.5,
+                                       tap_changer_type="Ratio")
     return net
 
 
@@ -150,8 +150,9 @@ def net_transformer():
     create_ext_grid(net, b1a, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
     create_switch(net, b1a, b1b, et="b")
     create_transformer_from_parameters(net, b1b, b2, vn_hv_kv=11., vn_lv_kv=0.42, vk_percent=6., vkr_percent=0.5,
-                                       pfe_kw=14, shift_degree=0.0, tap_changer_type="Ratio", tap_side="hv", tap_neutral=0, tap_min=-2, tap_max=2,
-                                       tap_pos=2, tap_step_percent=2.5, parallel=2, sn_mva=0.4, i0_percent=0.5)
+                                       pfe_kw=14, shift_degree=0.0, tap_changer_type="Ratio", tap_side="hv",
+                                       tap_neutral=0, tap_min=-2, tap_max=2, tap_pos=2, tap_step_percent=2.5,
+                                       parallel=2, sn_mva=0.4, i0_percent=0.5)
     create_shunt(net, b2, q_mvar=0.050, p_mw=0.0500)  # adding a shunt shouldn't change the result
     return net
 
@@ -326,68 +327,101 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
 
     calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [1.16712302, 0.80860656, 0.10127268, 0.18141131], rtol=0,
+    assert np.allclose(net.res_bus_sc.loc[6, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
+                       [1.16712302, 0.80860656, 0.10127268, 0.18141131], rtol=0,
                        atol=1e-6)
 
-    res_line_sc = np.array([[0.013691, 0.013691, -60.827605, 0.013691, 119.172395, 0.4132998, 0.7358034, -0.413244,
-                             -0.735716, 1.186326, -0.150470, 1.186180, -0.150091],
-                            [0.042441, 0.042441, -60.827605, 0.042441, 119.172395, 0.412972, 0.732456, -0.4124366,
-                             -0.7316133, 1.143870, -0.242663, 1.142514, -0.239117],
-                            [1.167123, 1.167123, -60.827605, 1.167123, 119.172395, 0.404566, 0.637498, 0, 0, 0.933749,
-                             -3.227445, 0.000000, 0.000000]])
-    relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
-    assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
-    res_trafo_sc = np.array([[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.186326,
-                              - 0.150470, 1.186326, - 0.150470],
-                             [0.013691, - 60.827605, 0.042441, 119.172395, 0.413244, 0.735716, - 0.412972, - 0.732456,
-                              1.186180, - 0.150091, 1.143870, - 0.242663],
-                             [0.042441, - 60.827605, 1.167123, 119.172395, 0.412437, 0.731613, - 0.404566, - 0.637498,
-                              1.142514, - 0.239117, 0.933749, - 3.227445]])
-    relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
-    assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[
+            [0.013691, 0.013691, -60.827605, 0.013691, 119.172395, 0.4132998, 0.7358034, -0.413244, -0.735716, 1.186326,
+             -0.150470, 1.186180, -0.150091],
+            [0.042441, 0.042441, -60.827605, 0.042441, 119.172395, 0.412972, 0.732456, -0.4124366, -0.7316133, 1.143870,
+             -0.242663, 1.142514, -0.239117],
+            [1.167123, 1.167123, -60.827605, 1.167123, 119.172395, 0.404566, 0.637498, 0, 0, 0.933749, -3.227445,
+             0.000000, 0.000000]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    relevant = [c for c in net.res_line_sc.columns if
+                not np.all(np.isnan(net.res_line_sc[c])) and c in res_line_sc.columns]
+    assert np.allclose(net.res_line_sc.loc[:, relevant], res_line_sc.loc[:, relevant], rtol=0, atol=1e-6)
+    res_trafo_sc = pd.DataFrame(
+        data=
+        [[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.186326, - 0.150470,
+          1.186326, - 0.150470],
+         [0.013691, - 60.827605, 0.042441, 119.172395, 0.413244, 0.735716, - 0.412972, - 0.732456, 1.186180, - 0.150091,
+          1.143870, - 0.242663],
+         [0.042441, - 60.827605, 1.167123, 119.172395, 0.412437, 0.731613, - 0.404566, - 0.637498, 1.142514, - 0.239117,
+          0.933749, - 3.227445]],
+        columns=['ikss_hv_ka', 'ikss_hv_degree', 'ikss_lv_ka', 'ikss_lv_degree', 'p_hv_mw', 'q_hv_mvar', 'p_lv_mw',
+                 'q_lv_mvar', 'vm_hv_pu', 'va_hv_degree', 'vm_lv_pu', 'va_lv_degree']
+    )
+    relevant = [c for c in net.res_trafo_sc.columns if not np.all(np.isnan(net.res_trafo_sc[c])) and c in res_trafo_sc]
+    assert np.allclose(net.res_trafo_sc.loc[:, relevant], res_trafo_sc.loc[:, relevant], rtol=0, atol=1e-6)
 
     net.trafo.at[1, "vn_hv_kv"] = 29
     net.trafo.at[2, "vn_hv_kv"] = 9
 
     calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [1.15940813, 0.80326152, 0.10147573, 0.18288051], rtol=0,
+    assert np.allclose(net.res_bus_sc.loc[6, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
+                       [1.15940813, 0.80326152, 0.10147573, 0.18288051], rtol=0,
                        atol=1e-6)
 
-    res_line_sc = np.array([[0.017769, 0.017769, -60.975224, 0.017769, 119.024776, 0.408286, 0.728168, -0.4081925,
-                             -0.7280205, 0.904182, - 0.254709, 0.903993, - 0.254055],
-                            [0.051529, 0.051529, -60.975224, 0.051529, 119.024776, 0.407791, 0.723216, -0.4070021,
-                             -0.7219731, 0.930252, - 0.392031, 0.928605, - 0.386736],
-                            [1.159408, 1.159408, -60.975224, 1.159408, 119.024776, 0.399235, 0.629098, 0, 0, 0.927576,
-                             - 3.375064, 0, 0]])
-    relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
-    assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
-    res_trafo_sc = np.array([[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.904182,
-                              - 0.254709, 0.904182, - 0.254709],
-                             [0.017769, - 60.975224, 0.051529, 119.024776, 0.408192, 0.728021, - 0.407791, - 0.723216,
-                              0.903993, - 0.254055, 0.930252, - 0.392031],
-                             [0.051529, - 60.975224, 1.159408, 119.024776, 0.407002, 0.721973, - 0.399235, - 0.629098,
-                              0.928605, - 0.386736, 0.927576, - 3.375064]])
-    relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
-    assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[
+            [0.017769, 0.017769, -60.975224, 0.017769, 119.024776, 0.408286, 0.728168, -0.4081925, -0.7280205, 0.904182,
+             - 0.254709, 0.903993, - 0.254055],
+            [0.051529, 0.051529, -60.975224, 0.051529, 119.024776, 0.407791, 0.723216, -0.4070021, -0.7219731, 0.930252,
+             - 0.392031, 0.928605, - 0.386736],
+            [1.159408, 1.159408, -60.975224, 1.159408, 119.024776, 0.399235, 0.629098, 0, 0, 0.927576, - 3.375064, 0,
+             0]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    relevant = [c for c in net.res_line_sc.columns if not np.all(np.isnan(net.res_line_sc[c])) and c in res_line_sc]
+    assert np.allclose(net.res_line_sc.loc[:, relevant], res_line_sc.loc[:, relevant], rtol=0, atol=1e-6)
+    res_trafo_sc = pd.DataFrame(
+        data=
+        [[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.904182, - 0.254709,
+          0.904182, - 0.254709],
+         [0.017769, - 60.975224, 0.051529, 119.024776, 0.408192, 0.728021, - 0.407791, - 0.723216, 0.903993, - 0.254055,
+          0.930252, - 0.392031],
+         [0.051529, - 60.975224, 1.159408, 119.024776, 0.407002, 0.721973, - 0.399235, - 0.629098, 0.928605, - 0.386736,
+          0.927576, - 3.375064]],
+        columns=['ikss_hv_ka', 'ikss_hv_degree', 'ikss_lv_ka', 'ikss_lv_degree', 'p_hv_mw', 'q_hv_mvar', 'p_lv_mw',
+                 'q_lv_mvar', 'vm_hv_pu', 'va_hv_degree', 'vm_lv_pu', 'va_lv_degree']
+    )
+    relevant = [c for c in net.res_trafo_sc.columns if not np.all(np.isnan(net.res_trafo_sc[c])) and c in res_trafo_sc]
+    assert np.allclose(net.res_trafo_sc.loc[:, relevant], res_trafo_sc.loc[:, relevant], rtol=0, atol=1e-6)
 
     net.trafo.at[1, "vn_hv_kv"] = 31
     net.trafo.at[2, "vn_hv_kv"] = 11
 
     calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4, inverse_y=inverse_y)
-    assert np.allclose(net.res_bus_sc.loc[4].values, [3.490484425, 60.45696064, 0.26224866, 1.80047754], rtol=0,
+    assert np.allclose(net.res_bus_sc.loc[4, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
+                       [3.490484425, 60.45696064, 0.26224866, 1.80047754], rtol=0,
                        atol=3e-6)
-    res_line_sc = np.array([[1.125963, 1.125963, -81.712857, 1.125963, 98.287143, 5.838649, 28.341696, -5.462115,
-                             -27.748369, 0.494590, - 3.353461, 0.483378, - 2.848843],
-                            [3.490484, 3.490484, -81.712857, 3.490484, 98.287143, 3.618494, 5.701869, 0, 0, 0.111701,
-                             - 24.112697, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
-    relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
-    assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
-    res_trafo_sc = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0.494590, -3.353461, 0.494590, -3.353461],
-                             [1.125963, - 81.712857, 3.490484, 98.287143, 5.462115, 27.748369, -3.618494, -5.701869,
-                              0.483378, -2.848843, 0.111701, -24.112697], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
-    relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
-    assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[
+            [1.125963, 1.125963, -81.712857, 1.125963, 98.287143, 5.838649, 28.341696, -5.462115, -27.748369, 0.494590,
+             - 3.353461, 0.483378, - 2.848843],
+            [3.490484, 3.490484, -81.712857, 3.490484, 98.287143, 3.618494, 5.701869, 0, 0, 0.111701, - 24.112697, 0,
+             0], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    relevant = [c for c in net.res_line_sc.columns if not np.all(np.isnan(net.res_line_sc[c])) and c in res_line_sc]
+    assert np.allclose(net.res_line_sc.loc[:, relevant], res_line_sc.loc[:, relevant], rtol=0, atol=1e-6)
+    res_trafo_sc = pd.DataFrame(
+        data=[[0, 0, 0, 0, 0, 0, 0, 0, 0.494590, -3.353461, 0.494590, -3.353461],
+              [1.125963, - 81.712857, 3.490484, 98.287143, 5.462115, 27.748369, -3.618494, -5.701869, 0.483378,
+               -2.848843, 0.111701, -24.112697], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+        columns=['ikss_hv_ka', 'ikss_hv_degree', 'ikss_lv_ka', 'ikss_lv_degree', 'p_hv_mw', 'q_hv_mvar', 'p_lv_mw',
+                 'q_lv_mvar', 'vm_hv_pu', 'va_hv_degree', 'vm_lv_pu', 'va_lv_degree']
+    )
+    relevant = [c for c in net.res_trafo_sc.columns if not np.all(np.isnan(net.res_trafo_sc[c])) and c in res_trafo_sc]
+    assert np.allclose(net.res_trafo_sc.loc[:, relevant], res_trafo_sc.loc[:, relevant], rtol=0, atol=1e-6)
 
     net.trafo.at[1, "vn_hv_kv"] = 30
     net.trafo.at[2, "vn_hv_kv"] = 10
@@ -396,22 +430,31 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
 
     calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [1.153265, 0.799006, 0.101542, 0.184117], rtol=0, atol=1e-6)
-    res_line_sc = np.array([[0.014531, 0.014531, - 61.122864, 0.014531, 118.877136, 0.404535, 0.728398, - 0.404473,
-                             - 0.728299, 1.103480, - 0.169658, 1.103325, - 0.169187],
-                            [0.048437, 0.048437, - 61.122864, 0.048437, 118.877136, 0.404185, 0.724860, - 0.403488,
-                             - 0.723762, 0.989244, - 0.267095, 0.987697, - 0.261989],
-                            [1.153265, 1.153265, - 61.122864, 1.153265, 118.877136, 0.395016, 0.622450, 0, 0, 0.922662,
-                             - 3.522703, 0, 0]])
-    relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
-    assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
-    res_trafo_sc = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 1.103480, - 0.169658, 1.103480, - 0.169658],
-                             [0.014531, - 61.122864, 0.048437, 118.877136, 0.404473, 0.728299, - 0.404185, - 0.72486,
-                              1.103325, - 0.169187, 0.989244, - 0.267095],
-                             [0.048437, - 61.122864, 1.153265, 118.877136, 0.403488, 0.723762, - 0.395016, - 0.62245,
-                              0.987697, - 0.261989, 0.922662, - 3.522703]])
-    relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
-    assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.loc[6, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
+                       [1.153265, 0.799006, 0.101542, 0.184117], rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.014531, 0.014531, - 61.122864, 0.014531, 118.877136, 0.404535, 0.728398, - 0.404473, - 0.728299,
+               1.103480, - 0.169658, 1.103325, - 0.169187],
+              [0.048437, 0.048437, - 61.122864, 0.048437, 118.877136, 0.404185, 0.724860, - 0.403488, - 0.723762,
+               0.989244, - 0.267095, 0.987697, - 0.261989],
+              [1.153265, 1.153265, - 61.122864, 1.153265, 118.877136, 0.395016, 0.622450, 0, 0, 0.922662, - 3.522703, 0,
+               0]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    relevant = [c for c in net.res_line_sc.columns if not np.all(np.isnan(net.res_line_sc[c])) and c in res_line_sc]
+    assert np.allclose(net.res_line_sc.loc[:, relevant], res_line_sc.loc[:, relevant], rtol=0, atol=1e-6)
+    res_trafo_sc = pd.DataFrame(
+        data=[[0, 0, 0, 0, 0, 0, 0, 0, 1.103480, - 0.169658, 1.103480, - 0.169658],
+              [0.014531, - 61.122864, 0.048437, 118.877136, 0.404473, 0.728299, - 0.404185, - 0.72486, 1.103325,
+               - 0.169187, 0.989244, - 0.267095],
+              [0.048437, - 61.122864, 1.153265, 118.877136, 0.403488, 0.723762, - 0.395016, - 0.62245, 0.987697,
+               - 0.261989, 0.922662, - 3.522703]],
+        columns=['ikss_hv_ka', 'ikss_hv_degree', 'ikss_lv_ka', 'ikss_lv_degree', 'p_hv_mw', 'q_hv_mvar', 'p_lv_mw',
+                 'q_lv_mvar', 'vm_hv_pu', 'va_hv_degree', 'vm_lv_pu', 'va_lv_degree']
+    )
+    relevant = [c for c in net.res_trafo_sc.columns if not np.all(np.isnan(net.res_trafo_sc[c])) and c in res_trafo_sc]
+    assert np.allclose(net.res_trafo_sc.loc[:, relevant].values, res_trafo_sc.loc[:, relevant], rtol=0, atol=1e-6)
 
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
@@ -432,35 +475,47 @@ def test_type_c_trafo_simple_other_voltage4(inverse_y):
     # baseI = baseMVA / (baseV * np.sqrt(3))
     # baseZ = baseV ** 2 / baseMVA
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [2.096122, 1.452236, 0.054549, 0.085178], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.loc[6, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
+                       [2.096122, 1.452236, 0.054549, 0.085178], rtol=0, atol=1e-6)
 
-    res_line_sc = np.array([[0.012104, 0.010331, -52.747518, 0.012104, 121.050735, 0.322524, 0.419803, -0.322487,
-                             -0.529717, 0.986152, -0.281725, 0.986032, -0.281941],
-                            [0.036634, 0.036019, -59.720977, 0.036634, 119.710805, 0.312602, 0.527369, -0.312210,
-                             -0.538872, 0.982660, -0.378583, 0.981499, -0.376180],
-                            [0.998604, 0.998594, -61.123876, 0.998604, 118.875767, 0.296171, 0.466687, 0, 0, 0.798926,
-                             -3.524072, 0, 0],
-                            [0.044289, 0.043675, -59.839870, 0.044289, 119.691851, 0.377698, 0.639716, -0.377123,
-                             -0.650913, 0.982060, -0.398116, 0.980654, -0.395135],
-                            [1.097518, 1.097507, -61.142831, 1.097518, 118.856813, 0.357750, 0.563720, 0, 0, 0.878062,
-                             -3.543027, 0, 0]])
-    non_i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c not in ["ikss_from_degree", "ikss_to_degree"]]
-    i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c in ["ikss_from_degree", "ikss_to_degree"]]
-    assert np.allclose(net.res_line_sc.values[:, non_i_degree], res_line_sc[:, non_i_degree], rtol=0, atol=2e-6)
-    assert np.allclose(net.res_line_sc.values[:, i_degree], res_line_sc[:, i_degree], rtol=0, atol=2e-4)
+    res_line_sc = pd.DataFrame(
+        data=[[0.012104, 0.010331, -52.747518, 0.012104, 121.050735, 0.322524, 0.419803, -0.322487, -0.529717, 0.986152,
+               -0.281725, 0.986032, -0.281941],
+              [0.036634, 0.036019, -59.720977, 0.036634, 119.710805, 0.312602, 0.527369, -0.312210, -0.538872, 0.982660,
+               -0.378583, 0.981499, -0.376180],
+              [0.998604, 0.998594, -61.123876, 0.998604, 118.875767, 0.296171, 0.466687, 0, 0, 0.798926, -3.524072, 0,
+               0],
+              [0.044289, 0.043675, -59.839870, 0.044289, 119.691851, 0.377698, 0.639716, -0.377123, -0.650913, 0.982060,
+               -0.398116, 0.980654, -0.395135],
+              [1.097518, 1.097507, -61.142831, 1.097518, 118.856813, 0.357750, 0.563720, 0, 0, 0.878062, -3.543027, 0,
+               0]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    non_i_degree = [c for c in net.res_line_sc.columns if
+                    c not in ["ikss_from_degree", "ikss_to_degree"] and c in res_line_sc]
+    i_degree = [c for c in net.res_line_sc.columns if c in ["ikss_from_degree", "ikss_to_degree"] and c in res_line_sc]
+    assert np.allclose(net.res_line_sc.loc[:, non_i_degree], res_line_sc.loc[:, non_i_degree], rtol=0, atol=2e-6)
+    assert np.allclose(net.res_line_sc.loc[:, i_degree], res_line_sc.loc[:, i_degree], rtol=0, atol=2e-4)
 
-    res_trafo_sc = np.array([[0.014655, -59.201943, 0.043675, 120.160131, 0.387670, 0.643162, -0.377698, -0.639716,
-                              0.986152, -0.281725, 0.982060, -0.398116],
-                             [0.012104, -58.949266, 0.036019, 120.279024, 0.322487, 0.529717, -0.312602, -0.527369,
-                              0.986032, -0.281941, 0.982660, -0.378583],
-                             [0.036634, -60.289196, 0.998594, 118.876124, 0.312210, 0.538872, -0.296171, -0.466687,
-                              0.981499, -0.376180, 0.798926, -3.524072],
-                             [0.044289, -60.308150, 1.097507, 118.857170, 0.377123, 0.650913, -0.357750, -0.563720,
-                              0.980654, -0.395135, 0.878062, -3.543027]])
-    non_i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c not in ["ikss_hv_degree", "ikss_lv_degree"]]
-    i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c in ["ikss_lv_degree", "ikss_lv_degree"]]
-    assert np.allclose(net.res_trafo_sc.values[:, non_i_degree], res_trafo_sc[:, non_i_degree], rtol=0, atol=2e-6)
-    assert np.allclose(net.res_trafo_sc.values[:, i_degree], res_trafo_sc[:, i_degree], rtol=0, atol=1e-5)
+    res_trafo_sc = pd.DataFrame(
+        data=[
+            [0.014655, -59.201943, 0.043675, 120.160131, 0.387670, 0.643162, -0.377698, -0.639716, 0.986152, -0.281725,
+             0.982060, -0.398116],
+            [0.012104, -58.949266, 0.036019, 120.279024, 0.322487, 0.529717, -0.312602, -0.527369, 0.986032, -0.281941,
+             0.982660, -0.378583],
+            [0.036634, -60.289196, 0.998594, 118.876124, 0.312210, 0.538872, -0.296171, -0.466687, 0.981499, -0.376180,
+             0.798926, -3.524072],
+            [0.044289, -60.308150, 1.097507, 118.857170, 0.377123, 0.650913, -0.357750, -0.563720, 0.980654, -0.395135,
+             0.878062, -3.543027]],
+        columns=['ikss_hv_ka', 'ikss_hv_degree', 'ikss_lv_ka', 'ikss_lv_degree', 'p_hv_mw', 'q_hv_mvar', 'p_lv_mw',
+                 'q_lv_mvar', 'vm_hv_pu', 'va_hv_degree', 'vm_lv_pu', 'va_lv_degree']
+    )
+    non_i_degree = [c for c in net.res_trafo_sc.columns if
+                    c not in ["ikss_hv_degree", "ikss_lv_degree"] and c in res_trafo_sc]
+    i_degree = [c for c in net.res_trafo_sc.columns if c in ["ikss_lv_degree", "ikss_lv_degree"] and c in res_trafo_sc]
+    assert np.allclose(net.res_trafo_sc.loc[:, non_i_degree], res_trafo_sc.loc[:, non_i_degree], rtol=0, atol=2e-6)
+    assert np.allclose(net.res_trafo_sc.loc[:, i_degree], res_trafo_sc.loc[:, i_degree], rtol=0, atol=1e-5)
 
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
@@ -488,37 +543,46 @@ def test_type_c_trafo_simple_other_voltage4_sgen(inverse_y):
     baseI = baseMVA / (baseV * np.sqrt(3))
     baseZ = baseV ** 2 / baseMVA
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [1.12072796, 0.77646312, 0.11355049, 0.15946966], rtol=0,
+    assert np.allclose(net.res_bus_sc.loc[6, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
+                       [1.12072796, 0.77646312, 0.11355049, 0.15946966], rtol=0,
                        atol=1e-6)
 
-    res_line_sc = np.array([[0.37233817, 0.37202159, -171.92326236, 0.37233817, 8.4072921, -19.05762949, 2.78907414,
-                             19.09876936, -2.83670764, 0.99637, -0.24936231, 0.99798561, -0.04098874],
-                            [0.04744828, 0.04684176, -52.75384134, 0.04744828, 126.82145161, 0.39363348, 0.67731344,
-                             -0.39297336, -0.68797096, 0.9655717, 7.08233793, 0.96406436, 7.08617078],
-                            [1.12072796, 1.12071697, -53.94177232, 1.12072796, 126.05787127, 0.37304125, 0.58781451, 0.,
-                             0., 0.89663052, 3.65803177, 0., 0.],
-                            [0.6275538, 0.62734921, -21.12040944, 0.6275538, 158.81863754, 10.05721887, 3.15086826,
-                             -9.94029022, -2.97825453, 0.96992777, -3.72493869, 0.95467304, -4.50238709],
-                            [0., 0.0000277, 85.40612729, 0., 0., 0., -0.00001832, 0., 0., 0.95459186, -4.56234781,
-                             0.95460121, -4.56270483]])
+    res_line_sc = pd.DataFrame(
+        data=[[0.37233817, 0.37202159, -171.92326236, 0.37233817, 8.4072921, -19.05762949, 2.78907414, 19.09876936,
+               -2.83670764, 0.99637, -0.24936231, 0.99798561, -0.04098874],
+              [0.04744828, 0.04684176, -52.75384134, 0.04744828, 126.82145161, 0.39363348, 0.67731344, -0.39297336,
+               -0.68797096, 0.9655717, 7.08233793, 0.96406436, 7.08617078],
+              [1.12072796, 1.12071697, -53.94177232, 1.12072796, 126.05787127, 0.37304125, 0.58781451, 0., 0.,
+               0.89663052, 3.65803177, 0., 0.],
+              [0.6275538, 0.62734921, -21.12040944, 0.6275538, 158.81863754, 10.05721887, 3.15086826, -9.94029022,
+               -2.97825453, 0.96992777, -3.72493869, 0.95467304, -4.50238709],
+              [0., 0.0000277, 85.40612729, 0., 0., 0., -0.00001832, 0., 0., 0.95459186, -4.56234781, 0.95460121,
+               -4.56270483]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
 
-    non_degree = [i for i, c in enumerate(net.res_line_sc.columns) if not "degree" in c]
-    degree = [i for i, c in enumerate(net.res_line_sc.columns) if "degree" in c]
-    assert np.allclose(net.res_line_sc.values[:, non_degree], res_line_sc[:, non_degree], rtol=0, atol=6e-5)
-    assert np.allclose(net.res_line_sc.values[:, degree], res_line_sc[:, degree], rtol=0, atol=0.05)
+    non_degree = [c for c in net.res_line_sc.columns if not "degree" in c and c in res_line_sc]
+    degree = [c for c in net.res_line_sc.columns if "degree" in c and c in res_line_sc]
+    assert np.allclose(net.res_line_sc.loc[:, non_degree], res_line_sc.loc[:, non_degree], rtol=0, atol=6e-5)
+    assert np.allclose(net.res_line_sc.loc[:, degree], res_line_sc.loc[:, degree], rtol=0, atol=0.05)
 
-    res_trafo_sc = np.array([[0.20929507, -21.10342929, 0.62734921, 158.87959058, 10.1259613, 3.85742992, -10.05721888,
-                              -3.15086826, 0.99637, -0.24936231, 0.96992777, -3.72493869],
-                             [0.37233817, -171.5927079, 1.15480275, 8.40493491, -19.09876937, 2.83670764, 19.30799817,
-                              -0.44577867, 0.99798561, -0.04098874, 0.9655717, 7.08233793],
-                             [0.04744828, -53.17854903, 1.12071698, 126.05822829, 0.39297335, 0.68797096, -0.37304126,
-                              -0.58781451, 0.96406436, 7.08617078, 0.89663052, 3.65803177],
-                             [0.00077159, -4.48005446, 0.0000277, -94.62521878, 0.01275854, -0.00000497, 0., 0.00001832,
-                              0.95467304, -4.50238709, 0.95459186, -4.56234781]])
-    non_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if "degree" not in c]
-    degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if "degree" in c]
-    assert np.allclose(net.res_trafo_sc.values[:, non_degree], res_trafo_sc[:, non_degree], rtol=0, atol=1e-5)
-    assert np.allclose(net.res_trafo_sc.values[:, degree], res_trafo_sc[:, degree], rtol=0, atol=0.07)
+    res_trafo_sc = pd.DataFrame(
+        data=[[0.20929507, -21.10342929, 0.62734921, 158.87959058, 10.1259613, 3.85742992, -10.05721888, -3.15086826,
+               0.99637, -0.24936231, 0.96992777, -3.72493869],
+              [0.37233817, -171.5927079, 1.15480275, 8.40493491, -19.09876937, 2.83670764, 19.30799817, -0.44577867,
+               0.99798561, -0.04098874, 0.9655717, 7.08233793],
+              [0.04744828, -53.17854903, 1.12071698, 126.05822829, 0.39297335, 0.68797096, -0.37304126, -0.58781451,
+               0.96406436, 7.08617078, 0.89663052, 3.65803177],
+              [0.00077159, -4.48005446, 0.0000277, -94.62521878, 0.01275854, -0.00000497, 0., 0.00001832, 0.95467304,
+               -4.50238709, 0.95459186, -4.56234781]],
+        columns=['ikss_hv_ka', 'ikss_hv_degree', 'ikss_lv_ka', 'ikss_lv_degree', 'p_hv_mw', 'q_hv_mvar', 'p_lv_mw',
+                 'q_lv_mvar', 'vm_hv_pu', 'va_hv_degree', 'vm_lv_pu', 'va_lv_degree']
+    )
+    non_degree = [c for c in net.res_trafo_sc.columns if "degree" not in c and c in res_trafo_sc]
+    degree = [c for c in net.res_trafo_sc.columns if "degree" in c and c in res_trafo_sc]
+    assert np.allclose(net.res_trafo_sc.loc[:, non_degree], res_trafo_sc.loc[:, non_degree], rtol=0, atol=1e-5)
+    assert np.allclose(net.res_trafo_sc.loc[:, degree], res_trafo_sc.loc[:, degree], rtol=0, atol=0.07)
 
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
@@ -531,20 +595,31 @@ def test_type_c_sgen_trafo4(inverse_y):
     runpp(net)
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.values, [0.680859, 129.720994, 3.049814, 152.46668], rtol=0, atol=1e-5)
+    assert np.allclose(net.res_bus_sc.loc[:, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
+                       [0.680859, 129.720994, 3.049814, 152.46668], rtol=0, atol=1e-5)
 
-    res_line_sc = [0.4184267, 0.41833479, -87.77946741, 0.4184267, 92.21738882, 0.99691065, 3.99091307, 0., 0.,
-                   0.05161055, -11.80466263, 0., 0.]
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.4184267, 0.41833479, -87.77946741, 0.4184267, 92.21738882, 0.99691065, 3.99091307, 0., 0.,
+               0.05161055, -11.80466263, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
     net.sgen.at[0, 'kappa'] = 1.2
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.values, [0.6821, 129.95747, 3.049814, 152.46668], rtol=0, atol=1e-5)
+    assert np.allclose(net.res_bus_sc.loc[:, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]],
+                       [0.6821, 129.95747, 3.049814, 152.46668], rtol=0, atol=1e-5)
 
-    res_line_sc = [0.4184267, 0.41833479, -87.77946741, 0.4184267, 92.21738882, 0.99691065, 3.99091307, 0., 0.,
-                   0.05161055, -11.80466263, 0., 0.]
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.4184267, 0.41833479, -87.77946741, 0.4184267, 92.21738882, 0.99691065, 3.99091307, 0., 0., 0.05161055,
+               -11.80466263, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
@@ -560,23 +635,32 @@ def test_load_type_c(inverse_y):
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.31443438, 59.9077952, 66.64954063, 194.98202182])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]], res_bus_sc,
+                       rtol=0, atol=1e-5)
 
-    res_line_sc = np.array([[0.31393855, 0.31381306, -71.61339493, 0.31393855, 108.37684429, 1.15160782, 3.16677295,
-                             -0.59052299, -0.92129652, 0.05635891, -1.59736465, 0.01829535, -14.28178926],
-                            [0.31443438, 0.31320255, -71.73882892, 0.31443438, 108.11805023, 0.58728173, 0.92032414, 0.,
-                             0., 0.01829535, -14.28178926, 0., 0.]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.31393855, 0.31381306, -71.61339493, 0.31393855, 108.37684429, 1.15160782, 3.16677295, -0.59052299,
+               -0.92129652, 0.05635891, -1.59736465, 0.01829535, -14.28178926],
+              [0.31443438, 0.31320255, -71.73882892, 0.31443438, 108.11805023, 0.58728173, 0.92032414, 0., 0.,
+               0.01829535, -14.28178926, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
     # now test for fault at the load bus
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=1, inverse_y=inverse_y)
     res_bus_sc = np.array([0.32128852, 61.21368488, 63.19657030, 190.67254950])
-    assert np.allclose(net.res_bus_sc.loc[1].values, res_bus_sc, rtol=0, atol=1e-5)
+    assert np.allclose(net.res_bus_sc.loc[1, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values, res_bus_sc, rtol=0,
+                       atol=1e-5)
 
-    res_line_sc = np.array([[0.32128852, 0.32121795, -72.27006831, 0.32128852, 107.72678791, 0.58777062, 2.35301071,
-                             -0.0000001, -0.0000001, 0.03962911, 3.70473647, 0., 0.],
-                            [0., 0., 0., 0., 0., 0., -0., 0., 0., 0., 0., 0., 0.]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.32128852, 0.32121795, -72.27006831, 0.32128852, 107.72678791, 0.58777062, 2.35301071, -0.0000001,
+               -0.0000001, 0.03962911, 3.70473647, 0., 0.], [0., 0., 0., 0., 0., 0., -0., 0., 0., 0., 0., 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
     # now try with positive p_mw, negative q_mvar
     net.load.q_mvar = -2
@@ -584,13 +668,18 @@ def test_load_type_c(inverse_y):
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.29176418, 55.58854147, 77.40936019, 208.87369732])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values, res_bus_sc, rtol=0,
+                       atol=1e-5)
 
-    res_line_sc = np.array([[0.29093901, 0.29082267, -70.14924675, 0.29093901, 109.84097608, 0.9903086, 2.72035994,
-                             -0.50842396, -0.79184572, 0.05224782, -0.1525674, 0.01697628, -12.86251045],
-                            [0.29176418, 0.29062116, -70.31955011, 0.29176418, 109.53732905, 0.50565042, 0.79240043, 0,
-                             0, 0.01697628, -12.86251045, 0., 0.]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.29093901, 0.29082267, -70.14924675, 0.29093901, 109.84097608, 0.9903086, 2.72035994, -0.50842396,
+               -0.79184572, 0.05224782, -0.1525674, 0.01697628, -12.86251045],
+              [0.29176418, 0.29062116, -70.31955011, 0.29176418, 109.53732905, 0.50565042, 0.79240043, 0, 0, 0.01697628,
+               -12.86251045, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
     # now try with negative p_mw, negative q_mvar
     net.load.p_mw = -5
@@ -598,13 +687,18 @@ def test_load_type_c(inverse_y):
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.27677319, 52.73237570, 22.92942615, 234.25805144])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]], res_bus_sc, rtol=0,
+                       atol=1.1e-5)
 
-    res_line_sc = np.array([[0.27533477, 0.27522443, -84.57867986, 0.27533477, 95.41156578, 0.88536175, 2.43975772,
-                             -0.45378216, -0.71256769, 0.04949597, -14.52396818, 0.01610403, -27.07850858],
-                            [0.27677319, 0.27568891, -84.53554824, 0.27677319, 95.32133091, 0.4550242, 0.7130645, 0, 0,
-                             0.01610403, -27.07850858, 0., 0.]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.27533477, 0.27522443, -84.57867986, 0.27533477, 95.41156578, 0.88536175, 2.43975772, -0.45378216,
+               -0.71256769, 0.04949597, -14.52396818, 0.01610403, -27.07850858],
+              [0.27677319, 0.27568891, -84.53554824, 0.27677319, 95.32133091, 0.4550242, 0.7130645, 0, 0, 0.01610403,
+               -27.07850858, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1.1e-6)
 
     # now try with zero p_mw and q_mvar, but the load still present
     net.load.p_mw = 0
@@ -614,13 +708,17 @@ def test_load_type_c(inverse_y):
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.28905271, 55.07193832, 40.36906664, 221.27455269])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]], res_bus_sc, rtol=0, atol=1e-5)
 
-    res_line_sc = np.array([[0.28792032, 0.28780504, -79.93483554, 0.28792032, 100.05540903, 0.96823224, 2.66644109,
-                             -0.49629573, -0.77774077, 0.05173395, -9.8916964, 0.01681852, -22.48755131],
-                            [0.28905271, 0.28792032, -79.94459097, 0.28905271, 99.91228819, 0.49629573, 0.77774077, 0,
-                             0, 0.01681852, -22.48755131, 0., 0.]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.28792032, 0.28780504, -79.93483554, 0.28792032, 100.05540903, 0.96823224, 2.66644109, -0.49629573,
+               -0.77774077, 0.05173395, -9.8916964, 0.01681852, -22.48755131],
+              [0.28905271, 0.28792032, -79.94459097, 0.28905271, 99.91228819, 0.49629573, 0.77774077, 0, 0, 0.01681852,
+               -22.48755131, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
@@ -637,13 +735,18 @@ def test_sgen_type_c(inverse_y):
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.27140996, 51.71054206, 1.86837663, 240.35204316])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values, res_bus_sc, rtol=0,
+                       atol=1.1e-5)
 
-    res_line_sc = np.array([[0.26972109, 0.26961292, -89.61895148, 0.26972109, 90.37129854, 0.84933852, 2.34245931,
-                             -0.43517822, -0.68498246, 0.0485064, -19.54879135, 0.01579197, -32.05702438],
-                            [0.27140996, 0.27034668, -89.51406404, 0.27140996, 90.34281512, 0.43756039, 0.68569712, 0,
-                             0, 0.01579197, -32.05702438, 0., 0.]])
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.5e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0.26972109, 0.26961292, -89.61895148, 0.26972109, 90.37129854, 0.84933852, 2.34245931, -0.43517822,
+               -0.68498246, 0.0485064, -19.54879135, 0.01579197, -32.05702438],
+              [0.27140996, 0.27034668, -89.51406404, 0.27140996, 90.34281512, 0.43756039, 0.68569712, 0, 0, 0.01579197,
+               -32.05702438, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1.5e-6)
 
     net.sgen.k = 1.
     net.sgen.kappa = 1.
@@ -652,14 +755,19 @@ def test_sgen_type_c(inverse_y):
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.37460791, 71.37239201, 1.86837663, 240.35204316])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]], res_bus_sc, rtol=0,
+                       atol=1.1e-5)
 
-    res_line_sc = np.array([[0.26731345, 0.26718739, -89.36194328, 0.26731345, 90.6256479, 1.00620834, 2.56195025,
-                             -0.59943766, -0.93434154, 0.05406945, -20.80440736, 0.02179654, -32.05702438],
-                            [0.37460791, 0.37314034, -89.51406404, 0.37460791, 90.34281512, 0.83356663, 1.30627509, 0,
-                             0, 0.02179654, -32.05702438, 0., 0.]])
+    res_line_sc = pd.DataFrame(
+        data=[[0.26731345, 0.26718739, -89.36194328, 0.26731345, 90.6256479, 1.00620834, 2.56195025, -0.59943766,
+               -0.93434154, 0.05406945, -20.80440736, 0.02179654, -32.05702438],
+              [0.37460791, 0.37314034, -89.51406404, 0.37460791, 90.34281512, 0.83356663, 1.30627509, 0, 0, 0.02179654,
+               -32.05702438, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
 
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.5e-6)
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1.5e-6)
 
     net.sgen.p_mw = 5
     net.sgen.kappa = 1.2
@@ -667,27 +775,36 @@ def test_sgen_type_c(inverse_y):
     calc_sc(net, use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.3757975, 71.59903955, 23.71256985, 238.47843258])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]], res_bus_sc, rtol=0,
+                       atol=1.1e-5)
 
-    res_line_sc = np.array([[0.26809978, 0.26797339, -84.23219467, 0.26809978, 95.75537616, 1.01346202, 2.57650331,
-                             -0.60429464, -0.93930479, 0.05422812, -15.70428288, 0.02186576, -26.99952079],
-                            [0.3757975, 0.37432527, -84.45656046, 0.3757975, 95.4003187, 0.83886913, 1.31458458, 0, 0,
-                             0.02186576, -26.99952079, 0., 0.]])
+    res_line_sc = pd.DataFrame(
+        data=[[0.26809978, 0.26797339, -84.23219467, 0.26809978, 95.75537616, 1.01346202, 2.57650331, -0.60429464,
+               -0.93930479, 0.05422812, -15.70428288, 0.02186576, -26.99952079],
+              [0.3757975, 0.37432527, -84.45656046, 0.3757975, 95.4003187, 0.83886913, 1.31458458, 0, 0, 0.02186576,
+               -26.99952079, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
 
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1.1e-6)
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1.1e-6)
 
     runpp(net)
     calc_sc(net, case="min", use_pre_fault_voltage=True, branch_results=True, bus=2, inverse_y=inverse_y)
 
     res_bus_sc = np.array([0.33334, 63.509772, 152.076986, 240.321483])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=4e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]], res_bus_sc, rtol=0, atol=4e-5)
 
-    res_line_sc = np.array([[0.22549428, 0.22549428, -57.7247817, 0.2256038, 122.26232395, 0.73906755, 1.86147343,
-                             -0.44933665, -0.70222018, 0.04661803, 10.62047628, 0.01939536, -0.35204102],
-                            [0.33203396, 0.33203396, -57.80908069, 0.33333986, 122.04779847, 0.66002583, 1.03432079, 0.,
-                             0., 0.01939536, -0.35204102, 0., 0.]])
+    res_line_sc = pd.DataFrame(
+        data=[[0.22549428, 0.22549428, -57.7247817, 0.2256038, 122.26232395, 0.73906755, 1.86147343, -0.44933665,
+               -0.70222018, 0.04661803, 10.62047628, 0.01939536, -0.35204102],
+              [0.33203396, 0.33203396, -57.80908069, 0.33333986, 122.04779847, 0.66002583, 1.03432079, 0., 0.,
+               0.01939536, -0.35204102, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
 
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=4e-6)
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=4e-6)
 
     # test with fault impedance
     runpp(net)
@@ -695,15 +812,19 @@ def test_sgen_type_c(inverse_y):
             r_fault_ohm=10, x_fault_ohm=5)
 
     res_bus_sc = np.array([0.36193148, 68.95720876, 33.71256985, 243.47843258])
-    assert np.allclose(net.res_bus_sc.loc[2].values, res_bus_sc, rtol=0, atol=1.1e-5)
+    assert np.allclose(net.res_bus_sc.loc[2, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]], res_bus_sc, rtol=0,
+                       atol=1.1e-5)
 
-    res_line_sc = np.array([
-        [0.25310399, 0.25289333, -79.00626669, 0.25310399, 100.93191475, 3.76673885, 3.49235098, -3.4021955,
-         -2.03898166, 0.1066072, -36.17097137, 0.08225171, -48.13325967],
-        [0.36193148, 0.35610158, -80.79001608, 0.36193148, 97.60508469, 4.69831427, 3.01125907, -3.92983193,
-         -1.96491597, 0.08225171, -48.13325967, 0.06371612, -55.82986413]])
+    res_line_sc = pd.DataFrame(
+        data=[[0.25310399, 0.25289333, -79.00626669, 0.25310399, 100.93191475, 3.76673885, 3.49235098, -3.4021955,
+               -2.03898166, 0.1066072, -36.17097137, 0.08225171, -48.13325967],
+              [0.36193148, 0.35610158, -80.79001608, 0.36193148, 97.60508469, 4.69831427, 3.01125907, -3.92983193,
+               -1.96491597, 0.08225171, -48.13325967, 0.06371612, -55.82986413]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
 
-    assert np.allclose(net.res_line_sc.values, res_line_sc, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
 
 def test_trafo_3w():
@@ -780,12 +901,17 @@ def test_one_line(inverse_y):
     bus_idx = 1
     calc_sc(net, case='max', branch_results=True, bus=bus_idx, use_pre_fault_voltage=True, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.loc[1].values, [4.79606369, 83.07025981, 0.47005260, 1.08109377], rtol=0,
+    assert np.allclose(net.res_bus_sc.loc[1, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
+                       [4.79606369, 83.07025981, 0.47005260, 1.08109377], rtol=0,
                        atol=1e-5)
 
-    res_line_sc = np.array([[4.79606369, 4.79601668, -68.32665507, 4.79606369, 111.67298852, 6.83166135, 10.76489439,
-                             0., 0., 0.15348228, -10.72685098, 0., 0.]])
-    assert np.allclose(net.res_line_sc, res_line_sc, rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[4.79606369, 4.79601668, -68.32665507, 4.79606369, 111.67298852, 6.83166135, 10.76489439,
+               0., 0., 0.15348228, -10.72685098, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))
@@ -803,18 +929,26 @@ def test_return_all_currents(inverse_y):
     # first test Type C:
     calc_sc(net, case='max', branch_results=True, bus=bus_idx, return_all_currents=True, use_pre_fault_voltage=True,
             inverse_y=inverse_y)
-    res_line_sc = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                            [4.79606369, 4.79601668, -68.32665507, 4.79606369, 111.67298852, 6.83166135, 10.76489439, 0,
-                             0, 0.15348228, -10.72685098, 0., 0.]])
-    assert np.allclose(net.res_line_sc, res_line_sc, rtol=0, atol=1e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+              [4.79606369, 4.79601668, -68.32665507, 4.79606369, 111.67298852, 6.83166135, 10.76489439, 0, 0,
+               0.15348228, -10.72685098, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1e-6)
 
     # test Type A:
     calc_sc(net, case='max', branch_results=True, return_all_currents=True, bus=bus_idx, use_pre_fault_voltage=False,
             inverse_y=inverse_y)
-    res_line_sc = np.array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                            [5.00936688, 5.00936688, -80.53631328, 5.00936688, 99.46368672, 7.45284566, 11.74387832, 0,
-                             0, 0.16030835, -22.93615278, 0., 0.]])
-    assert np.allclose(net.res_line_sc, res_line_sc, rtol=0, atol=1.5e-6)
+    res_line_sc = pd.DataFrame(
+        data=[[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+              [5.00936688, 5.00936688, -80.53631328, 5.00936688, 99.46368672, 7.45284566,
+               11.74387832, 0, 0, 0.16030835, -22.93615278, 0., 0.]],
+        columns=["ikss_ka", "ikss_from_ka", "ikss_from_degree", "ikss_to_ka", "ikss_to_degree", "p_from_mw",
+                 "q_from_mvar", "p_to_mw", "q_to_mvar", "vm_from_pu", "va_from_degree", "vm_to_pu", "va_to_degree"]
+    )
+    assert np.allclose(net.res_line_sc.loc[:, res_line_sc.columns], res_line_sc, rtol=0, atol=1.5e-6)
 
     # several buses not implemented for Type C
     create_sgen(net, 1, 0)

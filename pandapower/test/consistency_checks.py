@@ -57,7 +57,7 @@ def consistency_checks(net, rtol=1e-3, test_q=True):
 
 
 def indices_consistent(net):
-    elements = get_relevant_elements()
+    elements = get_relevant_elements(net)
     for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element].index
@@ -70,25 +70,36 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
     The surplus of bus feed summed over all buses always has to be equal to the sum of losses in
     all branches.
     """
-    # Active Power
-    bus_surplus_p = -net.res_bus.p_mw.sum()
-    bus_surplus_q = -net.res_bus.q_mvar.sum()
-    bus_dc_surplus_p = -net.res_bus_dc.p_mw.sum()
+    def safe_sum(net, attr_name, column_name):
+        """Safely sum a column from a result DataFrame if it exists."""
+        if hasattr(net, attr_name):
+            df = getattr(net, attr_name)
+            if df is not None and not df.empty and column_name in df.columns:
+                return df[column_name].sum()
+        return 0.0
 
-    branch_loss_p = (net.res_line.pl_mw.values.sum()
-                     + net.res_trafo.pl_mw.values.sum()
-                     + net.res_trafo3w.pl_mw.values.sum()
-                     + net.res_impedance.pl_mw.values.sum()
-                     + net.res_dcline.pl_mw.values.sum()
-                     + net.res_tcsc.pl_mw.values.sum())
-    branch_loss_q = (net.res_line.ql_mvar.values.sum()
-                     + net.res_trafo.ql_mvar.values.sum()
-                     + net.res_trafo3w.ql_mvar.values.sum()
-                     + net.res_impedance.ql_mvar.values.sum()
-                     + net.res_dcline.q_to_mvar.values.sum()
-                     + net.res_dcline.q_from_mvar.values.sum()
-                     + net.res_tcsc.ql_mvar.values.sum())
-    branch_dc_loss = net.res_line_dc.pl_mw.values.sum()
+    bus_surplus_p = -safe_sum(net, 'res_bus', 'p_mw')
+    bus_surplus_q = -safe_sum(net, 'res_bus', 'q_mvar')
+    bus_dc_surplus_p = -safe_sum(net, 'res_bus_dc', 'p_mw')
+
+    branch_loss_p = (
+            safe_sum(net, 'res_line', 'pl_mw') +
+            safe_sum(net, 'res_trafo', 'pl_mw') +
+            safe_sum(net, 'res_trafo3w', 'pl_mw') +
+            safe_sum(net, 'res_impedance', 'pl_mw') +
+            safe_sum(net, 'res_dcline', 'pl_mw') +
+            safe_sum(net, 'res_tcsc', 'pl_mw')
+    )
+    branch_loss_q = (
+            safe_sum(net, 'res_line', 'ql_mvar') +
+            safe_sum(net, 'res_trafo', 'ql_mvar') +
+            safe_sum(net, 'res_trafo3w', 'ql_mvar') +
+            safe_sum(net, 'res_impedance', 'ql_mvar') +
+            safe_sum(net, 'res_dcline', 'q_to_mvar') +
+            safe_sum(net, 'res_dcline', 'q_from_mvar') +
+            safe_sum(net, 'res_tcsc', 'ql_mvar')
+    )
+    branch_dc_loss = safe_sum(net, 'res_line_dc', 'pl_mw')
 
     try:
         assert isclose(bus_surplus_p, branch_loss_p, atol=atol)
@@ -119,7 +130,6 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     """
     bus_p = pd.Series(data=0., index=net.bus.index)
     bus_q = pd.Series(data=0., index=net.bus.index)
-    bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
 
     bus_p[~net.bus.in_service] = np.nan
     bus_q[~net.bus.in_service] = np.nan
@@ -134,37 +144,17 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
             bus_p.at[tab.bus] -= net.res_gen.p_mw.at[idx]
             bus_q.at[tab.bus] -= net.res_gen.q_mvar.at[idx]
 
-    for idx, tab in net.load.iterrows():
-        bus_p.at[tab.bus] += net.res_load.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_load.q_mvar.at[idx]
+    # addition
+    for elem in ["load", "asymmetric_load", "storage", "shunt", "ward", "xward", "vsc", "vsc_stacked"]:
+        for idx, tab in net[elem].iterrows():
+            bus_p.at[tab.bus] += net[f"res_{elem}"].p_mw.at[idx]
+            bus_q.at[tab.bus] += net[f"res_{elem}"].q_mvar.at[idx]
 
-    for idx, tab in net.sgen.iterrows():
-        bus_p.at[tab.bus] -= net.res_sgen.p_mw.at[idx]
-        bus_q.at[tab.bus] -= net.res_sgen.q_mvar.at[idx]
-
-    for idx, tab in net.asymmetric_load.iterrows():
-        bus_p.at[tab.bus] += net.res_asymmetric_load.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_asymmetric_load.q_mvar.at[idx]
-
-    for idx, tab in net.asymmetric_sgen.iterrows():
-        bus_p.at[tab.bus] -= net.res_asymmetric_sgen.p_mw.at[idx]
-        bus_q.at[tab.bus] -= net.res_asymmetric_sgen.q_mvar.at[idx]
-
-    for idx, tab in net.storage.iterrows():
-        bus_p.at[tab.bus] += net.res_storage.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_storage.q_mvar.at[idx]
-
-    for idx, tab in net.shunt.iterrows():
-        bus_p.at[tab.bus] += net.res_shunt.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_shunt.q_mvar.at[idx]
-
-    for idx, tab in net.ward.iterrows():
-        bus_p.at[tab.bus] += net.res_ward.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_ward.q_mvar.at[idx]
-
-    for idx, tab in net.xward.iterrows():
-        bus_p.at[tab.bus] += net.res_xward.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_xward.q_mvar.at[idx]
+    # subtraction
+    for elem in ["sgen", "asymmetric_sgen"]:
+        for idx, tab in net[elem].iterrows():
+            bus_p.at[tab.bus] -= net[f"res_{elem}"].p_mw.at[idx]
+            bus_q.at[tab.bus] -= net[f"res_{elem}"].q_mvar.at[idx]
 
     for idx, tab in net.svc.iterrows():
         bus_q.at[tab.bus] += net.res_svc.q_mvar.at[idx]
@@ -172,21 +162,23 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     for idx, tab in net.ssc.iterrows():
         bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
 
-    for idx, tab in net.vsc.iterrows():
-        bus_p.at[tab.bus] += net.res_vsc.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_vsc.q_mvar.at[idx]
-        bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
-
-    for idx, tab in net.vsc_stacked.iterrows():
-        bus_p.at[tab.bus] += net.res_vsc_stacked.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_vsc_stacked.q_mvar.at[idx]
-        bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_stacked.p_dc_mw_p.at[idx]
-        bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_stacked.p_dc_mw_m.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
-    assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
     if test_q:
         assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
+
+    if "bus_dc" in net and net.bus_dc.shape[0] > 0:
+        bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
+        bus_p_dc[~net.bus_dc.in_service] = np.nan
+
+        for idx, tab in net.vsc.iterrows():
+            bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
+
+        for idx, tab in net.vsc_stacked.iterrows():
+            bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_stacked.p_dc_mw_p.at[idx]
+            bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_stacked.p_dc_mw_m.at[idx]
+
+        assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
 
 
 def consistency_checks_3ph(net, rtol=2e-3):
@@ -196,7 +188,7 @@ def consistency_checks_3ph(net, rtol=2e-3):
     element_power_consistent_with_bus_power_3ph(net, rtol)
 
 def indices_consistent_3ph(net):
-    elements = get_relevant_elements("pf_3ph")
+    elements = get_relevant_elements(net, mode="pf_3ph")
     for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element+"_3ph"].index
@@ -209,17 +201,21 @@ def branch_loss_consistent_with_bus_feed_in_3ph(net, atol=1e-2):
     The surpluss of bus feed summed over all buses always has to be equal to the sum of losses in
     all branches.
     """
-    bus_surplus_p = -net.res_bus_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].sum().sum()
-    bus_surplus_q = -net.res_bus_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum().sum()
+    bus_surplus_p = -safe_sum_multiple_columns(
+        net, 'res_bus_3ph', ["p_a_mw", "p_b_mw", "p_c_mw"]
+    )
+    bus_surplus_q = -safe_sum_multiple_columns(
+        net, 'res_bus_3ph', ["q_a_mvar", "q_b_mvar", "q_c_mvar"]
+    )
 
-
-    branch_loss_p = net.res_line_3ph.pl_a_mw.sum() + net.res_trafo_3ph.pl_a_mw.sum() + \
-                    net.res_line_3ph.pl_b_mw.sum() + net.res_trafo_3ph.pl_b_mw.sum() + \
-                    net.res_line_3ph.pl_c_mw.sum() + net.res_trafo_3ph.pl_c_mw.sum()
-
-    branch_loss_q = net.res_line_3ph.ql_a_mvar.sum() + net.res_trafo_3ph.ql_a_mvar.sum() + \
-                    net.res_line_3ph.ql_b_mvar.sum() + net.res_trafo_3ph.ql_b_mvar.sum() + \
-                    net.res_line_3ph.ql_c_mvar.sum() + net.res_trafo_3ph.ql_c_mvar.sum()
+    branch_loss_p = (
+            safe_sum_multiple_columns(net, 'res_line_3ph', ["pl_a_mw", "pl_b_mw", "pl_c_mw"]) +
+            safe_sum_multiple_columns(net, 'res_trafo_3ph', ["pl_a_mw", "pl_b_mw", "pl_c_mw"])
+    )
+    branch_loss_q = (
+            safe_sum_multiple_columns(net, 'res_line_3ph', ["ql_a_mvar", "ql_b_mvar", "ql_c_mvar"]) +
+            safe_sum_multiple_columns(net, 'res_trafo_3ph', ["ql_a_mvar", "ql_b_mvar", "ql_c_mvar"])
+    )
 
     try:
         assert isclose(bus_surplus_p, branch_loss_p, atol=atol)
@@ -375,3 +371,24 @@ def trafo_currents_consistent_3ph(net, rtol):
 
             if vector_group == "YNyn":
                 check_ynyn_traformer_currents(i_hv, i_lv, ratio[tf_index], trafo["shift_degree"], rtol)
+
+
+def safe_sum(net, attr_name, column_name):
+    """Safely sum a column from a result DataFrame if it exists."""
+    if hasattr(net, attr_name):
+        df = getattr(net, attr_name)
+        if df is not None and not df.empty and column_name in df.columns:
+            return df[column_name].sum()
+    return 0.0
+
+
+def safe_sum_multiple_columns(net, attr_name, column_names):
+    """Safely sum multiple columns from a result DataFrame if they exist."""
+    if hasattr(net, attr_name):
+        df = getattr(net, attr_name)
+        if df is not None and not df.empty:
+            # Only sum columns that actually exist
+            existing_cols = [col for col in column_names if col in df.columns]
+            if existing_cols:
+                return df[existing_cols].sum().sum()
+    return 0.0

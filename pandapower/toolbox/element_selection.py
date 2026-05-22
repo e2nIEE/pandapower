@@ -615,13 +615,13 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     """
     pp_elms = set()
     if bus:
-        pp_elms |= {"bus"}
+        pp_elms.add("bus")
         if res_elements:
-            pp_elms |= {"res_bus"}
+            pp_elms.add("res_bus")
     pp_elms |= {el[0] for el in element_bus_tuples(
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)}
     if other_elements:
-        pp_elms |= {"measurement"}
+        pp_elms.add("measurement")
     if cost_tables:
         pp_elms |= {"poly_cost", "pwl_cost"}
     return pp_elms
@@ -653,19 +653,19 @@ def branch_element_bus_dict(include_switch=False, sort=None):
     return bebd
 
 
-def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):
+def element_bus_tuples(bus_elements: bool = True, branch_elements: bool = True, res_elements: bool = False):
     """
     Utility function
     Provides the tuples of elements and corresponding columns for buses they are connected to
-    :param bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
-    :param branch_elements: whether branch elements e.g. line, trafo, ... are included
-    :param res_elements: whether result table names e.g. res_sgen, res_line, ... are included
-    :param return_type: which type the output has
-    :return: list of tuples with element names and column names
+
+    Parameters:
+        bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
+        branch_elements: whether branch elements e.g. line, trafo, ... are included
+        res_elements: whether result table names e.g. res_sgen, res_line, ... are included
+
+    Return:
+        list of tuples with element names and column names
     """
-    if Version(__version__) < Version('2.13'):
-        logger.debug("element_bus_tuples() returns a list of tuples instead of a set of tuples "
-                     "since pp.version >= 2.12.")
     ebts = []
     if bus_elements:
         ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
@@ -683,42 +683,32 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     return ebts
 
 
-def count_elements(net, return_empties=False, **kwargs):
+def count_elements(net: pandapowerNet, return_empties: bool = False, **kwargs) -> pd.Series:
     """Counts how many elements of which element type exist in the pandapower net
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    return_empties : bool, optional
-        whether element types should be listed if no element exist, by default False
+    Parameters:
+        net: the pandapower net
+        return_empties: whether element types should be listed if no element exist
 
-    Other Parameters
-    ----------------
-    kwargs : dict[str,bool], optional
-        arguments (passed to pp_elements()) to narrow considered element types.
-        If nothing is passed, an empty dict is passed to pp_elements(), by default None
+    Keyword Args:
+        kwargs (dict[str,bool]): arguments passed to :func:`pp_elements` to narrow considered element types.
 
-    Returns
-    -------
-    pd.Series
+    Returns:
         number of elements per element type existing in the net
 
-    See also
-    --------
-    count_group_elements
+    See also:
+        :func:`count_group_elements`
 
-    Examples
-    --------
-    >>> from pandapower.toolbox.element_selection import count_elements
-    >>> from pandapower.networks.power_system_test_cases import case9
-    >>> count_elements(case9(), bus_elements=False)
-    bus     9
-    line    9
-    dtype: int32
+    Examples:
+        >>> from pandapower.toolbox.element_selection import count_elements
+        >>> from pandapower.networks.power_system_test_cases import case9
+        >>> count_elements(case9(), bus_elements=False)
+        bus     9
+        line    9
+        dtype: int32
     """
-    return pd.Series({et: net[et].shape[0] for et in pp_elements(**kwargs) if return_empties or \
-                      bool(net[et].shape[0])}, dtype=np.int64)
+    return pd.Series({et: net[et].shape[0] if et in net else 0 for et in pp_elements(**kwargs) if
+                      return_empties or (et in net and bool(net[et].shape[0]))}, dtype=np.int64)
 
 
 def get_all_elements(net, include_results=False):

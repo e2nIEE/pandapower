@@ -1,5 +1,3 @@
-from importlib.metadata import metadata
-
 import pandera as pa
 
 

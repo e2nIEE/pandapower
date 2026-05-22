@@ -5,6 +5,7 @@
 
 
 import numpy as np
+import pandas as pd
 import pytest
 import copy
 from pandapower.control import ContinuousTapControl
@@ -91,7 +92,8 @@ def _get_xward_result(net):
 def _get_losses(net):
     pl_mw = 0
     for elm in ['line', 'trafo', 'trafo3w', 'impedance']:
-        pl_mw += net['res_' + elm].pl_mw.sum()
+        if elm in net and net[elm].shape[0] > 0:
+            pl_mw += net['res_' + elm].pl_mw.sum()
     return pl_mw
 
 
@@ -127,9 +129,16 @@ def _get_inputs_results(net):
     inputs = np.r_[net.gen[net.gen.in_service].p_mw,
     np.zeros(len(net.ext_grid[net.ext_grid.in_service])),
     -net.xward[net.xward.in_service].ps_mw]
-    results = np.r_[net.res_gen[net.gen.in_service].p_mw,
-    net.res_ext_grid[net.ext_grid.in_service].p_mw,
-    -xward_pq_res]
+    results = np.r_[
+        net.res_gen[net.gen.in_service].p_mw,
+        net.res_ext_grid[net.ext_grid.in_service].p_mw if (
+                hasattr(net, 'res_ext_grid') and
+                net.res_ext_grid is not None and
+                hasattr(net, 'ext_grid') and
+                not net.ext_grid.empty
+        ) else pd.Series(dtype=float),
+    -xward_pq_res
+    ]
     return inputs, results
 
 

@@ -171,6 +171,7 @@ def test_json(net_in, tmp_path):
 
     # check if restore_all_dtypes works properly:
     net_in.line['test'] = 123
+    runpp(net_in)
     net_in.res_line['test'] = 123
     to_json(net_in, filename)
     net_out = from_json(filename)

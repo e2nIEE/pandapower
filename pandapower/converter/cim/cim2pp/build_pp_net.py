@@ -25,7 +25,6 @@ sc = cim_tools.get_pp_net_special_columns_dict()
 
 
 class CimConverter:
-
     def __init__(self, cim_parser: cim_classes.CimParser, converter_classes: Dict,
                  cim_version: str | None = None, **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)

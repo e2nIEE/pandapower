@@ -408,7 +408,7 @@ trafo_schema = pa.DataFrameSchema(
     strict=False,
 )
 
-res_trafo_schema = pa.DataFrameSchema(
+res_trafo_schema = res_trafo_est_schema = pa.DataFrameSchema(
     {
         "p_hv_mw": pa.Column(
             float, nullable=True, description="active power flow at the high voltage transformer bus [MW]"

@@ -5,7 +5,7 @@
 
 import numbers
 import warnings
-from collections.abc import MutableMapping, Iterable, Collection
+from collections.abc import Iterable, Collection
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as version_str
 from typing import (

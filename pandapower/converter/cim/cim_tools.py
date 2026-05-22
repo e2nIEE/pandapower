@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
 import os
 import json
 from typing import Dict, List
+
 import numpy as np
 import pandas as pd
 
@@ -33,21 +34,25 @@ def get_pp_net_special_columns_dict() -> Dict[str, str]:
 
 def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNet:
     """
-    Extend pandapower element DataFrames with special columns for the CIM converter, e.g. a column for the RDF ID.
-    :param net: The pandapower net to extend.
-    :param override: If True, all existing special CIM columns will be overwritten (content will be erased). If False,
-    only missing columns will be created. Optional, default: True
-    :return: The extended pandapower network.
+    Extend pandapower network with special element for the CIM converter.
+
+    ..note::
+        The CIM converter creates a pandapower network with metadata key "cim".
+        See :func:`pandapower.network.pandapowerNet.__init__`
+
+    Parameters:
+        net: The pandapower net to extend.
+        override: If True, net.CGMES will be overwritten (content will be erased). If False,
+            only missing element will be created.
+
+    Returns:
+        Reference to the input pandapower network (input will be modified).
     """
     # some special items
-    if override:
+    if 'CGMES' not in net or override:
         net['CGMES'] = {}
+    if 'BaseVoltage' not in net['CGMES'] or override:
         net['CGMES']['BaseVoltage'] = pd.DataFrame(None, columns=['rdfId', 'nominalVoltage'])
-    else:
-        if 'CGMES' not in net:
-            net['CGMES'] = {}
-        if 'BaseVoltage' not in net['CGMES']:
-            net['CGMES']['BaseVoltage'] = pd.DataFrame(None, columns=['rdfId', 'nominalVoltage'])
 
     return net
 
