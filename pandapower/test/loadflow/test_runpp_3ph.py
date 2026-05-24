@@ -1073,6 +1073,9 @@ def test_gen_3ph_loadflow():
     assert net.res_gen_3ph.q_a_mvar[0] < 100
     assert net.res_gen_3ph.q_a_mvar[0] < 100
 
+    assert np.isclose(net.res_gen_3ph.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(), 70.0)
+    assert np.isclose(net.res_gen_3ph.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum(), 33.165882)
+
 @pytest.mark.xfail
 def test_recycle_pq():
     net = create_empty_network()

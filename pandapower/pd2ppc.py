@@ -47,7 +47,7 @@ def _pd2ppc_recycle(net, sequence, recycle):
 
     if "gen" in recycle and recycle["gen"]:
         # updates the ppc["gen"] part
-        _build_gen_ppc(net, ppc)
+        _build_gen_ppc(net, ppc, sequence)
         ppc["gen"] = np.nan_to_num(ppc["gen"])
 
     ppci = _ppc2ppci(ppc, net)
@@ -200,7 +200,7 @@ def _pd2ppc(net, sequence=None, **kwargs):
     if "pf" in mode or "se" in mode or "dc" in mode:
         _check_for_reference_bus(ppc)
 
-    _build_gen_ppc(net, ppc)
+    _build_gen_ppc(net, ppc, sequence=sequence)
 
     _replace_nans_with_default_limits(net, ppc)
 
@@ -255,7 +255,7 @@ def _init_ppc(net, mode="pf", sequence=None):
     if mode == "opf":
         # additional fields in ppc
         ppc["gencost"] = np.array([], dtype=float)
-    net["_ppc"] = ppc
+        net["_ppc"] = ppc
 
     if sequence is None:
         net["_ppc"] = ppc

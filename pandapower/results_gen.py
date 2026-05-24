@@ -254,11 +254,11 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     S012[:, gen_is_idx] = np.array(
         [-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
     I012 = np.array(np.zeros((3, n_res_gen), dtype=complex))
-    I012[:, gen_is_idx] = I_from_SV_elementwise(S012[:, gen_is_idx], V012[:, gen_is_idx])
+    I012[:, gen_is_idx] = I_from_SV_elementwise(S012[:, gen_is_idx] * 1e3, V012[:, gen_is_idx])
 
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
-    Sabc = S_from_VI_elementwise(Vabc, Iabc) * 1e3
+    Sabc = S_from_VI_elementwise(Vabc, Iabc) * 1e-3 * -1
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
 
