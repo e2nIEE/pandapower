@@ -126,6 +126,7 @@ class Diagnostic:
         # clear old diagnostic output
         self.diag_results = {}
         self.diag_errors = {}
+        self.net = net
         # update with new kwargs
         self.kwargs.update(kwargs)
         for name, diag_class, arg_names in self._functions:
