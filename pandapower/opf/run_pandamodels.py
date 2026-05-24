@@ -60,7 +60,8 @@ def _runpm(
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     try:
         from juliacall import Main, Base, Pkg  # type: ignore
-    except ImportError:
+    except ImportError as e:
+        logger.debug(e)
         raise ImportError(
             "Please install juliacall properly to run pandapower with PandaModels.jl.")
 
