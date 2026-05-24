@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import copy
 import logging
 from typing import Literal, Any
 from collections.abc import Callable
@@ -126,7 +127,7 @@ class Diagnostic:
         # clear old diagnostic output
         self.diag_results = {}
         self.diag_errors = {}
-        self.net = net
+        self.net = copy.deepcopy(net)
         # update with new kwargs
         self.kwargs.update(kwargs)
         for name, diag_class, arg_names in self._functions:
