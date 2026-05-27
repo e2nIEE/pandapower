@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] integrated deprecation guidelines from documentation into CONTRIBUTING.md (#2974)
 - [CHANGED] differing behavior for :code:`in_service=False` depending on `voltage_depend_loads` has been fixed. Out of Service elements for res_bus now always contain `nan` as result.
 - [FIXED] `DiscreteTapControl` to work with `negative tap_step_percent`.
 - [CHANGED] updated the contributing file and documentation
