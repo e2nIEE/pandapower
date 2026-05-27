@@ -690,9 +690,9 @@ def get_connection_nodes(net, item, num_nodes):
                 logger.debug("Created new bus '%s' for disconected line " % name)
             else:
                 new_buses.append(b)
-        return tuple(new_buses), table
+        return list(new_buses), table
     else:
-        return tuple(buses), table
+        return list(buses), table
 
 
 def import_switch(item, idx_cubicle):
@@ -735,7 +735,7 @@ def create_connection_switches(net, item, number_switches, et, buses, elements):
 
 
 def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
-    coords: list[tuple[float, float]] = []
+    coords: list[list[float, float]] = []
     from_geo: Optional[str] = None
     to_geo: Optional[str] = None
     if from_bus in net.bus.index:
@@ -746,7 +746,7 @@ def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
 
     if from_geo and to_geo:
         coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
-        coords = [tuple((x, y)) for item in coords for x, y in item]
+        coords = [[x, y] for item in coords for x, y in item]
         logger.debug('got coords from buses: %s' % coords)
     else:
         logger.debug('no coords for line between buses %d and %d' % (from_bus, to_bus))
@@ -758,10 +758,10 @@ def get_coords_from_item(item):
     coords = item.GPScoords
     try:
         # lat / lon must be switched in my example (karlsruhe). Check if this is always right
-        c = tuple((x, y) for [y, x] in coords)
+        c = [[x, y] for [y, x] in coords]
     except ValueError:
         try:
-            c = tuple((x, y) for [y, x, z] in coords)
+            c = [[x, y] for [y, x, z] in coords]
         except ValueError:
             c = []
     return c
@@ -881,8 +881,8 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
 
 
 def point_len(
-        p1: tuple[Union[float, int], Union[float, int]],
-        p2: tuple[Union[float, int], Union[float, int]]) -> float:
+        p1: list[Union[float, int], Union[float, int]],
+        p2: list[Union[float, int], Union[float, int]]) -> float:
     """
     Calculate distance between p1 and p2
     """
@@ -891,7 +891,7 @@ def point_len(
     return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
 
 
-def calc_len_coords(coords: list[tuple[Union[float, int], Union[float, int]]]) -> float:
+def calc_len_coords(coords: list[list[Union[float, int], Union[float, int]]]) -> float:
     """
     Calculate the sum of point distances in list of coords
     """
@@ -1801,7 +1801,7 @@ def split_line_add_bus_old(net, item, parent):
         logger.debug('new coords: %s; %s' % (coords_a, coords_b))
 
         # get bus coords
-        bus_coords = tuple(coords_b[0])
+        bus_coords = list(coords_b[0])
         logger.debug('new bus coords: %.3f, %.3f' % bus_coords)
     else:
         logger.debug('line has no coords')
@@ -3502,11 +3502,11 @@ def create_pp_shunt(net, item):
         use_tap_table = 0
         id_characteristic_table = None
 
-    def calc_p_mw_and_q_mvar(r: float, x: float) -> tuple[float, float]:
+    def calc_p_mw_and_q_mvar(r: float, x: float) -> list[float, float]:
         if r == 0 and x == 0:
             return 0, 0
         divisor: float = (r ** 2 + x ** 2)
-        return (item.ushnm ** 2 * r) / divisor * multiplier, (item.ushnm ** 2 * x) / divisor * multiplier
+        return [(item.ushnm ** 2 * r) / divisor * multiplier, (item.ushnm ** 2 * x) / divisor * multiplier]
 
     multiplier = get_power_multiplier(item, 'Qact')
     bus, _ = get_connection_nodes(net, item, 1)
@@ -4882,7 +4882,7 @@ def break_coords_sections(coords, section_length, scale_factor_length):
         return [[np.nan, np.nan]], [[np.nan, np.nan]]
     # define scale
 
-    sum_len, delta_len, x1, y1, x2, y2 = tuple([0] * 6)
+    sum_len, delta_len, x1, y1, x2, y2 = list([0] * 6)
     i = 0
     for i in range(num_coords - 1):
         x1 = float(coords[i][0])
