@@ -1801,7 +1801,7 @@ def split_line_add_bus_old(net, item, parent):
         logger.debug('new coords: %s; %s' % (coords_a, coords_b))
 
         # get bus coords
-        bus_coords = list(coords_b[0])
+        bus_coords = tuple(coords_b[0])
         logger.debug('new bus coords: %.3f, %.3f' % bus_coords)
     else:
         logger.debug('line has no coords')
@@ -3502,7 +3502,7 @@ def create_pp_shunt(net, item):
         use_tap_table = 0
         id_characteristic_table = None
 
-    def calc_p_mw_and_q_mvar(r: float, x: float) -> list[float, float]:
+    def calc_p_mw_and_q_mvar(r: float, x: float) -> tuple[float, float]:
         if r == 0 and x == 0:
             return 0, 0
         divisor: float = (r ** 2 + x ** 2)
