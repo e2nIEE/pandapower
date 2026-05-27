@@ -56,7 +56,6 @@ _load_columns = {
     "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
     "type": pa.Column(
         pd.StringDtype,
-        pa.Check.isin(["wye", "delta"]),
         nullable=True,
         required=False,
         description="Connection Type of 3 Phase Load(Valid for three phase load flow only) Naming convention: wye, delta",
