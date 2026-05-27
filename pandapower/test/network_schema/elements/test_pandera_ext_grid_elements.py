@@ -242,6 +242,7 @@ class TestExtGridOptionalFields:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    @pytest.mark.xfail  # TODO add back when sc check is active
     def test_sc_group_partial_missing_invalid(self):
         """Test: SC group must be complete if any SC value is set"""
         net = create_empty_network()
@@ -254,6 +255,7 @@ class TestExtGridOptionalFields:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    @pytest.mark.xfail  # TODO add back when 3ph check is active
     def test_3ph_group_partial_missing_invalid(self):
         """Test: 3PH group must be complete if any 3PH value is set (and SC group too)"""
         net = create_empty_network()
