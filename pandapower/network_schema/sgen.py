@@ -209,7 +209,7 @@ sgen_schema = pa.DataFrameSchema(
         [
             "opf",
             # "sc",
-            "qcc",
+            # "qcc", # TODO remove reactive_capability_curve
         ],
         _sgen_columns,
     ),
