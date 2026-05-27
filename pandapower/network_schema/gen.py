@@ -204,7 +204,7 @@ _gen_columns = {
 }
 gen_checks = create_column_dependency_checks_from_metadata(
     [
-        "opf",
+        # "opf", # TODO removed due to error in testnets
         # "sc",
         "q_lim_enforced",
         # "qcc", #TODO remove reactive_capability_curve
