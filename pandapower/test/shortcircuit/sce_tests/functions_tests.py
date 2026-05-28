@@ -358,7 +358,7 @@ def run_test_cases(net, dataframes, fault, case, fault_values, lv_tol_percent, f
     """
     r_fault_ohm, x_fault_ohm = fault_values
 
-    # columns_to_check = get_columns_to_check(fault)
+    columns_to_check = None
     selected_sheet = f"{fault}_{case}_{lv_tol_percent}"
     if r_fault_ohm != 0.0 and x_fault_ohm != 0.0:
         selected_sheet = f"{fault}_{case}_fault_{lv_tol_percent}"
