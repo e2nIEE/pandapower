@@ -8,7 +8,7 @@ import warnings
 
 import numpy as np
 from scipy.sparse.linalg import inv as inv_sparse
-from scipy.linalg import inv
+from numpy.linalg import inv
 
 from pandapower.pd2ppc_zero import BIG_NUMBER
 from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV, R_EQUIV_OHM, X_EQUIV_OHM
@@ -71,7 +71,9 @@ def _calc_zbus(net, ppci):
                 warnings.simplefilter("ignore")
                 ppci["internal"]["Zbus"] = inv_sparse(Ybus).toarray()
         else:
-            ppci["internal"]["Zbus"] = inv(Ybus.toarray())
+            Ybus_full = ppci["internal"]["Ybus"].todense()
+            Zbus_matrix = inv(Ybus_full)
+            ppci["internal"]["Zbus"] = np.asarray(Zbus_matrix)
     except Exception as e:
         _clean_up(net, res=False)
         raise (e)
