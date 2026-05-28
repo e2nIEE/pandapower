@@ -40,7 +40,7 @@ class EmptyResults(metaclass=_EmptyResultsMeta):
 
     Will be created on first call, all subsequent calls will be faster
     """
-    _instance: EmptyResults = None
+    _instance: "EmptyResults" = None
     _data: dict[str, pd.DataFrame] = {}
 
     def __new__(cls):
