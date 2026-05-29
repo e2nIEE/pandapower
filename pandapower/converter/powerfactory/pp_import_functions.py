@@ -3506,7 +3506,7 @@ def create_pp_shunt(net, item):
         if r == 0 and x == 0:
             return 0, 0
         divisor: float = (r ** 2 + x ** 2)
-        return [(item.ushnm ** 2 * r) / divisor * multiplier, (item.ushnm ** 2 * x) / divisor * multiplier]
+        return (item.ushnm ** 2 * r) / divisor * multiplier, (item.ushnm ** 2 * x) / divisor * multiplier
 
     multiplier = get_power_multiplier(item, 'Qact')
     bus, _ = get_connection_nodes(net, item, 1)
