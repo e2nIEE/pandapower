@@ -14,7 +14,7 @@ from pandapower.create import create_empty_network, create_bus, create_line, cre
     create_buses, create_sgen, create_gen, create_gens, create_line_from_parameters
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.pf.create_jacobian_tdpf import calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, \
-    calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank
+    calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank, ALPHA_TDPF
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.run import set_user_pf_options, runpp
 from pandapower.std_types import parameter_from_std_type
@@ -124,7 +124,7 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
     net.line["temperature_degree_celsius"] = 20
     net.line["reference_temperature_degree_celsius"] = 20
     net.line["air_temperature_degree_celsius"] = 35
-    net.line["alpha"] = 0.004
+    net.line["alpha"] = ALPHA_TDPF
     net.line["conductor_outer_diameter_m"] = 30.6e-3
     net.line["mc_joule_per_m_k"] = 1490
     net.line["wind_speed_m_per_s"] = 0.6
@@ -234,7 +234,10 @@ def test_temperature_r(calc_a0_a1_a2_tau_for_simple_test_grid, with_gen, distrib
     runpp(net, tdpf=True, tdpf_delay_s=5 * 60, max_iteration=100)
 
     net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
+    # test default value for alpha = 0.004
+    net2.line.drop(columns="alpha", inplace=True)
     runpp(net2, consider_line_temperature=True)
+    net2.line["alpha"] = ALPHA_TDPF
 
     net.res_line = net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
     assert_res_equal(net, net2)
