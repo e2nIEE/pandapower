@@ -499,5 +499,98 @@ def test_sc_1ph_impedance():
     assert np.allclose(net.res_bus_sc.xk_ohm, [13.2439445, 137.5549268], rtol=0, atol=1e-5)
 
 
+@pytest.mark.parametrize("inverse_y", (True, False))
+def test_trafo_neutral_earthing_impedance(inverse_y):
+    # A neutral earthing impedance (e.g. a neutral earthing resistor/reactor on
+    # the star point of an earthed-wye / earthing transformer) must add 3*Z_N in
+    # series to the zero-sequence impedance for the single-phase-to-ground fault
+    # (IEC 60909). rn_ohm carries the resistance, xn_ohm the reactance of Z_N.
+    # Verified directly on the zero-sequence Thevenin impedance reported at the
+    # earthed LV bus (res_bus_sc.rk0_ohm / xk0_ohm).
+    def build(rn_ohm=0.0, xn_ohm=0.0):
+        net = create_empty_network(sn_mva=1.0)
+        b_hv = create_bus(net, vn_kv=20.0)
+        b_lv = create_bus(net, vn_kv=0.4)
+        create_ext_grid(net, b_hv, s_sc_max_mva=1000.0, s_sc_min_mva=1000.0,
+                        rx_max=0.1, rx_min=0.1, x0x_max=1.0, x0x_min=1.0,
+                        r0x0_max=0.1, r0x0_min=0.1)
+        create_transformer_from_parameters(
+            net, b_hv, b_lv, sn_mva=0.63, vn_hv_kv=20.0, vn_lv_kv=0.4,
+            vk_percent=6.0, vkr_percent=1.0, pfe_kw=0.0, i0_percent=0.0,
+            vector_group="Dyn", shift_degree=330.0,
+            vk0_percent=6.0, vkr0_percent=1.0, mag0_percent=100.0,
+            mag0_rx=0.0, si0_hv_partial=0.9, rn_ohm=rn_ohm, xn_ohm=xn_ohm)
+        calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
+        return net.res_bus_sc.loc[b_lv]
+
+    base = build()
+    with_rn = build(rn_ohm=0.01)
+    with_xn = build(xn_ohm=0.02)
+
+    # the neutral earthing impedance adds exactly 3*Z_N to the zero sequence
+    assert np.isclose(with_rn.rk0_ohm - base.rk0_ohm, 3 * 0.01, rtol=0, atol=1e-6)
+    assert np.isclose(with_rn.xk0_ohm, base.xk0_ohm, rtol=0, atol=1e-6)
+    assert np.isclose(with_xn.xk0_ohm - base.xk0_ohm, 3 * 0.02, rtol=0, atol=1e-6)
+    assert np.isclose(with_xn.rk0_ohm, base.rk0_ohm, rtol=0, atol=1e-6)
+    # the positive sequence impedance is unaffected by neutral earthing
+    assert np.isclose(with_rn.rk_ohm, base.rk_ohm, rtol=0, atol=1e-6)
+    assert np.isclose(with_rn.xk_ohm, base.xk_ohm, rtol=0, atol=1e-6)
+    # and the earth-fault current is correspondingly reduced
+    assert with_rn.ikss_ka < base.ikss_ka
+
+
+@pytest.mark.parametrize("inverse_y", (True, False))
+def test_zigzag_earthing_transformer(inverse_y):
+    # A zigzag earthing transformer (ZNyn / ZNd) provides the earth reference on
+    # an otherwise delta-fed (un-earthed) system. In the zero sequence it is a
+    # shunt-to-ground at its zigzag (ZN, HV-side) terminal. Modelling it as the
+    # equivalent wye-delta grounding bank (YNd, HV earthed star) must give the
+    # same single-phase earth-fault current, and a neutral earthing resistor
+    # (rn_ohm) must limit that current.
+    def build(eat_vg, rn_ohm=0.0):
+        net = create_empty_network(sn_mva=1.0)
+        b_src = create_bus(net, vn_kv=110.0)
+        b_mv = create_bus(net, vn_kv=20.0)     # delta side of the main trafo -> no earth
+        b_aux = create_bus(net, vn_kv=0.4)
+        create_ext_grid(net, b_src, s_sc_max_mva=5000.0, s_sc_min_mva=5000.0,
+                        rx_max=0.1, rx_min=0.1, x0x_max=1.0, x0x_min=1.0,
+                        r0x0_max=0.1, r0x0_min=0.1)
+        # main transformer: delta on the MV side, so the MV system has no earth
+        create_transformer_from_parameters(
+            net, b_src, b_mv, sn_mva=40.0, vn_hv_kv=110.0, vn_lv_kv=20.0,
+            vk_percent=12.0, vkr_percent=0.4, pfe_kw=0.0, i0_percent=0.0,
+            vector_group="YNd", shift_degree=330.0, vk0_percent=12.0,
+            vkr0_percent=0.4, mag0_percent=100.0, mag0_rx=0.0, si0_hv_partial=0.9)
+        # earthing transformer on the MV bus
+        create_transformer_from_parameters(
+            net, b_mv, b_aux, sn_mva=0.4, vn_hv_kv=20.0, vn_lv_kv=0.4,
+            vk_percent=4.0, vkr_percent=1.0, pfe_kw=0.0, i0_percent=0.0,
+            vector_group=eat_vg, shift_degree=330.0, vk0_percent=4.0,
+            vkr0_percent=1.0, mag0_percent=100.0, mag0_rx=0.0, si0_hv_partial=0.9,
+            rn_ohm=rn_ohm)
+        calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
+        return net.res_bus_sc.at[b_mv, "ikss_ka"], net.res_bus_sc.at[b_aux, "ikss_ka"]
+
+    znyn_mv, znyn_lv = build("ZNyn")
+    znd_mv, znd_lv = build("ZNd")
+    ynd_mv, _ = build("YNd")
+
+    # The zigzag earths the delta-fed MV system (finite MV earth-fault current),
+    # of the same order as the equivalent wye-delta grounding bank (YNd) -- but
+    # not identical, since the zigzag presents only its own HV-winding leakage
+    # portion to earth (si0), per the YNzn zero-sequence model.
+    assert znyn_mv > 0.0
+    assert 0.5 < znyn_mv / ynd_mv < 2.0
+    # ZNyn and ZNd share the same zigzag (HV) earth -> same MV earth-fault current.
+    assert np.isclose(znyn_mv, znd_mv, rtol=0, atol=1e-6)
+    # The zigzag decouples the two zero-sequence sides: an earthed-wye secondary
+    # (ZNyn) has its own LV earth-fault path, whereas a delta secondary (ZNd)
+    # gives no LV zero-sequence path.
+    assert znyn_lv > 0.0
+    assert np.isclose(znd_lv, 0.0, rtol=0, atol=1e-6)
+    # and a neutral earthing resistor limits the (HV) earth-fault current
+    assert build("ZNyn", rn_ohm=5.0)[0] < znyn_mv
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
