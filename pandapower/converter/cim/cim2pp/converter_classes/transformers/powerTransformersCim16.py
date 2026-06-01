@@ -238,39 +238,35 @@ class PowerTransformersCim16:
                            'vkr_hv_percent': [], 'vkr_mv_percent': [], 'vkr_lv_percent': [], 'vk_hv_percent': [],
                            'vk_mv_percent': [], 'vk_lv_percent': []}
 
-        def append_row(res_dict, id_c, row, cols):
-            res_dict['id_characteristic'].append(id_c)
-            res_dict['step'].append(row.tabular_step)
-            for variable in ['voltage_ratio', 'angle_deg', 'vkr_percent', 'vk_percent', 'vk_hv_percent',
-                             'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent', 'vkr_lv_percent']:
-                if variable in cols:
-                    res_dict[variable].append(getattr(row, variable))
+        value_cols = [col for col in append_dict if col not in ('id_characteristic', 'step')]
 
-        id_characteristic = self.cimConverter.net['trafo_characteristic_table']['id_characteristic'].max() + 1
-        if math.isnan(id_characteristic):
-            id_characteristic = 0
-        for one_id, one_df in trafo_df.groupby(sc['pte_id']):
-            # get next id_characteristic
-            if len(append_dict['id_characteristic']) > 0:
-                id_characteristic = max(append_dict['id_characteristic']) + 1
-            # set the ID at the corresponding transformer
-            trafo_df_origin.loc[trafo_df_origin['PowerTransformer'] == trafo_df_origin.loc[
-                trafo_df_origin[sc['pte_id']] == one_id, 'PowerTransformer'].values[
-                0], 'id_characteristic_table'] = id_characteristic
-            # iterate over the rows and get the desired data
-            for one_row in one_df.itertuples():
-                # to add only selected characteristic data instead of all available data, disable the next line and
-                # uncomment the rest
-                append_row(append_dict, id_characteristic, one_row, one_df.columns)
-                # if one_row.tabular_step == one_row.highStep:
-                #     append_row(append_dict, id_characteristic, one_row, one_df.columns)
-                # elif one_row.tabular_step == one_row.lowStep:
-                #     append_row(append_dict, id_characteristic, one_row, one_df.columns)
-                # elif one_row.tabular_step == one_row.neutralStep:
-                #     append_row(append_dict, id_characteristic, one_row, one_df.columns)
-                # elif one_row.tabular_step == one_row.step and one_row.step != one_row.highStep \
-                #         and one_row.step != one_row.lowStep and one_row.step != one_row.neutralStep:
-                #     append_row(append_dict, id_characteristic, one_row, one_df.columns)
+        id_characteristic_base = self.cimConverter.net['trafo_characteristic_table']['id_characteristic'].max() + 1
+        if math.isnan(id_characteristic_base):
+            id_characteristic_base = 0
+        id_characteristic_base = int(id_characteristic_base)
+
+        # One id_characteristic per tap-changer end; stable sort + factorize preserves legacy groupby order.
+        trafo_df = trafo_df[trafo_df[sc['pte_id']].notna()].sort_values(sc['pte_id'], kind='stable')
+        if trafo_df.index.size > 0:
+            group_codes = pd.factorize(trafo_df[sc['pte_id']], sort=True)[0]
+            trafo_df['id_characteristic'] = group_codes + id_characteristic_base
+
+            char_df = pd.DataFrame({
+                'id_characteristic': trafo_df['id_characteristic'].to_numpy(),
+                'step': trafo_df['tabular_step'].to_numpy(),
+            })
+            for variable in value_cols:
+                char_df[variable] = trafo_df[variable].to_numpy()
+
+            char_per_pte = trafo_df.drop_duplicates(subset=sc['pte_id']).set_index(sc['pte_id'])['id_characteristic']
+            pte_to_pt = (trafo_df_origin.loc[trafo_df_origin[sc['pte_id']].isin(char_per_pte.index),
+                                             [sc['pte_id'], 'PowerTransformer']]
+                         .drop_duplicates(subset=sc['pte_id']).set_index(sc['pte_id'])['PowerTransformer'])
+            pt_to_char = pd.Series(char_per_pte.reindex(pte_to_pt.index).to_numpy(), index=pte_to_pt.to_numpy())
+            mapped_char = trafo_df_origin['PowerTransformer'].map(pt_to_char)
+            trafo_df_origin.loc[mapped_char.notna(), 'id_characteristic_table'] = mapped_char[mapped_char.notna()]
+        else:
+            char_df = pd.DataFrame(append_dict)
 
         # create tap_dependency_table flag
         if 'tap_dependency_table' not in trafo_df_origin.columns:
@@ -279,7 +275,7 @@ class PowerTransformersCim16:
         trafo_df_origin.loc[trafo_df_origin['id_characteristic_table'].notna(), 'tap_dependency_table'] = True
 
         self.cimConverter.net['trafo_characteristic_table'] = pd.concat(
-            [self.cimConverter.net['trafo_characteristic_table'], pd.DataFrame(append_dict)],
+            [self.cimConverter.net['trafo_characteristic_table'], char_df],
             ignore_index=True, sort=False)
         self.cimConverter.net['trafo_characteristic_table']['step'] = \
             self.cimConverter.net['trafo_characteristic_table']['step'].astype(int)
