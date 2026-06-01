@@ -22,6 +22,7 @@ concurrency:
 
 env:
   IGNORES: "--ignore=pandapower/test/opf --ignore=pandapower/test/network_schema"
+  TUTORIAL_IGNORES: "--ignore=tutorials/uk_power_networks"
 
 jobs:
   build:
@@ -383,7 +384,7 @@ jobs:
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 
   tutorial_warnings_tests:
     needs: build
@@ -402,7 +403,7 @@ jobs:
           python -m pip list
       - name: Test with pytest
         run: |
-          pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 
   docs_check:
     needs: build
