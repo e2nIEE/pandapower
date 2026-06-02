@@ -286,8 +286,7 @@ class ConnectivityNodesCim16:
         regions = pd.merge(geo_regions, regions, left_on="rdfId", right_on="Region_SubGeographicalRegion")
         regions = regions.rename(columns={'name': 'GeographicalRegion_name', 'name_SubGeographicalRegion': 'SubGeographicalRegion_name',
                                           'rdfId': 'GeographicalRegion_id', 'rdfId_SubGeographicalRegion': 'SubGeographicalRegion_id'})
-        regions = regions.drop(columns=['name_substation', 'Region_substation', 'Region_SubGeographicalRegion',
-                                        'masUri'])
+        regions = regions.drop(columns=['name_substation', 'Region_substation', 'Region_SubGeographicalRegion'])
         # drop duplicates due to some bugs in several CGMES exports
         regions = regions.drop_duplicates(subset=['rdfId_substation'], keep='first')
         connectivity_nodes = pd.merge(connectivity_nodes, regions, how='left', left_on='Substation', right_on='rdfId_substation')
