@@ -448,6 +448,7 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     }
     
     #### for 6 special UWs
+    
     # if item.cpSite is not None:
     #     if len(item.cpSite.desc):
     #         params['TP_cpSite'] = item.cpSite.desc[0]
@@ -461,7 +462,9 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     #             params['TP_Substat'] = item.cpSubstat.desc[0]
     #         else:
     #             params['TP_Substat'] = item.cpSubstat.desc[2]
+    
     ###
+    
         
     system_type = {0: "ac", 1: "dc", 2: "ac/bi"}[item.systype]
 
@@ -520,20 +523,43 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced):
     else:
         logger.debug('bus %s is not part of any substation' %
                      params['name'])
-
-
+    
+        
+    ### E.DIS
+    if item.HasAttribute('e:cpFeed'):
+        feeder = item.GetAttribute('e:cpFeed')
+        
+        if feeder is not None:
+            feeder_name = feeder.loc_name
+            logger.debug('adding feeder name %s to descr of bus %s (#%d)' %
+                         (feeder_name, params['name'], bid))
+            feeder_equipment = item.GetAttribute('r:cpFeed:e:for_name')
+            logger.debug('adding feeder equipment %s to descr of bus %s (#%d)' %
+                         (feeder_equipment, params['name'], bid))
+        else:
+            feeder_name = ''
+            feeder_equipment = ''
+    else:
+        feeder_name = ''
+        feeder_equipment = ''
+        
+    ######  
+        
     if len(item.desc) > 0:
         descr = ' \n '.join(item.desc)
     elif item.fold_id:
         descr = item.fold_id.loc_name
     else:
         descr = ''
-
     logger.debug('adding descr <%s> to bus' % descr)
 
     net[table].at[bid, "description"] = descr
     net[table].at[bid, "substat"] = substat_descr
     net[table].at[bid, "folder_id"] = item.fold_id.loc_name
+    ### E.DIS
+    net[table].at[bid, "feeder_name"] = feeder_name
+    net[table].at[bid, "feeder_equipment"] = feeder_equipment
+    ###
 
     attr_dict = {"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
     add_additional_attributes(item, net, table, bid, attr_dict=attr_dict,
@@ -738,7 +764,8 @@ def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
 
     if from_geo and to_geo:
         coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
-        coords = [tuple((x, y)) for item in coords for x, y in item]
+        #coords = [tuple((x, y)) for item in coords for x, y in item]
+        coords = [[x, y] for item in coords for x, y in item]
         logger.debug('got coords from buses: %s' % coords)
     else:
         logger.debug('no coords for line between buses %d and %d' % (from_bus, to_bus))
@@ -795,6 +822,11 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
 
     logger.debug('asked for buses')
     # here: implement situation if line not connected
+    
+    ###
+    if item.loc_name=='R/115712_2':
+        print('moment')
+    ####
 
     try:
         (params['bus1'], params['bus2']), bus_table = get_connection_nodes(net, item, 2)
