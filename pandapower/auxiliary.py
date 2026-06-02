@@ -1607,10 +1607,9 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
             'in_service': dctab.in_service
         }
 
-        if hasattr(dctab, 'min_p_mw'):
-            kwargs_to['min_p_mw'] = p_min
-        if hasattr(dctab, 'max_p_mw'):
+        if hasattr(dctab, 'min_p_mw') or hasattr(dctab, 'max_p_mw'):
             kwargs_to['max_p_mw'] = p_max
+            kwargs_to['min_p_mw'] = p_min
         if hasattr(dctab, 'max_q_to_mvar'):
             kwargs_to['max_q_mvar'] = dctab.max_q_to_mvar
         if hasattr(dctab, 'min_q_to_mvar'):
@@ -1622,12 +1621,13 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
             'bus': dctab.from_bus,
             'p_mw': p_from,
             'vm_pu': dctab.vm_from_pu,
-            'in_service': dctab.in_service
+            'in_service': dctab.in_service,
+            'min_p_mw': -p_max,
+            'max_p_mw': -p_min,
         }
 
-        if hasattr(dctab, 'max_p_mw'):
+        if hasattr(dctab, 'max_p_mw') or hasattr(dctab, 'min_p_mw'):
             kwargs_from['min_p_mw'] = -p_max
-        if hasattr(dctab, 'min_p_mw'):
             kwargs_from['max_p_mw'] = -p_min
         if hasattr(dctab, 'max_q_from_mvar'):
             kwargs_from['max_q_mvar'] = dctab.max_q_from_mvar
