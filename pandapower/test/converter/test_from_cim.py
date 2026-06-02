@@ -1707,11 +1707,26 @@ def test_sv_mapping():
         'reactivePower': [-10.0, -5.0]
     })
 
+    # ── EnergyConsumer (eq) ────────────────────────────────────────────────────
+    cim['eq']['EnergyConsumer'] = pd.DataFrame({
+        'rdfId': ['_ec1'],
+        'name': ['EnergyConsumer1'],
+        'description': ['EnergyConsumer1'],
+        'EquipmentContainer': ['_vl110'],
+    })
+
+    # ── EnergyConsumer (ssh) ───────────────────────────────────────────────────
+    cim['ssh']['EnergyConsumer'] = pd.DataFrame({
+        'rdfId': ['_ec1'],
+        'p': [10.0],
+        'q': [10.0]
+    })
+
     cim['sv']['SvPowerFlow'] = pd.DataFrame({
-        'rdfId': ['_svpf_gen1', '_svpf_gen2', '_svpf_es1', '_svpf_es2'],
-        'Terminal': ['_term_gen1', '_term_gen2', '_term_es1', '_term_es2'],
-        'p': [-90.0, -160.0, -60.0, -15.0],
-        'q': [-30.0, -40.0, -15.0,  -10.0]
+        'rdfId': ['_svpf_gen1', '_svpf_gen2', '_svpf_es1', '_svpf_es2', '_svpf_ec1'],
+        'Terminal': ['_term_gen1', '_term_gen2', '_term_es1', '_term_es2', '_term_ec1'],
+        'p': [-90.0, -160.0, -60.0, -15.0, 20.0],
+        'q': [-30.0, -40.0, -15.0,  -10.0, 20.0]
     })
 
     # ── LinearShuntCompensator ─────────────────────────────────────────────────
@@ -1809,24 +1824,23 @@ def test_sv_mapping():
     })
 
     # ── Terminals ──────────────────────────────────────────────────────────────
-    # Gen1 → CN1, Gen2 → CN2, Shunt → CN1, Trafo HV → CN2, Trafo LV → CN3
     cim['eq']['Terminal'] = pd.DataFrame({
-        'rdfId': ['_term_gen1', '_term_gen2', '_term_shunt1',
-                  '_term_trafo_hv', '_term_trafo_lv', '_term_es1', '_term_es2'],
-        'name':  ['T_Gen1', 'T_Gen2', 'T_Shunt1', 'T_Trafo_HV', 'T_Trafo_LV', 'T_ES1', 'T_ES2'],
-        'ConnectivityNode': ['_cn1', '_cn2', '_cn1', '_cn2', '_cn3', '_cn1',  '_cn3'],
-        'ConductingEquipment': ['_sm1', '_sm2', '_shunt1', '_trafo1', '_trafo1', '_es1',  '_es2'],
-        'sequenceNumber': [1, 1, 1, 1, 2, 1, 1]
+        'rdfId': ['_term_gen1', '_term_gen2', '_term_shunt1', '_term_trafo_hv', '_term_trafo_lv',
+                  '_term_es1', '_term_es2', '_term_ec1'],
+        'name': ['T_Gen1', 'T_Gen2', 'T_Shunt1', 'T_Trafo_HV', 'T_Trafo_LV', 'T_ES1', 'T_ES2', 'T_EC1'],
+        'ConnectivityNode': ['_cn1', '_cn2', '_cn1', '_cn2', '_cn3', '_cn1',  '_cn3', '_cn1'],
+        'ConductingEquipment': ['_sm1', '_sm2', '_shunt1', '_trafo1', '_trafo1', '_es1', '_es2', '_ec1'],
+        'sequenceNumber': [1, 1, 1, 1, 2, 1, 1, 1]
     })
     cim['ssh']['Terminal'] = pd.DataFrame({
-        'rdfId':     ['_term_gen1', '_term_gen2', '_term_shunt1',
-                      '_term_trafo_hv', '_term_trafo_lv', '_term_es1', '_term_es2'],
-        'connected': [True, True, True, True, True, True, True]
+        'rdfId': ['_term_gen1', '_term_gen2', '_term_shunt1', '_term_trafo_hv', '_term_trafo_lv',
+                  '_term_es1', '_term_es2', '_term_ec1'],
+        'connected': [True, True, True, True, True, True, True, True]
     })
     cim['tp']['Terminal'] = pd.DataFrame({
         'rdfId': ['_term_gen1', '_term_gen2', '_term_shunt1',
-                  '_term_trafo_hv', '_term_trafo_lv', '_term_es1', '_term_es2'],
-        'TopologicalNode': ['_tn1', '_tn2', '_tn1', '_tn2', '_tn3', '_tn1', '_tn3']
+                  '_term_trafo_hv', '_term_trafo_lv', '_term_es1', '_term_es2', '_term_ec1'],
+        'TopologicalNode': ['_tn1', '_tn2', '_tn1', '_tn2', '_tn3', '_tn1', '_tn3', '_tn1']
     })
 
     # Set the cim dict and prepare
@@ -1835,6 +1849,25 @@ def test_sv_mapping():
     cim_parser.set_cim_data_types()
 
     net = from_cim_dict(cim_parser, ignore_errors=True, use_sv_data_for_assets=True)
+
+    # test the generators
+    assert net.sgen.loc[net.sgen['origin_id'] == '_es1', 'p_mw'].item() == pytest.approx(60.0, abs=0.000001)
+    assert net.sgen.loc[net.sgen['origin_id'] == '_es2', 'p_mw'].item() == pytest.approx(15.0, abs=0.000001)
+    assert net.sgen.loc[net.sgen['origin_id'] == '_es1', 'q_mvar'].item() == pytest.approx(15.0, abs=0.000001)
+    assert net.sgen.loc[net.sgen['origin_id'] == '_es2', 'q_mvar'].item() == pytest.approx(10.0, abs=0.000001)
+
+    assert net.gen.loc[net.gen['origin_id'] == '_sm1', 'p_mw'].item() == pytest.approx(90.0, abs=0.000001)
+    assert net.gen.loc[net.gen['origin_id'] == '_sm2', 'p_mw'].item() == pytest.approx(160.0, abs=0.000001)
+
+    # test the loads
+    assert net.load.loc[net.load['origin_id'] == '_ec1', 'p_mw'].item() == pytest.approx(20.0, abs=0.000001)
+    assert net.load.loc[net.load['origin_id'] == '_ec1', 'q_mvar'].item() == pytest.approx(20.0, abs=0.000001)
+
+    # test the shunts
+    assert net.shunt.loc[net.shunt['origin_id'] == '_shunt1', 'step'].item() == pytest.approx(2.0, abs=0.000001)
+
+    # test the trafo tap changer
+    assert net.trafo.loc[net.trafo['origin_id'] == '_trafo1', 'tap_pos'].item() == pytest.approx(12.0, abs=0.000001)
 
 
 if __name__ == "__main__":
