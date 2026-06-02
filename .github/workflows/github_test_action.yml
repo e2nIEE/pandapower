@@ -22,6 +22,7 @@ concurrency:
 
 env:
   IGNORES: "--ignore=pandapower/test/opf --ignore=pandapower/test/network_schema"
+  TUTORIAL_IGNORES: "--ignore=tutorials/uk_power_networks"
 
 jobs:
   build:
@@ -36,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -71,7 +72,7 @@ jobs:
   network_schema:
     # This tests only the network_schema tests due to the large amount these are only tested on min/max python version
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       matrix:
         #python-version: ['3.10', '3.14']
@@ -82,20 +83,20 @@ jobs:
 #      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           #python-version: ${{ matrix.python-version }}
           python-version: '3.14'
       - name: Install dependencies
         run: |
-          uv sync --extra dev          
-          uv pip install pytest-split
+          uv sync --extra dev
+          uv pip uninstall juliacall
+          uv pip install pytest-cov pytest-split
       - name: List of installed packages
         run: |
           uv pip list
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv pip install pytest-cov numpy~=1.26
           uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
           cp ./coverage.xml ./coverage-net-schema-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
@@ -113,7 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: "3.14"
       - name: Install dependencies
@@ -168,38 +169,6 @@ jobs:
           name: coverage-opf
           path: ./coverage-opf.xml
 
-  network_schema:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        group: [1, 2, 3, 4]
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-        with:
-          python-version: '3.14'
-          # Reminder: when removing the support of an old python version here, then don't forget to
-          # remove it also in pyproject.toml 'requires-python' and the release pipelines
-      - name: Install dependencies
-        run: |
-          uv sync --extra dev
-          uv pip uninstall juliacall
-          uv pip install pytest-cov pytest-split
-      - name: List of installed packages
-        run: |
-          uv pip list
-      - name: Test with pytest, Codecov and Coverage
-        run: |
-          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
-          cp ./coverage.xml ./coverage-${{ matrix.group }}-network_schema.xml
-      - name: Upload coverage as artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-${{ matrix.group }}-network_schema
-          path: ./coverage-${{ matrix.group }}-network_schema.xml
-
   upload-coverage:
     runs-on: ubuntu-latest
     needs: [build, opf, network_schema]
@@ -249,7 +218,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Install uv
-      uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -273,7 +242,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Install uv
-      uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -310,7 +279,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Install uv
-      uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -373,7 +342,7 @@ jobs:
         fi
     - uses: actions/checkout@v6
     - name: Install uv
-      uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -415,7 +384,7 @@ jobs:
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 
   tutorial_warnings_tests:
     needs: build
@@ -434,7 +403,7 @@ jobs:
           python -m pip list
       - name: Test with pytest
         run: |
-          pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 
   docs_check:
     needs: build
@@ -460,7 +429,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies

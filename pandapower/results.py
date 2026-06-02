@@ -4,14 +4,13 @@
 import numpy as np
 import pandas as pd
 
-from network_structure import get_results_structure_dict
 from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
     _get_bus_results_3ph, _get_bus_dc_v_results, _get_p_dc_results, _set_dc_buses_out_of_service
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph, _get_dc_slack_results
-from pandapower.network_structure import get_structure_dict
+from pandapower.network_structure import get_results_structure_dict
 
 BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
                        "branch_ikss_angle_f", "branch_ikss_angle_t",
@@ -41,7 +40,7 @@ class EmptyResults(metaclass=_EmptyResultsMeta):
 
     Will be created on first call, all subsequent calls will be faster
     """
-    _instance: EmptyResults = None
+    _instance: "EmptyResults | None" = None
     _data: dict[str, pd.DataFrame] = {}
 
     def __new__(cls):
