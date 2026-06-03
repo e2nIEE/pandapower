@@ -49,7 +49,7 @@ jobs:
       - name: Install dependencies
         if: ${{ (matrix.python-version == '3.10') || (matrix.python-version == '3.11') }}
         run: |
-          uv sync --extra pandapower[all,docs,test,typing,pandamodels,tutorials]
+          uv sync --extra all --extra docs --extra test --extra typing --extra pandamodels --extra tutorials
           uv pip install pytest-split
           uv pip uninstall juliacall
       - name: List of installed packages
