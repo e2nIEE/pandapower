@@ -137,7 +137,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.14']
-        julia-version: ['1.10']
+        julia-version: [ '1.12' ]
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
     steps:
