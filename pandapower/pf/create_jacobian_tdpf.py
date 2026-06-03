@@ -11,7 +11,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 
 SIGMA = 5.670374419e-8
 # ALPHA = 4.03e-3
-ALPHA = 4e-3
+ALPHA_TDPF = 4e-3
 
 
 def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
@@ -212,7 +212,7 @@ def calc_T_ngoko(i_square_pu, a0, a1, a2, tdpf_delay_s, T0, tau):
 
 def calc_a0_a1_a2_tau(t_air_pu, t_max_pu, t_ref_pu, r_ref_ohm_per_m, conductor_outer_diameter_m,
                       mc_joule_per_m_k, wind_speed_m_per_s, wind_angle_degree, s_w_per_square_meter,
-                      alpha_pu=ALPHA, solar_absorptivity=0.5, emissivity=0.5, T_base=1, i_base_a=1):
+                      alpha_pu=ALPHA_TDPF, solar_absorptivity=0.5, emissivity=0.5, T_base=1, i_base_a=1):
     """
     Calculate the coefficients for the simplified thermal model according to Ngoko et al.
 
