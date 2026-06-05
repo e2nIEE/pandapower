@@ -62,7 +62,7 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         from juliacall import Main, Base, Pkg  # type: ignore  # pre juliacall 0.9.34 Pkg could be imported directly
     except ImportError:
         try:
-            from juliacall import Main, Base
+            from juliacall import Main, Base  # type: ignore
             Main.seval("using Pkg")
             Pkg = Main.Pkg
         except ImportError:
