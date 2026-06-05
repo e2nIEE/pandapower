@@ -59,10 +59,16 @@ def _runpm(
 
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     try:
-        from juliacall import Main, Base, Pkg  # type: ignore
+        from juliacall import Main, Base, Pkg  # type: ignore  # pre juliacall 0.9.34 Pkg could be imported directly
     except ImportError:
-        raise ImportError(
-            "Please install juliacall properly to run pandapower with PandaModels.jl.")
+        try:
+            from juliacall import Main, Base
+            Main.seval("using Pkg")
+            Pkg = Main.Pkg
+        except ImportError:
+            raise ImportError(
+                "Please install juliacall properly to run pandapower with PandaModels.jl."
+            )
 
     if not Base.find_package("PandaModels"):
         logger.info("PandaModels.jl is missing, adding.")
