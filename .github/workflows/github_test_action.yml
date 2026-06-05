@@ -43,13 +43,13 @@ jobs:
       - name: Install dependencies
         if: ${{ (matrix.python-version != '3.10') && (matrix.python-version != '3.11') }}
         run: |
-          uv sync --extra dev
+          uv sync --extra all --extra test --extra pandamodels --extra pgm
           uv pip install pytest-split
           uv pip uninstall juliacall
       - name: Install dependencies
         if: ${{ (matrix.python-version == '3.10') || (matrix.python-version == '3.11') }}
         run: |
-          uv sync --extra all --extra docs --extra test --extra typing --extra pandamodels --extra tutorials
+          uv sync --extra all --extra test --extra pandamodels
           uv pip install pytest-split
           uv pip uninstall juliacall
       - name: List of installed packages
@@ -92,7 +92,7 @@ jobs:
           python-version: '3.14'
       - name: Install dependencies
         run: |
-          uv sync --extra dev
+          uv sync --extra all --extra test --extra pandamodels --extra pgm
           uv pip uninstall juliacall
           uv pip install pytest-cov pytest-split
       - name: List of installed packages
