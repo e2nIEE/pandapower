@@ -380,7 +380,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
-          python -m pip install -e .[all,tutorials,test]
+          python -m pip install -e .[all,pgm,tutorials,test]
       - name: List all installed packages
         run: |
           python -m pip list
@@ -400,7 +400,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
-          python -m pip install -e .[all,tutorials,test]
+          python -m pip install -e .[all,pgm,tutorials,test]
       - name: List all installed packages
         run: |
           python -m pip list
