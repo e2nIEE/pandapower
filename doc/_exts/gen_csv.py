@@ -53,7 +53,7 @@ def create_docu_csv_from_schema(schema: DataFrameSchema, path: str, filename: st
         for check in checks:
             if check["options"]["check_name"] == "in_range":
                 return f"[{check['min_value']}, {check['max_value']}]"
-            return f"{check_name_to_symbol[check["options"]["check_name"]]}{check['value']}"
+            return f"{check_name_to_symbol[check['options']['check_name']]}{check['value']}"
         return pd.NA
 
     def _get_metadata(name: str, kind: str, default: bool = False):
