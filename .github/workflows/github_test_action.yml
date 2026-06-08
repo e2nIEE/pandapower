@@ -41,29 +41,32 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
+        if: ${{ (matrix.python-version != '3.10') && (matrix.python-version != '3.11') }}
         run: |
-          uv sync --extra dev          
+          uv sync --extra all --extra test --extra pandamodels --extra pgm
           uv pip install pytest-split
           uv pip uninstall juliacall
-          # if ${{ matrix.python-version == '3.10' }}; then uv pip install pypower; fi
-          # if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
-          # if ${{ matrix.python-version == '3.14' }}; then uv pip install lightsim2grid; fi
-          # if ${{ matrix.python-version == '3.13' }}; then uv pip install lightsim2grid; fi
+      - name: Install dependencies
+        if: ${{ (matrix.python-version == '3.10') || (matrix.python-version == '3.11') }}
+        run: |
+          uv sync --extra all --extra test --extra pandamodels
+          uv pip install pytest-split
+          uv pip uninstall juliacall
       - name: List of installed packages
         run: |
           uv pip list
       - name: Test with pytest
-        if: ${{ matrix.python-version != '3.10' }}
+        if: ${{ matrix.python-version != '3.12' }}
         run: |
           uv run pytest --splits 2 --group ${{ matrix.group }} $IGNORES
       - name: Test with pytest, Codecov and Coverage
-        if: ${{ matrix.python-version == '3.10' }}
+        if: ${{ matrix.python-version == '3.12' }} # collecting on 3.12 (oldest version where pgm is included)
         run: |
           uv pip install pytest-cov numpy~=1.26
           uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} $IGNORES
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
-        if: ${{ matrix.python-version == '3.10' }}
+        if: ${{ matrix.python-version == '3.12' }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.group }}
@@ -89,7 +92,7 @@ jobs:
           python-version: '3.14'
       - name: Install dependencies
         run: |
-          uv sync --extra dev
+          uv sync --extra all --extra test --extra pandamodels --extra pgm
           uv pip uninstall juliacall
           uv pip install pytest-cov pytest-split
       - name: List of installed packages
@@ -377,7 +380,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
-          python -m pip install -e .[all,tutorials,test]
+          python -m pip install -e .[all,pgm,tutorials,test]
       - name: List all installed packages
         run: |
           python -m pip list
@@ -397,7 +400,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
-          python -m pip install -e .[all,tutorials,test]
+          python -m pip install -e .[all,pgm,tutorials,test]
       - name: List all installed packages
         run: |
           python -m pip list
