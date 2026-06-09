@@ -5,9 +5,9 @@ Created on Fri Jul  1 13:40:07 2016
 @author: thurner
 """
 from pandapower.std_types import available_std_types
-from pandapower.create import create_empty_network
+from pandapower.network import pandapowerNet
 
-net = create_empty_network()
+net = pandapowerNet(name="save_pp_std_types")
 
 linetypes = available_std_types(net, "line")
 columns = [c for c in net.line.columns if c in linetypes.columns] + ["q_mm2", "alpha"]

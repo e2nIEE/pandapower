@@ -112,7 +112,7 @@ def test_gen_ext_grid_same_bus():
 
 
 # def test_rdss_estimations():
-#     net = create_empty_network(sn_mva=1)
+#     net = pandapowerNet(name="test_rdss_estimations", sn_mva=1)
 #     b1 = create_bus(net, vn_kv=0.4)
 #     g1 = create_gen(net, b1, vn_kv=0.4, xdss_pu=0.1, cos_phi=0.8, p_mw=0.1, sn_mva=0.1)
 #     b2 = create_bus(net, vn_kv=20.)
@@ -177,7 +177,7 @@ def test_gen_ext_grid_same_bus():
 #     calc_sc(net, tk_s=5e-2)
 
 # def test_generator_book():
-#     net=create_empty_network()
+#     net=pandapowerNet(name="test_generator_book")
 #     b1= create_bus(net, 110)
 #     b2= create_bus(net, 6)
 
@@ -188,7 +188,7 @@ def test_gen_ext_grid_same_bus():
 #     calc_sc(net, tk_s=2.5e-2)
 
 # def test_shunt():
-#     net=create_empty_network()
+#     net=pandapowerNet(name="test_shunt")
 #     b1= create_bus(net, 110)
 #     b2= create_bus(net, 110)
 

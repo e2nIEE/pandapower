@@ -45,7 +45,7 @@ def validate_network(net: pandapowerNet):
 
     Example:
         >>> import pandapower as pp
-        >>> net = pp.create_empty_network()
+        >>> net = pp.pandapowerNet(name="validate_network")
         >>> # ... populate network with elements
         >>> validate_network(net)  # Validates all elements
     """

@@ -7,15 +7,16 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_empty_network, create_bus, create_line, create_transformer, create_transformer3w_from_parameters,
+    create_bus, create_line, create_transformer, create_transformer3w_from_parameters,
     create_switch, create_switches,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 @pytest.fixture(scope="module")
 def _create_test_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="_create_test_net")
     # Create buses
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -100,7 +101,7 @@ def test_create_switch(_create_test_net):
 
 
 def test_create_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_switches")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)

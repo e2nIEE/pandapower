@@ -11,8 +11,6 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 
-from pandapower.network_structure import get_structure_dict
-from pandapower.create import create_empty_network
 from pandapower.network import pandapowerNet
 
 

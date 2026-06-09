@@ -3,7 +3,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_load
+from pandapower.create import create_bus, create_load
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -45,7 +46,7 @@ class TestLoadRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
@@ -69,7 +70,7 @@ class TestLoadRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
 
@@ -85,7 +86,7 @@ class TestLoadOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """Test: load with all optional fields and complete ZIP group is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus(net, 0.4)
 
         create_load(
@@ -122,7 +123,7 @@ class TestLoadOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid when ZIP group is not triggered"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus(net, 0.4)
 
         # Create 3 loads with different optional fields
@@ -160,7 +161,7 @@ class TestLoadOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted (ZIP group satisfied when needed)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -202,7 +203,7 @@ class TestLoadOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected (ZIP group satisfied when needed)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -223,7 +224,7 @@ class TestLoadForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
 

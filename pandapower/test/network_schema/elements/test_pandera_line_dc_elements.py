@@ -5,7 +5,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus_dc, create_line_dc_from_parameters, create_line_dc
+from pandapower.create import create_bus_dc, create_line_dc_from_parameters, create_line_dc
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -55,7 +56,7 @@ class TestLineDcRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus_dc(net, 0.4)  # index 0
         create_bus_dc(net, 0.4)  # index 1
         create_bus_dc(net, 0.4, index=42)
@@ -93,7 +94,7 @@ class TestLineDcRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus_dc(net, 0.4)  # index 0
         create_bus_dc(net, 0.4)  # index 1
 
@@ -119,7 +120,7 @@ class TestLineDcOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """Test: line_dc with every optional field and complete TDPF group is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
@@ -162,7 +163,7 @@ class TestLineDcOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid when TDPF group is not triggered"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
@@ -213,15 +214,15 @@ class TestLineDcOptionalFields:
         )
 
         # Allow pd.NA in strings
-        net.line_dc["std_type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype)
-        net.line_dc["type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype)
-        net.line_dc["geo"] = pd.Series(data=pd.NA, dtype=pd.StringDtype)
+        net.line_dc["std_type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype())
+        net.line_dc["type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype())
+        net.line_dc["geo"] = pd.Series(data=pd.NA, dtype=pd.StringDtype())
 
         validate_network(net)
 
     def test_tdpf_group_partial_missing_invalid(self):
         """Test: TDPF group must be complete if any TDPF value is set"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid")
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
@@ -303,7 +304,7 @@ class TestLineDcOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted (TDPF group satisfied)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
@@ -369,7 +370,7 @@ class TestLineDcOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected (TDPF group satisfied)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 
@@ -409,7 +410,7 @@ class TestLineDcForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: from_bus_dc/to_bus_dc must reference existing bus_dc indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus_dc(net, 0.4)
         b1 = create_bus_dc(net, 0.4)
 

@@ -6,17 +6,18 @@ import numpy as np
 import pandas as pd
 
 from pandapower.create import (
-    create_empty_network, create_bus, create_transformer_from_parameters, create_transformer, create_transformers,
+    create_bus, create_transformer_from_parameters, create_transformer, create_transformers,
     create_transformers_from_parameters, create_transformers3w_from_parameters, create_transformers3w, load_std_type,
     create_transformer3w, create_transformer3w_from_parameters
 )
 from pandapower.std_types import create_std_type
 from pandapower.toolbox import dataframes_equal
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_tap_changer_type_default():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tap_changer_type_default")
     create_bus(net, 110)
     create_bus(net, 20)
     data = load_std_type(net, "25 MVA 110/20 kV", "trafo")
@@ -33,7 +34,7 @@ def test_tap_changer_type_default():
 
 def test_create_transformer_from_parameters():
     # Test basic transformer creation from parameters
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer_from_parameters0")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer_from_parameters(
@@ -63,7 +64,7 @@ def test_create_transformer_from_parameters():
     assert np.isclose(net.trafo.at[t, "i0_percent"], 0.1)
 
     # Test with tap changer
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer_from_parameters1")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer_from_parameters(
@@ -93,7 +94,7 @@ def test_create_transformer_from_parameters():
     assert np.isclose(net.trafo.at[t, "tap_step_percent"], 1.0)
 
     # Test with zero sequence parameters
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer_from_parameters2")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer_from_parameters(
@@ -121,7 +122,7 @@ def test_create_transformer_from_parameters():
     assert net.trafo.at[t, "vector_group"] == "Dyn"
 
     # Test with in_service=False
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer_from_parameters3")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer_from_parameters(
@@ -143,7 +144,7 @@ def test_create_transformer_from_parameters():
 
 def test_create_transformers_from_parameters():
     # standard
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_from_parameters0")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     index = create_transformers_from_parameters(
@@ -185,7 +186,7 @@ def test_create_transformers_from_parameters():
     validate_network(net)
 
     # setting params as single value
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_from_parameters1")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     create_transformers_from_parameters(
@@ -229,7 +230,7 @@ def test_create_transformers_from_parameters():
     validate_network(net)
 
     # setting params as array
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_from_parameters2")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     create_transformers_from_parameters(
@@ -269,7 +270,7 @@ def test_create_transformers_from_parameters():
 
 def test_create_transformers_raise_errorexcept():
     # standard
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_raise_errorexcept")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     create_transformers_from_parameters(
@@ -304,7 +305,7 @@ def test_create_transformers_raise_errorexcept():
 
 
 def test_create_transformer_raises_errorexcept1():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer_raises_errorexcept1")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 10)
     create_transformers_from_parameters(
@@ -357,7 +358,7 @@ def test_create_transformer_raises_errorexcept1():
 
 
 def test_trafo_2_tap_changers():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo_2_tap_changers")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     create_transformer(net, b1, b2, "40 MVA 110/20 kV")
@@ -387,7 +388,7 @@ def test_trafo_2_tap_changers():
 
 
 def test_trafo_2_tap_changers_parameters():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo_2_tap_changers_parameters")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
 
@@ -415,7 +416,7 @@ def test_trafo_2_tap_changers_parameters():
 
 
 def test_trafos_2_tap_changers_parameters():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafos_2_tap_changers_parameters")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
 
@@ -446,7 +447,7 @@ def test_trafos_2_tap_changers_parameters():
 
 def test_create_transformer():
     # Test basic transformer creation from std_type
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer0")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", name="test_trafo")
@@ -464,7 +465,7 @@ def test_create_transformer():
     assert net.trafo.at[t, "vk_percent"] == std_type["vk_percent"]
 
     # Test with custom index
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer1")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", index=5)
@@ -472,28 +473,28 @@ def test_create_transformer():
     assert 5 in net.trafo.index
 
     # Test with in_service=False
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer2")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", in_service=False)
     assert not net.trafo.at[t, "in_service"]
 
     # Test with tap_pos
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", tap_pos=5)
     assert net.trafo.at[t, "tap_pos"] == 5
 
     # Test with max_loading_percent
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer4")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", max_loading_percent=80)
     assert net.trafo.at[t, "max_loading_percent"] == 80
 
     # Test error case - non-existent bus
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer5")
     b1 = create_bus(net, 110)
     create_bus(net, 20)
     with pytest.raises(UserWarning, match=r"Trafo \d tries to attach to non-existing bus\(es\) \{\d\}"):
@@ -502,7 +503,7 @@ def test_create_transformer():
     validate_network(net)
 
 def test_create_transformers():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, .4)
     b3 = create_bus(net, .4)
@@ -550,7 +551,7 @@ def test_create_transformers():
 
 
 def test_create_transformers_for_single():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers_for_single")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, .4)
     create_transformers(
@@ -599,7 +600,7 @@ def test_create_transformers_for_single():
 
 def test_create_transformer3w():
     # Test basic 3-winding transformer creation from std_type
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w0")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -628,7 +629,7 @@ def test_create_transformer3w():
     assert net.trafo3w.at[t, "vn_lv_kv"] == std_type["vn_lv_kv"]
 
     # Test with custom index
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w1")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -644,7 +645,7 @@ def test_create_transformer3w():
     assert 10 in net.trafo3w.index
 
     # Test with in_service=False
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w2")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -659,7 +660,7 @@ def test_create_transformer3w():
     assert not net.trafo3w.at[t, "in_service"]
 
     # Test with tap_pos
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w3")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -674,7 +675,7 @@ def test_create_transformer3w():
     assert net.trafo3w.at[t, "tap_pos"] == 5
 
     # Test with max_loading_percent
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w4")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -689,7 +690,7 @@ def test_create_transformer3w():
     assert net.trafo3w.at[t, "max_loading_percent"] == 80
 
     # Test error case - non-existent bus
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w5")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     create_bus(net, 10)
@@ -705,7 +706,7 @@ def test_create_transformer3w():
     validate_network(net)
 
 def test_create_transformers3w():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers3w")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 20)
@@ -750,7 +751,7 @@ def test_create_transformers3w():
         'tap_step_percent': pd.Series([1.2, 1.2], dtype=np.float64),
         'tap_step_degree': pd.Series([0.0, 0.0], dtype=np.float64),
         'tap_pos': pd.Series([0.0, 0.0], dtype=np.float64),
-        'tap_at_star_point': pd.Series([False, False], dtype=pd.BooleanDtype),
+        'tap_at_star_point': pd.Series([False, False], dtype=pd.BooleanDtype()),
         # 'tap_changer_type': ['Ratio', 'Ratio'],
         # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
         # 'tap_dependency_table': [False, False],
@@ -764,7 +765,7 @@ def test_create_transformers3w():
 
 
 def net_transformer3w_from_parameters(**kwargs):
-    net = create_empty_network()
+    net = pandapowerNet(name="net_transformer3w_from_parameters")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     b3 = create_bus(net, 0.9)
@@ -797,7 +798,7 @@ def net_transformer3w_from_parameters(**kwargs):
 
 def test_create_transformer3w_from_parameters():
     # Test basic 3-winding transformer creation from parameters
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w_from_parameters0")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -844,7 +845,7 @@ def test_create_transformer3w_from_parameters():
     assert np.allclose(net.trafo3w.at[t, "i0_percent"], 0.89)
 
     # Test with shift angles
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w_from_parameters1")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -875,7 +876,7 @@ def test_create_transformer3w_from_parameters():
     assert net.trafo3w.at[t, "shift_lv_degree"] == 150
 
     # Test with tap changer
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w_from_parameters2")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -914,7 +915,7 @@ def test_create_transformer3w_from_parameters():
     assert np.isclose(net.trafo3w.at[t, "tap_step_percent"], 1.0)
 
     # Test with zero sequence parameters
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w_from_parameters3")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -955,7 +956,7 @@ def test_create_transformer3w_from_parameters():
     assert net.trafo3w.at[t, "vector_group"] == "YNd11"
 
     # Test with in_service=False
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w_from_parameters4")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b3 = create_bus(net, 10)
@@ -983,7 +984,7 @@ def test_create_transformer3w_from_parameters():
     assert not net.trafo3w.at[t, "in_service"]
 
     # Test error case - non-existent bus
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformer3w_from_parameters5")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     create_bus(net, 10)
@@ -1037,7 +1038,7 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.test_kwargs == "dummy_string")
 
     # setting params as array
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers3w_from_parameters")
     b1 = create_bus(net, 10)
     b2 = create_bus(net, 0.4)
     b3 = create_bus(net, 0.9)
@@ -1118,7 +1119,7 @@ def test_create_transformers3w_raise_errorexcept():
             index=[2, 1],
         )
     validate_network(net)
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_transformers3w_raise_errorexcept")
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     b3 = create_bus(net, 0.9)

@@ -5,7 +5,7 @@ This file included various test network for modelling and simulation different p
 """
 import pandas as pd
 
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines, create_switches, \
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_switches, \
     create_loads
 
 pd.Series(dtype='float64')

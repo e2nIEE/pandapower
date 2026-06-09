@@ -5,7 +5,6 @@ import pytest
 import numpy as np
 
 from pandapower.create import (
-    create_empty_network,
     create_bus,
     create_load,
     create_loads,
@@ -14,11 +13,12 @@ from pandapower.create import (
     create_bus_dc,
     create_load_dc,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_create_load():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_load")
     b1 = create_bus(net, 110)
 
     # Test basic load creation
@@ -69,7 +69,7 @@ def test_create_load():
 
 
 def test_create_loads():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_loads")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -113,7 +113,7 @@ def test_create_loads():
 
 
 def test_create_loads_raise_errorexcept():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_loads_raise_errorexcept")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -164,7 +164,7 @@ def test_create_loads_raise_errorexcept():
 
 
 def test_create_asymmetric_load():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_asymmetric_load")
     b1 = create_bus(net, 110)
 
     # Test basic asymmetric load creation
@@ -204,7 +204,7 @@ def test_create_asymmetric_load():
 
 
 def test_create_load_from_cosphi():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_load_from_cosphi")
     b1 = create_bus(net, 110)
 
     # Test underexcited (inductive)
@@ -235,7 +235,7 @@ def test_create_load_from_cosphi():
 
 
 def test_create_load_dc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_load_dc")
     b1 = create_bus_dc(net, 100)
 
     # Test basic DC load creation

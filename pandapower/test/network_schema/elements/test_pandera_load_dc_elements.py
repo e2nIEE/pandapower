@@ -5,7 +5,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus_dc, create_load_dc
+from pandapower.create import create_bus_dc, create_load_dc
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -39,7 +40,7 @@ class TestLoadDcRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus_dc(net, 0.4)  # index 0
         create_bus_dc(net, 0.4)  # index 1
         create_bus_dc(net, 0.4, index=42)
@@ -61,7 +62,7 @@ class TestLoadDcRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus_dc(net, 0.4)  # index 0
         create_bus_dc(net, 0.4)  # index 1
 
@@ -76,7 +77,7 @@ class TestLoadDcOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """Test: load_dc with all optional fields is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus_dc(net, 0.4)
 
         create_load_dc(
@@ -95,7 +96,7 @@ class TestLoadDcOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus_dc(net, 0.4)
 
         # Row 1: strings None, controllable NA
@@ -125,7 +126,7 @@ class TestLoadDcOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus_dc(net, 0.4)
         create_load_dc(net, bus_dc=b0, p_dc_mw=1.0, scaling=1.0, in_service=True)
 
@@ -146,7 +147,7 @@ class TestLoadDcOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus_dc(net, 0.4)
         create_load_dc(
             net,
@@ -171,7 +172,7 @@ class TestLoadDcForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: bus_dc must reference an existing bus_dc index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus_dc(net, 0.4)
         create_load_dc(net, bus_dc=b0, p_dc_mw=1.0, scaling=1.0, in_service=True)
 

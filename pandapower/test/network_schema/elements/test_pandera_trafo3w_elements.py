@@ -6,7 +6,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_bus
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
     strings,
@@ -51,7 +52,7 @@ class TestTrafo3wRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 110.0)  # index 0 (HV)
         create_bus(net, 20.0)  # index 1 (MV)
         create_bus(net, 10.0)  # index 2 (LV)
@@ -120,7 +121,7 @@ class TestTrafo3wRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 110.0)  # index 0 (HV)
         create_bus(net, 20.0)  # index 1 (MV)
         create_bus(net, 10.0)  # index 2 (LV)
@@ -162,7 +163,7 @@ class TestTrafo3wRequiredFields:
             validate_network(net)
 
     def test_vkr_less_than_vk_checks_pass(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_vkr_less_than_vk_checks_pass")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -196,7 +197,7 @@ class TestTrafo3wRequiredFields:
         validate_network(net)
 
     def test_vkr_greater_than_vk_fails(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_vkr_greater_than_vk_fails")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -235,7 +236,7 @@ class TestTrafo3wOptionalFields:
     """Tests for optional trafo3w fields"""
 
     def test_all_optional_fields_valid(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -293,7 +294,7 @@ class TestTrafo3wOptionalFields:
         validate_network(net)
 
     def test_optional_fields_with_nulls(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -366,7 +367,7 @@ class TestTrafo3wOptionalFields:
         ),
     )
     def test_valid_optional_values(self, parameter, valid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -442,7 +443,7 @@ class TestTrafo3wOptionalFields:
         ),
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -490,7 +491,7 @@ class TestTrafo3wDependencies:
     """Tests for group dependencies and FK"""
 
     def test_tap_group_partial_missing_invalid(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_tap_group_partial_missing_invalid")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -530,7 +531,7 @@ class TestTrafo3wDependencies:
             validate_network(net)
 
     def test_tap_group_complete_valid(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_tap_group_complete_valid")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -568,7 +569,7 @@ class TestTrafo3wDependencies:
         validate_network(net)
 
     def test_tdt_group_partial_missing_invalid(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_tdt_group_partial_missing_invalid")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -606,7 +607,7 @@ class TestTrafo3wDependencies:
             validate_network(net)
 
     def test_tdt_group_complete_valid(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_tdt_group_complete_valid")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)
@@ -643,7 +644,7 @@ class TestTrafo3wDependencies:
         validate_network(net)
 
     def test_invalid_bus_fk(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_fk")
         create_bus(net, 110.0)
         create_bus(net, 20.0)
         create_bus(net, 10.0)

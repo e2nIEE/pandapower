@@ -4,15 +4,16 @@
 import pytest
 
 from pandapower.create import (
-    create_empty_network, create_bus, create_buses, create_ext_grid, create_gen,
+    create_buses, create_ext_grid, create_gen,
     create_load, create_line, create_group, create_group_from_dict
 )
+from pandapower.network import pandapowerNet
 
 
 def test_create_group():
     """Test basic group creation with create_group function."""
     # Create a simple network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_group")
 
     # Create some elements to group
     buses = create_buses(net, 4, vn_kv=0.4)
@@ -41,7 +42,7 @@ def test_create_group():
 
 def test_create_group_with_custom_index():
     """Test group creation with a custom index."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_group_with_custom_index")
 
     buses = create_buses(net, 3, vn_kv=0.4)
     create_gen(net, bus=buses[0], p_mw=10)
@@ -61,7 +62,7 @@ def test_create_group_with_custom_index():
 
 def test_create_group_with_reference_column():
     """Test group creation using reference_column (by name instead of index)."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_group_with_reference_column")
 
     buses = create_buses(net, 3, vn_kv=0.4)
     create_ext_grid(net, bus=buses[0], name="grid")
@@ -85,7 +86,7 @@ def test_create_group_with_reference_column():
 
 def test_create_group_nonexistent_element_raises():
     """Test that creating a group with non-existent elements raises UserWarning."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_group_nonexistent_element_raises")
 
     buses = create_buses(net, 2, vn_kv=0.4)
     create_gen(net, bus=buses[0], p_mw=10)
@@ -102,7 +103,7 @@ def test_create_group_nonexistent_element_raises():
 
 def test_create_group_from_dict():
     """Test group creation using the dictionary-based wrapper."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_group_from_dict")
 
     buses = create_buses(net, 4, vn_kv=0.4)
     create_ext_grid(net, bus=buses[0])
@@ -129,7 +130,7 @@ def test_create_group_from_dict():
 
 def test_create_group_from_dict_with_reference_column():
     """Test create_group_from_dict with reference_column."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_group_from_dict_with_reference_column")
 
     buses = create_buses(net, 3, vn_kv=0.4)
     create_gen(net, bus=buses[0], p_mw=10, name="gen_a")
@@ -155,7 +156,7 @@ def test_create_group_from_dict_with_reference_column():
 
 def test_create_group_multiple_element_types():
     """Test creating a group with multiple different element types."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_group_multiple_element_types")
 
     buses = create_buses(net, 3, vn_kv=0.4)
     create_ext_grid(net, bus=buses[0])

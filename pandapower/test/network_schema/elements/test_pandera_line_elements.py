@@ -6,7 +6,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_line
+from pandapower.create import create_bus, create_line
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -66,7 +67,7 @@ class TestLineRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)  # ensure FK-positive for 42
@@ -96,7 +97,7 @@ class TestLineRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
 
@@ -112,7 +113,7 @@ class TestLineOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """Test: line with every optional field and tdpf group complete is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -154,7 +155,7 @@ class TestLineOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid when tdpf group is not triggered"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -200,7 +201,7 @@ class TestLineOptionalFields:
         """Test: tdpf group must be complete if any tdpf value is set"""
 
         # Case 1: tdpf flag only -> invalid
-        net = create_empty_network()
+        net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid0")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
@@ -209,7 +210,7 @@ class TestLineOptionalFields:
             validate_network(net)
 
         # Case 2: one tdpf param only -> invalid
-        net = create_empty_network()
+        net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid1")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
@@ -218,7 +219,7 @@ class TestLineOptionalFields:
             validate_network(net)
 
         # Case 3: another tdpf param only -> invalid
-        net = create_empty_network()
+        net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid2")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
@@ -259,7 +260,7 @@ class TestLineOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted (tdpf group satisfied)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -320,7 +321,7 @@ class TestLineOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected (tdpf group satisfied)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -350,7 +351,7 @@ class TestLineForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: from_bus/to_bus must reference existing bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 

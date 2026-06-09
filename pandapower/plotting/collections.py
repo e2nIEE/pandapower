@@ -1641,38 +1641,3 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
             add_collections_to_axes(ax, c, plot_colorbars, copy_collections)
         else:
             logger.warning("{} in collections is of unknown type. Skipping".format(i))
-
-
-if __name__ == "__main__":
-    # if 0:
-    #     from pandapower.create import create_empty_network, create_bus, create_gen, create_load, create_ext_grid, /
-    #         create_transformer
-    #
-    #     ntw = pp.create_empty_network()
-    #     b1 = create_bus(ntw, 10, geodata=(5, 10))
-    #     b2 = create_bus(ntw, 0.4, geodata=(5, 15))
-    #     b3 = create_bus(ntw, 0.4, geodata=(0, 22))
-    #     b4 = create_bus(ntw, 0.4, geodata=(8, 20))
-    #     create_gen(ntw, b1, p_mw=0.1)
-    #     create_load(ntw, b3, p_mw=0.1)
-    #     create_ext_grid(ntw, b4)
-    #
-    #     create_line(ntw, b2, b3, 2.0, std_type="NAYY 4x50 SE")
-    #     create_line(ntw, b2, b4, 2.0, std_type="NAYY 4x50 SE")
-    #     create_transformer(ntw, b1, b2, std_type="0.63 MVA 10/0.4 kV")
-    #     create_transformer(ntw, b3, b4, std_type="0.63 MVA 10/0.4 kV")
-    #
-    #     bus_col = create_bus_collection(ntw, size=0.2, color="k")
-    #     line_col = create_line_collection(ntw, use_line_geodata=False, color="k", linewidth=3.)
-    #     lt, bt = create_trafo_collection(ntw, size=2, linewidth=3.)
-    #     load_col1, load_col2 = create_load_collection(ntw, linewidth=2.,
-    #                                                   infofunc=lambda x: ("load", x))
-    #     gen1, gen2 = create_gen_collection(ntw, linewidth=2.,
-    #                                        infofunc=lambda x: ("gen", x))
-    #     eg1, eg2 = create_ext_grid_collection(ntw, size=2.,
-    #                                           infofunc=lambda x: ("ext_grid", x))
-    #
-    #     draw_collections([bus_col, line_col, load_col1, load_col2, gen1, gen2, lt, bt, eg1, eg2])
-    # else:
-    #     pass
-    pass

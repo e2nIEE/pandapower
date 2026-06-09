@@ -5,9 +5,10 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_empty_network, create_pwl_cost, create_pwl_costs, create_poly_cost, create_poly_costs, create_bus,
-    create_gen, create_sgen, create_ext_grid, create_load, create_dcline, create_storage
+    create_pwl_cost, create_pwl_costs, create_poly_costs, create_bus,
+    create_gen, create_sgen, create_ext_grid, create_load, create_storage
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 elements = [
@@ -21,7 +22,7 @@ elements = [
 
 @pytest.mark.parametrize("element, create_func, create_kwargs, kwargs", elements)
 def test_create_pwl_cost(element, create_func, create_kwargs, kwargs):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_pwl_cost")
     b1 = create_bus(net, 110)
     points = [[0., 0.3, 10.2], [0.3, 0.6, 20.4], [0.6, 1., 30.6], [1., 1.3, 40.8]]
     # create element
@@ -36,7 +37,7 @@ def test_create_pwl_cost(element, create_func, create_kwargs, kwargs):
 
 
 def test_create_pwl_costs():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_pwl_costs")
     b1 = create_bus(net, 110)
     points = [[0., 0.3, 10.2], [0.3, 0.6, 20.4], [0.6, 1., 30.6], [1., 1.3, 40.8]]
     elms = []
@@ -54,7 +55,7 @@ def test_create_pwl_costs():
 
 @pytest.mark.parametrize("element, create_func, create_kwargs, kwargs", elements)
 def test_create_poly_cost(element, create_func, create_kwargs, kwargs):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_poly_cost")
     b1 = create_bus(net, 110)
     points = [[0., 0.3, 10.2], [0.3, 0.6, 20.4], [0.6, 1., 30.6], [1., 1.3, 40.8]]
     # create element
@@ -69,7 +70,7 @@ def test_create_poly_cost(element, create_func, create_kwargs, kwargs):
 
 
 def test_create_poly_costs():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_poly_costs")
     b1 = create_bus(net, 110)
     elms = []
     ets = []

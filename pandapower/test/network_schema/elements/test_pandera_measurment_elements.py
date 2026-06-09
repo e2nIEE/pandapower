@@ -3,7 +3,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_bus
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -44,25 +45,25 @@ class TestMeasurementRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         b0 = create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
 
         net.measurement = pd.DataFrame(
             {
-                "name": pd.Series(["m1"], dtype=pd.StringDtype),
+                "name": pd.Series(["m1"], dtype=pd.StringDtype()),
                 "measurement_type": ["p"],
                 "element_type": ["bus"],
                 "value": [10.0],
                 "std_dev": [0.1],
                 "bus": [b0],
                 "element": [b0],
-                "side": pd.Series(["hv"], dtype=pd.StringDtype),
+                "side": pd.Series(["hv"], dtype=pd.StringDtype()),
             }
         )
         if parameter in {"name", "side"}:
-            net.measurement[parameter] = pd.Series([valid_value], dtype=pd.StringDtype)
+            net.measurement[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
         else:
             net.measurement[parameter] = valid_value
 
@@ -85,7 +86,7 @@ class TestMeasurementRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
 
@@ -113,7 +114,7 @@ class TestMeasurementOptionalFields:
 
     def test_measurement_without_bus_column_is_valid(self):
         """Test: 'bus' column is optional and may be absent"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_measurement_without_bus_column_is_valid")
         create_bus(net, 0.4)
 
         net.measurement = pd.DataFrame(
@@ -135,7 +136,7 @@ class TestMeasurementOptionalFields:
     )
     def test_optional_bus_valid_values(self, valid_bus):
         """Test: optional 'bus' column accepts valid values and FK passes if index exists"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_bus_valid_values")
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
@@ -161,7 +162,7 @@ class TestMeasurementOptionalFields:
     )
     def test_optional_bus_invalid_values(self, invalid_bus):
         """Test: optional 'bus' column rejects invalid values"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_bus_invalid_values")
         create_bus(net, 0.4)
 
         net.measurement = pd.DataFrame(
@@ -187,7 +188,7 @@ class TestMeasurementForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: bus must reference an existing bus index if present"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
 
         net.measurement = pd.DataFrame(

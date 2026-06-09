@@ -6,7 +6,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus_dc, create_source_dc
+from pandapower.create import create_bus_dc, create_source_dc
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -37,7 +38,7 @@ class TestSourceDcRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus_dc(net, 0.4)  # index 0
         create_bus_dc(net, 0.4)  # index 1
         create_bus_dc(net, 0.4, index=42)
@@ -58,7 +59,7 @@ class TestSourceDcRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus_dc(net, 0.4)  # 0
         create_bus_dc(net, 0.4)  # 1
 
@@ -70,7 +71,7 @@ class TestSourceDcRequiredFields:
     @pytest.mark.parametrize("parameter", ["vm_pu", "in_service"])
     def test_required_fields_nan_invalid(self, parameter):
         """NaN in required columns is invalid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_required_fields_nan_invalid")
         b0 = create_bus_dc(net, 0.4)
         create_source_dc(net, bus_dc=b0, vm_pu=1.0, in_service=True)
 
@@ -84,7 +85,7 @@ class TestSourceDcOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """All optional fields set"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus_dc(net, 0.4)
 
         create_source_dc(net, bus_dc=b0, vm_pu=1.02, in_service=True, name="SRC A", type="voltage_source")
@@ -95,7 +96,7 @@ class TestSourceDcOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Optional fields including nulls are valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus_dc(net, 0.4)
 
         # Row 1: name None
@@ -118,7 +119,7 @@ class TestSourceDcOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus_dc(net, 0.4)
 
         create_source_dc(net, bus_dc=b0, vm_pu=1.01, in_service=True, name="ok", type="ok")
@@ -136,7 +137,7 @@ class TestSourceDcOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus_dc(net, 0.4)
 
         create_source_dc(net, bus_dc=b0, vm_pu=1.0, in_service=True, name="ok", type="ok")
@@ -150,7 +151,7 @@ class TestSourceDcForeignKey:
 
     def test_invalid_bus_index(self):
         """bus_dc must reference an existing bus_dc index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus_dc(net, 0.4)
         create_source_dc(net, bus_dc=b0, vm_pu=1.0, in_service=True)
 

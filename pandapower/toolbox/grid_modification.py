@@ -14,7 +14,7 @@ from pandapower.network import pandapowerNet, plural_s
 from pandapower.std_types import change_std_type
 from pandapower.create._utils import add_column_to_df
 from pandapower.create import (
-    create_switch, create_line_from_parameters, create_impedance, create_empty_network, create_gen, create_ext_grid,
+    create_switch, create_line_from_parameters, create_impedance, create_gen, create_ext_grid,
     create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
 )
 from pandapower.results import EmptyResults

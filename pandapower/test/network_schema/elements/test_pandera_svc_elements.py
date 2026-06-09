@@ -1,12 +1,12 @@
 # test_pandera_svc_elements.py
 
 import itertools
-import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_svc
+from pandapower.create import create_bus, create_svc
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -53,7 +53,7 @@ class TestSvcRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)
         create_bus(net, 0.4)
         create_bus(net, 0.4, index=42)
@@ -88,7 +88,7 @@ class TestSvcRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)
         create_bus(net, 0.4)
 
@@ -113,7 +113,7 @@ class TestSvcOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """Test: SVC with all optional fields is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus(net, 0.4)
 
         create_svc(
@@ -135,7 +135,7 @@ class TestSvcOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus(net, 0.4)
 
         # Row 1: name set, angles NaN later
@@ -188,7 +188,7 @@ class TestSvcOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_svc(
@@ -221,7 +221,7 @@ class TestSvcOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_svc(
@@ -241,7 +241,7 @@ class TestSvcOptionalFields:
 
     def test_min_less_equal_max_check_passes(self):
         """Test: min_angle_degree <= max_angle_degree passes"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_min_less_equal_max_check_passes")
         b0 = create_bus(net, 0.4)
 
         create_svc(
@@ -261,7 +261,7 @@ class TestSvcOptionalFields:
 
     def test_min_greater_than_max_fails(self):
         """Test: min_angle_degree > max_angle_degree fails"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_min_greater_than_max_fails")
         b0 = create_bus(net, 0.4)
 
         create_svc(
@@ -286,7 +286,7 @@ class TestSvcForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
 
         create_svc(

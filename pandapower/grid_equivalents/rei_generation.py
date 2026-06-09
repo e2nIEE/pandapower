@@ -120,7 +120,7 @@ def adapt_impedance_params(Z, sign=1, adaption=1e-15):
     return rft_pu, xft_pu
 
 
-# TODO: This function should be refactored, it is way to big and dos way to many tasks in one.
+# TODO: This function should be refactored, it is way to big and does way to many tasks in one.
 def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses,
                      load_separate=False, sgen_separate=True, gen_separate=True,
                      show_computing_time=False, calc_volt_angles=True,

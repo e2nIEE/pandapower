@@ -5,13 +5,14 @@ import pytest
 import numpy as np
 
 from pandapower.create import (
-    create_empty_network, create_bus, create_sgen, create_sgens, create_asymmetric_sgen, create_sgen_from_cosphi
+    create_bus, create_sgen, create_sgens, create_asymmetric_sgen, create_sgen_from_cosphi
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_create_sgen():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgen")
 
     # Basic sgen creation
     b1 = create_bus(net, 110)
@@ -116,7 +117,7 @@ def test_create_sgen():
 
 
 def test_create_sgens():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgens")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -167,7 +168,7 @@ def test_create_sgens():
 
 
 def test_create_sgen_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgen_controllable")
 
     b1 = create_bus(net, 110)
     s1 = create_sgen(net, b1, 50)
@@ -180,7 +181,7 @@ def test_create_sgen_controllable():
 
 
 def test_create_sgens_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgens_controllable")
 
     b1 = create_bus(net, 110)
     s1 = create_sgens(net, [b1], 50)[0]
@@ -195,7 +196,7 @@ def test_create_sgens_controllable():
 
 
 def test_create_sgens_raise_errorexcept():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgens_raise_errorexcept")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -255,7 +256,7 @@ def test_create_sgens_raise_errorexcept():
 
 
 def test_create_asymmetric_sgen():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_asymmetric_sgen")
 
     # Basic asymmetric sgen creation
     b1 = create_bus(net, 110)
@@ -333,7 +334,7 @@ def test_create_asymmetric_sgen():
 
 
 def test_create_sgen_from_cosphi():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_sgen_from_cosphi")
     b1 = create_bus(net, 110)
 
     # Test overexcited mode (Q injection, positive q_mvar)

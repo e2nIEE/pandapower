@@ -7,16 +7,17 @@ import pytest
 import geojson
 
 from pandapower.create import (
-    create_empty_network, create_bus, create_ext_grid, create_line_from_parameters, create_transformer_from_parameters,
+    create_bus, create_ext_grid, create_line_from_parameters, create_transformer_from_parameters,
     create_load, create_sgen, create_dcline, create_gen, create_ward, create_xward, create_shunt, create_line,
     create_transformer, create_transformer3w, create_transformer3w_from_parameters, create_impedance, create_switch,
     create_buses, create_bus_dc, create_buses_dc
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_nonexistent_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_nonexistent_bus")
     create_functions = [
         partial(create_load, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
         partial(create_sgen, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
@@ -142,7 +143,7 @@ def test_nonexistent_bus():
 
 
 def test_create_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_bus")
     # default
     b1 = create_bus(net, 110, test_kwargs="dummy_string")
     # with geodata
@@ -156,7 +157,7 @@ def test_create_bus():
 
 
 def test_create_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_buses")
     # standard
     b1 = create_buses(net, 3, 110, test_kwargs="dummy_string")
     # with geodata
@@ -177,7 +178,7 @@ def test_create_buses():
 
 
 def test_create_bus_dc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_bus_dc")
     # default
     b1 = create_bus_dc(net, 110, test_kwargs="dummy_string")
     # with geodata
@@ -191,7 +192,7 @@ def test_create_bus_dc():
 
 
 def test_create_buses_dc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_buses_dc")
     # standard
     b1 = create_buses_dc(net, 3, 110, test_kwargs="dummy_string")
     # with geodata

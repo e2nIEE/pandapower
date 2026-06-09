@@ -13,7 +13,7 @@ from pandapower._version import __version__, __format_version__
 from pandapower import pandapowerNet
 from pandapower.control import TrafoController, BinarySearchControl, DroopControl
 from pandapower.create._utils import add_column_to_df
-from pandapower.create import create_empty_network, create_poly_cost
+from pandapower.create import create_poly_cost
 from pandapower.network_structure import get_structure_dict
 from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
 from pandapower.results import reset_results
