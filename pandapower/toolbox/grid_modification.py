@@ -156,67 +156,30 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
     return pandapowerNet(net=p2)
 
 
-def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
-    """Function to concatenate two nets into one data structure. The elements keep their indices
+def merge_nets(net1: pandapowerNet, net2: pandapowerNet, validate: bool = True, merge_results: bool = True,
+               tol: float = 1e-9, std_prio_on_net1: bool = True, return_net2_reindex_lookup: bool = False,
+               net2_reindex_log_level: str = "info", **runpp_kwargs):
+    """
+    Function to concatenate two nets into one data structure. The elements keep their indices
     unless both nets have the same indices. In that case, net2 elements get reindexed. The reindex
     lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
 
-    Parameters
-    ----------
-    net1 : pp.pandapowerNet
-        first net to concatenate
-    net2 : pp.pandapowerNet
-        second net to concatenate
-    validate : bool, optional
-        whether power flow results should be compared against the results of the input nets,
-        by default True
-    merge_results : bool, optional
-        whether results tables should be concatenated, by default True
-    tol : float, optional
-        tolerance which is allowed to pass the results validate check (relevant if validate is
-        True), by default 1e-9
-    std_prio_on_net1 : bool, optional
-        whether net1 standard type should be kept if net2 has types with same names, by default True
-    return_net2_reindex_lookup : bool, optional
-        if True, the merged net AND a dict of lookups is returned, by default False
-    net2_reindex_log_level : str, optional
-        logging level of the message which element types of net2 got reindexed elements. Options
-        are, for example "debug", "info", "warning", "error", or None, by default "info"
+    Arguments:
+        net1: first net to concatenate
+        net2: second net to concatenate
+        validate: whether power flow results should be compared against the results of the input nets
+        merge_results: whether results tables should be concatenated
+        tol: tolerance which is allowed to pass the results validate check (relevant if validate is True)
+        std_prio_on_net1: whether net1 standard type should be kept if net2 has types with same names
+        return_net2_reindex_lookup: if True, the merged net AND a dict of lookups is returned
+        net2_reindex_log_level: logging level of the message which element types of net2 got reindexed elements.
+            Options are, for example "debug", "info", "warning", "error", or None, by default "info"
 
-    Returns
-    -------
-    pp.pandapowerNet
+    Returns:
         net with concatenated element tables
 
-    Raises
-    ------
-    UserWarning
-        if validate is True and power flow results of the merged net deviate from input nets results
-    """
-    old_params = {"retain_original_indices_in_net1", "create_continuous_bus_indices"}
-    new_params = {"std_prio_on_net1", "return_net2_reindex_lookup", "net2_reindex_log_level"}
-    msg1 = "Since pandapower version 2.11.0, merge_nets() keeps element indices " + \
-        "and prioritize net1 standard types by default."
-    msg2 = f"Parameters {old_params} are deprecated."
-    msg3 = "To silence this warning, explicitely pass at least one of the new parameters " + \
-        f"{new_params}."
-
-    old_params_passed = len(set(kwargs).intersection(old_params))
-    new_params_passed = len(set(kwargs).intersection(new_params))
-
-    if old_params_passed:
-        raise FutureWarning(msg1 + msg2 + msg3)
-    elif not new_params_passed:
-        warnings.warn(msg1 + msg3, category=FutureWarning)
-    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol, **kwargs)
-
-
-def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
-                std_prio_on_net1=True, return_net2_reindex_lookup=False,
-                net2_reindex_log_level="info", **runpp_kwargs):
-    """Function to concatenate two nets into one data structure. The elements keep their indices
-    unless both nets have the same indices. In that case, net2 elements get reindex. The reindex
-    lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
+    Raises:
+        UserWarning: if validate is True and power flow results of the merged net deviate from input nets results
     """
     net = copy.deepcopy(net1)
     net2 = copy.deepcopy(net2)
