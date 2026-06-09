@@ -14,9 +14,9 @@ from pandapower.auxiliary import pandapowerNet
 from .. import cim_tools
 from ..cim_classes import CimParser
 
-logger = logging.getLogger('cim.pp2cim.build_cim_net')
-
 sc = cim_tools.get_pp_net_special_columns_dict()
+
+SUPPORTED_CGMES_VERSIONS = ('2.4.15', '3.0')
 
 # CGMES profile URIs used to synthesize a FullModel header when the net does not carry one
 # (i.e. the net was not imported from CGMES). For round-trip the headers come from net['CGMES'].
@@ -50,13 +50,24 @@ class PpToCimConverter:
     reusing the CGMES identifiers preserved by the cim2pp converter (origin_id, terminals, topology).
 
     The result can be serialized to RDF/XML by :class:`pandapower.converter.cim.cim_writer.CimWriter`.
+
+    Note: unlike the importer (which splits each element family into its own module under
+    ``cim2pp/converter_classes``), the exporter keeps all conversions in a single class on purpose:
+    they share a lot of cross-element state (terminals, base voltages, regulating controls, tap
+    changers and operational limits are accumulated across several element types and emitted once at
+    the end), which a per-class layout would make awkward.
     """
 
     def __init__(self, net: pandapowerNet, cgmes_version: str = '2.4.15', **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
+        if cgmes_version not in SUPPORTED_CGMES_VERSIONS:
+            raise ValueError("Unsupported CGMES version %r, expected one of %s"
+                             % (cgmes_version, SUPPORTED_CGMES_VERSIONS))
         self.net = net
         self.cgmes_version = cgmes_version
         self.kwargs = kwargs
+        # net['CGMES'] (FullModel headers + BaseVoltage), present when the net was imported from CGMES
+        self._cgmes = net['CGMES'] if isinstance(net.get('CGMES', None), dict) else {}
         # a mutable, empty copy of the canonical CIM data structure (correct columns per class)
         blueprint = CimParser(cgmes_version=cgmes_version).get_cim_data_structure()
         self.cim: Dict[str, Dict[str, pd.DataFrame]] = {
@@ -106,9 +117,7 @@ class PpToCimConverter:
         self._finalize_terminals()
         self._finalize_regulating_controls()
         self._finalize_tap_changers()
-        self._set('eq', 'OperationalLimitType', self._op_limit_type_rows)
-        self._set('eq', 'OperationalLimitSet', self._op_limit_sets)
-        self._set('eq', 'CurrentLimit', self._current_limits)
+        self._finalize_operational_limits()
         self.logger.info("Finished converting the pandapower net to CIM.")
         return self.cim
 
@@ -123,7 +132,7 @@ class PpToCimConverter:
     def _full_model_rows(self, profile: str, synthesize: bool) -> List[dict]:
         """Build FullModel header rows for a profile, reusing net['CGMES'] when available and
         otherwise synthesizing a minimal header so the parser can re-detect the profile."""
-        cgmes = self.net.get('CGMES', {}) if isinstance(self.net.get('CGMES', None), dict) else {}
+        cgmes = self._cgmes
         if profile in cgmes and isinstance(cgmes[profile], dict) and len(cgmes[profile]) > 0:
             rows = []
             for rdf_id, fields in cgmes[profile].items():
@@ -137,7 +146,7 @@ class PpToCimConverter:
         return []
 
     def _create_base_voltages(self):
-        bv = self.net.get('CGMES', {}).get('BaseVoltage') if isinstance(self.net.get('CGMES', None), dict) else None
+        bv = self._cgmes.get('BaseVoltage')
         records = []
         if isinstance(bv, pd.DataFrame) and not bv.empty:
             for _, row in bv.iterrows():
@@ -262,18 +271,29 @@ class PpToCimConverter:
         self._current_limits.append({'rdfId': _new_uuid(), 'OperationalLimitSet': ols_id,
                                      'OperationalLimitType': self._op_limit_types[key], 'value': value_a})
 
+    def _add_side_current_limit(self, trafo, terminal_id, side):
+        # add the CurrentLimit a transformer carries on the given winding side (hv / mv / lv)
+        self._add_current_limit(terminal_id, trafo.get('CurrentLimit.value_%s' % side),
+                                trafo.get('OperationalLimitType.limitType_%s' % side),
+                                trafo.get('OperationalLimitType.acceptableDuration_%s' % side))
+
+    def _finalize_operational_limits(self):
+        self._set('eq', 'OperationalLimitType', self._op_limit_type_rows)
+        self._set('eq', 'OperationalLimitSet', self._op_limit_sets)
+        self._set('eq', 'CurrentLimit', self._current_limits)
+
     def _convert_loads(self):
         # EnergyConsumer / ConformLoad / NonConformLoad / StationSupply all map to the load table
-        by_class: Dict[str, List[dict]] = {}
-        ssh_rows: Dict[str, List[dict]] = {}
+        by_class = collections.defaultdict(list)
+        ssh_rows = collections.defaultdict(list)
         for idx, load in self.net.load.iterrows():
             origin_class = load.get(sc['o_cl'])
             if pd.isna(origin_class):
                 origin_class = 'EnergyConsumer'
             origin_id = self._id_or_new(load.get(sc['o_id']))
-            by_class.setdefault(origin_class, []).append({
+            by_class[origin_class].append({
                 'rdfId': origin_id, 'name': load.get('name'), 'description': load.get('description')})
-            ssh_rows.setdefault(origin_class, []).append({
+            ssh_rows[origin_class].append({
                 'rdfId': origin_id, 'p': float(load['p_mw']), 'q': float(load['q_mvar'])})
             self._add_terminal(load.get(sc['t']), origin_id, 1, load['bus'], bool(load['in_service']))
         for cls, rows in by_class.items():
@@ -376,10 +396,10 @@ class PpToCimConverter:
         if pd.isna(mode) and pd.isna(enabled) and pd.isna(target):
             return None
         reg_id = _new_uuid()
-        self._reg_control_eq.append({'rdfId': reg_id, 'mode': mode if not pd.isna(mode) else None,
+        self._reg_control_eq.append({'rdfId': reg_id, 'mode': self._none_if_na(mode),
                                      'Terminal': terminal_id})
         self._reg_control_ssh.append({'rdfId': reg_id, 'enabled': self._as_bool(enabled),
-                                      'targetValue': target if not pd.isna(target) else None})
+                                      'targetValue': self._none_if_na(target)})
         return reg_id
 
     def _finalize_regulating_controls(self):
@@ -389,8 +409,8 @@ class PpToCimConverter:
     def _convert_switches(self):
         # Breaker / Disconnector / LoadBreakSwitch / Switch all map to the pandapower switch table
         # (with et == 'b'). The switch connects two buses via two terminals.
-        eq_by_class: Dict[str, List[dict]] = {}
-        ssh_by_class: Dict[str, List[dict]] = {}
+        eq_by_class = collections.defaultdict(list)
+        ssh_by_class = collections.defaultdict(list)
         for idx, switch in self.net.switch.iterrows():
             if switch.get('et') != 'b':
                 continue  # only bus-bus switches originate from CGMES switching devices
@@ -400,10 +420,10 @@ class PpToCimConverter:
             origin_id = self._id_or_new(switch.get(sc['o_id']))
             closed = bool(switch['closed'])
             in_ka = switch.get('in_ka')
-            eq_by_class.setdefault(origin_class, []).append({
+            eq_by_class[origin_class].append({
                 'rdfId': origin_id, 'name': switch.get('name'), 'description': switch.get('description'),
                 'normalOpen': not closed, 'ratedCurrent': in_ka * 1e3 if not pd.isna(in_ka) else np.nan})
-            ssh_by_class.setdefault(origin_class, []).append({'rdfId': origin_id, 'open': not closed})
+            ssh_by_class[origin_class].append({'rdfId': origin_id, 'open': not closed})
             # element is a bus (et == 'b')
             self._add_terminal(switch.get(sc['t_bus']), origin_id, 1, switch['bus'], closed)
             self._add_terminal(switch.get(sc['t_ele']), origin_id, 2, switch['element'], closed)
@@ -513,21 +533,12 @@ class PpToCimConverter:
             vn_hv = float(trafo['vn_hv_kv'])
             vn_lv = float(trafo['vn_lv_kv'])
             in_service = bool(trafo['in_service'])
-            # series impedance (positive and zero sequence) referred to the HV side. vk_percent is
-            # signed (it carries the sign of x), so use its magnitude for z and restore the sign on x.
-            vk, vk0 = trafo['vk_percent'], self._safe(trafo.get('vk0_percent'))
-            r_hv = trafo['vkr_percent'] * vn_hv ** 2 / (sn * 100)
-            z_hv = abs(vk) * vn_hv ** 2 / (sn * 100)
-            x_hv = math.copysign(math.sqrt(max(z_hv ** 2 - r_hv ** 2, 0.0)), vk)
-            r0_hv = self._safe(trafo.get('vkr0_percent')) * vn_hv ** 2 / (sn * 100)
-            z0_hv = abs(vk0) * vn_hv ** 2 / (sn * 100)
-            x0_hv = math.copysign(math.sqrt(max(z0_hv ** 2 - r0_hv ** 2, 0.0)), vk0)
-            # magnetizing branch from pfe_kw / i0_percent
-            g_hv = self._safe(trafo.get('pfe_kw')) / (vn_hv ** 2 * 1000) if vn_hv else 0.0
-            i0_s = self._safe(trafo.get('i0_percent')) * sn / 100
-            b_sq = i0_s ** 2 - (g_hv * vn_hv ** 2) ** 2
-            b_hv = math.sqrt(b_sq) / vn_hv ** 2 if b_sq > 0 and vn_hv else 0.0
-            clock = self._safe(trafo.get('shift_degree')) / 30 if not pd.isna(trafo.get('shift_degree')) else 0.0
+            # series impedance (positive and zero sequence) and magnetizing branch on the HV side
+            r_hv, x_hv = self._impedance_from_vk(trafo['vk_percent'], trafo['vkr_percent'], vn_hv, sn)
+            r0_hv, x0_hv = self._impedance_from_vk(self._safe(trafo.get('vk0_percent')),
+                                                  self._safe(trafo.get('vkr0_percent')), vn_hv, sn)
+            g_hv, b_hv = self._magnetizing_branch(vn_hv, sn, trafo.get('pfe_kw'), trafo.get('i0_percent'))
+            clock = self._phase_angle_clock(trafo.get('shift_degree'))
 
             pte_hv = self._id_or_new(trafo.get(sc['pte_id_hv']))
             pte_lv = self._id_or_new(trafo.get(sc['pte_id_lv']))
@@ -549,10 +560,7 @@ class PpToCimConverter:
             self._add_terminal(trafo.get(sc['t_lv']), origin_id, 2, trafo['lv_bus'], in_service)
             self._add_tap_changer(trafo, {'hv': pte_hv, 'lv': pte_lv})
             for side in ('hv', 'lv'):
-                self._add_current_limit(trafo.get(sc['t_%s' % side]),
-                                        trafo.get('CurrentLimit.value_%s' % side),
-                                        trafo.get('OperationalLimitType.limitType_%s' % side),
-                                        trafo.get('OperationalLimitType.acceptableDuration_%s' % side))
+                self._add_side_current_limit(trafo, trafo.get(sc['t_%s' % side]), side)
         self._set('eq', 'PowerTransformer', pt_rows)
         self._set('eq', 'PowerTransformerEnd', end_rows)
 
@@ -619,13 +627,11 @@ class PpToCimConverter:
                                                  a_hv, a_mv, a_lv, r0, k_hvmv, k_mvlv, k_lvhv),
                                 k_hvmv, k_mvlv, k_lvhv)
             # magnetizing branch on the HV end
-            g_hv = self._safe(trafo.get('pfe_kw')) / (u['hv'] ** 2 * 1000)
-            i0_s = self._safe(trafo.get('i0_percent')) * s['hv'] / 100
-            b_sq = i0_s ** 2 - (g_hv * u['hv'] ** 2) ** 2
-            b_hv = math.sqrt(b_sq) / u['hv'] ** 2 if b_sq > 0 else 0.0
+            g_hv, b_hv = self._magnetizing_branch(u['hv'], s['hv'], trafo.get('pfe_kw'),
+                                                  trafo.get('i0_percent'))
             clock = {'hv': 0,
-                     'mv': self._safe(trafo.get('shift_mv_degree')) / 30,
-                     'lv': self._safe(trafo.get('shift_lv_degree')) / 30}
+                     'mv': self._phase_angle_clock(trafo.get('shift_mv_degree')),
+                     'lv': self._phase_angle_clock(trafo.get('shift_lv_degree'))}
             pte = {'hv': self._id_or_new(trafo.get(sc['pte_id_hv'])),
                    'mv': self._id_or_new(trafo.get(sc['pte_id_mv'])),
                    'lv': self._id_or_new(trafo.get(sc['pte_id_lv']))}
@@ -642,9 +648,7 @@ class PpToCimConverter:
                                  'b': b_hv if side == 'hv' else 0.0, 'g': g_hv if side == 'hv' else 0.0,
                                  'BaseVoltage': self._base_voltage_id(u[side]), 'phaseAngleClock': clock[side]})
                 self._add_terminal(term[side], origin_id, n, bus[side], in_service)
-                self._add_current_limit(term[side], trafo.get('CurrentLimit.value_%s' % side),
-                                        trafo.get('OperationalLimitType.limitType_%s' % side),
-                                        trafo.get('OperationalLimitType.acceptableDuration_%s' % side))
+                self._add_side_current_limit(trafo, term[side], side)
             self._add_tap_changer(trafo, pte)
         self._set('eq', 'PowerTransformer', pt_rows)
         self._set('eq', 'PowerTransformerEnd', end_rows)
@@ -652,8 +656,7 @@ class PpToCimConverter:
     def _x_targets(self, trafo, vk_hv_col, vk_mv_col, vk_lv_col, a_hv, a_mv, a_lv, r, k_hvmv, k_mvlv, k_lvhv):
         # given the solved per-end r values, recover the per-pair reactance sums from the vk values
         def bx(vk_col, a, pair_r):
-            z_pair = self._safe(trafo.get(vk_col)) / a
-            return math.sqrt(max(z_pair ** 2 - pair_r ** 2, 0.0))
+            return self._reactance(self._safe(trafo.get(vk_col)) / a, pair_r)
         bx1 = bx(vk_hv_col, a_hv, r['hv'] + k_hvmv * r['mv'])
         bx2 = bx(vk_mv_col, a_mv, r['mv'] + k_mvlv * r['lv'])
         bx3 = bx(vk_lv_col, a_lv, r['lv'] + k_lvhv * r['hv'])
@@ -669,6 +672,35 @@ class PpToCimConverter:
         v_hv = b1 - k_hvmv * v_mv
         v_lv = (b2 - v_mv) / k_mvlv
         return {'hv': v_hv, 'mv': v_mv, 'lv': v_lv}
+
+    # ------------------------------------------------------------------ transformer impedance helpers
+
+    def _impedance_from_vk(self, vk, vkr, vn_kv, sn_mva):
+        """Recover the (r, x) ohm impedance of a winding from the per-unit short-circuit values.
+        vk_percent is signed (it carries the sign of x), so its magnitude gives z and its sign x."""
+        base = vn_kv ** 2 / (sn_mva * 100)  # %-to-ohm factor at this winding's voltage/rating
+        r = vkr * base  # vkr_percent is computed from abs(r), so it is non-negative
+        z = abs(vk) * base
+        return r, math.copysign(self._reactance(z, r), vk)
+
+    @staticmethod
+    def _reactance(z, r):
+        """Reactance magnitude from impedance and resistance: sqrt(z^2 - r^2), floored at 0."""
+        return math.sqrt(max(z ** 2 - r ** 2, 0.0))
+
+    def _magnetizing_branch(self, vn_kv, sn_mva, pfe_kw, i0_percent):
+        """Recover the (g, b) magnetizing admittance on a winding from pfe_kw / i0_percent."""
+        if not vn_kv:
+            return 0.0, 0.0
+        g = self._safe(pfe_kw) / (vn_kv ** 2 * 1000)
+        i0_s = self._safe(i0_percent) * sn_mva / 100
+        b_sq = i0_s ** 2 - (g * vn_kv ** 2) ** 2
+        b = math.sqrt(b_sq) / vn_kv ** 2 if b_sq > 0 else 0.0
+        return g, b
+
+    def _phase_angle_clock(self, shift_degree):
+        """CIM phaseAngleClock (multiples of 30 degrees) from a pandapower shift in degrees."""
+        return self._safe(shift_degree) / 30
 
     def _convert_equivalent_injections(self):
         # EquivalentInjection -> ward (regulationStatus False) or xward (regulationStatus True)
@@ -752,26 +784,31 @@ class PpToCimConverter:
                        'gen', 'impedance', 'shunt', 'ward', 'xward')
     _DIAGRAM_LINE_TABLES = ('line', 'dcline', 'impedance')
 
+    def _iter_geo(self, column, tables):
+        """Yield (row, origin_id, coords) for each element in `tables` carrying a parseable GeoJSON
+        coordinate string in `column` (shared by the DL and GL exporters)."""
+        for table in tables:
+            df = self.net[table]
+            if column not in df.columns:
+                continue
+            for _, row in df.iterrows():
+                coords = self._parse_geojson(row.get(column))
+                origin_id = row.get(sc['o_id'])
+                if coords is not None and not pd.isna(origin_id):
+                    yield row, origin_id, coords
+
     def _convert_diagram_layout(self):
         # Export the 'diagram' coordinates (DiagramLayout profile). DiagramObject.IdentifiedObject
         # points directly at each element's rdfId, so no container hierarchy is needed.
         diagram_id = _new_uuid()
         diagram_objects, points = [], []
-        for table in self._DIAGRAM_TABLES:
-            df = self.net[table]
-            if 'diagram' not in df.columns:
-                continue
-            for idx, row in df.iterrows():
-                coords = self._parse_geojson(row.get('diagram'))
-                origin_id = row.get(sc['o_id'])
-                if coords is None or pd.isna(origin_id):
-                    continue
-                do_id = _new_uuid()
-                diagram_objects.append({'rdfId': do_id, 'IdentifiedObject': origin_id,
-                                        'Diagram': diagram_id, 'name': row.get('name')})
-                for seq, (x, y) in enumerate(coords, start=1):
-                    points.append({'rdfId': _new_uuid(), 'DiagramObject': do_id,
-                                   'sequenceNumber': seq, 'xPosition': x, 'yPosition': y})
+        for row, origin_id, coords in self._iter_geo('diagram', self._DIAGRAM_TABLES):
+            do_id = _new_uuid()
+            diagram_objects.append({'rdfId': do_id, 'IdentifiedObject': origin_id,
+                                    'Diagram': diagram_id, 'name': row.get('name')})
+            for seq, (x, y) in enumerate(coords, start=1):
+                points.append({'rdfId': _new_uuid(), 'DiagramObject': do_id,
+                               'sequenceNumber': seq, 'xPosition': x, 'yPosition': y})
         if not diagram_objects:
             return
         self.cim['dl']['FullModel'] = pd.DataFrame(self._full_model_rows('dl', synthesize=True))
@@ -812,15 +849,8 @@ class PpToCimConverter:
                     seen_substations.add(sub_id)
                     self._append_location(locations, points, cs_id, sub_id, coords)
 
-        for table in self._GL_POINT_TABLES + self._GL_LINE_TABLES:
-            if 'geo' not in self.net[table].columns:
-                continue
-            for _, row in self.net[table].iterrows():
-                coords = self._parse_geojson(row.get('geo'))
-                origin_id = row.get(sc['o_id'])
-                if coords is None or pd.isna(origin_id):
-                    continue
-                self._append_location(locations, points, cs_id, origin_id, coords)
+        for _, origin_id, coords in self._iter_geo('geo', self._GL_POINT_TABLES + self._GL_LINE_TABLES):
+            self._append_location(locations, points, cs_id, origin_id, coords)
 
         if not locations:
             return
@@ -883,7 +913,7 @@ class PpToCimConverter:
         if windings != 2:
             return none
         split = next((i for i, ch in enumerate(vector_group) if ch.islower()), None)
-        if not split:  # no lower-case part (or starts lower-case) -> cannot split reliably
+        if split is None or split == 0:  # no lower-case part, or no leading HV part -> can't split
             return none
         return vector_group[:split].capitalize(), vector_group[split:].capitalize()
 

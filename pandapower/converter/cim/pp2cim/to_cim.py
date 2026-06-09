@@ -2,18 +2,21 @@
 from __future__ import annotations
 import logging
 import time
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 from pandapower.auxiliary import pandapowerNet
 from .build_cim_net import PpToCimConverter
 from ..cim_writer import CimWriter
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.getLogger('cim.pp2cim.to_cim')
 
 
 def to_cim(net: pandapowerNet, file_path: str = None, output_folder: str = None,
            cgmes_version: str = '2.4.15', base_name: str = 'pandapower',
-           **kwargs) -> Dict[str, "pd.DataFrame"]:
+           **kwargs) -> Dict[str, Dict[str, "pd.DataFrame"]]:
     """
     Converts a pandapower net to CGMES (CIM) and optionally writes the RDF/XML files.
 
