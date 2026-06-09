@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 import collections
+import json
 import logging
 import math
 import uuid
@@ -25,12 +26,16 @@ PROFILE_URI = {
         'ssh': 'http://entsoe.eu/CIM/SteadyStateHypothesis/1/1',
         'sv': 'http://entsoe.eu/CIM/StateVariables/4/1',
         'tp': 'http://entsoe.eu/CIM/Topology/4/1',
+        'dl': 'http://entsoe.eu/CIM/DiagramLayout/3/1',
+        'gl': 'http://entsoe.eu/CIM/GeographicalLocation/2/1',
     },
     '3.0': {
         'eq': 'http://iec.ch/TC57/ns/CIM/CoreEquipment-EU/3.0',
         'ssh': 'http://iec.ch/TC57/ns/CIM/SteadyStateHypothesis-EU/3.0',
         'sv': 'http://iec.ch/TC57/ns/CIM/StateVariables-EU/3.0',
         'tp': 'http://iec.ch/TC57/ns/CIM/Topology-EU/3.0',
+        'dl': 'http://iec.ch/TC57/ns/CIM/DiagramLayout-EU/3.0',
+        'gl': 'http://iec.ch/TC57/ns/CIM/GeographicalLocation-EU/3.0',
     },
 }
 
@@ -67,6 +72,12 @@ class PpToCimConverter:
         # accumulators for tap changers, keyed by CIM class (RatioTapChanger, PhaseTapChanger*)
         self._tc_eq: Dict[str, List[dict]] = collections.defaultdict(list)
         self._tc_ssh: Dict[str, List[dict]] = collections.defaultdict(list)
+        # accumulators for current limits (OperationalLimitSet + CurrentLimit + OperationalLimitType)
+        self._op_limit_sets: List[dict] = []
+        self._current_limits: List[dict] = []
+        self._op_limit_type_rows: List[dict] = []
+        # (limitType, acceptableDuration) -> OperationalLimitType rdfId (de-duplicates the types)
+        self._op_limit_types: Dict[tuple, str] = {}
 
         # nominalVoltage -> BaseVoltage rdfId, built from net['CGMES']['BaseVoltage']
         self._voltage_to_bv: Dict[float, str] = {}
@@ -82,6 +93,7 @@ class PpToCimConverter:
         self._convert_loads()
         self._convert_external_network_injections()
         self._convert_synchronous_machines()
+        self._convert_energy_sources()
         self._convert_switches()
         self._convert_shunts()
         self._convert_impedances()
@@ -89,29 +101,40 @@ class PpToCimConverter:
         self._convert_power_transformers_3w()
         self._convert_equivalent_injections()
         self._convert_state_variables()
+        self._convert_diagram_layout()
+        self._convert_geographical_location()
         self._finalize_terminals()
         self._finalize_regulating_controls()
         self._finalize_tap_changers()
+        self._set('eq', 'OperationalLimitType', self._op_limit_type_rows)
+        self._set('eq', 'OperationalLimitSet', self._op_limit_sets)
+        self._set('eq', 'CurrentLimit', self._current_limits)
         self.logger.info("Finished converting the pandapower net to CIM.")
         return self.cim
 
     # ------------------------------------------------------------------ headers / base voltages
 
     def _create_full_model(self):
-        cgmes = self.net.get('CGMES', {}) if isinstance(self.net.get('CGMES', None), dict) else {}
         for profile in ['eq', 'ssh', 'tp', 'sv']:
-            rows = []
-            if profile in cgmes and isinstance(cgmes[profile], dict) and len(cgmes[profile]) > 0:
-                for rdf_id, fields in cgmes[profile].items():
-                    row = {'rdfId': rdf_id}
-                    row.update(fields)
-                    rows.append(row)
-            elif profile in ('eq', 'ssh', 'tp'):
-                # synthesize a minimal header so the parser can re-detect the profile on re-import
-                rows.append({'rdfId': str(uuid.uuid4()),
-                             'profile': PROFILE_URI.get(self.cgmes_version, {}).get(profile)})
+            rows = self._full_model_rows(profile, synthesize=profile in ('eq', 'ssh', 'tp'))
             if rows:
                 self.cim[profile]['FullModel'] = pd.DataFrame(rows)
+
+    def _full_model_rows(self, profile: str, synthesize: bool) -> List[dict]:
+        """Build FullModel header rows for a profile, reusing net['CGMES'] when available and
+        otherwise synthesizing a minimal header so the parser can re-detect the profile."""
+        cgmes = self.net.get('CGMES', {}) if isinstance(self.net.get('CGMES', None), dict) else {}
+        if profile in cgmes and isinstance(cgmes[profile], dict) and len(cgmes[profile]) > 0:
+            rows = []
+            for rdf_id, fields in cgmes[profile].items():
+                row = {'rdfId': rdf_id}
+                row.update(fields)
+                rows.append(row)
+            return rows
+        if synthesize:
+            return [{'rdfId': str(uuid.uuid4()),
+                     'profile': PROFILE_URI.get(self.cgmes_version, {}).get(profile)}]
+        return []
 
     def _create_base_voltages(self):
         bv = self.net.get('CGMES', {}).get('BaseVoltage') if isinstance(self.net.get('CGMES', None), dict) else None
@@ -216,7 +239,28 @@ class PpToCimConverter:
             })
             self._add_terminal(line.get(sc['t_from']), origin_id, 1, line['from_bus'], in_service)
             self._add_terminal(line.get(sc['t_to']), origin_id, 2, line['to_bus'], in_service)
+            max_i_ka = line.get('max_i_ka')
+            self._add_current_limit(line.get(sc['t_from']),
+                                    max_i_ka * 1e3 if not pd.isna(max_i_ka) else np.nan)
         self._set('eq', 'ACLineSegment', eq_rows)
+
+    def _add_current_limit(self, terminal_id, value_a, limit_type='patl', acceptable_duration=None):
+        # Reconstruct an OperationalLimitSet + CurrentLimit on the given terminal (value in Amperes).
+        # OperationalLimitTypes are de-duplicated by (limitType, acceptableDuration).
+        if terminal_id is None or pd.isna(terminal_id) or pd.isna(value_a):
+            return
+        limit_type = 'patl' if (limit_type is None or pd.isna(limit_type)) else limit_type
+        duration = None if (acceptable_duration is None or pd.isna(acceptable_duration)) else acceptable_duration
+        key = (limit_type, duration)
+        if key not in self._op_limit_types:
+            olt_id = _new_uuid()
+            self._op_limit_types[key] = olt_id
+            self._op_limit_type_rows.append({'rdfId': olt_id, 'name': limit_type, 'limitType': limit_type,
+                                             'acceptableDuration': duration})
+        ols_id = _new_uuid()
+        self._op_limit_sets.append({'rdfId': ols_id, 'Terminal': terminal_id})
+        self._current_limits.append({'rdfId': _new_uuid(), 'OperationalLimitSet': ols_id,
+                                     'OperationalLimitType': self._op_limit_types[key], 'value': value_a})
 
     def _convert_loads(self):
         # EnergyConsumer / ConformLoad / NonConformLoad / StationSupply all map to the load table
@@ -242,7 +286,11 @@ class PpToCimConverter:
         eq_rows, ssh_rows = [], []
         for table in ('ext_grid', 'gen', 'sgen'):
             for idx, ext in self.net[table].iterrows():
-                if ext.get(sc['o_cl']) != 'ExternalNetworkInjection':
+                origin_class = ext.get(sc['o_cl'])
+                # ext_grids default to an ExternalNetworkInjection when no origin is known (e.g. a
+                # hand-built net); gen/sgen are only exported here when explicitly an ENI.
+                if origin_class != 'ExternalNetworkInjection' and not (
+                        table == 'ext_grid' and (origin_class is None or pd.isna(origin_class))):
                     continue
                 origin_id = self._id_or_new(ext.get(sc['o_id']))
                 terminal_id = self._add_terminal(ext.get(sc['t']), origin_id, 1, ext['bus'],
@@ -293,6 +341,32 @@ class PpToCimConverter:
         self._set('eq', 'SynchronousMachine', eq_sm)
         self._set('ssh', 'SynchronousMachine', ssh_sm)
 
+    def _convert_energy_sources(self):
+        # EnergySource -> sgen, or ext_grid when it carries a voltage set point (the importer routes
+        # EnergySources with a vm_pu to ext_grid and the rest to sgen). Setting voltageMagnitude /
+        # voltageAngle reproduces that split.
+        eq_rows, ssh_rows = [], []
+        for table in ('sgen', 'ext_grid'):
+            for idx, es in self.net[table].iterrows():
+                if es.get(sc['o_cl']) != 'EnergySource':
+                    continue
+                origin_id = self._id_or_new(es.get(sc['o_id']))
+                vn_kv = self.net.bus.loc[es['bus'], 'vn_kv'] if es['bus'] in self.net.bus.index else np.nan
+                row = {'rdfId': origin_id, 'name': es.get('name'), 'description': es.get('description')}
+                vm_pu = es.get('vm_pu')
+                if not pd.isna(vm_pu) and not pd.isna(vn_kv):
+                    row['voltageMagnitude'] = vm_pu * vn_kv
+                    row['nominalVoltage'] = vn_kv
+                    va_degree = es.get('va_degree')
+                    if not pd.isna(va_degree):
+                        row['voltageAngle'] = va_degree * math.pi / 180
+                eq_rows.append(row)
+                ssh_rows.append({'rdfId': origin_id, 'activePower': self._neg(es.get('p_mw')),
+                                 'reactivePower': self._neg(es.get('q_mvar'))})
+                self._add_terminal(es.get(sc['t']), origin_id, 1, es['bus'], bool(es['in_service']))
+        self._set('eq', 'EnergySource', eq_rows)
+        self._set('ssh', 'EnergySource', ssh_rows)
+
     def _add_regulating_control(self, row, terminal_id) -> str | None:
         """Reconstruct a RegulatingControl from the preserved RegulatingControl.* columns. Returns
         the new RegulatingControl rdfId, or None when the element has no regulation info."""
@@ -338,61 +412,92 @@ class PpToCimConverter:
             self._set('ssh', cls, ssh_by_class[cls])
 
     def _convert_shunts(self):
-        # LinearShuntCompensator and StaticVarCompensator map to the shunt table. NonlinearShunt-
-        # Compensators need per-section b/g points that are not preserved on the net, so they are
-        # not reversed here.
+        # LinearShuntCompensator, NonlinearShuntCompensator and StaticVarCompensator map to the
+        # shunt table.
         lin_eq, lin_ssh, svc_eq, svc_ssh = [], [], [], []
+        nonlin_eq, nonlin_ssh, nonlin_points = [], [], []
         for idx, shunt in self.net.shunt.iterrows():
             origin_class = shunt.get(sc['o_cl'])
             origin_id = self._id_or_new(shunt.get(sc['o_id']))
             vn_kv = shunt.get('vn_kv')
             connected = bool(shunt['in_service'])
+            # complex per-section admittance: s = vn^2 * conj(g + b*1j) -> g = p/vn^2, b = -q/vn^2
+            g_per_section = shunt['p_mw'] / vn_kv ** 2 if vn_kv else np.nan
+            b_per_section = -shunt['q_mvar'] / vn_kv ** 2 if vn_kv else np.nan
             if origin_class == 'StaticVarCompensator':
                 svc_eq.append({'rdfId': origin_id, 'name': shunt.get('name'),
                                'description': shunt.get('description'), 'voltageSetPoint': vn_kv,
                                'sVCControlMode': shunt.get('sVCControlMode')})
                 svc_ssh.append({'rdfId': origin_id, 'q': float(shunt['q_mvar'])})
-                self._add_terminal(shunt.get(sc['t']), origin_id, 1, shunt['bus'], connected)
+            elif origin_class == 'NonlinearShuntCompensator':
+                # the per-section points are not preserved on the net; reconstruct uniform points so
+                # the importer's aggregate (sum over active sections / sections) reproduces p_mw/q_mvar
+                max_step = shunt.get('max_step')
+                sections = int(max_step) if not pd.isna(max_step) else int(shunt.get('step', 1) or 1)
+                nonlin_eq.append({'rdfId': origin_id, 'name': shunt.get('name'),
+                                  'description': shunt.get('description'), 'nomU': vn_kv,
+                                  'maximumSections': max_step})
+                nonlin_ssh.append({'rdfId': origin_id, 'sections': shunt.get('step')})
+                for section in range(1, sections + 1):
+                    nonlin_points.append({'rdfId': _new_uuid(), 'NonlinearShuntCompensator': origin_id,
+                                          'sectionNumber': section, 'g': g_per_section, 'b': b_per_section})
             elif origin_class in (None, 'LinearShuntCompensator') or pd.isna(origin_class):
-                # complex per-section admittance: s = vn^2 * conj(g + b*1j) -> g = p/vn^2, b = -q/vn^2
-                g_per_section = shunt['p_mw'] / vn_kv ** 2 if vn_kv else np.nan
-                b_per_section = -shunt['q_mvar'] / vn_kv ** 2 if vn_kv else np.nan
                 lin_eq.append({'rdfId': origin_id, 'name': shunt.get('name'),
                                'description': shunt.get('description'), 'nomU': vn_kv,
                                'gPerSection': g_per_section, 'bPerSection': b_per_section,
                                'maximumSections': shunt.get('max_step'),
                                'normalSections': shunt.get('step')})
                 lin_ssh.append({'rdfId': origin_id, 'sections': shunt.get('step')})
-                self._add_terminal(shunt.get(sc['t']), origin_id, 1, shunt['bus'], connected)
             else:
                 self.logger.warning("Skipping shunt %s: origin_class %s not supported yet."
                                     % (origin_id, origin_class))
+                continue
+            self._add_terminal(shunt.get(sc['t']), origin_id, 1, shunt['bus'], connected)
         self._set('eq', 'LinearShuntCompensator', lin_eq)
         self._set('ssh', 'LinearShuntCompensator', lin_ssh)
         self._set('eq', 'StaticVarCompensator', svc_eq)
         self._set('ssh', 'StaticVarCompensator', svc_ssh)
+        self._set('eq', 'NonlinearShuntCompensator', nonlin_eq)
+        self._set('ssh', 'NonlinearShuntCompensator', nonlin_ssh)
+        self._set('eq', 'NonlinearShuntCompensatorPoint', nonlin_points)
 
     def _convert_impedances(self):
-        # SeriesCompensator -> impedance. (EquivalentBranch, also an impedance, is handled elsewhere.)
-        eq_rows = []
+        # impedance table holds SeriesCompensator and EquivalentBranch elements. Both store their
+        # per-unit values referred to z_base = vn_kv**2 / sn_mva (vn from the from-bus).
+        sc_rows, eb_rows = [], []
         for idx, imp in self.net.impedance.iterrows():
-            if imp.get(sc['o_cl']) != 'SeriesCompensator':
-                continue
+            origin_class = imp.get(sc['o_cl'])
             origin_id = self._id_or_new(imp.get(sc['o_id']))
             from_bus = imp['from_bus']
             vn_kv = self.net.bus.loc[from_bus, 'vn_kv'] if from_bus in self.net.bus.index else np.nan
             sn_mva = imp.get('sn_mva')
             z_base = (vn_kv ** 2) / sn_mva if not pd.isna(vn_kv) and sn_mva else np.nan
-            eq_rows.append({'rdfId': origin_id, 'name': imp.get('name'),
-                            'description': imp.get('description'),
-                            'BaseVoltage': self._base_voltage_id(vn_kv),
-                            'r': imp['rft_pu'] * z_base, 'x': imp['xft_pu'] * z_base,
-                            'r0': imp.get('rft0_pu', np.nan) * z_base,
-                            'x0': imp.get('xft0_pu', np.nan) * z_base})
+            bv_id = self._base_voltage_id(vn_kv)
             in_service = bool(imp['in_service'])
+            if origin_class == 'EquivalentBranch':
+                eb_rows.append({'rdfId': origin_id, 'name': imp.get('name'),
+                                'description': imp.get('description'), 'BaseVoltage': bv_id,
+                                'r': imp['rft_pu'] * z_base, 'x': imp['xft_pu'] * z_base,
+                                'r21': imp.get('rtf_pu', np.nan) * z_base,
+                                'x21': imp.get('xtf_pu', np.nan) * z_base,
+                                'zeroR12': imp.get('rft0_pu', np.nan) * z_base,
+                                'zeroX12': imp.get('xft0_pu', np.nan) * z_base,
+                                'zeroR21': imp.get('rtf0_pu', np.nan) * z_base,
+                                'zeroX21': imp.get('xtf0_pu', np.nan) * z_base})
+            elif origin_class in (None, 'SeriesCompensator') or pd.isna(origin_class):
+                sc_rows.append({'rdfId': origin_id, 'name': imp.get('name'),
+                                'description': imp.get('description'), 'BaseVoltage': bv_id,
+                                'r': imp['rft_pu'] * z_base, 'x': imp['xft_pu'] * z_base,
+                                'r0': imp.get('rft0_pu', np.nan) * z_base,
+                                'x0': imp.get('xft0_pu', np.nan) * z_base})
+            else:
+                self.logger.warning("Skipping impedance %s: origin_class %s not supported."
+                                    % (origin_id, origin_class))
+                continue
             self._add_terminal(imp.get(sc['t_from']), origin_id, 1, from_bus, in_service)
             self._add_terminal(imp.get(sc['t_to']), origin_id, 2, imp['to_bus'], in_service)
-        self._set('eq', 'SeriesCompensator', eq_rows)
+        self._set('eq', 'SeriesCompensator', sc_rows)
+        self._set('eq', 'EquivalentBranch', eb_rows)
 
     def _convert_power_transformers(self):
         # 2-winding PowerTransformer only (first slice). All series impedance and the magnetizing
@@ -424,20 +529,28 @@ class PpToCimConverter:
 
             pte_hv = self._id_or_new(trafo.get(sc['pte_id_hv']))
             pte_lv = self._id_or_new(trafo.get(sc['pte_id_lv']))
+            conn_hv, conn_lv = self._split_vector_group(trafo.get('vector_group'), 2)
             pt_rows.append({'rdfId': origin_id, 'name': trafo.get('name'),
                             'description': trafo.get('description'),
                             'isPartOfGeneratorUnit': self._as_bool(trafo.get('power_station_unit'))})
             end_rows.append({'rdfId': pte_hv, 'name': trafo.get('name'), 'PowerTransformer': origin_id,
                              'endNumber': 1, 'Terminal': trafo.get(sc['t_hv']), 'ratedS': sn, 'ratedU': vn_hv,
                              'r': r_hv, 'x': x_hv, 'b': b_hv, 'g': g_hv, 'r0': r0_hv, 'x0': x0_hv,
-                             'BaseVoltage': self._base_voltage_id(vn_hv), 'phaseAngleClock': clock})
+                             'BaseVoltage': self._base_voltage_id(vn_hv), 'phaseAngleClock': clock,
+                             'connectionKind': conn_hv})
             end_rows.append({'rdfId': pte_lv, 'name': trafo.get('name'), 'PowerTransformer': origin_id,
                              'endNumber': 2, 'Terminal': trafo.get(sc['t_lv']), 'ratedS': sn, 'ratedU': vn_lv,
                              'r': 0.0, 'x': 0.0, 'b': 0.0, 'g': 0.0, 'r0': 0.0, 'x0': 0.0,
-                             'BaseVoltage': self._base_voltage_id(vn_lv), 'phaseAngleClock': 0})
+                             'BaseVoltage': self._base_voltage_id(vn_lv), 'phaseAngleClock': 0,
+                             'connectionKind': conn_lv})
             self._add_terminal(trafo.get(sc['t_hv']), origin_id, 1, trafo['hv_bus'], in_service)
             self._add_terminal(trafo.get(sc['t_lv']), origin_id, 2, trafo['lv_bus'], in_service)
             self._add_tap_changer(trafo, {'hv': pte_hv, 'lv': pte_lv})
+            for side in ('hv', 'lv'):
+                self._add_current_limit(trafo.get(sc['t_%s' % side]),
+                                        trafo.get('CurrentLimit.value_%s' % side),
+                                        trafo.get('OperationalLimitType.limitType_%s' % side),
+                                        trafo.get('OperationalLimitType.acceptableDuration_%s' % side))
         self._set('eq', 'PowerTransformer', pt_rows)
         self._set('eq', 'PowerTransformerEnd', end_rows)
 
@@ -527,6 +640,9 @@ class PpToCimConverter:
                                  'b': b_hv if side == 'hv' else 0.0, 'g': g_hv if side == 'hv' else 0.0,
                                  'BaseVoltage': self._base_voltage_id(u[side]), 'phaseAngleClock': clock[side]})
                 self._add_terminal(term[side], origin_id, n, bus[side], in_service)
+                self._add_current_limit(term[side], trafo.get('CurrentLimit.value_%s' % side),
+                                        trafo.get('OperationalLimitType.limitType_%s' % side),
+                                        trafo.get('OperationalLimitType.acceptableDuration_%s' % side))
             self._add_tap_changer(trafo, pte)
         self._set('eq', 'PowerTransformer', pt_rows)
         self._set('eq', 'PowerTransformerEnd', end_rows)
@@ -626,12 +742,148 @@ class PpToCimConverter:
                          'sections': shunt.get('step')})
         self._set('sv', 'SvShuntCompensatorSections', rows)
 
+    # ------------------------------------------------------------------ diagram layout (DL)
+
+    # pandapower element tables whose diagram coordinates are exported (Point, except the branch
+    # elements which carry a LineString).
+    _DIAGRAM_TABLES = ('bus', 'line', 'trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen',
+                       'gen', 'impedance', 'shunt', 'ward', 'xward')
+    _DIAGRAM_LINE_TABLES = ('line', 'dcline', 'impedance')
+
+    def _convert_diagram_layout(self):
+        # Export the 'diagram' coordinates (DiagramLayout profile). DiagramObject.IdentifiedObject
+        # points directly at each element's rdfId, so no container hierarchy is needed.
+        diagram_id = _new_uuid()
+        diagram_objects, points = [], []
+        for table in self._DIAGRAM_TABLES:
+            df = self.net[table]
+            if 'diagram' not in df.columns:
+                continue
+            for idx, row in df.iterrows():
+                coords = self._parse_geojson(row.get('diagram'))
+                origin_id = row.get(sc['o_id'])
+                if coords is None or pd.isna(origin_id):
+                    continue
+                do_id = _new_uuid()
+                diagram_objects.append({'rdfId': do_id, 'IdentifiedObject': origin_id,
+                                        'Diagram': diagram_id, 'name': row.get('name')})
+                for seq, (x, y) in enumerate(coords, start=1):
+                    points.append({'rdfId': _new_uuid(), 'DiagramObject': do_id,
+                                   'sequenceNumber': seq, 'xPosition': x, 'yPosition': y})
+        if not diagram_objects:
+            return
+        self.cim['dl']['FullModel'] = pd.DataFrame(self._full_model_rows('dl', synthesize=True))
+        self._set('dl', 'Diagram', [{'rdfId': diagram_id, 'name': 'pandapower'}])
+        self._set('dl', 'DiagramObject', diagram_objects)
+        self._set('dl', 'DiagramObjectPoint', points)
+
+    # ------------------------------------------------------------------ geographical location (GL)
+
+    # GL point elements (single coordinate) and line elements (LineString); buses are handled
+    # separately because their geo is attached to the Substation, not the node directly.
+    _GL_POINT_TABLES = ('trafo', 'trafo3w', 'switch', 'ext_grid', 'load', 'sgen', 'gen', 'shunt',
+                        'ward', 'xward')
+    _GL_LINE_TABLES = ('line', 'impedance')
+
+    def _convert_geographical_location(self):
+        # Export the 'geo' coordinates (GeographicalLocation profile). Element geo maps directly to a
+        # Location; bus geo is attached to the Substation (reconstructing the VoltageLevel/Substation
+        # container hierarchy that the importer needs to map it back to the bus).
+        cs_id = _new_uuid()
+        locations, points = [], []
+        subs, vls = {}, {}
+
+        if 'geo' in self.net.bus.columns:
+            seen_substations = set()
+            for _, bus in self.net.bus.iterrows():
+                coords = self._parse_geojson(bus.get('geo'))
+                sub_id = bus.get(sc['sub_id'])
+                if coords is None or pd.isna(sub_id):
+                    continue
+                cnc_id = bus.get(sc['cnc_id'])
+                subs.setdefault(sub_id, {'rdfId': sub_id, 'name': bus.get('zone'),
+                                         'Region': self._none_if_na(bus.get('SubGeographicalRegion_id'))})
+                if not pd.isna(cnc_id):
+                    vls.setdefault(cnc_id, {'rdfId': cnc_id, 'name': bus.get('zone'), 'Substation': sub_id,
+                                            'BaseVoltage': self._base_voltage_id(bus.get('vn_kv'))})
+                if sub_id not in seen_substations:  # one Location (PositionPoint) per Substation
+                    seen_substations.add(sub_id)
+                    self._append_location(locations, points, cs_id, sub_id, coords)
+
+        for table in self._GL_POINT_TABLES + self._GL_LINE_TABLES:
+            if 'geo' not in self.net[table].columns:
+                continue
+            for _, row in self.net[table].iterrows():
+                coords = self._parse_geojson(row.get('geo'))
+                origin_id = row.get(sc['o_id'])
+                if coords is None or pd.isna(origin_id):
+                    continue
+                self._append_location(locations, points, cs_id, origin_id, coords)
+
+        if not locations:
+            return
+        self.cim['gl']['FullModel'] = pd.DataFrame(self._full_model_rows('gl', synthesize=True))
+        self._set('gl', 'CoordinateSystem',
+                  [{'rdfId': cs_id, 'name': 'WGS84', 'crsUrn': 'urn:ogc:def:crs:EPSG::4326'}])
+        self._set('gl', 'Location', locations)
+        self._set('gl', 'PositionPoint', points)
+        # the Substations / VoltageLevels needed to attach the bus geo (also adds bus zone on re-import)
+        self._set('eq', 'Substation', list(subs.values()))
+        self._set('eq', 'VoltageLevel', list(vls.values()))
+
+    @staticmethod
+    def _append_location(locations, points, cs_id, psr_id, coords):
+        loc_id = _new_uuid()
+        locations.append({'rdfId': loc_id, 'PowerSystemResources': psr_id, 'CoordinateSystem': cs_id})
+        for seq, (x, y) in enumerate(coords, start=1):
+            points.append({'rdfId': _new_uuid(), 'Location': loc_id, 'sequenceNumber': seq,
+                           'xPosition': x, 'yPosition': y})
+
+    @staticmethod
+    def _none_if_na(value):
+        return None if value is None or pd.isna(value) else value
+
+    @staticmethod
+    def _parse_geojson(value):
+        """Return a list of (x, y) coordinate tuples from a GeoJSON Point/LineString string, or None."""
+        if value is None or not isinstance(value, str) or pd.isna(value):
+            return None
+        try:
+            geo = json.loads(value)
+        except (ValueError, TypeError):
+            return None
+        coords = geo.get('coordinates')
+        if not coords:
+            return None
+        if geo.get('type') == 'Point':
+            return [(coords[0], coords[1])]
+        return [(point[0], point[1]) for point in coords]
+
     # ------------------------------------------------------------------ helpers
 
     @staticmethod
     def _id_or_new(value):
         # NaN is truthy, so "value or _new_uuid()" would keep a NaN id; use an explicit check.
         return _new_uuid() if value is None or pd.isna(value) else value
+
+    @staticmethod
+    def _split_vector_group(vector_group, windings: int):
+        """Split a pandapower vector_group back into per-winding CIM connectionKind values.
+
+        The importer builds it as the HV connectionKind upper-cased followed by the LV (and MV)
+        connectionKind lower-cased, e.g. 'YNyn' -> HV 'Yn', LV 'Yn'. Only the unambiguous two-winding
+        case is reversed (the HV part is the leading upper-case run); for three windings the split is
+        ambiguous, so connectionKind is left unset.
+        """
+        none = tuple([None] * windings)
+        if vector_group is None or not isinstance(vector_group, str) or pd.isna(vector_group):
+            return none
+        if windings != 2:
+            return none
+        split = next((i for i, ch in enumerate(vector_group) if ch.islower()), None)
+        if not split:  # no lower-case part (or starts lower-case) -> cannot split reliably
+            return none
+        return vector_group[:split].capitalize(), vector_group[split:].capitalize()
 
     @staticmethod
     def _safe(value):

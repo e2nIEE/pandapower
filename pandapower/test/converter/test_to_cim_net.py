@@ -26,8 +26,10 @@ import tempfile
 import pandas as pd
 import pytest
 
+import pandapower as pp
 from pandapower.test import test_path
 
+from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp.from_cim import from_cim
 from pandapower.converter.cim.pp2cim import to_cim
 from pandapower.run import runpp
@@ -103,6 +105,15 @@ def test_line_parameters_roundtrip(fullgrid_bb_roundtrip):
     assert list(original.index) == list(roundtrip.index)
     for col in ['length_km', 'r_ohm_per_km', 'x_ohm_per_km', 'c_nf_per_km']:
         assert original[col].round(6).tolist() == pytest.approx(roundtrip[col].round(6).tolist(), abs=1e-5)
+
+
+def test_line_current_limit_roundtrip(fullgrid_bb_roundtrip):
+    net, net_rt = fullgrid_bb_roundtrip
+    original = net.line.set_index('origin_id').sort_index()['max_i_ka']
+    roundtrip = net_rt.line.set_index('origin_id').sort_index()['max_i_ka']
+    assert original.notna().any()
+    # the CurrentLimit / OperationalLimitSet reconstruction must preserve max_i_ka
+    assert original.round(6).tolist() == pytest.approx(roundtrip.round(6).tolist(), nan_ok=True, abs=1e-6)
 
 
 def test_line_endpoints_roundtrip(fullgrid_bb_roundtrip):
@@ -184,6 +195,15 @@ def test_gen_setpoints_roundtrip(fullgrid_bb_roundtrip):
     assert sm['sn_mva'].round(6).tolist() == pytest.approx(sm_rt['sn_mva'].round(6).tolist(), abs=1e-5)
 
 
+def test_energy_source_ext_grid_roundtrip(fullgrid_bb_roundtrip):
+    net, net_rt = fullgrid_bb_roundtrip
+    # this grid's slack is an EnergySource routed to ext_grid (it carries a voltage set point)
+    assert (net.ext_grid['origin_class'] == 'EnergySource').any()
+    original = net.ext_grid.set_index('origin_id')['origin_class'].sort_index()
+    roundtrip = net_rt.ext_grid.set_index('origin_id')['origin_class'].sort_index()
+    assert original.to_dict() == roundtrip.to_dict()
+
+
 def test_gen_slack_roundtrip(fullgrid_bb_roundtrip):
     net, net_rt = fullgrid_bb_roundtrip
     original = net.gen.set_index('origin_id')['slack'].sort_index()
@@ -193,17 +213,19 @@ def test_gen_slack_roundtrip(fullgrid_bb_roundtrip):
 
 # --------------------------------------------------------------------------- shunts
 
-def test_linear_and_svc_shunts_roundtrip(fullgrid_bb_roundtrip):
+def test_all_shunts_roundtrip(fullgrid_bb_roundtrip):
     net, net_rt = fullgrid_bb_roundtrip
-    supported = ['LinearShuntCompensator', 'StaticVarCompensator']
-    original = net.shunt[net.shunt['origin_class'].isin(supported)].set_index('origin_id').sort_index()
-    roundtrip = net_rt.shunt[net_rt.shunt['origin_class'].isin(supported)].set_index('origin_id').sort_index()
+    # every shunt subtype (Linear, Nonlinear, StaticVarCompensator) must round-trip with its class
+    assert len(net_rt.shunt) == len(net.shunt)
+    original = net.shunt.set_index('origin_id').sort_index()
+    roundtrip = net_rt.shunt.set_index('origin_id').sort_index()
     assert list(original.index) == list(roundtrip.index)
-    # linear shunt power per section must survive the gPerSection/bPerSection round-trip
-    lin = original[original['origin_class'] == 'LinearShuntCompensator']
-    lin_rt = roundtrip.loc[lin.index]
-    assert lin['p_mw'].round(6).tolist() == pytest.approx(lin_rt['p_mw'].round(6).tolist(), abs=1e-5)
-    assert lin['q_mvar'].round(6).tolist() == pytest.approx(lin_rt['q_mvar'].round(6).tolist(), abs=1e-5)
+    assert original['origin_class'].tolist() == roundtrip['origin_class'].tolist()
+    # power must survive for linear and nonlinear shunts (SVC active power is defined as 0)
+    pq = original[original['origin_class'] != 'StaticVarCompensator']
+    pq_rt = roundtrip.loc[pq.index]
+    assert pq['p_mw'].round(5).tolist() == pytest.approx(pq_rt['p_mw'].round(5).tolist(), abs=1e-4)
+    assert pq['q_mvar'].round(5).tolist() == pytest.approx(pq_rt['q_mvar'].round(5).tolist(), abs=1e-4)
 
 
 # --------------------------------------------------------------------------- impedance
@@ -235,6 +257,30 @@ def test_trafo2w_parameters_roundtrip(fullgrid_bb_roundtrip):
     for col in ['vn_hv_kv', 'vn_lv_kv', 'sn_mva', 'vk_percent', 'vkr_percent', 'i0_percent', 'pfe_kw']:
         assert original[col].astype(float).round(6).tolist() == \
                pytest.approx(roundtrip[col].astype(float).round(6).tolist(), abs=1e-4)
+
+
+def test_trafo2w_vector_group_roundtrip(fullgrid_bb_roundtrip):
+    net, net_rt = fullgrid_bb_roundtrip
+    original = net.trafo.set_index('origin_id').sort_index()['vector_group']
+    roundtrip = net_rt.trafo.set_index('origin_id').sort_index()['vector_group']
+    assert original.notna().any()
+    # connectionKind per winding is reconstructed from the vector group (e.g. 'YNyn', 'Yy')
+    assert original.astype(str).tolist() == roundtrip.astype(str).tolist()
+
+
+def test_trafo_current_limits_roundtrip(fullgrid_bb_roundtrip):
+    net, net_rt = fullgrid_bb_roundtrip
+    for table, sides in (('trafo', ('hv', 'lv')), ('trafo3w', ('hv', 'mv', 'lv'))):
+        original = getattr(net, table).set_index('origin_id').sort_index()
+        roundtrip = getattr(net_rt, table).set_index('origin_id').sort_index()
+        for side in sides:
+            value_col = 'CurrentLimit.value_%s' % side
+            assert original[value_col].notna().any()
+            assert original[value_col].round(4).tolist() == \
+                   pytest.approx(roundtrip.loc[original.index, value_col].round(4).tolist(), nan_ok=True, abs=1e-3)
+            limit_col = 'OperationalLimitType.limitType_%s' % side
+            assert original[limit_col].astype(str).tolist() == \
+                   roundtrip.loc[original.index, limit_col].astype(str).tolist()
 
 
 def test_trafo2w_endpoints_roundtrip(fullgrid_bb_roundtrip):
@@ -312,11 +358,23 @@ def test_microgrid_nb_bus_topology_roundtrip(microgrid_nb_roundtrip):
     assert (net_rt.bus['origin_class'] == 'ConnectivityNode').all()
 
 
-def test_microgrid_nb_elements_roundtrip(microgrid_nb_roundtrip):
-    net, net_rt = microgrid_nb_roundtrip
-    for table in ['line', 'load', 'gen', 'switch', 'impedance', 'ward', 'trafo', 'trafo3w']:
+ALL_ELEMENT_TABLES = ['bus', 'line', 'load', 'ext_grid', 'gen', 'sgen', 'switch', 'shunt',
+                      'impedance', 'ward', 'xward', 'trafo', 'trafo3w']
+
+
+def _assert_all_elements_roundtrip(net, net_rt):
+    for table in ALL_ELEMENT_TABLES:
         assert len(getattr(net_rt, table)) == len(getattr(net, table)), \
-            "%s count changed in node-breaker round-trip" % table
+            "%s count changed: %d -> %d" % (table, len(getattr(net, table)), len(getattr(net_rt, table)))
+
+
+def test_fullgrid_all_elements_roundtrip(fullgrid_bb_roundtrip):
+    # the bus-branch reference grid must round-trip every element type completely
+    _assert_all_elements_roundtrip(*fullgrid_bb_roundtrip)
+
+
+def test_microgrid_nb_elements_roundtrip(microgrid_nb_roundtrip):
+    _assert_all_elements_roundtrip(*microgrid_nb_roundtrip)
 
 
 def test_microgrid_nb_switch_connectivity_roundtrip(microgrid_nb_roundtrip):
@@ -408,6 +466,140 @@ def test_sv_profile_reimportable(multivoltage_solved):
     to_cim(net, file_path=zip_path, cgmes_version='2.4.15')
     net_rt = from_cim(file_list=[zip_path], cgmes_version='2.4.15')
     assert len(net_rt.bus) == len(net.bus)
+
+
+# --------------------------------------------------------------------------- diagram coordinates (DL)
+
+@pytest.fixture(scope="module")
+def smallgrid_dl_roundtrip():
+    files = [os.path.join(example_cim_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip'),
+             os.path.join(example_cim_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_BaseCase_Complete_v3.0.0.zip')]
+    net = from_cim(file_list=files, cgmes_version='2.4.15', use_GL_or_DL_profile='DL')
+    tmp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(tmp_dir, "export_dl.zip")
+    to_cim(net, file_path=zip_path, cgmes_version='2.4.15')
+    net_rt = from_cim(file_list=[zip_path], cgmes_version='2.4.15', use_GL_or_DL_profile='DL')
+    return net, net_rt
+
+
+def test_bus_diagram_coordinates_roundtrip(smallgrid_dl_roundtrip):
+    net, net_rt = smallgrid_dl_roundtrip
+    original = net.bus.set_index('origin_id')['diagram'].dropna()
+    roundtrip = net_rt.bus.set_index('origin_id')['diagram'].dropna()
+    assert len(original) > 0
+    assert original.to_dict() == roundtrip.loc[original.index].to_dict()
+
+
+def test_line_diagram_coordinates_roundtrip(smallgrid_dl_roundtrip):
+    net, net_rt = smallgrid_dl_roundtrip
+    # lines carry a LineString (multiple points) which must survive in order
+    original = net.line.set_index('origin_id')['diagram'].dropna()
+    roundtrip = net_rt.line.set_index('origin_id')['diagram'].dropna()
+    assert len(original) > 0
+    assert original.to_dict() == roundtrip.loc[original.index].to_dict()
+
+
+# --------------------------------------------------------------------------- geographic coordinates (GL)
+
+@pytest.fixture(scope="module")
+def smallgrid_gl_roundtrip():
+    files = [os.path.join(example_cim_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_Boundary_v3.0.0.zip'),
+             os.path.join(example_cim_path, 'CGMES_v2.4.15_SmallGridTestConfiguration_BaseCase_Complete_v3.0.0.zip')]
+    net = from_cim(file_list=files, cgmes_version='2.4.15', use_GL_or_DL_profile='GL')
+    tmp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(tmp_dir, "export_gl.zip")
+    to_cim(net, file_path=zip_path, cgmes_version='2.4.15')
+    net_rt = from_cim(file_list=[zip_path], cgmes_version='2.4.15', use_GL_or_DL_profile='GL')
+    return net, net_rt
+
+
+def test_bus_geo_coordinates_roundtrip(smallgrid_gl_roundtrip):
+    net, net_rt = smallgrid_gl_roundtrip
+    # bus geo is attached to the Substation; the reconstructed VoltageLevel/Substation must map it back
+    original = net.bus.set_index('origin_id')['geo'].dropna()
+    roundtrip = net_rt.bus.set_index('origin_id')['geo'].dropna()
+    assert len(original) > 0
+    assert original.to_dict() == roundtrip.loc[original.index].to_dict()
+
+
+def test_line_geo_coordinates_roundtrip(smallgrid_gl_roundtrip):
+    net, net_rt = smallgrid_gl_roundtrip
+    original = net.line.set_index('origin_id')['geo'].dropna()
+    roundtrip = net_rt.line.set_index('origin_id')['geo'].dropna()
+    assert len(original) > 0
+    assert original.to_dict() == roundtrip.loc[original.index].to_dict()
+
+
+def test_bus_zone_restored_via_substation(smallgrid_gl_roundtrip):
+    net, net_rt = smallgrid_gl_roundtrip
+    # reconstructing Substation/VoltageLevel for the geo also restores the bus zone (substation name)
+    assert net.bus['zone'].notna().any()
+    assert net_rt.bus['zone'].notna().sum() == net.bus['zone'].notna().sum()
+
+
+# --------------------------------------------------------------------------- synthetic grids
+
+# Some CIM classes are not exercised by the sample CGMES grids (their instances are dropped on
+# import or simply absent). These are covered by building a small pandapower net from scratch,
+# tagging the relevant origin_class, exporting it and re-importing it.
+
+def _build_synthetic_net():
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=110., name='B1')
+    b2 = pp.create_bus(net, vn_kv=110., name='B2')
+    pp.create_line_from_parameters(net, b1, b2, length_km=2.0, r_ohm_per_km=0.1, x_ohm_per_km=0.3,
+                                   c_nf_per_km=11.0, max_i_ka=0.5, name='L1')
+    pp.create_load(net, b2, p_mw=5.0, q_mvar=2.0, name='LD1')
+    es = pp.create_sgen(net, b2, p_mw=3.0, q_mvar=1.0, name='ES1')
+    im = pp.create_impedance(net, b1, b2, rft_pu=0.01, xft_pu=0.05, sn_mva=net.sn_mva,
+                             rtf_pu=0.02, xtf_pu=0.06, name='EB1')
+    # add the CGMES helper columns, then tag the elements with the CIM class to export them as
+    cim_tools.extend_pp_net_cim(net, override=False)
+    net.sgen.loc[es, 'origin_class'] = 'EnergySource'
+    net.impedance.loc[im, 'origin_class'] = 'EquivalentBranch'
+    return net
+
+
+@pytest.fixture(scope="module")
+def synthetic_roundtrip():
+    return _roundtrip(_build_synthetic_net())
+
+
+def test_synthetic_from_scratch_foundation(synthetic_roundtrip):
+    # a hand-built net (no origin_id) must export with generated UUIDs and re-import intact
+    net, net_rt = synthetic_roundtrip
+    assert len(net_rt.bus) == len(net.bus)
+    assert len(net_rt.line) == len(net.line)
+    assert len(net_rt.load) == len(net.load)
+
+
+def test_synthetic_energy_source_roundtrip(synthetic_roundtrip):
+    net, net_rt = synthetic_roundtrip
+    es = net_rt.sgen[net_rt.sgen['origin_class'] == 'EnergySource']
+    assert len(es) == 1
+    assert es['p_mw'].iloc[0] == pytest.approx(3.0, abs=1e-6)
+    assert es['q_mvar'].iloc[0] == pytest.approx(1.0, abs=1e-6)
+
+
+def test_synthetic_equivalent_branch_roundtrip(synthetic_roundtrip):
+    net, net_rt = synthetic_roundtrip
+    eb = net_rt.impedance[net_rt.impedance['origin_class'] == 'EquivalentBranch']
+    assert len(eb) == 1
+    assert eb['rft_pu'].iloc[0] == pytest.approx(0.01, abs=1e-6)
+    assert eb['xft_pu'].iloc[0] == pytest.approx(0.05, abs=1e-6)
+    # the asymmetric (tf) values must survive too
+    assert eb['rtf_pu'].iloc[0] == pytest.approx(0.02, abs=1e-6)
+    assert eb['xtf_pu'].iloc[0] == pytest.approx(0.06, abs=1e-6)
+
+
+def test_synthetic_ext_grid_exported_as_eni():
+    # a hand-built ext_grid (no origin_class) is exported as an ExternalNetworkInjection
+    net = pp.create_empty_network()
+    b = pp.create_bus(net, vn_kv=110.)
+    pp.create_ext_grid(net, b)
+    cim_tools.extend_pp_net_cim(net, override=False)
+    cim = to_cim(net, cgmes_version='2.4.15')
+    assert len(cim['eq']['ExternalNetworkInjection']) == 1
 
 
 if __name__ == "__main__":
