@@ -592,6 +592,24 @@ def test_synthetic_equivalent_branch_roundtrip(synthetic_roundtrip):
     assert eb['xtf_pu'].iloc[0] == pytest.approx(0.06, abs=1e-6)
 
 
+def test_synthetic_negative_reactance_transformer_roundtrip():
+    # regression: some real transformers have a negative reactance (vk_percent < 0). vk_percent
+    # carries the sign of x, which must survive the impedance reconstruction.
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=220.)
+    b2 = pp.create_bus(net, vn_kv=110.)
+    pp.create_ext_grid(net, b1)
+    pp.create_transformer_from_parameters(net, b1, b2, sn_mva=100., vn_hv_kv=220., vn_lv_kv=110.,
+                                          vk_percent=-5.0, vkr_percent=0.5, pfe_kw=0., i0_percent=0.,
+                                          name='NEGX')
+    cim_tools.extend_pp_net_cim(net, override=False)
+    net.trafo.loc[0, 'origin_class'] = 'PowerTransformer'
+    _, net_rt = _roundtrip(net)
+    assert len(net_rt.trafo) == 1
+    assert net_rt.trafo['vk_percent'].iloc[0] == pytest.approx(-5.0, abs=1e-6)
+    assert net_rt.trafo['vkr_percent'].iloc[0] == pytest.approx(0.5, abs=1e-6)
+
+
 def test_synthetic_ext_grid_exported_as_eni():
     # a hand-built ext_grid (no origin_class) is exported as an ExternalNetworkInjection
     net = pp.create_empty_network()

@@ -513,13 +513,15 @@ class PpToCimConverter:
             vn_hv = float(trafo['vn_hv_kv'])
             vn_lv = float(trafo['vn_lv_kv'])
             in_service = bool(trafo['in_service'])
-            # series impedance (positive and zero sequence) referred to the HV side
+            # series impedance (positive and zero sequence) referred to the HV side. vk_percent is
+            # signed (it carries the sign of x), so use its magnitude for z and restore the sign on x.
+            vk, vk0 = trafo['vk_percent'], self._safe(trafo.get('vk0_percent'))
             r_hv = trafo['vkr_percent'] * vn_hv ** 2 / (sn * 100)
-            z_hv = trafo['vk_percent'] * vn_hv ** 2 / (sn * 100)
-            x_hv = math.sqrt(max(z_hv ** 2 - r_hv ** 2, 0.0))
+            z_hv = abs(vk) * vn_hv ** 2 / (sn * 100)
+            x_hv = math.copysign(math.sqrt(max(z_hv ** 2 - r_hv ** 2, 0.0)), vk)
             r0_hv = self._safe(trafo.get('vkr0_percent')) * vn_hv ** 2 / (sn * 100)
-            z0_hv = self._safe(trafo.get('vk0_percent')) * vn_hv ** 2 / (sn * 100)
-            x0_hv = math.sqrt(max(z0_hv ** 2 - r0_hv ** 2, 0.0))
+            z0_hv = abs(vk0) * vn_hv ** 2 / (sn * 100)
+            x0_hv = math.copysign(math.sqrt(max(z0_hv ** 2 - r0_hv ** 2, 0.0)), vk0)
             # magnetizing branch from pfe_kw / i0_percent
             g_hv = self._safe(trafo.get('pfe_kw')) / (vn_hv ** 2 * 1000) if vn_hv else 0.0
             i0_s = self._safe(trafo.get('i0_percent')) * sn / 100
