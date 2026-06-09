@@ -614,6 +614,7 @@ def test_multi_index():
     assert_frame_equal(df, df2)
 
 
+@pytest.mark.filterwarnings("ignore:.*ContinuousTapControl2.*:UserWarning")  # ignore warnings that are expected.
 def test_ignore_unknown_objects():
     net = create_kerber_dorfnetz()
     ContinuousTapControl(net, 0, 1.02)
