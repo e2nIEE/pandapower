@@ -410,6 +410,18 @@ def test_minigrid_all_elements_roundtrip(minigrid_roundtrip):
             "%s count changed: %d -> %d" % (table, len(getattr(net, table)), len(getattr(net_rt, table)))
 
 
+def test_node_breaker_bus_voltage_roundtrip(minigrid_roundtrip):
+    net, net_rt = minigrid_roundtrip
+    # node-breaker buses get their voltage via the ConnectivityNode -> VoltageLevel -> BaseVoltage
+    # container chain, which must be reconstructed even without a geo/DL profile
+    assert (net.bus['origin_class'] == 'ConnectivityNode').all()
+    original = net.bus.set_index('origin_id')['vn_kv'].sort_index()
+    roundtrip = net_rt.bus.set_index('origin_id')['vn_kv'].sort_index()
+    assert original.notna().all()
+    assert list(original.index) == list(roundtrip.index)
+    assert original.round(6).tolist() == pytest.approx(roundtrip.round(6).tolist(), abs=1e-6)
+
+
 def test_minigrid_sgen_sources_roundtrip(minigrid_roundtrip):
     net, net_rt = minigrid_roundtrip
     # sgens originate from both ExternalNetworkInjection and SynchronousMachine here

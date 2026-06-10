@@ -92,6 +92,11 @@ class PpToCimConverter:
 
         # nominalVoltage -> BaseVoltage rdfId, built from net['CGMES']['BaseVoltage']
         self._voltage_to_bv: Dict[float, str] = {}
+        # container objects rebuilt from the buses (de-duplicated by id). VoltageLevels carry the
+        # BaseVoltage that the importer uses to give node-breaker buses their voltage, and both are
+        # also needed to attach bus geo in the GL profile.
+        self._voltage_levels: Dict[str, dict] = {}
+        self._substations: Dict[str, dict] = {}
 
     # ------------------------------------------------------------------ orchestration
 
@@ -180,6 +185,7 @@ class PpToCimConverter:
             name = bus.get('name')
             description = bus.get('description')
             cnc_id = bus.get(sc['cnc_id'])
+            self._add_bus_containers(bus, cnc_id, bv_id)
             if origin_class == 'ConnectivityNode':
                 # node-breaker: the bus is a ConnectivityNode pointing to its TopologicalNode
                 tn_id = bus.get(sc['ct'])
@@ -196,6 +202,22 @@ class PpToCimConverter:
         self._set('tp', 'TopologicalNode', tp_nodes)
         self._set('eq', 'ConnectivityNode', eq_cns)
         self._set('tp', 'ConnectivityNode', tp_cns)
+        self._set('eq', 'VoltageLevel', list(self._voltage_levels.values()))
+        self._set('eq', 'Substation', list(self._substations.values()))
+
+    def _add_bus_containers(self, bus, cnc_id, bv_id):
+        # Rebuild the VoltageLevel (carrying the BaseVoltage) and Substation a bus belongs to. The
+        # importer resolves a node-breaker bus's voltage through ConnectivityNode -> VoltageLevel ->
+        # BaseVoltage, so these must exist independently of the geo profile.
+        sub_id = bus.get(sc['sub_id'])
+        if not pd.isna(cnc_id):
+            self._voltage_levels.setdefault(cnc_id, {
+                'rdfId': cnc_id, 'name': bus.get('zone'), 'BaseVoltage': bv_id,
+                'Substation': self._none_if_na(sub_id)})
+        if not pd.isna(sub_id):
+            self._substations.setdefault(sub_id, {
+                'rdfId': sub_id, 'name': bus.get('zone'),
+                'Region': self._none_if_na(bus.get('SubGeographicalRegion_id'))})
 
     def _node_ref(self, bus_idx):
         """Return (connectivity_node_id, topological_node_id) for a pandapower bus index."""
@@ -830,24 +852,18 @@ class PpToCimConverter:
         # container hierarchy that the importer needs to map it back to the bus).
         cs_id = _new_uuid()
         locations, points = [], []
-        subs, vls = {}, {}
 
+        # bus geo is attached to the Substation (the Substation/VoltageLevel containers are already
+        # rebuilt in _convert_buses); emit one Location per Substation
         if 'geo' in self.net.bus.columns:
             seen_substations = set()
             for _, bus in self.net.bus.iterrows():
                 coords = self._parse_geojson(bus.get('geo'))
                 sub_id = bus.get(sc['sub_id'])
-                if coords is None or pd.isna(sub_id):
+                if coords is None or pd.isna(sub_id) or sub_id in seen_substations:
                     continue
-                cnc_id = bus.get(sc['cnc_id'])
-                subs.setdefault(sub_id, {'rdfId': sub_id, 'name': bus.get('zone'),
-                                         'Region': self._none_if_na(bus.get('SubGeographicalRegion_id'))})
-                if not pd.isna(cnc_id):
-                    vls.setdefault(cnc_id, {'rdfId': cnc_id, 'name': bus.get('zone'), 'Substation': sub_id,
-                                            'BaseVoltage': self._base_voltage_id(bus.get('vn_kv'))})
-                if sub_id not in seen_substations:  # one Location (PositionPoint) per Substation
-                    seen_substations.add(sub_id)
-                    self._append_location(locations, points, cs_id, sub_id, coords)
+                seen_substations.add(sub_id)
+                self._append_location(locations, points, cs_id, sub_id, coords)
 
         for _, origin_id, coords in self._iter_geo('geo', self._GL_POINT_TABLES + self._GL_LINE_TABLES):
             self._append_location(locations, points, cs_id, origin_id, coords)
@@ -859,9 +875,6 @@ class PpToCimConverter:
                   [{'rdfId': cs_id, 'name': 'WGS84', 'crsUrn': 'urn:ogc:def:crs:EPSG::4326'}])
         self._set('gl', 'Location', locations)
         self._set('gl', 'PositionPoint', points)
-        # the Substations / VoltageLevels needed to attach the bus geo (also adds bus zone on re-import)
-        self._set('eq', 'Substation', list(subs.values()))
-        self._set('eq', 'VoltageLevel', list(vls.values()))
 
     @staticmethod
     def _append_location(locations, points, cs_id, psr_id, coords):
