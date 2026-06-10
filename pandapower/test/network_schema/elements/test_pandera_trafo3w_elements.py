@@ -293,7 +293,9 @@ class TestTrafo3wOptionalFieldsNullable:
         net.trafo3w["OperationalLimitType.limitType_mv"] = pd.Series([pd.NA], dtype="string")
         net.trafo3w["OperationalLimitType.limitType_lv"] = pd.Series([pd.NA], dtype="string")
 
-        validate_network(net)
+
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
