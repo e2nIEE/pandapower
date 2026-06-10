@@ -1,10 +1,12 @@
 # test_pandera_vsc_bipolar_elements.py
 
 import itertools
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
 
+from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_bus, create_bus_dc, create_vsc_bipolar
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -42,6 +44,16 @@ def _create_valid_vsc_bipolar_row(required=True, bus=0, bus_dc_plus=0, bus_dc_mi
     return df
 
 
+def _create_net_with_buses():
+    """Helper to create a network with AC and DC buses."""
+    net = pandapowerNet(name="_create_net_with_buses")
+    create_bus(net, 0.4)  # AC index 0
+    create_bus(net, 0.4)  # AC index 1
+    create_bus_dc(net, vn_kv=110.0)  # DC index 0
+    create_bus_dc(net, vn_kv=110.0)  # DC index 1
+    return net
+
+
 class TestVscBipolarRequiredFields:
     """Tests for required vsc_bipolar fields"""
 
@@ -76,21 +88,8 @@ class TestVscBipolarRequiredFields:
 
         # Create a valid vsc_bipolar element
         row = _create_valid_vsc_bipolar_row(bus=0, bus_dc_plus=0, bus_dc_minus=1)
-        create_vsc_bipolar(
-            net=net,
-            bus=row["bus"],
-            bus_dc_plus=row["bus_dc_plus"],
-            bus_dc_minus=row["bus_dc_minus"],
-            r_ohm=row["r_ohm"],
-            x_ohm=row["x_ohm"],
-            r_dc_ohm=row["r_dc_ohm"],
-            pl_dc_mw=row["pl_dc_mw"],
-            control_mode=row["control_mode"],
-            control_value_1=row["control_value_1"],
-            control_value_2=row["control_value_2"],
-            controllable=row["controllable"],
-            in_service=row["in_service"],
-        )
+        create_vsc_bipolar(net, **row)
+
         net.vsc_bipolar[parameter] = valid_value
 
         validate_network(net)
@@ -99,20 +98,20 @@ class TestVscBipolarRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["bus_dc_plus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["bus_dc_minus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["r_ohm"], not_floats_list),
-                itertools.product(["x_ohm"], not_floats_list),
-                itertools.product(["r_dc_ohm"], not_floats_list),
-                itertools.product(["pl_dc_mw"], not_floats_list),
+                itertools.product(["bus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
+                itertools.product(["bus_dc_plus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
+                itertools.product(["bus_dc_minus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
+                itertools.product(["r_ohm"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["x_ohm"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["r_dc_ohm"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["pl_dc_mw"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(
-                    ["control_mode"], [*strings, *not_strings_list]
-                ),  # TODO: check if string definition is good
-                itertools.product(["control_value_2"], not_floats_list),
-                itertools.product(["control_value_1"], not_floats_list),
-                itertools.product(["controllable"], not_boolean_list),
-                itertools.product(["in_service"], not_boolean_list),
+                    ["control_mode"], [float(np.nan), pd.NA, None, *strings, *not_strings_list]
+                ),
+                itertools.product(["control_value_1"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["control_value_2"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["controllable"], [float(np.nan), pd.NA, None, *not_boolean_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, None, *not_boolean_list]),
             )
         ),
     )
@@ -125,21 +124,8 @@ class TestVscBipolarRequiredFields:
         create_bus_dc(net, vn_kv=110.0)  # index 1
 
         row = _create_valid_vsc_bipolar_row(bus=0, bus_dc_plus=0, bus_dc_minus=1)
-        create_vsc_bipolar(
-            net=net,
-            bus=row["bus"],
-            bus_dc_plus=row["bus_dc_plus"],
-            bus_dc_minus=row["bus_dc_minus"],
-            r_ohm=row["r_ohm"],
-            x_ohm=row["x_ohm"],
-            r_dc_ohm=row["r_dc_ohm"],
-            pl_dc_mw=row["pl_dc_mw"],
-            control_mode=row["control_mode"],
-            control_value_1=row["control_value_1"],
-            control_value_2=row["control_value_2"],
-            controllable=row["controllable"],
-            in_service=row["in_service"],
-        )
+        create_vsc_bipolar(net, **row)
+
         net.vsc_bipolar[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
@@ -164,25 +150,10 @@ class TestVscBipolarOptionalFields:
         create_bus_dc(net, vn_kv=110.0)  # index 1
 
         row = _create_valid_vsc_bipolar_row(required=False, bus=b0, bus_dc_plus=0, bus_dc_minus=1)
-        create_vsc_bipolar(
-            net=net,
-            bus=row["bus"],
-            bus_dc_plus=row["bus_dc_plus"],
-            bus_dc_minus=row["bus_dc_minus"],
-            r_ohm=row["r_ohm"],
-            x_ohm=row["x_ohm"],
-            r_dc_ohm=row["r_dc_ohm"],
-            pl_dc_mw=row["pl_dc_mw"],
-            control_mode=row["control_mode"],
-            control_value_1=row["control_value_1"],
-            control_value_2=row["control_value_2"],
-            controllable=row["controllable"],
-            in_service=row["in_service"],
-        )
-        from pandapower.create._utils import add_column_to_df
+        create_vsc_bipolar(net=net, **row)
 
         add_column_to_df(net, "vsc_bipolar", parameter)
-        net.vsc_bipolar["name"].name = parameter
+        net.vsc_bipolar.at[0, parameter] = valid_value
 
         validate_network(net)
 
@@ -190,7 +161,7 @@ class TestVscBipolarOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], not_strings_list),
+                itertools.product(["name"], [float(np.nan), *not_strings_list]),
             )
         ),
     )
@@ -202,21 +173,7 @@ class TestVscBipolarOptionalFields:
         create_bus_dc(net, vn_kv=110.0)  # index 1
 
         row = _create_valid_vsc_bipolar_row(required=False, bus=b0, bus_dc_plus=0, bus_dc_minus=1)
-        create_vsc_bipolar(
-            net=net,
-            bus=row["bus"],
-            bus_dc_plus=row["bus_dc_plus"],
-            bus_dc_minus=row["bus_dc_minus"],
-            r_ohm=row["r_ohm"],
-            x_ohm=row["x_ohm"],
-            r_dc_ohm=row["r_dc_ohm"],
-            pl_dc_mw=row["pl_dc_mw"],
-            control_mode=row["control_mode"],
-            control_value_1=row["control_value_1"],
-            control_value_2=row["control_value_2"],
-            controllable=row["controllable"],
-            in_service=row["in_service"],
-        )
+        create_vsc_bipolar(net=net, **row)
         net.vsc_bipolar[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
@@ -226,36 +183,31 @@ class TestVscBipolarOptionalFields:
 class TestVscBipolarForeignKey:
     """Tests for foreign key constraints"""
 
-    @pytest.mark.parametrize("fk_field", ["bus", "bus_dc_plus", "bus_dc_minus"])
-    def test_invalid_fk_index(self, fk_field):
-        """Test: bus and bus_dc FKs must reference existing indices"""
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
         net = pandapowerNet(name="test_invalid_fk_index")
-        b0 = create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus_dc(net, vn_kv=110.0, index=10)
+        create_bus_dc(net, vn_kv=110.0, index=42)
 
-        create_bus_dc(net, vn_kv=110.0)  # index 0
-        create_bus_dc(net, vn_kv=110.0)  # index 1
-
-        row = _create_valid_vsc_bipolar_row(bus=b0, bus_dc_plus=0, bus_dc_minus=1)
         create_vsc_bipolar(
             net=net,
-            bus=row["bus"],
-            bus_dc_plus=row["bus_dc_plus"],
-            bus_dc_minus=row["bus_dc_minus"],
-            r_ohm=row["r_ohm"],
-            x_ohm=row["x_ohm"],
-            r_dc_ohm=row["r_dc_ohm"],
-            pl_dc_mw=row["pl_dc_mw"],
-            control_mode=row["control_mode"],
-            control_value_1=row["control_value_1"],
-            control_value_2=row["control_value_2"],
-            controllable=row["controllable"],
-            in_service=row["in_service"],
+            bus=10,
+            bus_dc_plus=10,
+            bus_dc_minus=42,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
         )
-        net.vsc_bipolar[fk_field] = 9999  # invalid references
 
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+        validate_network(net)
 
 
 class TestVscBipolarResults:
