@@ -49,7 +49,8 @@ def test_max_10_trafo(net_transformer):
 
 def test_max_6_trafo(net_transformer):
     net = net_transformer
-    calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6.)
+    with pytest.warns(UserWarning, match="Calculation does not support calculation of voltages and .*"):
+        calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.77350301940194) < 1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 5.77350301940194) < 1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 16.905912296) < 1e-5)

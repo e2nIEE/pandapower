@@ -380,7 +380,7 @@ class UCTE2pandapower:
         lines_rxb_zero = (
             (self.u_d["L"].r == 0) & (self.u_d["L"].x == 0) & (self.u_d["L"].b == 0)
         )
-        switches = self.u_d["L"].loc[lines_rxb_zero | switches_by_status, :]
+        switches = self.u_d["L"].loc[lines_rxb_zero | switches_by_status, :].copy()
 
         # create the in_service column from the UCTE status
         in_service_map = {0: True, 1: True, 2: True, 7: False, 8: False, 9: False}

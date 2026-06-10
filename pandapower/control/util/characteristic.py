@@ -207,13 +207,13 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     @x_vals.setter
     def x_vals(self, x_values):
-        if np.any(x_values == 0):
+        if np.any([True if x <= 0 else False for x in x_values]):
             logger.warning("zero-values not supported in x_values")
         self._x_vals = np.log10(x_values)
 
     @y_vals.setter
     def y_vals(self, y_values):
-        if np.any(y_values == 0):
+        if np.any([True if y <= 0 else False for y in y_values]):
             logger.warning("zero-values not supported in y_values")
         self._y_vals = np.log10(y_values)
 
