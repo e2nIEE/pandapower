@@ -215,9 +215,14 @@ Using the Converter
 
 .. autofunction:: pandapower.converter.cim.pp2cim.to_cim.to_cim
 
-The exporter writes the Equipment (EQ), SteadyStateHypothesis (SSH) and Topology (TP) profiles. The
-StateVariables (SV) profile with the power-flow results is written in addition when the network has
-been solved (i.e. the ``res_*`` tables are populated, e.g. via ``pandapower.runpp``).
+The exporter always writes the Equipment (EQ), SteadyStateHypothesis (SSH) and Topology (TP)
+profiles. Three further profiles are written only when the corresponding data is present:
+
+ - StateVariables (SV) with the power-flow results, when the network has been solved (i.e. the
+   ``res_*`` tables are populated, e.g. via ``pandapower.runpp``),
+ - DiagramLayout (DL) with the schematic coordinates, when the elements carry a ``diagram`` column,
+ - GeographicalLocation (GL) with the geographic coordinates, when the elements carry a ``geo``
+   column.
 
 Write the network to a single zip archive (one XML file per profile) ::
 
@@ -234,30 +239,49 @@ Notes on the export
  - Each pandapower element is mapped back to the CIM class stored in its ``origin_class`` column. New
    elements without an ``origin_id`` get a freshly generated UUID.
  - pandapower buses are written as ``TopologicalNode`` (bus-branch model) or ``ConnectivityNode``
-   (node-breaker model) depending on their origin.
+   (node-breaker model) depending on their origin. The ``VoltageLevel`` and ``Substation`` containers
+   are reconstructed so the bus voltage (and substation/zone) is restored on re-import.
  - Transformer impedances are reconstructed on the HV winding; for three-winding transformers the
    per-winding-pair short-circuit values are inverted to recover the per-end impedances.
- - The SV profile is only written for a solved network; otherwise it is omitted.
 
 **Supported** components for the export:
 
 eq / ssh profile
  - ConnectivityNode, TopologicalNode, BaseVoltage, Terminal
+ - Substation, VoltageLevel
  - ACLineSegment
  - EnergyConsumer, ConformLoad, NonConformLoad, StationSupply
  - ExternalNetworkInjection
  - SynchronousMachine, GeneratingUnit, RegulatingControl
+ - EnergySource
  - Breaker, Disconnector, LoadBreakSwitch, Switch
- - LinearShuntCompensator, StaticVarCompensator
- - SeriesCompensator
+ - LinearShuntCompensator, NonlinearShuntCompensator, NonlinearShuntCompensatorPoint,
+   StaticVarCompensator
+ - SeriesCompensator, EquivalentBranch
  - EquivalentInjection
  - PowerTransformer, PowerTransformerEnd
  - RatioTapChanger, PhaseTapChangerLinear, PhaseTapChangerAsymmetrical, PhaseTapChangerSymmetrical
+ - OperationalLimitSet, OperationalLimitType, CurrentLimit
 
 sv profile
  - SvVoltage
  - SvTapStep
  - SvShuntCompensatorSections
 
-Components that are not yet exported include EnergySource, EquivalentBranch, NonlinearShuntCompensator,
-PhaseTapChangerTabular and the diagram / geographical (DL / GL) coordinate profiles.
+dl profile
+ - Diagram, DiagramObject, DiagramObjectPoint
+
+gl profile
+ - CoordinateSystem, Location, PositionPoint
+
+Limitations
+-----------
+ - The export targets round-trip fidelity (the re-imported network reproduces the original), not a
+   byte-identical copy of the source files: objects without a preserved ``origin_id`` receive freshly
+   generated UUIDs, transformer impedance is placed on the HV winding, and some optional attributes
+   are not written. The output has not been validated against third-party CGMES tools or formal CGMES
+   conformance checks.
+ - ``PhaseTapChangerTabular`` is not exported: pandapower does not keep the tap-changer table, so it
+   cannot be reconstructed. The transformer is still exported, but without this tap changer.
+ - ``NonlinearShuntCompensator`` is exported with uniform per-section points whose aggregate
+   reproduces ``p_mw`` / ``q_mvar``; the original per-section values are not preserved on the net.
