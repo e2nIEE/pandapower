@@ -13,26 +13,24 @@ Create Function
 .. autofunction:: pandapower.create.create_ward
 .. autofunction:: pandapower.create.create_wards
 
-Input Parameters
+Table Structure
 =========================
 
 *net.ward*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.15\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: ward_par.csv
-   :delim: ;
-   :widths: 10, 10, 15, 40
-
-\*necessary for executing a power flow calculation.
+.. csv-table::
+    :file: table_structures/ward.csv
+    :header-rows: 1
+    :delim: ,
+    :widths: 10, 10, 15, 40, 2, 2
 
    
 Electric Model
 =================
 
 .. image:: ward.png
-	:width: 15em
-	:align: center
+    :width: 15em
+    :align: center
 
 The ward equivalent is a combination of a constant apparent power consumption and a constant impedance load. The constant apparent power is given by:
 
@@ -53,15 +51,15 @@ The shunt admittance part of the ward equivalent is calculated as described :ref
    \underline{y}_{shunt} &= \frac{pz\_mw + j \cdot qz\_mvar}{S_{N}}
    \end{align*}
 
-Result Parameters
+Result Table
 ==========================
 *net.res_ward*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: ward_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_ward.csv
+    :header-rows: 1
+    :delim: ,
+    :widths: 10, 10, 50, 2, 2
 
 
 .. math::

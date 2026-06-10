@@ -50,35 +50,35 @@ shunt_schema = pa.DataFrameSchema(
             description="references the id_characteristic index from the shunt_characteristic_table",
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
         ),
         "origin_class": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="origin_class rdfId from CIM",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "terminal": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="terminal from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "description": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="description from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
         "sVCControlMode": pa.Column(
             pd.StringDtype,
             nullable=True,
             required=False,
             description="sVCControlMode from converter, not relevant for calculations",
-            metadata={"cim": True},
+            metadata={"cim": True, "doc": False},
         ),
     },
     checks=[
@@ -87,15 +87,16 @@ shunt_schema = pa.DataFrameSchema(
             error="Column 'step' must be <= column 'max_step'",
         )
     ],
+    name="shunt",
     strict=False,
 )
 
-
-res_shunt_schema = pa.DataFrameSchema(
+res_shunt_schema = res_shunt_est_schema = pa.DataFrameSchema(
     {
         "p_mw": pa.Column(float, nullable=True, description="shunt active power consumption [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="shunt reactive power consumption [MVAr]"),
         "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude at shunt bus [pu]"),
     },
+    name="res_shunt",
     strict=False,
 )

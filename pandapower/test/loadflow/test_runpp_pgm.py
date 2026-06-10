@@ -3,33 +3,24 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from pandapower.create._utils import add_column_to_df
-from pandapower.create import (
-    create_empty_network, create_bus, create_ext_grid, create_load, create_switch, create_sgen, create_line
-)
+from pandapower.create import create_bus, create_ext_grid, create_load, create_switch, create_sgen, create_line
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp_pgm
 from pandapower.test.consistency_checks import runpp_pgm_with_consistency_checks, runpp_pgm_3ph_with_consistency_checks
 
-try:
-    import power_grid_model
-
-    PGM_IMPORTED = True
-except ImportError:
-    PGM_IMPORTED = False
+pytest.importorskip("power_grid_model")
+pytest.importorskip("power_grid_model_io")
 
 
 @pytest.mark.parametrize("consistency_fn", [runpp_pgm_with_consistency_checks, runpp_pgm_3ph_with_consistency_checks])
-@pytest.mark.skipif(not PGM_IMPORTED, reason="requires power_grid_model")
 def test_minimal_net_pgm(consistency_fn):
     # tests corner-case when the grid only has 1 bus and an ext-grid
-    net = create_empty_network()
+    net = pandapowerNet(name="test_minimal_net_pgm")
     b = create_bus(net, 110)
     create_ext_grid(net, b)
     consistency_fn(net)
 
     create_load(net, b, p_mw=0.1)
-    # FIXME: temporary skip for pgm converter due to pd.NA
-    pytest.skip("PGM's _get_pp_attr has an error when handling pandapower 4 networks. (pd.NA dtype support missing)")
     consistency_fn(net)
 
     b2 = create_bus(net, 110)
@@ -38,9 +29,8 @@ def test_minimal_net_pgm(consistency_fn):
     consistency_fn(net)
 
 
-@pytest.mark.skipif(not PGM_IMPORTED, reason="requires power_grid_model")
 def test_runpp_pgm__invalid_algorithm():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_runpp_pgm__invalid_algorithm")
     with pytest.raises(
             KeyError,
             match="Invalid algorithm 'foo'",
@@ -49,9 +39,8 @@ def test_runpp_pgm__invalid_algorithm():
 
 
 @patch("pandapower.run.logger")
-@pytest.mark.skipif(not PGM_IMPORTED, reason="requires power_grid_model")
 def test_runpp_pgm__internal_pgm_error(mock_logger: MagicMock):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_runpp_pgm__internal_pgm_error")
     b1 = create_bus(net, 110)
     create_ext_grid(net, b1, vm_pu=1)
     b2 = create_bus(net, 50)
@@ -70,9 +59,8 @@ def test_runpp_pgm__internal_pgm_error(mock_logger: MagicMock):
 
 
 @patch("pandapower.run.logger")
-@pytest.mark.skipif(not PGM_IMPORTED, reason="requires power_grid_model")
 def test_runpp_pgm__validation_fail(mock_logger: MagicMock):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_runpp_pgm__validation_fail")
     create_bus(net, -110, index=123)
     runpp_pgm(net, validate_input=True)
 

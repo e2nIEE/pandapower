@@ -10,8 +10,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from pandapower import pandapowerNet
-from pandapower.auxiliary import ADict
+from pandapower.network import ADict, pandapowerNet
 
 logger = logging.getLogger(__name__)
 

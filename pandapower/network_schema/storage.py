@@ -58,29 +58,30 @@ _storage_columns = {
         pd.StringDtype, nullable=True, required=False, description="type variable to classify the storage"
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "terminal": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="terminal from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "description": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="description from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
 }
 storage_schema = pa.DataFrameSchema(
     _storage_columns,
     checks=create_column_dependency_checks_from_metadata(["opf"], _storage_columns),
+    name="storage",
     strict=False,
 )
 
@@ -90,6 +91,7 @@ res_storage_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, nullable=True, description="resulting active power after scaling [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="resulting reactive power after scaling [MVar]"),
     },
+    name="res_storage",
     strict=False,
 )
 
@@ -102,5 +104,6 @@ res_storage_3ph_schema = pa.DataFrameSchema(
         "q_b_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
         "q_c_mvar": pa.Column(float, nullable=True, description=""),  # TODO: not in docu
     },
+    name="res_storage_3ph",
     strict=False,
 )

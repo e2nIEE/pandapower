@@ -12,7 +12,7 @@ import numpy as np
 import networkx as nx
 import logging as log
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.create._utils import add_column_to_df
 from pandapower.create import create_bus, create_line_from_parameters

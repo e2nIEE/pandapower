@@ -46,98 +46,99 @@ _bus_columns = {
         metadata={"cim": True},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True}
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
     ),
     "origin_profile": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="origin_profile from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "cim_topnode": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="cim_topnode from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "ConnectivityNodeContainer_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="ConnectivityNodeContainer_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "Substation_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="Substation_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "description": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="description from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "Busbar_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="Busbar_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "Busbar_name": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="Busbar_name from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "GeographicalRegion_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="GeographicalRegion_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "GeographicalRegion_name": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="GeographicalRegion_name from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "SubGeographicalRegion_id": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="SubGeographicalRegion_id from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "SubGeographicalRegion_name": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="SubGeographicalRegion_name from converter, not relevant for calculations",
-        metadata={"cim": True},
+        metadata={"cim": True, "doc": False},
     ),
     "ucte_country": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="ucte_country from converter, not relevant for calculations",
-        metadata={"ucte": True},
+        metadata={"ucte": True, "doc": False},
     ),
 }
 bus_schema = pa.DataFrameSchema(
     _bus_columns,
+    name="bus",
     checks=[
         *create_column_dependency_checks_from_metadata(["opf"], _bus_columns),
         create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
@@ -153,6 +154,7 @@ res_bus_schema = res_bus_est_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, nullable=True, description="resulting active power demand [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="resulting reactive power demand [Mvar]"),
     },
+    name="res_bus",
     strict=False,
 )
 
@@ -176,6 +178,7 @@ res_bus_3ph_schema = pa.DataFrameSchema(
             description="unbalance in percent defined as the ratio of V2 and V1 according to IEC 62749",
         ),
     },
+    name="res_bus_3ph",
     strict=False,
 )
 
@@ -199,5 +202,6 @@ res_bus_sc_schema = pa.DataFrameSchema(
             float, nullable=True, description="reactive part of equiv. (zero sequence) SC impedance [Ohm]"
         ),
     },
+    name="res_bus_sc",
     strict=False,
 )

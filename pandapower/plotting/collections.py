@@ -43,7 +43,10 @@ except ImportError:
     class TextPath:  # so that the test does not fail
         pass
 
-from pandapower.auxiliary import soft_dependency_error, pandapowerNet
+from pandapower.auxiliary import soft_dependency_error
+from pandapower import pandapowerNet
+from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
+    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches, vsc_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
@@ -1158,8 +1161,11 @@ def _create_gen_or_sgen_collection(
                 f'unique_angles was not passed to create_{attribute}_collection, but draw_by_type was set to True'
             )
         if patch_type is None:
-            patch_type = df.loc[indices, "type"].to_list()
-            angles = [unique_angles[b][attribute][t if t else "none"] for b, t in zip(buses, patch_type)]
+            if "type" in df:
+                patch_type = df.loc[indices, "type"].to_list()
+            else:
+                patch_type = ["none"] * len(indices)
+            angles = [unique_angles[b][attribute][t if pd.notna(t) else "none"] for b, t in zip(buses, patch_type)]
         else:
             angles = [unique_angles[b][attribute][patch_type] for b in buses]
     else:
@@ -1185,7 +1191,7 @@ def create_gen_collection(
         gens=None,
         size: float = 1.,
         infofunc=None,
-        orientation=math.pi,
+        orientation=np.pi,
         picker: bool = False,
         patch_type=None,
         unique_angles=None,
@@ -1222,7 +1228,7 @@ def create_sgen_collection(
         sgens=None,
         size: float = 1.,
         infofunc=None,
-        orientation=math.pi,
+        orientation=np.pi,
         picker: bool = False,
         patch_type=None,
         unique_angles=None,

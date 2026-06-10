@@ -3,8 +3,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.create import create_bus, create_ext_grid, create_line, create_load, create_switch, create_sgen, \
-    create_transformer, create_empty_network
+from pandapower import pandapowerNet
+from pandapower.create import (
+    create_bus, create_ext_grid, create_line, create_load, create_switch, create_sgen, create_transformer
+)
 
 
 def panda_four_load_branch():
@@ -19,7 +21,7 @@ def panda_four_load_branch():
         >>> from pandapower.networks.simple_pandapower_test_networks import panda_four_load_branch
         >>> net_four_load = panda_four_load_branch()
     """
-    net = create_empty_network()
+    net = pandapowerNet(name='four_load_branch')
 
     busnr1 = create_bus(net, name="bus1", vn_kv=10., geodata=(0, 0))
     busnr2 = create_bus(net, name="bus2", vn_kv=.4, geodata=(0, -1))
@@ -61,7 +63,7 @@ def four_loads_with_branches_out():
         >>> from pandapower.networks.simple_pandapower_test_networks import four_loads_with_branches_out
         >>> net_four_load_with_branches = four_loads_with_branches_out()
     """
-    net = create_empty_network()
+    net = pandapowerNet(name='four_loads_with_branches_out')
 
     busnr1 = create_bus(net, name="bus1ref", vn_kv=10., geodata=(0, 0))
     create_ext_grid(net, busnr1)
@@ -112,7 +114,7 @@ def simple_four_bus_system():
         >>> from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
         >>> net_simple_four_bus = simple_four_bus_system()
     """
-    net = create_empty_network()
+    net = pandapowerNet(name='simple_four_bus_system')
     busnr1 = create_bus(net, name="bus1ref", vn_kv=10, geodata=(0, 0))
     create_ext_grid(net, busnr1)
     busnr2 = create_bus(net, name="bus2", vn_kv=.4, geodata=(0, -1))
@@ -142,7 +144,7 @@ def simple_mv_open_ring_net():
          >>> net_simple_open_ring = simple_mv_open_ring_net()
     """
 
-    net = create_empty_network()
+    net = pandapowerNet(name='simple_mv_open_ring_net')
 
     create_bus(net, name="110 kV bar", vn_kv=110, type='b', geodata=(0, 0))
     create_bus(net, name="20 kV bar", vn_kv=20, type='b', geodata=(0, -1))

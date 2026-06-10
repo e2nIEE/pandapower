@@ -8,8 +8,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from pandapower import pp_dir
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pp_dir, pandapowerNet
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import count_elements
 import pandapower.converter.ucte as ucte_converter
@@ -116,6 +115,8 @@ def test_from_ucte(test_case):
     # --- for loop per result table
     for res_et, df_target in res_target.items():
         et = res_et[4:]
+        if net[et].empty:
+            continue
         name_col = "name" # if et != "bus" else "add_name"
         missing_names = pd.Index(net[et][name_col]).difference(df_target.index)
         if len(missing_names):

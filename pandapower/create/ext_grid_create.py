@@ -9,7 +9,7 @@ import logging
 
 from numpy import nan
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int
 from pandapower.create._utils import (

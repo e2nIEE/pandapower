@@ -6,6 +6,7 @@ from pandera import DataFrameSchema
 
 from pandapower._version import __version__, __format_version__
 from pandapower.network_schema.tools.helper import get_dtypes
+import pandapower.network_schema as _schema_module
 from pandapower.network_schema import *  # noqa: F403
 
 
@@ -41,46 +42,45 @@ def get_table_schema() -> dict[str, DataFrameSchema]:
         "load_dc": load_dc_schema,
         "vsc_stacked": vsc_stacked_schema,
         "vsc_bipolar": vsc_bipolar_schema,
-        # result tables
-        "_empty_res_bus": res_bus_schema,
-        "_empty_res_bus_dc": res_bus_dc_schema,
-        "_empty_res_ext_grid": res_ext_grid_schema,
-        "_empty_res_line": res_line_schema,
-        "_empty_res_line_dc": res_line_dc_schema,
-        "_empty_res_trafo": res_trafo_schema,
-        "_empty_res_load": res_load_schema,
-        "_empty_res_load_3ph": res_load_schema,
-        "_empty_res_asymmetric_load": res_asymmetric_load_schema,
-        "_empty_res_asymmetric_sgen": res_asymmetric_sgen_schema,
-        "_empty_res_motor": res_motor_schema,
-        "_empty_res_sgen": res_sgen_schema,
-        "_empty_res_sgen_3ph": res_sgen_schema,
-        "_empty_res_shunt": res_shunt_schema,
-        "_empty_res_svc": res_svc_schema,
-        "_empty_res_ssc": res_ssc_schema,
-        "_empty_res_vsc": res_vsc_schema,
-        "_empty_res_switch": res_switch_schema,
-        "_empty_res_impedance": res_impedance_schema,
-        "_empty_res_tcsc": res_tcsc_schema,
-        "_empty_res_dcline": res_dcline_schema,
-        "_empty_res_source_dc": res_source_dc_schema,
-        "_empty_res_load_dc": res_load_dc_schema,
-        "_empty_res_ward": res_ward_schema,
-        "_empty_res_xward": res_xward_schema,
-        "_empty_res_trafo_3ph": res_trafo_3ph_schema,
-        "_empty_res_trafo3w": res_trafo3w_schema,
-        "_empty_res_bus_3ph": res_bus_3ph_schema,
-        "_empty_res_ext_grid_3ph": res_ext_grid_3ph_schema,
-        "_empty_res_line_3ph": res_line_3ph_schema,
-        "_empty_res_asymmetric_load_3ph": res_asymmetric_load_3ph_schema,
-        "_empty_res_asymmetric_sgen_3ph": res_asymmetric_sgen_3ph_schema,
-        "_empty_res_storage": res_storage_schema,
-        "_empty_res_storage_3ph": res_storage_3ph_schema,
-        "_empty_res_gen": res_gen_schema,
-        "_empty_res_vsc_stacked": res_vsc_stacked_schema,
-        "_empty_res_vsc_bipolar": res_vsc_bipolar_schema
     }
     # ruff: enable
+
+
+def get_results_schema() -> dict[str, DataFrameSchema]:
+    """
+    Get a dict of all schamas that start with res_ and end with _schema listed in the init of network_schema module
+
+    Returns:
+        A dict with pandapowerNet df name as key and the schema as value
+    """
+    return {
+        name.removesuffix("_schema"): getattr(_schema_module, name)
+        for name in dir(_schema_module)
+        if name.startswith("res_") and name.endswith("_schema")
+    }
+
+
+def get_results_structure_dict() -> dict[str, dict[str, str]]:
+    """
+    Builds the structure_dict for all result tables from pandera
+
+    Returns: A dict where key is the table name and value is a dict of column names and the dtypes
+
+    """
+    # TODO: convert to pandera
+    additional_tables = {
+        "res_protection": {
+            "switch_id": "f8",
+            "prot_type": dtype(object),
+            "trip_melt": "bool",
+            "act_param": dtype(object),
+            "act_param_val": "f8",
+            "trip_melt_time_s": "f8",
+        }
+    }
+    dtypes_dict: dict[str, Any] = {key: get_dtypes(val) for key, val in get_results_schema().items()}
+    dtypes_dict.update(additional_tables)
+    return dtypes_dict
 
 
 def get_column_info(table: str, column: str) -> dict[str, str | bool | dict] | None:
@@ -98,19 +98,22 @@ def get_default_value(table: str, column: str) -> Any:
         return column_info["metadata"]["default"]
     return pd.NA
 
-def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
+def get_structure_dict(required_only: bool = True, metadata: list | None = None) -> dict:
     """
     This function returns the structure dict of the network
     """
+    if metadata is None:
+        metadata = []
     dtypes_dict: dict[str, Any] = {key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()}
-    dtypes_dict.update({
-        "pwl_cost": {  # TODO: convert to pandera
+    # TODO: convert to pandera
+    additional_schema = {
+        "pwl_cost": {
             "power_type": dtype(object),
             "element": "u4",
             "et": dtype(object),
             "points": dtype(object),
         },
-        "poly_cost": {  # TODO: convert to pandera
+        "poly_cost": {
             "element": "u4",
             "et": dtype(object),
             "cp0_eur": "f8",
@@ -120,7 +123,7 @@ def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
             "cq1_eur_per_mvar": "f8",
             "cq2_eur_per_mvar2": "f8",
         },
-        "controller": {  # TODO: convert to pandera
+        "controller": {
             "object": dtype(object),
             "in_service": "bool",
             "order": "float64",
@@ -128,21 +131,14 @@ def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
             "initial_run": "bool",
             "recycle": dtype(object),
         },
-        "group": {  # TODO: convert to pandera
+        "group": {
             "name": dtype(object),
             "element_type": dtype(object),
             "element_index": dtype(object),
             "reference_column": dtype(object),
-        },
-        # result tables
-        "_empty_res_protection": {
-            "switch_id": "f8",
-            "prot_type": dtype(object),
-            "trip_melt": "bool",
-            "act_param": dtype(object),
-            "act_param_val": "f8",
-            "trip_melt_time_s": "f8",
-        },  # TODO: convert to pandera
+        }
+    }
+    internal_values = {
         # internal
         "_ppc": None,
         "_ppc0": None,
@@ -166,7 +162,9 @@ def get_structure_dict(required_only: bool = True, metadata: list = []) -> dict:
         "name": "",
         "f_hz": 50.0,
         "sn_mva": 1,
-    })
+    }
+    dtypes_dict.update(additional_schema)
+    dtypes_dict.update(internal_values)
     return dtypes_dict
 
 

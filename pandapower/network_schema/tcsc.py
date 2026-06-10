@@ -55,6 +55,7 @@ tcsc_schema = pa.DataFrameSchema(
     checks=[
         create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     ],
+    name="tcsc",
     strict=False,
 )
 
@@ -81,5 +82,6 @@ res_tcsc_schema = pa.DataFrameSchema(
         "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at the to bus [pu]"),
         "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at the to bus [degree]"),
     },
+    name="res_tcsc",
     strict=False,
 )

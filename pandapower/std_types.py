@@ -6,11 +6,14 @@
 
 import warnings
 import logging
-from typing import Literal, cast, get_args
+from typing import Literal, cast, get_args, TYPE_CHECKING
 
 import pandas as pd
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.pp_types import StandardTypesDictKeys
+
+if TYPE_CHECKING:
+    from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +41,10 @@ def required_std_type_parameters(element: DefaultStandardTypes = "line"):
 
 
 def create_std_type(
-        net: pandapowerNet,
+        net: 'pandapowerNet',
         data: dict,
         name: str,
-        element: str = "line",
+        element: StandardTypesDictKeys = "line",
         overwrite=True,
         check_required=True):
     """
@@ -120,6 +123,7 @@ def create_std_types(net, data, element="line", overwrite=True, check_required=T
             - "line_dc"
             - "trafo"
             - "trafo3w"
+            - "fuse"
 
         overwrite: whether overwriteing existing standard type is allowed
         check_required: check if required standard type parameters are present

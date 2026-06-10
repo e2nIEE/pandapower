@@ -5,7 +5,7 @@ import pandas as pd
 from pandas import testing as pdt
 from deepdiff import DeepDiff
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 
 try:
     from networkx.utils.misc import graphs_equal

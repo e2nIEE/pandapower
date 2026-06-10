@@ -12,18 +12,20 @@ import numpy as np
 import pandas as pd
 
 from pandapower.network_structure import get_structure_dict
-from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_empty_network
+from pandapower.network import pandapowerNet
 
 
 class UCTE2pandapower:
-    def __init__(self, slack_as_gen: bool = True, clip_small_x_values: bool = True):
+    def __init__(self, slack_as_gen: bool = True, name: str | None = None, clip_small_x_values: bool = True):
         """
         Convert UCTE data to pandapower.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.u_d: dict = {}
-        self.net = create_empty_network(structure=get_structure_dict(metadata=['ucte']))
+        self.net = pandapowerNet(name="UCTE Converter", metadata=["ucte"])
+        if name is not None:
+            self.net.name = name
         self.net.bus["node_name"] = ""
         self.slack_as_gen = slack_as_gen
         self.clip_small_x_values = clip_small_x_values

@@ -41,6 +41,7 @@ _bus_dc_columns = {
 }
 bus_dc_schema = pa.DataFrameSchema(
     _bus_dc_columns,
+    name="bus_dc",
     checks=[*create_column_dependency_checks_from_metadata(["opf"], _bus_dc_columns),
             create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
 ],
@@ -53,5 +54,6 @@ res_bus_dc_schema = pa.DataFrameSchema(
         "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude [p.u]"),
         "p_mw": pa.Column(float, nullable=True, description="resulting active power demand [MW]"),
     },
+    name="res_bus_dc",
     strict=False,
 )

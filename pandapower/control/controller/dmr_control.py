@@ -3,7 +3,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.control.basic_controller import Controller
 import numpy as np
 import logging

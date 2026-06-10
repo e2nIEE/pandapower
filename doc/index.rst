@@ -6,39 +6,40 @@ pandapower combines the data analysis library `pandas <https://pandas.pydata.org
 `PYPOWER <https://pypi.org/project/PYPOWER/>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
 
-.. image:: /pics/pandapower_color.svg
-    :width: 250em
+.. image:: /pics/pandapower_color.png
+    :target: http://pandapower.org/
+    :width: 30em
     :align: left
 
-.. |br| raw:: html
+|
+|
+|
+|
+|
+|
 
-    <br />
+More information about pandapower can be found on `pandapower.org <https://pandapower.org>`_.
 
-|br|
-|br|
-|br|
-
-More information about pandapower can be found on `www.pandapower.org <https://www.pandapower.org>`_.
-
-If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://www.pandapower.org/contact/#list>`_!
+If you are interested in the newest pandapower developments, subscribe to our `mailing list <https://pandapower.org/contact/#list>`_!
 
 pandapower is a joint development of the research group of the Department for Sustainable Electrical Energy Systems (e2n), University of Kassel and the Department for Distribution System
 Operation at the Fraunhofer Institute for Energy Economics and Energy System Technology (IEE), Kassel.
 
 .. image:: /pics/iee.png
-        :width: 18em
-        :align: left
+    :target: https://iee.fraunhofer.de/
+    :width: 18em
+    :align: left
 
 .. image:: /pics/e2n.png
-        :width: 22em
-        :align: right
+    :target: https://uni-kassel.de/eecs/e2n/
+    :width: 22em
+    :align: left
 
-
-
-|br|
-|br|
-|br|
-|br|
+|
+|
+|
+|
+|
 
 .. toctree::
     :maxdepth: 2

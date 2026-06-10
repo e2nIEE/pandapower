@@ -447,7 +447,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
 
     boundary_buses = set(boundary_buses)
 
-    unsupplied_buses = set(net.res_bus.index[net.res_bus.vm_pu.isnull()])
+    unsupplied_buses = set(net.res_bus.index[net.res_bus.vm_pu.isnull()]) if "res_bus" in net else set()
     unsupplied_boundary_buses = boundary_buses & unsupplied_buses
     if len(unsupplied_boundary_buses):
         raise ValueError(

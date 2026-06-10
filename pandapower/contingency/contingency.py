@@ -42,7 +42,7 @@ try:
 except ImportError:
     KLU_solver_available = False
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.create._utils import add_column_to_df
 from pandapower.run import runpp
 

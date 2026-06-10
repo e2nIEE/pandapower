@@ -625,8 +625,7 @@ def simple_plot(
         plot_sgens (bool, optional): Draw static generator symbols.
             Default is ``False``.
         orientation (float or None, optional): Base orientation angle in
-            radians for sgen, gen, and load symbols.  ``None`` uses the
-            element-specific default.  Default is ``None``.
+            radians for sgen, gen, and load symbols.  ``None`` uses ``np.pi``.  Default is ``None``.
         load_size (float, optional): Relative load symbol size.
             Default is ``1.0``.
         gen_size (float, optional): Relative gen symbol size.
@@ -724,14 +723,19 @@ def simple_plot(
     if plot_line_switches:
         respect_switches = False
 
+    if orientation is None:
+        orientation = math.pi
+
     # create generic coordinates if no geodata is available
-    if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (
-            net.line.geo.isna().any() and net.bus.geo.isna().any()):
+    if ('geo' not in net.line.columns or 'geo' not in net.bus.columns or
+        (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (
+        net.line.geo.isna().any() and net.bus.geo.isna().any())
+    ):
         logger.warning(
-            "No or insufficient geodata available --> Creating artificial coordinates."
-            " This may take some time"
+            "No or insufficient geodata available --> Creating artificial coordinates. This may take some time"
         )
-        create_generic_coordinates(net, respect_switches=respect_switches, library=library)
+        buses = net.bus.index.tolist() if "geo" not in net.bus else net.bus.index[net.bus.geo.isna()].tolist()
+        create_generic_coordinates(net, respect_switches=respect_switches, library=library, buses=buses)
 
     if scale_size:
         # scale all symbol sizes relative to the mean distance between buses

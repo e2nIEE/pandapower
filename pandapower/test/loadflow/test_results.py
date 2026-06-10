@@ -11,10 +11,12 @@ import pytest
 from numpy import isin, isnan, isclose
 
 from pandapower import pp_dir
-from pandapower.create import create_bus, create_load, create_transformer3w_from_parameters, create_transformer, \
-    create_empty_network, create_ext_grid, create_line_from_parameters, create_transformer_from_parameters, \
-    create_impedance
+from pandapower.create import (
+    create_bus, create_load, create_transformer3w_from_parameters, create_transformer, create_ext_grid,
+    create_line_from_parameters, create_transformer_from_parameters, create_impedance
+)
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.test.conftest import result_test_network
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
@@ -42,7 +44,7 @@ def add_trafo_connection(net, hv_bus, trafotype="2W"):
 
 
 def create_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="create_net")
     vn_kv = 20
     b1 = create_bus(net, vn_kv=vn_kv)
     create_ext_grid(net, b1, vm_pu=1.01)
@@ -159,8 +161,9 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     b2 = buses[1]
     b3 = buses[2]
     # powerfactory results to check t-equivalent circuit model
-    runpp_with_consistency_checks(net, trafo_model="t", trafo_loading="current", init="dc",
-                                  calculate_voltage_angles=True, voltage_depend_loads=False)
+    runpp_with_consistency_checks(
+        net, trafo_model="t", trafo_loading="current", init="dc", calculate_voltage_angles=True
+    )
 
     load1 = 28.7842
     load2 = 0.4830
@@ -221,7 +224,7 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
 
     # sincal results to check pi-equivalent circuit model
     net.trafo.loc[trafos, "parallel"] = 1  # sincal is tested without parallel transformers
-    runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="current", voltage_depend_loads=False)
+    runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="current")
 
     load1 = 57.637
     load2 = 0.483
@@ -234,7 +237,7 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
     assert abs(net.res_bus.vm_pu.at[b2] - v2) < v_tol
     assert abs(net.res_bus.vm_pu.at[b3] - v3) < v_tol
 
-    runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="power", voltage_depend_loads=False)
+    runpp_with_consistency_checks(net, trafo_model="pi", trafo_loading="power")
 
     load1 = 52.929
     load2 = 0.444
@@ -244,28 +247,25 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
 
 
 def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo_2_taps")
     create_bus(net, 110)
     create_bus(net, 20)
     create_ext_grid(net, 0)
-    create_transformer_from_parameters(net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
-                                       tap_side="hv", tap_neutral=0, tap_max=10,
-                                       tap_min=-10, tap_step_percent=2, tap_step_degree=0,
-                                       tap_pos=0, tap_changer_type="Ratio",
-                                       tap2_side="hv", tap2_neutral=0, tap2_max=10,
-                                       tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0,
-                                       tap2_pos=0, tap2_changer_type="Ratio")
+    create_transformer_from_parameters(
+        net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
+        tap_side="hv", tap_neutral=0, tap_max=10, tap_min=-10, tap_step_percent=2, tap_step_degree=0,
+        tap_pos=0, tap_changer_type="Ratio", tap2_side="hv", tap2_neutral=0, tap2_max=10,
+        tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0, tap2_pos=0, tap2_changer_type="Ratio"
+    )
 
     create_load(net, 1, 10)
 
     runpp(net)
-    net.res_bus
 
 
 def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
-    # FIXME: reenable voltage dependent loads
     net = result_test_network
-    runpp_with_consistency_checks(net, calculate_voltage_angles=True, voltage_depend_loads=False)
+    runpp_with_consistency_checks(net, calculate_voltage_angles=True)
     buses = net.bus[net.bus.zone == "test_ext_grid"]
     b2 = buses.index[1]
     ext_grids = [
@@ -396,8 +396,7 @@ def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, 
     g1 = gens[0]
 
     # enforce reactive power limits
-    # FIXME: reenable voltage dependent loads
-    runpp_with_consistency_checks(net, enforce_q_lims=True, voltage_depend_loads=False)
+    runpp_with_consistency_checks(net, enforce_q_lims=True)
 
     # powerfactory results
     u2 = 1.00607194
@@ -412,7 +411,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     net = result_test_network
     buses = net.bus[net.bus.zone == "test_trafo3w"].index
     trafos = net.trafo3w[net.trafo3w.hv_bus.isin(buses)].index
-    runpp_with_consistency_checks(net, trafo_model="pi", voltage_depend_loads=False)
+    runpp_with_consistency_checks(net, trafo_model="pi")
     b2 = buses[1]
     b3 = buses[2]
     b4 = buses[3]
@@ -453,7 +452,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
     assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
 
-    runpp_with_consistency_checks(net, trafo_model="pi", trafo3w_losses='star', voltage_depend_loads=False)
+    runpp_with_consistency_checks(net, trafo_model="pi", trafo3w_losses='star')
 
     # Test results Integral:
     uhv = 1.01011711678
@@ -561,12 +560,11 @@ def test_trafo3w_tap_neutral_not_zero(tap_pos, tap_side, tap_step_degree):
 
 
 def test_impedance(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
-    # FIXME: reenable voltage dependent loads
     net = result_test_network
-    runpp_with_consistency_checks(net, voltage_depend_loads=False)
+    runpp_with_consistency_checks(net)
     buses = net.bus[net.bus.zone == "test_impedance"]
     impedances = [x for x in net.impedance.index if net.impedance.from_bus[x] in buses.index]
-    runpp_with_consistency_checks(net, trafo_model="t", numba=True, voltage_depend_loads=False)
+    runpp_with_consistency_checks(net, trafo_model="t", numba=True)
     b2 = buses.index[1]
     b3 = buses.index[2]
     imp1 = impedances[0]
@@ -634,8 +632,10 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
 
 
 def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
-    """Test for enforce_q_lims loadflow option."""
-    net = create_empty_network()
+    """
+    Test for enforce_q_lims loadflow option
+    """
+    net = pandapowerNet(name="test_enforce_q_lims")
     net = add_test_gen(net)
     runpp(net)
     buses = net.bus[net.bus.zone == "test_gen"]
@@ -682,7 +682,7 @@ def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
 
 def test_enforce_p_lims(s_tol=5e-3):
     """Test for enforce_p_lims loadflow option."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_enforce_p_lims")
     net = add_test_gen(net)
     runpp(net)
     buses = net.bus[net.bus.zone == "test_gen"]
@@ -756,7 +756,7 @@ def test_open(result_test_network):
 
 
 def test_impedance_g_b():
-    net = create_empty_network(sn_mva=100)
+    net = pandapowerNet(name="test_impedance_g_b", sn_mva=100)
     create_bus(net, 110)
     create_bus(net, 20)
     create_ext_grid(net, 0)
@@ -775,7 +775,7 @@ def test_impedance_g_b():
 
 
 def test_trafo_unequal_r_x_hv_lv():
-    net = create_empty_network(sn_mva=10)
+    net = pandapowerNet(name="test_trafo_unequal_r_x_hv_lv", sn_mva=10)
     create_bus(net, 110)
     create_bus(net, 20)
     create_ext_grid(net, 0)

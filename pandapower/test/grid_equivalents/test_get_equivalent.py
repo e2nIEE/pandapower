@@ -8,15 +8,19 @@ import pytest
 from pandapower import pp_dir
 from pandapower.control import ConstControl
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object
+from pandapower.create import (
+    create_buses, create_ext_grid, create_poly_cost, create_line, create_load, create_sgen, create_pwl_cost, create_bus,
+    create_switch, create_motor, create_group
+)
 from pandapower.create._utils import add_column_to_df
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_poly_cost, create_line, \
-    create_load, create_sgen, create_pwl_cost, create_bus, create_switch, create_motor
 from pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.get_equivalent import get_equivalent, merge_internal_net_and_equivalent_external_net
 from pandapower.grid_equivalents.ward_generation import create_passive_external_net_for_ward_admittance
-from pandapower.groups import group_element_lists, compare_group_elements, group_row, \
-    set_group_reference_column, count_group_elements, group_element_index
-from pandapower.create.group_create import create_group
+from pandapower.groups import (
+    group_element_lists, compare_group_elements, group_row, set_group_reference_column, count_group_elements,
+    group_element_index
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.run import runpp
@@ -28,7 +32,7 @@ from pandapower.toolbox.grid_modification import select_subnet, replace_gen_by_s
 
 
 def create_test_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="create_test_net")
     # buses
     create_buses(net, 7, 20, zone=['0', '0', '1', '1', '1', '0', '0'], name=[f"bus {i}" for i in range(7)],
                  min_vm_pu=np.append(np.arange(.9, 0.94, .01), [np.nan, np.nan, np.nan]), max_vm_pu=2.0)
@@ -326,6 +330,7 @@ def test_adopt_columns_to_separated_eq_elms():
     # --- gen_separate
     net = case9()
     replace_ext_grid_by_gen(net, slack=True)
+    runpp(net)
     net.gen.index = [1, 2, 0]
     net.poly_cost["element"] = net.gen.index.values
     net.gen.sort_index(inplace=True)

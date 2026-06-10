@@ -5,14 +5,16 @@
 
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_switch, create_shunt, \
-    create_transformer_from_parameters
+from pandapower.create import (
+    create_bus, create_ext_grid, create_switch, create_shunt, create_transformer_from_parameters
+)
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 @pytest.fixture
 def net_transformer():
-    net = create_empty_network(sn_mva=2)
+    net = pandapowerNet(name="net_transformer", sn_mva=2)
     b1a = create_bus(net, vn_kv=10.)
     b1b = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=.4)

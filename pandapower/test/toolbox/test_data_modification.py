@@ -9,16 +9,17 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.create import create_measurement, create_empty_network, create_bus, create_load, create_sgen, \
-    create_shunt, create_ward
+from pandapower.create import create_measurement, create_bus, create_load, create_sgen, create_shunt, create_ward
+from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.create_examples import example_simple, example_multivoltage
 from pandapower.run import runpp
 from pandapower.test.helper_functions import assert_net_equal
 from pandapower.toolbox.comparison import compare_arrays
-from pandapower.toolbox.data_modification import reindex_elements, reindex_buses, add_column_from_node_to_elements, \
-    add_column_from_element_to_elements, create_continuous_bus_index, create_continuous_elements_index, \
-    set_scaling_by_type
+from pandapower.toolbox.data_modification import (
+    reindex_elements, reindex_buses, add_column_from_node_to_elements, add_column_from_element_to_elements,
+    create_continuous_bus_index, create_continuous_elements_index, set_scaling_by_type
+)
 from pandapower.toolbox.element_selection import pp_elements
 from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
@@ -85,7 +86,7 @@ def test_reindex_buses():
     # a more complexe bus_lookup of course should also work, but this one is easy to check
     reindex_buses(net, bus_lookup)
 
-    for elm in net.keys():
+    for elm in net:
         if isinstance(net[elm], pd.DataFrame) and net[elm].shape[0]:
             cols = pd.Series(net[elm].columns)
             bus_cols = cols.loc[cols.str.contains("bus")]
@@ -115,7 +116,7 @@ def test_reindex_buses__create_duplicate_index():
         reindex_buses(net, bus_lookup)
 
 def test_continuos_bus_numbering():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_continuos_bus_numbering")
 
     bus0 = create_bus(net, 0.4, index=12)
     create_load(net, bus0, p_mw=0.)
@@ -146,7 +147,7 @@ def test_continuos_bus_numbering():
     assert buses[0] == 0  # starts at zero
 
     used_buses = []
-    for element in net.keys():
+    for element in net:
         try:
             used_buses.extend(net[element].bus.values)
         except AttributeError:
@@ -219,7 +220,7 @@ def test_continuous_element_numbering():
 
 
 def test_scaling_by_type():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_scaling_by_type")
 
     bus0 = create_bus(net, 0.4)
     create_load(net, bus0, p_mw=0., type="Household")

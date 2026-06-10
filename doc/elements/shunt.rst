@@ -15,18 +15,15 @@ Create Function
 .. autofunction:: pandapower.create.create_shunt_as_capacitor
 
 
-Input Parameters
+Table Structure
 =====================
 
 *net.shunt*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: shunt_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
-
-\*necessary for executing a power flow calculation.
+.. csv-table::
+    :file: table_structures/shunt.csv
+    :header-rows: 1
+    :delim: ,
 
    
 Electric Model
@@ -34,9 +31,9 @@ Electric Model
 
 
 .. image:: shunt.png
-	:width: 12em
-	:alt: alternate Text
-	:align: center
+    :width: 12em
+    :alt: alternate Text
+    :align: center
 
 The power values are given at :math:`v = 1` pu and are scaled linearly with the number of steps:
    
@@ -107,15 +104,14 @@ The below table provides an example shunt_characteristic_spline table, populated
    :delim: ,
    :widths: 10, 20, 30, 30
 
-Result Parameters
+Result Table
 ==========================
 *net.res_shunt*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: shunt_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_shunt.csv
+    :header-rows: 1
+    :delim: ,
 
 .. math::
    :nowrap:

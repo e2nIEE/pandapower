@@ -71,10 +71,10 @@ def get_element_indices(
 
     EXAMPLE:
         >>> from pandapower.networks.create_examples import example_multivoltage
-        >>> from pandapower import get_element_indices
+        >>> from pandapower.toolbox.element_selection import get_element_indices
         >>> net = example_multivoltage()
         >>> # get indices of only one element type (buses in this example):
-        >>> get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+        >>> get_element_indices(net, "bus", [f"Bus HV{i}" for i in range(1, 4)])
         [32, 33, 34]
         >>> # get indices of only two element type (first buses, second lines):
         >>> get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
@@ -436,8 +436,9 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
             logger.warning("Unknown switch status \"%s\" selected! "
                            "Selecting all switches by default." % status)
 
+    branch_buses = None
     if include_element_connections:
-        bebd = branch_element_bus_dict()
+        branch_buses = branch_element_bus_dict()
 
     cs = set()
     for et in consider:
@@ -452,8 +453,7 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
             if include_element_connections:
                 element_type = ets_to_element_types(et)
                 sw_idx = net.switch.index[(net.switch.et == et) & switch_selection]
-                element_buses = net[element_type].loc[list(net.switch.element.loc[sw_idx]),
-                bebd[element_type]]
+                element_buses = net[element_type].loc[list(net.switch.element.loc[sw_idx]), branch_buses[element_type]]
                 isin_df = pd.concat([element_buses[col].isin(buses) for col in element_buses],
                                     axis=1)
                 cs |= set(sw_idx[isin_df.any(axis=1)])
@@ -461,14 +461,19 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
 
 
 def get_connected_elements_dict(
-        net: pandapowerNet, buses, respect_switches: bool = True, respect_in_service: bool = False,
+        net: pandapowerNet,
+        buses: Iterable,
+        respect_switches: bool = True,
+        respect_in_service: bool = False,
         include_empty_lists: bool = False,
-        element_types=None, **kwargs) -> dict[str, Collection]:
+        element_types: Iterable[str] | None = None,
+        **kwargs
+) -> dict[str, Collection]:
     """
     Returns a dict of lists of connected elements.
 
     Parameters:
-        net: The pandapower network
+        net: pandapower network
         buses: buses as origin to search for connected elements
         respect_switches:
         respect_in_service:
@@ -477,7 +482,7 @@ def get_connected_elements_dict(
         element_types: types elements which are analysed for connection. If not given, all pandapower element types
             are analysed. That list of all element types can also be restricted by key word arguments
 
-    Keyword arguments:
+    Keyword Arguments:
         "connected_buses", "connected_bus_elements", "connected_branch_elements" and
         "connected_other_elements"
 
@@ -536,8 +541,9 @@ def get_gc_objects_dict():
     This function is based on the code in mem_top module
     Summarize object types that are tracked by the garbage collector at the moment.
     Useful to test if there are memory leaks.
-    :return: dictionary with keys corresponding to types and values to the number of objects of the
-    type
+
+    Returns:
+         dictionary with keys corresponding to types and values to the number of objects of the type
     """
     objs = gc.get_objects()
     nums_by_types = {}
@@ -609,13 +615,13 @@ def pp_elements(bus=True, bus_elements=True, branch_elements=True, other_element
     """
     pp_elms = set()
     if bus:
-        pp_elms |= {"bus"}
+        pp_elms.add("bus")
         if res_elements:
-            pp_elms |= {"res_bus"}
+            pp_elms.add("res_bus")
     pp_elms |= {el[0] for el in element_bus_tuples(
         bus_elements=bus_elements, branch_elements=branch_elements, res_elements=res_elements)}
     if other_elements:
-        pp_elms |= {"measurement"}
+        pp_elms.add("measurement")
     if cost_tables:
         pp_elms |= {"poly_cost", "pwl_cost"}
     return pp_elms
@@ -647,19 +653,19 @@ def branch_element_bus_dict(include_switch=False, sort=None):
     return bebd
 
 
-def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):
+def element_bus_tuples(bus_elements: bool = True, branch_elements: bool = True, res_elements: bool = False):
     """
     Utility function
     Provides the tuples of elements and corresponding columns for buses they are connected to
-    :param bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
-    :param branch_elements: whether branch elements e.g. line, trafo, ... are included
-    :param res_elements: whether result table names e.g. res_sgen, res_line, ... are included
-    :param return_type: which type the output has
-    :return: list of tuples with element names and column names
+
+    Parameters:
+        bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
+        branch_elements: whether branch elements e.g. line, trafo, ... are included
+        res_elements: whether result table names e.g. res_sgen, res_line, ... are included
+
+    Return:
+        list of tuples with element names and column names
     """
-    if Version(__version__) < Version('2.13'):
-        logger.debug("element_bus_tuples() returns a list of tuples instead of a set of tuples "
-                     "since pp.version >= 2.12.")
     ebts = []
     if bus_elements:
         ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
@@ -677,42 +683,32 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
     return ebts
 
 
-def count_elements(net, return_empties=False, **kwargs):
+def count_elements(net: pandapowerNet, return_empties: bool = False, **kwargs) -> pd.Series:
     """Counts how many elements of which element type exist in the pandapower net
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    return_empties : bool, optional
-        whether element types should be listed if no element exist, by default False
+    Parameters:
+        net: the pandapower net
+        return_empties: whether element types should be listed if no element exist
 
-    Other Parameters
-    ----------------
-    kwargs : dict[str,bool], optional
-        arguments (passed to pp_elements()) to narrow considered element types.
-        If nothing is passed, an empty dict is passed to pp_elements(), by default None
+    Keyword Args:
+        kwargs (dict[str,bool]): arguments passed to :func:`pp_elements` to narrow considered element types.
 
-    Returns
-    -------
-    pd.Series
+    Returns:
         number of elements per element type existing in the net
 
-    See also
-    --------
-    count_group_elements
+    See also:
+        :func:`count_group_elements`
 
-    Examples
-    --------
-    >>> from pandapower import count_elements
-    >>> from pandapower.networks.power_system_test_cases import case9
-    >>> count_elements(case9(), bus_elements=False)
-    bus     9
-    line    9
-    dtype: int32
+    Examples:
+        >>> from pandapower.toolbox.element_selection import count_elements
+        >>> from pandapower.networks.power_system_test_cases import case9
+        >>> count_elements(case9(), bus_elements=False)
+        bus     9
+        line    9
+        dtype: int32
     """
-    return pd.Series({et: net[et].shape[0] for et in pp_elements(**kwargs) if return_empties or \
-                      bool(net[et].shape[0])}, dtype=np.int64)
+    return pd.Series({et: net[et].shape[0] if et in net else 0 for et in pp_elements(**kwargs) if
+                      return_empties or (et in net and bool(net[et].shape[0]))}, dtype=np.int64)
 
 
 def get_all_elements(net, include_results=False):

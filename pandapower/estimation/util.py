@@ -150,7 +150,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
                         'trafo3w': {'side': ('hv', 'mv', 'lv'),
                                     'meas_type': ('p_mw', 'q_mvar')}}
     for bus_ix, bus_res in net.res_bus.iterrows():
-        for meas_type in bus_meas_types.keys():
+        for meas_type in bus_meas_types:
             meas_value = float(bus_res[bus_meas_types[meas_type]])
             if meas_type in ('p', 'q'):
                 create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
@@ -161,8 +161,8 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
     remove_shunt_injection_from_meas(net,"shunt")
     remove_shunt_injection_from_meas(net,"ward")
 
-    for br_type in branch_meas_type.keys():
-        if not net['res_' + br_type].empty:
+    for br_type in branch_meas_type:
+        if f'res_{br_type}' in net and not net['res_' + br_type].empty:
             for br_ix, br_res in net['res_' + br_type].iterrows():
                 for side in branch_meas_type[br_type]['side']:
                     for meas_type in branch_meas_type[br_type]['meas_type']:
@@ -173,7 +173,7 @@ def add_virtual_meas_from_loadflow(net, v_std_dev=0.01, p_std_dev=0.03, q_std_de
     add_virtual_meas_error(net, v_std_dev=v_std_dev, p_std_dev=p_std_dev, q_std_dev=q_std_dev,
                            with_random_error=with_random_error)
 
-def remove_shunt_injection_from_meas(net,type):
+def remove_shunt_injection_from_meas(net, type):
     index = net[type].index.tolist()
     bus = net[type]["bus"].tolist()
     for k in range(len(index)):
@@ -203,19 +203,20 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
                                     'meas_type': ('i_ka', 'ia_degree', 'p_mw', 'q_mvar')}}
 
     # Added degree result for branches
-    for br_type in branch_meas_type.keys():
+    for br_type in branch_meas_type:
         for side in branch_meas_type[br_type]['side']:
-            p, q, vm, va = net["res_" + br_type]["p_%s_mw" % side].values, \
-                           net["res_" + br_type]["q_%s_mvar" % side].values, \
-                           net["res_" + br_type]["vm_%s_pu" % side].values, \
-                           net["res_" + br_type]["va_%s_degree" % side].values
-            S = p + q * 1j
-            V = vm * np.exp(np.deg2rad(va) * 1j)
-            I = np.conj(S / V)
-            net["res_" + br_type]["ia_%s_degree" % side] = np.rad2deg(np.angle(I))
+            if "res_" + br_type in net:
+                p, q, vm, va = net["res_" + br_type]["p_%s_mw" % side].values, \
+                               net["res_" + br_type]["q_%s_mvar" % side].values, \
+                               net["res_" + br_type]["vm_%s_pu" % side].values, \
+                               net["res_" + br_type]["va_%s_degree" % side].values
+                S = p + q * 1j
+                V = vm * np.exp(np.deg2rad(va) * 1j)
+                I = np.conj(S / V)
+                net["res_" + br_type]["ia_%s_degree" % side] = np.rad2deg(np.angle(I))
 
     for bus_ix, bus_res in net.res_bus.iterrows():
-        for meas_type in bus_meas_types.keys():
+        for meas_type in bus_meas_types:
             meas_value = float(bus_res[bus_meas_types[meas_type]])
             if meas_type in ('p', 'q'):
                 create_measurement(net, meas_type=meas_type, element_type='bus', element=bus_ix,
@@ -226,8 +227,8 @@ def add_virtual_pmu_meas_from_loadflow(net, v_std_dev=0.001, i_std_dev=0.1,
     remove_shunt_injection_from_meas(net,"shunt")
     remove_shunt_injection_from_meas(net,"ward")
 
-    for br_type in branch_meas_type.keys():
-        if not net['res_' + br_type].empty:
+    for br_type in branch_meas_type:
+        if 'res_' + br_type in net and not net['res_' + br_type].empty:
             for br_ix, br_res in net['res_' + br_type].iterrows():
                 for side in branch_meas_type[br_type]['side']:
                     for meas_type in branch_meas_type[br_type]['meas_type']:

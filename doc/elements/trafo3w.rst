@@ -32,18 +32,15 @@ Create Function
     max(sn_hv_mva, sn_mv_mva, sn_lv_mva). You might have to convert the
     values depending on how the short-circuit voltages are defined.
 
-Input Parameters
+Table Structure
 =========================
 
 *net.trafo3w*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-    :file: trafo3w_par.csv
-    :delim: ;
-    :widths: 15, 10, 10, 30
-
-\*necessary for executing a power flow calculation.
+.. csv-table::
+    :file: table_structures/trafo3w.csv
+    :header-rows: 1
+    :delim: ,
 
 .. note:: Three Winding Transformer loading can not yet be constrained with the optimal power flow.
 
@@ -124,7 +121,7 @@ The variable tap\_side controls if the tap changer is located at T1 ('hv'), T2 (
 is located at the star point of the three winding transformer or at the terminal side (hv/mv/lv bus).
     
 .. seealso::
-    `MVA METHOD FOR 3-WINDING TRANSFORMER <https:/pangonilo.com/index.php?sdmon=files/MVA_Method_3-Winding_Transformer.pdf>`_
+    `MVA METHOD FOR 3-WINDING TRANSFORMER <https://pangonilo.com/index.php?sdmon=files/MVA_Method_3-Winding_Transformer.pdf>`_
 
 Trafo characteristic table
 ----------------------------
@@ -166,15 +163,15 @@ The below table provides an example trafo_characteristic_spline table, populated
     :delim: ,
     :widths: 10, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55
 
-Result Parameters
+Result Tables
 ==========================
-**net.res_trafo3w**
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.60\linewidth}|
-.. csv-table:: 
-    :file: trafo3w_res.csv
-    :delim: ;
-    :widths: 15, 10, 60
+*net.res_trafo3w*
+
+.. csv-table::
+    :file: table_structures/res_trafo3w.csv
+    :header-rows: 1
+    :delim: ,
 
 .. math::
     p\_hv\_mw &= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\    
@@ -201,12 +198,11 @@ For trafo_loading='power', the loading is defined as:
 .. math::
     loading\_percent = max( \frac{i_{hv} \cdot v_{hv}}{sn\_hv\_mva}, \frac{i_{mv} \cdot v_{mv}}{sn\_mv\_mva}, \frac{i_{lv} \cdot v_{lv}}{sn\_lv\_mva}) \cdot 100
 
-**net.res_trafo3w_sc**
+*net.res_trafo3w_sc*
 
 The short-circuit (SC) results are put into *net.res_trafo3w_sc* with following definitions:
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.1\linewidth}|p{0.60\linewidth}|
-.. csv-table:: 
-    :file: trafo3w_res_sc.csv
-    :delim: ;
-    :widths: 15, 10, 60
+.. csv-table::
+    :file: table_structures/res_trafo3w_sc.csv
+    :header-rows: 1
+    :delim: ,

@@ -6,14 +6,17 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_transformer_from_parameters, \
-    create_gen, create_transformer3w_from_parameters, create_line_from_parameters, create_xward, create_motor
+from pandapower.create import (
+    create_bus, create_ext_grid, create_transformer_from_parameters, create_gen, create_transformer3w_from_parameters,
+    create_line_from_parameters, create_xward, create_motor
+)
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.shortcircuit.toolbox import detect_power_station_unit, calc_sc_on_line
 
 
 def iec_60909_4():
-    net = create_empty_network(sn_mva=34)
+    net = pandapowerNet(name="iec_60909_4", sn_mva=34)
 
     b1 = create_bus(net, vn_kv=380.)
     b2 = create_bus(net, vn_kv=110.)
@@ -123,7 +126,7 @@ def iec_60909_4():
 
 
 def iec_60909_4_small(with_xward=False):
-    net = create_empty_network(sn_mva=6)
+    net = pandapowerNet(name="iec_60909_4_small", sn_mva=6)
 
     b1 = create_bus(net, vn_kv=380.)
     b2 = create_bus(net, vn_kv=110.)
@@ -182,7 +185,7 @@ def iec_60909_4_small(with_xward=False):
 
 
 def iec_60909_4_small_gen_only():
-    net = create_empty_network(sn_mva=56)
+    net = pandapowerNet(name="iec_60909_4_small_gen_only", sn_mva=56)
 
     b3 = create_bus(net, vn_kv=110.)
     HG2 = create_bus(net, vn_kv=10)
@@ -198,7 +201,7 @@ def iec_60909_4_small_gen_only():
 
 
 def iec_60909_4_2gen():
-    net = create_empty_network(sn_mva=12)
+    net = pandapowerNet(name="iec_60909_4_2gen", sn_mva=12)
 
     b3 = create_bus(net, vn_kv=110.)
     b4 = create_bus(net, vn_kv=110.)
@@ -224,7 +227,7 @@ def iec_60909_4_2gen():
 
 
 def vde_232():
-    net = create_empty_network(sn_mva=13)
+    net = pandapowerNet(name="vde_232", sn_mva=13)
     # hv buses
     create_bus(net, 110)
     create_bus(net, 21)

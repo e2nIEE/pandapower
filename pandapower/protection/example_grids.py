@@ -12,7 +12,7 @@ pd.Series(dtype='float64')
 
 
 def three_radial_bus_net():
-    net = create_empty_network()  # create an empty network
+    net = pandapowerNet(name="three_radial_bus_net")  # create an empty network
     create_buses(net, nr_buses=16, vn_kv=20, index=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], name=None,
                  type="n",
                  geodata=[(0, 0), (0, -1), (0, -2), (-2, -3), (-2, -4), (-2, -5), (0, -6),
@@ -40,7 +40,7 @@ def three_radial_bus_net():
 
 
 def dtoc_relay_net(open_loop=True):
-    net = create_empty_network()  # create an empty network
+    net = pandapowerNet(name="dtoc_relay_net")  # create an empty network
 
     # create buses
     create_buses(net, nr_buses=7, vn_kv=20, index=[0, 1, 2, 3, 4, 5, 6], name=None, type="n",
@@ -70,7 +70,7 @@ def dtoc_relay_net(open_loop=True):
 
 
 def idmt_relay_net(open_loop=True):
-    net = create_empty_network()  # create an empty network
+    net = pandapowerNet(name="idmt_relay_net")  # create an empty network
 
     #create buses
     create_buses(net, nr_buses=7, vn_kv=20, index=[0, 1, 2, 3, 4, 5, 6], name=None, type="n",
@@ -100,7 +100,7 @@ def idmt_relay_net(open_loop=True):
 
 
 def idtoc_relay_net(open_loop=True):
-    net = create_empty_network()  # create an empty network
+    net = pandapowerNet(name="idtoc_relay_net")  # create an empty network
 
     # create buses
     create_buses(net, nr_buses=7, vn_kv=20, index=[0, 1, 2, 3, 4, 5, 6], name=None, type="n",

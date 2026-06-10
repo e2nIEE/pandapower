@@ -1,18 +1,16 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_vsc_stacked_names
+from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
     _get_bus_results_3ph, _get_bus_dc_v_results, _get_p_dc_results, _set_dc_buses_out_of_service
 from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph, _get_dc_slack_results
+from pandapower.network_structure import get_results_structure_dict
 
 BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
                        "branch_ikss_angle_f", "branch_ikss_angle_t",
@@ -24,6 +22,60 @@ BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
                        "branch_ith_f", "branch_ith_t")
 
 suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
+
+
+class _EmptyResultsMeta(type):
+    """
+    Metaclass for attribute access to EmptyResults
+    """
+
+    def __getitem__(cls, name: str) -> pd.DataFrame:
+        instance = cls()  # get singleton instance
+        return instance[name]
+
+
+class EmptyResults(metaclass=_EmptyResultsMeta):
+    """
+    Singleton Class that stores all empty res tables so they can be copied to the net when required.
+
+    Will be created on first call, all subsequent calls will be faster
+    """
+    _instance: "EmptyResults | None" = None
+    _data: dict[str, pd.DataFrame] = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(EmptyResults, cls).__new__(cls)
+            # Initialization:
+            # create dataframes from results_structure_dict
+            dataframes = pandapowerNet.create_dataframes(get_results_structure_dict())
+            # set data on instance
+            for key, value in dataframes.items():
+                if not isinstance(value, pd.DataFrame):
+                    raise ValueError(f"EmptyResults got {type(value)} for {key}, expected pandas.DataFrame")
+                cls._instance._data[key] = value
+        return cls._instance
+
+    def __getattr__(self, name: str) -> pd.DataFrame:
+        if name not in self._data:
+            raise KeyError(f"EmptyResults has no key {name}")
+        return self._data[name].copy()  # Always return a copy, prevent modifying the stored DataFrames
+
+    def __getitem__(self, name: str) -> pd.DataFrame:
+        if name not in self._data:
+            raise KeyError(f"EmptyResults has no key {name}")
+        return self._data[name].copy()  # Always return a copy, prevent modifying the stored DataFrames
+
+    def __repr__(self):
+        return self._data.__repr__()
+
+    def __str__(self):
+        return f"EmptyResults({self._data})"
+
+def _overwrite_out_of_service(net: pandapowerNet) -> None:
+    for elem in ["bus", "bus_dc"]:  # TODO: add other out of service elements
+        if f"res_{elem}" in net:
+            net[f"res_{elem}"][~net[elem].in_service] = np.nan
 
 
 def _extract_results(net, ppc):
@@ -43,6 +95,7 @@ def _extract_results(net, ppc):
     # _get_branch_dc_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc) # not needed since it is calculated in _get_branch_results
     _get_bus_dc_results(net, bus_p_dc)
     _get_vsc_stacked_results(net)
+    _overwrite_out_of_service(net)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
@@ -128,10 +181,10 @@ def _get_aranged_lookup(net, bus_table="bus"):
 
 
 def verify_results(net, mode="pf"):
-    elements = get_relevant_elements(mode)
+    elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
-        res_element, _ = get_result_tables(element, suffix)
+        res_element = get_result_tables(element, suffix)
 
         index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
         if not index_equal:
@@ -149,62 +202,55 @@ def verify_results(net, mode="pf"):
 
 def get_result_tables(element, suffix=None):
     res_element = "res_" + element
-    res_element_with_suffix = res_element if suffix is None else res_element + "_%s" % suffix
-
-    if suffix == suffix_mode.get("se", None):
-        # State estimation used default result table
-        return res_element_with_suffix, "_empty_%s" % res_element
-    else:
-        return res_element_with_suffix, "_empty_%s" % res_element_with_suffix
+    return res_element if suffix is None else f"{res_element}_{suffix}"
 
 
+# TODO: check if it would be better to only use init_element and not use this directly.
+#  init_element creates the res_tables with the index from the relevant element
+#  empty_res_element creates the res_tables without the index, but why should they not get the index?
 def empty_res_element(net, element, suffix=None):
-    res_element, res_empty_element = get_result_tables(element, suffix)
-    if res_empty_element in net:
-        net[res_element] = net[res_empty_element].copy()
-    else:
+    res_element = get_result_tables(element, suffix)
+    try:
+        net[res_element] = EmptyResults[res_element]
+    except KeyError:
         net[res_element] = pd.DataFrame(
             columns=pd.Index([], dtype=object), index=pd.Index([], dtype=np.int64)
         )
 
 
 def init_element(net, element, suffix=None):
-    res_element, res_empty_element = get_result_tables(element, suffix)
-    index = net[element].index
-    if len(index):
-        # init empty dataframe
-        if res_empty_element in net:
-            net[res_element] = pd.DataFrame(np.nan, index=index, columns=net[res_empty_element].columns, dtype='float')
-        else:
-            net[res_element] = pd.DataFrame(index=index, dtype='float')
-    else:
-        empty_res_element(net, element, suffix)
+    res_element = get_result_tables(element, suffix)
+    empty_res_element(net, element, suffix)
+    if not net[element].empty:
+        net[res_element] = net[res_element].reindex(net[element].index)
 
 
-def get_relevant_elements(mode="pf"):
-    if mode == "pf" or mode == "opf" or mode == "dc":
-        return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
-                "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
-                "xward", "dcline", "asymmetric_load", "asymmetric_sgen", "source_dc",
-                "switch", "tcsc", "svc", "ssc", "vsc", "vsc_stacked", "vsc_bipolar"]
-    elif mode == "sc":
-        return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
-    elif mode == "se":
-        return ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"]
-    elif mode == "pf_3ph":
-        return ["bus", "line", "trafo", "ext_grid", "shunt",
-                "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]
+def get_relevant_elements(net, mode="pf"):
+    elements = {
+        "pf": ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
+               "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
+               "xward", "dcline", "asymmetric_load", "asymmetric_sgen", "source_dc",
+               "switch", "tcsc", "svc", "ssc", "vsc", "vsc_stacked", "vsc_bipolar"],
+        "sc": ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"],
+        "se": ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"],
+        "pf_3ph": ["bus", "line", "trafo", "ext_grid", "shunt", "load", "sgen", "storage",
+                   "asymmetric_load", "asymmetric_sgen"]
+    }
+    elements["opf"] = elements["pf"]
+    elements["dc"] = elements["pf"]
+
+    return [elem for elem in elements.get(mode, []) if not net[elem].empty]
 
 
 def init_results(net, mode="pf"):
-    elements = get_relevant_elements(mode)
+    elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         init_element(net, element, suffix)
 
 
 def reset_results(net, mode="pf"):
-    elements = get_relevant_elements(mode)
+    elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         empty_res_element(net, element, suffix)

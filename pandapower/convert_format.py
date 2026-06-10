@@ -1,25 +1,22 @@
-# -*- coding: utf-8 -*-
-from collections import defaultdict
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
+from collections import defaultdict
+import logging
 
 import numpy as np
 import pandas as pd
 import geojson
-
 from packaging.version import Version
 
 from pandapower._version import __version__, __format_version__
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.control import TrafoController, BinarySearchControl, DroopControl
-from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.create._utils import add_column_to_df
+from pandapower.create import create_empty_network, create_poly_cost
 from pandapower.network_structure import get_structure_dict
 from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
 from pandapower.results import reset_results
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +44,12 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
         if not bool(cols.issubset(net.load.columns)):
             for col in cols:
                 add_column_to_df(net, "load", col)
+
+        # drop empty res_ tables and _empty_res_ tables
+        for key in list(net.keys()):  # conversion to list required because of dict modification while iteration
+            if key.startswith("_empty_res_") or (key.startswith("res_") and len(net[key]) == 0):
+                del net[key]
+
     if net_format_version < Version("3.1.0"):
         _convert_q_capability_characteristic(net)
     if Version("3.0.0") <= net_format_version < Version("3.1.3"):
@@ -158,12 +161,12 @@ def _restore_index_names(net):
     """Restores dataframes index names stored as dictionary. With newer pp to_json() this
     information is stored to the dataframe its self.
     """
-    if "index_names" in net.keys():
+    if "index_names" in net:
         if not isinstance(net["index_names"], dict):
             raise ValueError("To restore the index names of the dataframes, a dict including this "
                              f"information is expected, not {type(net['index_names'])}")
         for key, index_name in net["index_names"].items():
-            if key in net.keys():
+            if key in net:
                 net[key].index.name = index_name
         del net["index_names"]
 
@@ -211,26 +214,25 @@ def _convert_trafo_controller_parameter_names(net):
         controller = net.controller.at[ctrl_idx, "object"]
         if issubclass(type(controller), TrafoController):
 
-            if "tid" in controller.__dict__.keys():
+            if "tid" in controller.__dict__:
                 controller.__dict__["element_index"] = controller.__dict__.pop("tid")
-            elif "transformer_index" in controller.__dict__.keys():
+            elif "transformer_index" in controller.__dict__:
                 controller.__dict__["element_index"] = controller.__dict__.pop("transformer_index")
 
-            if "trafotable" in controller.__dict__.keys():
+            if "trafotable" in controller.__dict__:
                 controller.__dict__["element"] = controller.__dict__.pop("trafotable")
-                if "trafotype" in controller.__dict__.keys():
+                if "trafotype" in controller.__dict__:
                     del controller.__dict__["trafotype"]
-            elif "trafotype" in controller.__dict__.keys():
+            elif "trafotype" in controller.__dict__:
                 controller.__dict__["element"] = controller.__dict__.pop("trafotype")
 
-            if "controlled_bus" in controller.__dict__.keys():
+            if "controlled_bus" in controller.__dict__:
                 controller.__dict__["trafobus"] = controller.__dict__.pop("controlled_bus")
 
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
-        bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & \
-                           (net.measurement.element_type == "bus")
+        bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & (net.measurement.element_type == "bus")
         net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
@@ -291,11 +293,10 @@ def _add_nominal_power(net):
 
 
 def _add_missing_tables(net):
-    net_new = create_empty_network()
-    for key in net_new.keys():
-        if key.startswith("_empty_res"):
-            net[key] = net_new[key]
-        elif key not in net.keys():
+    net_new = pandapowerNet(name='missing_tables_net')
+    net_new.name = ""  # name is set to avoid warnings, then unset here to avoid adding it to any network
+    for key in net_new:
+        if key.startswith("_empty_res") or key not in net:
             net[key] = net_new[key]
 
 
@@ -309,13 +310,13 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
             "cost_per_kw" in net.sgen:
         for index, cost in net.sgen.cost_per_kw.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
+                create_poly_cost(net, index, "sgen", cp1_eur_per_mw=cost*1000)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kw" in net.ext_grid:
         for index, cost in net.ext_grid.cost_per_kw.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
+                create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=cost*1000)
 
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "cost_per_kvar" in net.gen:
@@ -358,7 +359,9 @@ def _rename_columns(net, elements_to_deserialize):
     if _check_elements_to_deserialize('measurement', elements_to_deserialize):
         if "measurement" in net and "type" in net.measurement and "measurement":
             if net.measurement.empty:
-                net["measurement"] = create_empty_network()["measurement"]
+                ms = "measurement"
+                net[ms] = pandapowerNet.create_dataframes({ms: get_structure_dict()[ms]})[ms]
+                # TODO: improve this code to avoid this complex structure just so create_dataframes only creates one df
             else:
                 net.measurement["side"] = None
                 bus_measurements = net.measurement.element_type == "bus"
@@ -377,7 +380,7 @@ def _rename_columns(net, elements_to_deserialize):
         if "controller" in net:
             net["controller"] = net["controller"].rename(columns={"controller": "object"})
 
-    if _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize):
+    if 'res_line_3ph' in net and _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize):
         if "p_a_l_mw" in net.res_line_3ph:
             net['res_line_3ph'] = net['res_line_3ph'].rename(columns={
                 'p_a_l_mw': 'pl_a_mw',
@@ -388,7 +391,7 @@ def _rename_columns(net, elements_to_deserialize):
                 'q_c_l_mvar': 'ql_c_mvar',
             })
 
-    if _check_elements_to_deserialize('res_trafo_3ph', elements_to_deserialize):
+    if 'res_trafo_3ph' in net and _check_elements_to_deserialize('res_trafo_3ph', elements_to_deserialize):
         if "p_a_l_mw" in net.res_trafo_3ph:
             net['res_trafo_3ph'] = net['res_trafo_3ph'].rename(columns={
                 'p_a_l_mw': 'pl_a_mw',
@@ -520,16 +523,16 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.switch['in_ka'] = np.nan
 
     # Update the switch table with 'in_ka'
-    if _check_elements_to_deserialize('res_switch', elements_to_deserialize) and \
-            'p_from_mw' not in net.res_switch:
-        net.res_switch['p_from_mw'] = np.nan
-        net.res_switch['q_from_mvar'] = np.nan
-        net.res_switch['p_to_mw'] = np.nan
-        net.res_switch['q_to_mvar'] = np.nan
+    if ('res_switch' in net and _check_elements_to_deserialize('res_switch', elements_to_deserialize) and
+            'p_from_mw' not in net.res_switch):
+            net.res_switch['p_from_mw'] = np.nan
+            net.res_switch['q_from_mvar'] = np.nan
+            net.res_switch['p_to_mw'] = np.nan
+            net.res_switch['q_to_mvar'] = np.nan
 
     # Update the switch table with 'in_ka'
-    if _check_elements_to_deserialize('res_switch_est', elements_to_deserialize) and \
-            'p_from_mw' not in net.res_switch_est:
+    if ('res_switch_est' in net and _check_elements_to_deserialize('res_switch_est', elements_to_deserialize) and
+            'p_from_mw' not in net.res_switch_est):
         net.res_switch_est['p_from_mw'] = np.nan
         net.res_switch_est['q_from_mvar'] = np.nan
         net.res_switch_est['p_to_mw'] = np.nan
@@ -563,8 +566,8 @@ def _add_missing_columns(net, elements_to_deserialize):
             "slack_weight" not in net.xward:
         net.xward['slack_weight'] = 0.0
 
-    if _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize) and \
-        "p_c_from_mw" not in net.res_line_3ph:
+    if ('res_line_3ph' in net and _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize) and
+            "p_c_from_mw" not in net.res_line_3ph):
             net.res_line_3ph['p_c_from_mw'] = np.nan
             net.res_line_3ph['loading_a_percent'] = np.nan
             net.res_line_3ph['loading_b_percent'] = np.nan
@@ -573,8 +576,8 @@ def _add_missing_columns(net, elements_to_deserialize):
 
 def _update_trafo_type_parameter_names(net):
     for element in ('trafo', 'trafo3w'):
-        for type in net.std_types[element].keys():
-            keys = {col: _update_column(col) for col in net.std_types[element][type].keys() if
+        for type in net.std_types[element]:
+            keys = {col: _update_column(col) for col in net.std_types[element][type] if
                     col.startswith("tp") or col.startswith("vsc")}
             for old_key, new_key in keys.items():
                 net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
@@ -602,7 +605,7 @@ def _update_column(column):
 
 
 def _set_data_type_of_columns(net):
-    new_net = create_empty_network()
+    new_net = pandapowerNet(name='')
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
@@ -617,7 +620,7 @@ def _set_data_type_of_columns(net):
 
 def _convert_to_mw(net):
     replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
-    for element in net.keys():
+    for element in net:
         if isinstance(net[element], pd.DataFrame):
             for old, new in replace:
                 diff = {column: column.replace(old, new) for column in net[element].columns if
@@ -685,7 +688,7 @@ def _convert_objects(net, elements_to_deserialize):
     """
     _check_elements_to_deserialize('controller', elements_to_deserialize)
     if _check_elements_to_deserialize('controller', elements_to_deserialize) and \
-            "controller" in net.keys():
+            "controller" in net:
         for obj in net["controller"].object.values:
             _update_object_attributes(obj)
 

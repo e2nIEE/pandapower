@@ -1,7 +1,6 @@
 import numpy as np
 
 from pandapower.create import (
-    create_empty_network,
     create_bus,
     create_ext_grid,
     create_transformer3w,
@@ -9,13 +8,14 @@ from pandapower.create import (
 )
 from pandapower.estimation.idx_brch import P_TO, P_TO_STD
 from pandapower.estimation.ppc_conversion import pp2eppci
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import branch_cols
 import pytest
 
 
 def test_duplicate_measurements_at_trafo3w():
     # Create an empty network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_duplicate_measurements_at_trafo3w")
 
     # Create buses for two three-winding transformers (HV, MV, LV each)
     hv_bus1 = create_bus(net, vn_kv=110, name="HV Bus 1")

@@ -5,11 +5,15 @@
 
 
 import numpy as np
+import pandas as pd
 import pytest
 import copy
 from pandapower.control import ContinuousTapControl
-from pandapower.create import create_empty_network, create_buses, create_gen, create_load, create_ext_grid, \
-    create_line_from_parameters, create_xward, create_bus, create_shunt
+from pandapower.create import (
+    create_buses, create_gen, create_load, create_ext_grid, create_line_from_parameters, create_xward, create_bus,
+    create_shunt
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9, case2848rte
 from pandapower.pypower.idx_brch import PF
@@ -31,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def small_example_grid():
-    net = create_empty_network()
+    net = pandapowerNet(name="small_example_grid")
     create_buses(net, 3, 20)
 
     create_gen(net, 0, p_mw=100, vm_pu=1, slack=True, slack_weight=1)
@@ -88,7 +92,8 @@ def _get_xward_result(net):
 def _get_losses(net):
     pl_mw = 0
     for elm in ['line', 'trafo', 'trafo3w', 'impedance']:
-        pl_mw += net['res_' + elm].pl_mw.sum()
+        if elm in net and net[elm].shape[0] > 0:
+            pl_mw += net['res_' + elm].pl_mw.sum()
     return pl_mw
 
 
@@ -124,9 +129,16 @@ def _get_inputs_results(net):
     inputs = np.r_[net.gen[net.gen.in_service].p_mw,
     np.zeros(len(net.ext_grid[net.ext_grid.in_service])),
     -net.xward[net.xward.in_service].ps_mw]
-    results = np.r_[net.res_gen[net.gen.in_service].p_mw,
-    net.res_ext_grid[net.ext_grid.in_service].p_mw,
-    -xward_pq_res]
+    results = np.r_[
+        net.res_gen[net.gen.in_service].p_mw,
+        net.res_ext_grid[net.ext_grid.in_service].p_mw if (
+                hasattr(net, 'res_ext_grid') and
+                net.res_ext_grid is not None and
+                hasattr(net, 'ext_grid') and
+                not net.ext_grid.empty
+        ) else pd.Series(dtype=float),
+    -xward_pq_res
+    ]
     return inputs, results
 
 
@@ -341,7 +353,7 @@ def test_xward_oos():
 
 
 def test_only_xward():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_only_xward")
     create_bus(net, 110)
     create_ext_grid(net, 0, vm_pu=1.05, slack_weight=2)
     create_xward(net, 0, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
@@ -371,7 +383,7 @@ def test_separate_zones():
 
 
 def case9_simplified():
-    net = create_empty_network()
+    net = pandapowerNet(name="case9_simplified")()
     create_buses(net, 9, vn_kv=345.)
     lines = [[0, 3], [3, 4], [4, 5], [2, 5], [5, 6], [6, 7], [7, 1], [7, 8], [8, 3]]
 
