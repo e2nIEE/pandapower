@@ -66,7 +66,6 @@ class TestXWardRequiredFields:
         )
 
         net.xward[parameter] = valid_value
-        # ensure string dtype for name when touched
         if parameter == "name":
             net.xward["name"] = net.xward["name"].astype("string")
         validate_network(net)
@@ -75,15 +74,15 @@ class TestXWardRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["ps_mw"], [float(np.nan), pd.NA, *not_floats_list]),
-                itertools.product(["qs_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
-                itertools.product(["pz_mw"], [float(np.nan), pd.NA, *not_floats_list]),
-                itertools.product(["qz_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
-                itertools.product(["r_ohm"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["x_ohm"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["vm_pu"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
+                itertools.product(["ps_mw"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["qs_mvar"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["pz_mw"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["qz_mvar"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["r_ohm"], [float(np.nan), pd.NA, None, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["x_ohm"], [float(np.nan), pd.NA, None, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["vm_pu"], [float(np.nan), pd.NA, None, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, None, *not_boolean_list]),
             )
         ),
     )
@@ -111,11 +110,11 @@ class TestXWardRequiredFields:
             validate_network(net)
 
 
-class TestXWardOptionalFields:
-    """Tests for optional xward fields"""
+class TestXWardOptionalFieldsNullable:
+    """Tests for optional nullable fields - can be absent, null, or have valid values"""
 
     def test_all_optional_fields_valid(self):
-        """Test: xward with optional fields set is valid"""
+        """Test: xward with all optional fields set is valid"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
 
@@ -133,11 +132,47 @@ class TestXWardOptionalFields:
             in_service=True,
             name="XWard A",
         )
-        net.xward["name"] = net.xward["name"].astype("string")
+
+        # CIM columns
+        net.xward["origin_id"] = pd.Series(["cim_id_1"], dtype=pd.StringDtype())
+        net.xward["origin_class"] = pd.Series(["EquivalentInjection"], dtype=pd.StringDtype())
+        net.xward["terminal"] = pd.Series(["term_1"], dtype=pd.StringDtype())
+        net.xward["description"] = pd.Series(["Test xward"], dtype=pd.StringDtype())
+
         validate_network(net)
 
-    def test_optional_fields_with_nulls(self):
-        """Test: optional fields including nulls are valid"""
+    def test_all_optional_nullable_fields_with_nulls(self):
+        """Test: all nullable optional fields with null values are accepted"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+
+        create_xward(
+            net,
+            bus=b0,
+            ps_mw=1.0,
+            qs_mvar=0.3,
+            pz_mw=0.2,
+            qz_mvar=0.1,
+            r_ohm=0.05,
+            x_ohm=0.07,
+            vm_pu=1.0,
+            in_service=True,
+        )
+
+        # All nullable string columns -> NA
+        net.xward["name"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.xward["origin_id"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.xward["origin_class"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.xward["terminal"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.xward["description"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+
+        # Nullable float column -> NaN
+        net.xward["slack_weight"] = float(np.nan)
+
+        validate_network(net)
+
+    def test_optional_fields_with_mixed_nulls(self):
+        """Test: optional fields including nulls across rows are valid"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
@@ -154,7 +189,7 @@ class TestXWardOptionalFields:
             vm_pu=1.0,
             in_service=True,
             name="alpha",
-            slack_weight=None,
+            slack_weight=0.5,
         )
         create_xward(
             net,
@@ -167,11 +202,16 @@ class TestXWardOptionalFields:
             x_ohm=0.03,
             vm_pu=1.02,
             in_service=False,
-            name=None,
-            slack_weight=None,
         )
 
-        net.xward["name"] = pd.Series(["x1", pd.NA], dtype=pd.StringDtype())
+        # Set nullable columns with mixed values
+        net.xward["name"] = pd.Series(["alpha", pd.NA], dtype=pd.StringDtype())
+        net.xward["slack_weight"] = [0.5, float(np.nan)]
+        net.xward["origin_id"] = pd.Series(["cim_1", pd.NA], dtype=pd.StringDtype())
+        net.xward["origin_class"] = pd.Series([pd.NA, "EquivalentInjection"], dtype=pd.StringDtype())
+        net.xward["terminal"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.xward["description"] = pd.Series(["Desc 1", pd.NA], dtype=pd.StringDtype())
+
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -179,12 +219,16 @@ class TestXWardOptionalFields:
         list(
             itertools.chain(
                 itertools.product(["name"], [pd.NA, *strings]),
-                itertools.product(["slack_weight"], [*all_allowed_floats, float(np.nan)]),
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                itertools.product(["slack_weight"], [float(np.nan), *all_allowed_floats]),
             )
         ),
     )
     def test_valid_optional_values(self, parameter, valid_value):
-        """Test: valid optional values are accepted"""
+        """Test: valid optional values (nullable) are accepted"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
 
@@ -201,18 +245,23 @@ class TestXWardOptionalFields:
             in_service=True,
         )
 
-        if parameter == "name":
+        if parameter in ["name", "origin_id", "origin_class", "terminal", "description"]:
             net.xward[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
         else:
             net.xward[parameter] = valid_value
+
         validate_network(net)
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], not_strings_list),
-                itertools.product(["slack_weight"], not_floats_list),
+                itertools.product(["name"], [float(np.nan), *not_strings_list]),
+                itertools.product(["origin_id"], [float(np.nan), *not_strings_list]),
+                itertools.product(["origin_class"], [float(np.nan), *not_strings_list]),
+                itertools.product(["terminal"], [float(np.nan), *not_strings_list]),
+                itertools.product(["description"], [float(np.nan), *not_strings_list]),
+                itertools.product(["slack_weight"], [pd.NA, *not_floats_list]),
             )
         ),
     )
@@ -243,6 +292,7 @@ class TestXWardForeignKey:
     """Tests for foreign key constraints"""
 
     def test_invalid_bus_index(self):
+        """Test: bus FK must reference an existing bus index"""
         net = create_empty_network()
         b0 = create_bus(net, 0.4)
 
@@ -262,6 +312,52 @@ class TestXWardForeignKey:
         net.xward["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_xward(
+            net,
+            bus=10,
+            ps_mw=1.0,
+            qs_mvar=0.3,
+            pz_mw=0.2,
+            qz_mvar=0.1,
+            r_ohm=0.05,
+            x_ohm=0.07,
+            vm_pu=1.0,
+            in_service=True,
+        )
+        create_xward(
+            net,
+            bus=42,
+            ps_mw=0.5,
+            qs_mvar=0.1,
+            pz_mw=0.0,
+            qz_mvar=0.0,
+            r_ohm=0.02,
+            x_ohm=0.03,
+            vm_pu=1.02,
+            in_service=True,
+        )
+        create_xward(
+            net,
+            bus=100,
+            ps_mw=0.8,
+            qs_mvar=0.2,
+            pz_mw=0.1,
+            qz_mvar=0.05,
+            r_ohm=0.03,
+            x_ohm=0.04,
+            vm_pu=0.99,
+            in_service=False,
+        )
+
+        validate_network(net)
 
 
 class TestXWardResults:
