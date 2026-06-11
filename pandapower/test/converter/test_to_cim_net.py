@@ -604,6 +604,35 @@ def test_synthetic_equivalent_branch_roundtrip(synthetic_roundtrip):
     assert eb['xtf_pu'].iloc[0] == pytest.approx(0.06, abs=1e-6)
 
 
+@pytest.mark.xfail(reason="Known limitation, left for discussion: a 2-winding transformer's impedance "
+                          "is exported entirely on the HV winding. pandapower stores only the total "
+                          "impedance, so a source model that splits impedance across both windings "
+                          "cannot be reproduced per-winding (the total still round-trips). See the "
+                          "Limitations section of the converter docs.")
+def test_2w_transformer_impedance_split_not_preserved():
+    # Build a 2-winding transformer and export it. The exporter places all series impedance on the
+    # HV PowerTransformerEnd (endNumber 1) and leaves the LV end (endNumber 2) ideal (r = x = 0).
+    # A source model with individual impedances on *both* windings would therefore not round-trip its
+    # per-winding split. This test documents that gap by asserting that the LV winding also carries
+    # impedance - which currently fails by design.
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=220.)
+    b2 = pp.create_bus(net, vn_kv=110.)
+    pp.create_ext_grid(net, b1)
+    pp.create_transformer_from_parameters(net, b1, b2, sn_mva=100., vn_hv_kv=220., vn_lv_kv=110.,
+                                          vk_percent=12.0, vkr_percent=0.5, pfe_kw=0., i0_percent=0.)
+    cim_tools.extend_pp_net_cim(net, override=False)
+    net.trafo.loc[0, 'origin_class'] = 'PowerTransformer'
+
+    ends = to_cim(net, cgmes_version='2.4.15')['eq']['PowerTransformerEnd']
+    hv_end = ends[ends['endNumber'] == 1].iloc[0]
+    lv_end = ends[ends['endNumber'] == 2].iloc[0]
+    assert abs(float(hv_end['r'])) + abs(float(hv_end['x'])) > 0  # HV end carries the impedance
+    # the LV end is ideal today; ideally a split source model would keep impedance on both windings
+    assert abs(float(lv_end['r'])) + abs(float(lv_end['x'])) > 0, \
+        "LV winding carries no impedance - the HV/LV split is not preserved (all lumped on HV)"
+
+
 def test_synthetic_negative_reactance_transformer_roundtrip():
     # regression: some real transformers have a negative reactance (vk_percent < 0). vk_percent
     # carries the sign of x, which must survive the impedance reconstruction.
