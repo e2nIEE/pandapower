@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] cim2pp add GeographicalRegion from eqbd profile
+- [FIXED] behavior of PowerFactory2pp-converter if coordinates are saved at cpSubstat.
 - [CHANGED] differing behavior for :code:`in_service=False` depending on `voltage_depend_loads` has been fixed. Out of Service elements for res_bus now always contain `nan` as result.
 - [FIXED] `DiscreteTapControl` to work with `negative tap_step_percent`.
 - [CHANGED] updated the contributing file and documentation
@@ -18,12 +20,14 @@ Change Log
 - [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
 - [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
 - [FIXED] ucte2pp: prevent nan values for impedances and transformers for B/G/P_fe/i0
-- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cim_version)
 - [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
 - [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
 - [ADDED] plotting: highlighting feature and hovering functionality to :code:`simple_plot()`
 - [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
+- [FIXED] pf2pp: static generator without a bus does not cause import errors (it is ignored)
 - [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
+- [ADDED] cim2pp: mapping SV data to the assets with flag use_sv_data_for_assets=True
 
 [3.4.0] - 2026-02-09
 -------------------------------
