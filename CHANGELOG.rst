@@ -24,6 +24,7 @@ Change Log
 - [ADDED] plotting: highlighting feature and hovering functionality to :code:`simple_plot()`
 - [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
 - [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
+- [ADDED] introducing pypowsybl to pandapower converter
 
 [3.4.0] - 2026-02-09
 -------------------------------
