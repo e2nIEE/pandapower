@@ -278,16 +278,39 @@ gl profile
 
 Limitations
 -----------
- - The export targets round-trip fidelity (the re-imported network reproduces the original), not a
-   byte-identical copy of the source files: objects without a preserved ``origin_id`` receive freshly
-   generated UUIDs, transformer impedance is placed on the HV winding, and some optional attributes
-   are not written. The output has not been validated against third-party CGMES tools or formal CGMES
-   conformance checks.
- - Table-based tap changers (``PhaseTapChangerTabular`` and table-based ``RatioTapChanger``) are
-   exported by rebuilding their tables from the flattened per-step characteristic
-   (``net['trafo_characteristic_table']``): the per-step ratio and angle are reconstructed, and the
-   per-step impedance deviation is reconstructed for two-winding transformers. For three-winding
-   transformers the per-step impedance deviation is not reconstructed (the base impedance is treated
-   as tap-independent), which can slightly shift the power-flow result at off-neutral tap positions.
- - ``NonlinearShuntCompensator`` is exported with uniform per-section points whose aggregate
+The export targets round-trip fidelity (the re-imported network reproduces the original), not a
+byte-identical copy of the source files, and it has not been validated against third-party CGMES
+tools or formal CGMES conformance checks. Objects without a preserved ``origin_id`` receive freshly
+generated UUIDs.
+
+Approximations (the element is exported, but some detail is simplified):
+
+ - **Two-winding transformer impedance** is placed entirely on the HV winding. This is exact when the
+   source already lumps the impedance on one winding (the common ENTSO-E convention); a genuine
+   non-equal HV/LV split would round-trip the total impedance but not the per-winding arrangement.
+   Three-winding per-winding impedance is reconstructed exactly.
+ - **Table-based tap changers** (``PhaseTapChangerTabular`` and table-based ``RatioTapChanger``) are
+   rebuilt from the flattened per-step characteristic (``net['trafo_characteristic_table']``): the
+   per-step ratio and angle are reconstructed, and the per-step impedance deviation is reconstructed
+   for two-winding transformers. For three-winding transformers the per-step impedance deviation is
+   treated as tap-independent, which can slightly shift the power-flow result at off-neutral taps.
+ - **NonlinearShuntCompensator** is exported with uniform per-section points whose aggregate
    reproduces ``p_mw`` / ``q_mvar``; the original per-section values are not preserved on the net.
+ - **Three-winding transformer vector group** (per-winding ``connectionKind``) is not set, because the
+   winding split is ambiguous; the two-winding vector group is reconstructed.
+
+Data read by the importer but not (yet) reproduced by the exporter:
+
+ - **Short-circuit data** (e.g. ``SynchronousMachine`` r2/x2 and the derived rdss/xdss, and the
+   ``ExternalNetworkInjection`` short-circuit fields) - only the power-flow parameters are written.
+ - **Generator metadata**: the ``GeneratingUnit`` subtype (Wind / Hydro / Solar / Thermal / Nuclear),
+   ``ReactiveCapabilityCurve`` / ``CurveData``, and ``EnergySchedulingType`` are not written.
+ - **TapChangerControl** (tap-changer voltage regulation) and **VoltageLimit** are not written; only
+   ``CurrentLimit`` operational limits are exported.
+ - **Region / area objects**: ``GeographicalRegion``, ``SubGeographicalRegion``, ``ControlArea`` and
+   ``TieFlow`` are not emitted (a bus ``Substation`` still references its region by id).
+ - **Measurements** (``Analog`` / ``AnalogValue``) and the **SvPowerFlow** branch results in the SV
+   profile are not written (the SV profile writes ``SvVoltage`` / ``SvTapStep`` /
+   ``SvShuntCompensatorSections``).
+ - **Element families not yet handled**: DC equipment (``DCLineSegment``, ``VsConverter`` /
+   ``CsConverter`` and DC nodes/terminals) and ``AsynchronousMachine`` (motors) are not exported.
