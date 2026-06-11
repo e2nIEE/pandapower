@@ -248,8 +248,8 @@ Notes on the export
 
 eq / ssh profile
  - ConnectivityNode, TopologicalNode, BaseVoltage, Terminal
- - Substation, VoltageLevel
- - ACLineSegment
+ - Substation, VoltageLevel, SubGeographicalRegion, GeographicalRegion
+ - ACLineSegment, Line
  - EnergyConsumer, ConformLoad, NonConformLoad, StationSupply
  - ExternalNetworkInjection
  - SynchronousMachine, GeneratingUnit, RegulatingControl
@@ -307,8 +307,8 @@ Data read by the importer but not (yet) reproduced by the exporter:
    ``ReactiveCapabilityCurve`` / ``CurveData``, and ``EnergySchedulingType`` are not written.
  - **TapChangerControl** (tap-changer voltage regulation) and **VoltageLimit** are not written; only
    ``CurrentLimit`` operational limits are exported.
- - **Region / area objects**: ``GeographicalRegion``, ``SubGeographicalRegion``, ``ControlArea`` and
-   ``TieFlow`` are not emitted (a bus ``Substation`` still references its region by id).
+ - **Area objects**: ``ControlArea`` and ``TieFlow`` are not emitted (the ``GeographicalRegion`` /
+   ``SubGeographicalRegion`` hierarchy *is* reconstructed, so substation region references resolve).
  - **Measurements** (``Analog`` / ``AnalogValue``) and the **SvPowerFlow** branch results in the SV
    profile are not written (the SV profile writes ``SvVoltage`` / ``SvTapStep`` /
    ``SvShuntCompensatorSections``).

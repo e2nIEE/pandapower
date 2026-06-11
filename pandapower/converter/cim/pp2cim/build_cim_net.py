@@ -107,6 +107,8 @@ class PpToCimConverter:
         # also needed to attach bus geo in the GL profile.
         self._voltage_levels: Dict[str, dict] = {}
         self._substations: Dict[str, dict] = {}
+        self._sub_regions: Dict[str, dict] = {}
+        self._geo_regions: Dict[str, dict] = {}
 
     # ------------------------------------------------------------------ orchestration
 
@@ -214,20 +216,32 @@ class PpToCimConverter:
         self._set('tp', 'ConnectivityNode', tp_cns)
         self._set('eq', 'VoltageLevel', list(self._voltage_levels.values()))
         self._set('eq', 'Substation', list(self._substations.values()))
+        self._set('eq', 'SubGeographicalRegion', list(self._sub_regions.values()))
+        self._set('eq', 'GeographicalRegion', list(self._geo_regions.values()))
 
     def _add_bus_containers(self, bus, cnc_id, bv_id):
-        # Rebuild the VoltageLevel (carrying the BaseVoltage) and Substation a bus belongs to. The
-        # importer resolves a node-breaker bus's voltage through ConnectivityNode -> VoltageLevel ->
-        # BaseVoltage, so these must exist independently of the geo profile.
+        # Rebuild the container hierarchy a bus belongs to: VoltageLevel (carrying the BaseVoltage) ->
+        # Substation -> SubGeographicalRegion -> GeographicalRegion. The importer resolves a
+        # node-breaker bus's voltage through ConnectivityNode -> VoltageLevel -> BaseVoltage, so these
+        # must exist independently of the geo profile, and emitting the regions keeps the
+        # Substation.Region reference resolvable.
         sub_id = bus.get(sc['sub_id'])
+        sgr_id = bus.get('SubGeographicalRegion_id')
+        gr_id = bus.get('GeographicalRegion_id')
         if not pd.isna(cnc_id):
             self._voltage_levels.setdefault(cnc_id, {
                 'rdfId': cnc_id, 'name': bus.get('zone'), 'BaseVoltage': bv_id,
                 'Substation': self._none_if_na(sub_id)})
         if not pd.isna(sub_id):
             self._substations.setdefault(sub_id, {
-                'rdfId': sub_id, 'name': bus.get('zone'),
-                'Region': self._none_if_na(bus.get('SubGeographicalRegion_id'))})
+                'rdfId': sub_id, 'name': bus.get('zone'), 'Region': self._none_if_na(sgr_id)})
+        if not pd.isna(sgr_id):
+            self._sub_regions.setdefault(sgr_id, {
+                'rdfId': sgr_id, 'name': bus.get('SubGeographicalRegion_name'),
+                'Region': self._none_if_na(gr_id)})
+        if not pd.isna(gr_id):
+            self._geo_regions.setdefault(gr_id, {
+                'rdfId': gr_id, 'name': bus.get('GeographicalRegion_name')})
 
     def _node_ref(self, bus_idx):
         """Return (connectivity_node_id, topological_node_id) for a pandapower bus index."""
@@ -284,6 +298,15 @@ class PpToCimConverter:
             self._add_current_limit(line.get(sc['t_from']),
                                     max_i_ka * 1e3 if not pd.isna(max_i_ka) else np.nan)
         self._set('eq', 'ACLineSegment', eq_rows)
+        # emit a minimal Line container for each referenced EquipmentContainer that is not already a
+        # Substation/VoltageLevel, so the ACLineSegment.EquipmentContainer reference resolves
+        line_containers = {row['EquipmentContainer'] for row in eq_rows
+                           if not pd.isna(row.get('EquipmentContainer'))
+                           and row['EquipmentContainer'] not in self._voltage_levels
+                           and row['EquipmentContainer'] not in self._substations}
+        if line_containers:
+            self.cim['eq'].setdefault('Line', pd.DataFrame(columns=['rdfId', 'name']))
+            self._set('eq', 'Line', [{'rdfId': cid} for cid in line_containers])
 
     def _add_current_limit(self, terminal_id, value_a, limit_type='patl', acceptable_duration=None):
         # Reconstruct an OperationalLimitSet + CurrentLimit on the given terminal (value in Amperes).
