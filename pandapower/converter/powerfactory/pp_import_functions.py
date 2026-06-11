@@ -6,6 +6,7 @@ from itertools import combinations
 from typing import Literal, Optional, Union
 
 import geojson
+import json
 import networkx as nx
 import numpy as np
 from pandas import DataFrame, Series, concat, isna
@@ -497,6 +498,32 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
             logger.debug('adding substat %s to descr of bus %s (#%d)' %
                          (substat, params['name'], bid))
             substat_descr = substat.loc_name
+
+            # get geo-coordinates from stations
+            if json.loads(net[table].at[bid, 'geo'])['coordinates'] == [0, 0]:
+
+                if flag_graphics == 'GPS':
+                    x = substat.GetAttribute('e:GPSlon')
+                    y = substat.GetAttribute('e:GPSlat')
+                    logger.warning(
+                        'bus %s has no geodata, geodata of substation %s is used.' % (item,
+                                                                                      substat))
+                    if x == 0 and y == 0:
+                        pass
+                elif flag_graphics == 'graphic objects':
+                    graphic_object = get_graphic_object(substat)
+                    if graphic_object:
+                        x = graphic_object.GetAttribute('rCenterX')
+                        y = graphic_object.GetAttribute('rCenterY')
+                        # add gr coord data
+                    else:
+                        x, y = 0, 0
+                else:
+                    x, y = 0, 0
+
+                geodata = (x, y)
+                net[table].at[
+                    bid, "geo"] = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
         else:
             logger.debug("bus has no substat description")
     else:
@@ -663,9 +690,9 @@ def get_connection_nodes(net, item, num_nodes):
                 logger.debug("Created new bus '%s' for disconected line " % name)
             else:
                 new_buses.append(b)
-        return tuple(new_buses), table
+        return list(new_buses), table
     else:
-        return tuple(buses), table
+        return list(buses), table
 
 
 def import_switch(item, idx_cubicle):
@@ -708,7 +735,7 @@ def create_connection_switches(net, item, number_switches, et, buses, elements):
 
 
 def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
-    coords: list[tuple[float, float]] = []
+    coords: list[list[float, float]] = []
     from_geo: Optional[str] = None
     to_geo: Optional[str] = None
     if from_bus in net.bus.index:
@@ -719,7 +746,7 @@ def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
 
     if from_geo and to_geo:
         coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
-        coords = [tuple((x, y)) for item in coords for x, y in item]
+        coords = [[x, y] for item in coords for x, y in item]
         logger.debug('got coords from buses: %s' % coords)
     else:
         logger.debug('no coords for line between buses %d and %d' % (from_bus, to_bus))
@@ -731,10 +758,10 @@ def get_coords_from_item(item):
     coords = item.GPScoords
     try:
         # lat / lon must be switched in my example (karlsruhe). Check if this is always right
-        c = tuple((x, y) for [y, x] in coords)
+        c = [[x, y] for [y, x] in coords]
     except ValueError:
         try:
-            c = tuple((x, y, z) for [y, x, z] in coords)
+            c = [[x, y] for [y, x, z] in coords]
         except ValueError:
             c = []
     return c
@@ -805,7 +832,13 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
         if coords:
             params["geodata"] = coords
         logger.debug('line <%s> has no sections' % params['name'])
-        lid = create_line_normal(net=net, item=item, is_unbalanced=is_unbalanced, ac=ac, **params)
+        # get in_service from overlaying line | line sections can't be in or out of service
+        in_service = not bool(item.outserv)
+        lid = create_line_normal(net=net,
+                                 item=item,
+                                 is_unbalanced=is_unbalanced,
+                                 in_service=in_service,
+                                 ac=ac, **params)
         sid_list = [lid]
         logger.debug('created line <%s> with index <%d>' % (params['name'], lid))
 
@@ -817,8 +850,14 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
             sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
                                             coords=coords, is_unbalanced=is_unbalanced, **params)
         else:
-            lidx = create_line_no_sections(net, item, line_sections, params["bus1"], params["bus2"], coords,
-                                           is_unbalanced, ac)
+            lidx = create_line_no_sections(net,
+                                           item,
+                                           line_sections,
+                                           params["bus1"],
+                                           params["bus2"],
+                                           coords,
+                                           is_unbalanced,
+                                           ac)
             sid_list = [lidx]
         logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
 
@@ -842,8 +881,8 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
 
 
 def point_len(
-        p1: tuple[Union[float, int], Union[float, int]],
-        p2: tuple[Union[float, int], Union[float, int]]) -> float:
+        p1: list[Union[float, int], Union[float, int]],
+        p2: list[Union[float, int], Union[float, int]]) -> float:
     """
     Calculate distance between p1 and p2
     """
@@ -852,7 +891,7 @@ def point_len(
     return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
 
 
-def calc_len_coords(coords: list[tuple[Union[float, int], Union[float, int]]]) -> float:
+def calc_len_coords(coords: list[list[Union[float, int], Union[float, int]]]) -> float:
     """
     Calculate the sum of point distances in list of coords
     """
@@ -1010,14 +1049,15 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
 
     buses_gen = segment_buses(net, bus1=bus1, bus2=bus2, num_sections=len(item_list),
                               line_name=line_name)
-
+    # line = main_item | item | line_sections doesn't contain outserv!
+    in_service = not bool(line.outserv)
     for item in item_list:
         name = line_name
         section_name = item.loc_name
         bus1 = next(buses_gen)
         bus2 = next(buses_gen)
         sid = create_line_normal(net=net, item=item, bus1=bus1, bus2=bus2, name=name, parallel=parallel,
-                                 is_unbalanced=is_unbalanced, ac=True)
+                                 is_unbalanced=is_unbalanced, ac=True, in_service=in_service)
         sid_list.append(sid)
         net.line.at[sid, "section"] = section_name
         net.res_line.at[sid, "pf_loading"] = line_loading
@@ -1092,15 +1132,30 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
     # alpha_final = [item.alpha / p * w for item, p, w in zip(item_list, parallel, weights)]
     # max_temperature_degree_celsius = min([item.tmax for item in item_list])
     temperature_degree_celsius = max([item.Top for item in item_list])
+    in_service = not bool(main_item.outserv)
 
-    lid = create_line_from_parameters(net=net, from_bus=bus1, to_bus=bus2, length_km=total_len,
-                                      r_ohm_per_km=r_ohm_per_km, x_ohm_per_km=x_ohm_per_km, c_nf_per_km=c_nf_per_km,
-                                      max_i_ka=max_i_ka, name=line_name, type=None, geodata=coords,
-                                      g_us_per_km=g_us_per_km, alpha=alpha, parallel=main_item.nlnum,
+    lid = create_line_from_parameters(net=net,
+                                      from_bus=bus1,
+                                      to_bus=bus2,
+                                      length_km=total_len,
+                                      r_ohm_per_km=r_ohm_per_km,
+                                      x_ohm_per_km=x_ohm_per_km,
+                                      c_nf_per_km=c_nf_per_km,
+                                      max_i_ka=max_i_ka,
+                                      name=line_name,
+                                      type=None,
+                                      geodata=coords,
+                                      in_service=in_service,
+                                      g_us_per_km=g_us_per_km,
+                                      alpha=alpha,
+                                      parallel=main_item.nlnum,
                                       temperature_degree_celsius=temperature_degree_celsius,
-                                      r0_ohm_per_km=r0_ohm_per_km, x0_ohm_per_km=x0_ohm_per_km,
-                                      c0_nf_per_km=c0_nf_per_km, g0_us_per_km=g0_us_per_km,
-                                      endtemp_degree=endtemp_degree)
+                                      r0_ohm_per_km=r0_ohm_per_km,
+                                      x0_ohm_per_km=x0_ohm_per_km,
+                                      c0_nf_per_km=c0_nf_per_km,
+                                      g0_us_per_km=g0_us_per_km,
+                                      endtemp_degree=endtemp_degree
+                                      )
 
     net.line.loc[lid, 'description'] = ' \n '.join(main_item.desc) if len(main_item.desc) > 0 else ''
     if hasattr(main_item, "cimRdfId"):
@@ -1113,14 +1168,14 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
     return lid
 
 
-def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, geodata=None):
+def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, in_service, geodata=None):
     pf_type = item.typ_id
     std_type, type_created = create_line_type(net=net, item=pf_type,
                                               cable_in_air=item.inAir if item.HasAttribute(
                                                   'inAir') else False)
     params = {
         'name': name,
-        'in_service': not bool(item.outserv),
+        'in_service': in_service,
         'length_km': item.dline,
         'df': item.fline,
         'parallel': parallel,
@@ -1308,7 +1363,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definit
         bus1, _ = get_connection_nodes(net, item, 1)
     except IndexError:
         logger.error("Cannot add Xnet '%s': not connected" % name)
-        return
+        return None, None
 
     logger.debug('found bus <%d> in net' % bus1)
 
@@ -2067,39 +2122,43 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     categories = {"wgen": "WKA", "pv": "PV", "reng": "REN", "stg": "SGEN"}
     params.name = item.loc_name
     logger.debug('>> creating genstat <%s>' % params)
+    av_mode = item.av_mode  # Get voltage regulation mode
 
-    av_mode = item.av_mode
+    # If there is no connecting bus, do not create pandapower object
+    try:
+        params.bus, _ = get_connection_nodes(net, item, 1)
+    except:
+        logger.error("Static gen '%s': has no connecting bus, no pandapower object will be created!" % params.name)
+        return
 
+    # Get information if static generator is labeled as reference machine
     if (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
         is_reference_machine = True
-        #item.SetAttribute('bustp', 'SL')
+        # item.SetAttribute('bustp', 'SL')
         is_definite_ext_grid = True
     else:
         is_reference_machine = bool(item.ip_ctrl)
         is_definite_ext_grid = False
 
+    # Specify function to extract static gen parameters
     ask = ask_unbalanced_sgen_params if is_unbalanced else ask_gen_params
 
+    # Cases: to which pandapower object should static gen be mapped?
     if is_reference_machine or (av_mode == 'constv' and pv_as_slack):
-        logger.info('Genstat <%s> to be imported as external grid' % params.name)
+        # Case 1: map to pandapower ext grid
+        logger.info('Genstat <%s> is imported as external grid' % params.name)
         logger.debug('genstat parameters: %s' % params)
         multiplier = get_power_multiplier(item, pf_variable_p_gen)
-        sg, element = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=is_unbalanced,
-                                     multiplier=multiplier, is_definite_ext_grid=is_definite_ext_grid)
-        #element = 'ext_grid'
-    else:
-        try:
-            params.bus, _ = get_connection_nodes(net, item, 1)
-        except:
-            logger.error("Cannot add Sgen '%s': not connected" % params.name)
-            return
-
+        sg, element = create_ext_net(net, item=item, pv_as_slack=pv_as_slack,
+                                     is_unbalanced=is_unbalanced,
+                                     multiplier=multiplier,
+                                     is_definite_ext_grid=is_definite_ext_grid)
+    else:  # Case 2-4: map to pandapower gen or (asymmetric) sgen
         params.update(ask(item, pf_variable_p_gen, 'p_mw', 'q_mvar', 'sn_mva'))
+        params.in_service = monopolar_in_service(item)
         logger.debug(f'genstat parameters: {params}')
 
-        params.in_service = monopolar_in_service(item)
-
-        # category (wind, PV, etc):
+        # Get category
         if item.GetClassName() == 'ElmPvsys':
             cat = 'PV'
         else:
@@ -2109,10 +2168,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 cat = None
                 logger.debug('sgen <%s> with category <%s> imported as <%s>' %
                              (params.name, item.aCategory, cat))
-        # parallel units:
+
+        # Get number of parallel units:
         ngnum = item.ngnum
         logger.debug('%d parallel generators of type %s' % (ngnum, cat))
-
         for param in params.keys():
             if any(param.startswith(prefix) for prefix in ["p_", "q_", "sn_"]):
                 params[param] *= ngnum
@@ -2125,24 +2184,15 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         else:
             params.type = cat
 
-        # create...
-        pstac = item.c_pstac  # None if station controller is not available
+        # Check if static gen has a station controller (if not available->None)
+        pstac = item.c_pstac
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop and pstac.i_ctrl == 0:
-                av_mode = 'constq'
-            else:
-                if pstac.i_ctrl == 0:
-                    av_mode = 'constq'
-                elif pstac.i_ctrl == 1:
-                    av_mode = 'constq'
-                elif pstac.i_ctrl == 2:
-                    av_mode='constq' #other devices
-                elif pstac.i_ctrl == 3:
-                    av_mode='constq' #implementing other devices?
-                else:
-                    logger.error('Error! av_mode undefined')
-                    return
-        if av_mode == 'constv' or av_mode == 'vdroop':
+            if pstac.i_ctrl not in [0, 1, 2, 3]:
+                logger.error('Error! av_mode undefined')
+                return
+            av_mode = "constq"
+
+        if av_mode == 'constv' or av_mode == 'vdroop':  # Case 2: map to gen
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
             if pstac is not None and not pstac.outserv and export_ctrl:
@@ -2184,17 +2234,19 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 
             sg = create_gen(net, **params)
             element = 'gen'
+            logger.debug('created gen at index <%d>' % sg)
         else:
-            if is_unbalanced:
+            if is_unbalanced:  # Case 3: map to asymmetric sgen
                 sg = create_asymmetric_sgen(net, **params)
                 element = "asymmetric_sgen"
-            else:
-                # add reactive and active power limits
+                logger.debug('created asymmetric sgen at index <%d>' % sg)
+            else:  # Case 4: map to symmetric sgen                
                 if pstac is not None and not pstac.outserv and export_ctrl:
                     try:
                         params['q_mvar'] = item.GetAttribute('m:Q:bus1')
                     except AttributeError:
                         pass
+
                 # add reactive and active power limits
                 params.min_q_mvar = item.cQ_min
                 params.max_q_mvar = item.cQ_max
@@ -2203,14 +2255,24 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 
                 sg = create_sgen(net, **params)
                 element = 'sgen'
-    logger.debug('created sgen at index <%d>' % sg)
+    if sg is not None:
+        logger.debug('created sgen at index <%d>' % sg)
+    else:
+        return
 
+    # Add description and additional attributes
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"},
+    add_additional_attributes(item, net, element, sg,
+                              attr_dict={"for_name": "equipment",
+                                         "cpSite.loc_name": "site",
+                                         "c_pstac.loc_name": "sta_ctrl"},
                               attr_list=["sernum", "chr_name"])
+
+    # Add scaling
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
+    # Create capability curve in case of sgen or gen
     if item.pQlimType and element != 'ext_grid':
         id = create_q_capability_curve(net, item.pQlimType)
         net[element].loc[sg, 'id_q_capability_characteristic'] = id
@@ -4824,7 +4886,7 @@ def break_coords_sections(coords, section_length, scale_factor_length):
         return [[np.nan, np.nan]], [[np.nan, np.nan]]
     # define scale
 
-    sum_len, delta_len, x1, y1, x2, y2 = tuple([0] * 6)
+    sum_len, delta_len, x1, y1, x2, y2 = list([0] * 6)
     i = 0
     for i in range(num_coords - 1):
         x1 = float(coords[i][0])

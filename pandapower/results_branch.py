@@ -14,7 +14,7 @@ from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_bus_dc import DC_BASE_KV, DC_VM
 from pandapower.pypower.idx_tcsc import TCSC_THYRISTOR_FIRING_ANGLE, TCSC_X_PU, TCSC_PF, TCSC_PT, TCSC_QF, TCSC_QT, \
     TCSC_IF, TCSC_IT
-
+from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     """
