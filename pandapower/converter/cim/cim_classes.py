@@ -311,7 +311,8 @@ class CimParser:
                 'Terminal': pd.DataFrame(
                     columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'EnergySource': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType']),
-                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
+                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
+                'GeographicalRegion': pd.DataFrame(columns=['rdfId', 'name'])
             }),
             'ssh': MappingProxyType({
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'netInterchange']),
@@ -725,7 +726,8 @@ class CimParser:
                 'Terminal': pd.DataFrame(
                     columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'EnergySource': pd.DataFrame(columns=['rdfId', 'nominalVoltage']),
-                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
+                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
+                'GeographicalRegion': pd.DataFrame(columns=['rdfId', 'name'])
             }),
             'op': MappingProxyType({  # TODO: value attributes from AnalogValue and DiscreteValue need clarification
                 'Analog': pd.DataFrame(columns=[
