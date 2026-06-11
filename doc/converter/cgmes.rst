@@ -285,7 +285,9 @@ Limitations
    conformance checks.
  - Table-based tap changers (``PhaseTapChangerTabular`` and table-based ``RatioTapChanger``) are
    exported by rebuilding their tables from the flattened per-step characteristic
-   (``net['trafo_characteristic_table']``): the per-step ratio and angle are reconstructed, but the
-   per-step impedance deviation is not (the base impedance is treated as tap-independent).
+   (``net['trafo_characteristic_table']``): the per-step ratio and angle are reconstructed, and the
+   per-step impedance deviation is reconstructed for two-winding transformers. For three-winding
+   transformers the per-step impedance deviation is not reconstructed (the base impedance is treated
+   as tap-independent), which can slightly shift the power-flow result at off-neutral tap positions.
  - ``NonlinearShuntCompensator`` is exported with uniform per-section points whose aggregate
    reproduces ``p_mw`` / ``q_mvar``; the original per-section values are not preserved on the net.

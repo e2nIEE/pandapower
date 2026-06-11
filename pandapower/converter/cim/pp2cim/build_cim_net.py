@@ -640,11 +640,8 @@ class PpToCimConverter:
         self._tabular_tables.append({'rdfId': table_id})
         self._tabular_eq.append({**common, 'PhaseTapChangerTable': table_id})
         self._tabular_ssh.append({'rdfId': tc_id, 'step': trafo.get('tap_pos')})
-        for _, point in rows.iterrows():
-            self._tabular_points.append({
-                'rdfId': _new_uuid(), 'PhaseTapChangerTable': table_id,
-                'step': int(point['step']), 'ratio': float(point['voltage_ratio']),
-                'angle': float(point['angle_deg']), 'r': 0.0, 'x': 0.0})
+        self._tabular_points.extend(
+            self._table_points(table_id, rows, trafo, 'PhaseTapChangerTable', with_angle=True))
 
     def _ratio_table_id(self, trafo):
         # build a RatioTapChangerTable + per-step points from the characteristic, returning its id
@@ -654,18 +651,41 @@ class PpToCimConverter:
             return None
         table_id = _new_uuid()
         self._ratio_tables.append({'rdfId': table_id})
-        for _, point in rows.iterrows():
-            self._ratio_points.append({
-                'rdfId': _new_uuid(), 'RatioTapChangerTable': table_id,
-                'step': int(point['step']), 'ratio': float(point['voltage_ratio']), 'r': 0.0, 'x': 0.0})
+        self._ratio_points.extend(
+            self._table_points(table_id, rows, trafo, 'RatioTapChangerTable', with_angle=False))
         return table_id
 
     def _index_characteristic_table(self):
         ct = self.net.get('trafo_characteristic_table')
         if not isinstance(ct, pd.DataFrame) or ct.empty or 'id_characteristic' not in ct.columns:
             return {}
-        cols = [c for c in ['step', 'voltage_ratio', 'angle_deg'] if c in ct.columns]
+        cols = [c for c in ['step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent']
+                if c in ct.columns]
         return {cid: g[cols] for cid, g in ct.dropna(subset=['step']).groupby('id_characteristic')}
+
+    def _table_points(self, table_id, rows, trafo, table_key, with_angle):
+        """Build tap-changer table-point rows from the per-step characteristic. The per-step ratio
+        (and, for phase changers, angle) are taken directly; the per-step impedance deviation r/x is
+        reconstructed for two-winding transformers (percent space), and left at 0 for three-winding
+        ones (the per-winding recombination is not inverted)."""
+        vk_base, vkr_base = trafo.get('vk_percent'), trafo.get('vkr_percent')
+        two_winding = ('vk_percent' in rows.columns and not pd.isna(vk_base) and not pd.isna(vkr_base)
+                       and vk_base != 0 and abs(vk_base) >= abs(vkr_base))
+        vkx_base = math.sqrt(vk_base ** 2 - vkr_base ** 2) if two_winding else 0.0
+        points = []
+        for _, point in rows.iterrows():
+            r_dev = x_dev = 0.0
+            if two_winding and not pd.isna(point.get('vk_percent')) and vkr_base and vkx_base:
+                vk, vkr = float(point['vk_percent']), float(point['vkr_percent'])
+                r_dev = (vkr / vkr_base - 1) * 100
+                vkx = math.sqrt(max(vk ** 2 - vkr ** 2, 0.0))
+                x_dev = (vkx / vkx_base - 1) * 100
+            row = {'rdfId': _new_uuid(), table_key: table_id, 'step': int(point['step']),
+                   'ratio': float(point['voltage_ratio']), 'r': r_dev, 'x': x_dev}
+            if with_angle:
+                row['angle'] = float(point['angle_deg'])
+            points.append(row)
+        return points
 
     def _finalize_tap_changers(self):
         for tc_class in self._tc_eq:
