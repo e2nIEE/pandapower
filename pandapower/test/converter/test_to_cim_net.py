@@ -653,6 +653,36 @@ def test_synthetic_tabular_tap_changer_roundtrip():
     assert ratio.loc[2] == pytest.approx(1.10, abs=1e-6)
 
 
+def test_synthetic_ratio_table_tap_changer_roundtrip():
+    # a table-based RatioTapChanger carries a per-step ratio characteristic in addition to its linear
+    # stepVoltageIncrement; the exporter rebuilds the RatioTapChangerTable so the per-step ratio
+    # survives, while the linear tap_step_percent is kept as well.
+    net = pp.create_empty_network()
+    b1 = pp.create_bus(net, vn_kv=220.)
+    b2 = pp.create_bus(net, vn_kv=110.)
+    pp.create_ext_grid(net, b1)
+    t = pp.create_transformer_from_parameters(net, b1, b2, sn_mva=100., vn_hv_kv=220., vn_lv_kv=110.,
+                                              vk_percent=12., vkr_percent=0.5, pfe_kw=0., i0_percent=0.)
+    cim_tools.extend_pp_net_cim(net, override=False)
+    net.trafo.loc[t, 'origin_class'] = 'PowerTransformer'
+    net.trafo.loc[t, ['tapchanger_class', 'tap_side', 'tap_neutral', 'tap_min', 'tap_max', 'tap_pos',
+                      'tap_step_percent', 'id_characteristic_table']] = \
+        ['RatioTapChanger', 'hv', 0, -2, 2, -1, 1.25, 3]
+    net['trafo_characteristic_table'] = pd.DataFrame({
+        'id_characteristic': [3] * 5, 'step': [-2, -1, 0, 1, 2],
+        'voltage_ratio': [0.96, 0.98, 1.00, 1.02, 1.04], 'angle_deg': [0.] * 5,
+        'vk_percent': [12.] * 5, 'vkr_percent': [0.5] * 5})
+
+    _, net_rt = _roundtrip(net)
+    assert len(net_rt.trafo) == 1
+    assert net_rt.trafo['tapchanger_class'].iloc[0] == 'RatioTapChanger'
+    assert net_rt.trafo['tap_pos'].iloc[0] == -1
+    assert net_rt.trafo['tap_step_percent'].iloc[0] == pytest.approx(1.25, abs=1e-6)  # linear part kept
+    ratio = net_rt['trafo_characteristic_table'].set_index('step')['voltage_ratio']
+    assert ratio.loc[-1] == pytest.approx(0.98, abs=1e-6)  # the operating tap
+    assert ratio.loc[2] == pytest.approx(1.04, abs=1e-6)
+
+
 def test_synthetic_ext_grid_exported_as_eni():
     # a hand-built ext_grid (no origin_class) is exported as an ExternalNetworkInjection
     net = pp.create_empty_network()

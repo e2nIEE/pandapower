@@ -88,6 +88,9 @@ class PpToCimConverter:
         self._tabular_ssh: List[dict] = []
         self._tabular_tables: List[dict] = []
         self._tabular_points: List[dict] = []
+        # accumulators for table-based RatioTapChangers (RatioTapChangerTable + TablePoints)
+        self._ratio_tables: List[dict] = []
+        self._ratio_points: List[dict] = []
         # per-step characteristic rows (voltage_ratio / angle) grouped by id_characteristic
         self._char_by_id = self._index_characteristic_table()
         # accumulators for current limits (OperationalLimitSet + CurrentLimit + OperationalLimitType)
@@ -607,7 +610,12 @@ class PpToCimConverter:
             self._add_tabular_tap_changer(tc_id, common, trafo)
             return
         if tc_class == 'RatioTapChanger':
-            self._tc_eq[tc_class].append({**common, 'stepVoltageIncrement': trafo.get('tap_step_percent')})
+            # a table-based RatioTapChanger also carries a per-step ratio characteristic; rebuild its
+            # RatioTapChangerTable so the non-linear per-step ratio survives (in addition to the
+            # linear stepVoltageIncrement, which pandapower keeps as tap_step_percent)
+            table_id = self._ratio_table_id(trafo)
+            self._tc_eq[tc_class].append({**common, 'stepVoltageIncrement': trafo.get('tap_step_percent'),
+                                          'RatioTapChangerTable': table_id})
         elif tc_class == 'PhaseTapChangerLinear':
             self._tc_eq[tc_class].append({**common, 'stepPhaseShiftIncrement': trafo.get('tap_step_degree')})
         elif tc_class == 'PhaseTapChangerAsymmetrical':
@@ -638,6 +646,20 @@ class PpToCimConverter:
                 'step': int(point['step']), 'ratio': float(point['voltage_ratio']),
                 'angle': float(point['angle_deg']), 'r': 0.0, 'x': 0.0})
 
+    def _ratio_table_id(self, trafo):
+        # build a RatioTapChangerTable + per-step points from the characteristic, returning its id
+        # (or None for a purely linear RatioTapChanger without a characteristic table)
+        rows = self._char_by_id.get(trafo.get('id_characteristic_table'))
+        if rows is None or rows.empty:
+            return None
+        table_id = _new_uuid()
+        self._ratio_tables.append({'rdfId': table_id})
+        for _, point in rows.iterrows():
+            self._ratio_points.append({
+                'rdfId': _new_uuid(), 'RatioTapChangerTable': table_id,
+                'step': int(point['step']), 'ratio': float(point['voltage_ratio']), 'r': 0.0, 'x': 0.0})
+        return table_id
+
     def _index_characteristic_table(self):
         ct = self.net.get('trafo_characteristic_table')
         if not isinstance(ct, pd.DataFrame) or ct.empty or 'id_characteristic' not in ct.columns:
@@ -656,6 +678,9 @@ class PpToCimConverter:
             self._set('eq', 'PhaseTapChangerTabular', self._tabular_eq)
             self._set('ssh', 'PhaseTapChangerTabular', self._tabular_ssh)
             self._set('eq', 'PhaseTapChangerTablePoint', self._tabular_points)
+        # tables for table-based RatioTapChangers
+        self._set('eq', 'RatioTapChangerTable', self._ratio_tables)
+        self._set('eq', 'RatioTapChangerTablePoint', self._ratio_points)
 
     def _convert_power_transformers_3w(self):
         # 3-winding PowerTransformer. The pandapower per-winding-pair short-circuit values are the

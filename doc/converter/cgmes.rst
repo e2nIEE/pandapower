@@ -260,7 +260,8 @@ eq / ssh profile
  - SeriesCompensator, EquivalentBranch
  - EquivalentInjection
  - PowerTransformer, PowerTransformerEnd
- - RatioTapChanger, PhaseTapChangerLinear, PhaseTapChangerAsymmetrical, PhaseTapChangerSymmetrical
+ - RatioTapChanger, RatioTapChangerTable, RatioTapChangerTablePoint
+ - PhaseTapChangerLinear, PhaseTapChangerAsymmetrical, PhaseTapChangerSymmetrical
  - PhaseTapChangerTabular, PhaseTapChangerTable, PhaseTapChangerTablePoint
  - OperationalLimitSet, OperationalLimitType, CurrentLimit
 
@@ -282,10 +283,9 @@ Limitations
    generated UUIDs, transformer impedance is placed on the HV winding, and some optional attributes
    are not written. The output has not been validated against third-party CGMES tools or formal CGMES
    conformance checks.
- - ``PhaseTapChangerTabular`` is exported by rebuilding its table from the flattened per-step
-   characteristic (``net['trafo_characteristic_table']``): the per-step ratio and angle are
-   reconstructed, but the per-step impedance deviation is not (the base impedance is treated as
-   tap-independent). Table-based ``RatioTapChanger`` changers are currently exported as linear, so
-   their non-linear per-step ratio is approximated.
+ - Table-based tap changers (``PhaseTapChangerTabular`` and table-based ``RatioTapChanger``) are
+   exported by rebuilding their tables from the flattened per-step characteristic
+   (``net['trafo_characteristic_table']``): the per-step ratio and angle are reconstructed, but the
+   per-step impedance deviation is not (the base impedance is treated as tap-independent).
  - ``NonlinearShuntCompensator`` is exported with uniform per-section points whose aggregate
    reproduces ``p_mw`` / ``q_mvar``; the original per-section values are not preserved on the net.
