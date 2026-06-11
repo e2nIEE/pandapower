@@ -83,6 +83,13 @@ class PpToCimConverter:
         # accumulators for tap changers, keyed by CIM class (RatioTapChanger, PhaseTapChanger*)
         self._tc_eq: Dict[str, List[dict]] = collections.defaultdict(list)
         self._tc_ssh: Dict[str, List[dict]] = collections.defaultdict(list)
+        # accumulators for tabular phase tap changers (PhaseTapChangerTabular + Table + TablePoints)
+        self._tabular_eq: List[dict] = []
+        self._tabular_ssh: List[dict] = []
+        self._tabular_tables: List[dict] = []
+        self._tabular_points: List[dict] = []
+        # per-step characteristic rows (voltage_ratio / angle) grouped by id_characteristic
+        self._char_by_id = self._index_characteristic_table()
         # accumulators for current limits (OperationalLimitSet + CurrentLimit + OperationalLimitType)
         self._op_limit_sets: List[dict] = []
         self._current_limits: List[dict] = []
@@ -587,10 +594,8 @@ class PpToCimConverter:
         self._set('eq', 'PowerTransformerEnd', end_rows)
 
     def _add_tap_changer(self, trafo, pte_by_side: Dict[str, str]):
-        # Reconstruct the tap changer on the end given by tap_side. RatioTapChanger and the phase
-        # tap changers (Linear/Asymmetrical/Symmetrical) are supported; PhaseTapChangerTabular needs
-        # table points that are not preserved on the net, so it is skipped (the transformer then
-        # re-imports without a tap changer).
+        # Reconstruct the tap changer on the end given by tap_side. RatioTapChanger and all phase tap
+        # changers (Linear/Asymmetrical/Symmetrical/Tabular) are supported.
         tc_class = trafo.get(sc['tc'])
         pte_id = pte_by_side.get(trafo.get('tap_side'))
         if pte_id is None or pd.isna(tc_class):
@@ -598,6 +603,9 @@ class PpToCimConverter:
         tc_id = self._id_or_new(trafo.get(sc['tc_id']))
         common = {'rdfId': tc_id, 'TransformerEnd': pte_id, 'neutralStep': trafo.get('tap_neutral'),
                   'lowStep': trafo.get('tap_min'), 'highStep': trafo.get('tap_max')}
+        if tc_class == 'PhaseTapChangerTabular':
+            self._add_tabular_tap_changer(tc_id, common, trafo)
+            return
         if tc_class == 'RatioTapChanger':
             self._tc_eq[tc_class].append({**common, 'stepVoltageIncrement': trafo.get('tap_step_percent')})
         elif tc_class == 'PhaseTapChangerLinear':
@@ -608,13 +616,46 @@ class PpToCimConverter:
         elif tc_class == 'PhaseTapChangerSymmetrical':
             self._tc_eq[tc_class].append({**common, 'voltageStepIncrement': trafo.get('tap_step_percent')})
         else:
-            return  # PhaseTapChangerTabular and others are not supported yet
+            return  # unknown tap changer type
         self._tc_ssh[tc_class].append({'rdfId': tc_id, 'step': trafo.get('tap_pos')})
+
+    def _add_tabular_tap_changer(self, tc_id, common, trafo):
+        # A tabular phase tap changer defines a per-step ratio/angle table. pandapower flattens it
+        # into net['trafo_characteristic_table'] (one row per step). Rebuild the PhaseTapChangerTable
+        # and its TablePoints from that so the importer recovers the same per-step ratio/angle, hence
+        # the same transformer ratio at the operating tap. (The per-step impedance deviation is not
+        # reconstructed; the base impedance is exported on the windings and treated as tap-independent.)
+        rows = self._char_by_id.get(trafo.get('id_characteristic_table'))
+        if rows is None or rows.empty:
+            return  # no characteristic available -> cannot reconstruct the tap changer
+        table_id = _new_uuid()
+        self._tabular_tables.append({'rdfId': table_id})
+        self._tabular_eq.append({**common, 'PhaseTapChangerTable': table_id})
+        self._tabular_ssh.append({'rdfId': tc_id, 'step': trafo.get('tap_pos')})
+        for _, point in rows.iterrows():
+            self._tabular_points.append({
+                'rdfId': _new_uuid(), 'PhaseTapChangerTable': table_id,
+                'step': int(point['step']), 'ratio': float(point['voltage_ratio']),
+                'angle': float(point['angle_deg']), 'r': 0.0, 'x': 0.0})
+
+    def _index_characteristic_table(self):
+        ct = self.net.get('trafo_characteristic_table')
+        if not isinstance(ct, pd.DataFrame) or ct.empty or 'id_characteristic' not in ct.columns:
+            return {}
+        cols = [c for c in ['step', 'voltage_ratio', 'angle_deg'] if c in ct.columns]
+        return {cid: g[cols] for cid, g in ct.dropna(subset=['step']).groupby('id_characteristic')}
 
     def _finalize_tap_changers(self):
         for tc_class in self._tc_eq:
             self._set('eq', tc_class, self._tc_eq[tc_class])
             self._set('ssh', tc_class, self._tc_ssh[tc_class])
+        # tabular phase tap changers (the PhaseTapChangerTable class is not in the blueprint)
+        if self._tabular_eq:
+            self.cim['eq'].setdefault('PhaseTapChangerTable', pd.DataFrame(columns=['rdfId']))
+            self._set('eq', 'PhaseTapChangerTable', self._tabular_tables)
+            self._set('eq', 'PhaseTapChangerTabular', self._tabular_eq)
+            self._set('ssh', 'PhaseTapChangerTabular', self._tabular_ssh)
+            self._set('eq', 'PhaseTapChangerTablePoint', self._tabular_points)
 
     def _convert_power_transformers_3w(self):
         # 3-winding PowerTransformer. The pandapower per-winding-pair short-circuit values are the
