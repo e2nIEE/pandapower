@@ -515,24 +515,12 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
 def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
-    if 'tap_dependency_table' in trafo_df:
-        if 'trafo_characteristic_table' in net:
-            r, x = _calc_r_x_from_dataframe(
-                mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence,
-                trafo_characteristic_table=net.trafo_characteristic_table)
-        else:
-            r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
-    else:
-        characteristic = net.get("characteristic")
-        if characteristic is not None:
-            warnings.warn(DeprecationWarning(
-                "tap_dependency_table is missing in net, which is most probably due to unsupported net data. "
-                "tap_dependency_table was introduced with pandapower 3.0 and replaced spline characteristics. "
-                "Spline characteristics will still work, but they are deprecated and will be removed in future releases."
-            ))
+    if 'tap_dependency_table' in trafo_df and 'trafo_characteristic_table' in net:
         r, x = _calc_r_x_from_dataframe(
-            mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence, characteristic=characteristic
-        )
+            mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence,
+            trafo_characteristic_table=net.trafo_characteristic_table)
+    else:
+        r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
 
     if mode == "sc":
         if net._options.get("use_pre_fault_voltage", False):
@@ -963,7 +951,7 @@ def _get_vk_values_from_table(
     return vals
 
 
-def _get_vk_values(trafo_df: pd.DataFrame, trafotype: Literal["2W", "3W"] = "2W", characteristic=None) -> tuple[
+def _get_vk_values(trafo_df: pd.DataFrame, trafotype: Literal["2W", "3W"] = "2W") -> tuple[
     str, ...]:
     """
     get vk values from trafo table
@@ -1032,15 +1020,7 @@ def _get_vk_values(trafo_df: pd.DataFrame, trafotype: Literal["2W", "3W"] = "2W"
 
     for _, vk_var in enumerate(vk_variables):
         vk_value = get_trafo_values(trafo_df, vk_var)
-        # TODO: vk char columns deprecated: remove once support is dropped
-        if use_tap_dependent_impedance and vk_var in char_columns:
-            if characteristic is None:
-                raise ValueError("characteristic was not passed to _get_vk_values")
-            warnings.warn("Use of characteristic is deprecated and will be removed soon", UserWarning)
-            vals += (_calc_tap_dependent_value(tap_pos, vk_value, tap_dependent_impedance, characteristic,
-                                               all_characteristic_idx[:, index_column[vk_var]]),)
-        else:
-            vals += (vk_value,)
+        vals += (vk_value,)
 
     return vals
 
@@ -1067,8 +1047,7 @@ def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, character
 # FIXME: behavior differs depending on trafo_df type dict or pandas.DataFrame. This should be changed!
 #  use test: loadflow/test_runpp.py::test_tap_table_order and change output of _trafo_df_from_trafo3w to DataFrame to
 #  trigger issue
-def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, trafo_characteristic_table=None,
-                             characteristic=None):
+def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, trafo_characteristic_table=None):
     """
     Calculates (Vectorized) the resistance and reactance according to the
     transformer values
@@ -1077,14 +1056,7 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
     if sequence == 1:
         tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table", na_replacement=float("nan"))
         if tap_dependency is None:
-            if characteristic is not None:
-                warnings.warn(DeprecationWarning(
-                    "tap_dependency_table is missing in net, which is most probably due to unsupported net data."
-                    " tap_dependency_table was introduced with pandapower 3.0 and replaced spline characteristics. "
-                    "Spline characteristics will still work, but they are deprecated and will be removed "
-                    "in future releases."
-                ))
-            vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic=characteristic)
+            vk_percent, vkr_percent = _get_vk_values(trafo_df)
         else:
             tap_dependency = np.array(
                 [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency])
@@ -1674,14 +1646,7 @@ def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, net):
                 t3['vk_hv_percent'], t3['vkr_hv_percent'], t3['vk_mv_percent'],
                 t3['vkr_mv_percent'], t3['vk_lv_percent'], t3['vkr_lv_percent'])
     else:
-        characteristic = net.get("characteristic")
-        if characteristic is not None:
-            warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
-                                             "old net data. tap_dependency_table was introduced with "
-                                             "pandapower 3.0 and replaced spline characteristics. Spline "
-                                             "characteristics will still work, but they are deprecated and will be "
-                                             "removed in future releases."))
-        vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, "3W", characteristic)
+        vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, "3W")
 
     vk_3w = np.stack([vk_hv, vk_mv, vk_lv])
     vkr_3w = np.stack([vkr_hv, vkr_mv, vkr_lv])
