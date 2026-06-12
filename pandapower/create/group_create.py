@@ -71,7 +71,6 @@ def create_group(
         **kwargs,
     }
     _set_multiple_entries(net, "group", index, entries=entries)
-    net.group.loc[net.group.reference_column == "", "reference_column"] = None  # overwrite
 
     return index[0]
 
