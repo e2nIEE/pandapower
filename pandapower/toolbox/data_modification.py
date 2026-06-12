@@ -111,7 +111,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
         element_type = net[el][et_col]
         for short, complete in [("t", "trafo"), ("t3", "trafo3w"), ("l", "line"), ("s", "switch"),
                                 ("b", "bus")]:
-            element_type.loc[element_type == short] = complete
+            net[el].loc[element_type == short, et_col] = complete
         element_types_without_column = [et for et in set(element_type) if column not in
                                         net[et].columns]
         if len(element_types_without_column):
