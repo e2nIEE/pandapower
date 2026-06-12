@@ -273,7 +273,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
                      201: [9.5, 4.0], 202: [9.0, 5.0], 203: [8.0, 6.0]
                      }
     }
-    net.bus.geo = net.bus.apply(
+    net.bus["geo"] = net.bus.apply(
         lambda row: dumps(Point(bus_geo[network_class][row.name])),
         axis=1
     )

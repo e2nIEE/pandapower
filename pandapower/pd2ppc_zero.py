@@ -236,7 +236,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         si0_hv_partial = trafos.si0_hv_partial.values.astype(float)
         parallel = trafos.parallel.values.astype(float)
         if "power_station_unit" in trafos.columns:
-            power_station_unit = trafos.power_station_unit.fillna(False).astype(bool)
+            power_station_unit = trafos.power_station_unit.astype("boolean").fillna(False).astype(bool)
         else:
             power_station_unit = np.zeros(len(trafos), dtype=bool)
         in_service = trafos["in_service"].astype(np.int64)
