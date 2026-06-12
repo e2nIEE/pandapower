@@ -1850,8 +1850,17 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             raise err
 
     elif load_class == 'ElmLodmv':
+                
         params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
                           dict_net=dict_net, variables=('p_mw', 'sn_mva')))
+        
+     
+        trafo_typ = item.GetAttribute('typ_id')
+        if trafo_typ is None:
+            pass
+        else: 
+            trafo_sn_mva = trafo_typ.GetAttribute('strn')
+            params['trafo_sn_mva'] = trafo_sn_mva
 
     elif load_class == 'ElmLod':
         params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
