@@ -516,8 +516,8 @@ def test_create_transformers():
         test_kwargs="TestKW"
     )
     res_df = pd.DataFrame({
-        'name': pd.Series(['trafo1', 'trafo2'], dtype=pd.StringDtype),
-        'std_type': pd.Series(['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype),
+        'name': pd.Series(['trafo1', 'trafo2'], dtype=pd.StringDtype()),
+        'std_type': pd.Series(['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype()),
         'hv_bus': pd.Series([0, 0], dtype=np.int64),
         'lv_bus': pd.Series([1, 2], dtype=np.int64),
         'sn_mva': pd.Series([0.4, 0.4], dtype=np.float64),
@@ -543,7 +543,7 @@ def test_create_transformers():
         'in_service': pd.Series([True, True], dtype=bool),
         # 'oltc': [False, False],
         'test_kwargs': ['TestKW', 'TestKW'],
-        'vector_group': pd.Series(['Dyn5', 'Dyn5'], dtype=pd.StringDtype),
+        'vector_group': pd.Series(['Dyn5', 'Dyn5'], dtype=pd.StringDtype()),
     })
     for colum in res_df:
         assert net.trafo[colum].equals(res_df[colum])
@@ -564,8 +564,8 @@ def test_create_transformers_for_single():
         sn_mva=.4
     )
     res_df = pd.DataFrame({
-        'name': pd.Series(['trafo1'], dtype=pd.StringDtype),
-        'std_type': pd.Series(['0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype),
+        'name': pd.Series(['trafo1'], dtype=pd.StringDtype()),
+        'std_type': pd.Series(['0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype()),
         'hv_bus': pd.Series([0], dtype=np.int64),
         'lv_bus': pd.Series([1], dtype=np.int64),
         'sn_mva': pd.Series([0.4], dtype=np.float64),
@@ -591,7 +591,7 @@ def test_create_transformers_for_single():
         'in_service': pd.Series([True], dtype=bool),
         # 'oltc': [False],
         'test_kwargs': ['TestKW'],
-        'vector_group': pd.Series(['Dyn5'], dtype=pd.StringDtype),
+        'vector_group': pd.Series(['Dyn5'], dtype=pd.StringDtype()),
     })
     assert dataframes_equal(net.trafo, res_df)
 
@@ -723,8 +723,8 @@ def test_create_transformers3w():
         index=[5, 6],
     )
     res_df = pd.DataFrame({
-        'name': pd.Series(['t3w-1', 't3w-2'], dtype=pd.StringDtype),
-        'std_type': pd.Series(['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'], dtype=pd.StringDtype),
+        'name': pd.Series(['t3w-1', 't3w-2'], dtype=pd.StringDtype()),
+        'std_type': pd.Series(['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'], dtype=pd.StringDtype()),
         'hv_bus': pd.Series([0, 0], dtype=np.int64),
         'mv_bus': pd.Series([1, 2], dtype=np.int64),
         'lv_bus': pd.Series([3, 4], dtype=np.int64),
@@ -744,7 +744,7 @@ def test_create_transformers3w():
         'i0_percent': pd.Series([0.89, 0.89], dtype=np.float64),
         'shift_mv_degree': pd.Series([0.0, 0.0], dtype=np.float64),
         'shift_lv_degree': pd.Series([0.0, 0.0], dtype=np.float64),
-        'tap_side': pd.Series(['hv', 'hv'], dtype=pd.StringDtype),
+        'tap_side': pd.Series(['hv', 'hv'], dtype=pd.StringDtype()),
         'tap_neutral': pd.Series([0.0, 0.0], dtype=np.float64),
         'tap_min': pd.Series([-10.0, -10.0], dtype=np.float64),
         'tap_max': pd.Series([10.0, 10.0], dtype=np.float64),
