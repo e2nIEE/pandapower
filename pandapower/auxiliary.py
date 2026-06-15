@@ -85,15 +85,9 @@ def log_to_level(
 
 def version_check(
     package_name: str,
-    level: Literal["error", "warning", "info", "debug", "UserWarning"] = "UserWarning",
-    ignore_not_installed: bool = False
 ) -> None:
     # FIXME: version should NEVER be defined in code!
-    minimum_version = {'plotly': "3.1.1",
-                       'numba': "0.25",
-                       }
-    if ignore_not_installed and package_name not in minimum_version.keys():
-        return
+    minimum_version = {'numba': "0.25"}
 
     try:
         version = version_str(package_name)
@@ -101,13 +95,9 @@ def version_check(
             log_to_level((
                 f"{package_name} version {version} is no longer supported by pandapower.\r\n"
                 f"Please upgrade your installation. Possibly it can be done via "
-                f"'pip install --upgrade {package_name}'."), logger, level)
+                f"'pip install --upgrade {package_name}'."), logger, "UserWarning")
     except PackageNotFoundError:
-        if ignore_not_installed:
-            raise PackageNotFoundError(
-                f"Python package '{package_name}', is needed.\r\nPlease install it. "
-                f"Possibly it can be installed via 'pip install {package_name}'.")
-
+        pass
 
 try:
     from numba import jit
