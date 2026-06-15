@@ -4,6 +4,9 @@ Change Log
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
 - [ADDED] pandera network validation
+- [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
+- [ADDED] create function for trafo characteristic entries
+- [ADDED] converter for trafo characteristics
 
 [upcoming release] - 2026-..-..
 -------------------------------
