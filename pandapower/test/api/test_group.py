@@ -327,7 +327,7 @@ def test_detach_and_compare(nets_to_test_group):
     if type_ is int:
         assert pd.isna(group_element_lists(net, 3)[2][0])
     else:
-        assert pd.isna(group_element_lists(net, 3))[2] == ["name"]
+        assert group_element_lists(net, 3)[2] == ["name"]
 
 
 def test_res_power(nets_to_test_group):

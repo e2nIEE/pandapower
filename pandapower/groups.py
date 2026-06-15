@@ -466,7 +466,7 @@ def compare_group_elements(net: pandapowerNet, index1: int, index2: int) -> bool
     for et in et1:
         gr1_ref_col_for_et = gr1.reference_column.at[et]
         gr2_ref_col_for_et = gr2.reference_column.at[et]
-        if pd.isna(gr1_ref_col_for_et) and pd.isna(gr2_ref_col_for_et) or gr1_ref_col_for_et == gr2_ref_col_for_et:
+        if pd.notna(gr1_ref_col_for_et) and pd.notna(gr2_ref_col_for_et) and gr1_ref_col_for_et == gr2_ref_col_for_et:
             if len(pd.Index(gr1.element_index.at[et]).symmetric_difference(gr2.element_index.at[et])):  # type: ignore[arg-type]
                 return False
         else:
