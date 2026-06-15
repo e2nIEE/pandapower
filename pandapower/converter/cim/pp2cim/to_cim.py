@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+
+"""Entry point for exporting a pandapower net to CIM/CGMES.
+
+:func:`to_cim` rebuilds the CIM data structure from a pandapower net via
+:class:`~pandapower.converter.cim.pp2cim.build_cim_net.PpToCimConverter` and
+serializes it to RDF/XML profiles with
+:class:`~pandapower.converter.cim.cim_writer.CimWriter`.
+"""
 from __future__ import annotations
 import logging
 import time
@@ -46,6 +54,6 @@ def to_cim(net: pandapowerNet, file_path: str = None, output_folder: str = None,
         if file_path is not None:
             writer.to_zip(file_path, base_name=base_name)
 
-    logger.info("Needed time for converting pp -> cim: %s" % (time_converted - time_start))
-    logger.info("Total time: %s" % (time.time() - time_start))
+    logger.info("Needed time for converting pp -> cim: %s", time_converted - time_start)
+    logger.info("Total time: %s", time.time() - time_start)
     return cim

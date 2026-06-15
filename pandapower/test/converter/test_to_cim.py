@@ -136,7 +136,7 @@ def test_target_profiles_serialized(minigrid_roundtrip):
 def test_eq_uses_rdf_id_ssh_uses_rdf_about(minigrid_roundtrip):
     # The EQ profile defines equipment (rdf:ID) while the SSH profile updates it (rdf:about). After
     # a round-trip the same Terminal rdfIds must appear in both profiles.
-    cim_original, cim_roundtrip = minigrid_roundtrip
+    _, cim_roundtrip = minigrid_roundtrip
     eq_terminals = set(cim_roundtrip['eq']['Terminal']['rdfId'])
     ssh_terminals = set(cim_roundtrip['ssh']['Terminal']['rdfId'])
     assert ssh_terminals
@@ -170,7 +170,7 @@ def test_to_xml_returns_bytes_per_profile(minigrid_roundtrip):
     cim_original, _ = minigrid_roundtrip
     writer = CimWriter(cim_original, cgmes_version='2.4.15')
     xml = writer.to_xml()
-    assert set(['eq', 'ssh', 'sv', 'tp']).issubset(xml.keys())
+    assert {'eq', 'ssh', 'sv', 'tp'}.issubset(xml.keys())
     for profile, content in xml.items():
         assert isinstance(content, bytes)
         assert content.lstrip().startswith(b"<?xml")

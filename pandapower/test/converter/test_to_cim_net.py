@@ -90,7 +90,7 @@ def test_load_count_roundtrip(fullgrid_bb_roundtrip):
 
 def test_bus_voltage_levels_roundtrip(fullgrid_bb_roundtrip):
     net, net_rt = fullgrid_bb_roundtrip
-    original = net.set_index('origin_id') if False else net.bus.set_index('origin_id')['vn_kv'].sort_index()
+    original = net.bus.set_index('origin_id')['vn_kv'].sort_index()
     roundtrip = net_rt.bus.set_index('origin_id')['vn_kv'].sort_index()
     assert list(original.index) == list(roundtrip.index)
     assert original.round(6).tolist() == roundtrip.round(6).tolist()
@@ -342,7 +342,7 @@ def test_to_cim_returns_structure_without_writing():
 
 
 def test_export_zip_written_and_reimportable(fullgrid_bb_roundtrip):
-    net, net_rt = fullgrid_bb_roundtrip
+    _, net_rt = fullgrid_bb_roundtrip
     # the fixture already re-imported the zip; a non-empty net proves the pipeline works end to end
     assert len(net_rt.bus) > 0
     assert len(net_rt.line) > 0
@@ -586,7 +586,7 @@ def test_synthetic_from_scratch_foundation(synthetic_roundtrip):
 
 
 def test_synthetic_energy_source_roundtrip(synthetic_roundtrip):
-    net, net_rt = synthetic_roundtrip
+    _, net_rt = synthetic_roundtrip
     es = net_rt.sgen[net_rt.sgen['origin_class'] == 'EnergySource']
     assert len(es) == 1
     assert es['p_mw'].iloc[0] == pytest.approx(3.0, abs=1e-6)
@@ -594,7 +594,7 @@ def test_synthetic_energy_source_roundtrip(synthetic_roundtrip):
 
 
 def test_synthetic_equivalent_branch_roundtrip(synthetic_roundtrip):
-    net, net_rt = synthetic_roundtrip
+    _, net_rt = synthetic_roundtrip
     eb = net_rt.impedance[net_rt.impedance['origin_class'] == 'EquivalentBranch']
     assert len(eb) == 1
     assert eb['rft_pu'].iloc[0] == pytest.approx(0.01, abs=1e-6)

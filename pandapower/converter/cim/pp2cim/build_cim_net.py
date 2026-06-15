@@ -1,4 +1,18 @@
 # -*- coding: utf-8 -*-
+
+"""Reconstruction of the CIM/CGMES data structure from a pandapower net.
+
+:class:`PpToCimConverter` walks the pandapower element tables and rebuilds the
+corresponding CIM objects (TopologicalNode/ConnectivityNode, Terminals,
+ACLineSegment, PowerTransformer, loads, generation, switches, shunts, tap
+changers, operational limits, power-flow results, coordinates) profile by
+profile. It relies on the CGMES identifiers preserved by the importer
+(``origin_id``/``origin_class`` and the terminal/end/container references) so
+that an imported net round-trips back to equivalent CGMES.
+"""
+# The converter is intentionally kept in one module: it mirrors the CGMES schema
+# class-by-class, so a single cohesive file is easier to follow than an arbitrary split.
+# pylint: disable=too-many-lines
 from __future__ import annotations
 import collections
 import json
@@ -17,6 +31,9 @@ from ..cim_classes import CimParser
 sc = cim_tools.get_pp_net_special_columns_dict()
 
 SUPPORTED_CGMES_VERSIONS = ('2.4.15', '3.0')
+
+# Special net column carrying the CGMES RegulatingControl.enabled flag for an element.
+REGULATING_CONTROL_ENABLED = 'RegulatingControl.enabled'
 
 # CGMES profile URIs used to synthesize a FullModel header when the net does not carry one
 # (i.e. the net was not imported from CGMES). For round-trip the headers come from net['CGMES'].
@@ -61,8 +78,8 @@ class PpToCimConverter:
     def __init__(self, net: pandapowerNet, cgmes_version: str = '2.4.15', **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
         if cgmes_version not in SUPPORTED_CGMES_VERSIONS:
-            raise ValueError("Unsupported CGMES version %r, expected one of %s"
-                             % (cgmes_version, SUPPORTED_CGMES_VERSIONS))
+            raise ValueError(f"Unsupported CGMES version {cgmes_version!r}, "
+                             f"expected one of {SUPPORTED_CGMES_VERSIONS}")
         self.net = net
         self.cgmes_version = cgmes_version
         self.kwargs = kwargs
@@ -113,6 +130,10 @@ class PpToCimConverter:
     # ------------------------------------------------------------------ orchestration
 
     def convert_to_cim(self) -> Dict[str, Dict[str, pd.DataFrame]]:
+        """Run all element converters and return the CIM data structure.
+
+        :return: The CIM data structure (profile -> CIM element type -> DataFrame).
+        """
         self.logger.info("Start converting the pandapower net to CIM.")
         self._create_full_model()
         self._create_base_voltages()
@@ -272,7 +293,7 @@ class PpToCimConverter:
 
     def _convert_lines(self):
         eq_rows = []
-        for idx, line in self.net.line.iterrows():
+        for _, line in self.net.line.iterrows():
             if line.get(sc['o_cl']) not in (None, 'ACLineSegment') and not pd.isna(line.get(sc['o_cl'])):
                 # only ACLineSegment-derived lines are exported here (e.g. DCLineSegment is skipped)
                 continue
@@ -328,9 +349,9 @@ class PpToCimConverter:
 
     def _add_side_current_limit(self, trafo, terminal_id, side):
         # add the CurrentLimit a transformer carries on the given winding side (hv / mv / lv)
-        self._add_current_limit(terminal_id, trafo.get('CurrentLimit.value_%s' % side),
-                                trafo.get('OperationalLimitType.limitType_%s' % side),
-                                trafo.get('OperationalLimitType.acceptableDuration_%s' % side))
+        self._add_current_limit(terminal_id, trafo.get(f'CurrentLimit.value_{side}'),
+                                trafo.get(f'OperationalLimitType.limitType_{side}'),
+                                trafo.get(f'OperationalLimitType.acceptableDuration_{side}'))
 
     def _finalize_operational_limits(self):
         self._set('eq', 'OperationalLimitType', self._op_limit_type_rows)
@@ -341,7 +362,7 @@ class PpToCimConverter:
         # EnergyConsumer / ConformLoad / NonConformLoad / StationSupply all map to the load table
         by_class = collections.defaultdict(list)
         ssh_rows = collections.defaultdict(list)
-        for idx, load in self.net.load.iterrows():
+        for _, load in self.net.load.iterrows():
             origin_class = load.get(sc['o_cl'])
             if pd.isna(origin_class):
                 origin_class = 'EnergyConsumer'
@@ -360,7 +381,7 @@ class PpToCimConverter:
         # control settings, so scan all three tables for ENI-derived rows.
         eq_rows, ssh_rows = [], []
         for table in ('ext_grid', 'gen', 'sgen'):
-            for idx, ext in self.net[table].iterrows():
+            for _, ext in self.net[table].iterrows():
                 origin_class = ext.get(sc['o_cl'])
                 # ext_grids default to an ExternalNetworkInjection when no origin is known (e.g. a
                 # hand-built net); gen/sgen are only exported here when explicitly an ENI.
@@ -379,7 +400,7 @@ class PpToCimConverter:
                 ssh_rows.append({
                     'rdfId': origin_id, 'p': self._neg(ext.get('p_mw')), 'q': self._neg(ext.get('q_mvar')),
                     'referencePriority': ext.get('referencePriority'),
-                    'controlEnabled': self._as_bool(ext.get('RegulatingControl.enabled'))})
+                    'controlEnabled': self._as_bool(ext.get(REGULATING_CONTROL_ENABLED))})
         self._set('eq', 'ExternalNetworkInjection', eq_rows)
         self._set('ssh', 'ExternalNetworkInjection', ssh_rows)
 
@@ -388,7 +409,7 @@ class PpToCimConverter:
         # and (when voltage controlled) the RegulatingControl so the importer reproduces the split.
         eq_sm, ssh_sm, eq_gu = [], [], []
         for table in ('gen', 'sgen'):
-            for idx, machine in self.net[table].iterrows():
+            for _, machine in self.net[table].iterrows():
                 if machine.get(sc['o_cl']) != 'SynchronousMachine':
                     continue
                 origin_id = self._id_or_new(machine.get(sc['o_id']))
@@ -411,7 +432,7 @@ class PpToCimConverter:
                 ssh_sm.append({'rdfId': origin_id, 'p': self._neg(machine.get('p_mw')),
                                'q': self._neg(machine.get('q_mvar')),
                                'referencePriority': machine.get('referencePriority'),
-                               'controlEnabled': self._as_bool(machine.get('RegulatingControl.enabled'))})
+                               'controlEnabled': self._as_bool(machine.get(REGULATING_CONTROL_ENABLED))})
         self._set('eq', 'GeneratingUnit', eq_gu)
         self._set('eq', 'SynchronousMachine', eq_sm)
         self._set('ssh', 'SynchronousMachine', ssh_sm)
@@ -422,31 +443,37 @@ class PpToCimConverter:
         # voltageAngle reproduces that split.
         eq_rows, ssh_rows = [], []
         for table in ('sgen', 'ext_grid'):
-            for idx, es in self.net[table].iterrows():
+            for _, es in self.net[table].iterrows():
                 if es.get(sc['o_cl']) != 'EnergySource':
                     continue
                 origin_id = self._id_or_new(es.get(sc['o_id']))
-                vn_kv = self.net.bus.loc[es['bus'], 'vn_kv'] if es['bus'] in self.net.bus.index else np.nan
-                row = {'rdfId': origin_id, 'name': es.get('name'), 'description': es.get('description')}
-                vm_pu = es.get('vm_pu')
-                if not pd.isna(vm_pu) and not pd.isna(vn_kv):
-                    row['voltageMagnitude'] = vm_pu * vn_kv
-                    row['nominalVoltage'] = vn_kv
-                    va_degree = es.get('va_degree')
-                    if not pd.isna(va_degree):
-                        row['voltageAngle'] = va_degree * math.pi / 180
-                eq_rows.append(row)
+                eq_rows.append(self._energy_source_eq_row(es, origin_id))
                 ssh_rows.append({'rdfId': origin_id, 'activePower': self._neg(es.get('p_mw')),
                                  'reactivePower': self._neg(es.get('q_mvar'))})
                 self._add_terminal(es.get(sc['t']), origin_id, 1, es['bus'], bool(es['in_service']))
         self._set('eq', 'EnergySource', eq_rows)
         self._set('ssh', 'EnergySource', ssh_rows)
 
+    def _energy_source_eq_row(self, es, origin_id) -> dict:
+        # Build the EQ EnergySource row; a voltage set point (reproducing the importer's ext_grid
+        # split) is only emitted when both the per-unit voltage and the bus base voltage are known.
+        vn_kv = self.net.bus.loc[es['bus'], 'vn_kv'] if es['bus'] in self.net.bus.index else np.nan
+        row = {'rdfId': origin_id, 'name': es.get('name'), 'description': es.get('description')}
+        vm_pu = es.get('vm_pu')
+        if pd.isna(vm_pu) or pd.isna(vn_kv):
+            return row
+        row['voltageMagnitude'] = vm_pu * vn_kv
+        row['nominalVoltage'] = vn_kv
+        va_degree = es.get('va_degree')
+        if not pd.isna(va_degree):
+            row['voltageAngle'] = va_degree * math.pi / 180
+        return row
+
     def _add_regulating_control(self, row, terminal_id) -> str | None:
         """Reconstruct a RegulatingControl from the preserved RegulatingControl.* columns. Returns
         the new RegulatingControl rdfId, or None when the element has no regulation info."""
         mode = row.get('RegulatingControl.mode')
-        enabled = row.get('RegulatingControl.enabled')
+        enabled = row.get(REGULATING_CONTROL_ENABLED)
         target = row.get('RegulatingControl.targetValue')
         if pd.isna(mode) and pd.isna(enabled) and pd.isna(target):
             return None
@@ -466,7 +493,7 @@ class PpToCimConverter:
         # (with et == 'b'). The switch connects two buses via two terminals.
         eq_by_class = collections.defaultdict(list)
         ssh_by_class = collections.defaultdict(list)
-        for idx, switch in self.net.switch.iterrows():
+        for _, switch in self.net.switch.iterrows():
             if switch.get('et') != 'b':
                 continue  # only bus-bus switches originate from CGMES switching devices
             origin_class = switch.get(sc['o_cl'])
@@ -491,7 +518,7 @@ class PpToCimConverter:
         # shunt table.
         lin_eq, lin_ssh, svc_eq, svc_ssh = [], [], [], []
         nonlin_eq, nonlin_ssh, nonlin_points = [], [], []
-        for idx, shunt in self.net.shunt.iterrows():
+        for _, shunt in self.net.shunt.iterrows():
             origin_class = shunt.get(sc['o_cl'])
             origin_id = self._id_or_new(shunt.get(sc['o_id']))
             vn_kv = shunt.get('vn_kv')
@@ -505,17 +532,11 @@ class PpToCimConverter:
                                'sVCControlMode': shunt.get('sVCControlMode')})
                 svc_ssh.append({'rdfId': origin_id, 'q': float(shunt['q_mvar'])})
             elif origin_class == 'NonlinearShuntCompensator':
-                # the per-section points are not preserved on the net; reconstruct uniform points so
-                # the importer's aggregate (sum over active sections / sections) reproduces p_mw/q_mvar
-                max_step = shunt.get('max_step')
-                sections = int(max_step) if not pd.isna(max_step) else int(shunt.get('step', 1) or 1)
-                nonlin_eq.append({'rdfId': origin_id, 'name': shunt.get('name'),
-                                  'description': shunt.get('description'), 'nomU': vn_kv,
-                                  'maximumSections': max_step})
-                nonlin_ssh.append({'rdfId': origin_id, 'sections': shunt.get('step')})
-                for section in range(1, sections + 1):
-                    nonlin_points.append({'rdfId': _new_uuid(), 'NonlinearShuntCompensator': origin_id,
-                                          'sectionNumber': section, 'g': g_per_section, 'b': b_per_section})
+                eq_row, ssh_row, points = self._nonlinear_shunt_rows(
+                    shunt, origin_id, vn_kv, g_per_section, b_per_section)
+                nonlin_eq.append(eq_row)
+                nonlin_ssh.append(ssh_row)
+                nonlin_points.extend(points)
             elif origin_class in (None, 'LinearShuntCompensator') or pd.isna(origin_class):
                 lin_eq.append({'rdfId': origin_id, 'name': shunt.get('name'),
                                'description': shunt.get('description'), 'nomU': vn_kv,
@@ -524,8 +545,8 @@ class PpToCimConverter:
                                'normalSections': shunt.get('step')})
                 lin_ssh.append({'rdfId': origin_id, 'sections': shunt.get('step')})
             else:
-                self.logger.warning("Skipping shunt %s: origin_class %s not supported yet."
-                                    % (origin_id, origin_class))
+                self.logger.warning("Skipping shunt %s: origin_class %s not supported yet.",
+                                    origin_id, origin_class)
                 continue
             self._add_terminal(shunt.get(sc['t']), origin_id, 1, shunt['bus'], connected)
         self._set('eq', 'LinearShuntCompensator', lin_eq)
@@ -536,11 +557,24 @@ class PpToCimConverter:
         self._set('ssh', 'NonlinearShuntCompensator', nonlin_ssh)
         self._set('eq', 'NonlinearShuntCompensatorPoint', nonlin_points)
 
+    def _nonlinear_shunt_rows(self, shunt, origin_id, vn_kv, g_per_section, b_per_section):
+        # The per-section points are not preserved on the net; reconstruct uniform points so the
+        # importer's aggregate (sum over active sections / sections) reproduces p_mw/q_mvar.
+        max_step = shunt.get('max_step')
+        sections = int(max_step) if not pd.isna(max_step) else int(shunt.get('step', 1) or 1)
+        eq_row = {'rdfId': origin_id, 'name': shunt.get('name'),
+                  'description': shunt.get('description'), 'nomU': vn_kv, 'maximumSections': max_step}
+        ssh_row = {'rdfId': origin_id, 'sections': shunt.get('step')}
+        points = [{'rdfId': _new_uuid(), 'NonlinearShuntCompensator': origin_id,
+                   'sectionNumber': section, 'g': g_per_section, 'b': b_per_section}
+                  for section in range(1, sections + 1)]
+        return eq_row, ssh_row, points
+
     def _convert_impedances(self):
         # impedance table holds SeriesCompensator and EquivalentBranch elements. Both store their
         # per-unit values referred to z_base = vn_kv**2 / sn_mva (vn from the from-bus).
         sc_rows, eb_rows = [], []
-        for idx, imp in self.net.impedance.iterrows():
+        for _, imp in self.net.impedance.iterrows():
             origin_class = imp.get(sc['o_cl'])
             origin_id = self._id_or_new(imp.get(sc['o_id']))
             from_bus = imp['from_bus']
@@ -566,8 +600,8 @@ class PpToCimConverter:
                                 'r0': imp.get('rft0_pu', np.nan) * z_base,
                                 'x0': imp.get('xft0_pu', np.nan) * z_base})
             else:
-                self.logger.warning("Skipping impedance %s: origin_class %s not supported."
-                                    % (origin_id, origin_class))
+                self.logger.warning("Skipping impedance %s: origin_class %s not supported.",
+                                    origin_id, origin_class)
                 continue
             self._add_terminal(imp.get(sc['t_from']), origin_id, 1, from_bus, in_service)
             self._add_terminal(imp.get(sc['t_to']), origin_id, 2, imp['to_bus'], in_service)
@@ -580,7 +614,7 @@ class PpToCimConverter:
         # This reproduces the importer's vk/vkr/i0/pfe (which sum both ends). Tap changers and
         # 3-winding transformers are not reversed yet.
         pt_rows, end_rows = [], []
-        for idx, trafo in self.net.trafo.iterrows():
+        for _, trafo in self.net.trafo.iterrows():
             if trafo.get(sc['o_cl']) not in (None, 'PowerTransformer') and not pd.isna(trafo.get(sc['o_cl'])):
                 continue
             origin_id = self._id_or_new(trafo.get(sc['o_id']))
@@ -615,7 +649,7 @@ class PpToCimConverter:
             self._add_terminal(trafo.get(sc['t_lv']), origin_id, 2, trafo['lv_bus'], in_service)
             self._add_tap_changer(trafo, {'hv': pte_hv, 'lv': pte_lv})
             for side in ('hv', 'lv'):
-                self._add_side_current_limit(trafo, trafo.get(sc['t_%s' % side]), side)
+                self._add_side_current_limit(trafo, trafo.get(sc[f't_{side}']), side)
         self._set('eq', 'PowerTransformer', pt_rows)
         self._set('eq', 'PowerTransformerEnd', end_rows)
 
@@ -693,7 +727,7 @@ class PpToCimConverter:
         ones (the per-winding recombination is not inverted)."""
         vk_base, vkr_base = trafo.get('vk_percent'), trafo.get('vkr_percent')
         two_winding = ('vk_percent' in rows.columns and not pd.isna(vk_base) and not pd.isna(vkr_base)
-                       and vk_base != 0 and abs(vk_base) >= abs(vkr_base))
+                       and vk_base and abs(vk_base) >= abs(vkr_base))
         vkx_base = math.sqrt(vk_base ** 2 - vkr_base ** 2) if two_winding else 0.0
         points = []
         for _, point in rows.iterrows():
@@ -731,7 +765,7 @@ class PpToCimConverter:
         # voltage). We invert that pairwise system to recover the per-end r/x (positive and zero
         # sequence); the magnetizing branch is placed on the HV end.
         pt_rows, end_rows = [], []
-        for idx, trafo in self.net.trafo3w.iterrows():
+        for _, trafo in self.net.trafo3w.iterrows():
             if trafo.get(sc['o_cl']) not in (None, 'PowerTransformer') and not pd.isna(trafo.get(sc['o_cl'])):
                 continue
             origin_id = self._id_or_new(trafo.get(sc['o_id']))
@@ -838,7 +872,7 @@ class PpToCimConverter:
         eq_rows, ssh_rows = [], []
         for table, regulation_status in (('ward', False), ('xward', True)):
             df = self.net[table]
-            for idx, row in df.iterrows():
+            for _, row in df.iterrows():
                 origin_id = self._id_or_new(row.get(sc['o_id']))
                 eq_rows.append({'rdfId': origin_id, 'name': row.get('name'),
                                 'description': row.get('description'),
@@ -888,7 +922,7 @@ class PpToCimConverter:
     def _convert_sv_tap_steps(self):
         rows = []
         for table in ('trafo', 'trafo3w'):
-            for idx, trafo in self.net[table].iterrows():
+            for _, trafo in self.net[table].iterrows():
                 if trafo.get(sc['tc']) != 'RatioTapChanger':
                     continue  # only tap changers that were actually exported
                 tc_id = trafo.get(sc['tc_id'])
@@ -900,7 +934,7 @@ class PpToCimConverter:
 
     def _convert_sv_shunt_sections(self):
         rows = []
-        for idx, shunt in self.net.shunt.iterrows():
+        for _, shunt in self.net.shunt.iterrows():
             if shunt.get(sc['o_cl']) not in (None, 'LinearShuntCompensator') and not pd.isna(shunt.get(sc['o_cl'])):
                 continue
             rows.append({'rdfId': _new_uuid(), 'ShuntCompensator': shunt.get(sc['o_id']),
@@ -1035,7 +1069,7 @@ class PpToCimConverter:
         if windings != 2:
             return none
         split = next((i for i, ch in enumerate(vector_group) if ch.islower()), None)
-        if split is None or split == 0:  # no lower-case part, or no leading HV part -> can't split
+        if not split:  # split is None (no lower-case part) or 0 (no leading HV part) -> can't split
             return none
         return vector_group[:split].capitalize(), vector_group[split:].capitalize()
 

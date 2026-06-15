@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+
+"""Serialization of a CIM data structure to CGMES RDF/XML.
+
+:class:`CimWriter` is the inverse of the importer's XML parser: it turns the CIM
+data structure (profile -> CIM element type -> DataFrame) into one RDF/XML
+document per profile, using the CGMES schema labels and data types to emit the
+correct element/attribute tags. It can return the XML as strings, write one file
+per profile, or bundle the profiles into a zip archive.
+"""
 from __future__ import annotations
 import logging
 import os
@@ -14,6 +23,8 @@ logger = logging.getLogger(__name__)
 
 # The RDF namespace is identical for all CGMES versions.
 RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+# Qualified name of the RDF resource reference attribute.
+RDF_RESOURCE = 'rdf:resource'
 # The ModelDescription namespace used for the FullModel header.
 MD_NS = 'http://iec.ch/TC57/61970-552/ModelDescription/1#'
 
@@ -73,8 +84,8 @@ class CimWriter:
         self.cim = cim
         self.cgmes_version = cgmes_version
         if cgmes_version not in NS_DICT:
-            raise ValueError("Unsupported CGMES version for export: %s. Supported: %s"
-                             % (cgmes_version, list(NS_DICT.keys())))
+            raise ValueError(f"Unsupported CGMES version for export: {cgmes_version}. "
+                             f"Supported: {list(NS_DICT.keys())}")
         self.ns = NS_DICT[cgmes_version]
         self.cim_schema = get_cim_schema(cgmes_version)
 
@@ -89,7 +100,7 @@ class CimWriter:
         result: dict[str, bytes] = {}
         for profile in self.cim:
             if profile not in self.cim_schema and profile != 'eq_bd' and profile != 'tp_bd':
-                self.logger.warning("Skipping profile '%s': not part of the CGMES schema." % profile)
+                self.logger.warning("Skipping profile '%s': not part of the CGMES schema.", profile)
                 continue
             xml_bytes = self._serialize_profile(profile)
             if xml_bytes is not None:
@@ -108,7 +119,7 @@ class CimWriter:
         written: dict[str, str] = {}
         for profile, xml_bytes in self.to_xml().items():
             suffix = PROFILE_FILE_SUFFIX.get(profile, profile.upper())
-            file_path = os.path.join(output_folder, "%s_%s.xml" % (base_name, suffix))
+            file_path = os.path.join(output_folder, f"{base_name}_{suffix}.xml")
             with open(file_path, 'wb') as f:
                 f.write(xml_bytes)
             written[profile] = file_path
@@ -125,7 +136,7 @@ class CimWriter:
         with zipfile.ZipFile(file_path, 'w', zipfile.ZIP_DEFLATED) as zf:
             for profile, xml_bytes in self.to_xml().items():
                 suffix = PROFILE_FILE_SUFFIX.get(profile, profile.upper())
-                zf.writestr("%s_%s.xml" % (base_name, suffix), xml_bytes)
+                zf.writestr(f"{base_name}_{suffix}.xml", xml_bytes)
         return file_path
 
     # ------------------------------------------------------------------ serialization
@@ -135,25 +146,26 @@ class CimWriter:
 
         # write the FullModel header first (if present)
         profile_dict = self.cim[profile]
+        wrote_element = False
         if 'FullModel' in profile_dict and isinstance(profile_dict['FullModel'], pd.DataFrame) \
                 and not profile_dict['FullModel'].empty:
             self._write_full_model(root, profile_dict['FullModel'])
+            wrote_element = True
 
         schema_profile = self.cim_schema.get(profile, {})
-        wrote_element = False
         for class_name, df in profile_dict.items():
             if class_name == 'FullModel':
                 continue
             if not isinstance(df, pd.DataFrame) or df.empty:
                 continue
             if class_name not in schema_profile:
-                self.logger.warning("Skipping CIM class '%s' in profile '%s': not in schema."
-                                    % (class_name, profile))
+                self.logger.warning("Skipping CIM class '%s' in profile '%s': not in schema.",
+                                    class_name, profile)
                 continue
             self._write_class(root, profile, class_name, df, schema_profile[class_name])
             wrote_element = True
 
-        if not wrote_element and len(root) == 0:
+        if not wrote_element:
             return None
         return etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='utf-8')
 
@@ -166,8 +178,8 @@ class CimWriter:
         for _, row in df.iterrows():
             rdf_id = row.get('rdfId')
             if self._is_empty(rdf_id):
-                self.logger.warning("Skipping a '%s' element in profile '%s': missing rdfId."
-                                    % (class_name, profile))
+                self.logger.warning("Skipping a '%s' element in profile '%s': missing rdfId.",
+                                    class_name, profile)
                 continue
             element = etree.SubElement(root, self._qname(class_label))
             if use_about:
@@ -183,7 +195,7 @@ class CimWriter:
     def _write_field(self, element, field_schema: dict, value):
         label = field_schema['label']
         data_type = field_schema.get('data_type', '') or ''
-        is_resource = 'rdf:resource' in data_type
+        is_resource = RDF_RESOURCE in data_type
         prefix = self._resource_prefix(data_type) if is_resource else ''
         for one_value in self._iter_values(value):
             sub = etree.SubElement(element, self._qname(label))
@@ -193,7 +205,7 @@ class CimWriter:
                 # multi-valued (list) references; normalize so we never emit '##...'.
                 if prefix == '#':
                     formatted = formatted.lstrip('#')
-                sub.set(self._qname('rdf:resource'), prefix + formatted)
+                sub.set(self._qname(RDF_RESOURCE), prefix + formatted)
             else:
                 sub.text = self._format_value(one_value)
 
@@ -208,11 +220,11 @@ class CimWriter:
             if col == 'rdfId':
                 continue
             value = row[col]
-            tag = 'md:Model.%s' % col
+            tag = f'md:Model.{col}'
             for one_value in self._iter_values(value):
                 sub = etree.SubElement(model, self._qname(tag))
                 if col in FULLMODEL_RESOURCE_FIELDS:
-                    sub.set(self._qname('rdf:resource'), self._as_urn(self._format_value(one_value)))
+                    sub.set(self._qname(RDF_RESOURCE), self._as_urn(self._format_value(one_value)))
                 else:
                     sub.text = self._format_value(one_value)
 
@@ -240,7 +252,7 @@ class CimWriter:
     def _qname(self, label: str) -> str:
         prefix, _, local = label.partition(':')
         if prefix not in self.ns:
-            raise ValueError("Unknown namespace prefix '%s' in label '%s'." % (prefix, label))
+            raise ValueError(f"Unknown namespace prefix '{prefix}' in label '{label}'.")
         return '{%s}%s' % (self.ns[prefix], local)
 
     @staticmethod
@@ -263,7 +275,7 @@ class CimWriter:
         if value is None:
             return True
         if isinstance(value, (list, tuple)):
-            return len(value) == 0
+            return not value
         try:
             return bool(pd.isna(value))
         except (ValueError, TypeError):
