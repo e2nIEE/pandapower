@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # jsonpy documentation build configuration file, created by
 # sphinx-quickstart on Fri May 03 17:30:42 2013.
 #
