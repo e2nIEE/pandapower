@@ -308,13 +308,15 @@ def _add_measurements_to_trafo3w(
 
 def _add_measurements_to_bus(meas_bus, bus_append, map_bus):
     """
-        Aggregate measurements by bus index and append results to bus_append array.
+    Aggregate measurements by bus index and append results to bus_append array.
 
-        Parameters:
-        - meas_bus: subset of measurement DataFrame containing only measurements at buses
-        - bus_append: NumPy array to store measurements, std devs, and indices to add to ppci
-        - map_bus: dict mapping bus IDs to PPCI bus indices
-        """
+    Parameters:
+        meas_bus: subset of measurement DataFrame containing only measurements at buses
+        bus_append: NumPy array to store measurements, std devs, and indices to add to ppci
+        map_bus: dict mapping bus IDs to PPCI bus indices
+    """
+    # FIXME: this function violates copy on write because meas_bus is a subset and is used to change values in the
+    #  original DataFrame!
 
     # Process voltage (v) and voltage angle (va) measurements
     for meas_type in ("v", "va"):
