@@ -34,6 +34,7 @@ def typed_list(iterable, dtype):
         return [str(it) for it in iterable]
 
 
+# TODO: the params should be replaced by indirect parametrization: https://stackoverflow.com/a/44568273/4633400
 @pytest.fixture(scope="module", params=[(None, int), ("name", str)])
 def nets_to_test_group(request):
     reference_column, type_ = request.param
