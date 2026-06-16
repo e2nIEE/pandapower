@@ -324,7 +324,7 @@ def test_detach_and_compare(nets_to_test_group):
     detach_from_groups(net, "trafo", 1, 3)
     assert group_element_lists(net, 3)[0] == ["trafo"]
     assert group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
-    if type_ is int:
+    if isinstance(type_, int):
         assert pd.isna(group_element_lists(net, 3)[2][0])
     else:
         assert group_element_lists(net, 3)[2] == ["name"]
