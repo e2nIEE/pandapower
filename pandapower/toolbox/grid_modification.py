@@ -3,12 +3,12 @@
 
 import copy
 from collections.abc import Iterable, Collection
-import warnings
-from typing import Literal
+from typing import Literal, get_type_hints, cast
 
 import numpy as np
 import pandas as pd
 
+from pandapower.pp_types import StandardTypesDict, StandardTypesDictKeys
 from pandapower.auxiliary import _preserve_dtypes, ensure_iterability, log_to_level
 from pandapower.network import pandapowerNet, plural_s
 from pandapower.std_types import change_std_type
@@ -158,7 +158,8 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
 
 def merge_nets(net1: pandapowerNet, net2: pandapowerNet, validate: bool = True, merge_results: bool = True,
                tol: float = 1e-9, std_prio_on_net1: bool = True, return_net2_reindex_lookup: bool = False,
-               net2_reindex_log_level: str = "info", **runpp_kwargs):
+               net2_reindex_log_level: Literal["error", "warning", "info", "debug", "UserWarning"] | None = "info",
+               **runpp_kwargs):
     """
     Function to concatenate two nets into one data structure. The elements keep their indices
     unless both nets have the same indices. In that case, net2 elements get reindexed. The reindex
@@ -236,10 +237,13 @@ def merge_nets(net1: pandapowerNet, net2: pandapowerNet, validate: bool = True, 
 
     # copy standard types of net by data of net2
     for type_ in net.std_types:
+        if type_ not in tuple(get_type_hints(StandardTypesDict).keys()):
+            continue
+        typed_type: StandardTypesDictKeys = cast(StandardTypesDictKeys, type_)
         if std_prio_on_net1:
-            net.std_types[type_] = {**net2.std_types[type_], **net.std_types[type_]}
+            net.std_types[typed_type] = {**net2.std_types[typed_type], **net.std_types[typed_type]}
         else:
-            net.std_types[type_].update(net2.std_types[type_])
+            net.std_types[typed_type].update(net2.std_types[typed_type])
 
     # validate vm results
     if validate:
