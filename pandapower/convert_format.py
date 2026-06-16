@@ -720,45 +720,55 @@ def _update_characteristics(net, elements_to_deserialize):
         c.interpolator_kind = "interp1d"
         c.kwargs = {"kind": c.__dict__.pop("kind"), "bounds_error": False, "fill_value": c.__dict__.pop("fill_value")}
 
-        # convert characteristics to tap_dependency_table
-        characteristic_cols = [("trafo", ["vk_percent_characteristic", "vkr_percent_characteristic"]),
-                               ("trafo3w", ["vk_hv_percent_characteristic", "vkr_hv_percent_characteristic",
-                                            "vk_mv_percent_characteristic", "vkr_mv_percent_characteristic",
-                                            "vk_lv_percent_characteristic", "vkr_lv_percent_characteristic"])]
+    # convert characteristics to tap_dependency_table
+    characteristic_cols = [("trafo", ["vk_percent_characteristic", "vkr_percent_characteristic"]),
+                           ("trafo3w", ["vk_hv_percent_characteristic", "vkr_hv_percent_characteristic",
+                                        "vk_mv_percent_characteristic", "vkr_mv_percent_characteristic",
+                                        "vk_lv_percent_characteristic", "vkr_lv_percent_characteristic"])]
 
-        for table, columns in characteristic_cols:
+    for table, columns in characteristic_cols:
+        if "tap_dependency_table" not in net[table].columns:
             net[table]["tap_dependency_table"] = False
-            for _, row in net[table].iterrows():
-                characteristics = {}
-                for name in columns:
-                    if name in net[table] and pd.notna(row[name]):  # check if col exists and is not nan
-                        characteristics[name] = net.characteristic.loc[row[name], 'object']
-                if len(characteristics) == 0:
-                    continue
-                tap_min = row["tap_min"]
-                if pd.isna(tap_min):
-                    raise UserWarning(f'tap_min is missing for {table} with id {row.name}')
-                tap_max = row["tap_max"]
-                if pd.isna(tap_max):
-                    raise UserWarning(f'tap_max is missing for {table} with id {row.name}')
-                # cast to int, for compatibility with range
-                tap_max = int(tap_max)
-                tap_min = int(tap_min)
-                tap_step_percent = row["tap_step_percent"]
-                tap_step_degree = row["tap_step_degree"]
-                if tap_max < tap_min:
-                    tap_min, tap_max = tap_max, tap_min
-                vals = {
-                    'step': list(range(tap_min, tap_max + 1))
-                }
-                vals['voltage_ratio'] = [(100 + step * tap_step_percent) / 100 for step in vals['step']]
-                vals['angle_deg'] = [step * tap_step_degree for step in vals['step']]
-                for key, value in characteristics.items():
-                    vals[key] = value.interpolator(range(tap_min, tap_max + 1))
-                row['id_characteristic_table'] = create_trafo_characteristic(net, vals)
-                row['tap_dependency_table'] = True
+        if "id_characteristic_table" not in net[table].columns:
+            net[table]["id_characteristic_table"] = pd.Series(pd.NA, dtype=pd.Int64Dtype())
+        for ind, row in net[table].iterrows():
+            characteristics = {}
+            fallbacks = {}
+            for name in columns:
+                # new column name does not end with _characteristic so it is sliced here.
+                new_name = name[:-len("_characteristic")]
+                if name in net[table] and pd.notna(row[name]):  # check if col exists and is not nan
+                    characteristics[new_name] = net.characteristic.loc[row[name], 'object']
+                elif new_name in net[table] and pd.notna(row[new_name]):
+                    fallbacks[new_name] = row[new_name]
+            if len(characteristics) == 0:
+                continue
+            tap_min = row["tap_min"]
+            if pd.isna(tap_min):
+                raise UserWarning(f'tap_min is missing for {table} with id {row.name}')
+            tap_max = row["tap_max"]
+            if pd.isna(tap_max):
+                raise UserWarning(f'tap_max is missing for {table} with id {row.name}')
+            # cast to int, for compatibility with range
+            tap_max = int(tap_max)
+            tap_min = int(tap_min)
+            tap_step_percent = row["tap_step_percent"]
+            tap_step_degree = row["tap_step_degree"]
+            if tap_max < tap_min:
+                tap_min, tap_max = tap_max, tap_min
+            vals = {
+                'step': list(range(tap_min, tap_max + 1))
+            }
+            vals['voltage_ratio'] = [(100 + step * tap_step_percent) / 100 for step in vals['step']]
+            vals['angle_deg'] = [step * tap_step_degree for step in vals['step']]
+            for key, value in fallbacks.items():
+                vals[key] = [value] * len(vals['step'])
+            for key, value in characteristics.items():
+                vals[key] = value.interpolator(range(tap_min, tap_max + 1))
+            net[table].at[ind, 'id_characteristic_table'] = create_trafo_characteristic(net, vals)
+            net[table].at[ind, 'tap_dependency_table'] = True
 
-            net[table] = net[table].drop(labels=columns, errors="ignore")  # ignore errors if columns are not present
+        net[table] = net[table].drop(columns=columns, errors="ignore")  # ignore errors if columns are not present
 
 
 def convert_trafo_pst_logic(net):

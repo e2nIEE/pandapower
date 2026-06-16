@@ -66,6 +66,8 @@ def create_trafo_characteristic(net: pandapowerNet, characteristic_values: dict,
             new_rows[col] = float('nan')
     # Keep only the columns that exist in the target (re‑order to match)
     new_rows = new_rows[net.trafo_characteristic_table.columns]
+    # if angle_deg is nan it should be set to 0
+    new_rows.loc[:, "angle_deg"] = new_rows.angle_deg.fillna(0.0)
     # Append (concat) to the original DataFrame
     net.trafo_characteristic_table = pd.concat([net.trafo_characteristic_table, new_rows])
 

@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 import numpy as np
 import os
@@ -14,8 +11,7 @@ from packaging import version as vs
 from pandapower import pp_dir, from_json, convert_format, runpp
 
 folder = os.path.join(pp_dir, "test", "test_files", "old_versions")
-found_versions = [file.split("_")[1].split(".json")[0] for _, _, files
-                  in os.walk(folder) for file in files]
+found_versions = [file.split("_")[1].split(".json")[0] for _, _, files in os.walk(folder) for file in files]
 
 
 @pytest.mark.slow
