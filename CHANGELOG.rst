@@ -25,6 +25,7 @@ Change Log
 - [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
 - [ADDED] plotting: highlighting feature and hovering functionality to :code:`simple_plot()`
 - [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
+- [FIXED] pf2pp: static generator without a bus does not cause import errors (it is ignored)
 - [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
 - [ADDED] cim2pp: mapping SV data to the assets with flag use_sv_data_for_assets=True
 
