@@ -1,14 +1,14 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 
 @author: mrichter
 """
 from __future__ import annotations
+
 import datetime
 import enum
 import json
 from typing import List, Dict
+
 from . import interfaces
 
 

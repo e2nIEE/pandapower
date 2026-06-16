@@ -1,10 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 
 @author: mrichter
 """
 from __future__ import annotations
+
 from typing import List, Dict, Union
 import pandas as pd
 import json

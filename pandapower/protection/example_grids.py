@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This file included various test network for modelling and simulation different pandapower modules
 

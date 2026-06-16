@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Wed May  2 17:06:25 2018
 Tests 3 phase power flow algorithm
