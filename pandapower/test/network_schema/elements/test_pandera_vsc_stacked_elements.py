@@ -3,7 +3,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_vsc_stacked
+from pandapower.create import create_bus, create_bus_dc, create_vsc_stacked
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -44,7 +45,7 @@ class TestVSCSTACKEDRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, vn_kv=110.0)  # index 0
         create_bus(net, vn_kv=110.0)  # index 1
         create_bus(net, vn_kv=110.0, index=42)
@@ -95,7 +96,7 @@ class TestVSCSTACKEDRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 110.0)  # index 0
         create_bus(net, 110.0)  # index 1
         create_bus_dc(net, vn_kv=110.0)  # index 0
@@ -136,7 +137,7 @@ class TestVSCSTACKEDOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
@@ -171,7 +172,7 @@ class TestVSCSTACKEDOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
@@ -202,7 +203,7 @@ class TestVSCSTACKEDSchemaForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
@@ -229,7 +230,7 @@ class TestVSCSTACKEDSchemaForeignKey:
 
     def test_invalid_bus_dc_plus_index(self):
         """Test: bus_dc_plus FK must reference an existing dc bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_dc_plus_index")
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
@@ -256,7 +257,7 @@ class TestVSCSTACKEDSchemaForeignKey:
 
     def test_invalid_bus_dc_minus_index(self):
         """Test: bus_dc_minus FK must reference an existing dc bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_dc_minus_index")
         b0 = create_bus(net, 110.0)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1

@@ -5,7 +5,6 @@ import pytest
 import numpy as np
 
 from pandapower.create import (
-    create_empty_network,
     create_bus,
     create_bus_dc,
     create_shunt,
@@ -17,11 +16,12 @@ from pandapower.create import (
     create_vsc_bipolar,
     create_vsc_stacked
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_create_shunt():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_shunt")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
 
@@ -64,7 +64,7 @@ def test_create_shunt():
 
 
 def test_create_shunts():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_shunts")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 20)
@@ -110,7 +110,7 @@ def test_create_shunts():
 
 
 def test_create_shunt_as_capacitor():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_shunt_as_capacitor")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
 
@@ -151,7 +151,7 @@ def test_create_shunt_as_capacitor():
 
 
 def test_create_shunt_nonexistent_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_shunt_nonexistent_bus")
     create_bus(net, 110)
 
     # Test that creating shunt on non-existent bus raises error
@@ -160,7 +160,7 @@ def test_create_shunt_nonexistent_bus():
 
 
 def test_create_shunts_nonexistent_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_shunts_nonexistent_buses")
     b1 = create_bus(net, 110)
 
     # Test that creating shunts on non-existent buses raises error
@@ -169,7 +169,7 @@ def test_create_shunts_nonexistent_buses():
 
 
 def test_create_shunt_index_conflict():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_shunt_index_conflict")
     b1 = create_bus(net, 110)
 
     # Create first shunt
@@ -186,7 +186,7 @@ def test_create_shunt_index_conflict():
 
 
 def test_create_svc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_svc")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
 
@@ -243,7 +243,7 @@ def test_create_svc():
 
 
 def test_create_ssc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_ssc")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
 
@@ -288,7 +288,7 @@ def test_create_ssc():
 
 
 def test_create_svc_nonexistent_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_svc_nonexistent_bus")
     create_bus(net, 110)
 
     # Test that creating SVC on non-existent bus raises error
@@ -300,7 +300,7 @@ def test_create_svc_nonexistent_bus():
 
 
 def test_create_ssc_nonexistent_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_ssc_nonexistent_bus")
     create_bus(net, 110)
 
     # Test that creating SSC on non-existent bus raises error
@@ -309,7 +309,7 @@ def test_create_ssc_nonexistent_bus():
 
 
 def test_create_svc_index_conflict():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_svc_index_conflict")
     b1 = create_bus(net, 110)
 
     # Create first SVC
@@ -335,7 +335,7 @@ def test_create_svc_index_conflict():
 
 
 def test_create_ssc_index_conflict():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_ssc_index_conflict")
     b1 = create_bus(net, 110)
 
     # Create first SSC
@@ -352,7 +352,7 @@ def test_create_ssc_index_conflict():
 
 
 def test_create_vsc_stacked():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_stacked")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
@@ -418,7 +418,7 @@ def test_create_vsc_stacked():
 
 
 def test_create_vsc_bipolar():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_bipolar")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b_dc_plus = create_bus_dc(net, 100)
@@ -481,7 +481,7 @@ def test_create_vsc_bipolar():
 
 
 def test_create_vsc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
     b_dc = create_bus_dc(net, 100)
@@ -543,7 +543,7 @@ def test_create_vsc():
 
 
 def test_create_vsc_stacked_nonexistent_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_stacked_nonexistent_bus")
     create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
     b_dc_minus = create_bus_dc(net, -100)
@@ -557,7 +557,7 @@ def test_create_vsc_stacked_nonexistent_bus():
 
 
 def test_create_vsc_stacked_nonexistent_dc_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_stacked_nonexistent_dc_buses")
     b1 = create_bus(net, 110)
 
     # Test that creating VSC on non-existent DC buses raises error
@@ -569,7 +569,7 @@ def test_create_vsc_stacked_nonexistent_dc_buses():
 
 
 def test_create_vsc_bipolar_nonexistent_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_bipolar_nonexistent_bus")
     create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
     b_dc_minus = create_bus_dc(net, -100)
@@ -583,7 +583,7 @@ def test_create_vsc_bipolar_nonexistent_bus():
 
 
 def test_create_vsc_bipolar_nonexistent_dc_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_bipolar_nonexistent_dc_buses")
     b1 = create_bus(net, 110)
 
     # Test that creating VSC bipolar on non-existent DC buses raises error
@@ -595,7 +595,7 @@ def test_create_vsc_bipolar_nonexistent_dc_buses():
 
 
 def test_create_vsc_nonexistent_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_nonexistent_bus")
     b_dc = create_bus_dc(net, 100)
 
     # Test that creating VSC on non-existent AC bus raises error
@@ -604,7 +604,7 @@ def test_create_vsc_nonexistent_bus():
 
 
 def test_create_vsc_nonexistent_dc_bus():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_nonexistent_dc_bus")
     b1 = create_bus(net, 110)
 
     # Test that creating VSC on non-existent DC bus raises error
@@ -613,7 +613,7 @@ def test_create_vsc_nonexistent_dc_bus():
 
 
 def test_create_vsc_stacked_index_conflict():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_stacked_index_conflict")
     b1 = create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
     b_dc_minus = create_bus_dc(net, -100)
@@ -641,7 +641,7 @@ def test_create_vsc_stacked_index_conflict():
 
 
 def test_create_vsc_bipolar_index_conflict():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_bipolar_index_conflict")
     b1 = create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
     b_dc_minus = create_bus_dc(net, -100)
@@ -669,7 +669,7 @@ def test_create_vsc_bipolar_index_conflict():
 
 
 def test_create_vsc_index_conflict():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_vsc_index_conflict")
     b1 = create_bus(net, 110)
     b_dc = create_bus_dc(net, 100)
 

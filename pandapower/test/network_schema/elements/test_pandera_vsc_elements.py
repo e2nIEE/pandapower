@@ -6,7 +6,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_vsc
+from pandapower.create import create_bus, create_bus_dc, create_vsc
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
     strings,
@@ -54,7 +55,7 @@ class TestVscRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         # AC buses
         create_bus(net, vn_kv=110.0)  # index 0
         create_bus(net, vn_kv=20.0)  # index 1
@@ -105,7 +106,7 @@ class TestVscRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         # AC buses
         create_bus(net, vn_kv=110.0)  # index 0
         create_bus(net, vn_kv=20.0)  # index 1
@@ -139,7 +140,7 @@ class TestVscOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """Test: VSC with optional 'name' set is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         create_bus(net, vn_kv=110.0)  # AC
         create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # DC
 
@@ -164,7 +165,7 @@ class TestVscOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Test: VSC with optional 'name' including nulls is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         # AC/DC buses
         create_bus(net, vn_kv=20.0)  # 0
         create_bus(net, vn_kv=10.0)  # 1
@@ -213,7 +214,7 @@ class TestVscOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         create_bus(net, vn_kv=110.0)
         create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)
 
@@ -241,7 +242,7 @@ class TestVscOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: Invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         create_bus(net, vn_kv=110.0)
         create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)
 
@@ -269,7 +270,7 @@ class TestVscForeignKey:
     """Tests for foreign key constraints"""
 
     def test_invalid_bus_index(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         create_bus(net, vn_kv=110.0)
         create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)
 
@@ -294,7 +295,7 @@ class TestVscForeignKey:
             validate_network(net)
 
     def test_invalid_bus_dc_index(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_dc_index")
         create_bus(net, vn_kv=110.0)
         create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)
 

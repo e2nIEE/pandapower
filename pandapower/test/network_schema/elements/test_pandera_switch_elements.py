@@ -6,7 +6,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_switch
+from pandapower.create import create_bus, create_switch
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -43,7 +44,7 @@ class TestSwitchRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
@@ -74,7 +75,7 @@ class TestSwitchRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
 
@@ -87,7 +88,7 @@ class TestSwitchRequiredFields:
     @pytest.mark.parametrize("parameter", ["bus", "element", "et", "closed"])
     def test_required_fields_nan_invalid(self, parameter):
         """NaN in required columns is invalid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_required_fields_nan_invalid")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -102,7 +103,7 @@ class TestSwitchOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """All optional fields set"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -117,7 +118,7 @@ class TestSwitchOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Optional fields including nulls are valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -146,7 +147,7 @@ class TestSwitchOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -170,7 +171,7 @@ class TestSwitchOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -186,7 +187,7 @@ class TestSwitchForeignKey:
 
     def test_invalid_bus_index(self):
         """bus must reference an existing bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 

@@ -4,7 +4,8 @@
 import pandas as pd
 import numpy as np
 
-from pandapower.create import create_empty_network, create_bus, create_storage, create_storages
+from pandapower.create import create_bus, create_storage, create_storages
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 def _check_storage_table(table: pd.DataFrame, buses: tuple[int, int, int]):
@@ -32,7 +33,7 @@ def _check_storage_table(table: pd.DataFrame, buses: tuple[int, int, int]):
 
 
 def test_create_storage():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_storage")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
@@ -55,7 +56,7 @@ def test_create_storage():
 
 
 def test_create_storages():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_storages")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)

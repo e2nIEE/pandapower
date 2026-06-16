@@ -5,7 +5,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_bus_dc, create_vsc_bipolar
+from pandapower.create import create_bus, create_bus_dc, create_vsc_bipolar
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -65,7 +66,7 @@ class TestVscBipolarRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
@@ -117,7 +118,7 @@ class TestVscBipolarRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
         create_bus_dc(net, vn_kv=110.0)  # index 0
@@ -157,7 +158,7 @@ class TestVscBipolarOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
@@ -195,7 +196,7 @@ class TestVscBipolarOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
@@ -228,7 +229,7 @@ class TestVscBipolarForeignKey:
     @pytest.mark.parametrize("fk_field", ["bus", "bus_dc_plus", "bus_dc_minus"])
     def test_invalid_fk_index(self, fk_field):
         """Test: bus and bus_dc FKs must reference existing indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_fk_index")
         b0 = create_bus(net, 0.4)
         create_bus(net, 0.4)
 

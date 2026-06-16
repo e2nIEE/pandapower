@@ -296,8 +296,8 @@ def fuse_test_net3():
     # Define load fuse (bus-bus switch)
     create_switch(net, bus=3, element=4, et='b', type="fuse", z_ohm=0.0001)
     # define load
-    create_load(net, bus=4, p_mw=0.1, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=.1,
-                name=None, scaling=1., index=0)
+    create_load(net, bus=4, p_mw=0.1, q_mvar=0, const_z_p_percent=0, const_z_q_percent=0, const_i_p_percent=0,
+                const_i_q_percent=0, sn_mva=.1, name=None, scaling=1., index=0)
     return net
 
 
@@ -364,8 +364,8 @@ def fuse_test_net2():
     create_switches(net, buses=[1, 2, 3], elements=[0, 1, 1], et='l', type="fuse")
 
     # define load
-    create_load(net, bus=3, p_mw=0.1, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=.1,
-                name=None, scaling=1., index=0)
+    create_load(net, bus=3, p_mw=0.1, q_mvar=0, const_z_p_percent=0, const_z_q_percent=0, const_i_p_percent=0,
+                const_i_q_percent=0, sn_mva=.1, name=None, scaling=1., index=0)
 
     return net
 
@@ -460,8 +460,8 @@ def fuse_test_net4():
     create_switch(net, bus=6, element=7, et='l', type="CB", closed=False)
 
     # define load
-    create_loads(net, buses=[4, 8], p_mw=[0.1, 0.05], q_mvar=0, const_z_percent=0, const_i_percent=0, name=None,
-                 index=[0, 1])
+    create_loads(net, buses=[4, 8], p_mw=[0.1, 0.05], q_mvar=0, const_z_p_percent=0, const_z_q_percent=0,
+                 const_i_p_percent=0, const_i_q_percent=0, name=None, index=[0, 1])
 
     return net
 

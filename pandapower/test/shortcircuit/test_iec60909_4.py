@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -281,7 +279,8 @@ def test_iec_60909_4_3ph_small_with_gen_xward():
 def test_iec_60909_4_3ph_small_gen_only():
     net = iec_60909_4_small_gen_only()
 
-    calc_sc(net, fault="3ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(UserWarning, match="Calculation does not support calculation of voltages and .*"):
+        calc_sc(net, fault="3ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [1.9755, 39.5042]
     ip_pf = [5.2316, 104.1085]
     ib_pf = [1.6071, 27.3470]

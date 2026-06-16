@@ -6,7 +6,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_storage
+from pandapower.create import create_bus, create_storage
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -45,7 +46,7 @@ class TestStorageRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
@@ -69,7 +70,7 @@ class TestStorageRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
 
@@ -84,7 +85,7 @@ class TestStorageOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """All optional fields set and OPF group complete"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus(net, 0.4)
 
         create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
@@ -108,7 +109,7 @@ class TestStorageOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Optional fields incl. nulls are valid when OPF group is not triggered"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus(net, 0.4)
 
         # Row 1
@@ -131,7 +132,7 @@ class TestStorageOptionalFields:
         """OPF group must be complete if any OPF value is set"""
 
         # Case 1: only max_p_mw
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_partial_missing_invalid0")
         b0 = create_bus(net, 0.4)
         create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["max_p_mw"] = 1.0
@@ -139,7 +140,7 @@ class TestStorageOptionalFields:
             validate_network(net)
 
         # Case 2: only controllable
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_partial_missing_invalid1")
         b0 = create_bus(net, 0.4)
         create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["controllable"] = pd.Series([True], dtype="boolean")
@@ -147,7 +148,7 @@ class TestStorageOptionalFields:
             validate_network(net)
 
         # Case 3: only min_q_mvar
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_partial_missing_invalid2")
         b0 = create_bus(net, 0.4)
         create_storage(net, bus=b0, p_mw=-0.2, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["min_q_mvar"] = -0.5
@@ -173,7 +174,7 @@ class TestStorageOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Valid optional values are accepted (OPF group satisfied when needed)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_storage(net, bus=b0, p_mw=0.3, q_mvar=0.0, sn_mva=1.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
@@ -214,7 +215,7 @@ class TestStorageOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Invalid optional values are rejected (OPF group satisfied)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_storage(net, bus=b0, p_mw=0.3, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
@@ -236,7 +237,7 @@ class TestStorageForeignKey:
 
     def test_invalid_bus_index(self):
         """bus must reference an existing bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
 
         create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)

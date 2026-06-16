@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,8 +9,6 @@ from typing import Dict, Union
 import numpy as np
 import pandas as pd
 
-from pandapower.network_structure import get_structure_dict
-from pandapower.create import create_empty_network
 from pandapower.network import pandapowerNet
 
 
@@ -382,7 +378,7 @@ class UCTE2pandapower:
         lines_rxb_zero = (
             (self.u_d["L"].r == 0) & (self.u_d["L"].x == 0) & (self.u_d["L"].b == 0)
         )
-        switches = self.u_d["L"].loc[lines_rxb_zero | switches_by_status, :]
+        switches = self.u_d["L"].loc[lines_rxb_zero | switches_by_status, :].copy()
 
         # create the in_service column from the UCTE status
         in_service_map = {0: True, 1: True, 2: True, 7: False, 8: False, 9: False}

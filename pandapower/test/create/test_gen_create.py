@@ -4,12 +4,13 @@
 import pytest
 import numpy as np
 
-from pandapower.create import create_empty_network, create_bus, create_gen, create_gens
+from pandapower.create import create_bus, create_gen, create_gens
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 def test_create_gen():
     # Test basic generator creation with required parameters
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gen")
     b1 = create_bus(net, 110.0)
 
     # Create generator with required parameters (bus, p_mw)
@@ -32,7 +33,7 @@ def test_create_gen():
 
 def test_create_gen_with_optional_params():
     # Test generator creation with optional parameters
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gen_with_optional_params")
     b1 = create_bus(net, 110.0)
 
     gidx = create_gen(
@@ -91,7 +92,7 @@ def test_create_gen_with_optional_params():
 
 def test_create_gen_out_of_service():
     # Test generator creation with in_service=False
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gen_out_of_service")
     b1 = create_bus(net, 110.0)
 
     gidx = create_gen(
@@ -109,7 +110,7 @@ def test_create_gen_out_of_service():
 
 def test_create_gen_with_index():
     # Test generator creation with custom index
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gen_with_index")
     b1 = create_bus(net, 110.0)
 
     gidx = create_gen(
@@ -127,7 +128,7 @@ def test_create_gen_with_index():
 
 def test_create_gen_nonexistent_bus():
     # Test that creating a generator with non-existent bus raises an error
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gen_nonexistent_bus")
 
     with pytest.raises(Exception):
         create_gen(
@@ -138,7 +139,7 @@ def test_create_gen_nonexistent_bus():
 
 
 def test_create_gens():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gens")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -193,7 +194,7 @@ def test_create_gens():
 
 
 def test_create_gen_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gen_controllable")
 
     b1 = create_bus(net, 110)
     s1 = create_gen(net, b1, 50)
@@ -206,7 +207,7 @@ def test_create_gen_controllable():
 
 
 def test_create_gens_controllable():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gens_controllable")
 
     b1 = create_bus(net, 110)
     s1 = create_gens(net, [b1], 50)[0]
@@ -219,7 +220,7 @@ def test_create_gens_controllable():
 
 
 def test_create_gens_raise_errorexcept():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_gens_raise_errorexcept")
     # standard
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)

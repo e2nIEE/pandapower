@@ -1,3 +1,4 @@
+from numpy._typing import NDArray
 from pandas.api.types import is_bool_dtype, is_numeric_dtype
 
 from pandapower.auxiliary import LoadflowNotConverged
@@ -89,24 +90,24 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
               nb_dict["nb_i"]:(nb_dict["nb_i"] + nb_dict["nb_b"] + nb_dict["nb_t"])]
     Ybus_be = Ybus_eb.T
 
+    inverse_y_bus_ee: NDArray = np.array(float('nan'))
     try:
-        inverse_Ybus_ee = np.linalg.inv(Ybus_ee)
+        inverse_y_bus_ee = np.linalg.inv(Ybus_ee)
     except np.linalg.LinAlgError as err:
         if 'Singular matrix' in str(err):
             logger.debug("Ymat_ee is a singular martix, now try to compute the \
                          pseudo-inverse of the matrix.")
-            inverse_Ybus_ee = np.linalg.pinv(Ybus_ee)
-    Ybus_eq_boundary = Ybus_bb - (Ybus_be * inverse_Ybus_ee * Ybus_eb)
-    Ybus_eq = np.copy(Ybus_sorted[0: nb_dict["nb_i"] + nb_dict["nb_b"] + nb_dict["nb_t"],
+            inverse_y_bus_ee = np.linalg.pinv(Ybus_ee)
+    y_bus_eq_boundary = Ybus_bb - (Ybus_be * inverse_y_bus_ee * Ybus_eb)
+    y_bus_eq = np.copy(Ybus_sorted[0: nb_dict["nb_i"] + nb_dict["nb_b"] + nb_dict["nb_t"],
                       0: nb_dict["nb_i"] + nb_dict["nb_b"] + nb_dict["nb_t"]])
-    Ybus_eq[-(nb_dict["nb_b"] + nb_dict["nb_t"]):, -(nb_dict["nb_b"] +
-                                                     nb_dict["nb_t"]):] = Ybus_eq_boundary
+    y_bus_eq[-(nb_dict["nb_b"] + nb_dict["nb_t"]):, -(nb_dict["nb_b"] + nb_dict["nb_t"]):] = y_bus_eq_boundary
 
     t_end = time.perf_counter()
     if show_computing_time:
         logger.info("\"calculate_equivalent_Ybus\" finished in %s seconds:" % round((
                 t_end - t_start), 2))
-    return Ybus_eq
+    return y_bus_eq
 
 
 def adapt_impedance_params(Z, sign=1, adaption=1e-15):
@@ -120,7 +121,7 @@ def adapt_impedance_params(Z, sign=1, adaption=1e-15):
     return rft_pu, xft_pu
 
 
-# TODO: This function should be refactored, it is way to big and dos way to many tasks in one.
+# TODO: This function should be refactored, it is way to big and does way to many tasks in one.
 def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses,
                      load_separate=False, sgen_separate=True, gen_separate=True,
                      show_computing_time=False, calc_volt_angles=True,

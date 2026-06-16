@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_empty_network,
     create_bus,
     create_buses,
     create_ext_grid,
@@ -14,12 +13,13 @@ from pandapower.create import (
     create_tcsc,
     create_series_reactor_as_impedance,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_create_impedance():
     """Test creating a single impedance element."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_impedance")
 
     # Create buses
     b1 = create_bus(net, 110)
@@ -95,7 +95,7 @@ def test_create_impedance():
 
 def test_create_impedances():
     """Test creating multiple impedance elements at once."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_impedances")
 
     # Create buses
     buses = create_buses(net, 4, 110)
@@ -167,7 +167,7 @@ def test_create_impedances():
 
 def test_create_tcsc():
     """Test creating a TCSC (Thyristor Controlled Series Compensator) element."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_tcsc")
 
     # Create buses
     b1 = create_bus(net, 110)
@@ -225,7 +225,7 @@ def test_create_tcsc():
 
 def test_create_series_reactor_as_impedance():
     """Test creating a series reactor as per-unit impedance."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_series_reactor_as_impedance")
 
     # Create buses with same voltage level
     b1 = create_bus(net, 110)

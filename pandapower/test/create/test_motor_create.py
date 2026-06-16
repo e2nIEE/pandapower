@@ -4,15 +4,14 @@
 import pytest
 import numpy as np
 
-from pandapower.create import (
-    create_empty_network, create_bus, create_motor
-)
+from pandapower.create import create_bus, create_motor
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_create_motor():
     # Test basic motor creation with required parameters
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_motor")
     b1 = create_bus(net, 110.0)
 
     # Create motor with required parameters
@@ -33,7 +32,7 @@ def test_create_motor():
 
 def test_create_motor_with_optional_params():
     # Test motor creation with optional parameters
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_motor_with_optional_params")
     b1 = create_bus(net, 110.0)
 
     midx = create_motor(
@@ -75,7 +74,7 @@ def test_create_motor_with_optional_params():
 
 def test_create_motor_out_of_service():
     # Test motor creation with in_service=False
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_motor_out_of_service")
     b1 = create_bus(net, 110.0)
 
     midx = create_motor(
@@ -94,7 +93,7 @@ def test_create_motor_out_of_service():
 
 def test_create_motor_with_index():
     # Test motor creation with custom index
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_motor_with_index")
     b1 = create_bus(net, 110.0)
 
     midx = create_motor(
@@ -113,7 +112,7 @@ def test_create_motor_with_index():
 
 def test_create_motor_nonexistent_bus():
     # Test that creating a motor with non-existent bus raises an error
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_motor_nonexistent_bus")
 
     with pytest.raises(Exception):
         create_motor(

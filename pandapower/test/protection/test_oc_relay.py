@@ -138,7 +138,7 @@ def oc_relay_net():
     # Define switches
     create_switches(net, buses=[0, 1, 1, 2, 4, 5], elements=[0, 1, 3, 2, 4, 5], et='l', type="CB_DTOC")
     # define load
-    create_loads(net, buses=[3, 6], p_mw=[5, 2], q_mvar=[1, 1], const_z_percent=0, const_i_percent=0, sn_mva=None,
-                 name=None, scaling=1., index=[0, 1])
+    create_loads(net, buses=[3, 6], p_mw=[5, 2], q_mvar=[1, 1], const_z_p_percent=0, const_z_q_percent=0,
+                 const_i_p_percent=0, const_i_q_percent=0, name=None, scaling=1., index=[0, 1])
 
     return net

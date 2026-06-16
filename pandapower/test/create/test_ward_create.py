@@ -6,13 +6,14 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 
-from pandapower.create import create_empty_network, create_bus, create_ward, create_wards, create_xward
+from pandapower.create import create_bus, create_ward, create_wards, create_xward
 from pandapower.toolbox import nets_equal
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_create_ward():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_ward")
     bus = create_bus(net, 110)
 
     ward_id = create_ward(net, bus, ps_mw=1.0, qs_mvar=0.5, pz_mw=0.2, qz_mvar=0.1)
@@ -40,7 +41,7 @@ def test_create_ward():
 
 
 def test_create_wards():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_wards")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
@@ -81,7 +82,7 @@ def test_create_wards():
 
 
 def test_create_xward():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_xward")
     bus = create_bus(net, 110)
 
     xward_id = create_xward(

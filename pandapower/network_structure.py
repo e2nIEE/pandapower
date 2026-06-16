@@ -135,7 +135,7 @@ def get_structure_dict(required_only: bool = True, metadata: list | None = None)
             "name": dtype(object),
             "element_type": dtype(object),
             "element_index": dtype(object),
-            "reference_column": dtype(object),
+            "reference_column": pd.StringDtype(),
         }
     }
     internal_values = {

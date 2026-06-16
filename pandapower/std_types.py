@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -1589,8 +1587,8 @@ def basic_std_types():
 
 def add_basic_std_types(net):
     """Adds basic standard types of the pandapower library to the net provided. These standard types
-    are the same types that are available with output of `pandapower.create_empty_network()` and
-    `pandapower.create_empty_network(add_stdtypes=True)` respectively.
+    are the same types that are available with output of `pandapower.pandapowerNet()` and
+    `pandapower.pandapowerNet(add_stdtypes=True)` respectively.
 
     Parameters:
         net: pandapower net which should receive the basic standard types

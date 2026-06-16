@@ -4,7 +4,8 @@ import itertools
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid
+from pandapower.create import create_bus, create_ext_grid
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -42,7 +43,7 @@ class TestExtGridRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)
@@ -68,7 +69,7 @@ class TestExtGridRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
 
@@ -85,7 +86,7 @@ class TestExtGridOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """Test: ext_grid with every optional field is valid and dependencies satisfied"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus(net, 0.4)
 
         create_ext_grid(
@@ -113,7 +114,7 @@ class TestExtGridOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Test: ext_grid with optional fields including nulls, with dependencies respected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus(net, 0.4)
 
         # Row 1: OPF present, SC/3PH absent
@@ -166,7 +167,7 @@ class TestExtGridOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_ext_grid(
@@ -196,7 +197,7 @@ class TestExtGridOptionalFields:
 
     def test_opf_group_partial_missing_invalid(self):
         """Test: OPF group must be complete if any OPF value is set"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
         b0 = create_bus(net, 0.4)
         create_ext_grid(net, bus=b0, vm_pu=1.0, va_degree=0.0, in_service=True)
         # Set only one OPF column -> should fail by group dependency
@@ -207,7 +208,7 @@ class TestExtGridOptionalFields:
 
     def test_sc_group_partial_missing_invalid(self):
         """Test: SC group must be complete if any SC value is set"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_sc_group_partial_missing_invalid")
         b0 = create_bus(net, 0.4)
 
         create_ext_grid(net, bus=b0, vm_pu=1.0, va_degree=0.0, in_service=True)
@@ -219,7 +220,7 @@ class TestExtGridOptionalFields:
 
     def test_3ph_group_partial_missing_invalid(self):
         """Test: 3PH group must be complete if any 3PH value is set (and SC group too)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_3ph_group_partial_missing_invalid")
         b0 = create_bus(net, 0.4)
 
         create_ext_grid(net, bus=b0, vm_pu=1.0, va_degree=0.0, in_service=True)
@@ -249,7 +250,7 @@ class TestExtGridOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are not accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
         create_ext_grid(
             net,
@@ -282,7 +283,7 @@ class TestExtGridForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
 
         create_ext_grid(net, bus=b0, vm_pu=1.0, va_degree=0.0, in_service=True)

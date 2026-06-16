@@ -11,10 +11,11 @@ from pandapower.network_schema.tools.validation.bus_index_validation import (
     _create_multi_column_reference_schema,
 )
 from pandapower.create import (
-    create_empty_network, create_bus, create_load, create_ext_grid, create_line,
+    create_bus, create_load, create_ext_grid, create_line,
     create_transformer, create_gen, create_bus_dc, create_vsc, create_switch
 )
 from pandapower.create._utils import _get_index_with_check
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.line import line_schema
 from pandapower.network_schema.bus import bus_schema
 from pandapower.network_schema.bus_dc import bus_dc_schema
@@ -81,9 +82,9 @@ class TestBusIndexValidation:
         """
         Test that validation passes for line with valid bus references.
         """
-        from pandapower.create import create_empty_network, create_bus, create_line
+        from pandapower.create import create_bus, create_line
 
-        net = create_empty_network()
+        net = pandapowerNet(name="test_line_with_valid_buses")
         b0 = create_bus(net, vn_kv=0.4)
         b1 = create_bus(net, vn_kv=0.4)
         create_line(net, from_bus=b0, to_bus=b1, length_km=0.1, std_type="NAYY 4x50 SE")
@@ -96,7 +97,7 @@ class TestBusIndexValidation:
         Test that validation raises error for invalid bus references.
         """
 
-        net = create_empty_network()
+        net = pandapowerNet(name="test_line_with_invalid_buses")
         b0 = create_bus(net, vn_kv=0.4)
         b1 = create_bus(net, vn_kv=0.4)
         invalid_bus = _get_index_with_check(net, "bus", 99)
@@ -119,7 +120,7 @@ class TestBusIndexValidation:
         """
         Test that validation is skipped for 'bus' element.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_skips_validation_for_bus_element")
         create_bus(net, vn_kv=0.4)
 
         # Should not raise any error - bus is the reference table itself
@@ -129,7 +130,7 @@ class TestBusIndexValidation:
         """
         Test that validation is skipped for 'bus_dc' element.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_skips_validation_for_bus_dc_element")
         create_bus_dc(net, vn_kv=0.4)
 
         # Should not raise any error - bus_dc is the reference table itself
@@ -139,7 +140,7 @@ class TestBusIndexValidation:
         """
         Test that switch validation includes the 'element' column.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_validates_switch_with_element_column")
         b1 = create_bus(net, vn_kv=0.4)
         b2 = create_bus(net, vn_kv=0.4)
         l1 = create_line(net, from_bus=b1, to_bus=b2, length_km=0.1, std_type="NAYY 4x50 SE")
@@ -153,7 +154,7 @@ class TestBusIndexValidation:
         """
         Test validation of VSC with both AC and DC bus columns.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_validates_vsc_with_ac_and_dc_buses")
         # AC buses
         b0 = create_bus(net, vn_kv=110.0)
         # DC buses
@@ -169,7 +170,7 @@ class TestBusIndexValidation:
         """
         Test validation fails when DC bus reference is invalid in VSC.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_vsc_with_invalid_dc_bus")
         b0 = create_bus(net, vn_kv=110.0)
         dc0 = create_bus_dc(net, vn_kv=0.4)
         invalid_dc_bus = _get_index_with_check(net, "bus_dc", 99)
@@ -186,7 +187,7 @@ class TestBusIndexValidation:
         """
         Test that only columns present in net[element] are validated.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_load_with_valid_bus")
         b1 = create_bus(net, vn_kv=0.4)
 
         # Create a load (which only has 'bus' column, not 'from_bus' or 'to_bus')
@@ -206,7 +207,7 @@ class TestBusIndexValidationIntegration:
         Test validation on a more complete network.
         """
         # Create a simple network
-        net = create_empty_network()
+        net = pandapowerNet(name="test_full_network_validation")
 
         # Create buses
         b1 = create_bus(net, vn_kv=110.0, name="Bus 1")

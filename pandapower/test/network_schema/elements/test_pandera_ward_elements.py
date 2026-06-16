@@ -6,7 +6,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ward
+from pandapower.create import create_bus, create_ward
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -40,7 +41,7 @@ class TestWardRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
         create_bus(net, 0.4, index=42)  # ensure 42 exists for FK-positive tests
@@ -65,7 +66,7 @@ class TestWardRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
 
@@ -81,7 +82,7 @@ class TestWardOptionalFields:
 
     def test_all_optional_fields_valid(self):
         """Test: ward with optional 'name' set is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_fields_valid")
         b0 = create_bus(net, 0.4)
 
         create_ward(net, bus=b0, ps_mw=1.0, qs_mvar=0.2, pz_mw=0.1, qz_mvar=0.05, in_service=True, name="Ward A")
@@ -91,7 +92,7 @@ class TestWardOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         """Test: ward with optional 'name' including nulls is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -107,7 +108,7 @@ class TestWardOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_ward(net, bus=b0, ps_mw=1.0, qs_mvar=0.2, pz_mw=0.1, qz_mvar=0.05, in_service=True)
@@ -120,7 +121,7 @@ class TestWardOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_ward(net, bus=b0, ps_mw=1.0, qs_mvar=0.2, pz_mw=0.1, qz_mvar=0.05, in_service=True)
@@ -134,7 +135,7 @@ class TestWardForeignKey:
     """Tests for foreign key constraints"""
 
     def test_invalid_bus_index(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
 
         create_ward(net, bus=b0, ps_mw=1.0, qs_mvar=0.2, pz_mw=0.1, qz_mvar=0.05, in_service=True)

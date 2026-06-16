@@ -4,10 +4,9 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus
+from pandapower.create import create_bus
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-from pandapower.network_schema.tools.helper import get_dtypes
-from pandapower.network_schema.bus import bus_schema
 from pandapower.test.network_schema.elements.helper import (
     strings,
     bools,
@@ -35,7 +34,7 @@ class TestBusRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         """Test: Invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         kwargs = {parameter: valid_value}
         vn_kv = kwargs.pop("vn_kv", 0.4)
         create_bus(net, vn_kv, **kwargs)
@@ -54,7 +53,7 @@ class TestBusRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: Invalid required values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)
         net.bus[parameter] = invalid_value
 
@@ -67,13 +66,13 @@ class TestBusOptionalFields:
 
     def test_bus_with_optional_fields(self):
         """Test: Bus with every optional fields is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_bus_with_optional_fields")
         create_bus(net, vn_kv=0.4, zone="everywhere", max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0), type="b")
         validate_network(net)
 
     def test_buses_with_optional_fields_including_nullvalues(self):
         """Test: Buses with some optional fields is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_buses_with_optional_fields_including_nullvalues")
         create_bus(net, 0.4, zone="nowhere")
         create_bus(net, 0.4, max_vm_pu=1)
         create_bus(net, 0.4, min_vm_pu=0.9)
@@ -84,7 +83,7 @@ class TestBusOptionalFields:
 
     def test_valid_type_values(self):
         """Test: Valid 'type' values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_type_values")
         create_bus(net, 0.4)
         create_bus(net, 0.4)
 
@@ -104,7 +103,7 @@ class TestBusOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         create_bus(net, 0.4, **{parameter: valid_value})
 
         validate_network(net)
@@ -120,7 +119,7 @@ class TestBusOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: Invalid optional values are rejected"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         create_bus(net, 0.4)
         net.bus[parameter] = invalid_value
 

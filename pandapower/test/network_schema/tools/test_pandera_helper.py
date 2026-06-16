@@ -1,5 +1,5 @@
 import pytest
-import pandera as pa
+import pandera.pandas as pa
 import pandas as pd
 import numpy as np
 from pandapower.network_schema.tools.helper import get_dtypes

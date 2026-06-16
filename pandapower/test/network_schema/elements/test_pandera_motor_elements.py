@@ -6,7 +6,8 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_motor
+from pandapower.create import create_bus, create_motor
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from pandapower.test.network_schema.elements.helper import (
@@ -54,7 +55,7 @@ class TestMotorRequiredFields:
         ),
     )
     def test_valid_required_values(self, parameter, valid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
         create_bus(net, 0.4, index=42)
@@ -99,7 +100,7 @@ class TestMotorRequiredFields:
         ),
     )
     def test_invalid_required_values(self, parameter, invalid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus(net, 0.4)
         create_bus(net, 0.4)
 
@@ -141,7 +142,7 @@ class TestMotorRequiredFields:
         ],
     )
     def test_required_fields_nan_invalid(self, parameter):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_required_fields_nan_invalid")
         b0 = create_bus(net, 0.4)
 
         create_motor(
@@ -169,7 +170,7 @@ class TestMotorOptionalFields:
     """Only 'name' is optional"""
 
     def test_optional_fields_with_nulls(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_optional_fields_with_nulls")
         b0 = create_bus(net, 0.4)
 
         create_motor(
@@ -217,7 +218,7 @@ class TestMotorOptionalFields:
         ),
     )
     def test_valid_optional_values(self, parameter, valid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_motor(
@@ -244,7 +245,7 @@ class TestMotorOptionalFields:
         list(itertools.chain(itertools.product(["name"], not_strings_list))),
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         b0 = create_bus(net, 0.4)
 
         create_motor(
@@ -272,7 +273,7 @@ class TestMotorForeignKey:
     """Foreign key constraints"""
 
     def test_invalid_bus_index(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         b0 = create_bus(net, 0.4)
 
         create_motor(

@@ -6,10 +6,10 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_empty_network, create_bus_dc
+from pandapower.create import create_bus_dc
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
-    strings,
     bools,
     not_strings_list,
     not_floats_list,
@@ -34,7 +34,7 @@ class TestBusDCRequiredFields:
         ),
     )
     def test_valid_required_values(self, parameter, valid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_required_values")
 
         # A minimal valid bus_dc
         create_bus_dc(net, vn_kv=1.0, in_service=True)
@@ -54,7 +54,7 @@ class TestBusDCRequiredFields:
         ),
     )
     def test_invalid_required_values(self, parameter, invalid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_required_values")
         create_bus_dc(net, vn_kv=1.0, in_service=True)
 
         net.bus_dc[parameter] = invalid_value
@@ -67,7 +67,7 @@ class TestBusDCOptionalFields:
     """Tests for optional dc bus fields"""
 
     def test_bus_dc_with_optional_fields(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_bus_dc_with_optional_fields")
         create_bus_dc(
             net,
             vn_kv=1.0,
@@ -82,7 +82,7 @@ class TestBusDCOptionalFields:
         validate_network(net)
 
     def test_bus_dc_with_optional_fields_including_nulls(self):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_bus_dc_with_optional_fields_including_nulls")
         create_bus_dc(net, vn_kv=1.0, in_service=True, name="bye world")
         create_bus_dc(net, vn_kv=1.0, in_service=True, type="b")
         create_bus_dc(net, vn_kv=1.0, in_service=True, zone="somewhere")
@@ -99,7 +99,7 @@ class TestBusDCOptionalFields:
         ),
     )
     def test_valid_optional_values(self, parameter, valid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_optional_values")
         create_bus_dc(net, vn_kv=1.0, in_service=True, **{parameter: valid_value})
         if parameter in "min_vm_pu" and not isnan(valid_value):
             net.bus_dc.at[0, "max_vm_pu"] = 2.0
@@ -118,7 +118,7 @@ class TestBusDCOptionalFields:
         ),
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_optional_values")
         create_bus_dc(net, vn_kv=1.0, in_service=True)
         net.bus_dc[parameter] = invalid_value
 

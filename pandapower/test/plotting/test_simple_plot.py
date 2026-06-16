@@ -1,16 +1,17 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import pytest
 from math import pi
-from pandapower.create import create_empty_network, create_bus, create_sgen, create_load
+
+from pandapower.create import create_bus, create_sgen, create_load
+from pandapower.network import pandapowerNet
 
 
 def test_calculate_unique_angles():
     from pandapower.plotting.simple_plot import calculate_unique_angles
 
-    net = create_empty_network()
+    net = pandapowerNet(name="test_calculate_unique_angles")
     b = create_bus(net, 50, "bus")
     b1 = create_bus(net, 50, "bus")
 

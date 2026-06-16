@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -71,7 +69,6 @@ def create_group(
         **kwargs,
     }
     _set_multiple_entries(net, "group", index, entries=entries)
-    net.group.loc[net.group.reference_column == "", "reference_column"] = None  # overwrite
 
     return index[0]
 

@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+import pytest
 
 from pandapower.create import create_bus, create_line, create_ext_grid, create_sgen, create_gen
 from pandapower.network import pandapowerNet
@@ -146,4 +145,5 @@ def test_voltage_very_simple():
 
 def test_iec_60909_4():
     net = iec_60909_4()
-    calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)
+    with pytest.warns(UserWarning, match="Calculation does not support calculation of voltages and .*"):
+        calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)

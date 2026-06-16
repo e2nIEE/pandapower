@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -103,10 +101,10 @@ def _get_injection_consumption(net):
     # xward is in the consumption reference system
     # active power consumption by the internal elements of xward is not adjusted by the distributed slack calculation
     # that is why we add the active power of the internal elements of the xward here
-    consumed_p_mw = total_pl_mw + \
-                    net.load[net.load.in_service].p_mw.sum() - \
-                    net.sgen[net.load.in_service].p_mw.sum() + \
-                    xward_internal.sum()
+    consumed_p_mw = (total_pl_mw
+                     + net.load[net.load.in_service].p_mw.sum()
+                     - net.sgen[net.sgen.in_service].p_mw.sum()
+                     + xward_internal.sum())
     injected_p_mw = net.gen[net.gen.in_service].p_mw.sum()
     # we return the xward power separately because it is also already considered in the inputs and results
     return injected_p_mw, consumed_p_mw, net.xward[net.xward.in_service].ps_mw.sum()

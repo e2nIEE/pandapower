@@ -1,14 +1,10 @@
-# -*- coding: utf-8 -*-
 """
 This file included various test network for modelling and simulation different pandapower modules
 
 """
-import pandas as pd
 
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines, create_switches, \
-    create_loads
-
-pd.Series(dtype='float64')
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_switches, create_loads
+from pandapower.network import pandapowerNet
 
 
 def three_radial_bus_net():

@@ -4,16 +4,13 @@
 import pytest
 import numpy as np
 
-from pandapower.create import (
-    create_empty_network,
-    create_bus_dc,
-    create_source_dc,
-)
+from pandapower.create import create_bus_dc, create_source_dc
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_create_source_dc():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_source_dc")
     b1 = create_bus_dc(net, 100)
 
     # Test basic source_dc creation
@@ -52,7 +49,7 @@ def test_create_source_dc():
 
 def test_create_source_dc_invalid_bus():
     """Test that creating source_dc with non-existent bus raises error"""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_source_dc_invalid_bus")
     create_bus_dc(net, 100)  # creates bus with index 0
 
     # Test with non-existent bus_dc
@@ -62,7 +59,7 @@ def test_create_source_dc_invalid_bus():
 
 def test_create_source_dc_with_kwargs():
     """Test that additional kwargs are passed correctly to the table"""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_source_dc_with_kwargs")
     b1 = create_bus_dc(net, 100)
 
     # Test with additional kwargs
@@ -83,7 +80,7 @@ def test_create_source_dc_with_kwargs():
 
 def test_create_source_dc_multiple():
     """Test creating multiple source_dc elements"""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_source_dc_multiple")
     b1 = create_bus_dc(net, 100)
     b2 = create_bus_dc(net, 110)
 
