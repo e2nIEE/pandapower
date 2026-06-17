@@ -260,6 +260,19 @@ class TestLoadDcForeignKey:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    def test_valid_bus_dc_index_non_sequential(self):
+        """Test: bus_dc FK works with non-sequential bus_dc indices"""
+        net = create_empty_network()
+        create_bus_dc(net, 0.4, index=10)
+        create_bus_dc(net, 0.4, index=42)
+        create_bus_dc(net, 0.4, index=100)
+
+        create_load_dc(net, bus_dc=10, p_dc_mw=1.0, scaling=1.0, in_service=True)
+        create_load_dc(net, bus_dc=42, p_dc_mw=2.0, scaling=0.9, in_service=True)
+        create_load_dc(net, bus_dc=100, p_dc_mw=0.5, scaling=1.1, in_service=False)
+
+        validate_network(net)
+
 
 class TestLoadDcResults:
     """Tests for load_dc results after calculations"""

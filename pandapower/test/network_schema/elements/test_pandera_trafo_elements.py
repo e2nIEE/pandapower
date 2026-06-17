@@ -1074,12 +1074,25 @@ class TestTrafoDependencies:
 class TestTrafoForeignKeys:
     """Tests for foreign key constraints (hv_bus, lv_bus -> bus.index)"""
 
-    def test_valid_bus_index_sequential(self):
-        """Test: bus FK works with sequential bus indices"""
+    def test_invalid_hv_bus_index(self):
+        """Test: hv_bus FK must reference an existing bus index"""
         net = _create_net_with_buses()
         net.trafo = _create_valid_trafo_dataframe()
 
-        validate_network(net)
+        net.trafo["hv_bus"] = 9999
+
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_invalid_lv_bus_index(self):
+        """Test: lv_bus FK must reference an existing bus index"""
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+
+        net.trafo["lv_bus"] = 9999
+
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""

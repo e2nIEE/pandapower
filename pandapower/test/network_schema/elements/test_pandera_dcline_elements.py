@@ -350,6 +350,31 @@ class TestDclineForeignKey:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FKs work with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_dcline(
+            net, from_bus=10, to_bus=42, p_mw=10.0,
+            loss_percent=1.0, loss_mw=0.1, vm_from_pu=1.02, vm_to_pu=1.01,
+            in_service=True,
+        )
+        create_dcline(
+            net, from_bus=42, to_bus=100, p_mw=5.0,
+            loss_percent=0.5, loss_mw=0.05, vm_from_pu=1.01, vm_to_pu=1.0,
+            in_service=True,
+        )
+        create_dcline(
+            net, from_bus=100, to_bus=10, p_mw=8.0,
+            loss_percent=0.8, loss_mw=0.08, vm_from_pu=1.0, vm_to_pu=1.02,
+            in_service=False,
+        )
+
+        validate_network(net)
+
 
 class TestDclineResults:
     """Tests for dcline results after calculations"""
