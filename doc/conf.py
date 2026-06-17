@@ -35,7 +35,9 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinxcontrib.imagesvg',
     'numpydoc',
-    'gen_csv',
+    # custom extensions:
+    'save_element_tables',
+    'save_std_types'
 ]
 # sphinx.ext.mathjax and sphinx.ext.imgmath don't comply with each other any more.
 
