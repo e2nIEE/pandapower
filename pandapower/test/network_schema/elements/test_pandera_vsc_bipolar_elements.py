@@ -183,6 +183,87 @@ class TestVscBipolarOptionalFields:
 class TestVscBipolarForeignKey:
     """Tests for foreign key constraints"""
 
+    def test_invalid_bus_index(self):
+        """Test: bus FK must reference an existing bus index"""
+        net = create_empty_network()
+        create_bus(net, 0.4)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
+
+        create_vsc_bipolar(
+            net,
+            bus=0,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        net.vsc_bipolar["bus"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_invalid_bus_dc_plus_index(self):
+        """Test: bus_dc_plus FK must reference an existing bus_dc index"""
+        net = create_empty_network()
+        create_bus(net, 0.4)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
+
+        create_vsc_bipolar(
+            net,
+            bus=0,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        net.vsc_bipolar["bus_dc_plus"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_invalid_bus_dc_minus_index(self):
+        """Test: bus_dc_minus FK must reference an existing bus_dc index"""
+        net = create_empty_network()
+        create_bus(net, 0.4)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
+
+        create_vsc_bipolar(
+            net,
+            bus=0,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        net.vsc_bipolar["bus_dc_minus"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
         net = pandapowerNet(name="test_invalid_fk_index")

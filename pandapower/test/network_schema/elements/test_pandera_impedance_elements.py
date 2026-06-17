@@ -367,6 +367,34 @@ class TestImpedanceForeignKey:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FKs work with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_impedance(
+            net, from_bus=10, to_bus=42,
+            rft_pu=0.01, xft_pu=0.02, rtf_pu=0.03, xtf_pu=0.04,
+            gf_pu=0.0, bf_pu=0.0, gt_pu=0.0, bt_pu=0.0,
+            sn_mva=100.0, in_service=True,
+        )
+        create_impedance(
+            net, from_bus=42, to_bus=100,
+            rft_pu=0.05, xft_pu=0.06, rtf_pu=0.07, xtf_pu=0.08,
+            gf_pu=0.0, bf_pu=0.0, gt_pu=0.0, bt_pu=0.0,
+            sn_mva=50.0, in_service=True,
+        )
+        create_impedance(
+            net, from_bus=100, to_bus=10,
+            rft_pu=0.02, xft_pu=0.03, rtf_pu=0.04, xtf_pu=0.05,
+            gf_pu=0.0, bf_pu=0.0, gt_pu=0.0, bt_pu=0.0,
+            sn_mva=75.0, in_service=False,
+        )
+
+        validate_network(net)
+
 
 class TestImpedanceResults:
     """Tests for impedance results after calculations"""

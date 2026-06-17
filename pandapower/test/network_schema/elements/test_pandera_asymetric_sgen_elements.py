@@ -302,6 +302,31 @@ class TestAsymmetricSgenForeignKey:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_asymmetric_sgen(
+            net, bus=10, p_a_mw=-1.0, q_a_mvar=0.5,
+            p_b_mw=-1.0, q_b_mvar=0.5, p_c_mw=-1.0, q_c_mvar=0.5,
+            scaling=1.0, in_service=True,
+        )
+        create_asymmetric_sgen(
+            net, bus=42, p_a_mw=-2.0, q_a_mvar=0.3,
+            p_b_mw=-2.0, q_b_mvar=0.3, p_c_mw=-2.0, q_c_mvar=0.3,
+            scaling=0.9, in_service=True,
+        )
+        create_asymmetric_sgen(
+            net, bus=100, p_a_mw=-0.5, q_a_mvar=0.1,
+            p_b_mw=-0.5, q_b_mvar=0.1, p_c_mw=-0.5, q_c_mvar=0.1,
+            scaling=1.0, in_service=False,
+        )
+
+        validate_network(net)
+
 
 class TestAsymmetricSgenResults:
     """Tests for asymmetric_sgen results after calculations"""

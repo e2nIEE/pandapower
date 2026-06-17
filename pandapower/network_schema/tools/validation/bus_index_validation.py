@@ -136,8 +136,14 @@ def _bus_index_validation(element: str, schema: pa.DataFrameSchema, net: pandapo
         >>> _bus_index_validation('load', net)  # Validates bus column
     """
     if element not in ["bus", "bus_dc"]:
-        bus_columns = [col for col in schema.columns if
-                       ("bus" == col.lower() or "bus_dc" == col.lower()) and col in net[element]]
+        bus_columns = [
+            col_name
+            for col_name, col_schema in schema.columns.items()
+            if "bus" in col_name.lower()
+               and col_name in net[element].columns
+               and str(col_schema.dtype) == "int64"
+        ]
+
         if element == "switch":
             bus_columns.append("element")
         dc_items = [item for item in bus_columns if "dc" in item]

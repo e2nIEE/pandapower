@@ -206,7 +206,7 @@ class TestExtGridOptionalFields:
             x0x_max=3.0,
             name="ext grid 0",
         )
-        e1 = create_ext_grid(
+        create_ext_grid(
             net,
             bus=b0,
             vm_pu=1.02,
@@ -330,6 +330,19 @@ class TestExtGridForeignKey:
         net.ext_grid["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_ext_grid(net, bus=10, vm_pu=1.0, va_degree=0.0, in_service=True)
+        create_ext_grid(net, bus=42, vm_pu=1.02, va_degree=0.0, in_service=True)
+        create_ext_grid(net, bus=100, vm_pu=0.98, va_degree=0.0, in_service=False)
+
+        validate_network(net)
 
 
 class TestExtGridResults:

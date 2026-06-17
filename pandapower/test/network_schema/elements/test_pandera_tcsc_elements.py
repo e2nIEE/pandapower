@@ -314,6 +314,50 @@ class TestTcscOptionalFields:
 class TestTcscForeignKey:
     """Tests for foreign key constraints"""
 
+    def test_invalid_from_bus_index(self):
+        """Test: from_bus FK must reference an existing bus index"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_tcsc(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        net.tcsc["from_bus"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_invalid_to_bus_index(self):
+        """Test: to_bus FK must reference an existing bus index"""
+        net = create_empty_network()
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+
+        create_tcsc(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_p_to_mw=0.0,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        net.tcsc["to_bus"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FKs work with non-sequential bus indices"""
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")

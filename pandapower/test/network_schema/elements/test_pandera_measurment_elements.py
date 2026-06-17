@@ -210,6 +210,29 @@ class TestMeasurementForeignKey:
             validate_network(net)
 
 
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        net.measurement = pd.DataFrame(
+            {
+                "name": pd.Series(["m1", "m2", "m3"], dtype="string"),
+                "measurement_type": ["p", "q", "v"],
+                "element_type": ["bus", "bus", "bus"],
+                "value": [10.0, 5.0, 1.01],
+                "std_dev": [0.1, 0.2, 0.01],
+                "bus": [10, 42, 100],
+                "element": [10, 42, 100],
+                "side": pd.Series([pd.NA, pd.NA, pd.NA], dtype="string"),
+            }
+        )
+
+        validate_network(net)
+
+
 class TestMeasurementResults:
     """Tests for measurement results after calculations"""
 

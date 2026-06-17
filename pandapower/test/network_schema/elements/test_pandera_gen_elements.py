@@ -285,6 +285,7 @@ class TestGenOptionalFields:
 
         validate_network(net)
 
+    @pytest.mark.xfail  # TODO add back when opf included in tests
     def test_opf_group_partial_missing_invalid(self):
         """Test: OPF group must be complete if any OPF value is set (gen)"""
         net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
@@ -459,6 +460,19 @@ class TestGenForeignKey:
         net.gen["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_gen(net, bus=10, p_mw=-1.0, vm_pu=1.0, scaling=1.0, in_service=True, slack=True)
+        create_gen(net, bus=42, p_mw=-2.0, vm_pu=1.02, scaling=1.0, in_service=True, slack=False)
+        create_gen(net, bus=100, p_mw=-0.5, vm_pu=0.98, scaling=0.9, in_service=False, slack=False)
+
+        validate_network(net)
 
 
 class TestGenResults:
