@@ -692,6 +692,31 @@ class TestLineDcForeignKey:
 
         validate_network(net)
 
+    def test_valid_bus_dc_index_non_sequential(self):
+        """Test: bus_dc FKs work with non-sequential bus_dc indices"""
+        net = create_empty_network()
+        create_bus_dc(net, 0.4, index=10)
+        create_bus_dc(net, 0.4, index=42)
+        create_bus_dc(net, 0.4, index=100)
+
+        create_line_dc_from_parameters(
+            net, from_bus_dc=10, to_bus_dc=42, length_km=1.0,
+            r_ohm_per_km=0.1, g_us_per_km=0.0, max_i_ka=0.2,
+            parallel=1, df=0.5, in_service=True,
+        )
+        create_line_dc_from_parameters(
+            net, from_bus_dc=42, to_bus_dc=100, length_km=2.0,
+            r_ohm_per_km=0.2, g_us_per_km=0.0, max_i_ka=0.3,
+            parallel=1, df=0.8, in_service=True,
+        )
+        create_line_dc_from_parameters(
+            net, from_bus_dc=100, to_bus_dc=10, length_km=1.5,
+            r_ohm_per_km=0.15, g_us_per_km=0.0, max_i_ka=0.25,
+            parallel=1, df=0.6, in_service=False,
+        )
+
+        validate_network(net)
+
 
 class TestLineDcResults:
     """Tests for line_dc results after calculations"""

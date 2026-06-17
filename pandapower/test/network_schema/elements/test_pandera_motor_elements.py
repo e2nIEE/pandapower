@@ -605,6 +605,31 @@ class TestMotorForeignKey:
 
         validate_network(net)
 
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_motor(
+            net, bus=10, pn_mech_mw=1.0, cos_phi=0.9,
+            efficiency_percent=90.0, loading_percent=50.0,
+            scaling=1.0, in_service=True,
+        )
+        create_motor(
+            net, bus=42, pn_mech_mw=2.0, cos_phi=0.85,
+            efficiency_percent=88.0, loading_percent=60.0,
+            scaling=1.0, in_service=True,
+        )
+        create_motor(
+            net, bus=100, pn_mech_mw=0.5, cos_phi=0.92,
+            efficiency_percent=92.0, loading_percent=40.0,
+            scaling=0.9, in_service=False,
+        )
+
+        validate_network(net)
+
 
 class TestMotorResults:
     """Tests for motor results after calculations"""

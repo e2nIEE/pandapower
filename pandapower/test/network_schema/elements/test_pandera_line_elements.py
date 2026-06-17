@@ -670,6 +670,19 @@ class TestLineForeignKey:
 
         validate_network(net)
 
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FKs work with non-sequential bus indices"""
+        net = create_empty_network()
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_line(net, from_bus=10, to_bus=42, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_line(net, from_bus=42, to_bus=100, length_km=2.0, in_service=True, std_type=STD_TYPE)
+        create_line(net, from_bus=100, to_bus=10, length_km=1.5, in_service=False, std_type=STD_TYPE)
+
+        validate_network(net)
+
 
 class TestLineResults:
     """Tests for line results after calculations"""
