@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-from typing import Optional
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from typing import Optional
 
 import pandas as pd
 import numpy as np
@@ -50,19 +48,15 @@ def match_sql_type(dtype):
 
 
 def check_if_sql_table_exists(cursor, table_name):
-    query = f"SELECT EXISTS (SELECT FROM information_schema.tables " \
-            f"WHERE table_schema = '{table_name.split('.')[0]}' " \
-            f"AND table_name = '{table_name.split('.')[-1]}');"
-    cursor.execute(query)
+    query = f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = %s AND table_name = %s);"
+    cursor.execute(query, (table_name.split('.')[0], table_name.split('.')[-1]))
     (exists,) = cursor.fetchone()
     return exists
 
 
 def get_sql_table_columns(cursor, table_name):
-    query = f"SELECT * FROM information_schema.columns " \
-            f"WHERE table_schema = '{table_name.split('.')[0]}' " \
-            f"AND table_name   = '{table_name.split('.')[-1]}';"
-    cursor.execute(query)
+    query = "SELECT * FROM information_schema.columns WHERE table_schema = %s AND table_name = %s;"
+    cursor.execute(query, (table_name.split('.')[0], table_name.split('.')[-1]))
     colnames = [desc[0] for desc in cursor.description]
     list_idx = colnames.index("column_name")
     columns_data = cursor.fetchall()
@@ -77,12 +71,14 @@ def download_sql_table(cursor, table_name, **id_columns):
         raise UserWarning(f"table {table_name} does not exist or the user has no access to it")
 
     if len(id_columns.keys()) == 0:
-        query = f"SELECT * FROM {table_name}"
+        query = f"SELECT * FROM %s"
+        params = (table_name,)
     else:
         columns_string = ' and '.join([f"{str(k)} = '{str(v)}'" for k, v in id_columns.items()])
-        query = f"SELECT * FROM {table_name} WHERE {columns_string}"
+        query = f"SELECT * FROM %s WHERE %s"
+        params = (table_name, columns_string)
 
-    cursor.execute(query)
+    cursor.execute(query, params)
     colnames = [desc[0] for desc in cursor.description]
     table = cursor.fetchall()
     df = pd.DataFrame(table, columns=colnames)
@@ -171,8 +167,8 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
             if download:
                 raise UserWarning(f"grid_id ({grid_id_column}) is None: {grid_id}")
             return  # we don't need to check for duplicates if grid_id is None (means we are uploading a new net)
-        query = f"SELECT COUNT(*) FROM {table_name} where {grid_id_column}={grid_id}"
-        cursor.execute(query)
+        query = "SELECT COUNT(*) FROM %s where %s=%s"
+        cursor.execute(query, (table_name, grid_id_column, grid_id))
         (found,) = cursor.fetchone()
         if download and found == 0:
             raise UserWarning(f"found no entries in {table_name} where {grid_id_column}={grid_id}")
@@ -239,8 +235,8 @@ def delete_postgresql_net(
     cursor = conn.cursor()
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
-    query = f"DELETE FROM {catalogue_table_name} WHERE {grid_id_column}={grid_id};"
-    cursor.execute(query)
+    query = "DELETE FROM %s WHERE %s=%s;"
+    cursor.execute(query, (catalogue_table_name, grid_id_column, grid_id))
     # query = f'DROP SCHEMA IF EXISTS "{schema}" CASCADE; CREATE SCHEMA IF NOT EXISTS "{schema}";'
     # cursor.execute(query)
     conn.commit()
@@ -387,7 +383,7 @@ def from_sqlite(filename):
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         dodfs = {}
         for t, in cursor.fetchall():
-            table = pd.read_sql_query("SELECT * FROM '%s'" % t, conn, index_col="index")
+            table = pd.read_sql_query("SELECT * FROM %s", conn, params=(t,), index_col="index")
             table.index.name = None
             dodfs[t] = table
         net = io_utils.from_dict_of_dfs(dodfs)
