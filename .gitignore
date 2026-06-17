@@ -12,6 +12,7 @@ doc/api/
 doc/.build/*
 doc/_build/*
 doc/elements/table_structures/
+doc/std_types/tables/
 *.ipynb_checkpoints
 .cache
 *__pycache__*
