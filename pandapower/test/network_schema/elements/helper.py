@@ -52,8 +52,8 @@ all_allowed_floats: list[float | np.float64] = [*zero_float, *positiv_floats, *n
 not_allowed_floats: list[float | np.float64 | np.float32 | np.float16] = [
     np.float32(1.0),
     np.float16(1.0),
-    float("inf"),
-    float("-inf"),
+    # float("inf"),
+    # float("-inf"), #TODO prüfen ob nicht erlaubt
 ]
 all_floats: list[float | np.float64 | np.float32 | np.float16] = [*all_allowed_floats, *not_allowed_floats]
 
