@@ -2,8 +2,6 @@ def prj_import(com_import, dst_user_dir, file_name):
     com_import.g_target = dst_user_dir
     com_import.g_file = file_name
     com_import.g_target = dst_user_dir
-    if com_import.g_target is not dst_user_dir:
-        raise AssertionError('com_import.g_target is not dst_user_dir')
     com_import.Execute()
 
 
