@@ -294,7 +294,7 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
     bus_df = _drop_duplicates_and_join_TSO(bus_df)
     new_bus_idx = create_buses(
         net, len(bus_df), vn_kv=bus_df.vn_kv, name=bus_df.name, zone=bus_df.TSO)
-    if not new_bus_idx == bus_df.index:
+    if new_bus_idx != bus_df.index:
         raise AssertionError("Not all values of now_bus_idx are close to bus_df.index")
 
 
