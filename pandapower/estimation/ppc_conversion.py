@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -10,7 +9,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.pypower.idx_bus import BUS_TYPE as pypower_BUS_TYPE, VM as pypower_VM, VA as pypower_VA
-from pandapower.auxiliary import _init_runse_options, pandapowerNet
+from pandapower.auxiliary import _init_runse_options
+from pandapower import pandapowerNet
 from pandapower.estimation.util import estimate_voltage_vector
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
@@ -307,13 +307,15 @@ def _add_measurements_to_trafo3w(
 
 def _add_measurements_to_bus(meas_bus, bus_append, map_bus):
     """
-        Aggregate measurements by bus index and append results to bus_append array.
+    Aggregate measurements by bus index and append results to bus_append array.
 
-        Parameters:
-        - meas_bus: subset of measurement DataFrame containing only measurements at buses
-        - bus_append: NumPy array to store measurements, std devs, and indices to add to ppci
-        - map_bus: dict mapping bus IDs to PPCI bus indices
-        """
+    Parameters:
+        meas_bus: subset of measurement DataFrame containing only measurements at buses
+        bus_append: NumPy array to store measurements, std devs, and indices to add to ppci
+        map_bus: dict mapping bus IDs to PPCI bus indices
+    """
+    # FIXME: this function violates copy on write because meas_bus is a subset and is used to change values in the
+    #  original DataFrame!
 
     # Process voltage (v) and voltage angle (va) measurements
     for meas_type in ("v", "va"):

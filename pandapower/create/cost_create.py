@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,7 +9,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int, CostElementType, PWLPowerType
 from pandapower.create.utils import (
     _cost_existance_check,
@@ -104,6 +102,7 @@ def create_pwl_costs(
      - Storage
 
     Parameters:
+        net: the pandapower network
         elements: IDs of the elements in the respective element table
         et: element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"
         points: [[p1, p2, c1], [p2, p3, c2], …] for each element where c(n) defines the costs between p(n) and p(n+1)

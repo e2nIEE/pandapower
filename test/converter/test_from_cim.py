@@ -107,7 +107,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
 
     cgmes_files = [os.path.join(folder_path, 'SimBench_1-HVMV-mixed-1.105-0-sw_modified.zip')]
 
-    return from_cim(file_list=cgmes_files, run_powerflow=True)
+    return from_cim(file_list=cgmes_files, run_powerflow=True, ignore_errors=False)
 
 
 @pytest.fixture(scope="module")
@@ -116,7 +116,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
 
     cgmes_files = [os.path.join(folder_path, 'Simbench_1-EHV-mixed--2-no_sw.zip')]
 
-    return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
+    return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True, ignore_errors=False)
 
 
 @pytest.fixture(scope="module")
@@ -180,11 +180,11 @@ def test_micro_sc_trafo(mirco_sc):
     assert element_0['vkr_percent'].item() == pytest.approx(0.2149991967411512, abs=0.00001)
     assert element_0['pfe_kw'].item() == pytest.approx(210.9995411616211, abs=0.00001)
     assert element_0['i0_percent'].item() == pytest.approx(0.4131131902379213, abs=0.00001)
-    assert element_0['vector_group'].item() == 'Yy' #TODO: needs addidtional test
+    assert element_0['vector_group'].item() == 'Yy'  # TODO: needs additional test
     assert element_0['vk0_percent'].item() == pytest.approx(12.000000798749786, abs=0.00001)
     assert element_0['vkr0_percent'].item() == pytest.approx(0.2149991967411512, abs=0.00001)
-    assert not element_0['oltc'].item() #TODO: needs addidtional test
-    assert not element_0['power_station_unit'].item() #TODO: needs addidtional test
+    assert not element_0['oltc'].item()  # TODO: needs additional test
+    assert not element_0['power_station_unit'].item()  # TODO: needs additional test
     # sc parameter si0_hv_partial, mag0_rx, mag0_percent missing
 
 def test_micro_sc_trafo3w(mirco_sc):
@@ -203,8 +203,8 @@ def test_micro_sc_trafo3w(mirco_sc):
     assert element_0['vkr0_hv_percent'].item() == pytest.approx(0, abs=0.00001)
     assert element_0['vkr0_mv_percent'].item() == pytest.approx(0, abs=0.00001)
     assert element_0['vkr0_lv_percent'].item() == pytest.approx(0, abs=0.00001)
-    assert not element_0['power_station_unit'].item() #TODO: needs addidtional test
-    assert element_0['vector_group'].item() == 'Yyy' #TODO: needs addidtional test
+    assert not element_0['power_station_unit'].item()  # TODO: needs additional test
+    assert element_0['vector_group'].item() == 'Yyy'  #TODO: needs additional test
 
 def test_micro_sc_gen(mirco_sc):
     assert len(mirco_sc.gen.index) == 2
@@ -212,15 +212,16 @@ def test_micro_sc_gen(mirco_sc):
         mirco_sc.gen['origin_id'] == '_550ebe0d-f2b2-48c1-991f-cebea43a21aa'].index]
     assert element_0['vn_kv'].item() == pytest.approx(21.0, abs=0.00001)
     assert element_0['xdss_pu'].item() == pytest.approx(0.17, abs=0.00001)
-    assert element_0['rdss_ohm'].item() == pytest.approx(0.0, abs=0.00001) #TODO: needs addidtional test, docu says should be > 0
+    assert element_0['rdss_ohm'].item() == pytest.approx(0.0,
+                                                         abs=0.00001)  #TODO: needs additional test, docu says should be > 0
     assert element_0['cos_phi'].item() == pytest.approx(0.85, abs=0.00001)
-    assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.00001) #TODO: needs addidtional test
+    assert element_0['pg_percent'].item() == pytest.approx(0.0, abs=0.00001)  #TODO: needs additional test
     # sc parameter power_station_trafo missing!
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow_res_bus(
         SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow.res_bus.index) == 0
+    assert "res_bus" not in SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow
 
 
 def test_example_multivoltage_res_xward(example_multivoltage):
@@ -338,36 +339,19 @@ def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw
     assert element_1['side'].item() is None
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_xward.index) == 0
+missing_res_tables = ["res_svc", "res_storage_3ph", "res_storage", "res_shunt_3ph", "res_shunt", "res_sgen_sc",
+                      "res_sgen_3ph", "res_switch_est", "res_switch_sc", "res_tcsc", "res_xward", "res_ward",
+                      "res_trafo_sc", "res_trafo_est", "res_trafo_3ph", "res_trafo3w_sc", "res_trafo3w_est",
+                      "res_trafo3w", "res_motor", "res_load_3ph", "res_line_sc", "res_line_est", "res_line_3ph",
+                      "res_impedance_est", "res_impedance", "res_gen_sc", "res_gen", "res_ext_grid_sc",
+                      "res_ext_grid_3ph", "res_dcline", "res_bus_sc", "res_bus_est", "res_bus_3ph",
+                      "res_asymmetric_sgen_3ph", "res_asymmetric_sgen", "res_asymmetric_load_3ph",
+                      "res_asymmetric_load"]
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ward.index) == 0  # TODO:
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_sc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_est.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo_3ph.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w_sc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w_est.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo3w(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_trafo3w.index) == 0
+@pytest.mark.parametrize("res_table", missing_res_tables)
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_empty_res(SimBench_1_HVMVmixed_1_105_0_sw_modified, res_table):
+    assert res_table not in SimBench_1_HVMVmixed_1_105_0_sw_modified
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -393,18 +377,6 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_trafo(SimBench_1_HVMVmixed
                'va_hv_degree'].item() == pytest.approx(4.683488464449254, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_tcsc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_tcsc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch_sc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch_est.index) == 0
-
-
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch) == 625  # TODO: test with different net with better values
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_switch.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.switch[
@@ -417,34 +389,6 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_switch(SimBench_1_HVMVmixe
             SimBench_1_HVMVmixed_1_105_0_sw_modified.switch[
                 'origin_id'] == '_00bf6ec7-fb79-4a7b-a3d2-ea35490b067c'].index]
     assert element_1['i_ka'].item() == pytest.approx(0.0, abs=0.0001)
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_svc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_svc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_storage_3ph.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_storage(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_storage.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_shunt_3ph.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_shunt(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_shunt.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen_sc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_sgen_3ph.index) == 0
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -465,14 +409,6 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_sgen(SimBench_1_HVMVmixed_
     assert element_2['q_mvar'].item() == pytest.approx(0.0, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_motor(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_motor.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load_3ph.index) == 0
-
-
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.index) == 154
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_load.iloc[SimBench_1_HVMVmixed_1_105_0_sw_modified.load[
@@ -489,18 +425,6 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_load(SimBench_1_HVMVmixed_
         SimBench_1_HVMVmixed_1_105_0_sw_modified.load['origin_id'] == '_6184b5be-a494-4ae9-ab24-528a33b19a41'].index]
     assert element_2['p_mw'].item() == pytest.approx(34.480, abs=0.0001)
     assert element_2['q_mvar'].item() == pytest.approx(13.6270, abs=0.0001)
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_sc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_est.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_line_3ph.index) == 0
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -542,30 +466,6 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_line(SimBench_1_HVMVmixed_
     assert element_1['loading_percent'].item() == pytest.approx(6.015006212368526, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_impedance_est.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_impedance(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_impedance.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen_sc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_gen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_gen.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid_sc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid_3ph.index) == 0
-
-
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.index) == 3
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.res_ext_grid.iloc[
@@ -574,22 +474,6 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_ext_grid(SimBench_1_HVMVmi
                 'origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f'].index]
     assert element_0['p_mw'].item() == pytest.approx(-257.1300942171846, abs=0.0001)
     assert element_0['q_mvar'].item() == pytest.approx(134.7707263896562, abs=0.0001)
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_dcline(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_dcline.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_sc(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_sc.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_est(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_est.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_bus_3ph.index) == 0
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -616,23 +500,7 @@ def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_bus(SimBench_1_HVMVmixed_1
     assert element_2['q_mvar'].item() == pytest.approx(0.0, abs=0.0001)
 
 
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_sgen_3ph.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_sgen(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_sgen.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load_3ph(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_load_3ph.index) == 0
-
-
-def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_asymmetric_load(SimBench_1_HVMVmixed_1_105_0_sw_modified):
-    assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.res_asymmetric_load.index) == 0
-
-
-def test_test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
+def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_ext_grid(SimBench_1_HVMVmixed_1_105_0_sw_modified):
     assert len(SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid.index) == 3
     element_0 = SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid[
         SimBench_1_HVMVmixed_1_105_0_sw_modified.ext_grid['origin_id'] == '_5fb17d90-f222-45a2-9e26-05f52a34731f']
@@ -736,8 +604,13 @@ def test_smallgrid_GL_bus_geodata(smallgrid_GL):
     assert element_0['geo'].item() == '{"coordinates": [-4.844991207122803, 55.92612075805664], "type": "Point"}'
 
 
-def test_fullgrid_xward(fullgrid_v2):
-    assert len(fullgrid_v2.xward.index) == 0
+empty_tables = ["xward", "tcsc", "svc", "storage", "sgen", "pwl_cost", "poly_cost", "measurement", "asymmetric_sgen",
+                "asymmetric_load"]
+
+
+@pytest.mark.parametrize("table", empty_tables)
+def test_fullgrid_xward(fullgrid_v2, table):
+    assert len(fullgrid_v2[table].index) == 0
 
 
 def test_fullgrid_ward(fullgrid_v2):
@@ -961,10 +834,6 @@ def test_fullgrid_trafo_spline(fullgrid_v2_spline):
     assert pd.isna(element_1['id_characteristic_spline'].item())
 
 
-def test_fullgrid_tcsc(fullgrid_v2):
-    assert len(fullgrid_v2.tcsc.index) == 0
-
-
 def test_fullgrid_switch(fullgrid_v2):
     assert len(fullgrid_v2.switch.index) == 4
     element_0 = fullgrid_v2.switch[fullgrid_v2.switch['origin_id'] == '_8a3ad6e1-6e23-b649-880e-4865217501c4']
@@ -979,14 +848,6 @@ def test_fullgrid_switch(fullgrid_v2):
     assert 'Disconnector' == element_0['origin_class'].item()
     assert element_0['terminal_bus'].item() == '_2af7ad2c-062c-1c4f-be3e-9c7cd594ddbb'
     assert element_0['terminal_element'].item() == '_916578a1-7a6e-7347-a5e0-aaf35538949c'
-
-
-def test_fullgrid_svc(fullgrid_v2):
-    assert len(fullgrid_v2.svc.index) == 0
-
-
-def test_fullgrid_storage(fullgrid_v2):
-    assert len(fullgrid_v2.storage.index) == 0
 
 
 def test_fullgrid_shunt(fullgrid_v2):
@@ -1004,18 +865,6 @@ def test_fullgrid_shunt(fullgrid_v2):
     assert element_0['terminal'].item() == '_d5e2e58e-ccf6-47d9-b3bb-3088eb7a9b6c'
     assert not element_0['step_dependency_table'].item()
     assert pd.isna(element_0['id_characteristic_table'].item())
-
-
-def test_fullgrid_sgen(fullgrid_v2):
-    assert len(fullgrid_v2.sgen.index) == 0
-
-
-def test_fullgrid_pwl_cost(fullgrid_v2):
-    assert len(fullgrid_v2.pwl_cost.index) == 0
-
-
-def test_fullgrid_poly_cost(fullgrid_v2):
-    assert len(fullgrid_v2.poly_cost.index) == 0
 
 
 def test_fullgrid_motor(fullgrid_v2):
@@ -1038,25 +887,16 @@ def test_fullgrid_motor(fullgrid_v2):
     assert element_0['terminal'].item() == '_7b71e695-3977-f544-b31f-777cfbbde49b'
 
 
-def test_fullgrid_measurement(fullgrid_v2):
-    assert len(fullgrid_v2.measurement.index) == 0  # TODO: analogs
-
-
-def test_fullgrid_load(fullgrid_v2):
+def test_fullgrid_load(fullgrid_v2):  # TODO: test each load type
     assert len(fullgrid_v2.load.index) == 5
     element_0 = fullgrid_v2.load[fullgrid_v2.load['origin_id'] == '_1324b99a-59ee-0d44-b1f6-15dc0d9d81ff']
     assert element_0['name'].item() == 'BE_CL_1'
     assert fullgrid_v2.bus.iloc[element_0['bus'].item()]['origin_id'] == '_4c66b132-0977-1e4c-b9bb-d8ce2e912e35'
     assert element_0['p_mw'].item() == pytest.approx(0.010, abs=0.000001)
     assert element_0['q_mvar'].item() == pytest.approx(0.010, abs=0.000001)
-    assert element_0['const_z_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_i_p_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_z_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
-    assert element_0['const_i_q_percent'].item() == pytest.approx(0.0, abs=0.000001)
     assert math.isnan(element_0['sn_mva'].item())
     assert element_0['scaling'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_0['in_service'].item()
-    assert None is element_0['type'].item()
     assert element_0['origin_class'].item() == 'ConformLoad'
     assert element_0['terminal'].item() == '_84f6ff75-6bf9-8742-ae06-1481aa3b34de'
 
@@ -1071,7 +911,6 @@ def test_fullgrid_line(fullgrid_v2):
     assert len(fullgrid_v2.line.index) == 11
     element_0 = fullgrid_v2.line[fullgrid_v2.line['origin_id'] == '_a16b4a6c-70b1-4abf-9a9d-bd0fa47f9fe4']
     assert element_0['name'].item() == 'BE-Line_7'
-    assert None is element_0['std_type'].item()
     assert fullgrid_v2.bus.iloc[element_0['from_bus'].item()]['origin_id'] == '_1fa19c281c8f4e1eaad9e1cab70f923e'
     assert fullgrid_v2.bus.iloc[element_0['to_bus'].item()]['origin_id'] == '_f70f6bad-eb8d-4b8f-8431-4ab93581514e'
     assert element_0['length_km'].item() == pytest.approx(23.0, abs=0.000001)
@@ -1082,7 +921,6 @@ def test_fullgrid_line(fullgrid_v2):
     assert element_0['max_i_ka'].item() == pytest.approx(1.0620, abs=0.000001)
     assert element_0['df'].item() == pytest.approx(1.0, abs=0.000001)
     assert element_0['parallel'].item() == pytest.approx(1.0, abs=0.000001)
-    assert None is element_0['type'].item()
     assert element_0['in_service'].item()
     assert element_0['origin_class'].item() == 'ACLineSegment'
     assert element_0['terminal_from'].item() == '_57ae9251-c022-4c67-a8eb-611ad54c963c'
@@ -1314,7 +1152,7 @@ def test_fullgrid_bus(fullgrid_v2):
 
     element_2 = fullgrid_v2.bus[fullgrid_v2.bus['origin_id'] == '_99b219f3-4593-428b-a4da-124a54630178']
     assert element_2['zone'].item() == 'PP_Brussels'
-    assert math.isnan(element_2['geo'].item())
+    assert pd.isna(element_2['geo'].item())
     assert element_2['cim_topnode'].item() == '_99b219f3-4593-428b-a4da-124a54630178'
     assert element_2['ConnectivityNodeContainer_id'].item() == '_b10b171b-3bc5-4849-bb1f-61ed9ea1ec7c'
     assert element_2['Substation_id'].item() == '_37e14a0f-5e34-4647-a062-8bfd9305fa9d'
@@ -1325,14 +1163,6 @@ def test_fullgrid_bus(fullgrid_v2):
     assert element_2['GeographicalRegion_name'].item() == 'BE'
     assert element_2['SubGeographicalRegion_id'].item() == '_c1d5bfc88f8011e08e4d00247eb1f55e'
     assert element_2['SubGeographicalRegion_name'].item() == 'ELIA-Brussels'
-
-
-def test_fullgrid_asymmetric_sgen(fullgrid_v2):
-    assert len(fullgrid_v2.asymmetric_sgen.index) == 0
-
-
-def test_fullgrid_asymmetric_load(fullgrid_v2):
-    assert len(fullgrid_v2.asymmetric_load.index) == 0
 
 
 def test_fullgrid_NB_bus(fullgrid_node_breaker):
@@ -1362,7 +1192,7 @@ def test_fullgrid_NB_bus(fullgrid_node_breaker):
 
     element_2 = fullgrid_node_breaker.bus[fullgrid_node_breaker.bus['origin_id'] == '_c38adab3-5168-4004-a83d-28d890dedd36']
     assert element_2['zone'].item() == 'HVDC 1'
-    assert math.isnan(element_2['geo'].item())
+    assert pd.isna(element_2['geo'].item())
     assert element_2['cim_topnode'].item() == '_b01fe92f-68ab-4123-ae45-f22d3e8daad1'
     assert element_2['ConnectivityNodeContainer_id'].item() == '_c68f0a24-46cb-42aa-b91d-0b49b8310cc9'
     assert element_2['Substation_id'].item() == '_9df6213f-c5dc-477c-aab4-74721f7d1fdb'

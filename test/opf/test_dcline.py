@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
 from numpy import array, allclose, isclose
 
+from pandapower.auxiliary import OPFNotConverged
 from pandapower.create import (
     create_empty_network,
     create_bus,
@@ -16,6 +15,7 @@ from pandapower.create import (
     create_pwl_cost,
     create_poly_cost
 )
+from pandapower.network import pandapowerNet
 from pandapower.run import runopp, runpp
 
 from test.consistency_checks import consistency_checks
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture
 def dcline_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="dcline_net")
 
     b5 = create_bus(net, 380)
     b3 = create_bus(net, 380)

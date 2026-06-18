@@ -1,8 +1,6 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+from __future__ import annotations
 
 import sys
 import math
@@ -13,7 +11,8 @@ import numpy as np
 import pandas as pd
 import geojson
 
-from pandapower.auxiliary import soft_dependency_error, version_check, ADict
+from pandapower.auxiliary import soft_dependency_error
+from pandapower.network import ADict
 from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
@@ -29,7 +28,6 @@ try:
     from plotly.graph_objs.scattermap import Line as scmLine
     from plotly.graph_objs.scattermap import Marker as scmMarker
 
-    version_check("plotly")
     PLOTLY_INSTALLED = True
 except ImportError:
     PLOTLY_INSTALLED = False

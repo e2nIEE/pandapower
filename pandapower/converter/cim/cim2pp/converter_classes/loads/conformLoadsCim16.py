@@ -44,5 +44,4 @@ class ConformLoadsCim16:
         eqssh_conform_loads['const_i_q_percent'] = 0.
         eqssh_conform_loads['const_z_q_percent'] = 0.
         eqssh_conform_loads['scaling'] = 1.
-        eqssh_conform_loads['type'] = None
         return eqssh_conform_loads

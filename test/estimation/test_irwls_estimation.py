@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -39,7 +37,7 @@ def test_shgm_ps():
     net = case14()
     runpp(net)
     add_virtual_meas_from_loadflow(net)
-    _,_,eppci = pp2eppci(net)
+    _, _, eppci = pp2eppci(net)
 
     # Using the example from Mili's paper
     H = np.array([[10, -10],

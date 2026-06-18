@@ -1,13 +1,11 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import random as rd
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_load, \
-    create_transformer
+from pandapower.create import create_bus, create_ext_grid, create_line, create_load, create_transformer
+from pandapower.network import pandapowerNet
 from pandapower.std_types import create_std_type
 
 
@@ -21,7 +19,7 @@ def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
     The voltage levels can be set manually and the transformer parameter can \
     be set with "ti"
     """
-    pd_net = create_empty_network()
+    pd_net = pandapowerNet(name='')
     NFA2X4x70 = {"c_nf_per_km": 0, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.069, "max_i_ka": 0.270,
                  "type": "ol", "q_mm2": 70}
     NAYY4x50 = {"c_nf_per_km": 670, "r_ohm_per_km": 0.6417, "x_ohm_per_km": 0.084823,

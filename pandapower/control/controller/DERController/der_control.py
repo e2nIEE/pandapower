@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -223,7 +221,7 @@ class DERController(PQController):
                     (0.95 < vm_pu[to_saturate]) & (vm_pu[to_saturate] < 1.05) &
                     (-0.328684 < q_pu[to_saturate]) & any(q_pu[to_saturate] < 0.328684)
                 ):
-                    logger.warning(f"Such kind of saturation is performed that is not in line with"
+                    logger.warning("Such kind of saturation is performed that is not in line with"
                                    " VDE AR N 4110: p reduction within 0.95 < vm < 1.05 and "
                                    "0.95 < cosphi.")
                 q_pu[to_saturate] = np.clip(q_pu[to_saturate], -sat_s_pu[to_saturate],
@@ -241,7 +239,3 @@ class DERController(PQController):
         return (f"DERController({el_id_str}, q_model={self.q_model}, pqv_area={self.pqv_area}, "
                 f"saturate_sn_mva={self.saturate_sn_mva}, q_prio={self.q_prio}, "
                 f"damping_coef={self.damping_coef})")
-
-
-if __name__ == "__main__":
-    pass

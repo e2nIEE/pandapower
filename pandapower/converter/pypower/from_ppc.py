@@ -6,15 +6,15 @@ import logging
 
 import numpy as np
 import pandas as pd
-
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, VA, BASE_KV, ZONE, VMAX, VMIN
 from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, TAP, SHIFT, BR_STATUS
 from pandapower.pypower.idx_cost import MODEL, COST, NCOST
-from pandapower.create import create_empty_network, create_buses, create_loads, \
-    create_sgens, create_gens, create_lines_from_parameters, create_transformers_from_parameters, \
-    create_shunts, create_ext_grid, create_pwl_costs, create_poly_costs, create_impedances
+from pandapower.create import (
+    create_buses, create_loads, create_sgens, create_gens, create_lines_from_parameters, create_shunts, create_ext_grid,
+    create_transformers_from_parameters, create_pwl_costs, create_poly_costs, create_impedances
+)
 from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
     if np.any(ppc['bus'][:, BASE_KV] <= 0):
         logger.info('There are false baseKV given in the pypower case file.')
 
-    net = create_empty_network(f_hz=f_hz, sn_mva=ppc["baseMVA"])
+    net = pandapowerNet(name="from_ppc", f_hz=f_hz, sn_mva=ppc["baseMVA"])
     net._from_ppc_lookups = {}
 
     _from_ppc_bus(net, ppc)
@@ -170,19 +170,21 @@ def _from_ppc_gen(net, ppc):
 
 
 def _from_ppc_branch(net, ppc, f_hz, **kwargs):
-    """ branch data -> create line, trafo """
-    n_bra = ppc["branch"].shape[0]
+    """
+    branch data -> create line, trafo
 
-    # todo how to preserve this information (g, r_asym, x_asym, g_asym, b_asym):
-    #  * for branches that are not transformers but non-zero r_asym, x_asym, g_asym, b_asym
-    #       - create as impedance instead of line
-    #  * for branches that are transfromers but have non-zero g_asym, b_asym: --> not done yet
-    #       - write a new function to convert delta to wye
-    #       - obtain the values for rft, rtf, xft, xtf
-    #       - calculate ratios for HV portion of r and x
-    #       - write the ratios in trafo columns leakage_resistance_ratio_hv, leakage_reactance_ratio_hv
-    #  * for branches that are not transformers but connect different voltage levels:
-    #       - import them as impedance instead
+    (g, r_asym, x_asym, g_asym, b_asym):
+        * for branches that are not transformers but non-zero r_asym, x_asym, g_asym, b_asym
+             - create as impedance instead of line
+        * for branches that are transfromers but have non-zero g_asym, b_asym: --> not done yet
+             - write a new function to convert delta to wye
+             - obtain the values for rft, rtf, xft, xtf
+             - calculate ratios for HV portion of r and x
+             - write the ratios in trafo columns leakage_resistance_ratio_hv, leakage_reactance_ratio_hv
+        * for branches that are not transformers but connect different voltage levels:
+             - import them as impedance instead
+    """
+    n_bra = ppc["branch"].shape[0]
 
     zero_column = np.zeros(n_bra, dtype=np.float64)
     br_r_asym = ppc.get("branch_r_asym", zero_column)
@@ -563,8 +565,8 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
         raise ValueError(
             "net._from_ppc_lookups must contain a lookup (dict of keys 'branch' and 'gen')")
 
-    if net.res_bus.shape[0] == 0 and net.bus.shape[0] > 0:
-        logger.debug("runpp() is performed by validate_from_ppc() since res_bus is empty.")
+    if "res_bus" not in net or net.res_bus.shape[0] == 0 and net.bus.shape[0] > 0:
+        logger.debug("runpp() is performed by validate_from_ppc() since res_bus is not created or is empty.")
         runpp(net, calculate_voltage_angles=True, trafo_model="pi")
 
     # --- pypower powerflow results -> ppc_res -----------------------------------------------------

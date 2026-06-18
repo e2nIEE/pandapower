@@ -8,14 +8,16 @@ load_dc_schema = pa.DataFrameSchema(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}
         ),
         "p_dc_mw": pa.Column(float, description="active power of the load [MW] positive value means consumption"),
-        "scaling": pa.Column(float, pa.Check.ge(0), description="scaling factor for active and reactive power"),
-        "in_service": pa.Column(bool, description="specifies if the load is in service."),
+        "scaling": pa.Column(
+            float, pa.Check.ge(0), description="scaling factor for active and reactive power", metadata={"default": 1.0}
+        ),
+        "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
         "type": pa.Column(pd.StringDtype, nullable=True, required=False, description="A string describing the type."),
         "controllable": pa.Column(
-            pd.BooleanDtype,
-            nullable=True,
+            bool,
             required=False,
             description="States if load is controllable or not, load will not be used as a flexibilty if it is not controllable",
+            metadata={"default": False},
         ),
         "zone": pa.Column(
             pd.StringDtype,
@@ -24,6 +26,7 @@ load_dc_schema = pa.DataFrameSchema(
             description="can be used to group loads, for example network groups / regions",
         ),
     },
+    name="load_dc",
     strict=False,
 )
 
@@ -35,5 +38,6 @@ res_load_dc_schema = pa.DataFrameSchema(
             description="resulting active power demand after scaling and after considering voltage dependence [MW]",
         )
     },
+    name="res_load_dc",
     strict=False,
 )

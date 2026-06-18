@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Wed May  2 17:06:25 2018
 Tests 3 phase power flow algorithm
@@ -7,9 +6,8 @@ Tests 3 phase power flow algorithm
 import numpy as np
 import pytest
 
-from pandapower.create import (
-    create_empty_network, create_bus, create_ext_grid, create_asymmetric_load, create_line_from_parameters
-)
+from pandapower.create import create_bus, create_ext_grid, create_asymmetric_load, create_line_from_parameters
+from pandapower.network import pandapowerNet
 from pandapower.pf.runpp_3ph import runpp_3ph
 
 
@@ -17,7 +15,7 @@ from pandapower.pf.runpp_3ph import runpp_3ph
 def net():
     v_base = 20  # 20kV Base Voltage
     mva_base = 100  # 100 MVA
-    net = create_empty_network(sn_mva=mva_base)
+    net = pandapowerNet(name="net", sn_mva=mva_base)
 
     bus0 = create_bus(net, vn_kv=v_base, name="Bus 0")
 

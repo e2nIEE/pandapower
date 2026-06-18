@@ -1,13 +1,16 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
 import os
 import json
 from typing import Dict, List
+
 import numpy as np
-from pandapower.auxiliary import pandapowerNet
 import pandas as pd
+
+from pandapower.network_structure import get_structure_dict
+from pandapower import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -31,126 +34,25 @@ def get_pp_net_special_columns_dict() -> Dict[str, str]:
 
 def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNet:
     """
-    Extend pandapower element DataFrames with special columns for the CIM converter, e.g. a column for the RDF ID.
-    :param net: The pandapower net to extend.
-    :param override: If True, all existing special CIM columns will be overwritten (content will be erased). If False,
-    only missing columns will be created. Optional, default: True
-    :return: The extended pandapower network.
+    Extend pandapower network with special element for the CIM converter.
+
+    ..note::
+        The CIM converter creates a pandapower network with metadata key "cim".
+        See :func:`pandapower.network.pandapowerNet.__init__`
+
+    Parameters:
+        net: The pandapower net to extend.
+        override: If True, net.CGMES will be overwritten (content will be erased). If False,
+            only missing element will be created.
+
+    Returns:
+        Reference to the input pandapower network (input will be modified).
     """
-    np_str_type = 'str'
-    np_float_type = 'float'
-    np_bool_type = 'bool'
-
-    sc = get_pp_net_special_columns_dict()
-
-    # all pandapower element types like bus, line, trafo will get the following special columns
-    fill_dict_all: Dict[str, List[str]] = {}
-    fill_dict_all[np_str_type] = [sc['o_id'], sc['o_cl']]
-
-    # special elements
-    fill_dict: Dict[str, Dict[str, List[str]]] = {}
-
-    fill_dict['bus'] = {}
-    fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', sc['bb_id'],
-                                     sc['bb_name'], 'GeographicalRegion_id', 'GeographicalRegion_name',
-                                     'SubGeographicalRegion_id', 'SubGeographicalRegion_name']
-
-    fill_dict['ext_grid'] = {}
-    fill_dict['ext_grid'][np_str_type] = [sc['t'], sc['sub'], 'description', 'RegulatingControl.mode']
-    fill_dict['ext_grid'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'p_mw', 'q_mvar',
-                                            's_sc_max_mva', 's_sc_min_mva', 'rx_max', 'rx_min', 'r0x0_max', 'x0x_max',
-                                            'RegulatingControl.targetValue', 'referencePriority']
-    fill_dict['ext_grid'][np_bool_type] = ['RegulatingControl.enabled']
-
-    fill_dict['load'] = {}
-    fill_dict['load'][np_str_type] = [sc['t'], 'description']
-    fill_dict['gen'] = {}
-    fill_dict['gen'][np_str_type] = [sc['t'], 'description', 'RegulatingControl.mode']
-    fill_dict['gen'][np_float_type] = ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar', 'vn_kv', 'rdss_ohm',
-                                       'xdss_pu', 'cos_phi', 'pg_percent',  'governorSCD',
-                                       'RegulatingControl.targetValue', 'referencePriority']
-    fill_dict['gen'][np_bool_type] = ['RegulatingControl.enabled']
-    fill_dict['sgen'] = {}
-    fill_dict['sgen'][np_str_type] = [sc['t'], 'description', 'generator_type', 'RegulatingControl.mode']
-    fill_dict['sgen'][np_float_type] = ['k', 'rx', 'vn_kv', 'rdss_ohm', 'xdss_pu', 'lrc_pu',
-                                        'RegulatingControl.targetValue', 'referencePriority', 'max_p_mw', 'min_p_mw']
-    fill_dict['sgen'][np_bool_type] = ['RegulatingControl.enabled']
-    fill_dict['motor'] = {}
-    fill_dict['motor'][np_str_type] = [sc['t'], 'description']
-    fill_dict['storage'] = {}
-    fill_dict['storage'][np_str_type] = [sc['t'], 'description']
-    fill_dict['shunt'] = {}
-    fill_dict['shunt'][np_str_type] = [sc['t'], 'description','sVCControlMode']
-    fill_dict['ward'] = {}
-    fill_dict['ward'][np_str_type] = [sc['t'], 'description']
-    fill_dict['xward'] = {}
-    fill_dict['xward'][np_str_type] = [sc['t'], 'description']
-
-    fill_dict['line'] = {}
-    fill_dict['line'][np_str_type] = [sc['t_from'], sc['t_to'], 'description', 'EquipmentContainer_id']
-    fill_dict['line'][np_float_type] = ['r0_ohm_per_km', 'x0_ohm_per_km', 'c0_nf_per_km', 'g0_us_per_km',
-                                        'endtemp_degree']
-
-    fill_dict['dcline'] = {}
-    fill_dict['dcline'][np_str_type] = [sc['t_from'], sc['t_to'], 'description']
-
-    fill_dict['switch'] = {}
-    fill_dict['switch'][np_str_type] = [sc['t_bus'], sc['t_ele'], 'description']
-
-    fill_dict['impedance'] = {}
-    fill_dict['impedance'][np_str_type] = [sc['t_from'], sc['t_to'], 'description']
-    fill_dict['impedance'][np_float_type] = ['rft0_pu', 'xft0_pu', 'rtf0_pu', 'xtf0_pu']
-
-    fill_dict['trafo'] = {}
-    fill_dict['trafo'][np_str_type] = [sc['t_hv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_lv'], sc['tc'], sc['tc_id'],
-                                       sc['tc2'], sc['tc2_id'], 'tap2_changer_type', 'tap2_side', 'description',
-                                       'vector_group', 'OperationalLimitType.limitType_hv',
-                                       'OperationalLimitType.limitType_lv']
-    fill_dict['trafo'][np_float_type] = ['tap2_neutral', 'tap2_min', 'tap2_max', 'tap2_pos', 'tap2_step_percent',
-                                         'tap2_step_degree', 'vk0_percent', 'vkr0_percent', 'xn_ohm',
-                                         'CurrentLimit.value_hv', 'CurrentLimit.value_lv',
-                                         'OperationalLimitType.acceptableDuration_hv',
-                                         'OperationalLimitType.acceptableDuration_lv']
-    fill_dict['trafo'][np_bool_type] = ['power_station_unit', 'oltc']
-
-    fill_dict['trafo3w'] = {}
-    fill_dict['trafo3w'][np_str_type] = [sc['t_hv'], sc['t_mv'], sc['t_lv'], sc['pte_id_hv'], sc['pte_id_mv'],
-                                         sc['pte_id_lv'], sc['tc'], sc['tc_id'], 'description', 'vector_group',
-                                         'OperationalLimitType.limitType_hv', 'OperationalLimitType.limitType_mv',
-                                         'OperationalLimitType.limitType_lv']
-    fill_dict['trafo3w'][np_float_type] = ['vk0_hv_percent', 'vk0_mv_percent', 'vk0_lv_percent', 'vkr0_hv_percent',
-                                           'vkr0_mv_percent', 'vkr0_lv_percent', 'CurrentLimit.value_hv',
-                                           'CurrentLimit.value_mv', 'CurrentLimit.value_lv',
-                                           'OperationalLimitType.acceptableDuration_hv',
-                                           'OperationalLimitType.acceptableDuration_mv',
-                                           'OperationalLimitType.acceptableDuration_lv']
-    fill_dict['trafo3w'][np_bool_type] = ['power_station_unit']
-
-    fill_dict['measurement'] = {}
-    fill_dict['measurement'][np_str_type] = ['source', 'origin_class', 'origin_id', 'analog_id', 'terminal_id',
-                                             'description']
-
-    for pp_type, one_fd in fill_dict.items():
-        for np_type, fields in fill_dict_all.items():
-            np_type = np.sctypeDict.get(np_type)
-            for field in fields:
-                if override or field not in net[pp_type].columns:
-                    net[pp_type][field] = pd.Series([], dtype=np_type)
-        for np_type, fields in one_fd.items():
-            np_type = np.sctypeDict.get(np_type)
-            for field in fields:
-                if override or field not in net[pp_type].columns:
-                    net[pp_type][field] = pd.Series([], dtype=np_type)
-
     # some special items
-    if override:
+    if 'CGMES' not in net or override:
         net['CGMES'] = {}
+    if 'BaseVoltage' not in net['CGMES'] or override:
         net['CGMES']['BaseVoltage'] = pd.DataFrame(None, columns=['rdfId', 'nominalVoltage'])
-    else:
-        if 'CGMES' not in net:
-            net['CGMES'] = {}
-        if 'BaseVoltage' not in net['CGMES']:
-            net['CGMES']['BaseVoltage'] = pd.DataFrame(None, columns=['rdfId', 'nominalVoltage'])
 
     return net
 

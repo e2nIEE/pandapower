@@ -16,22 +16,16 @@ Create Function
 
 .. autofunction:: pandapower.create.create_source_dc
 
-Input Parameters
+Table Structure
 =====================
 
-*net.sgen*
+*net.source_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: source_dc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+.. csv-table::
+    :file: table_structures/source_dc.csv
+    :header-rows: 1
+    :delim: ,
 
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation
 
 Electric Model
 =================
@@ -52,14 +46,13 @@ The P-Values are calculated from the parameter table values as:
     
     Other values are provided as additional information for usage in controller or other applications based on pandapower. It is not considered in the power flow!
 
-Result Parameters
+Result Table
 ==========================
 *net.res_source_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-    :file: res_source_dc.csv
-    :delim: ;
-    :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_source_dc.csv
+    :header-rows: 1
+    :delim: ,
 
 The power values in the net.res_source_dc table are equivalent to :math:`P_{sgen}`.

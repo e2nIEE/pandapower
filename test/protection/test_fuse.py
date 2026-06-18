@@ -3,10 +3,12 @@ import copy
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines_from_parameters, \
-    create_transformer, create_switch, create_switches, create_load, create_bus, create_sgen, create_gen, create_line, \
-    create_shunt, create_lines, create_loads
+from pandapower.create import (
+    create_buses, create_ext_grid, create_lines_from_parameters, create_transformer, create_switch, create_switches,
+    create_load, create_bus, create_sgen, create_gen, create_line, create_shunt, create_lines, create_loads
+)
 from pandapower.file_io import from_json_string, to_json
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_simple
 from pandapower.protection.protection_devices.fuse import Fuse
 from pandapower.protection.run_protection import calculate_protection_times
@@ -277,7 +279,7 @@ def test_json_fuse():
 
 def fuse_test_net3():
     # network with transformer to test HV fuse curve_select
-    net = create_empty_network()
+    net = pandapowerNet(name="fuse_test_net3")
     # create buses
     create_buses(net, nr_buses=5, vn_kv=[20, 0.4, 0.4, 0.4, 0.4], index=[0, 1, 2, 3, 4], name=None, type="n",
                  geodata=[(0, 0), (0, -2), (0, -4), (0, -6), (0, -8)])
@@ -295,8 +297,8 @@ def fuse_test_net3():
     # Define load fuse (bus-bus switch)
     create_switch(net, bus=3, element=4, et='b', type="fuse", z_ohm=0.0001)
     # define load
-    create_load(net, bus=4, p_mw=0.1, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=.1,
-                name=None, scaling=1., index=0)
+    create_load(net, bus=4, p_mw=0.1, q_mvar=0, const_z_p_percent=0, const_z_q_percent=0, const_i_p_percent=0,
+                const_i_q_percent=0, sn_mva=.1, name=None, scaling=1., index=0)
     return net
 
 
@@ -339,7 +341,7 @@ def fuse_test_net2():
     # network with transformer to test HV fuse curve_select
     # load switch (index 4) is configured as bus-bus
 
-    net = create_empty_network()
+    net = pandapowerNet(name="fuse_test_net2")
 
     # create buses
     create_buses(net, nr_buses=4, vn_kv=[20, 0.4, 0.4, 0.4], index=[0, 1, 2, 3], name=None, type="n",
@@ -363,8 +365,8 @@ def fuse_test_net2():
     create_switches(net, buses=[1, 2, 3], elements=[0, 1, 1], et='l', type="fuse")
 
     # define load
-    create_load(net, bus=3, p_mw=0.1, q_mvar=0, const_z_percent=0, const_i_percent=0, sn_mva=.1,
-                name=None, scaling=1., index=0)
+    create_load(net, bus=3, p_mw=0.1, q_mvar=0, const_z_p_percent=0, const_z_q_percent=0, const_i_p_percent=0,
+                const_i_q_percent=0, sn_mva=.1, name=None, scaling=1., index=0)
 
     return net
 
@@ -373,7 +375,7 @@ def modified_simple_net():
     # modify simple network from create_examples.py to include resistance values for switches
     # this should hopefully the NaN issue during power flow and short circuit calculations
 
-    net = create_empty_network()
+    net = pandapowerNet(name="modified_simple_net")
 
     # create buses
     bus1 = create_bus(net, name="HV Busbar", vn_kv=110., type="b")
@@ -431,7 +433,7 @@ def modified_simple_net():
 def fuse_test_net4():
     # test network to demonstrate overcurrent protection in tutorial
 
-    net = create_empty_network()
+    net = pandapowerNet(name="fuse_test_net4")
 
     # create buses
     create_buses(net, nr_buses=9, vn_kv=[20, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4],
@@ -459,8 +461,8 @@ def fuse_test_net4():
     create_switch(net, bus=6, element=7, et='l', type="CB", closed=False)
 
     # define load
-    create_loads(net, buses=[4, 8], p_mw=[0.1, 0.05], q_mvar=0, const_z_percent=0, const_i_percent=0, name=None,
-                 index=[0, 1])
+    create_loads(net, buses=[4, 8], p_mw=[0.1, 0.05], q_mvar=0, const_z_p_percent=0, const_z_q_percent=0,
+                 const_i_p_percent=0, const_i_q_percent=0, name=None, index=[0, 1])
 
     return net
 

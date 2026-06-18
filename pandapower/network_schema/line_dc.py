@@ -4,7 +4,7 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _line_dc_columns = {
-    "name": pa.Column(pd.StringDtype, required=False, description="name of the dc line"),
+    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc line"),
     "std_type": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -26,12 +26,20 @@ _line_dc_columns = {
     "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
     "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),
     "g_us_per_km": pa.Column(
-        float, pa.Check.ge(0), description="dielectric conductance of the dc line [micro Siemens per km]"
+        float,
+        pa.Check.ge(0),
+        description="dielectric conductance of the dc line [micro Siemens per km]",
+        metadata={"default": 0.0},
     ),
     "max_i_ka": pa.Column(float, pa.Check.ge(0), description="maximal thermal current [kilo Ampere]"),
-    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel dc line systems"),
+    "parallel": pa.Column(
+        int, pa.Check.ge(1), description="number of parallel dc line systems", metadata={"default": 1}
+    ),
     "df": pa.Column(
-        float, pa.Check.between(min_value=0, max_value=1), description="derating factor (scaling) for max_i_ka"
+        float,
+        pa.Check.between(min_value=0, max_value=1),
+        description="derating factor (scaling) for max_i_ka",
+        metadata={"default": 1.0},
     ),
     "type": pa.Column(
         pd.StringDtype,
@@ -39,8 +47,15 @@ _line_dc_columns = {
         required=False,
         description="type of dc line Naming conventions: “”ol”” - overhead dc line, “”cs”” - underground cable system”",
     ),
-    "max_loading_percent": pa.Column(float, pa.Check.gt(0), description="Maximum loading of the dc line"),
-    "in_service": pa.Column(bool, description="specifies if the dc line is in service."),
+    "max_loading_percent": pa.Column(
+        float,
+        pa.Check.gt(0),
+        nullable=True,
+        required=False,
+        description="Maximum loading of the dc line",
+        metadata={"opf": True},
+    ),
+    "in_service": pa.Column(bool, description="specifies if the dc line is in service.", metadata={"default": True}),
     "geo": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -137,6 +152,7 @@ _line_dc_columns = {
 line_dc_schema = pa.DataFrameSchema(
     _line_dc_columns,
     checks=create_column_dependency_checks_from_metadata(["tdpf"], _line_dc_columns),
+    name="line_dc",
     strict=False,
 )
 
@@ -156,5 +172,6 @@ res_line_dc_schema = pa.DataFrameSchema(
         "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at to dc bus"),
         "loading_percent": pa.Column(float, nullable=True, description="line loading [%]"),
     },
+    name="res_line_dc",
     strict=False,
 )

@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-from typing import Optional
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from typing import Optional
 
 import pandas as pd
 import numpy as np
@@ -263,7 +261,7 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_nam
     grid_catalogue_name : str
         name of the catalogue table that includes all grid_id values and the timestamp when the grid data were added
     empty_dict_like_object : dict-like
-        If None, the output of pandapower.create_empty_network() is used as an empty element to be filled by
+        If None, the output of :func:`pandapower.pandapowerNet` is used as an empty element to be filled by
         the grid data. Give another dict-like object to start filling that alternative object with the data.
 
     Returns
@@ -463,7 +461,7 @@ def from_postgresql(
     :param str grid_id_column: name of the column for "grid_id" in the PosgreSQL tables, default="grid_id".
     :param str grid_catalogue_name: name of the catalogue table that includes all grid_id values and the timestamp when
         the grid data were added
-    :param empty_dict_like_object: If None, the output of pandapower.create_empty_network() is used as an empty element
+    :param empty_dict_like_object: If None, the output of :func:`pandapower.pandapowerNet` is used as an empty element
         to be filled by the grid data.
         Give another dict-like object to start filling that alternative object with the data.
     :param grid_tables:

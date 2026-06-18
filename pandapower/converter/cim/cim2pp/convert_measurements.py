@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
@@ -7,7 +5,7 @@ import time
 from typing import Dict
 import pandas as pd
 import numpy as np
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from .. import cim_tools
 
 

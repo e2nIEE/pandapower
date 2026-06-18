@@ -1,22 +1,23 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
 from collections.abc import Iterable, Collection
-import warnings
-from typing import Literal
+from typing import Literal, get_type_hints, cast
 
 import numpy as np
 import pandas as pd
-from pandapower.auxiliary import pandapowerNet, _preserve_dtypes, ensure_iterability, \
-    log_to_level, plural_s
+
+from pandapower.pp_types import StandardTypesDict, StandardTypesDictKeys
+from pandapower.auxiliary import _preserve_dtypes, ensure_iterability, log_to_level
+from pandapower.network import pandapowerNet, plural_s
 from pandapower.std_types import change_std_type
+from pandapower.create.utils import add_column_to_df
 from pandapower.create import (
-    create_switch, create_line_from_parameters, create_impedance, create_empty_network, create_gen, create_ext_grid,
+    create_switch, create_line_from_parameters, create_impedance, create_gen, create_ext_grid,
     create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
 )
+from pandapower.results import EmptyResults
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict,
@@ -77,7 +78,7 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
         if not include_results:
             clear_result_tables(p2)
     else:
-        p2 = create_empty_network(add_stdtypes=False)
+        p2 = pandapowerNet(name='', add_stdtypes=False)
         p2["std_types"] = copy.deepcopy(net["std_types"])
 
         net_parameters = ["name", "f_hz"]
@@ -150,72 +151,36 @@ def select_subnet(net, buses, include_switch_buses=False, include_results=False,
             net.switch[net.switch.et == 'l'].element.isin(p2.line.index),
             net.switch[net.switch.et == 't'].element.isin(p2.trafo.index),
         ], sort=False)
-        ]
+    ]
 
-    return pandapowerNet(p2)
+    return pandapowerNet(net=p2)
 
 
-def merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9, **kwargs):
-    """Function to concatenate two nets into one data structure. The elements keep their indices
+def merge_nets(net1: pandapowerNet, net2: pandapowerNet, validate: bool = True, merge_results: bool = True,
+               tol: float = 1e-9, std_prio_on_net1: bool = True, return_net2_reindex_lookup: bool = False,
+               net2_reindex_log_level: Literal["error", "warning", "info", "debug", "UserWarning"] | None = "info",
+               **runpp_kwargs):
+    """
+    Function to concatenate two nets into one data structure. The elements keep their indices
     unless both nets have the same indices. In that case, net2 elements get reindexed. The reindex
     lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
 
-    Parameters
-    ----------
-    net1 : pp.pandapowerNet
-        first net to concatenate
-    net2 : pp.pandapowerNet
-        second net to concatenate
-    validate : bool, optional
-        whether power flow results should be compared against the results of the input nets,
-        by default True
-    merge_results : bool, optional
-        whether results tables should be concatenated, by default True
-    tol : float, optional
-        tolerance which is allowed to pass the results validate check (relevant if validate is
-        True), by default 1e-9
-    std_prio_on_net1 : bool, optional
-        whether net1 standard type should be kept if net2 has types with same names, by default True
-    return_net2_reindex_lookup : bool, optional
-        if True, the merged net AND a dict of lookups is returned, by default False
-    net2_reindex_log_level : str, optional
-        logging level of the message which element types of net2 got reindexed elements. Options
-        are, for example "debug", "info", "warning", "error", or None, by default "info"
+    Arguments:
+        net1: first net to concatenate
+        net2: second net to concatenate
+        validate: whether power flow results should be compared against the results of the input nets
+        merge_results: whether results tables should be concatenated
+        tol: tolerance which is allowed to pass the results validate check (relevant if validate is True)
+        std_prio_on_net1: whether net1 standard type should be kept if net2 has types with same names
+        return_net2_reindex_lookup: if True, the merged net AND a dict of lookups is returned
+        net2_reindex_log_level: logging level of the message which element types of net2 got reindexed elements.
+            Options are, for example "debug", "info", "warning", "error", or None, by default "info"
 
-    Returns
-    -------
-    pp.pandapowerNet
+    Returns:
         net with concatenated element tables
 
-    Raises
-    ------
-    UserWarning
-        if validate is True and power flow results of the merged net deviate from input nets results
-    """
-    old_params = {"retain_original_indices_in_net1", "create_continuous_bus_indices"}
-    new_params = {"std_prio_on_net1", "return_net2_reindex_lookup", "net2_reindex_log_level"}
-    msg1 = "Since pandapower version 2.11.0, merge_nets() keeps element indices " + \
-        "and prioritize net1 standard types by default."
-    msg2 = f"Parameters {old_params} are deprecated."
-    msg3 = "To silence this warning, explicitely pass at least one of the new parameters " + \
-        f"{new_params}."
-
-    old_params_passed = len(set(kwargs).intersection(old_params))
-    new_params_passed = len(set(kwargs).intersection(new_params))
-
-    if old_params_passed:
-        raise FutureWarning(msg1 + msg2 + msg3)
-    elif not new_params_passed:
-        warnings.warn(msg1 + msg3, category=FutureWarning)
-    return _merge_nets(net1, net2, validate=validate, merge_results=merge_results, tol=tol, **kwargs)
-
-
-def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
-                std_prio_on_net1=True, return_net2_reindex_lookup=False,
-                net2_reindex_log_level="info", **runpp_kwargs):
-    """Function to concatenate two nets into one data structure. The elements keep their indices
-    unless both nets have the same indices. In that case, net2 elements get reindex. The reindex
-    lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
+    Raises:
+        UserWarning: if validate is True and power flow results of the merged net deviate from input nets results
     """
     net = copy.deepcopy(net1)
     net2 = copy.deepcopy(net2)
@@ -272,10 +237,13 @@ def _merge_nets(net1, net2, validate=True, merge_results=True, tol=1e-9,
 
     # copy standard types of net by data of net2
     for type_ in net.std_types:
+        if type_ not in tuple(get_type_hints(StandardTypesDict).keys()):
+            continue
+        typed_type: StandardTypesDictKeys = cast(StandardTypesDictKeys, type_)
         if std_prio_on_net1:
-            net.std_types[type_] = {**net2.std_types[type_], **net.std_types[type_]}
+            net.std_types[typed_type] = {**net2.std_types[typed_type], **net.std_types[typed_type]}
         else:
-            net.std_types[type_].update(net2.std_types[type_])
+            net.std_types[typed_type].update(net2.std_types[typed_type])
 
     # validate vm results
     if validate:
@@ -716,8 +684,9 @@ def drop_buses(net, buses, drop_elements=True):
 
     detach_from_groups(net, "bus", buses)
     net["bus"].drop(buses, inplace=True)
-    res_buses = net.res_bus.index.intersection(buses)
-    net["res_bus"] = net["res_bus"].drop(res_buses)
+    if "res_bus" in net:
+        res_buses = net.res_bus.index.intersection(buses)
+        net["res_bus"] = net["res_bus"].drop(res_buses)
     if drop_elements:
         drop_elements_at_buses(net, buses)
         drop_measurements_at_elements(net, "bus", idx=buses)
@@ -748,8 +717,9 @@ def drop_trafos(net, trafos, table="trafo"):
     # drop the trafos
     detach_from_groups(net, table, trafos)
     net[table] = net[table].drop(trafos)
-    res_trafos = net["res_" + table].index.intersection(trafos)
-    net["res_" + table] = net["res_" + table].drop(res_trafos)
+    if f"res_{table}" in net:
+        res_trafos = net["res_" + table].index.intersection(trafos)
+        net["res_" + table] = net["res_" + table].drop(res_trafos)
     logger.debug(f"Dropped {len(trafos)} {table}{plural_s(len(trafos))} with {num_switches} switches")
 
 
@@ -774,8 +744,9 @@ def drop_lines(net, lines):
     net["line"].drop(lines, inplace=True)
     if "line_geodata" in net:
         net["line_geodata"].drop(set(lines) & set(net["line_geodata"].index), inplace=True)
-    res_lines = net.res_line.index.intersection(lines)
-    net["res_line"].drop(res_lines, inplace=True)
+    if "res_line" in net:
+        res_lines = net.res_line.index.intersection(lines)
+        net["res_line"].drop(res_lines, inplace=True)
     logger.debug(f"Dropped {len(lines)} line{plural_s(len(lines))} with {len(i)} line switches")
 
 
@@ -1080,7 +1051,7 @@ def create_replacement_switch_for_branch(net, element_type, element_index):
                         type='CB')
     # to enable unproblematic validation for the pf converter
     for col in ("pf_closed", "pf_in_service"):
-        if col in net.res_switch.columns:
+        if "res_switch" in net and col in net.res_switch:
             net.res_switch.loc[sid, col] = is_closed
     logger.debug('created switch %s (%d) as replacement for %s %s' %
                  (switch_name, sid, element_type, element_index))
@@ -1278,7 +1249,7 @@ def replace_line_by_impedance(
             xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
             gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
             bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p if "c0_nf_per_km" in cols else None,
-            name=line_.name,
+            name=line_["name"],  # TODO: should this be line_.name (line index) or line_["name"]
             in_service=line_.in_service))
         i += 1
     _replace_group_member_element_type(net, index, "line", new_index, "impedance",
@@ -1350,10 +1321,14 @@ def replace_ext_grid_by_gen(
 
     # --- create gens
     new_idx = []
-    for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(), gen_indices):
-        p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
+    for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(name="ExtGrid"), gen_indices):
+        p_mw = 0 if "res_ext_grid" not in net or ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
             ext_grid.Index, "p_mw"]
-        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
+        if hasattr(ext_grid, "name") and pd.notna(ext_grid.name):
+            name = ext_grid.name
+        else:
+            name = ""
+        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=name,
                          in_service=ext_grid.in_service, controllable=True, index=index)
         new_idx.append(idx)
     net.gen.loc[new_idx, "slack"] = slack
@@ -1506,7 +1481,8 @@ def replace_gen_by_sgen(
     # --- create sgens
     new_idx = []
     for gen, index in zip(net.gen.loc[gens].itertuples(), sgen_indices):
-        q_mvar = 0. if gen.Index not in net.res_gen.index else net.res_gen.at[gen.Index, "q_mvar"]
+        q_mvar = 0. if "res_gen" not in net or gen.Index not in net.res_gen.index else net.res_gen.at[
+            gen.Index, "q_mvar"]
         controllable = True if "controllable" not in net.gen.columns else gen.controllable
         idx = create_sgen(net, gen.bus, p_mw=gen.p_mw, q_mvar=q_mvar, name=gen.name,
                           in_service=gen.in_service, controllable=controllable, index=index)
@@ -1699,7 +1675,7 @@ def replace_pq_elmtype(
     # add missing columns to net[new_element_type] which should be kept
     missing_cols_to_keep = existing_cols_to_keep.difference(net[new_element_type].columns)
     for col in missing_cols_to_keep:
-        net[new_element_type][col] = np.nan
+        add_column_to_df(net, new_element_type, col)
 
     # --- create new_element_type
     already_considered_cols = set()
@@ -1948,10 +1924,13 @@ def _replace_group_member_element_type(
 
 
 def _adapt_result_tables_in_replace_functions(
-    net, element_type_old, element_index_old, element_type_new, element_index_new):
+        net, element_type_old, element_index_old, element_type_new, element_index_new
+):
     et_old, et_new = "res_" + element_type_old, "res_" + element_type_new
+    if et_new not in net:
+        net[et_new] = EmptyResults[et_new]
     idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
-    if net[et_old].shape[0]:
+    if et_old in net and net[et_old].shape[0]:
         in_res = pd.Series(idx_old).isin(net[et_old].index).values
         to_add = net[et_old].loc[idx_old[in_res]]
         to_add.index = idx_new[in_res]

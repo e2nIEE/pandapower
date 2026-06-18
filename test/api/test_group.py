@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,8 +9,7 @@ import pandas.testing as pdt
 import pytest
 
 from pandapower.create import (
-    create_group, create_group_from_dict, create_empty_network, create_buses, create_lines, create_ext_grid,
-    create_loads, create_switches
+    create_group_from_dict, create_group, create_buses, create_lines, create_ext_grid, create_loads, create_switches,
 )
 from pandapower.file_io import to_json, from_json_string
 from pandapower.groups import (
@@ -22,6 +19,7 @@ from pandapower.groups import (
     set_group_reference_column, remove_not_existing_group_members, ensure_lists_in_group_element_column,
     check_unique_group_rows, drop_group_and_elements,
 )
+from pandapower.network import pandapowerNet
 from pandapower.networks import case24_ieee_rts, create_cigre_network_mv
 from pandapower.run import runpp
 from pandapower.toolbox import pp_elements, dataframes_equal, drop_lines, drop_trafos, drop_buses, drop_elements_simple
@@ -36,6 +34,7 @@ def typed_list(iterable, dtype):
         return [str(it) for it in iterable]
 
 
+# TODO: the params should be replaced by indirect parametrization: https://stackoverflow.com/a/44568273/4633400
 @pytest.fixture(scope="module", params=[(None, int), ("name", str)])
 def nets_to_test_group(request):
     reference_column, type_ = request.param
@@ -184,7 +183,7 @@ def test_remove_not_existing_group_members(nets_to_test_group):
 
 
 def test_check_unique_group_rows():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_check_unique_group_rows")
     empty_group = deepcopy(net.group)
 
     # test with duplicated rows
@@ -325,7 +324,10 @@ def test_detach_and_compare(nets_to_test_group):
     detach_from_groups(net, "trafo", 1, 3)
     assert group_element_lists(net, 3)[0] == ["trafo"]
     assert group_element_lists(net, 3)[1] == [typed_list([0, 2], type_)]
-    assert group_element_lists(net, 3)[2] == [None if type_ is int else "name"]
+    if type_ is int:
+        assert pd.isna(group_element_lists(net, 3)[2][0])
+    else:
+        assert group_element_lists(net, 3)[2] == ["name"]
 
 
 def test_res_power(nets_to_test_group):
@@ -408,7 +410,7 @@ def test_element_associated_groups(nets_to_test_group):
 
 def test_elements_connected_to_group():
     # test net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_elements_connected_to_group")
     buses = create_buses(net, 12, 20)
     create_lines(net, [buses[0]] * 6, list(range(1, 7)), length_km=0.5, std_type="48-AL1/8-ST1A 20.0")
     create_ext_grid(net, 0)

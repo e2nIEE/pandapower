@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -13,7 +12,6 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     ## default arguments
     if ppci is None:
         raise ValueError('ppci is empty')
-    # ppopt = ppoption(ppopt)
 
     # get data for calc
     bus, gen, vsc = ppci["bus"], ppci["gen"], ppci["vsc"]

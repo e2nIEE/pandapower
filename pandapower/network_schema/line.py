@@ -4,7 +4,13 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _line_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the line"),
+    "name": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="name of the line",
+        metadata={"cim": True, "ucte": True},
+    ),
     "std_type": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -27,6 +33,7 @@ _line_columns = {
         float,
         pa.Check.ge(0),
         description="dielectric conductance in micro Siemens per km",
+        metadata={"default": 0.0},
     ),
     "r0_ohm_per_km": pa.Column(
         float,
@@ -34,7 +41,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence resistance of the line [Ohm per km]",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "x0_ohm_per_km": pa.Column(
         float,
@@ -42,7 +49,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence reactance of the line [Ohm per km]",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "c0_nf_per_km": pa.Column(
         float,
@@ -50,7 +57,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence capacitance of the line [nano Farad per km]",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True},
     ),
     "g0_us_per_km": pa.Column(
         float,
@@ -58,12 +65,15 @@ _line_columns = {
         nullable=True,
         required=False,
         description="dielectric conductance of the line [micro Siemens per km]",
-        metadata={"sc": True, "3ph": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "default": 0.0},
     ),
     "max_i_ka": pa.Column(float, pa.Check.gt(0), description="maximal thermal current [kilo Ampere]"),
-    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel line systems"),
+    "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel line systems", metadata={"default": 1}),
     "df": pa.Column(
-        float, pa.Check.between(min_value=0, max_value=1), description="derating factor (scaling) for max_i_ka"
+        float,
+        pa.Check.between(min_value=0, max_value=1),
+        description="derating factor (scaling) for max_i_ka",
+        metadata={"default": 1.0},
     ),
     "type": pa.Column(
         pd.StringDtype,
@@ -85,14 +95,15 @@ _line_columns = {
         nullable=True,
         required=False,
         description="Short-Circuit end temperature of the line in degree Celsius",
-        metadata={"sc": True, "tdpf": True},
+        metadata={"sc": True, "tdpf": True, "cim": True},
     ),
-    "in_service": pa.Column(bool, description="specifies if the line is in service."),
+    "in_service": pa.Column(bool, description="specifies if the line is in service.", metadata={"default": True}),
     "geo": pa.Column(
         pd.StringDtype,
         nullable=True,
         required=False,
         description="geojson.LineString object or its string representation",
+        metadata={"cim": True},
     ),
     "alpha": pa.Column(
         float,
@@ -187,9 +198,51 @@ _line_columns = {
         description="specific mass of the conductor multiplied by the specific thermal capacity of the material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)",
         metadata={"tdpf": True},
     ),
+    "origin_id": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+    ),
+    "origin_class": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+    ),
+    "description": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="description from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
+    ),
+    "terminal_to": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_to from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
+    ),
+    "terminal_from": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_from from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
+    ),
+    "EquipmentContainer_id": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="EquipmentContainer_id from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
+    ),
+    "amica_name": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="amica_name from converter, not relevant for calculations",
+        metadata={"ucte": True, "doc": False},
+    ),
 }
 line_schema = pa.DataFrameSchema(
     _line_columns,
+    name="line",
     strict=False,
     checks=create_column_dependency_checks_from_metadata(
         [
@@ -223,6 +276,7 @@ res_line_schema = res_line_est_schema = pa.DataFrameSchema(
         "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at to bus [degrees]"),
         "loading_percent": pa.Column(float, nullable=True, description="line loading [%]"),
     },
+    name="res_line",
     strict=False,
 )
 
@@ -285,19 +339,16 @@ res_line_3ph_schema = pa.DataFrameSchema(
         "i_c_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Phase C [kA]"),
         "i_c_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Phase C [kA]"),
         "i_c_ka": pa.Column(float, nullable=True, description="Current at Phase C [kA]"),
-        "i_n_from_ka": pa.Column(
-            float, nullable=True, description="Current at from bus: Neutral [kA]"
-        ),  # TODO: muss mike schauen
-        "i_n_to_ka": pa.Column(
-            float, nullable=True, description="Current at to bus: Neutral [kA]"
-        ),  # TODO: muss mike schauen
+        "i_n_from_ka": pa.Column(float, nullable=True, description="Current at from bus: Neutral [kA]"),
+        "i_n_to_ka": pa.Column(float, nullable=True, description="Current at to bus: Neutral [kA]"),
         "i_ka": pa.Column(float, nullable=True, description="Maximum of i_from_ka and i_to_ka [kA]"),
-        "i_n_ka": pa.Column(float, nullable=True, description=""),  # TODO: missing in docu muss mike schauen
+        "i_n_ka": pa.Column(float, nullable=True, description="Current Neutral [kA]"),
         "loading_a_percent": pa.Column(float, nullable=True, description="line a loading [%]"),
         "loading_b_percent": pa.Column(float, nullable=True, description="line b loading [%]"),
         "loading_c_percent": pa.Column(float, nullable=True, description="line c loading [%]"),
-        "loading_n_percent": pa.Column(float, nullable=True, description=""),  # TODO: was only in docu
+        "loading_n_percent": pa.Column(float, nullable=True, description="line loading [%]"),
     },
+    name="res_line_3ph",
     strict=False,
 )
 
@@ -333,5 +384,6 @@ res_line_sc_schema = pa.DataFrameSchema(
         "ip_ka": pa.Column(float, nullable=True, description="peak value of the short-circuit current [kA]"),
         "ith_ka": pa.Column(float, nullable=True, description="equivalent thermal short-circuit current [kA]"),
     },
+    name="res_line_sc",
     strict=False,
 )

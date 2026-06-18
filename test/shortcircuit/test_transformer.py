@@ -1,18 +1,18 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_switch, create_shunt, \
-    create_transformer_from_parameters
+from pandapower.create import (
+    create_bus, create_ext_grid, create_switch, create_shunt, create_transformer_from_parameters
+)
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 @pytest.fixture
 def net_transformer():
-    net = create_empty_network(sn_mva=2)
+    net = pandapowerNet(name="net_transformer", sn_mva=2)
     b1a = create_bus(net, vn_kv=10.)
     b1b = create_bus(net, vn_kv=10.)
     b2 = create_bus(net, vn_kv=.4)
@@ -47,7 +47,8 @@ def test_max_10_trafo(net_transformer):
 
 def test_max_6_trafo(net_transformer):
     net = net_transformer
-    calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6.)
+    with pytest.warns(UserWarning, match="Calculation does not support calculation of voltages and .*"):
+        calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.77350301940194) < 1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 5.77350301940194) < 1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[2] - 16.905912296) < 1e-5)

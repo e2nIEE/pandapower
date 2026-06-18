@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from itertools import combinations
@@ -37,7 +35,6 @@ BR_Z = 3
 logger = logging.getLogger(__name__)
 
 
-# TODO: undocumented Parameters
 def create_nxgraph(
     net, respect_switches=True, include_lines=True, include_impedances=True, include_dclines=True, include_trafos=True,
     include_trafo3ws=True, include_tcsc=True, include_vsc=True, include_line_dc=True, nogobuses=None, notravbuses=None,
@@ -60,13 +57,13 @@ def create_nxgraph(
         include_lines (bool or index, True): determines, whether or which lines get converted to edges
         include_impedances (bool or index, True): determines, whether or which per unit impedances (net.impedance) are
             converted to edges
+        include_dclines (bool or index, True): determines, whether or which dclines get converted to edges
+        include_trafos (bool or index, True): determines, whether or which trafos get converted to edges
+        include_trafo3ws (bool or index, True): determines, whether or which trafo3ws get converted to edges
         include_tcsc (bool or index, True): determines, whether or which TCSC elements (net.tcsc) are converted to edges
         include_vsc (bool or index, True): determines, whether or which VSC elements (net.vsc) are converted to edges
         include_line_dc (bool or index, True): determines, whether or which DC line elements (net.line_dc) are converted
             to edges
-        include_dclines (bool or index, True): determines, whether or which dclines get converted to edges
-        include_trafos (bool or index, True): determines, whether or which trafos get converted to edges
-        include_trafo3ws (bool or index, True): determines, whether or which trafo3ws get converted to edges
         nogobuses (integer/list, None): nogobuses are not being considered in the graph
         notravbuses (integer/list, None): lines connected to these buses are not being considered in the graph
         multi (bool, True):
@@ -80,7 +77,11 @@ def create_nxgraph(
         branch_impedance_unit (str, "ohm"): defines the unit of the branch impedance for calc_branch_impedances=True.
             If it is set to "ohm", the parameters 'r_ohm', 'x_ohm' and 'z_ohm' are added to each branch. If it is set
             to "pu", the parameters are 'r_pu', 'x_pu' and 'z_pu'.
+        library:
         include_out_of_service (bool, False): defines if out of service buses are included in the nx graph
+        include_switches:
+        trafo_length_km:
+        switch_length_km:
 
     Returns:
         Returns the required NetworkX graph

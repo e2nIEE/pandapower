@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -53,7 +51,7 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
     net.res_bus_est.loc[merged_bus_idx, "q_mvar"] = 0
     # add shunt power because the injection at the node computed via Ybus is only the extra injection on top of the shunt
     for element in ["shunt", "ward", "xward"]:
-        if ~net[element].empty:
+        if not net[element].empty:
             bus = net[element].bus.values
             if element == "shunt":
                 Sn = 1j*(net[element].q_mvar.values)
@@ -70,9 +68,10 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
             net["res_bus_est"].loc[bus,"q_mvar"] += Sinj.imag
             if element == "shunt":
                 element_res_est = "res_" + element + "_est"
-                net[element_res_est]["p_mw"] = Sinj.real
-                net[element_res_est]["q_mvar"] = Sinj.imag
-                net[element_res_est]["vm_pu"] = net["res_bus_est"].loc[bus,"vm_pu"].values
+                if element_res_est in net:
+                    net[element_res_est]["p_mw"] = Sinj.real
+                    net[element_res_est]["q_mvar"] = Sinj.imag
+                    net[element_res_est]["vm_pu"] = net["res_bus_est"].loc[bus,"vm_pu"].values
     return net
 
 

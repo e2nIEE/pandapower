@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-import warnings
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
+import warnings
 from collections import defaultdict
 from itertools import chain
 
@@ -338,7 +336,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     nr_trafo3w = len(net.trafo3w)
     nr_ssc = len(net.ssc)
     nr_vsc = len(net.vsc)
-    aux = dict()
+    aux = {}
     if nr_xward > 0 or nr_trafo3w > 0 or nr_ssc > 0 or nr_vsc > 0:
         bus_indices = [net["bus"].index.values, np.array([], dtype=np.int64)]
         max_idx = max(net["bus"].index) + 1
@@ -398,12 +396,11 @@ def _build_bus_ppc(net, ppc, sequence=None):
                                      net["xward"]["in_service"].values,
                                      net["trafo3w"]["in_service"].values,
                                      net["ssc"]["in_service"].values,
-                                     net["vsc"]["in_service"].values])
+                                     net["vsc"]["in_service"].values]).astype(bool)
     else:
         in_service = net["bus"]["in_service"].values
     ppc["bus"][~in_service, BUS_TYPE] = NONE
-    if mode != "nx":
-        set_reference_buses(net, ppc, bus_lookup, mode)
+    set_reference_buses(net, ppc, bus_lookup, mode)
     vm_pu = get_voltage_init_vector(net, init_vm_pu, "magnitude", sequence=sequence)
     if vm_pu is not None:
         ppc["bus"][:n_bus, VM] = vm_pu
@@ -415,7 +412,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     if mode == "sc":
         _add_c_to_ppc(net, ppc)
 
-    if net._options["mode"] == "opf":
+    if mode == "opf":
         if "max_vm_pu" in net.bus:
             ppc["bus"][:n_bus, VMAX] = net["bus"].max_vm_pu.values
         else:
@@ -454,7 +451,7 @@ def _build_bus_dc_ppc(net, ppc):
     # get bus indices
     bus_index = net["bus_dc"].index.values
     # get in service elements
-    aux = dict()
+    aux = {}
     nr_vsc = len(net.vsc)
     if nr_vsc > 0 and mode != "dc":
         max_idx = max(net["bus_dc"].index) + 1
@@ -1010,11 +1007,11 @@ def _add_ext_grid_sc_impedance(net, ppc):
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 1.1
-    if not "s_sc_%s_mva" % case in eg:
+    if f"s_sc_{case}_mva" not in eg:
         raise ValueError(f"short circuit apparent power s_sc_{case}_mva needs to be specified for external grid \n"
                          f" Try: net.ext_grid['s_sc_{case}_mva'] = 1000")
     s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
-    if not "rx_%s" % case in eg:
+    if f"rx_{case}" not in eg:
         raise ValueError(f"short circuit R/X rate rx_{case} needs to be specified for external grid \n"
                          f" Try: net.ext_grid['rx_{case}'] = 0.1")
     rx = eg["rx_%s" % case].values

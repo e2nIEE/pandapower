@@ -8,10 +8,13 @@ import pandas as pd
 import pytest
 from numpy import isin, isnan, isclose
 
-from pandapower.create import create_bus, create_load, create_transformer3w_from_parameters, create_transformer, \
-    create_empty_network, create_ext_grid, create_line_from_parameters, create_transformer_from_parameters, \
-    create_impedance
+from pandapower import pp_dir
+from pandapower.create import (
+    create_bus, create_load, create_transformer3w_from_parameters, create_transformer, create_ext_grid,
+    create_line_from_parameters, create_transformer_from_parameters, create_impedance
+)
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 
 from test import test_path
@@ -46,7 +49,7 @@ def add_trafo_connection(net, hv_bus, trafotype="2W"):
 
 
 def create_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="create_net")
     vn_kv = 20
     b1 = create_bus(net, vn_kv=vn_kv)
     create_ext_grid(net, b1, vm_pu=1.01)
@@ -155,16 +158,17 @@ def test_load_sgen_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3
 
 def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
     net = result_test_network
-    buses = net.bus[net.bus.zone == "test_trafo"]
-    trafos = [x for x in net.trafo.index if net.trafo.hv_bus[x] in buses.index]
+    buses = net.bus[net.bus.zone == "test_trafo"].index
+    trafos = net.trafo[net.trafo.hv_bus.isin(buses)].index
     t1 = trafos[0]
     t2 = trafos[1]
     t3 = trafos[2]
-    b2 = buses.index[1]
-    b3 = buses.index[2]
+    b2 = buses[1]
+    b3 = buses[2]
     # powerfactory results to check t-equivalent circuit model
-    runpp_with_consistency_checks(net, trafo_model="t", trafo_loading="current", init="dc",
-                                  calculate_voltage_angles=True)
+    runpp_with_consistency_checks(
+        net, trafo_model="t", trafo_loading="current", init="dc", calculate_voltage_angles=True
+    )
 
     load1 = 28.7842
     load2 = 0.4830
@@ -248,22 +252,20 @@ def test_trafo(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e
 
 
 def test_trafo_2_taps(v_tol=1e-6, i_tol=1e-6, s_tol=1e-2, l_tol=1e-3, va_tol=1e-2):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo_2_taps")
     create_bus(net, 110)
     create_bus(net, 20)
     create_ext_grid(net, 0)
-    create_transformer_from_parameters(net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
-                                       tap_side="hv", tap_neutral=0, tap_max=10,
-                                       tap_min=-10, tap_step_percent=2, tap_step_degree=0,
-                                       tap_pos=0, tap_changer_type="Ratio",
-                                       tap2_side="hv", tap2_neutral=0, tap2_max=10,
-                                       tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0,
-                                       tap2_pos=0, tap2_changer_type="Ratio")
+    create_transformer_from_parameters(
+        net, 0, 1, 100, 110, 20, 0.5, 12, 14, 0.5,
+        tap_side="hv", tap_neutral=0, tap_max=10, tap_min=-10, tap_step_percent=2, tap_step_degree=0,
+        tap_pos=0, tap_changer_type="Ratio", tap2_side="hv", tap2_neutral=0, tap2_max=10,
+        tap2_min=-10, tap2_step_percent=2, tap2_step_degree=0, tap2_pos=0, tap2_changer_type="Ratio"
+    )
 
     create_load(net, 1, 10)
 
     runpp(net)
-    net.res_bus
 
 
 def test_ext_grid(result_test_network, v_tol=1e-6, va_tol=1e-2, i_tol=1e-6, s_tol=5e-3, l_tol=1e-3):
@@ -412,13 +414,12 @@ def test_enforce_qlims(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, 
 
 def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=1e-3):
     net = result_test_network
-    buses = net.bus[net.bus.zone == "test_trafo3w"]
-    trafos = [x for x in net.trafo3w.index if net.trafo3w.hv_bus[
-        x] in buses.index]
+    buses = net.bus[net.bus.zone == "test_trafo3w"].index
+    trafos = net.trafo3w[net.trafo3w.hv_bus.isin(buses)].index
     runpp_with_consistency_checks(net, trafo_model="pi")
-    b2 = buses.index[1]
-    b3 = buses.index[2]
-    b4 = buses.index[3]
+    b2 = buses[1]
+    b3 = buses[2]
+    b4 = buses[3]
     t3 = trafos[0]
 
     uhv = 1.010117166
@@ -636,8 +637,10 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
 
 
 def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
-    """Test for enforce_q_lims loadflow option."""
-    net = create_empty_network()
+    """
+    Test for enforce_q_lims loadflow option
+    """
+    net = pandapowerNet(name="test_enforce_q_lims")
     net = add_test_gen(net)
     runpp(net)
     buses = net.bus[net.bus.zone == "test_gen"]
@@ -684,7 +687,7 @@ def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
 
 def test_enforce_p_lims(s_tol=5e-3):
     """Test for enforce_p_lims loadflow option."""
-    net = create_empty_network()
+    net = pandapowerNet(name="test_enforce_p_lims")
     net = add_test_gen(net)
     runpp(net)
     buses = net.bus[net.bus.zone == "test_gen"]
@@ -758,7 +761,7 @@ def test_open(result_test_network):
 
 
 def test_impedance_g_b():
-    net = create_empty_network(sn_mva=100)
+    net = pandapowerNet(name="test_impedance_g_b", sn_mva=100)
     create_bus(net, 110)
     create_bus(net, 20)
     create_ext_grid(net, 0)
@@ -777,7 +780,7 @@ def test_impedance_g_b():
 
 
 def test_trafo_unequal_r_x_hv_lv():
-    net = create_empty_network(sn_mva=10)
+    net = pandapowerNet(name="test_trafo_unequal_r_x_hv_lv", sn_mva=10)
     create_bus(net, 110)
     create_bus(net, 20)
     create_ext_grid(net, 0)

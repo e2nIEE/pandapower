@@ -1,16 +1,17 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import warnings
 import logging
-from typing import Literal, cast, get_args
+from typing import Literal, cast, get_args, TYPE_CHECKING
 
 import pandas as pd
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.pp_types import StandardTypesDictKeys
+
+if TYPE_CHECKING:
+    from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +39,10 @@ def required_std_type_parameters(element: DefaultStandardTypes = "line"):
 
 
 def create_std_type(
-        net: pandapowerNet,
+        net: 'pandapowerNet',
         data: dict,
         name: str,
-        element: str = "line",
+        element: StandardTypesDictKeys = "line",
         overwrite=True,
         check_required=True):
     """
@@ -65,11 +66,11 @@ def create_std_type(
         data: dictionary of standard type parameters
         name: name of the standard type as string
         element:
-         
+
             - "line"
             - "trafo"
             - "trafo3w"
-        
+
         overwrite: whether overwrite existing standard type is allowed
         check_required: check if required standard type parameters are present
 
@@ -115,12 +116,13 @@ def create_std_types(net, data, element="line", overwrite=True, check_required=T
         net: The pandapower network
         data: dictionary of standard type parameter sets
         element:
-            
+
             - "line"
             - "line_dc"
             - "trafo"
             - "trafo3w"
-            
+            - "fuse"
+
         overwrite: whether overwriteing existing standard type is allowed
         check_required: check if required standard type parameters are present
 
@@ -217,7 +219,8 @@ def rename_std_type(net, old_name, new_name, element="line"):
     if new_name in library:
         raise UserWarning(f"{element} standard type '{new_name}' already exists.")
     library[new_name] = library.pop(old_name)
-    net[element].loc[net[element].std_type == old_name, "std_type"] = new_name
+    if "std_type" in net[element].columns:
+        net[element].loc[net[element].std_type == old_name, "std_type"] = new_name
 
 
 def available_std_types(net, element="line"):
@@ -263,13 +266,14 @@ def parameter_from_std_type(net, parameter, element="line", fill=None):
     """
     if parameter not in net[element]:
         net[element][parameter] = fill
-    for typ in net[element].std_type.unique():
-        if pd.isnull(typ) or not std_type_exists(net, typ, element):
-            continue
-        typedata = load_std_type(net, name=typ, element=element)
-        if parameter in typedata:
-            util = net[element].loc[net[element].std_type == typ].index
-            net[element].loc[util, parameter] = typedata[parameter]
+    if "std_type" in net[element].columns:
+        for typ in net[element].std_type.unique():
+            if pd.isnull(typ) or not std_type_exists(net, typ, element):
+                continue
+            typedata = load_std_type(net, name=typ, element=element)
+            if parameter in typedata:
+                util = net[element].loc[net[element].std_type == typ].index
+                net[element].loc[util, parameter] = typedata[parameter]
     if fill is not None:
         net[element].loc[pd.isnull(net[element][parameter]).values, parameter] = fill
 
@@ -290,6 +294,9 @@ def change_std_type(net, eid, name, element="line"):
     for column in table.columns:
         if column in type_param:
             table.at[eid, column] = type_param[column]
+    # add column if not present and init it to pd.NA
+    if "std_type" not in table.columns:
+        table["std_type"] = pd.Series(data=pd.NA, dtype=pd.StringDtype())
     table.at[eid, "std_type"] = name
 
 
@@ -389,7 +396,7 @@ def add_zero_impedance_parameters(net):
 def add_temperature_coefficient(net, fill=None):
     """
     Adds alpha parameter for calculations of line temperature
-    
+
     Parameters:
         net: pandapower network
         fill: fill value for when the parameter in std_type is missing, e.g. 4.03e-3 for aluminum or 3.93e-3 for copper
@@ -1580,8 +1587,8 @@ def basic_std_types():
 
 def add_basic_std_types(net):
     """Adds basic standard types of the pandapower library to the net provided. These standard types
-    are the same types that are available with output of `pandapower.create_empty_network()` and
-    `pandapower.create_empty_network(add_stdtypes=True)` respectively.
+    are the same types that are available with output of `pandapower.pandapowerNet()` and
+    `pandapower.pandapowerNet(add_stdtypes=True)` respectively.
 
     Parameters:
         net: pandapower net which should receive the basic standard types

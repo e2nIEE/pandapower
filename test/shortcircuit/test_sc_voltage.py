@@ -1,18 +1,18 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_ext_grid, create_sgen, create_gen
+from pandapower.create import create_bus, create_line, create_ext_grid, create_sgen, create_gen
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 from test.shortcircuit.test_iec60909_4 import iec_60909_4
 
 
 def simple_grid():
-    net = create_empty_network(sn_mva=4)
+    net = pandapowerNet(name="simple_grid", sn_mva=4)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
@@ -124,7 +124,7 @@ def test_voltage_simple():
 
 
 def test_voltage_very_simple():
-    net = create_empty_network(sn_mva=12)
+    net = pandapowerNet(name="test_voltage_very_simple", sn_mva=12)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
@@ -146,4 +146,5 @@ def test_voltage_very_simple():
 
 def test_iec_60909_4():
     net = iec_60909_4()
-    calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)
+    with pytest.warns(UserWarning, match="Calculation does not support calculation of voltages and .*"):
+        calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)

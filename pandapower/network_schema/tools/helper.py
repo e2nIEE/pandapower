@@ -1,13 +1,13 @@
 import pandera as pa
 
 
-def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True) -> dict:
+def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata: list = []) -> dict:
     """
     Extract column data types from a Pandera DataFrame schema.
 
     This function parses a Pandera schema and returns a dictionary mapping
     column names to their corresponding data types. Optionally filters to
-    include only required columns.
+    include only required columns or columns with specific metadata.
 
     Args:
         schema (pa.DataFrameSchema): The Pandera DataFrame schema to extract
@@ -15,6 +15,9 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True) -> dict:
         required_only (bool, optional): If True, only includes required columns
             in the result. If False, includes all columns regardless of their
             required status. Defaults to True.
+        metadata (list, optional): List of metadata keys to check. Columns will
+            be included if they have metadata containing any of these keys with
+            truthy values. Defaults to empty list.
 
     Returns:
         dict: A dictionary where keys are column names (str) and values are
@@ -31,11 +34,18 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True) -> dict:
         {'name': <class 'str'>, 'age': <class 'int'>}
         >>> get_dtypes(schema, required_only=False)
         {'name': <class 'str'>, 'age': <class 'int'>, 'score': <class 'float'>}
+
+    Note:
+        When metadata parameter is provided, columns with matching metadata keys
+        having truthy values will be included regardless of required_only setting.
     """
     return {
         name: col.dtype.type
         for name, col in schema.columns.items()
-        if not required_only or schema.columns[name].required
+        if not required_only
+        or schema.columns[name].required
+        or schema.columns[name].metadata is not None
+        and any(item in schema.columns[name].metadata for item in metadata)
     }
 
 

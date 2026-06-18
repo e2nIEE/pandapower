@@ -1,16 +1,16 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import pytest
-from unittest import mock
 from pandas._testing import assert_series_equal
 
-from pandapower.create import create_transformer, create_line, create_transformer3w_from_parameters, create_pwl_cost, \
-    create_poly_cost, create_group, create_transformer3w, create_measurement, create_buses, create_loads, \
-    create_xward, create_group_from_dict, create_transformer_from_parameters
+from pandapower.create import (
+    create_transformer, create_line, create_transformer3w_from_parameters, create_pwl_cost, create_poly_cost,
+    create_group, create_transformer3w, create_measurement, create_buses, create_loads, create_xward,
+    create_group_from_dict, create_transformer_from_parameters
+)
 from pandapower.groups import group_element_index, count_group_elements
+from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv, create_cigre_network_lv
 from pandapower.networks.create_examples import example_simple, example_multivoltage
 from pandapower.networks.ieee_european_lv_asymmetric import ieee_european_lv_asymmetric
@@ -50,7 +50,7 @@ def __create_trafo3w(net, bus_sl, service: bool = True):
 
 @pytest.mark.parametrize('service', [True, False])
 def test_drop_inactive_elements(service):
-    net = create_empty_network()
+    net = pandapowerNet(name=f"test_drop_inactive_elements service={service}")
     bus_sl = create_bus(net, vn_kv=.4, in_service=service)
     __create_trafo3w(net, bus_sl, service=service)
     # drop them
@@ -78,7 +78,7 @@ def test_drop_inactive_elements(service):
         assert len(net.bus) == 1
         assert bus_sl in net.bus.index.values
 
-    net = create_empty_network()
+    net = pandapowerNet(name=f"test_drop_inactive_elements")
 
     bus0 = create_bus(net, vn_kv=.4, in_service=True)
     create_ext_grid(net, bus0, in_service=True)
@@ -93,7 +93,7 @@ def test_drop_inactive_elements(service):
 
 
 def test_drop_inactive_elements_with_empty_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_inactive_elements_with_empty_net")
     try:
         drop_inactive_elements(net)
     except Exception:
@@ -101,7 +101,7 @@ def test_drop_inactive_elements_with_empty_net():
 
 
 def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_inactive_elements_with_missing_in_service_column 0")
     bus_sl = create_bus(net, vn_kv=.4)
     create_ext_grid(net, bus_sl)
     bus0 = create_bus(net, vn_kv=.4)
@@ -119,7 +119,7 @@ def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
         'Set 0 of 1 unsupplied buses out of service'
     )
 
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_inactive_elements_with_missing_in_service_column 1")
     bus0 = create_bus(net, vn_kv=.4)
     create_ext_grid(net, bus0)
     bus1 = create_bus(net, vn_kv=.4)
@@ -132,7 +132,7 @@ def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
 
 
 def test_drop_inactive_elements_other_branches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_inactive_elements_other_branches")
 
     bus0 = create_bus(net, vn_kv=.4)
     create_ext_grid(net, bus0)
@@ -152,7 +152,7 @@ def test_drop_inactive_elements_other_branches():
     assert impedance0 not in net.motor.index
 
 def test_drop_elements_simple_with_trafo(mock_logger):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_elements_simple_with_trafo")
     bus0 = create_bus(net, vn_kv=.4)
     create_ext_grid(net, bus0)
     drop_elements_simple(net, "bus", 0)
@@ -422,7 +422,7 @@ def test_drop_inner_branches():
 
 
 def test_fuse_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_fuse_buses")
     b1 = create_bus(net, vn_kv=1, name="b1")
     b2 = create_bus(net, vn_kv=1.5, name="b2")
     b3 = create_bus(net, vn_kv=2, name="b2")
@@ -470,7 +470,7 @@ def test_fuse_buses():
 
 
 def test_close_switch_at_line_with_two_open_switches():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_close_switch_at_line_with_two_open_switches")
 
     bus1 = create_bus(net, vn_kv=.4)
     bus2 = create_bus(net, vn_kv=.4)
@@ -498,7 +498,7 @@ def test_close_switch_at_line_with_two_open_switches():
 
 
 def test_create_replacement_switch_for_branch():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_create_replacement_switch_for_branch")
 
     bus0 = create_bus(net, vn_kv=0.4)
     bus1 = create_bus(net, vn_kv=0.4)
@@ -542,7 +542,7 @@ def test_create_replacement_switch_for_branch():
 
 @pytest.fixture
 def net():
-    net = create_empty_network()
+    net = pandapowerNet(name="net")
 
     bus0 = create_bus(net, vn_kv=0.4)
     bus1 = create_bus(net, vn_kv=0.4)
@@ -620,7 +620,7 @@ def test_all(net):
 
 
 def test_drop_elements_at_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_elements_at_buses")
 
     bus0 = create_bus(net, vn_kv=110)
     bus1 = create_bus(net, vn_kv=20)
@@ -669,7 +669,7 @@ def test_drop_elements_at_buses():
 
 def test_impedance_line_replacement():
     # create test net
-    net1 = create_empty_network(sn_mva=1.1)
+    net1 = pandapowerNet(name="test_impedance_line_replacement", sn_mva=1.1)
     create_buses(net1, 2, 10)
     create_ext_grid(net1, 0)
     create_impedance(net1, 0, 1, 0.1, 0.1, 8.7e-3)
@@ -697,8 +697,8 @@ def test_impedance_line_replacement():
     assert np.allclose(net3.res_impedance[cols].values, net2.res_line[cols].values)
 
 
-@pytest.mark.parametrize('i', [0, 1])
-def test_replace_ext_grid_gen(i):
+@pytest.mark.parametrize('replace_gen_or_ext_grid', [True, False])
+def test_replace_ext_grid_gen(replace_gen_or_ext_grid):
     net = example_simple()
     net.ext_grid["uuid"] = "test"
     runpp(net, calculate_voltage_angles="auto")
@@ -706,9 +706,9 @@ def test_replace_ext_grid_gen(i):
     create_group(net, ["line", "ext_grid"], [[0], [0]])
 
     # replace_ext_grid_by_gen
-    if i == 0:
+    if replace_gen_or_ext_grid:
         replace_ext_grid_by_gen(net, 0, gen_indices=[4], add_cols_to_keep=["uuid"])
-    elif i == 1:
+    else:
         replace_ext_grid_by_gen(net, [0], gen_indices=[4], cols_to_keep=["uuid", "max_p_mw"])
     assert not net.ext_grid.shape[0]
     assert not net.res_ext_grid.shape[0]
@@ -720,9 +720,9 @@ def test_replace_ext_grid_gen(i):
     assert net.group.element_index.iat[1] == [4]
 
     # replace_gen_by_ext_grid
-    if i == 0:
+    if replace_gen_or_ext_grid:
         replace_gen_by_ext_grid(net)
-    elif i == 1:
+    else:
         replace_gen_by_ext_grid(net, [0, 4], ext_grid_indices=[2, 3])
         assert np.allclose(net.ext_grid.index.values, [2, 3])
     assert not net.gen.shape[0]
@@ -732,8 +732,8 @@ def test_replace_ext_grid_gen(i):
     assert net.res_ext_grid.p_mw.dropna().shape[0] == 2
 
 
-@pytest.mark.parametrize('i', [0, 1])
-def test_replace_gen_sgen(i):
+@pytest.mark.parametrize('replace_gen_or_sgen', [True, False])
+def test_replace_gen_sgen(replace_gen_or_sgen):
     net = case9()
     vm_set = [1.03, 1.02]
     net.gen["vm_pu"] = vm_set
@@ -742,9 +742,9 @@ def test_replace_gen_sgen(i):
     assert list(net.res_gen.index.values) == [0, 1]
 
     # replace_gen_by_sgen
-    if i == 0:
+    if replace_gen_or_sgen:
         replace_gen_by_sgen(net)
-    elif i == 1:
+    else:
         replace_gen_by_sgen(net, [0, 1], sgen_indices=[4, 1], cols_to_keep=[
             "max_p_mw"], add_cols_to_keep=["slack_weight"])  # min_p_mw is not in cols_to_keep
         assert np.allclose(net.sgen.index.values, [4, 1])
@@ -760,9 +760,9 @@ def test_replace_gen_sgen(i):
 
     # replace_sgen_by_gen
     net2 = copy.deepcopy(net)
-    if i == 0:
+    if replace_gen_or_sgen:
         replace_sgen_by_gen(net2, [1])
-    elif i == 1:
+    else:
         replace_sgen_by_gen(net2, 1, gen_indices=[2], add_cols_to_keep=["slack_weight"])
         assert np.allclose(net2.gen.index.values, [2])
         assert np.allclose(net2.gen.slack_weight.values, 1)
@@ -771,7 +771,7 @@ def test_replace_gen_sgen(i):
     assert net2.gen.shape[0] == 1
     assert net2.res_gen.shape[0] == 1
 
-    if i == 0:
+    if replace_gen_or_sgen:
         replace_sgen_by_gen(net, 1)
         assert nets_equal(net, net2)
 
@@ -781,15 +781,14 @@ def test_replace_pq_elmtype():
         for elm, no in elm_shape.items():
             assert net[elm].shape[0] == no
 
-    net = create_empty_network()
+    net = pandapowerNet(name="test_replace_pq_elmtype")
     create_buses(net, 3, 20)
     create_ext_grid(net, 0)
     for to_bus in [1, 2]:
         create_line(net, 0, to_bus, 0.6, 'NA2XS2Y 1x95 RM/25 12/20 kV')
     names = ["load 1", "load 2"]
-    types = ["house", "commercial"]
     create_loads(net, [1, 2], 0.8, 0.1, sn_mva=1, min_p_mw=0.5, max_p_mw=1.0, controllable=True,
-                 name=names, scaling=[0.8, 1], type=types)
+                 name=names, scaling=[0.8, 1])
     create_poly_cost(net, 0, "load", 7)
     create_poly_cost(net, 1, "load", 3)
     runpp(net)
@@ -797,12 +796,11 @@ def test_replace_pq_elmtype():
     net_orig = copy.deepcopy(net)
 
     # --- test unset old_indices, cols_to_keep and add_cols_to_keep
-    replace_pq_elmtype(net, "load", "sgen", new_indices=[2, 7], cols_to_keep=["type"],
-                       add_cols_to_keep=["scaling"])  # cols_to_keep is not
-    # default but ["type"] -> min/max p_mw get lost
+    replace_pq_elmtype(
+        net, "load", "sgen", new_indices=[2, 7], cols_to_keep=[], add_cols_to_keep=["scaling"]
+    )
     check_elm_shape(net, {"load": 0, "sgen": 2})
     assert list(net.sgen.index) == [2, 7]
-    assert list(net.sgen.type.values) == types
     assert list(net.sgen.name.values) == names
     assert net.sgen.controllable.astype(bool).all()
     assert "min_p_mw" not in net.sgen.columns
@@ -811,7 +809,7 @@ def test_replace_pq_elmtype():
 
     # --- test set old_indices and add_cols_to_keep for different element types
     net = copy.deepcopy(net_orig)
-    add_cols_to_keep = ["scaling", "type", "sn_mva"]
+    add_cols_to_keep = ["scaling", "sn_mva"]
     replace_pq_elmtype(net, "load", "sgen", old_indices=1, add_cols_to_keep=add_cols_to_keep)
     check_elm_shape(net, {"load": 1, "sgen": 1})
     runpp(net)
@@ -1121,7 +1119,7 @@ def test_set_isolated_areas_out_of_service():
     assert np.all(net.line.loc[np.setdiff1d(net.line.index, isolated_lines), 'in_service'])
 
 def test_drop_trafos_incorrect_table_names():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_trafos_incorrect_table_names")
     bus_sl = create_bus(net, vn_kv=.4)
     create_ext_grid(net, bus_sl)
     bus0 = create_bus(net, vn_kv=.4)
@@ -1145,13 +1143,13 @@ def test_drop_trafos_incorrect_table_names():
     assert exc.value.args[0] == "parameter 'table' must be 'trafo' or 'trafo3w'"
 
 def test_drop_elements_buses():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_elements_buses")
     bus0 = create_bus(net, vn_kv=.4)
     drop_elements(net, "bus", element_index=[0])
     assert bus0 not in net.bus.index
 
 def test_drop_elements_lines():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_elements_lines")
     bus0 = create_bus(net, vn_kv=.4)
     bus1 = create_bus(net, vn_kv=.4)
     line0 = create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
@@ -1159,7 +1157,7 @@ def test_drop_elements_lines():
     assert line0 not in net.line.index
 
 def test_drop_elements_trafos():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_drop_elements_trafos")
     bus_sl = create_bus(net, vn_kv=.4, in_service=True)
     __create_trafo3w(net, bus_sl, service=True)
     drop_elements(net, "trafo", element_index=[0])
@@ -1170,7 +1168,7 @@ def _simple_line_net():
     """
     Two buses connected by one line.
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="_simple_line_net")
     bus0 = create_bus(net, vn_kv=20.)
     bus1 = create_bus(net, vn_kv=20.)
     create_line_from_parameters(
@@ -1191,7 +1189,7 @@ def test_set_isolated_areas_out_of_service_switch_marks_line():
     assert bool(net.line.at[line_idx, "in_service"]) is False
 
 def test_set_isolated_areas_out_of_service_marks_trafo_oos():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_set_isolated_areas_out_of_service_marks_trafo_oos")
     b_hv = create_bus(net, vn_kv=110.)
     b_lv = create_bus(net, vn_kv=20.)
     t_idx = create_transformer_from_parameters(

@@ -1,9 +1,16 @@
 Change Log
 =============
 
+[upcoming 4.0.0] - 2026-..-..
+-------------------------------
+- [ADDED] pandera network validation
+- [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
+- [ADDED] create function for trafo characteristic entries
+- [ADDED] converter for trafo characteristics
+- [CHANGED] moved test files out of package, :code:`pandapower.test` to :code:`test`
+
 [upcoming release] - 2026-..-..
 -------------------------------
-- [CHANGED] moved test files out of package, :code:`pandapower.test` to :code:`test`
 - [FIXED] cim2pp add GeographicalRegion from eqbd profile
 - [FIXED] behavior of PowerFactory2pp-converter if coordinates are saved at cpSubstat.
 - [CHANGED] differing behavior for :code:`in_service=False` depending on `voltage_depend_loads` has been fixed. Out of Service elements for res_bus now always contain `nan` as result.

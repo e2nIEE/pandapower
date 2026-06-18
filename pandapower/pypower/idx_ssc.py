@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -36,7 +34,7 @@ SSC_X = 3  # (p.u.)
 SSC_SET_VM_PU = 4
 SSC_STATUS = 5  # initial branch status, 1 - in service, 0 - out of service
 SSC_CONTROLLABLE = 6
-SSC_X_CONTROL_VA = 7 # va degrees ## check with roman
+SSC_X_CONTROL_VA = 7 # va degrees TODO: check
 SSC_X_CONTROL_VM = 8 # (p.u)  vm
 SSC_Q = 9 # result for Q
 

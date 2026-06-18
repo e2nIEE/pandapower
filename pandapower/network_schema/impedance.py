@@ -3,7 +3,9 @@ import pandera.pandas as pa
 
 impedance_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the impedance"),
+        "name": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="name of the impedance", metadata={"cim": True}
+        ),
         "from_bus": pa.Column(
             int,
             pa.Check.ge(0),
@@ -26,6 +28,7 @@ impedance_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="zero-sequence resistance of the impedance from ‘from’ to ‘to’ bus [p.u.]",
+            metadata={"cim": True},
         ),
         "xft0_pu": pa.Column(
             float,
@@ -33,6 +36,7 @@ impedance_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="zero-sequence reactance of the impedance from ‘from’ to ‘to’ bus [p.u.]",
+            metadata={"cim": True},
         ),
         "rtf0_pu": pa.Column(
             float,
@@ -40,6 +44,7 @@ impedance_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="zero-sequence resistance of the impedance from ‘to’ to ‘from’ bus [p.u.]",
+            metadata={"cim": True},
         ),
         "xtf0_pu": pa.Column(
             float,
@@ -47,16 +52,19 @@ impedance_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="zero-sequence reactance of the impedance from ‘to’ to ‘from’ bus [p.u.]",
+            metadata={"cim": True},
         ),
         "gf_pu": pa.Column(
             float,
             # pa.Check.gt(1),
             description="conductance at the ‘from_bus’ [p.u.]",
+            metadata={"default": 0.0},
         ),
         "bf_pu": pa.Column(
             float,
             # pa.Check.gt(2),
             description="susceptance at the ‘from_bus’ [p.u.]",
+            metadata={"default": 0.0},
         ),
         "gt_pu": pa.Column(
             float,
@@ -99,13 +107,46 @@ impedance_schema = pa.DataFrameSchema(
         "sn_mva": pa.Column(
             float, pa.Check.gt(0), description="reference apparent power for the impedance per unit values [MVA]"
         ),
-        "in_service": pa.Column(bool, description="specifies if the impedance is in service."),
+        "in_service": pa.Column(
+            bool, description="specifies if the impedance is in service.", metadata={"default": True}
+        ),
+        "origin_id": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True, "doc": False},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
+        "terminal_to": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal_to from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
+        "terminal_from": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal_from from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
     },
+    name="impedance",
     strict=False,
 )
 
-
-res_impedance_schema = pa.DataFrameSchema(
+res_impedance_schema = res_impedance_est_schema = pa.DataFrameSchema(
     {
         "p_from_mw": pa.Column(
             float, nullable=True, description="active power flow into the impedance at “from” bus [MW]"
@@ -122,5 +163,6 @@ res_impedance_schema = pa.DataFrameSchema(
         "i_from_ka": pa.Column(float, nullable=True, description="current at from bus [kA]"),
         "i_to_ka": pa.Column(float, nullable=True, description="current at to bus [kA]"),
     },
+    name="res_impedance",
     strict=False,
 )

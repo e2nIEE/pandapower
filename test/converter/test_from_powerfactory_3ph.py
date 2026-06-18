@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import json
 import pytest
@@ -82,10 +80,12 @@ def test_trafo_asym():
             net.asymmetric_load.type = loadtype
             net.trafo.vector_group = vector_group
             runpp_3ph(net)
-            read_pf_results_from_file_to_net(os.path.join(testfiles_path, "pf_combinations_results_trafo.json"), net,
-                                             vector_group + "_" + loadtype)
+            read_pf_results_from_file_to_net(
+                os.path.join(testfiles_path, "pf_combinations_results_trafo.json"),
+                net,
+                vector_group + "_" + loadtype
+            )
             compare_3ph_pp_pf_results(net)
-    # return net
 
 
 def test_line_asym():
@@ -93,7 +93,6 @@ def test_line_asym():
     runpp_3ph(net)
     read_pf_results_from_file_to_net(os.path.join(testfiles_path, "pf_results_line.json"), net)
     compare_3ph_pp_pf_results(net)
-    # return net
 
 
 def test_net_asym():
@@ -108,7 +107,6 @@ def test_net_asym():
                 os.path.join(testfiles_path, "pf_combinations_results_net_bus_trafo_line_load_19.10.20.json"), net,
                 vector_group + "_" + loadtype)
             compare_3ph_pp_pf_results(net)
-    # return net
 
 
 def initialize_powerfactory(prj_name):
@@ -262,7 +260,7 @@ def write_pf_results_to_file(app, net, filename, combinations):
                 activate_study_case(app, study_case_name)
                 get_pf_results(app, net)
                 pf_res = _get_pf_results_unbalanced(net)
-                pf_results["%s_%s" % (vector_group, loadtype)] = pf_res
+                pf_results[f"{vector_group}_{loadtype}"] = pf_res
 
         for comb_key, comb_item in pf_results.items():
             for key, item in comb_item.items():
@@ -270,8 +268,7 @@ def write_pf_results_to_file(app, net, filename, combinations):
     else:
         get_pf_results(app, net)
         pf_results = _get_pf_results_unbalanced(net)
-        for key, item in pf_results.items():
-            pf_results[key] = item.to_dict()
+        pf_results = {key: item.to_dict() for key, item in pf_results.items()}
 
     import json
     with open(filename, "w") as f:

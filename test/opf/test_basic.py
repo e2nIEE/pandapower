@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -15,7 +13,6 @@ from pandapower.auxiliary import OPFNotConverged
 from pandapower.convert_format import convert_format
 from pandapower.create import (
     create_bus,
-    create_empty_network,
     create_ext_grid,
     create_gen,
     create_line,
@@ -29,6 +26,8 @@ from pandapower.create import (
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
 )
+from pandapower.network import pandapowerNet
+from pandapower.create.utils import add_column_to_df
 from pandapower.networks import simple_four_bus_system
 from pandapower.pypower.opf_model import opf_model
 from pandapower.run import rundcopp, runopp, runpp
@@ -44,7 +43,7 @@ def simplest_grid():
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="simplest_grid")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
@@ -89,7 +88,7 @@ def test_runopp_init_results_preserves_model_v0(monkeypatch):
 
 @pytest.fixture(scope='session')
 def net_3w_trafo_opf():
-    net = create_empty_network()
+    net = pandapowerNet(name="net_3w_trafo_opf")
 
     # create buses
     bus1 = create_bus(net, vn_kv=220.)
@@ -129,7 +128,7 @@ def net_3w_trafo_opf():
 
 @pytest.fixture(scope='module')
 def simple_opf_test_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="simple_opf_test_net")
     create_bus(net, vn_kv=10.)
     create_bus(net, vn_kv=.4)
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
@@ -151,7 +150,7 @@ def test_convert_format():
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_convert_format")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
@@ -221,7 +220,7 @@ def test_simplest_voltage():
 #    vm_min = 0.95
 #
 #    # create net
-#    net = create_empty_network()
+#    net = pandapowerNet(name="test_eg_voltage")
 #    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
 #    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
 #    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150,
@@ -253,7 +252,7 @@ def test_simplest_dispatch():
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_simplest_dispatch")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150,
@@ -288,7 +287,7 @@ def test_opf_gen_voltage():
     vm_min = 0.95
 
     # ceate net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_opf_gen_voltage")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
@@ -334,7 +333,7 @@ def test_opf_sgen_voltage():
     vm_min = 0.96
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_opf_sgen_voltage")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
@@ -381,7 +380,7 @@ def test_opf_gen_loading():
     max_line_loading = 11
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_opf_gen_loading")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
@@ -435,7 +434,7 @@ def test_opf_sgen_loading():
     max_line_loading = 13
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_opf_sgen_loading")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
@@ -485,7 +484,7 @@ def test_unconstrained_line():
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_unconstrained_line")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15,
@@ -510,7 +509,7 @@ def test_unconstrained_line():
 
 
 def test_trafo3w_loading():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo3w_loading")
     _, b2, _ = add_grid_connection(net, vn_kv=110.)
     b3 = create_bus(net, vn_kv=20.)
     b4 = create_bus(net, vn_kv=10.)
@@ -616,7 +615,7 @@ def test_opf_varying_max_line_loading():
     max_trafo_loading = 800
 
     # create net
-    net = create_empty_network()
+    net = pandapowerNet(name="test_opf_varying_max_line_loading")
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
@@ -669,7 +668,7 @@ def test_storage_opf():
     max_line_loading_percent = 100
 
     # create network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_storage_opf")
 
     b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
     b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
@@ -775,7 +774,7 @@ def test_in_service_controllables():
     max_line_loading_percent = 100
 
     # create network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_in_service_controllables")
     b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
     b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
 
@@ -835,7 +834,7 @@ def test_opf_no_controllables_vs_pf():
     max_line_loading_percent = 100
 
     # create network
-    net = create_empty_network()
+    net = pandapowerNet(name="test_opf_no_controllables_vs_pf")
 
     b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
     b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
@@ -925,12 +924,13 @@ def test_only_gen_slack_vm_setpoint(four_bus_net):
     net.bus.loc[:, "min_vm_pu"] = 0.9
     net.bus.loc[:, "max_vm_pu"] = 1.1
     # create two additional slacks with different voltage setpoints
-    create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
-               max_q_mvar=1., slack=True)
-    create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1,
-               max_q_mvar=1., controllable=False)  # controllable == False -> vm_pu enforced
-    create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1.,
-               min_q_mvar=-1, max_q_mvar=1.)  # controllable == True -> vm_pu between
+    create_gen(net, 0, p_mw=0., vm_pu=1., max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1., slack=True,
+               controllable=True)
+    create_gen(net, 1, p_mw=0.02, vm_pu=1.01, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
+               controllable=False)  # controllable == False -> vm_pu enforced
+    create_gen(net, 3, p_mw=0.01, vm_pu=1.02, max_p_mw=1., min_p_mw=-1., min_q_mvar=-1, max_q_mvar=1.,
+               controllable=True) # controllable == True -> vm_pu between
+
     # bus voltages
     runpp(net)
     # assert if voltage limits are correct in result in pf an opf
@@ -977,6 +977,10 @@ def test_gen_p_vm_limits(four_bus_net):
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
     create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
                min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
+
     runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)
@@ -996,6 +1000,10 @@ def test_gen_violated_p_vm_limits(four_bus_net):
     # controllable == False -> limits are ignored and p_mw / vm_pu values are enforced
     g = create_gen(net, bus, p_mw=0.02, vm_pu=1.01, controllable=True,
                    min_vm_pu=.9, max_vm_pu=1.1, min_p_mw=min_p_mw, max_p_mw=max_p_mw)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
+
     runopp(net, calculate_voltage_angles=False)
     assert not np.allclose(net.res_bus.at[bus, "vm_pu"], 1.01)
     assert not np.allclose(net.res_bus.at[bus, "p_mw"], 0.02)

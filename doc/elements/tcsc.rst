@@ -30,18 +30,15 @@ Create Function
 
 .. autofunction:: pandapower.create.create_tcsc
 
-Input Parameters
+Table Structure
 =====================
 
 *net.tcsc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.4\linewidth}|
-.. csv-table:: 
-   :file: tcsc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
-
-\*necessary for executing a power flow calculation.
+.. csv-table::
+    :file: table_structures/tcsc.csv
+    :header-rows: 1
+    :delim: ,
 
    
 Electric Model
@@ -49,9 +46,9 @@ Electric Model
 
 
 .. image:: tcsc.png
-	:width: 12em
-	:alt: alternate Text
-	:align: center
+    :width: 12em
+    :alt: alternate Text
+    :align: center
 
 The series impedance :math:`X_{TCSC}` of the TCSC element is calculated equivalently to SVC, according to the following equation:
    
@@ -92,12 +89,11 @@ The power flow through the TCSC element is described by the following equation:
         \end{bmatrix}^*
     \end{align*}
 
-Result Parameters
+Result Table
 ==========================
 *net.res_tcsc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: tcsc_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_tcsc.csv
+    :header-rows: 1
+    :delim: ,

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -10,9 +8,10 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_indices
-from pandapower.create.network_create import create_empty_network
+from pandapower import pandapowerNet
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
+from pandapower.network_structure import get_structure_dict
 
 import logging
 
@@ -110,7 +109,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
         element_type = net[el][et_col]
         for short, complete in [("t", "trafo"), ("t3", "trafo3w"), ("l", "line"), ("s", "switch"),
                                 ("b", "bus")]:
-            element_type.loc[element_type == short] = complete
+            net[el].loc[element_type == short, et_col] = complete
         element_types_without_column = [et for et in set(element_type) if column not in
                                         net[et].columns]
         if len(element_types_without_column):
@@ -163,9 +162,12 @@ def reindex_buses(net, bus_lookup, allow_duplicate_index=False):
 
     # --- reindex buses
     net.bus.index = get_indices(net.bus.index, bus_lookup)
-    net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
-    net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
-    net.res_bus_sc.index = get_indices(net.res_bus_sc.index, bus_lookup)
+    if "res_bus" in net:
+        net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
+    if "res_bus_3ph" in net:
+        net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
+    if "res_bus_sc" in net:
+        net.res_bus_sc.index = get_indices(net.res_bus_sc.index, bus_lookup)
 
     # --- adapt link in bus elements
     for element, value in element_bus_tuples():
@@ -245,7 +247,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
 
     Examples
     --------
-    >>> net = create_empty_network()
+    >>> net = pandapowerNet(name='Example')
     >>> idx0 = create_bus(net, 110)
     >>> idx1 = 4
     >>> idx2 = 7
@@ -263,8 +265,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         raise ValueError("Either new_indices or lookup must be given.")
     elif new_indices is not None and lookup is not None:
         raise ValueError("Only one can be considered, new_indices or lookup.")
-    if new_indices is not None and not len(new_indices) or lookup is not None and not len(
-            lookup.keys()):
+    if new_indices is not None and not len(new_indices) or lookup is not None and not len(lookup):
         return
 
     if new_indices is not None:
@@ -330,8 +331,16 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         if element_type == "trafo_characteristic_table":
             net["trafo_characteristic_table"]["id_characteristic"] = (
                 net["trafo_characteristic_table"]["id_characteristic"].map(lookup))
+            if "id_characteristic_table" not in net["trafo"]:
+                net["trafo"]["id_characteristic_table"] = (
+                    pd.Series(data=[pd.NA] * net["trafo"].shape[0],
+                              dtype=get_structure_dict(required_only=False)['trafo']['id_characteristic_table']))
             net["trafo"]["id_characteristic_table"] = (
                 net["trafo"]["id_characteristic_table"].map(lookup))
+            if "id_characteristic_table" not in net["trafo3w"]:
+                net["trafo3w"]["id_characteristic_table"] = (
+                    pd.Series(data=[pd.NA] * net["trafo3w"].shape[0],
+                              dtype=get_structure_dict(required_only=False)['trafo3w']['id_characteristic_table']))
             net["trafo3w"]["id_characteristic_table"] = (
                 net["trafo3w"]["id_characteristic_table"].map(lookup))
 
@@ -361,19 +370,20 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
 
     # run reindex_elements() for all element_types
     for et in element_types:
-        net[et] = net[et].sort_index()
-        new_index = list(np.arange(start, len(net[et]) + start))
-        if et == "trafo_characteristic_table":
-            ids = net[et].id_characteristic.dropna().unique()
-            reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
-        elif et in net and isinstance(net[et], pd.DataFrame):
-            if et in ["bus_geodata", "line_geodata"]:
-                logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
-                            "already included by et=='" + et.split("_")[0] + "'.")
+        if et in net:
+            net[et] = net[et].sort_index()
+            new_index = list(np.arange(start, len(net[et]) + start))
+            if et == "trafo_characteristic_table":
+                ids = net[et].id_characteristic.dropna().unique()
+                reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
+            elif et in net and isinstance(net[et], pd.DataFrame):
+                if et in ["bus_geodata", "line_geodata"]:
+                    logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
+                                "already included by et=='" + et.split("_")[0] + "'.")
+                else:
+                    reindex_elements(net, et, new_index)
             else:
-                reindex_elements(net, et, new_index)
-        else:
-            logger.debug("No indices could be changed for element '%s'." % et)
+                logger.debug("No indices could be changed for element '%s'." % et)
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
@@ -418,7 +428,7 @@ def set_data_type_of_columns_to_default(net):
         no return value; Sideeffect: the net passed as input has pandapower-default dtypes of columns in element tables.
 
     """
-    new_net = create_empty_network()
+    new_net = pandapowerNet(name='')
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
             for col in item.columns:

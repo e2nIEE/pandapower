@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -10,6 +8,11 @@ from scipy.sparse import eye, csr_matrix as sparse
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
+
+try:
+    from numpy import isin
+except ImportError:
+    from numpy import in1d as isin
 
 __all__ = ['BaseAlgebra', 'BaseAlgebraZeroInjConstraints']
 
@@ -295,8 +298,8 @@ class BaseAlgebra:
     @staticmethod
     def _merge_mask(mask1, mask2):
         new_mask_tot = np.unique(np.concatenate((mask1,mask2),0))
-        new_mask1 = np.isin(new_mask_tot, mask1)
-        new_mask2 = np.isin(new_mask_tot, mask2)
+        new_mask1 = isin(new_mask_tot, mask1)
+        new_mask2 = isin(new_mask_tot, mask2)
         return new_mask_tot, new_mask1, new_mask2
 
 

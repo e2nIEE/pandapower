@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -8,8 +6,9 @@ from itertools import combinations
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_switch
+from pandapower.create import create_switch
 from pandapower.pypower.idx_brch import BR_R, BR_X
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.topology.create_graph import create_nxgraph, graph_tool_available
 
@@ -29,7 +28,7 @@ if graph_tool_available:
 
 @pytest.mark.parametrize("library", libraries)
 def test_line(library):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_line")
     add_test_line(net)
     line, open_loop_line, _ = net.line.index
     f, t = net.line.from_bus.at[line], net.line.to_bus.at[line]
@@ -72,7 +71,7 @@ def test_line(library):
 
 @pytest.mark.parametrize("library", libraries)
 def test_trafo(library):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo")
     add_test_trafo(net)
 
     trafo, open_loop_trafo, _ = net.trafo.index
@@ -118,7 +117,7 @@ def test_trafo(library):
 
 @pytest.mark.parametrize("library", libraries)
 def test_trafo3w(library):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_trafo3w")
     add_test_trafo3w(net)
 
     t1, t2 = net.trafo3w.index
@@ -183,7 +182,7 @@ def test_trafo3w_impedances(network_with_trafo3ws, library):
 
 @pytest.mark.parametrize("library", libraries)
 def test_impedance(library):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_impedance")
     add_test_impedance(net)
 
     impedance, _ = net.impedance.index
@@ -212,7 +211,7 @@ def test_impedance(library):
 
 @pytest.mark.parametrize("library", libraries)
 def test_bus_bus_switches(library):
-    net = create_empty_network()
+    net = pandapowerNet(name="test_bus_bus_switches")
     add_test_bus_bus_switch(net)
 
     s = net.switch.index[0]
@@ -242,7 +241,7 @@ def test_bus_bus_switches(library):
 
 
 def test_nogo():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_nogo")
     add_test_line(net)
     mg = create_nxgraph(net)
     assert set(mg.nodes()) == set(net.bus.index)
@@ -251,14 +250,14 @@ def test_nogo():
 
 
 def test_branch_impedance_unit():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_nogo")
     with pytest.raises(ValueError, match="branch impedance unit can be either 'ohm' or 'pu'"):
         mg = create_nxgraph(net, branch_impedance_unit="p.u.")
 
 
 @pytest.mark.skipif(not graph_tool_available, reason="graph_tool not available")
 def test_nogo_graph_tool():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_nogo_graph_tool")
     add_test_line(net)
     mg = create_nxgraph(net, library="graph_tool")
     assert set(mg.nodes()) == set(net.bus.index)

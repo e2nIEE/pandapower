@@ -4,7 +4,9 @@ import pandera.pandas as pa
 from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _dcline_columns = {
-    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the generator"),
+    "name": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="name of the generator", metadata={"cim": True}
+    ),
     "from_bus": pa.Column(
         int,
         pa.Check.ge(0),
@@ -31,7 +33,7 @@ _dcline_columns = {
         nullable=True,
         required=False,
         description="Maximum active power transmission",
-        metadata={"opf": True},
+        metadata={"opf": True, "cim": True},
     ),
     "min_p_mw": pa.Column(
         float,
@@ -45,26 +47,62 @@ _dcline_columns = {
         nullable=True,
         required=False,
         description="Minimum reactive power at from bus",
-        metadata={"opf": True},
+        metadata={"opf": True, "cim": True},
     ),
     "max_q_from_mvar": pa.Column(
         float,
         nullable=True,
         required=False,
         description="Maximum reactive power at from bus",
-        metadata={"opf": True},
+        metadata={"opf": True, "cim": True},
     ),
     "min_q_to_mvar": pa.Column(
-        float, nullable=True, required=False, description="Minimum reactive power at to bus", metadata={"opf": True}
+        float,
+        nullable=True,
+        required=False,
+        description="Minimum reactive power at to bus",
+        metadata={"opf": True, "cim": True},
     ),
     "max_q_to_mvar": pa.Column(
-        float, nullable=True, required=False, description="Maximum reactive power at to bus", metadata={"opf": True}
+        float,
+        nullable=True,
+        required=False,
+        description="Maximum reactive power at to bus",
+        metadata={"opf": True, "cim": True},
     ),
-    "in_service": pa.Column(bool, description="specifies if the line is in service."),
+    "in_service": pa.Column(bool, description="specifies if the line is in service.", metadata={"default": True}),
+    "origin_id": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+    ),
+    "origin_class": pa.Column(
+        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+    ),
+    "description": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="description from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
+    ),
+    "terminal_to": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_to from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
+    ),
+    "terminal_from": pa.Column(
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="terminal_from from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
+    ),
 }
 dcline_schema = pa.DataFrameSchema(
     _dcline_columns,
     checks=create_column_dependency_checks_from_metadata(["opf"], _dcline_columns),
+    name="dcline",
     strict=False,
 )
 
@@ -84,5 +122,6 @@ res_dcline_schema = pa.DataFrameSchema(
         "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at ‘to_bus’ [p.u]"),
         "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at ‘to_bus’ [degree]"),
     },
+    name="res_dcline",
     strict=False,
 )

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -7,13 +5,13 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_empty_network,
     create_bus,
     create_line,
     create_ext_grid,
     create_transformer,
     create_sgen
 )
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 from test.shortcircuit.test_meshing_detection import meshed_grid
@@ -21,7 +19,7 @@ from test.shortcircuit.test_meshing_detection import meshed_grid
 
 @pytest.fixture
 def radial_grid():
-    net = create_empty_network(sn_mva=2.)
+    net = pandapowerNet(name="radial_grid", sn_mva=2.)
     b0 = create_bus(net, 220)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
@@ -35,7 +33,7 @@ def radial_grid():
 
 @pytest.fixture
 def three_bus_big_sgen_example():
-    net = create_empty_network(sn_mva=3)
+    net = pandapowerNet(name="three_bus_big_sgen_example", sn_mva=3)
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)

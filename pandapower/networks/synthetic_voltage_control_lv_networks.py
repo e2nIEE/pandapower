@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -7,7 +5,8 @@ import pandas as pd
 from geojson import Point, dumps
 from numpy import nan, append
 
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_transformer, create_buses, \
+from pandapower import pandapowerNet
+from pandapower.create import create_bus, create_ext_grid, create_transformer, create_buses, \
     create_line, create_load, create_sgen
 from pandapower.std_types import create_std_type
 
@@ -68,7 +67,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
                              'suburb_1': 'NAYY 4x35'}
 
     # create network
-    net = create_empty_network(name='synthetic_voltage_control_lv_network: ' + network_class)
+    net = pandapowerNet(name=f'synthetic_voltage_control_lv_network: {network_class}')
 
     # create std_types
     # cable data (r, x, i_max) from www.faberkabel.de
@@ -272,7 +271,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
                      201: [9.5, 4.0], 202: [9.0, 5.0], 203: [8.0, 6.0]
                      }
     }
-    net.bus.geo = net.bus.apply(
+    net.bus["geo"] = net.bus.apply(
         lambda row: dumps(Point(bus_geo[network_class][row.name])),
         axis=1
     )

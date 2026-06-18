@@ -30,15 +30,18 @@ tcsc_schema = pa.DataFrameSchema(
             description="the value of thyristor firing angle of TCSC",
         ),
         "controllable": pa.Column(
-            bool, description="whether the element is considered as actively controlling or as a fixed series impedance"
+            bool,
+            description="whether the element is considered as actively controlling or as a fixed series impedance",
+            metadata={"default": True},
         ),
-        "in_service": pa.Column(bool, description="specifies if the TCSC is in service."),
+        "in_service": pa.Column(bool, description="specifies if the TCSC is in service.", metadata={"default": True}),
         "min_angle_degree": pa.Column(
             float,
             pa.Check.ge(90),
             nullable=True,
             required=False,
             description="minimum value of the thyristor_firing_angle_degree",
+            metadata={"default": 90},
         ),
         "max_angle_degree": pa.Column(
             float,
@@ -46,11 +49,13 @@ tcsc_schema = pa.DataFrameSchema(
             nullable=True,
             required=False,
             description="maximum value of the thyristor_firing_angle_degree",
+            metadata={"default": 180},
         ),
     },
     checks=[
         create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     ],
+    name="tcsc",
     strict=False,
 )
 
@@ -77,5 +82,6 @@ res_tcsc_schema = pa.DataFrameSchema(
         "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at the to bus [pu]"),
         "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at the to bus [degree]"),
     },
+    name="res_tcsc",
     strict=False,
 )

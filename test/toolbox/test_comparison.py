@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -53,7 +51,10 @@ def test_nets_equal():
     assert nets_equal(net, original, atol=0.1)
 
     # check controllers
-    original.trafo.tap_side = original.trafo.tap_side.fillna("hv")
+    if "tap_side" in original.trafo:
+        original.trafo.tap_side = original.trafo.tap_side.fillna("hv")
+    else:
+        original.trafo["tap_side"] = pd.Series(["hv"]*len(original.trafo), dtype=pd.StringDtype())
     net1 = copy.deepcopy(original)
     net2 = copy.deepcopy(original)
     ContinuousTapControl(net1, 0, 1.0)

@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numpy import nan
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_load, \
-    create_transformer_from_parameters, create_shunt, create_gen, create_ext_grid, create_buses, create_switch, \
-    create_load_from_cosphi, create_sgen, create_storage
+from pandapower.create import (
+    create_bus, create_line, create_load, create_transformer_from_parameters, create_shunt, create_gen, create_ext_grid,
+    create_buses, create_switch, create_load_from_cosphi, create_sgen, create_storage
+)
+from pandapower.network import pandapowerNet
 from pandapower.std_types import create_std_type
 
 import logging
@@ -27,7 +27,7 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     OUTPUT:
         **net** - The pandapower format network.
     """
-    net_cigre_hv = create_empty_network()
+    net_cigre_hv = pandapowerNet(name="CIGRE HV Grid")
 
     # Linedata
     # Line220kV
@@ -145,7 +145,7 @@ def create_cigre_network_mv(with_der=False):
     if with_der not in [False, "pv_wind", "all"]:
         raise ValueError("'with_der' is unknown. It should be in [False, 'pv_wind', 'all'].")
 
-    net_cigre_mv = create_empty_network()
+    net_cigre_mv = pandapowerNet(name="CIGRE MV Grid")
 
     # Linedata
     line_data = {'c_nf_per_km': 151.1749, 'r_ohm_per_km': 0.501,
@@ -273,7 +273,7 @@ def create_cigre_network_lv():
     OUTPUT:
         **net** - The pandapower format network.
     """
-    net_cigre_lv = create_empty_network()
+    net_cigre_lv = pandapowerNet(name="CIGRE LV Grid")
 
     # Linedata
     # UG1

@@ -20,6 +20,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  IGNORES: "--ignore=test/opf --ignore=test/network_schema"
+  TUTORIAL_IGNORES: "--ignore=tutorials/uk_power_networks"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,40 +35,78 @@ jobs:
         # remove it also in pyproject.toml 'requires-python' and the release pipelines
         group: [ 1, 2 ]
     steps:
-#      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
+        if: ${{ (matrix.python-version != '3.10') && (matrix.python-version != '3.11') }}
         run: |
-          uv sync --extra dev          
+          uv sync --extra all --extra test --extra pandamodels --extra pgm
           uv pip install pytest-split
           uv pip uninstall juliacall
-          # if ${{ matrix.python-version == '3.10' }}; then uv pip install pypower; fi
-          # if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
-          # if ${{ matrix.python-version == '3.14' }}; then uv pip install lightsim2grid; fi
-          # if ${{ matrix.python-version == '3.13' }}; then uv pip install lightsim2grid; fi
+      - name: Install dependencies
+        if: ${{ (matrix.python-version == '3.10') || (matrix.python-version == '3.11') }}
+        run: |
+          uv sync --extra all --extra test --extra pandamodels
+          uv pip install pytest-split
+          uv pip uninstall juliacall
       - name: List of installed packages
         run: |
           uv pip list
       - name: Test with pytest
-        if: ${{ matrix.python-version != '3.10' }}
+        if: ${{ matrix.python-version != '3.12' }}
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=test/opf
+          uv run pytest --splits 2 --group ${{ matrix.group }} $IGNORES
       - name: Test with pytest, Codecov and Coverage
-        if: ${{ matrix.python-version == '3.10' }}
+        if: ${{ matrix.python-version == '3.12' }} # collecting on 3.12 (oldest version where pgm is included)
         run: |
           uv pip install pytest-cov numpy~=1.26
-          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} --ignore=test/opf
+          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} $IGNORES
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
-        if: ${{ matrix.python-version == '3.10' }}
+        if: ${{ matrix.python-version == '3.12' }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.group }}
           path: ./coverage-${{ matrix.group }}.xml
+
+  network_schema:
+    # This tests only the network_schema tests due to the large amount these are only tested on min/max python version
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        #python-version: ['3.10', '3.14']
+        # Reminder: when removing the support of an old python version here, then don't forget to
+        # remove it also in pyproject.toml 'requires-python' and the release pipelines
+        group: [ 1, 2, 3, 4 ]
+    steps:
+#      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          #python-version: ${{ matrix.python-version }}
+          python-version: '3.14'
+      - name: Install dependencies
+        run: |
+          uv sync --extra all --extra test --extra pandamodels --extra pgm
+          uv pip uninstall juliacall
+          uv pip install pytest-cov pytest-split
+      - name: List of installed packages
+        run: |
+          uv pip list
+      - name: Test with pytest, Codecov and Coverage
+        run: |
+          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} test/network_schema
+          cp ./coverage.xml ./coverage-net-schema-${{ matrix.group }}.xml
+      - name: Upload coverage as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-net-schema-${{ matrix.group }}
+          path: ./coverage-net-schema-${{ matrix.group }}.xml
 
   numpy1-support:
     runs-on: ubuntu-latest
@@ -75,7 +117,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: "3.14"
       - name: Install dependencies
@@ -89,41 +131,28 @@ jobs:
           uv pip list
       - name: Test with pytest
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }} --ignore=test/opf
+          uv run pytest --splits 2 --group ${{ matrix.group }} $IGNORES
 
   opf:
-    # needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     continue-on-error: true
     strategy:
       matrix:
         python-version: ['3.14']
-        julia-version: ['1.10']
+        julia-version: [ '1.12' ]
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python'
-        group: [ 1 ]
     steps:
       - uses: actions/checkout@v6
       - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
-      #- name: Install uv
-      #  uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
-      #  with:
-      #    python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          # uv sync --extra dev
           python -m pip install pypower pytest-split pytest-cov juliacall julia
           python -m pip install .[pandamodels,test]
-          # if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
-      #- name: Install Julia
-      #  run: |
-      #    ./.install_julia.sh 1.10.4
-      #    uv pip install julia
-      #    uv run python ./.install_pycall.py
       - name: Install PandaModels.jl
         run: |
           julia -e 'using Pkg; Pkg.add("PandaModels")'
@@ -136,12 +165,16 @@ jobs:
       - name: Test with pytest, Codecov and Coverage
         run: |
           pytest --cov=./ --cov-report=xml test/opf
-          # uv run python-jl -m pytest --cov=./ --cov-report=xml
-          cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
+          cp ./coverage.xml ./coverage-opf.xml
+      - name: Upload coverage as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-opf
+          path: ./coverage-opf.xml
 
   upload-coverage:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, opf, network_schema]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -151,23 +184,29 @@ jobs:
           path: .
           pattern: coverage-*
           merge-multiple: true
-      - name: duplicate reports
+      - name: Generate coverage file list
+        id: coverage-files
         run: |
-          ls -al
-          cp coverage-1.xml codacy-coverage-1.xml
-          cp coverage-2.xml codacy-coverage-2.xml
+          FILES=$(find . -name "coverage-*.xml" | tr '\n' ',' | sed 's/,$//')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+      - name: duplicate reports
+        shell: bash
+        run: |
+          for f in coverage-*.xml; do
+            cp "$f" "codacy-$f"
+          done
       - name: Upload coverage to Codacy
         continue-on-error: true
         uses: codacy/codacy-coverage-reporter-action@89d6c85cfafaec52c72b6c5e8b2878d33104c699 #v1.3
         with:
-          coverage-reports: codacy-coverage-1.xml,codacy-coverage-2.xml
+          coverage-reports: codacy-coverage-*.xml
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 #v5
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 #v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage-1.xml,./coverage-2.xml
+          files: ${{ steps.coverage-files.outputs.files }}
           verbose: true
 
   warnings:
@@ -178,11 +217,11 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.14']
-        group: [ 1, 2 ]
+        group: [ 1, 2, 3, 4 ]
     steps:
     - uses: actions/checkout@v6
     - name: Install uv
-      uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -195,7 +234,7 @@ jobs:
         uv pip list
     - name: Test with pytest
       run: |
-        uv run pytest -W error --splits 2 --group ${{ matrix.group }}
+        uv run pytest -W error --splits 4 --group ${{ matrix.group }}
 
   relying: # packages that rely on pandapower
     needs: build
@@ -206,7 +245,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Install uv
-      uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -243,7 +282,7 @@ jobs:
     steps:
     - uses: actions/checkout@v6
     - name: Install uv
-      uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -306,7 +345,7 @@ jobs:
         fi
     - uses: actions/checkout@v6
     - name: Install uv
-      uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+      uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
@@ -341,30 +380,33 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
-          python -m pip install -e .[all,tutorials,test]
+          python -m pip install -e .[all,pgm,tutorials,test]
       - name: List all installed packages
         run: |
           python -m pip list
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 
   tutorial_warnings_tests:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        group: [ 1, 2, 3 ]
     steps:
       # UV does not work for julia, do not add it here!
       - uses: actions/checkout@v6
       - name: Install dependencies
         run: |
-          python -m pip install -e .[all,tutorials,test]
+          python -m pip install -e .[all,pgm,tutorials,test]
       - name: List all installed packages
         run: |
           python -m pip list
       - name: Test with pytest
         run: |
-          pytest -W error --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 
   docs_check:
     needs: build
@@ -390,7 +432,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a #v4.2.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies

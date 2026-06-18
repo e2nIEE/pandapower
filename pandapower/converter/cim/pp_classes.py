@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
@@ -8,7 +6,7 @@ import json
 from . import cim_tools
 
 from pandapower.diagnostic import diagnostic
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 
 
 class PandapowerDiagnostic:

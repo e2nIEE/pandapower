@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import os
 
 import numpy as np
@@ -9,11 +8,16 @@ import pandas as pd
 import pytest
 import copy
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_load, create_ext_grid, \
-    create_buses, create_sgen, create_gen, create_gens, create_line_from_parameters
+from pandapower.create import (
+    create_bus, create_line, create_load, create_ext_grid, create_buses, create_sgen, create_gen, create_gens,
+    create_line_from_parameters
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9, case30
-from pandapower.pf.create_jacobian_tdpf import calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, \
-    calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank, ALPHA_TDPF
+from pandapower.pf.create_jacobian_tdpf import (
+    calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta,
+    calc_T_frank, ALPHA_TDPF
+)
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.run import set_user_pf_options, runpp
 from pandapower.std_types import parameter_from_std_type
@@ -37,7 +41,7 @@ def en_net(request):
 
 
 def create_single_line_net(std_type):
-    net = create_empty_network()
+    net = pandapowerNet(name="create_single_line_net")
     set_user_pf_options(net, init="dc", max_iteration=100)
 
     vn_kv = float(std_type.split(" ")[-1])
@@ -106,7 +110,7 @@ def prepare_case_30():
 def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distributed_slack=False):
     s_base = 100
 
-    net = create_empty_network(sn_mva=s_base)
+    net = pandapowerNet(name="simple_test_grid", sn_mva=s_base)
     std_type = "490-AL1/64-ST1A 110.0"
     r = 0.059
     v_base = 132
@@ -146,7 +150,9 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
         create_sgen(net, 4, 300, scaling=sgen_scaling, name="G5")
 
     if distributed_slack:
-        net["gen" if with_gen else "sgen"].at[idx, 'slack_weight'] = 1
+        if with_gen:  # distributed slack is currently not supported for sgen.
+            net["gen"]["slack_weight"] = 0.0
+            net["gen"].at[idx, 'slack_weight'] = 1
         set_user_pf_options(net, distributed_slack=True)
         net.sn_mva = 1000  # otherwise numerical issues
 
@@ -392,7 +398,7 @@ def test_with_user_pf_options():
 # Relationship of Bare Overhead Conductors" Basic Example with Calculation, Page 23 and following
 def test_IEEE_example_1():
     # 60Hz according to USA
-    net = create_empty_network(f_hz=60.0)
+    net = pandapowerNet(name="test_IEEE_example_1", f_hz=60.0)
 
     b1 = create_bus(net, vn_kv=380, name='b1_hv', type='n')
     b2 = create_bus(net, vn_kv=380, name='b10', type='n')
@@ -441,7 +447,7 @@ def test_IEEE_example_1():
 # Relationship of Bare Overhead Conductors", Annex B, Numerical example 1, Page 44
 def test_IEEE_example_2():
     # 60Hz according to USA
-    net = create_empty_network(f_hz=60.0)
+    net = pandapowerNet(name="test_IEEE_example_2", f_hz=60.0)
 
     b1 = create_bus(net, vn_kv=380, name='b1_hv', type='n')
     b2 = create_bus(net, vn_kv=380, name='b10', type='n')
@@ -489,7 +495,7 @@ def test_IEEE_example_2():
 # Relationship of Bare Overhead Conductors", Annex B, Numerical example 2, Page 45
 def test_IEEE_example_3():
     # 60Hz according to USA
-    net = create_empty_network(f_hz=60.0)
+    net = pandapowerNet(name="test_IEEE_example_3", f_hz=60.0)
 
     b1 = create_bus(net, vn_kv=380, name='b1_hv', type='n')
     b2 = create_bus(net, vn_kv=380, name='b10', type='n')

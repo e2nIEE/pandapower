@@ -1,15 +1,17 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
+import pandas as pd
 import pytest
 import copy
 from pandapower.control import ContinuousTapControl
-from pandapower.create import create_empty_network, create_buses, create_gen, create_load, create_ext_grid, \
-    create_line_from_parameters, create_xward, create_bus, create_shunt
+from pandapower.create import (
+    create_buses, create_gen, create_load, create_ext_grid, create_line_from_parameters, create_xward, create_bus,
+    create_shunt
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9, case2848rte
 from pandapower.pypower.idx_brch import PF
@@ -33,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 def small_example_grid():
-    net = create_empty_network()
+    net = pandapowerNet(name="small_example_grid")
     create_buses(net, 3, 20)
 
     create_gen(net, 0, p_mw=100, vm_pu=1, slack=True, slack_weight=1)
@@ -41,12 +43,15 @@ def small_example_grid():
 
     create_load(net, 1, p_mw=100, q_mvar=100)
 
-    create_line_from_parameters(net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
-    create_line_from_parameters(net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
-    create_line_from_parameters(net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0,
-                                max_i_ka=1)
+    create_line_from_parameters(
+        net, 0, 1, length_km=3, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1
+    )
+    create_line_from_parameters(
+        net, 1, 2, length_km=2, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1
+    )
+    create_line_from_parameters(
+        net, 2, 0, length_km=1, r_ohm_per_km=0.01, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1
+    )
     return net
 
 
@@ -63,7 +68,7 @@ def _get_xward_result(net):
     else:
         p_impedance = np.array([])
 
-    for b, x_id in zip(net.xward.query("in_service").bus.values, net.xward.query("in_service").index.values):
+    for b, x_id in zip(net.xward[net.xward.in_service].bus, net.xward[net.xward.in_service].index.values):
         p_bus = ppc['bus'][net._pd2ppc_lookups["bus"][b], PD]
         p_shunt = ppc['bus'][net._pd2ppc_lookups["bus"][b], VM] ** 2 * net["xward"].at[x_id, "pz_mw"]
         internal_results = np.append(internal_results, p_shunt)
@@ -87,7 +92,8 @@ def _get_xward_result(net):
 def _get_losses(net):
     pl_mw = 0
     for elm in ['line', 'trafo', 'trafo3w', 'impedance']:
-        pl_mw += net['res_' + elm].pl_mw.sum()
+        if elm in net and net[elm].shape[0] > 0:
+            pl_mw += net['res_' + elm].pl_mw.sum()
     return pl_mw
 
 
@@ -97,19 +103,21 @@ def _get_injection_consumption(net):
     # xward is in the consumption reference system
     # active power consumption by the internal elements of xward is not adjusted by the distributed slack calculation
     # that is why we add the active power of the internal elements of the xward here
-    consumed_p_mw = total_pl_mw + \
-                    net.load.query("in_service").p_mw.sum() - \
-                    net.sgen.query("in_service").p_mw.sum() + \
-                    xward_internal.sum()
-    injected_p_mw = net.gen.query("in_service").p_mw.sum()
+    consumed_p_mw = (total_pl_mw
+                     + net.load[net.load.in_service].p_mw.sum()
+                     - net.sgen[net.sgen.in_service].p_mw.sum()
+                     + xward_internal.sum())
+    injected_p_mw = net.gen[net.gen.in_service].p_mw.sum()
     # we return the xward power separately because it is also already considered in the inputs and results
-    return injected_p_mw, consumed_p_mw, net.xward.query("in_service").ps_mw.sum()
+    return injected_p_mw, consumed_p_mw, net.xward[net.xward.in_service].ps_mw.sum()
 
 
 def _get_slack_weights(net):
-    slack_weights = np.r_[net.gen.query("in_service").slack_weight,
-    net.ext_grid.query("in_service").slack_weight,
-    net.xward.query("in_service").slack_weight]
+    slack_weights = np.r_[
+        net.gen[net.gen.in_service].slack_weight if "slack_weight" in net.gen.columns else [],
+        net.ext_grid[net.ext_grid.in_service].slack_weight if "slack_weight" in net.ext_grid.columns else [],
+        net.xward[net.xward.in_service].slack_weight if "slack_weight" in net.xward.columns else []
+    ]
     return slack_weights / sum(slack_weights)
 
 
@@ -118,12 +126,19 @@ def _get_inputs_results(net):
     # that is why we only consider the active power consumption by the PQ load of the xward here
     xward_pq_res, _ = _get_xward_result(net)
     # xward is in the consumption reference system, but here the results are all assumed in the generation reference system
-    inputs = np.r_[net.gen.query("in_service").p_mw,
-    np.zeros(len(net.ext_grid.query("in_service"))),
-    -net.xward.query("in_service").ps_mw]
-    results = np.r_[net.res_gen[net.gen.in_service].p_mw,
-    net.res_ext_grid[net.ext_grid.in_service].p_mw,
-    -xward_pq_res]
+    inputs = np.r_[net.gen[net.gen.in_service].p_mw,
+    np.zeros(len(net.ext_grid[net.ext_grid.in_service])),
+    -net.xward[net.xward.in_service].ps_mw]
+    results = np.r_[
+        net.res_gen[net.gen.in_service].p_mw,
+        net.res_ext_grid[net.ext_grid.in_service].p_mw if (
+                hasattr(net, 'res_ext_grid') and
+                net.res_ext_grid is not None and
+                hasattr(net, 'ext_grid') and
+                not net.ext_grid.empty
+        ) else pd.Series(dtype=float),
+    -xward_pq_res
+    ]
     return inputs, results
 
 
@@ -136,8 +151,11 @@ def assert_results_correct(net, tol=1e-8):
     # assert power balance is correct
     assert abs(result_p_mw.sum() - consumed_p_mw) < tol, "power balance is wrong"
     # assert results are according to the distributed slack formula
-    assert np.allclose(input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw,
-                       atol=tol, rtol=0), "distributed slack weights formula has a wrong result"
+    assert np.allclose(
+        input_p_mw - (injected_p_mw - consumed_p_mw - consumed_xward_p_mw) * slack_weights, result_p_mw,
+        atol=tol,
+        rtol=0
+    ), "distributed slack weights formula has a wrong result"
 
 
 def check_xward_results(net, tol=1e-9):
@@ -157,7 +175,7 @@ def run_and_assert_numba(net, **kwargs):
 
 def test_get_xward_result():
     # here we test the helper function that calculates the internal and PQ load results separately
-    # it separates the results of other node ellments at the same bus, but only works for 1 xward at a bus
+    # it separates the results of other node elements at the same bus, but only works for 1 xward at a bus
     net = small_example_grid()
     create_xward(net, 2, 100, 0, 0, 0, 0.02, 0.2, 1)
     create_load(net, 2, 50, 0, 0, 0, 0.02, 0.2, 1)
@@ -335,7 +353,7 @@ def test_xward_oos():
 
 
 def test_only_xward():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_only_xward")
     create_bus(net, 110)
     create_ext_grid(net, 0, vm_pu=1.05, slack_weight=2)
     create_xward(net, 0, 200, 20, 10, 1, 0.02, 0.2, 1, slack_weight=2)
@@ -365,7 +383,7 @@ def test_separate_zones():
 
 
 def case9_simplified():
-    net = create_empty_network()
+    net = pandapowerNet(name="case9_simplified")()
     create_buses(net, 9, vn_kv=345.)
     lines = [[0, 3], [3, 4], [4, 5], [2, 5], [5, 6], [6, 7], [7, 1], [7, 8], [8, 3]]
 

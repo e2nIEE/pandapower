@@ -7,19 +7,16 @@ Create Function
 
 .. autofunction:: pandapower.create.create_motor
 
-Input Parameters
+Table Structure
 =====================
 
 *net.motor*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-
 .. csv-table::
-   :file: motor_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+    :file: table_structures/motor.csv
+    :header-rows: 1
+    :delim: ,
 
-\*necessary for executing a power flow calculation.
 
 Electric Model
 =================
@@ -35,10 +32,9 @@ Result Parameters
 ==========================    
 *net.res_motor*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.45\linewidth}|
-.. csv-table:: 
-   :file: motor_res.csv
-   :delim: ;
-   :widths: 10, 10, 45
+.. csv-table::
+    :file: table_structures/res_motor.csv
+    :header-rows: 1
+    :delim: ,
    
 The power values in the net.res_motor table are equivalent to :math:`P_{motor}` and :math:`Q_{motor}`.

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -7,8 +5,11 @@
 import pytest
 from numpy import allclose, all
 
-from pandapower.create import create_empty_network, create_bus, create_transformer, create_line, create_load, \
-    create_ext_grid, create_gen, create_poly_cost
+from pandapower.create import (
+    create_bus, create_transformer, create_line, create_load, create_ext_grid, create_gen, create_poly_cost
+)
+from pandapower.network import pandapowerNet
+from pandapower.create.utils import add_column_to_df
 from pandapower.run import runopp
 
 import logging
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_minimize_active_power_curtailment():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_minimize_active_power_curtailment")
 
     # create buses
     bus1 = create_bus(net, vn_kv=220.)
@@ -42,6 +43,9 @@ def test_minimize_active_power_curtailment():
     create_ext_grid(net, bus1)
     create_gen(net, bus3, p_mw=80., max_p_mw=80., min_p_mw=0., vm_pu=1.01, controllable=True)
     create_gen(net, bus4, p_mw=0.1, max_p_mw=100., min_p_mw=0., vm_pu=1.01, controllable=True)
+
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
 
     net.trafo["max_loading_percent"] = 50.
     net.line["max_loading_percent"] = 50.

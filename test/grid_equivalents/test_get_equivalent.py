@@ -7,14 +7,19 @@ import pytest
 
 from pandapower.control import ConstControl
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object
-from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_poly_cost, create_line, \
-    create_load, create_sgen, create_pwl_cost, create_bus, create_switch, create_motor
+from pandapower.create import (
+    create_buses, create_ext_grid, create_poly_cost, create_line, create_load, create_sgen, create_pwl_cost, create_bus,
+    create_switch, create_motor, create_group
+)
+from pandapower.create.utils import add_column_to_df
 from pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.get_equivalent import get_equivalent, merge_internal_net_and_equivalent_external_net
 from pandapower.grid_equivalents.ward_generation import create_passive_external_net_for_ward_admittance
-from pandapower.groups import group_element_lists, compare_group_elements, group_row, \
-    set_group_reference_column, count_group_elements, group_element_index
-from pandapower.create.group_create import create_group
+from pandapower.groups import (
+    group_element_lists, compare_group_elements, group_row, set_group_reference_column, count_group_elements,
+    group_element_index
+)
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.run import runpp
@@ -28,10 +33,10 @@ from test import test_path
 
 
 def create_test_net():
-    net = create_empty_network()
+    net = pandapowerNet(name="create_test_net")
     # buses
-    create_buses(net, 7, 20, zone=[0, 0, 1, 1, 1, 0, 0], name=["bus %i" % i for i in range(7)],
-                 min_vm_pu=np.append(np.arange(.9, 0.94, .01), [np.nan, np.nan, np.nan]))
+    create_buses(net, 7, 20, zone=['0', '0', '1', '1', '1', '0', '0'], name=[f"bus {i}" for i in range(7)],
+                 min_vm_pu=np.append(np.arange(.9, 0.94, .01), [np.nan, np.nan, np.nan]), max_vm_pu=2.0)
 
     # ext_grid
     idx = create_ext_grid(net, 0, 1.0, 0.0)
@@ -163,8 +168,7 @@ def test_cost_consideration():
         boundary_buses = [0, 2]
         internal_buses = [1]
         eq_net1 = get_equivalent(net, "rei", boundary_buses, internal_buses)
-        eq_net2 = get_equivalent(net, "rei", boundary_buses, internal_buses,
-                                 return_internal=False)
+        eq_net2 = get_equivalent(net, "rei", boundary_buses, internal_buses, return_internal=False)
 
         # check elements
         check_elements_amount(eq_net1, {"bus": 6, "load": 3, "sgen": 3, "shunt": 5, "ext_grid": 1,
@@ -219,18 +223,15 @@ def test_basic_usecases(eq_type):
         check_elements_amount(net1, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
                                      "line": 3, "impedance": 3}, check_all_pp_elements=True)
         check_res_bus(net, net1)
-        assert np.allclose(net1.bus.min_vm_pu.values,
-                           np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
+        assert np.allclose(net1.bus.min_vm_pu.to_numpy(), np.array([0.9, 0.91, 0., 0., 0.93]))
         check_elements_amount(net2, {"bus": 3, "load": 3, "sgen": 0, "shunt": 3, "ext_grid": 0,
                                      "line": 0, "impedance": 2}, check_all_pp_elements=True)
         check_res_bus(net, net2)
-        assert np.allclose(net2.bus.min_vm_pu.values,
-                           net.bus.min_vm_pu.loc[[2, 4, 3]].values, equal_nan=True)
+        assert np.allclose(net2.bus.min_vm_pu.to_numpy(), net.bus.min_vm_pu.loc[[2, 4, 3]].to_numpy())
         check_elements_amount(net3, {"bus": 5, "load": 3, "sgen": 2, "shunt": 3, "ext_grid": 1,
                                      "line": 3, "impedance": 3}, check_all_pp_elements=True)
         check_res_bus(net, net3)
-        assert np.allclose(net1.bus.min_vm_pu.values,
-                           np.array([0.9, 0.91, np.nan, np.nan, 0.93]), equal_nan=True)
+        assert np.allclose(net1.bus.min_vm_pu.to_numpy(), np.array([0.9, 0.91, 0., 0., 0.93]))
 
     elif "ward" in eq_type:
         check_elements_amount(net1, {"bus": 4, "load": 2, "sgen": 2, "ext_grid": 1, "line": 3,
@@ -330,6 +331,7 @@ def test_adopt_columns_to_separated_eq_elms():
     # --- gen_separate
     net = case9()
     replace_ext_grid_by_gen(net, slack=True)
+    runpp(net)
     net.gen.index = [1, 2, 0]
     net.poly_cost["element"] = net.gen.index.values
     net.gen.sort_index(inplace=True)
@@ -357,7 +359,6 @@ def test_adopt_columns_to_separated_eq_elms():
 
 def test_equivalent_groups():
     net = example_multivoltage()
-    # net.sn_mva = 100
     for elm in pp_elements():
         if net[elm].shape[0] and not net[elm].name.duplicated().any():
             net[elm]["origin_id"] = net[elm].name
@@ -489,6 +490,8 @@ def test_characteristic():
          'angle_deg': [0, 0, 0, 0, 0], 'vk_percent': [2, 3, 4, 5, 6],
          'vkr_percent': [1.323, 1.324, 1.325, 1.326, 1.327], 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan,
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
+    add_column_to_df(net, "trafo", "id_characteristic_table")
+    add_column_to_df(net, "trafo", 'tap_dependency_table')
     net.trafo.at[1, 'id_characteristic_table'] = 0
     net.trafo.at[1, 'tap_dependency_table'] = True
     # add spline characteristics for one transformer based on trafo_characteristic_table

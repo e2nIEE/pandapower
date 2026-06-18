@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -54,9 +52,12 @@ def _get_elements(params, net, element, phase, typ):
     elm = net[element].values
 #   # Trying to find the column no for using numpy filters for active loads
     scaling = net[element].columns.get_loc("scaling")
-    typ_col = net[element].columns.get_loc("type")  # Type = Delta or Wye load
-    # active wye or active delta row selection
-    active = (net["_is_elements"][element]) & (elm[:, typ_col] == typ)
+    if "type" in net[element]:
+        typ_col = net[element].columns.get_loc("type")  # Type = Delta or Wye load
+        # active wye or active delta row selection
+        active = (net["_is_elements"][element]) & (elm[:, typ_col] == typ)
+    else:
+        active = []
     bus = [net[element].columns.get_loc("bus")]
     if len(elm):
         if element == 'load' or element == 'sgen':
@@ -371,7 +372,7 @@ def runpp_3ph(
     # scipy spsolve options in NR power flow
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
-    if init == "results" and net.res_bus_3ph.empty:
+    if init == "results" and ("res_bus_3ph" not in net or net.res_bus_3ph.empty):
         init = "auto"
     if init == "auto":
         init = "dc" if calculate_voltage_angles else "flat"

@@ -3,8 +3,10 @@ Notes:
     Using different reference_columns for the same group and element_type is not supported.
     See check_unique_group_rows()
 """
+
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import logging
 import uuid
@@ -17,16 +19,15 @@ import numpy.typing as npt
 import pandas as pd
 import pandas.testing as pdt
 
-from pandapower.auxiliary import ensure_iterability, log_to_level, pandapowerNet
-from pandapower.create import (
-    create_empty_network, create_group
-)
-from pandapower.create.utils import _group_parameter_list, _set_multiple_entries, _check_elements_existence
+from pandapower.auxiliary import ensure_iterability, log_to_level
+from pandapower.create import create_group
+from pandapower.create.utils import _group_parameter_list, _check_elements_existence, _set_multiple_entries
 from pandapower.toolbox.power_factor import signing_system_value
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict, element_bus_tuples, pp_elements, get_connected_elements_dict
 )
 from pandapower.toolbox.result_info import res_power_columns
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -462,7 +463,9 @@ def compare_group_elements(net: pandapowerNet, index1: int, index2: int) -> bool
     gr1 = net.group.loc[[index1]].set_index("element_type")
     gr2 = net.group.loc[[index2]].set_index("element_type")
     for et in et1:
-        if gr1.reference_column.at[et] == gr2.reference_column.at[et]:
+        gr1_ref_col_for_et = gr1.reference_column.at[et]
+        gr2_ref_col_for_et = gr2.reference_column.at[et]
+        if pd.notna(gr1_ref_col_for_et) and pd.notna(gr2_ref_col_for_et) and gr1_ref_col_for_et == gr2_ref_col_for_et:
             if len(pd.Index(gr1.element_index.at[et]).symmetric_difference(gr2.element_index.at[et])):  # type: ignore[arg-type]
                 return False
         else:
@@ -831,13 +834,13 @@ def set_group_reference_column(
         else:
             # fill nan values in net[et][reference_column] with unique names
             if reference_column not in net[et].columns:
-                net[et][reference_column] = pd.Series([None]*net[et].shape[0], dtype=object)
-            if pd.api.types.is_object_dtype(net[et][reference_column]):
-                idxs = net[et].index[net[et][reference_column].isnull()]
-                net[et].loc[idxs, reference_column] = ["%s_%i_%s" % (et, idx, str(
-                    uuid.uuid4())) for idx in idxs]
+                net[et][reference_column] = pd.Series(None, dtype=object)
+            if net[et][reference_column].isna().any():
+                idxs = net[et].index[net[et][reference_column].isna()]
+                net[et].loc[idxs, reference_column] = [f"{et}_{idx}_{uuid.uuid4()}" for idx in idxs]
+
             # determine duplicated values which would corrupt Groups functionality
-            if (net[et][reference_column].duplicated() | net[et][reference_column].isnull()).any():
+            if (net[et][reference_column].duplicated() | net[et][reference_column].isna()).any():
                 dupl_elements.append(et)
 
         # update net.group[["element_index", "reference_column"]] for element_type == et
@@ -855,10 +858,9 @@ def set_group_reference_column(
             net.group.iat[pos, net.group.columns.get_loc("reference_column")] = reference_column  # type: ignore[index]
             net.group.iat[pos, net.group.columns.get_loc("element_index")] = element_index  # type: ignore[index]
     if len(dupl_elements):
-        raise ValueError(
-            f"In net[*].{'index' if reference_column is None else reference_column} have duplicated or nan values. "
-            f"* is placeholder for {dupl_elements}."
-        )
+        if reference_column is None:
+            reference_column = 'index'
+        raise ValueError(f"In tables {dupl_elements} column {reference_column} has duplicate or nan values.")
 
 
 def return_group_as_net(
@@ -892,9 +894,10 @@ def return_group_as_net(
                                "dropped now.")
             remove_not_existing_group_members(net, verbose=verbose)
     else:
-        group_net = create_empty_network(
+        group_net = pandapowerNet(
             name=group_name(net, index), f_hz=net.f_hz, sn_mva=net.sn_mva,
-            add_stdtypes=kwargs.get("add_stdtypes", True))
+            add_stdtypes=kwargs.get("add_stdtypes", True)
+        )
         group_net["group"] = net.group.loc[[index]]
         for et in net.group.loc[[index], "element_type"].tolist():
             idx = group_element_index(net, index, et)

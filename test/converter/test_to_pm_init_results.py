@@ -10,7 +10,7 @@ def test_convert_pp_to_pm_init_results_propagates_bus_vm_and_va():
     """Ensures that init_vm_pu/init_va_degree='results' is not wiped by to_pm conversion.
     """
 
-    net = pp.create_empty_network(sn_mva=100.0)
+    net = pp.pandapowerNet(name="test_convert_pp_to_pm_init_results_propagates_bus_vm_and_va", sn_mva=100.0)
     b_slack = pp.create_bus(net, vn_kv=110.0)
     b_load = pp.create_bus(net, vn_kv=110.0)
     pp.create_ext_grid(net, b_slack, vm_pu=1.02)

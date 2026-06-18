@@ -13,7 +13,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import ADict
+from pandapower.network import ADict, pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -245,11 +245,7 @@ def check_switch_type(element, element_index, column):
     return None
 
 
-def check_vkr_larger(
-        element: pd.Series,
-        element_index: int,
-        column: Literal['vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent']
-) -> int | None:
+def check_vkr_larger(element, element_index, column):
     if column not in ['vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent'] or column not in element:
         raise TypeError(f"{element}, {column}, not a valid argument for checking vkr_percent.")
 

@@ -5,16 +5,15 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_empty_network,
     create_bus,
     create_ext_grid,
-    create_transformer,
+    create_gen,
     create_line,
     create_load,
-    create_gen,
-    create_sgen
+    create_sgen,
+    create_transformer
 )
-
+from pandapower import pandapowerNet
 from test.loadflow.result_test_network_generator import result_test_network_generator
 
 
@@ -39,11 +38,11 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope="session")
 def simple_network():
-    net = create_empty_network()
+    net = pandapowerNet(name='simple_network')
     b1 = create_bus(net, name="bus1", vn_kv=10.)
     create_ext_grid(net, b1)
-    b2 = create_bus(net, name="bus2", geodata=(1, 2))
-    b3 = create_bus(net, name="bus3", geodata=(1, 3))
+    b2 = create_bus(net, name="bus2", geodata=(1, 2), vn_kv=.4)
+    b3 = create_bus(net, name="bus3", geodata=(1, 3), vn_kv=.4)
     b4 = create_bus(net, name="bus4", vn_kv=10.)
     create_transformer(net, b4, b2,
                           std_type="0.25 MVA 10/0.4 kV",
@@ -69,6 +68,13 @@ def result_test_network():
         pass
     runpp(net, trafo_model="t", trafo_loading="current")
     return net
+
+
+def pytest_generate_tests(metafunc):
+    if "result_test_networks" in metafunc.fixturenames:
+        net = result_test_network_generator()
+        metafunc.parametrize("result_test_networks", net, ids=lambda n: n.last_added_case)
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-x"])

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -8,9 +6,10 @@ from __future__ import annotations
 import logging
 from numpy import nan
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.pp_types import Int
 from pandapower.create.utils import _check_element, _get_index_with_check, _set_entries
+from pandapower.network_structure import get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +19,15 @@ def create_motor(
     bus: Int,
     pn_mech_mw: float,
     cos_phi: float,
-    efficiency_percent: float = 100.0,
-    loading_percent: float = 100.0,
+    efficiency_percent: float = get_default_value("motor", "efficiency_percent"),
+    loading_percent: float = get_default_value("motor", "loading_percent"),
     name: str | None = None,
     lrc_pu: float = nan,
-    scaling: float = 1.0,
+    scaling: float = get_default_value("motor", "scaling"),
     vn_kv: float = nan,
     rx: float = nan,
     index: Int | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("motor", "in_service"),
     cos_phi_n: float = nan,
     efficiency_n_percent: float = nan,
     **kwargs,

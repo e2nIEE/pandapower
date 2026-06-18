@@ -15,22 +15,34 @@ vsc_bipolar_schema = pa.DataFrameSchema(
         "pl_dc_mw": pa.Column(
             float,
             description="no-load losses of the VSC on the DC side for the shunt R representing the no load losses",
+            metadata={"default": 0.0},
         ),
         "control_mode": pa.Column(
-            str, description="the control mode of the ac side of the VSC. Can be 'Vac_phi', 'Vdc_phi', 'Vdc_Q', 'Pac_Vac', 'Pac_Qac' or 'Vdc_Vac'"
+            str,
+            pa.Check.isin(["Vac_phi", "Vdc_phi", "Vdc_Q", "Pac_Vac", "Pac_Qac", "Vdc_Vac"]),
+            description="the control mode of the ac side of the VSC. Must be 'Vac_phi', 'Vdc_phi', 'Vdc_Q', 'Pac_Vac', 'Pac_Qac' or 'Vdc_Vac'",
+            metadata={"default": "Vac_phi"},
         ),
         "control_value_1": pa.Column(
-            float, description="The first controlled parameter, for example voltage magnitude or phase"
+            float,
+            description="The first controlled parameter, for example voltage magnitude or phase",
+            metadata={"default": 1.0},
         ),
         "control_value_2": pa.Column(
-            float, description="The second controlled parameter, also depends on the control mode"
+            float,
+            description="The second controlled parameter, also depends on the control mode",
+            metadata={"default": 0.0},
         ),
         "controllable": pa.Column(
             bool,
             description="whether the element is considered as actively controlling or as a fixed voltage source connected via shunt impedance",
+            metadata={"default": True},
         ),
-        "in_service": pa.Column(bool, description="True for in_service or False for out of service"),
+        "in_service": pa.Column(
+            bool, description="True for in_service or False for out of service", metadata={"default": True}
+        ),
     },
+    name="vsc_bipolar",
     strict=False,
 )
 
@@ -49,5 +61,6 @@ res_vsc_bipolar_schema = pa.DataFrameSchema(
         "vm_dc_pu_p": pa.Column(float, nullable=True, description=""),
         "vm_dc_pu_m": pa.Column(float, nullable=True, description=""),
     },
+    name="res_vsc_bipolar",
     strict=False,
 )

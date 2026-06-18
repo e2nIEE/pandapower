@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,7 +9,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.pp_types import Int
 from pandapower.create.utils import (
     _check_element,
@@ -21,6 +19,7 @@ from pandapower.create.utils import (
     _set_entries,
     _set_multiple_entries,
 )
+from pandapower.network_structure import get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ def create_ward(
     pz_mw: float,
     qz_mvar: float,
     name: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("ward", "in_service"),
     index: Int | None = None,
     **kwargs,
 ) -> Int:
@@ -80,7 +79,7 @@ def create_wards(
     pz_mw: float | Iterable[float],
     qz_mvar: float | Iterable[float],
     name: Iterable[str] | None = None,
-    in_service: bool | Iterable[bool] = True,
+    in_service: bool | Iterable[bool] = get_default_value("ward", "in_service"),
     index: int | None = None,
     **kwargs,
 ) -> npt.NDArray[np.array]:
@@ -130,10 +129,10 @@ def create_xward(
     r_ohm: float,
     x_ohm: float,
     vm_pu: float,
-    in_service: bool = True,
+    in_service: bool = get_default_value("xward", "in_service"),
     name: str | None = None,
     index: Int | None = None,
-    slack_weight: float = 0.0,
+    slack_weight: float = get_default_value("xward", "slack_weight"),
     **kwargs,
 ):
     """

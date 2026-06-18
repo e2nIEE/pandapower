@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import warnings
 from packaging.version import Version
 import logging
@@ -22,9 +21,9 @@ try:
     from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
     from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
     if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import SolverType
+        from lightsim2grid_cpp import SolverType, GridModel
     else:
-        from lightsim2grid.lightsim2grid_cpp import SolverType
+        from lightsim2grid.lightsim2grid_cpp import SolverType, GridModel
 
     lightsim2grid_installed = True
 except ImportError:
@@ -43,8 +42,31 @@ try:
 except ImportError:
     KLU_solver_available = False
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
+from pandapower.create.utils import add_column_to_df
 from pandapower.run import runpp
+
+
+def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
+    """
+    Try to initialize a lightsim2grid model
+
+    Arguments:
+        net: The pandapower network to use in lightsim2grid
+
+    Returns:
+        The initialized lightsim2grid model
+
+    Raises:
+        Any Exception thrown by lightsim2grid is logged and raised again.
+    """
+    try:
+        ls2g_model = init_ls2g(net)
+        return ls2g_model
+    except Exception as e:
+        logger.error(f"Failed to create lightsim2grid model for network: {net.name}")
+        logger.exception(e)
+        raise e
 
 
 def run_contingency(
@@ -193,6 +215,8 @@ def run_contingency_ls2g(
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
                           "Install lightsim2grid e.g. by running 'pip install lightsim2grid' in command prompt.")
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", 'max_q_mvar')
     # check for continuous bus index starting with 0:
     n_bus = len(net.bus)
     last_bus = net.bus.index[-1]
@@ -232,11 +256,11 @@ def run_contingency_ls2g(
               "slack bus of pandapower will be used."
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", msg)
-            lightsim_grid_model = init_ls2g(net)
+            lightsim_grid_model = pp_to_ls2g(net)
         net.gen['slack'] = slack_backup
         solver_type = SolverType.KLU if KLU_solver_available else SolverType.SparseLU
     else:
-        lightsim_grid_model = init_ls2g(net)
+        lightsim_grid_model = pp_to_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
     if tps_flag:

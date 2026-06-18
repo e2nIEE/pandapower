@@ -1,35 +1,9 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
-# Additional copyright for modified code by Brendan Curran-Johnson (ADict class):
-# Copyright (c) 2013 Brendan Curran-Johnson
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-# (https://github.com/bcj/AttrDict/blob/master/LICENSE.txt)
-
-import copy
 import numbers
 import warnings
-from collections.abc import MutableMapping, Iterable, Collection
+from collections.abc import Iterable, Collection
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as version_str
 from typing import (
@@ -58,6 +32,7 @@ from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS_DC
+from pandapower.network import pandapowerNet
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
@@ -73,6 +48,8 @@ try:
     geopandas_available = True
 except ImportError:
     geopandas_available = False
+    # for typing only
+    GeoSeries = object
 
 
 PyPowerNetwork = dict[str, Any]
@@ -84,6 +61,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
+# FIXME: Remove this!
 def log_to_level(
     msg: str,
     passed_logger: logging.Logger,
@@ -105,14 +83,9 @@ def log_to_level(
 
 def version_check(
     package_name: str,
-    level: Literal["error", "warning", "info", "debug", "UserWarning"] = "UserWarning",
-    ignore_not_installed: bool = False
 ) -> None:
-    minimum_version = {'plotly': "3.1.1",
-                       'numba': "0.25",
-                       }
-    if ignore_not_installed and package_name not in minimum_version.keys():
-        return
+    # FIXME: version should NEVER be defined in code!
+    minimum_version = {'numba': "0.25"}
 
     try:
         version = version_str(package_name)
@@ -120,13 +93,9 @@ def version_check(
             log_to_level((
                 f"{package_name} version {version} is no longer supported by pandapower.\r\n"
                 f"Please upgrade your installation. Possibly it can be done via "
-                f"'pip install --upgrade {package_name}'."), logger, level)
+                f"'pip install --upgrade {package_name}'."), logger, "UserWarning")
     except PackageNotFoundError:
-        if ignore_not_installed:
-            raise PackageNotFoundError(
-                f"Python package '{package_name}', is needed.\r\nPlease install it. "
-                f"Possibly it can be installed via 'pip install {package_name}'.")
-
+        pass
 
 try:
     from numba import jit
@@ -171,351 +140,11 @@ def warn_and_fix_parameter_renaming(
     return new_parameter
 
 
-class ADict(dict[str, Any], MutableMapping[str, Any]):
-    _allow_invalid_attributes: bool
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
-        # to prevent overwrite of internal attributes by new keys
-        # see _valid_name()
-        self._setattr('_allow_invalid_attributes', False)
-
-    def _build(self, obj: T, **kwargs: Any) -> T:
-        """
-        We only want dict like elements to be treated as recursive AttrDicts.
-        """
-        return obj
-
-    # --- taken from AttrDict
-
-    def __getstate__(self) -> tuple[dict[str, Any], bool]:
-        return self.copy(), self._allow_invalid_attributes
-
-    def __dir__(self) -> list[str]:
-        return list(self.keys())
-
-    def __setstate__(self, state: tuple[dict[str, Any], bool]) -> None:
-        mapping, allow_invalid_attributes = state
-        self.update(mapping)
-        self._setattr('_allow_invalid_attributes', allow_invalid_attributes)
-
-    @classmethod
-    def _constructor(cls, mapping: dict[str, Any]) -> "ADict":
-        return cls(mapping)
-
-    # --- taken from MutableAttr
-
-    def _setattr(self, key: str, value: Any) -> None:
-        """
-        Add an attribute to the object, without attempting to add it as
-        a key to the mapping (i.e. internals)
-        """
-        super(MutableMapping, self).__setattr__(key, value)
-
-    def __setattr__(self, key: str, value: Any) -> None:
-        """
-        Add an attribute.
-
-        key: The name of the attribute
-        value: The attributes contents
-        """
-        if self._valid_name(key):
-            self[key] = value
-        elif getattr(self, '_allow_invalid_attributes', True):
-            super(MutableMapping, self).__setattr__(key, value)
-        else:
-            raise TypeError(
-                "'{cls}' does not allow attribute creation.".format(
-                    cls=self.__class__.__name__
-                )
-            )
-
-    def _delattr(self, key: str) -> None:
-        """
-        Delete an attribute from the object, without attempting to
-        remove it from the mapping (i.e. internals)
-        """
-        super(MutableMapping, self).__delattr__(key)
-
-    def __delattr__(self, key: str, force: bool = False) -> None:
-        """
-        Delete an attribute.
-
-        key: The name of the attribute
-        """
-        if self._valid_name(key):
-            del self[key]
-        elif getattr(self, '_allow_invalid_attributes', True):
-            super(MutableMapping, self).__delattr__(key)
-        else:
-            raise TypeError(
-                "'{cls}' does not allow attribute deletion.".format(
-                    cls=self.__class__.__name__
-                )
-            )
-
-    def __call__(self, key: str) -> Any:
-        """
-        Dynamically access a key-value pair.
-
-        key: A key associated with a value in the mapping.
-
-        This differs from __getitem__, because it returns a new instance
-        of an Attr (if the value is a Mapping object).
-        """
-        if key not in self:
-            raise AttributeError(
-                "'{cls} instance has no attribute '{name}'".format(
-                    cls=self.__class__.__name__, name=key
-                )
-            )
-
-        return self._build(self[key])
-
-    def __getattr__(self, key: str) -> Any:
-        """
-        Access an item as an attribute.
-        """
-        if key not in self or not self._valid_name(key):
-            raise AttributeError(
-                "'{cls}' instance has no attribute '{name}'".format(
-                    cls=self.__class__.__name__, name=key
-                )
-            )
-
-        return self._build(self[key])
-
-    def __deepcopy__(self, memo: dict[int, Any]) -> "ADict":
-        """
-        overloads the deepcopy function of pandapower if at least one DataFrame with column
-        "object" is in net
-
-        in addition, line geodata can contain mutable objects like lists, and it is also treated
-        specially
-
-        reason: some of these objects contain a reference to net which breaks the default deepcopy
-        function. Also, the DataFrame doesn't deepcopy its elements if geodata changes in the
-        lists, it affects both net instances
-        This fix was introduced in pandapower 2.2.1
-
-        """
-        deep_columns = {'object', 'coords', 'geometry'}
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.items():
-            if isinstance(v, pd.DataFrame) and not set(v.columns).isdisjoint(deep_columns):
-                if k not in result:
-                    result[k] = v.__class__(index=v.index, columns=v.columns)
-                for col in v.columns:
-                    if col in deep_columns:
-                        result[k][col] = v[col].apply(lambda x: copy.deepcopy(x, memo))
-                    else:
-                        result[k][col] = copy.deepcopy(v[col], memo)
-                _preserve_dtypes(result[k], v.dtypes)
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-
-        result._setattr('_allow_invalid_attributes', self._allow_invalid_attributes)
-        return result
-
-    @classmethod
-    def _valid_name(cls, key: Any) -> bool:
-        """
-        Check whether a key is a valid attribute name.
-
-        A key may be used as an attribute if:
-         * It is a string
-         * The key doesn't overlap with any class attributes (for Attr,
-            those would be 'get', 'items', 'keys', 'values', 'mro', and
-            'register').
-        """
-        return (
-                isinstance(key, str) and
-                not hasattr(cls, key)
-        )
-
-
-class pandapowerNet(ADict):
-    """
-    pandapowerNet constructor
-    given dict needs to contain the pandapower network dataframes, for example use classmethod create_dataframes
-    """
-    bus: pd.DataFrame
-    load: pd.DataFrame
-    sgen: pd.DataFrame
-    motor: pd.DataFrame
-    asymmetric_load: pd.DataFrame
-    asymmetric_sgen: pd.DataFrame
-    storage: pd.DataFrame
-    gen: pd.DataFrame
-    switch: pd.DataFrame
-    shunt: pd.DataFrame
-    svc: pd.DataFrame
-    ssc: pd.DataFrame
-    ext_grid: pd.DataFrame
-    line: pd.DataFrame
-    trafo: pd.DataFrame
-    trafo3w: pd.DataFrame
-    impedance: pd.DataFrame
-    tcsc: pd.DataFrame
-    dcline: pd.DataFrame
-    ward: pd.DataFrame
-    xward: pd.DataFrame
-    measurement: pd.DataFrame
-    pwl_cost: pd.DataFrame
-    poly_cost: pd.DataFrame
-    characteristic: pd.DataFrame
-    controller: pd.DataFrame
-    group: pd.DataFrame
-    line_geodata: pd.DataFrame
-    bus_geodata: pd.DataFrame
-    res_bus: pd.DataFrame
-    res_line: pd.DataFrame
-    res_trafo: pd.DataFrame
-    res_trafo3w: pd.DataFrame
-    res_impedance: pd.DataFrame
-    res_ext_grid: pd.DataFrame
-    res_load: pd.DataFrame
-    res_motor: pd.DataFrame
-    res_sgen: pd.DataFrame
-    res_storage: pd.DataFrame
-    res_shunt: pd.DataFrame
-    res_gen: pd.DataFrame
-    res_ward: pd.DataFrame
-    res_xward: pd.DataFrame
-    res_dcline: pd.DataFrame
-    res_asymmetric_load: pd.DataFrame
-    res_asymmetric_sgen: pd.DataFrame
-    res_switch: pd.DataFrame
-    res_tcsc: pd.DataFrame
-    res_svc: pd.DataFrame
-    res_ssc: pd.DataFrame
-    res_bus_est: pd.DataFrame
-    res_line_est: pd.DataFrame
-    res_trafo_est: pd.DataFrame
-    res_trafo3w_est: pd.DataFrame
-    res_impedance_est: pd.DataFrame
-    res_switch_est: pd.DataFrame
-    res_bus_sc: pd.DataFrame
-    res_line_sc: pd.DataFrame
-    res_trafo_sc: pd.DataFrame
-    res_trafo3w_sc: pd.DataFrame
-    res_ext_grid_sc: pd.DataFrame
-    res_gen_sc: pd.DataFrame
-    res_sgen_sc: pd.DataFrame
-    res_switch_sc: pd.DataFrame
-    res_bus_3ph: pd.DataFrame
-    res_line_3ph: pd.DataFrame
-    res_trafo_3ph: pd.DataFrame
-    res_ext_grid_3ph: pd.DataFrame
-    res_shunt_3ph: pd.DataFrame
-    res_load_3ph: pd.DataFrame
-    res_sgen_3ph: pd.DataFrame
-    res_storage_3ph: pd.DataFrame
-    res_asymmetric_load_3ph: pd.DataFrame
-    res_asymmetric_sgen_3ph: pd.DataFrame
-    _empty_res_bus: pd.DataFrame
-    _empty_res_ext_grid: pd.DataFrame
-    _empty_res_line: pd.DataFrame
-    _empty_res_trafo: pd.DataFrame
-    _empty_res_load: pd.DataFrame
-    _empty_res_asymmetric_load: pd.DataFrame
-    _empty_res_asymmetric_sgen: pd.DataFrame
-    _empty_res_motor: pd.DataFrame
-    _empty_res_sgen: pd.DataFrame
-    _empty_res_shunt: pd.DataFrame
-    _empty_res_svc: pd.DataFrame
-    _empty_res_ssc: pd.DataFrame
-    _empty_res_switch: pd.DataFrame
-    _empty_res_impedance: pd.DataFrame
-    _empty_res_tcsc: pd.DataFrame
-    _empty_res_dcline: pd.DataFrame
-    _empty_res_ward: pd.DataFrame
-    _empty_res_xward: pd.DataFrame
-    _empty_res_trafo_3ph: pd.DataFrame
-    _empty_res_trafo3w: pd.DataFrame
-    _empty_res_bus_3ph: pd.DataFrame
-    _empty_res_ext_grid_3ph: pd.DataFrame
-    _empty_res_line_3ph: pd.DataFrame
-    _empty_res_asymmetric_load_3ph: pd.DataFrame
-    _empty_res_asymmetric_sgen_3ph: pd.DataFrame
-    _empty_res_storage: pd.DataFrame
-    _empty_res_storage_3ph: pd.DataFrame
-    _empty_res_gen: pd.DataFrame
-    _empty_res_protection: pd.DataFrame
-    _empty_res_load_3ph: pd.DataFrame
-    _empty_res_sgen_3ph: pd.DataFrame
-
-    version: str
-    format_version: str
-    converged: bool
-    OPF_converged: bool
-    name: str
-    f_hz: float
-    sn_mva: float
-    std_types: dict[str, Any]
-    user_pf_options: dict[str, Any]
-    _ppc: PyPowerNetwork | None
-    _ppc0: PyPowerNetwork | None
-    _ppc1: PyPowerNetwork | None
-    _ppc2: PyPowerNetwork | None
-    _is_elements: pd.DataFrame | None
-    _pd2ppc_lookups: dict[str, Any]
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        if isinstance(args[0], self.__class__):
-            net = args[0]
-            self.clear()
-            self.update(**copy.deepcopy(net))
-
-        for key in self:
-            if isinstance(self[key], list) and len(self[key]) == 1:
-                self[key] = self[key][0]
-
-    @classmethod
-    def create_dataframes(cls, data):
-        for key in data: #TODO: change index dtype to np.uint32
-            if isinstance(data[key], dict):
-                data[key] = pd.DataFrame(columns=data[key].keys(), index=pd.Index([], dtype=np.int64)).astype(data[key])
-        return data
-
-    def __repr__(self) -> str:  # pragma: no cover
-        """
-        See Also
-        --------
-        count_elements
-        """
-        par = []
-        res = []
-        for et in list(self.keys()):
-            if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
-                n_rows = self[et].shape[0]
-                if 'res_' in et:
-                    res.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
-                elif et == 'group':
-                    n_groups = len(set(self[et].index))
-                    par.append(f"   - {et} ({n_groups} group{plural_s(n_groups)}, {n_rows} row{plural_s(n_rows)})")
-                else:
-                    par.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
-        res_cost = [" and the following result values:",
-                    "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
-        if not len(par) + len(res):
-            return "This pandapower network is empty"
-        if len(res):
-            res = [" and the following results tables:"] + res
-        lines = ["This pandapower network includes the following parameter tables:"] + \
-                par + res + res_cost
-        return "\n".join(lines)
-
-
 @pd.api.extensions.register_series_accessor("geojson")
 class GeoAccessor:
     """
     pandas Series accessor for the geo column. It facilitates the use of geojson strings.
-    NaN entrys are dropped using the accessor!
+    NaN entries are dropped using the accessor!
     """
 
     def __init__(self, pandas_obj: "pdt.Series[str]") -> None:
@@ -542,8 +171,6 @@ class GeoAccessor:
     def _coords(self):
         """
         Extracts the geometry coordinates from the GeoJSON strings.
-        It is not recommended to use the standalone coordinates.
-        Important informations like the crs or latlon/lonlat are lost as a result.
         """
         return self._obj.dropna().apply(loads).apply(self._extract_coords)
 
@@ -564,14 +191,14 @@ class GeoAccessor:
     @property
     def as_shapely_obj(self) -> pdt.Series:
         """
-        Converts the GeoJSON strings to shapely geometrys.
+        Converts the GeoJSON strings to shapely geometries.
         """
         return self._obj.dropna().apply(from_geojson)
 
     @property
     def as_geoseries(self) -> "GeoSeries":
         """
-        Converts the PandasSeries to a GeoSeries with shapely geometrys.
+        Converts the PandasSeries to a GeoSeries with shapely geometries.
         """
         return GeoSeries(self._obj.dropna().pipe(from_geojson), crs=4326, index=self._obj.dropna().index)
 
@@ -590,10 +217,6 @@ class GeoAccessor:
             else:
                 return geoms_item
         raise AttributeError(f"'GeoAccessor' object has no attribute '{item}'")
-
-
-def plural_s(number: int | float) -> str:
-    return "" if number == 1 else "s"
 
 
 EtType = Literal["b", "l", "t", "t3", "i"]
@@ -651,6 +274,8 @@ def element_types_to_ets(element_types: ElementType | list[ElementType] | None =
 def empty_defaults_per_dtype(dtype: np.dtype[Any]) -> Any:
     if is_numeric_dtype(dtype):
         return np.nan
+    elif isinstance(dtype, pd.StringDtype):
+        return pd.NA
     elif is_string_dtype(dtype):
         return ""
     elif is_object_dtype(dtype):
@@ -660,12 +285,10 @@ def empty_defaults_per_dtype(dtype: np.dtype[Any]) -> Any:
 
 
 def _preserve_dtypes(df: pd.DataFrame, dtypes: pdt.Series[np.dtype[Any]]) -> None:
-    for item, dtype in list(dtypes.items()):
+    for item, dtype in dtypes.items():
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
-                raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
-                                  f"NaN are casted to True by default, which can lead to errors. "
-                                  f"Replace NaN values with True or False first.")
+                df[item] = df[item].fillna(pd.NA).astype('boolean')
             try:
                 df[item] = df[item].astype(dtype)
             except ValueError:
@@ -993,7 +616,10 @@ def _detect_read_write_flag(
 
 # read functions:
 def _read_from_single_index(net: pandapowerNet, element: str, variable: str, index: np.int64) -> Any:
-    return net[element].at[index, variable]
+    if variable in net[element]:
+        return net[element].at[index, variable]
+    else:
+        return pd.NA
 
 
 def _read_from_all_index(net: pandapowerNet, element: str, variable: str) -> NDArray[Any]:
@@ -1312,11 +938,10 @@ def _select_is_elements_numba(
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
-    #    mode = net["_options"]["mode"]
     elements_ac = ["load", "motor", "sgen", "asymmetric_load", "asymmetric_sgen", "gen",
                    "ward", "xward", "shunt", "ext_grid", "storage", "svc", "ssc", "vsc"]  # ,"impedance_load"
     elements_dc = ["vsc", "load_dc", "source_dc"]
-    is_elements = dict()
+    is_elements = {}
     for element_table_list, bus_table, bis in zip((elements_ac, elements_dc), ("bus", "bus_dc"), (bus_in_service, bus_dc_in_service)):
         for element_table in element_table_list:
             num_elements = len(net[element_table].index)
@@ -1400,8 +1025,6 @@ def _add_ppc_options(
     """
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
-    # if recycle is None:
-    #     recycle = dict(trafo=False, bus_pq=False, bfsw=False)
 
     init_results = (isinstance(init_vm_pu, str) and (init_vm_pu == "results")) or \
                    (isinstance(init_va_degree, str) and (init_va_degree == "results"))
@@ -1540,13 +1163,11 @@ def _add_sc_options(
 
 
 def _add_options(net: pandapowerNet, options: dict[str, Any]) -> None:
-    # double_parameters = set(net.__internal_options.keys()) & set(options.keys())
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
         raise UserWarning(
             "Parameters always have to be unique! The following parameters where specified " +
             "twice: %s" % double_parameters)
-    # net.__internal_options.update(options)
     net._options.update(options)
 
 
@@ -1949,7 +1570,11 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
         p_mw = np.abs(dctab.p_mw)
         p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw  # type: ignore[operator]
 
-        max_p_mw: float = dctab.max_p_mw  # type: ignore[assignment]
+        max_p_mw: float
+        if hasattr(dctab, 'max_p_mw') and pd.notna(dctab.max_p_mw):
+            max_p_mw = dctab.max_p_mw  # type: ignore[assignment]
+        else:
+            max_p_mw = float('nan')
         p_min: float
         p_max: float
         if np.sign(dctab.p_mw) > 0:
@@ -1963,15 +1588,41 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
             p_max = 0
             p_min = -max_p_mw
 
-        create_gen(net, bus=dctab.to_bus, p_mw=p_to, vm_pu=dctab.vm_to_pu,
-                   min_p_mw=p_min, max_p_mw=p_max,
-                   max_q_mvar=dctab.max_q_to_mvar, min_q_mvar=dctab.min_q_to_mvar,
-                   in_service=dctab.in_service)
+        kwargs_to = {
+            'bus': dctab.to_bus,
+            'p_mw': p_to,
+            'vm_pu': dctab.vm_to_pu,
+            'in_service': dctab.in_service
+        }
 
-        create_gen(net, bus=dctab.from_bus, p_mw=p_from, vm_pu=dctab.vm_from_pu,
-                   min_p_mw=-p_max, max_p_mw=-p_min,
-                   max_q_mvar=dctab.max_q_from_mvar, min_q_mvar=dctab.min_q_from_mvar,
-                   in_service=dctab.in_service)
+        if hasattr(dctab, 'min_p_mw') or hasattr(dctab, 'max_p_mw'):
+            kwargs_to['max_p_mw'] = p_max
+            kwargs_to['min_p_mw'] = p_min
+        if hasattr(dctab, 'max_q_to_mvar'):
+            kwargs_to['max_q_mvar'] = dctab.max_q_to_mvar
+        if hasattr(dctab, 'min_q_to_mvar'):
+            kwargs_to['min_q_mvar'] = dctab.min_q_to_mvar
+
+        create_gen(net, **kwargs_to)
+
+        kwargs_from = {
+            'bus': dctab.from_bus,
+            'p_mw': p_from,
+            'vm_pu': dctab.vm_from_pu,
+            'in_service': dctab.in_service,
+            'min_p_mw': -p_max,
+            'max_p_mw': -p_min,
+        }
+
+        if hasattr(dctab, 'max_p_mw') or hasattr(dctab, 'min_p_mw'):
+            kwargs_from['min_p_mw'] = -p_max
+            kwargs_from['max_p_mw'] = -p_min
+        if hasattr(dctab, 'max_q_from_mvar'):
+            kwargs_from['max_q_mvar'] = dctab.max_q_from_mvar
+        if hasattr(dctab, 'min_q_from_mvar'):
+            kwargs_from['min_q_mvar'] = dctab.min_q_from_mvar
+
+        create_gen(net, **kwargs_from)
 
 
 def _add_vsc_stacked(net: pandapowerNet):
@@ -2089,7 +1740,7 @@ def _init_runpp_options(
     lightsim2grid = kwargs.get("lightsim2grid", "auto")
 
     # for all the parameters from 'overrule_options' we need to collect them
-    # if they are used for any of the chjecks below:
+    # if they are used for any of the checks below:
     algorithm = overrule_options.get("algorithm", algorithm)
     calculate_voltage_angles = overrule_options.get("calculate_voltage_angles", calculate_voltage_angles)
     init = overrule_options.get("init", init)
@@ -2103,15 +1754,11 @@ def _init_runpp_options(
     # tolerance_mva, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
 
     # check if numba is available and the corresponding flag
-    if numba:
-        numba = _check_if_numba_is_installed()
+    numba &= _check_if_numba_is_installed()
 
-    if voltage_depend_loads:
-        if not (np.any(net["load"]["const_z_p_percent"].values)
-                or np.any(net["load"]["const_i_p_percent"].values)
-                or np.any(net["load"]["const_z_q_percent"].values)
-                or np.any(net["load"]["const_i_q_percent"].values)):
-            voltage_depend_loads = False
+    cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
+    if not cols.issubset(net.load.columns) or net.load[list(cols)].isna().any().any():
+        raise AttributeError(f"Network is missing one or more of net.load columns: {cols}")
 
     lightsim2grid = _check_lightsim2grid_compatibility(net, lightsim2grid, voltage_depend_loads, algorithm,
                                                        distributed_slack, tdpf)
@@ -2316,7 +1963,6 @@ def _init_rundcopp_options(
     # scipy spsolve options in NR power flow
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
-    # net.__internal_options = {}
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,

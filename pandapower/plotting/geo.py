@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -12,7 +10,8 @@ import math
 import pandas as pd
 from numpy import array
 
-from pandapower.auxiliary import soft_dependency_error, pandapowerNet, ADict
+from pandapower.auxiliary import soft_dependency_error
+from pandapower.network import ADict, pandapowerNet
 # ADict is used as a type to ensure compatibility with pandapipes
 
 
@@ -281,7 +280,7 @@ def dump_to_geojson_node_branch(
         if element:
             props: dict = {}
             for table in [name, f"res_{name}"]:
-                if table not in net.keys():
+                if table not in net:
                     continue
 
                 tempdf = net[table].copy(deep=True)

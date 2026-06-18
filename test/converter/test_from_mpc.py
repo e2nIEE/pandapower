@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
 
 import os
 import logging
@@ -13,6 +10,7 @@ from pandapower.converter.matpower import from_mpc
 from pandapower.networks import case24_ieee_rts
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
+from pandapower.results import reset_results
 
 try:
     import matpowercaseframes
@@ -32,6 +30,10 @@ def test_from_mpc_mat():
     this_folder = os.path.join(test_path, "converter")
     mat_case = os.path.join(this_folder, 'case24_ieee_rts.mat')
     case24_from_mpc = from_mpc(mat_case, f_hz=60, casename_mpc_file='mpc', tap_side="hv")
+    # TODO: remove after https://github.com/e2nIEE/pandapower/pull/2813:
+    #  reset 3ph results (new columns in case24 but not in from_mpc, would be solved by 3ph powerflow, so not relevant)
+    reset_results(case24, "pf_3ph")
+    reset_results(case24_from_mpc, "pf_3ph")
 
     runpp(case24)
     runpp(case24_from_mpc)

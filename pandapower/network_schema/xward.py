@@ -4,7 +4,11 @@ import pandera.pandas as pa
 xward_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="name of the extended ward equivalent"
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="name of the extended ward equivalent",
+            metadata={"cim": True},
         ),
         "bus": pa.Column(
             int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
@@ -17,10 +21,41 @@ xward_schema = pa.DataFrameSchema(
         "x_ohm": pa.Column(float, pa.Check.gt(0), description="internal reactance of the voltage source [ohm]"),
         "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage source set point [p.u]"),
         "slack_weight": pa.Column(
-            float, nullable=True, required=False, description=" Contribution factor for distributed slack power"
+            float,
+            nullable=True,
+            required=False,
+            description=" Contribution factor for distributed slack power",
+            metadata={"cim": True, "default": 0.0},
         ),
-        "in_service": pa.Column(bool, description="specifies if the extended ward equivalent is in service."),
+        "in_service": pa.Column(
+            bool, description="specifies if the extended ward equivalent is in service.", metadata={"default": True}
+        ),
+        "origin_id": pa.Column(
+            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True, "doc": False},
+        ),
+        "terminal": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
     },
+    name="xward",
     strict=False,
 )
 
@@ -32,5 +67,6 @@ res_xward_schema = pa.DataFrameSchema(
         "va_internal_degree": pa.Column(float, nullable=True, description=""),
         "vm_internal_pu": pa.Column(float, nullable=True, description=""),
     },
+    name="res_xward",
     strict=False,
 )

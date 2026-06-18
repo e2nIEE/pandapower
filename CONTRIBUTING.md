@@ -192,7 +192,7 @@ tests for the toolbox functions. You then add a new test function to this file:
 ```python
 def test_double_rated_power():
    init_sn_mva = 100
-   net = create_empty_network(sn_mva=init_sn_mva)
+   net = pandapowerNet(name="test_double_rated_power", sn_mva=init_sn_mva)
    assert net.sn_mva == init_sn_mva
    double_rated_power(net)
    assert net.sn_mva == init_sn_mva*2

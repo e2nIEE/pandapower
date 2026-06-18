@@ -62,10 +62,3 @@ class ProtectionDevice(JSONSerializableClass):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-
-
-if __name__ == "__main__":
-    from pandapower.create import create_empty_network
-
-    net = create_empty_network()
-    ProtectionDevice(net)

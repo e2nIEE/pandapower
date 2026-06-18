@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -10,7 +8,7 @@ from typing import Literal
 
 import pandas as pd
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.pp_types import Int, MeasurementElementType, MeasurementType
 from pandapower.create.utils import _get_index_with_check, _set_entries
 
@@ -35,6 +33,7 @@ def create_measurement(
     are: v, p, q, i, va, ia
 
     Parameters:
+        net: the network to which the measurement will be added
         meas_type: Type of measurement. "v", "p", "q", "i", "va" and "ia" are possible
         element_type: Clarifies which element is measured. "bus", "line", "trafo", "trafo3w", "load", "gen", "sgen",
             "shunt", "ward", "xward" and "ext_grid" are possible
@@ -62,51 +61,19 @@ def create_measurement(
         
         >>> create_measurement(net, "q", "line", 4.5, 0.1, 2, "to")
     """
-    if meas_type not in ("v", "p", "q", "i", "va", "ia"):
-        raise UserWarning(f"Invalid measurement type: {meas_type}")
-
     if side is None and element_type in ("line", "trafo", "trafo3w"):
         raise UserWarning(f"The element type '{element_type}' requires parameter 'side' to be set")
 
-    if meas_type in ("v", "va"):
-        element_type = "bus"
-
-    if element_type not in (
-        "bus",
-        "line",
-        "trafo",
-        "trafo3w",
-        "load",
-        "gen",
-        "sgen",
-        "shunt",
-        "ward",
-        "xward",
-        "ext_grid",
-    ):
-        raise UserWarning(f"Invalid element type: {element_type}")
-
-    if element is not None and element not in net[element_type].index.values:
+    if element is not None and element not in net[element_type].index.to_numpy():
         raise UserWarning(f"{element_type} with index={element} does not exist")
-
-    index = _get_index_with_check(net, "measurement", index)
 
     if meas_type in ("i", "ia") and element_type == "bus":
         raise UserWarning("Line current measurements cannot be placed at buses")
 
-    if meas_type in ("v", "va") and element_type in (
-        "line",
-        "trafo",
-        "trafo3w",
-        "load",
-        "gen",
-        "sgen",
-        "shunt",
-        "ward",
-        "xward",
-        "ext_grid",
-    ):
+    if meas_type in ("v", "va") and element_type != "bus":
         raise UserWarning(f"Voltage measurements can only be placed at a bus, not at {element_type}")
+
+    index = _get_index_with_check(net, "measurement", index)
 
     if check_existing:
         if side is None:

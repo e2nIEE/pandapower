@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -237,10 +235,11 @@ def _net_to_html(net, respect_switches=True, include_lines=True, include_trafos=
             "res_ext_grid_3ph",
             "res_sgen_3ph",
         ]:
-            item = getattr(net, name)
-            if len(item):
-                table = TABLE(TR(*map(TH, item.columns)), *[TR(*map(TD, row)) for row in item.values])
-                tables.append(DIV(H2(name), table))
+            if name in net:
+                item = getattr(net, name)
+                if len(item):
+                    table = TABLE(TR(*map(TH, item.columns)), *[TR(*map(TD, row)) for row in item.values])
+                    tables.append(DIV(H2(name), table))
 
     page = HTML(
         HEAD(STYLE(style)),

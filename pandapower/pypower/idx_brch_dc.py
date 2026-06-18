@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
@@ -56,8 +54,8 @@ DC_IF          = 9   # current injected at "from" bus end (p.u.)
 DC_PT          = 10   # real power injected at "to" bus end (MW)
 DC_IT          = 11   # current injected at "to" bus end (p.u.)
 
-DC_BR_R_ASYM = 12   # todo Roman check if necessary
-DC_BR_X_ASYM = 13   # todo Roman check if necessary
+DC_BR_R_ASYM = 12   # todo check if necessary
+DC_BR_X_ASYM = 13   # todo check if necessary
 
 DC_TDPF = 14  ### TDPF not implemented for DC lines
 

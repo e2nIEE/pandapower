@@ -1,17 +1,18 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import sys
 import copy
+from typing import TYPE_CHECKING, Iterable
 
 import geojson
+import networkx
 import networkx as nx
 import pandas as pd
 import numpy as np
 
-from pandapower.auxiliary import soft_dependency_error
+from pandapower.auxiliary import pandapowerNet, soft_dependency_error
+from pandapower.create.utils import add_column_to_df
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_components
 
@@ -23,24 +24,31 @@ except ImportError:
 
 import logging
 
+if TYPE_CHECKING:
+    import igraph
+
 logger = logging.getLogger(__name__)
 
 
-def build_igraph_from_pp(net, respect_switches=False, buses=None, trafo_length_km=0.01, switch_length_km=0.001,
-                         dcline_length_km=1.0):
+def build_igraph_from_pp(
+        net: pandapowerNet,
+        respect_switches: bool = False,
+        buses=None,
+        trafo_length_km=0.01,
+        switch_length_km=0.001,
+        dcline_length_km=1.0
+):
     """
     This function uses the igraph library to create an igraph graph for a given pandapower network.
     Lines, transformers and switches are respected.
     Performance vs. networkx: https://graph-tool.skewed.de/performance
 
-    :param net: pandapower network
-    :type net: pandapowerNet
-    :param respect_switches: if True, exclude edges for open switches (also lines that are \
-        connected via line switches)
-    :type respect_switches: bool, default False
+    Parameters:
+        net: the pandapower network
+        respect_switches: if True, exclude edges for open switches (also lines that are connected via line switches)
 
-    :Example:
-        graph, meshed, roots = build_igraph_from_pp(net)
+    Example:
+        >>> graph, meshed, roots = build_igraph_from_pp(net)
     """
     if not IGRAPH_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "igraph")
@@ -123,19 +131,24 @@ def _get_switch_mask(net, element, switch_element, open_switches):
     open_element_mask = np.isin(net[element].index, open_elements, invert=True)
     return open_element_mask
 
-def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
+
+def coords_from_igraph(
+        graph: "igraph.Graph",
+        roots: Iterable,
+        meshed: bool = False,
+        calculate_meshed: bool = False
+) -> list[list[float]]:
     """
     Create a list of generic coordinates from an igraph graph layout.
 
-    :param graph: The igraph graph on which the coordinates shall be based
-    :type graph: igraph.Graph
-    :param roots: The root buses of the graph
-    :type roots: iterable
-    :param meshed: determines if the graph has any meshes
-    :type meshed: bool, default False
-    :param calculate_meshed: determines whether to calculate the meshed status
-    :type calculate_meshed: bool, default False
-    :return: coords - list of coordinates from the graph layout
+    Parameters:
+        graph: The igraph graph on which the coordinates shall be based
+        roots: The root buses of the graph
+        meshed: determines if the graph has any meshes
+        calculate_meshed: determines whether to calculate the meshed status
+
+    Return:
+        list of coordinates from the graph layout
     """
     if calculate_meshed:
         meshed = False
@@ -151,15 +164,19 @@ def coords_from_igraph(graph, roots, meshed=False, calculate_meshed=False):
     return list(zip(*layout.coords))
 
 
-def coords_from_nxgraph(mg=None, layout_engine='neato'):
+def coords_from_nxgraph(
+        mg: networkx.Graph = None,
+        layout_engine: str = 'neato'
+) -> list[list[float]]:
     """
     Create a list of generic coordinates from a networkx graph layout.
 
-    :param mg: The networkx graph on which the coordinates shall be based
-    :type mg: networkx.Graph
-    :param layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
-    :type layout_engine: str
-    :return: coords - list of coordinates from the graph layout
+    Parameters:
+        mg: The networkx graph on which the coordinates shall be based
+        layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
+
+    Return:
+         list of coordinates from the graph layout
     """
     # workaround for bug in agraph
     for u, v in mg.edges(data=False):
@@ -171,42 +188,43 @@ def coords_from_nxgraph(mg=None, layout_engine='neato'):
     return list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(mg, prog=layout_engine).values()))))
 
 
-def create_generic_coordinates(net, mg=None, library="igraph",
-                               respect_switches=False,
-                               geodata_table="bus",
-                               buses=None,
-                               overwrite=False,
-                               layout_engine='neato',
-                               trafo_length_km=0.01,
-                               switch_length_km=0.001):
+def create_generic_coordinates(
+        net: pandapowerNet,
+        mg: networkx.Graph = None,
+        library: str = "igraph",
+        respect_switches: bool = False,
+        geodata_table: str = "bus",
+        buses: Iterable[int] = None,
+        overwrite: bool = False,
+        layout_engine: str = 'neato',
+        trafo_length_km: float = 0.01,
+        switch_length_km: float = 0.001
+) -> pandapowerNet:
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches
     and rings. It will remove out of service buses/lines from the net. The coordinates will be
     created either by igraph or by using networkx library.
 
-    :param net: pandapower network
-    :type net: pandapowerNet
-    :param mg: Existing networkx multigraph, if available. Convenience to save computation time.
-    :type mg: networkx.Graph
-    :param respect_switches: respect switches in a network for generic coordinates
-    :type respect_switches: bool
-    :param library: "igraph" to use igraph package or "networkx" to use networkx package
-    :type library: str
-    :param geodata_table: table to write the generic geodatas to
-    :type geodata_table: str
-    :param buses: buses for which generic geodata are created, all buses will be used by default
-    :type buses: list
-    :param overwrite: overwrite existing geodata
-    :type overwrite: bool
-    :param layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
-    :type layout_engine: str
-    :return: net - pandapower network with added geo coordinates for the buses
+    Parameters:
+        net: pandapower network
+        mg: Existing networkx multigraph, if available. Convenience to save computation time.
+        respect_switches: respect switches in a network for generic coordinates
+        library: "igraph" to use igraph package or "networkx" to use networkx package
+        geodata_table: table to write the generic geodatas to
+        buses: buses for which generic geodata are created, all buses will be used by default
+        overwrite: overwrite existing geodata
+        layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
 
-    :Example:
+    Return:
+         the pandapower network with added geo coordinates for the buses.
+         Does not copy the network, so the original network will be modified!
+
+    Example:
         >>> net = create_generic_coordinates(net)
     """
-
-    _prepare_geodata_table(net, geodata_table, overwrite)
+    if buses is None:
+        buses = net[geodata_table].index.tolist()
+    _prepare_geodata_table(net, geodata_table, overwrite, buses)
     if library == "igraph":
         if not IGRAPH_INSTALLED:
             soft_dependency_error("build_igraph_from_pp()", "igraph")
@@ -224,23 +242,38 @@ def create_generic_coordinates(net, mg=None, library="igraph",
     else:
         raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
     if len(coords):
-        net[geodata_table]["geo"] = pd.Series(
-            map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords)),
-            index=net[geodata_table].index if buses is None else buses,
+        geojson_strings: list[str] = list(
+            map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords))
         )
+        net[geodata_table].loc[buses, "geo"] = pd.Series(data=geojson_strings, index=buses)
     return net
 
 
-def _prepare_geodata_table(net, geodata_table, overwrite):
-    if geodata_table in net and "geo" in net[geodata_table] and net[geodata_table]["geo"].dropna().shape[0]:
+def _prepare_geodata_table(
+        net: pandapowerNet, geodata_table: str, overwrite: bool, elements: Iterable[int] | None
+) -> None:
+    if geodata_table not in net or "geo" not in net[geodata_table]:
+        try:
+            add_column_to_df(net, geodata_table, "geo")
+        except KeyError as e:
+            logger.warning("Creating geodata for a unknown table")
+            if geodata_table not in net:
+                net[geodata_table] = pd.DataFrame(columns=["geo"], index=elements, dtype=pd.StringDtype())
+            else:
+                net[geodata_table]["geo"] = pd.NA
+    if elements is None:
+        elements = net[geodata_table].index.tolist()
+    try:
+        net[geodata_table].loc[elements]
+    except KeyError as e:
+        logger.error(f"While preparing geodata table for {geodata_table} a nonexistent bus was passed!")
+        raise e
+    if net[geodata_table].loc[elements, "geo"].dropna().shape[0]:
         if overwrite:
-            net[geodata_table] = net[geodata_table].drop("geo", axis=1)
-            net[geodata_table] = net[geodata_table].dropna(how='all')
+            net[geodata_table].loc[elements, "geo"] = pd.NA
         else:
             raise UserWarning(f"Table {geodata_table} is not empty - use overwrite=True to overwrite existing geodata")
 
-    if geodata_table not in net:
-        net[geodata_table] = pd.DataFrame(columns=["geo"])
 
 def fuse_geodata(net):
     mg = create_nxgraph(net, include_lines=False, include_impedances=False, respect_switches=False)
@@ -255,4 +288,5 @@ def fuse_geodata(net):
                     mean_lon = np.mean([coord[0] for coord in coordinates])
                 else:
                     mean_lon, mean_lat = geo.coordinates
-                net.bus.geo.loc[bus] = geojson.dumps(geojson.Point((mean_lon, mean_lat)))
+                geojson_string: str = geojson.dumps(geojson.Point((mean_lon, mean_lat)))
+                net.bus.at[bus, "geo"] = geojson_string

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -498,7 +496,3 @@ class PQVArea4105(BasePQVArea):
         super().__init__(raise_merge_overlap=raise_merge_overlap)
         self.pq_area = PQArea4105(variant)
         self.qv_area = QVArea4105(variant)
-
-
-if __name__ == "__main__":
-    pass

@@ -14,54 +14,35 @@ from pandapower.topology.graph_searches import connected_component, connected_co
 logger = logging.getLogger(__name__)
 
 
-def getFromDict(dict_, keys):
-    """ Get value from nested dict """
-    return reduce(operator.getitem, keys, dict_)
-
-
-def setInDict(dict_, keys, value):
-    """ Set value to nested dict """
-    getFromDict(dict_, keys[:-1])[keys[-1]] = value
-
-
-def appendSetInDict(dict_, keys, set_):
-    """ Use case specific: append existing value of type set in nested dict """
-    getFromDict(dict_, keys[:-1])[keys[-1]] |= set_
-
-
-def setSetInDict(dict_, keys, set_):
-    """ Use case specific: set new or append existing value of type set in nested dict """
-    if isinstance(getFromDict(dict_, keys[:-1]), dict):
-        if keys[-1] in getFromDict(dict_, keys[:-1]).keys():
-            if isinstance(getFromDict(dict_, keys), set):
-                appendSetInDict(dict_, keys, set_)
-            else:
-                raise ValueError("The set in the nested dict cannot be appended since it actually "
-                                 "is not a set but a " + str(type(getFromDict(dict_, keys))))
-        else:
-            setInDict(dict_, keys, set_)
-    else:
-        raise ValueError("This function expects a dict for 'getFromDict(dict_, " + str(keys[:-1]) +
-                         ")', not a" + str(type(getFromDict(dict_, keys[:-1]))))
-
-
 def append_set_to_dict(dict_, set_, keys):
-    """ Appends a nested dict by the values of a set, independant if the keys already exist or not.
+    """
+    Set ``set_`` in a nested dictionary ``dict_`` using the sequence ``keys``
+    
+    Parameters:
+        dict_: The dictionary to modify (will update in place).
+        set_: The value to store at the deepest level.
+        keys: A sequence of keys that defines the nesting path.
+        
+    Raises:
+        ValueError: if a key (except the last) exists but is not a dictionary.
     """
     keys = ensure_iterability(keys)
 
     # ensure that the dict way to the last key exist
-    for pos, _ in enumerate(keys[:-1]):
-        if isinstance(getFromDict(dict_, keys[:pos]), dict):
-            if keys[pos] not in getFromDict(dict_, keys[:pos]).keys():
-                setInDict(dict_, keys[:pos + 1], dict())
-        else:
-            raise ValueError("This function expects a dict for 'getFromDict(dict_, " +
-                             str(keys[:pos]) + ")', not a" + str(type(getFromDict(
-                dict_, keys[:pos]))))
-
+    current = dict_
+    for k in keys[:-1]:
+        if k not in current:
+            current[k] = {}
+        elif not isinstance(current.get(k), dict):
+            raise ValueError(f"This function expects a dict for '{k}', not a {type(current[k])}")
+        current = current[k]
     # set the value
-    setSetInDict(dict_, keys, set_)
+    if keys[-1] not in current:
+        current[keys[-1]] = set_
+    elif isinstance(current[keys[-1]], set):
+        current[keys[-1]].update(set_)
+    else:
+        raise ValueError(f"This function expects a set for '{keys[-1]}', not a {type(current[keys[-1]])}")
 
 
 def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
@@ -75,7 +56,7 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
         **all_boundary_branches** (dict) - defines which element indices are boundary branches.
             The dict keys must be pandapower elements, e.g. "line" or "trafo"
     """
-    include = dict.fromkeys(["line", "trafo", "trafo3w", "impedance"])
+    include = {"line": None, "trafo": None, "trafo3w": None, "impedance": None}
     for elm in include.keys():
         if elm in all_boundary_branches.keys():
             include[elm] = net[elm].index.difference(all_boundary_branches[elm])
@@ -101,9 +82,9 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
             for i, set_ in enumerate(ccl):
                 if set_.intersection(areas[-1]):
                     areas[-1] |= ccl.pop(i)
-
+    
     for i, area in enumerate(areas):
-        net.bus.loc[list(area), "zone"] = i
+        net.bus.loc[list(area), "zone"] = str(i)
 
 
 def get_boundaries_by_bus_zone_with_boundary_branches(net):
@@ -175,11 +156,9 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
         branch_dict[elm] += [bus]
 
     zones = net.bus.zone.unique()
-    boundary_branches = {zone if net.bus.zone.dtype == object else zone.item():
-                             dict() for zone in zones}
-    boundary_branches["all"] = dict()
-    boundary_buses = {zone if net.bus.zone.dtype == object else zone.item():
-                          {"all": set(), "internal": set(), "external": set()} for zone in zones}
+    boundary_branches = {zone: {} for zone in zones}
+    boundary_branches["all"] = {}
+    boundary_buses = {zone: {"all": set(), "internal": set(), "external": set()} for zone in zones}
     boundary_buses["all"] = set()
 
     for elm, buses in branch_dict.items():
