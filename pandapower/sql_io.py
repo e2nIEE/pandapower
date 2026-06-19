@@ -1,7 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import pandas as pd
 import numpy as np
@@ -28,12 +28,14 @@ except ImportError:
 
 import logging
 
+if TYPE_CHECKING:
+    import psycopg.sql as psql
+
 logger = logging.getLogger(__name__)
 
 
-def to_sql_str(string: str) -> psql.Identifier:
+def to_sql_str(string: str) -> "psql.Identifier":
     return psql.Identifier(*string.split('.'))
-
 
 
 def match_sql_type(dtype):
@@ -75,17 +77,12 @@ def download_sql_table(cursor, table_name, **id_columns):
         raise UserWarning(f"table {table_name} does not exist or the user has no access to it")
 
     if len(id_columns.keys()) == 0:
-        query = "SELECT * FROM {0}".format(
-            to_sql_str(table_name)
-        )
+        query = "SELECT * FROM {0}".format(to_sql_str(table_name))
     else:
         columns_string = ' AND '.join(
             ["{0} = {1}".format(to_sql_str(k).as_string(cursor), to_sql_str(v).as_string(cursor)) for k, v in
              id_columns.items()])
-        query = "SELECT * FROM {0} WHERE {1}".format(
-            to_sql_str(table_name),
-            columns_string
-        )
+        query = "SELECT * FROM {0} WHERE {1}".format(to_sql_str(table_name), columns_string)
     cursor.execute(query)
     colnames = [desc[0] for desc in cursor.description]
     table = cursor.fetchall()
@@ -196,10 +193,10 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column)
     # create a "catalogue" table to keep track of all grids available in the DB
     query = "INSERT INTO {0}({1}) VALUES({2}) RETURNING {3}".format(
-        to_sql_str(catalogue_table_name),
-        to_sql_str(grid_id_column),
-        'DEFAULT' if grid_id is None else to_sql_str(grid_id),
-        to_sql_str(grid_id_column)
+        to_sql_str(catalogue_table_name).as_string(cursor),
+        to_sql_str(grid_id_column).as_string(cursor),
+        'DEFAULT' if grid_id is None else to_sql_str(grid_id).as_string(cursor),
+        to_sql_str(grid_id_column).as_string(cursor)
     )
     cursor.execute(query)
     conn.commit()
@@ -208,13 +205,9 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
 
 
 def add_timestamp_column(conn, cursor, table_name):
-    cursor.execute("ALTER TABLE {0} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;".format(
-        to_sql_str(table_name)
-    ))
+    cursor.execute("ALTER TABLE {0} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;".format(to_sql_str(table_name)))
     conn.commit()
-    cursor.execute(f"ALTER TABLE {0} ALTER COLUMN timestamp SET DEFAULT now();".format(
-        to_sql_str(table_name)
-    ))
+    cursor.execute("ALTER TABLE {0} ALTER COLUMN timestamp SET DEFAULT now();".format(to_sql_str(table_name)))
     conn.commit()
 
 

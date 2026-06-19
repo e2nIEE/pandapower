@@ -92,6 +92,7 @@ typing = [
     "types-tqdm~=4.67",
     "scipy-stubs~=1.15",
     "pandera[mypy]~=0.26.1"
+    "psycopg~=3.2"
 ]
 
 all = ["pandapower[plotting,performance,fileio,converter,pgm,control]"]
