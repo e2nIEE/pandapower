@@ -20,7 +20,7 @@ from pandapower.auxiliary import _preserve_dtypes
 from pandapower.sql_io import (
     download_sql_table, to_postgresql, from_postgresql, delete_postgresql_net, PSYCOPG_INSTALLED
 )
-from pandapower.test import assert_res_equal, test_path
+from pandapower.test import assert_res_equal
 
 if PSYCOPG_INSTALLED:
     import psycopg
@@ -43,13 +43,8 @@ def net_in(request):
 
 
 def get_postgresql_connection_data() -> tuple[str | None, str | None]:
-    filename = os.path.join(test_path, "test_files", "postgresql_connect_data.json")
-    if not os.path.isfile(filename):
-        return None, None
-    with open(filename) as fp:
-        connect_data = json.load(fp)
-        dsn = connect_data.pop("dsn")
-        schema = connect_data.pop("schema")
+    dsn = os.getenv('DSN', None)
+    schema = os.getenv('SCHEMA', None)
     return dsn, schema
 
 
