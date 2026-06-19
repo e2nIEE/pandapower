@@ -23,10 +23,6 @@ if PSYCOPG_INSTALLED:
     import psycopg
     import psycopg.errors
 
-
-# FIXME: Tests will be skipped if psycopg is not installed even in pipeline and pipeline will not fail!
-#  This should be fixed so that they are never skipped in the pipeline!
-
 @pytest.fixture(params=[case9, case14, case39, simple_mv_open_ring_net,
                         create_cigre_network_hv, mv_oberrhein])
 def net_in(request):
