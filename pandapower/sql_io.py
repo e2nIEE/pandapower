@@ -77,12 +77,11 @@ def download_sql_table(cursor, table_name, **id_columns):
         raise UserWarning(f"table {table_name} does not exist or the user has no access to it")
 
     if len(id_columns.keys()) == 0:
-        query = "SELECT * FROM {0}".format(to_sql_str(table_name))
+        query = psql.SQL("SELECT * FROM {}").format(to_sql_str(table_name))
     else:
-        columns_string = ' AND '.join(
-            ["{0} = {1}".format(to_sql_str(k).as_string(cursor), to_sql_str(v).as_string(cursor)) for k, v in
-             id_columns.items()])
-        query = "SELECT * FROM {0} WHERE {1}".format(to_sql_str(table_name), columns_string)
+        columns_string = psql.SQL(' AND ').join(
+            [psql.SQL("{} = {}").format(to_sql_str(k), to_sql_str(v)) for k, v in id_columns.items()])
+        query = psql.SQL("SELECT * FROM {} WHERE {}").format(to_sql_str(table_name), columns_string)
     cursor.execute(query)
     colnames = [desc[0] for desc in cursor.description]
     table = cursor.fetchall()
@@ -127,14 +126,19 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
 
     # check if all columns already exist and if not, add more columns
     existing_columns = get_sql_table_columns(cursor, table_name)
-    new_columns = [('{0}'.format(to_sql_str(c).as_string(cursor)), t) for c, t in
+    new_columns = [(to_sql_str(c), t) for c, t in
                    zip(sql_columns, sql_column_types) if c not in existing_columns]
     if len(new_columns) > 0:
         logger.info(f"adding columns {new_columns} to table {table_name}")
-        column_statement = ", ".join(f"ADD COLUMN {c} {t}" for c, t in new_columns)
-        query = "ALTER TABLE {0} {1};".format(
-            to_sql_str(table_name),
-            column_statement
+        query = psql.SQL("ALTER TABLE {table} {add_columns};").format(
+            table=to_sql_str(table_name),
+            add_columns=psql.SQL(',').join([
+                psql.SQL("ADD COLUMN {column} {type_}").format(
+                    column=col,
+                    type_=type_
+                )
+                for col, type_ in new_columns
+            ])
         )
         cursor.execute(query)
         conn.commit()
@@ -165,8 +169,11 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
         if download:
             raise UserWarning(f"grid catalogue {table_name} does not exist")
         else:
-            query = f"CREATE TABLE {table_name} ({grid_id_column} BIGSERIAL PRIMARY KEY, " \
-                    f"timestamp TIMESTAMPTZ DEFAULT now());"
+            query = psql.SQL(
+                "CREATE TABLE {table_name}({column} BIGSERIAL PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT now());").format(
+                table_name=to_sql_str(table_name),
+                column=to_sql_str(grid_id_column)
+            )
             cursor.execute(query)
     else:
         existing_columns = get_sql_table_columns(cursor, table_name)
@@ -176,9 +183,9 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
             if download:
                 raise UserWarning(f"grid_id ({grid_id_column}) is None: {grid_id}")
             return  # we don't need to check for duplicates if grid_id is None (means we are uploading a new net)
-        query = "SELECT COUNT(*) FROM {0} where {1}=%s".format(
+        query = psql.SQL("SELECT COUNT(*) FROM {} where {}=%s").format(
             to_sql_str(table_name),
-            to_sql_str(grid_id_column).as_string(cursor)
+            to_sql_str(grid_id_column)
         )
         cursor.execute(query, (grid_id,))
         (found,) = cursor.fetchone()
@@ -192,11 +199,10 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
     # check if a grid with the provided ids was already added
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column)
     # create a "catalogue" table to keep track of all grids available in the DB
-    query = "INSERT INTO {0}({1}) VALUES({2}) RETURNING {3}".format(
-        to_sql_str(catalogue_table_name).as_string(cursor),
-        to_sql_str(grid_id_column).as_string(cursor),
-        'DEFAULT' if grid_id is None else to_sql_str(grid_id).as_string(cursor),
-        to_sql_str(grid_id_column).as_string(cursor)
+    query = psql.SQL("INSERT INTO {catalogue}({column}) VALUES({value}) RETURNING {column}").format(
+        catalogue=to_sql_str(catalogue_table_name),
+        column=to_sql_str(grid_id_column),
+        value='DEFAULT' if grid_id is None else to_sql_str(grid_id),
     )
     cursor.execute(query)
     conn.commit()
@@ -205,19 +211,19 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
 
 
 def add_timestamp_column(conn, cursor, table_name):
-    cursor.execute("ALTER TABLE {0} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;".format(to_sql_str(table_name)))
+    cursor.execute(
+        psql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;").format(to_sql_str(table_name)))
     conn.commit()
-    cursor.execute("ALTER TABLE {0} ALTER COLUMN timestamp SET DEFAULT now();".format(to_sql_str(table_name)))
+    cursor.execute(psql.SQL("ALTER TABLE {} ALTER COLUMN timestamp SET DEFAULT now();").format(to_sql_str(table_name)))
     conn.commit()
 
 
 def create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name):
-    query = "CREATE TABLE IF NOT EXISTS {0}({1} BIGINT, FOREIGN KEY({2}) REFERENCES {3}({4}) ON DELETE CASCADE);".format(
-        to_sql_str(table_name),
-        to_sql_str(grid_id_column),
-        to_sql_str(grid_id_column),
-        to_sql_str(catalogue_table_name),
-        to_sql_str(grid_id_column),
+    query = psql.SQL(
+        "CREATE TABLE IF NOT EXISTS {table}({column} BIGINT, FOREIGN KEY({column}) REFERENCES {catalogue}({column}) ON DELETE CASCADE);").format(
+        table=to_sql_str(table_name),
+        column=to_sql_str(grid_id_column),
+        catalogue=to_sql_str(catalogue_table_name),
     )
     cursor.execute(query)
     conn.commit()
@@ -251,7 +257,7 @@ def delete_postgresql_net(
         cursor = conn.cursor()
         catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
         check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
-        query = "DELETE FROM {0} WHERE {1}=%s;".format(
+        query = psql.SQL("DELETE FROM {} WHERE {}=%s;").format(
             to_sql_str(catalogue_table_name),
             to_sql_str(grid_id_column),
         )
