@@ -1,4 +1,3 @@
-
 ==============
 CIGRE Networks
 ==============
@@ -11,10 +10,12 @@ integration at high voltage, medium voltage and low voltage and at the desired d
 
 .. note::
 
-    Source for this network is the final Report of Task Force C6.04.02 [1]: `"Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources" <http://www.e-cigre.org/Order/select.asp?ID=729590>`_, 2014
+    Source for this network is the final Report of Task Force C6.04.02 [1]:
+    `Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources - Reference: 575 - 2014. <https://www.e-cigre.org/publications/detail/575-benchmark-systems-for-network-integration-of-renewable-and-distributed-energy-resources.html>`__
 
     See also a correlating Paper with tiny changed network parameters [2]:
-    `K. Rudion, A. Orths, Z. A. Styczynski and K. Strunz, Design of benchmark of medium voltage distribution network for investigation of DG integration <http://ieeexplore.ieee.org/document/1709447/?arnumber=1709447&tag=1>`_ 2006 IEEE Power Engineering Society General Meeting, Montreal, 2006
+    `K. Rudion, A. Orths, Z. A. Styczynski and K. Strunz, Design of benchmark of medium voltage distribution network for investigation of DG integration <https://ieeexplore.ieee.org/document/1709447/?arnumber=1709447&tag=1>`__
+    2006 IEEE Power Engineering Society General Meeting, Montreal, 2006
 
 High voltage transmission network
 ---------------------------------
@@ -44,7 +45,7 @@ High voltage transmission network
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
 
 
 
@@ -74,7 +75,7 @@ Medium voltage distribution network
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
 
 
 ---------------------------
@@ -115,7 +116,7 @@ Although the case study mentions the High Voltage as 220 kV, we assume 110 kV ag
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
 
 
 ---------------------------
@@ -159,7 +160,7 @@ considered. Although the case study mentions the High Voltage as 220 kV, we assu
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
 
 
 ---------------------------
@@ -191,4 +192,8 @@ Low voltage distribution network
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
+
+
+.. _[Source 1]: https://www.e-cigre.org/publications/detail/575-benchmark-systems-for-network-integration-of-renewable-and-distributed-energy-resources.html
+.. _[Source 2]: https://ieeexplore.ieee.org/document/1709447/?arnumber=1709447&tag=1

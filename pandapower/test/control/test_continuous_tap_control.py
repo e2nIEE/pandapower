@@ -14,7 +14,7 @@ from pandapower import set_user_pf_options, runpp
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines, create_transformer, \
     create_load, create_bus, create_line, create_transformer3w
 from pandapower.networks import simple_four_bus_system, mv_oberrhein
-from pandapower.toolbox import reindex_buses, create_continuous_bus_index
+from pandapower.toolbox.data_modification import reindex_buses, create_continuous_bus_index
 from pandapower.control import ContinuousTapControl
 
 

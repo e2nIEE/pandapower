@@ -12,6 +12,9 @@ on:
       - 'CHANGELOG.rst'
       - '**/CHANGELOG.rst'
 
+permissions:
+  contents: read
+
 # https://stackoverflow.com/questions/66335225/how-to-cancel-previous-runs-in-the-pr-when-you-push-new-commitsupdate-the-curre
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -330,6 +333,9 @@ jobs:
   tutorial_tests:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        group: [ 1, 2, 3 ]
     steps:
       # UV does not work for julia, do not add it here!
       - uses: actions/checkout@v6
@@ -342,7 +348,7 @@ jobs:
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
         run: |
-          pytest --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
 
   tutorial_warnings_tests:
     needs: build

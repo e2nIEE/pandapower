@@ -124,6 +124,8 @@ class CimConverter:
         self.classes_dict['synchronousMachinesCim16'](cimConverter=self).convert_synchronous_machines_cim16()
         self.classes_dict['asynchronousMachinesCim16'](cimConverter=self).convert_asynchronous_machines_cim16()
         self.classes_dict['energySourcesCim16'](cimConverter=self).convert_energy_sources_cim16()
+        if self.cim_version == 'ltds':
+            self.classes_dict['powerElectronicsConnection'](cimConverter=self).convert_power_electronics_connection()
         # --------- convert shunt elements ---------
         self.classes_dict['linearShuntCompensatorCim16'](cimConverter=self).convert_linear_shunt_compensator_cim16()
         self.classes_dict['nonLinearShuntCompensatorCim16'](
@@ -166,6 +168,10 @@ class CimConverter:
                     message="Creating the coordinates failed, returning the net without coordinates!"))
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                                                      message=traceback.format_exc()))
+
+        # check if SV data should be considered
+        if kwargs.get('use_sv_data_for_assets', False):
+            CreateMeasurements(self.net, self.cim).map_sv_data_from_assets()
 
         # set the datatypes after the conversion, especially for integer and boolean columns
         self.net = pp_tools.set_pp_col_types(net=self.net)

@@ -8,11 +8,19 @@ from copy import deepcopy
 import pandas as pd
 import pytest
 
+try:
+    import matplotlib.pyplot as plt
+
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
 from pandapower.plotting.simple_plot import simple_plot
 
 
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_set_line_geodata_from_bus_geodata():
     net = case9()
     bus_geo_data = deepcopy(net.bus.geo)
@@ -77,6 +85,16 @@ def test_set_line_geodata_from_bus_geodata():
     net.bus.at[4, "geo"] = None
     net.line.geo = deepcopy(empty_line_geo)  # ensure that line geo data is missing
     set_line_geodata_from_bus_geodata(net)
+
+
+def test_simple_hl_plot():
+    # test that plotting works with case9 file
+    net = case9()
+    load_buses = net.load.bus.values
+    load_lines = net.line.loc[net.line.from_bus.isin(load_buses) | net.line.to_bus.isin(load_buses)].index
+    ax = simple_plot(net, highlight_lines=load_lines, highlight_buses=load_buses, show_plot=False)
+
+    assert ax is not None
 
 
 if __name__ == "__main__":

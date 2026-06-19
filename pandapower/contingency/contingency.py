@@ -2,68 +2,90 @@
 
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import warnings
+from packaging.version import Version
+import logging
+from typing import Callable
 
 import numpy as np
 import pandas as pd
-import warnings
-from packaging.version import Version
-
-import logging
+from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 try:
     import lightsim2grid
-    v = Version(lightsim2grid.__version__)
-    if v < Version("0.9.0"):
+    ls2g_version = Version(lightsim2grid.__version__)
+    if ls2g_version < Version("0.9.0"):
         logger.warning("Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid")
         raise ImportError
 
     from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
     from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
-    from lightsim2grid_cpp import SolverType
+    if ls2g_version < Version("0.13.0"):
+        from lightsim2grid_cpp import SolverType
+    else:
+        from lightsim2grid.lightsim2grid_cpp import SolverType
 
     lightsim2grid_installed = True
 except ImportError:
     lightsim2grid_installed = False
 
 try:
-    from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
+    if not lightsim2grid_installed:
+        raise ImportError
+    ls2g_version = Version(lightsim2grid.__version__)
+    if ls2g_version < Version("0.13.0"):
+        from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
+    else:
+        from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
 
     KLU_solver_available = True
 except ImportError:
     KLU_solver_available = False
 
+from pandapower.auxiliary import pandapowerNet
 from pandapower.run import runpp
 
 
-def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None, write_to_net=True,
-                    contingency_evaluation_function=runpp, **kwargs):
+def run_contingency(
+        net: pandapowerNet,
+        nminus1_cases: dict,
+        pf_options: dict | None = None,
+        pf_options_nminus1: dict | None = None,
+        write_to_net: bool = True,
+        contingency_evaluation_function: Callable = runpp,
+        **kwargs
+) -> dict:
     """
     Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
     The variable `temperature_degree_celsius` can be used in addition to `loading_percent` to obtain max. temperature.
     In the returned dictionary, the variable `loading_percent` represents the loading in N-0 case,
     `max_loading_percent` and `min_loading_percent` represent highest and lowest observed `loading_percent` among all
     calculated N-1 cases. The same convention applies to `temperature_degree_celsius` when applicable.
-    This function can be passed through to :func:`pandapower.timeseries.run_timeseries` as the `run_control_fct` argument.
+    This function can be passed through to :func:`pandapower.timeseries.run_timeseries` as the `run_control_fct`
+    argument.
 
-    :param pandapowerNet net: The pandapower network
-    :param dict nminus1_cases: describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}, "trafo3w": {"index": [1]}}
-    :param dict pf_options: options for power flow calculation in N-0 case
-    :param dict pf_options_nminus1: options for power flow calculation in N-1 cases
-    :param bool write_to_net: whether to write the results of contingency analysis to net (in `res_` tables). The results will be written for
-        the following additional variables: table `res_bus` with columns `max_vm_pu`, `min_vm_pu`,
-        tables `res_line`, `res_trafo`, `res_trafo3w` with columns `max_loading_percent`, `min_loading_percent`,
-        `causes_overloading`, `cause_element`, `cause_index`, table `res_line` with columns
-        `max_temperature_degree_celsius`, `min_temperature_degree_celsius` (if `tdpf` set to True)
-        "causes_overloading": does this element, when defining the N-1 case, cause overloading of other elements? the
-        overloading is defined by net.line["max_loading_percent_nminus1"] (if set) or net.line["max_loading_percent"]
-        "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
-        "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
-    :param callable contingency_evaluation_function: function to use for power flow calculation, default runpp
+    Parameters:
+        net: The pandapower network
+        nminus1_cases: describes all N-1 cases, e.g.
+            `{"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}, "trafo3w": {"index": [1]}}`
+        pf_options: options for power flow calculation in N-0 case
+        pf_options_nminus1: options for power flow calculation in N-1 cases
+        write_to_net: whether to write the results of contingency analysis to net (in `res_` tables).
+            The results will be written for the following additional variables: table `res_bus` with columns
+            `max_vm_pu`, `min_vm_pu`,
+            tables `res_line`, `res_trafo`, `res_trafo3w` with columns `max_loading_percent`, `min_loading_percent`,
+            `causes_overloading`, `cause_element`, `cause_index`, table `res_line` with columns
+            `max_temperature_degree_celsius`, `min_temperature_degree_celsius` (if `tdpf` set to True)
+            "causes_overloading": does this element, when defining the N-1 case, cause overloading of other elements?
+            the overloading is defined by net.line["max_loading_percent_nminus1"] (if set) or
+            net.line["max_loading_percent"]
+            "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
+            "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
+        contingency_evaluation_function: function to use for power flow calculation, default runpp
 
-    :return: contingency results dict of arrays per element for index, min/max result
-    :rtype: dict
+    Returns:
+        contingency results dict of arrays per element for index, min/max result
     """
     # set up the dict for results and relevant variables
     # ".get" in case the options have been set in set_user_pf_options:
@@ -127,7 +149,12 @@ def run_contingency(net, nminus1_cases, pf_options=None, pf_options_nminus1=None
     return contingency_results
 
 
-def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=runpp, **kwargs):
+def run_contingency_ls2g(
+        net: pandapowerNet,
+        nminus1_cases: dict,
+        contingency_evaluation_function: Callable = runpp,
+        **kwargs
+):
     """
     Execute contingency analysis using the lightsim2grid library. This works much faster than using
     pandapower.
@@ -156,10 +183,12 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
     "congestion_caused_mva": overall congestion in the grid in MVA during the N-1 case due to the failure of the element
 
-    :param pandapowerNet net: The pandapower network
-    :param dict nminus1_cases: describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
-        Note: trafo3w is not supported
-    :param callable contingency_evaluation_function: function to use for power flow calculation, default runpp (but only relevant for N-0 case)
+    Parameters:
+        net: The pandapower network
+        nminus1_cases: describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
+            Note: trafo3w is not supported
+        contingency_evaluation_function: function to use for power flow calculation, default runpp
+            (but only relevant for N-0 case)
     """
     if not lightsim2grid_installed:
         raise UserWarning("lightsim2grid package not installed. "
@@ -211,17 +240,17 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
     if tps_flag:
-        net.trafo.tap_phase_shifter = tps
-        net.trafo.tap_pos = tps_tap_pos
-        net.trafo.shift_degree = tps_shift_degree
+        net.trafo["tap_phase_shifter"] = tps
+        net.trafo["tap_pos"] = tps_tap_pos
+        net.trafo["shift_degree"] = tps_shift_degree
     if tct2w_flag:
-        net.trafo.tap_changer_type = tct2w
-        net.trafo.tap_pos = tct2w_tap_pos
-        net.trafo.shift_degree = tct2w_shift_degree
+        net.trafo["tap_changer_type"] = tct2w
+        net.trafo["tap_pos"] = tct2w_tap_pos
+        net.trafo["shift_degree"] = tct2w_shift_degree
     if tct3w_flag:
-        net.trafo3w.tap_changer_type = tct3w
-        net.trafo3w.tap_pos = tct3w_tap_pos
-        net.trafo3w.shift_degree = tct3w_shift_degree
+        net.trafo3w["tap_changer_type"] = tct3w
+        net.trafo3w["tap_pos"] = tct3w_tap_pos
+        net.trafo3w["shift_degree"] = tct3w_shift_degree
 
     n_lines = len(net.line)
     n_lines_cases = len(nminus1_cases.get("line", {}).get("index", []))
@@ -243,7 +272,7 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
         s.add_multiple_n1(index)
 
     # s.add_multiple_n1(net.line.index.values.astype(int))
-    v_init = net._ppc["internal"]["V"]
+    v_init = net._ppc["internal"]["V"]  # type: ignore[index]
     s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
     v_res = s.get_voltages()
     s.compute_flows()
@@ -261,8 +290,10 @@ def run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run
     net.trafo["max_loading_percent_nminus1"]
     if "max_loading_percent_nminus1" in net.trafo.columns
     else net.trafo["max_loading_percent"] if n_trafos > 0 else []]
-    voltage_all = np.r_[net.bus.loc[net.line.from_bus.values, "vn_kv"].values if n_lines > 0 else [],
-    net.trafo.vn_hv_kv if n_trafos > 0 else []]
+    voltage_all: NDArray = np.r_[
+        net.bus.loc[net.line.from_bus, "vn_kv"].tolist() if n_lines > 0 else [],
+        net.trafo.vn_hv_kv if n_trafos > 0 else []
+    ]
     flows_all_mva = np.nan_to_num(kamps_all * voltage_all * np.sqrt(3))
     flows_limit_all = np.nan_to_num(max_loading_limit_all / 100 * max_i_ka_limit_all * voltage_all * np.sqrt(3))
 

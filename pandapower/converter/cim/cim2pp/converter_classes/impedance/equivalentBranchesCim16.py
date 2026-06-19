@@ -112,7 +112,7 @@ class EquivalentBranchesCim16:
         eqb['gt_pu'] = 0.
         eqb['bt_pu'] = 0.
         if self.cimConverter.cim_version == '3.0':
-           eqb['in_service'] = eqb.connected & eqb.connected2 & eqb.inService
+           eqb['in_service'] = eqb.connected & eqb.connected2
         elif self.cimConverter.cim_version == 'ltds':
             mapping = self.cimConverter.cim['ssh']['Equipment'][['rdfId', 'inService']]
             mapping = mapping.set_index('rdfId').to_dict()['inService']

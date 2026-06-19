@@ -44,7 +44,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     C{Aeq}, C{Beq}. The functions for evaluating the objective function,
     constraints and Hessian are identical.
 
-    Example from U{http://en.wikipedia.org/wiki/Nonlinear_programming}:
+    Example from U{https://en.wikipedia.org/wiki/Nonlinear_programming}:
         >>> from numpy import array, r_, float64, dot
         >>> from scipy.sparse import csr_matrix
         >>> def f2(x):
@@ -79,7 +79,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
     Ported by Richard Lincoln from the MATLAB Interior Point Solver (MIPS)
     (v1.9) by Ray Zimmerman.  MIPS is distributed as part of the MATPOWER
     project, developed at the Power System Engineering Research Center (PSERC) (PSERC),
-    Cornell. See U{http://www.pserc.cornell.edu/matpower/} for more info.
+    Cornell. See U{https://matpower.org/} for more info.
     MIPS was ported by Ray Zimmerman from C code written by H. Wang for his
     PhD dissertation:
       - "On the Computation and Application of Multi-period
@@ -168,7 +168,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None,
                    - C{lower} - lower bound on optimization variables
                    - C{upper} - upper bound on optimization variables
 
-    @see: U{http://www.pserc.cornell.edu/matpower/}
+    @see: U{https://matpower.org/}
 
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Richard Lincoln

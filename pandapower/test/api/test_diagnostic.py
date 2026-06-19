@@ -114,6 +114,7 @@ class TestInvalidValues:
         net.trafo3w.loc[0, "vk_hv_percent"] = 2.3
         net.trafo3w.loc[0, "vk_mv_percent"] = np.nan
         net.trafo3w.loc[0, "vk_lv_percent"] = 0.0
+        net.trafo3w.loc[0, "vkr_lv_percent"] = 1.0
         net.trafo3w.loc[0, "sn_hv_mva"] = 11
         net.trafo3w.loc[0, "sn_mv_mva"] = "a"
         net.trafo3w.loc[0, "vn_hv_kv"] = -1.5
@@ -137,12 +138,14 @@ class TestInvalidValues:
                 (0, "vn_hv_kv", -1.5, ">0"),
                 (0, "vn_lv_kv", False, ">0"),
                 (0, "vk_percent", 0.0, ">0"),
+                (0, 'vkr_percent', 0.06, 'vkr_percent_larger')
             ],
             "trafo3w": [
                 (0, "sn_mv_mva", "a", ">0"),
                 (0, "vn_hv_kv", -1.5, ">0"),
                 (0, "vn_mv_kv", -1.5, ">0"),
                 (0, "vn_lv_kv", False, ">0"),
+                (0, "vkr_lv_percent", 1.0, "vkr_percent_larger"),
                 (0, "vk_mv_percent", "nan", ">0"),
                 (0, "vk_lv_percent", 0.0, ">0"),
                 (0, "vk_mv_percent", "nan", "<20"),
@@ -179,14 +182,18 @@ class TestInvalidValues:
         else:
             diag_results = {}
         assert diag_results[check_function] == {
+            "gen": [(0, "scaling", "nan", ">=0")],
             "line": [
                 (7, "r_ohm_per_km", -1.0, ">=0"),
                 (8, "x_ohm_per_km", "nan", ">=0"),
                 (8, "c_nf_per_km", "0", ">=0"),
             ],
+            "load": [(0, "scaling", -0.1, ">=0"), (3, "scaling", "1", ">=0")],
+            "sgen": [(0, "scaling", False, ">=0")],
             "trafo": [
                 (0, "vkr_percent", "-1", ">=0"),
                 (0, "vkr_percent", "-1", "<15"),
+                (0, 'vkr_percent', '-1', 'vkr_percent_larger'),
                 (0, "pfe_kw", -1.5, ">=0"),
                 (0, "i0_percent", -0.001, ">=0"),
             ],
@@ -197,9 +204,6 @@ class TestInvalidValues:
                 (0, "vkr_mv_percent", False, "<15"),
                 (0, "pfe_kw", "2", ">=0"),
             ],
-            "gen": [(0, "scaling", "nan", ">=0")],
-            "load": [(0, "scaling", -0.1, ">=0"), (3, "scaling", "1", ">=0")],
-            "sgen": [(0, "scaling", False, ">=0")],
         }
 
         check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))

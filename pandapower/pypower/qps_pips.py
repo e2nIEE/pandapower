@@ -30,7 +30,7 @@ def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):
     constraints are specified with C{A}, C{L}, C{U} instead of C{A}, C{B},
     C{Aeq}, C{Beq}.
 
-    Example from U{http://www.uc.edu/sashtml/iml/chap8/sect12.htm}:
+    Example from U{https://documentation.sas.com/doc/en/pgmsascdc/v_067/imlug/imlug_genstatexpls_sect012.htm}:
 
         >>> from numpy import array, zeros, Inf
         >>> from scipy.sparse import csr_matrix

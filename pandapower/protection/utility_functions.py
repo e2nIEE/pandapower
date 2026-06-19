@@ -1,10 +1,7 @@
 # This function includes various function used for general functionalities such as plotting, grid search
 
 import copy
-from typing import List, Tuple
-
-from matplotlib.collections import PatchCollection
-from typing_extensions import deprecated
+from typing import TYPE_CHECKING
 
 import geojson
 import math
@@ -26,10 +23,13 @@ from pandapower.toolbox.element_selection import get_connected_buses_at_element,
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 
+import warnings
+
 logger = log.getLogger(__name__)
 
 try:
     import matplotlib.pyplot as plt
+    from matplotlib.collections import PatchCollection
 
     MATPLOTLIB_INSTALLED = True
 except ImportError:
@@ -43,7 +43,14 @@ except ImportError:
     MPLCURSORS_INSTALLED = False
     logger.info('could not import mplcursors')
 
-def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> List[Tuple[float, float]]:
+if TYPE_CHECKING:
+    from matplotlib.collections import PatchCollection
+
+
+warnings.filterwarnings('ignore')
+
+
+def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> list[tuple[float, float]]:
     try:
         bl = net.bus.dropna(subset=["geo"]).loc[bus_idx, 'geo']
         if isinstance(bl, pd.Series):
@@ -55,7 +62,7 @@ def _get_coords_from_bus_idx(net: pandapowerNet, bus_idx: pd.Index) -> List[Tupl
     return []
 
 
-def _get_coords_from_line_idx(net: pandapowerNet, line_idx: pd.Index) -> List[Tuple[float, float]]:
+def _get_coords_from_line_idx(net: pandapowerNet, line_idx: pd.Index) -> list[tuple[float, float]]:
     try:
         ll = net.line.dropna(subset=["geo"]).loc[line_idx, 'geo']
         if isinstance(ll, pd.Series):
@@ -120,12 +127,12 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
             net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
-    net.bus.at[max_idx_bus + 1, 'geo'] = None
+    net.bus.loc[max_idx_bus + 1, 'geo'] = None
 
     x1, y1 = _get_coords_from_bus_idx(net, aux_line.from_bus)[0]
     x2, y2 = _get_coords_from_bus_idx(net, aux_line.to_bus)[0]
 
-    net.bus.at[max_idx_bus + 1, "geo"] = geojson.dumps(
+    net.bus.geo.at[max_idx_bus + 1] = geojson.dumps(
         geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True)
     return net
 
@@ -229,25 +236,25 @@ def fuse_bus_switches(net, bus_switches):
     return net
 
 
-def get_fault_annotation(net: pandapowerNet, fault_current: float = .0, font_size_bus: float = 0.06) -> PatchCollection:
+def get_fault_annotation(net: pandapowerNet, fault_current: float = .0, font_size_bus: float = 0.06) -> "PatchCollection":
     max_bus_idx = max(net.bus.dropna(subset=['geo']).index)
     fault_text = f'\tI_sc = {fault_current}kA'
 
-    fault_geo_x_y: Tuple[float, float] = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
+    fault_geo_x_y: tuple[float, float] = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
     fault_geo_x_y = (fault_geo_x_y[0], fault_geo_x_y[1] - font_size_bus + 0.02)
 
     # list of new geo data for line (half position of switch)
     fault_annotate: PatchCollection = create_annotation_collection(
         texts=[fault_text],
         coords=[fault_geo_x_y],
-        size=font_size_bus,
+        size=int(font_size_bus),
         prop=None
     )
 
     return fault_annotate
 
 
-def get_sc_location_annotation(net: pandapowerNet, sc_location: float, font_size_bus: float = 0.06) -> PatchCollection:
+def get_sc_location_annotation(net: pandapowerNet, sc_location: float, font_size_bus: float = 0.06) -> "PatchCollection":
     max_bus_idx = max(net.bus.dropna(subset=['geo']).index)
     sc_text = f'\tsc_location: {sc_location * 100}%'
 
@@ -255,7 +262,7 @@ def get_sc_location_annotation(net: pandapowerNet, sc_location: float, font_size
     sc_geo_x_y = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
     sc_geo_x_y = (sc_geo_x_y[0], sc_geo_x_y[1] + 0.02)
 
-    sc_annotate: PatchCollection = create_annotation_collection(
+    sc_annotate: "PatchCollection" = create_annotation_collection(
         texts=[sc_text],
         coords=[sc_geo_x_y],
         size=font_size_bus,
@@ -369,7 +376,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
                                                               respect_in_service=False)
 
             bus_list = list(get_bus_index)
-            bus_coords: List[Tuple[float, float]] = [
+            bus_coords: list[tuple[float, float]] = [
                 geojson.utils.coords(geojson.loads(net.bus.geo.at[bus])) for bus in bus_list
             ]
 
@@ -798,7 +805,7 @@ def bus_path_from_to_bus(net, radial_start_bus, loop_start_bus, end_bus):
 def get_switches_in_path(net, paths):
     """function calculate the switching times from the  bus path"""
 
-    lines_in_path: List[List] = []
+    lines_in_path: list[list] = []
 
     for path in paths:
         lines_at_path: set = set()

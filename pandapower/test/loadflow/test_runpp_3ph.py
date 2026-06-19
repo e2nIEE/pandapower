@@ -13,7 +13,7 @@ import copy
 
 from pandapower.networks import create_cigre_network_mv
 from pandapower import pp_dir
-from pandapower import replace_line_by_impedance
+from pandapower.toolbox.grid_modification import replace_line_by_impedance
 from pandapower.auxiliary import get_free_id
 from pandapower.create import (
     create_empty_network,
@@ -40,7 +40,7 @@ from pandapower.test.consistency_checks import (
     trafo_currents_consistent_3ph,
 )
 from pandapower.test.loadflow.PF_Results import get_PF_Results
-from pandapower.toolbox import dataframes_equal
+from pandapower.toolbox.comparison import dataframes_equal
 from pandapower.test.conftest import result_test_network
 from pandapower.test.helper_functions import add_grid_connection
 from pandapower.test.loadflow.test_runpp import get_isolated

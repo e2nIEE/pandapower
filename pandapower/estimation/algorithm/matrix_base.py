@@ -295,8 +295,8 @@ class BaseAlgebra:
     @staticmethod
     def _merge_mask(mask1, mask2):
         new_mask_tot = np.unique(np.concatenate((mask1,mask2),0))
-        new_mask1 = np.in1d(new_mask_tot, mask1)
-        new_mask2 = np.in1d(new_mask_tot, mask2)
+        new_mask1 = np.isin(new_mask_tot, mask1)
+        new_mask2 = np.isin(new_mask_tot, mask2)
         return new_mask_tot, new_mask1, new_mask2
 
 

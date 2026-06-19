@@ -340,29 +340,25 @@ def test_volt_dep_load_at_inactive_bus():
     # create buses
     bus1 = create_bus(net, index=0, vn_kv=20., name="Bus 1")
     bus2 = create_bus(net, index=1, vn_kv=0.4, name="Bus 2")
-    create_bus(net, index=3, in_service=False, vn_kv=0.4, name="Bus 3")
-    create_bus(net, index=4, vn_kv=0.4, name="Bus 4")
-    create_bus(net, index=5, vn_kv=0.4, name="Bus 4")
+    bus3 = create_bus(net, index=3, in_service=False, vn_kv=0.4, name="Bus 3")
+    bus4 = create_bus(net, index=4, vn_kv=0.4, name="Bus 4")
+    bus5 = create_bus(net, index=5, vn_kv=0.4, name="Bus 5")
 
     # create bus elements
     create_ext_grid(net, bus=bus1, vm_pu=1.02, name="Grid Connection")
-    create_load(net, bus=4, p_mw=0.1, q_mvar=0.05, name="Load3", const_i_p_percent=100)
+    create_load(net, bus=bus4, p_mw=0.1, q_mvar=0.05, name="Load3", const_i_p_percent=100)
     create_load(net, bus=5, p_mw=0.1, q_mvar=0.05, name="Load4")
 
     # create branch elements
-    create_transformer(net, hv_bus=bus1, lv_bus=bus2, std_type="0.4 MVA 20/0.4 kV",
-                               name="Trafo")
-    create_line(net, from_bus=1, to_bus=3, length_km=0.1, std_type="NAYY 4x50 SE",
-                        name="Line")
-    create_line(net, from_bus=1, to_bus=4, length_km=0.1, std_type="NAYY 4x50 SE",
-                        name="Line")
-    create_line(net, from_bus=1, to_bus=5, length_km=0.1, std_type="NAYY 4x50 SE",
-                        name="Line")
+    create_transformer(net, hv_bus=bus1, lv_bus=bus2, std_type="0.4 MVA 20/0.4 kV", name="Trafo")
+    create_line(net, from_bus=bus2, to_bus=bus3, length_km=0.1, std_type="NAYY 4x50 SE", name="Line0")
+    create_line(net, from_bus=bus2, to_bus=bus4, length_km=0.1, std_type="NAYY 4x50 SE", name="Line1")
+    create_line(net, from_bus=bus2, to_bus=bus5, length_km=0.1, std_type="NAYY 4x50 SE", name="Line2")
 
     runpp(net)
-    assert not np.isnan(net.res_load.p_mw.at[1])
-    assert not np.isnan(net.res_bus.p_mw.at[5])
-    assert net.res_bus.p_mw.at[3] == 0
+    assert not np.isnan(net.res_load.p_mw.at[bus2])
+    assert not np.isnan(net.res_bus.p_mw.at[bus5])
+    assert np.isnan(net.res_bus.p_mw.at[bus3])
 
 
 def test_two_oos_buses():

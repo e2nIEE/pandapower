@@ -13,32 +13,32 @@ from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VM
 from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC, gen_cols
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.auxiliary import _subnetworks, _sum_by_group
+from pandapower.auxiliary import _subnetworks, _sum_by_group, pandapowerNet
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_SET_VM_PU, SSC_CONTROLLABLE
-from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE, VSC_MODE_AC_V, \
-    VSC_MODE_AC_SL
+from pandapower.pypower.idx_vsc import (
+    VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE, VSC_MODE_AC_V, VSC_MODE_AC_SL
+)
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def _build_gen_ppc(net, ppc):
+def _build_gen_ppc(net: pandapowerNet, ppc: dict):
     """
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be floated afterwards.
 
-    **INPUT**:
-        **net** -The pandapower format network
-
-        **ppc** - The PYPOWER format network to fill in values
+    Parameters:
+        net: The pandapower format network
+        ppc: The PYPOWER format network to fill in values
     """
 
     mode = net["_options"]["mode"]
     distributed_slack = net["_options"]["distributed_slack"]
 
     _is_elements = net["_is_elements"]
-    gen_order = dict()
+    gen_order: dict[str, tuple[int, int]] = {}
     f = 0
     for element in ["ext_grid", "gen"]:
         f = add_gen_order(gen_order, element, _is_elements, f)
@@ -358,7 +358,7 @@ def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
             ppc["gen"][f:t, PMAX] = tab["max_p_mw"].values[is_element] + delta
 
 
-def _check_voltage_setpoints_at_same_bus(ppc):
+def _check_voltage_setpoints_at_same_bus(ppc: dict):
     """
     Checks if voltage-controlling elements (generators, SSC, VSC) at the same bus have different setpoints.
 
@@ -367,21 +367,17 @@ def _check_voltage_setpoints_at_same_bus(ppc):
     It raises a UserWarning if such discrepancies are found.
 
     Parameters:
-    -----------
-    ppc : dict
-        The grid data structure, that contains grid data arrays
+        ppc: The grid data structure, that contains grid data arrays
 
     Raises:
-    -------
-    UserWarning:
-        If there are buses with voltage controlling elements that have different voltage setpoints.
+        UserWarning:
+            If there are buses with voltage controlling elements that have different voltage setpoints.
 
     Notes:
-    ------
-    The function specifically checks for voltage setpoints discrepancies between:
-    1. Generators
-    2. Controllable SSCs
-    3. VSCs with voltage control mode on the AC side and controllable state
+        The function specifically checks for voltage setpoints discrepancies between:
+        1. Generators
+        2. Controllable SSCs
+        3. VSCs with voltage control mode on the AC side and controllable state
     """
     # generator buses:
     gen_bus = ppc['gen'][:, GEN_BUS].astype(np.int64)

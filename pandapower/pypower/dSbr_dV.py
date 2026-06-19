@@ -57,7 +57,7 @@ def dSbr_dV(branch, Yf, Yt, V):
     [TN2]  R. D. Zimmerman, "AC Power Flows, Generalized OPF Costs and
     their Derivatives using Complex Matrix Notation", MATPOWER
     Technical Note 2, February 2010.
-    U{http://www.pserc.cornell.edu/matpower/TN2-OPF-Derivatives.pdf}
+    U{https://matpower.org/docs/TN2-OPF-Derivatives.pdf}
 
     @author: Ray Zimmerman (PSERC Cornell)
     """

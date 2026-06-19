@@ -16,7 +16,7 @@ from pandapower.create import create_empty_network, create_buses, create_lines_f
     create_transformers_from_parameters
 from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
-from pandapower.toolbox import drop_buses, fuse_buses
+from pandapower.toolbox.grid_modification import drop_buses, fuse_buses
 
 import logging
 
@@ -363,7 +363,7 @@ def _create_transformers_and_buses(
     max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, (
         "Maximum Current Imax (A) primary", "Max")].values
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
-    z_pu = vn_lv_kv**2 / sn_mva
+    z_pu = vn_hv_kv**2 / sn_mva
     rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
     xk = data[key].xs("Reactance_X(Ω)", level=1, axis=1).values[:, 0] / z_pu
     b0 = data[key].xs("Susceptance_B (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu

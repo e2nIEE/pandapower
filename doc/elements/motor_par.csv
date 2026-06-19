@@ -6,7 +6,7 @@ cos_phi *;float;:math:`0...1`;cosine phi at current operating point
 cos_phi_n *;float;:math:`0...1`;cosine phi at rated power of the motor for short-circuit calculation
 efficiency_percent *;float;:math:`0..100`; Efficiency in percent at current operating point[%]
 efficiency_n_percent *;float;:math:`0..100`; Efficiency in percent at rated power for short-circuit calculation [%]
-loading_percent *;float;:math:`0..100`; Efficiency in percent at rated power for short-circuit calculation [%] [%]
+loading_percent *;float;:math:`0..100`; The mechanical loading in percentage of the rated mechanical power [%]
 scaling *;float;:math:`\geq 0`;scaling factor for active and reactive power
 lrc_pu *;float;:math:`\geq 0`; locked rotor current in relation to the rated motor current [pu]
 rx *;float;:math:`\geq 0`;R/X ratio of the motor for short-circuit calculation.

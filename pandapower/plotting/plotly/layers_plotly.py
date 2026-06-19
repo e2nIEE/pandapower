@@ -38,7 +38,7 @@ def layers_plotly(net, bus_groups, respect_switches=True, use_line_geo=None, col
 
         **projection** (String, None) - defines a projection from which network geo-data will be
         transformed to lat-long. For each projection a string can be found at
-        http://spatialreference.org/ref/epsg/
+        https://spatialreference.org/ref/epsg/
 
         **map_style** (str, 'basic') - enables using mapLibre plot in plotly
 

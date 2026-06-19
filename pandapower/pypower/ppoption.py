@@ -69,9 +69,9 @@ primal/dual interior point method,
 available from: https://projects.coin-or.org/Ipopt/
 500 - CPLEX, requires Python interface to CPLEX solver
 600 - MOSEK, requires Python interface to MOSEK solver
-available from: http://www.mosek.com/
+available from: https://www.mosek.com/
 700 - GUROBI, requires Python interface to Gurobi optimizer
-available from: http://www.gurobi.com/''')
+available from: https://www.gurobi.com/''')
 ]
 
 OUTPUT_OPTIONS = [

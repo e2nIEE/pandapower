@@ -6,13 +6,14 @@
 import pandas as pd
 import pytest
 
+from pandapower import runpp
 from pandapower.create import create_empty_network, create_bus, create_transformer3w, create_transformer, create_line, \
     create_switch, create_buses, create_gens, create_sgens, create_measurement, create_poly_cost
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.toolbox.element_selection import get_element_indices, next_bus, get_connected_elements, \
     get_connected_buses, false_elm_links_loop, get_connected_buses_at_switches, pp_elements, element_bus_tuples, \
-    count_elements, branch_element_bus_dict
+    count_elements, branch_element_bus_dict, get_all_elements
 
 
 def test_get_element_indices():
@@ -235,6 +236,26 @@ def test_count_elements():
     assert len(received.index) == len(pp_elements())
     assert set(received.index) == pp_elements()
 
+
+def test_get_all_elements():
+    net = case9()
+    # get res_ tables
+    runpp(net)
+
+    overview_no_res = get_all_elements(net, include_results=False)
+    overview_with_res = get_all_elements(net, include_results=True)
+
+    res_tables = {
+        name
+        for name, df in net.items()
+        if isinstance(df, pd.DataFrame) and name.startswith("res_") and not df.empty
+    }
+
+    assert not (res_tables & set(overview_no_res["pp_type"].unique()))
+    assert res_tables.issubset(set(overview_with_res["pp_type"].unique()))
+
+    assert len(overview_no_res) == sum(count_elements(net, cost_tables=True))
+    assert len(overview_with_res) == sum(count_elements(net, cost_tables=True, res_elements=True))
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

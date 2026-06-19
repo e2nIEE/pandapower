@@ -245,6 +245,21 @@ def check_switch_type(element, element_index, column):
     return None
 
 
+def check_vkr_larger(element, element_index, column):
+    if column not in ['vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent'] or column not in element:
+        raise TypeError(f"{element}, {column}, not a valid argument for checking vkr_percent.")
+
+    # if vkr_percent, the real part of vk, is larger than vk_percent: Error. (Same for vkr_hv_percent ...)
+    try:
+        if element[column] > element[f'vk_{column[4:]}']:
+            return element_index
+    except TypeError:
+        return element_index
+    return None
+
+
+
+
 def diagnostic(
         net: pandapowerNet,
         report_style: Literal['compact', 'detailed'] | None = 'detailed',

@@ -43,8 +43,7 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
         - C{opt} : optional options structure with the following fields,
         all of which are also optional (default values shown in parentheses)
             - C{alg} (0) - determines which solver to use
-                -   0 = automatic, first available of BPMPD_MEX, CPLEX,
-                        Gurobi, PIPS
+                -   0 = automatic, first available of BPMPD_MEX, CPLEX, Gurobi, PIPS
                 - 100 = BPMPD_MEX
                 - 200 = PIPS, Python Interior Point Solver
                 pure Python implementation of a primal-dual
@@ -68,9 +67,8 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
             - C{pips_opt}  - options dict for L{qps_pips}
             - C{mosek_opt} - options dict for MOSEK
             - C{ot_opt}    - options dict for QUADPROG/LINPROG
-        - C{problem} : The inputs can alternatively be supplied in a single
-        C{problem} dict with fields corresponding to the input arguments
-        described above: C{H, c, A, l, u, xmin, xmax, x0, opt}
+        - C{problem} : The inputs can alternatively be supplied in a single C{problem} dict with fields corresponding to
+        the input arguments described above: C{H, c, A, l, u, xmin, xmax, x0, opt}
 
     Outputs:
         - C{x} : solution vector
@@ -81,15 +79,14 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None,
         - C{output} : output struct with the following fields:
             - C{alg} - algorithm code of solver used
             - (others) - algorithm specific fields
-        - C{lmbda} : dict containing the Langrange and Kuhn-Tucker
-        multipliers on the constraints, with fields:
+        - C{lmbda} : dict containing the Langrange and Kuhn-Tucker multipliers on the constraints, with fields:
             - C{mu_l} - lower (left-hand) limit on linear constraints
             - C{mu_u} - upper (right-hand) limit on linear constraints
             - C{lower} - lower bound on optimization variables
             - C{upper} - upper bound on optimization variables
 
 
-    Example from U{http://www.uc.edu/sashtml/iml/chap8/sect12.htm}:
+    Example from U{https://documentation.sas.com/doc/en/pgmsascdc/v_067/imlug/imlug_genstatexpls_sect012.htm}:
 
         >>> from numpy import array, zeros, Inf
         >>> from scipy.sparse import csr_matrix

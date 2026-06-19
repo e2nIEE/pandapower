@@ -14,7 +14,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
           correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
           pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
           delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
-          pdm_dev_mode=False, **kwargs):  # pragma: no cover
+          pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):  # pragma: no cover
     """
     Runs  optimal power flow from PowerModels.jl via PandaModels.jl
 
@@ -78,7 +78,7 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
                      enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
@@ -94,14 +94,14 @@ def runpm_dc_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  correct_pm_network_data=True, silence=True, pm_model="DCPPowerModel", pm_solver="ipopt",
                  pm_time_limits=None, pm_log_level=0, delete_buffer_file=True, pm_file_path = None,
-                 pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
+                 pm_tol=1e-8, pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):
     """
     Runs linearized optimal power flow from PowerModels.jl via PandaModels.jl
     """
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
                      enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=False, init="flat", numba=True,
@@ -116,14 +116,14 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
                  trafo_model="t", delta=1e-8, trafo3w_losses="hv", check_connectivity=True,
                  pm_solver="ipopt", correct_pm_network_data=True, silence=True,
                  pm_time_limits=None, pm_log_level=0, pm_file_path=None, delete_buffer_file=True,
-                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
+                 opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, init_vm_pu="flat", init_va_degree="flat", **kwargs):
     """
     Runs non-linear optimal power flow from PowerModels.jl via PandaModels.jl
     """
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
                      trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat", enforce_p_lims=False,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
                      enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
                      voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
     _add_opf_options(net, trafo_loading='power', ac=True, init="flat", numba=True,

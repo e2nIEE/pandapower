@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_lines, create_switches, \
     create_loads
@@ -58,6 +59,7 @@ def test_oc_relay_idtoc():
     assert protection_results.trip_melt_time_s.at[4] == 0.07
 
 
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_oc_relay_plots():
     net = oc_relay_net()
     net.switch.at[2, "type"] = 'CB_IDMT'
@@ -103,6 +105,7 @@ def test_select_k_alpha():
         assert net.protection.object.at[q].alpha == alpha_list[q]
 
 
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
 def test_plot_tripped_grid_protection_device():
     net = oc_relay_net()
 

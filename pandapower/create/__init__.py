@@ -10,7 +10,6 @@ from pandapower.create._utils import (
     _check_multiple_elements,
     _cost_existance_check,
     _costs_existance_check,
-    _geodata_to_geo_series,
     _get_index_with_check,
     _get_multiple_index_with_check,
     _group_parameter_list,

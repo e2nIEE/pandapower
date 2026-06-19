@@ -21,7 +21,7 @@ def create_measurement(
     net: pandapowerNet,
     meas_type: MeasurementType,
     element_type: MeasurementElementType,
-    value: Literal["MW", "MVAr", "p.u.", "kA"],
+    value: float,
     std_dev: float,
     element: int,
     side: int | Literal["from", "to"] | Literal["hv", "mv", "lv"] | None = None,
@@ -38,8 +38,7 @@ def create_measurement(
         meas_type: Type of measurement. "v", "p", "q", "i", "va" and "ia" are possible
         element_type: Clarifies which element is measured. "bus", "line", "trafo", "trafo3w", "load", "gen", "sgen",
             "shunt", "ward", "xward" and "ext_grid" are possible
-        value: Measurement value. Units are "MW" for P, "MVAr" for Q, "p.u." for V, "kA" for I. Bus power measurement is
-            in load reference system, which is consistent to the rest of pandapower.
+        value: Measurement value.
         std_dev: Standard deviation in the same unit as the measurement
         element: Index of the measured element
         side: Only used for measured lines or transformers. Side defines at which end of the branch the measurement is
@@ -57,11 +56,11 @@ def create_measurement(
     Example:
         2 MW load measurement with 0.05 MW standard deviation on bus 0:
         
-        >>> create_measurement(net, "p", "bus", 0, 2., 0.05.)
+        >>> create_measurement(net, "p", "bus", 2., 0.05., 0)
 
         4.5 MVar line measurement with 0.1 MVAr standard deviation on the "to_bus" side of line 2:
         
-        >>> create_measurement(net, "q", "line", 2, 4.5, 0.1, "to")
+        >>> create_measurement(net, "q", "line", 4.5, 0.1, 2, "to")
     """
     if meas_type not in ("v", "p", "q", "i", "va", "ia"):
         raise UserWarning(f"Invalid measurement type: {meas_type}")
