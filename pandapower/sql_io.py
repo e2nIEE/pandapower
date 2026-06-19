@@ -206,7 +206,7 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
     query = psql.SQL(query_str).format(
         catalogue=to_sql_str(catalogue_table_name),
         column=to_sql_str(grid_id_column),
-        value=to_sql_str(grid_id),
+        value=None if grid_id is None else to_sql_str(grid_id),
     )
     cursor.execute(query)
     conn.commit()
