@@ -133,10 +133,7 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
         query = psql.SQL("ALTER TABLE {table} {add_columns};").format(
             table=to_sql_str(table_name),
             add_columns=psql.SQL(',').join([
-                psql.SQL("ADD COLUMN {column} {type_}").format(
-                    column=col,
-                    type_=type_
-                )
+                psql.SQL(f"ADD COLUMN {{column}} {type_}").format(column=col)
                 for col, type_ in new_columns
             ])
         )
