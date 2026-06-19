@@ -87,7 +87,6 @@ typing = [
     "mypy~=1.18",
     "pandas-stubs~=2.3",
     "types-shapely~=2.1",
-    "types-psycopg2~=2.9",
     "types-openpyxl~=3.1",
     "types-networkx~=3.4",
     "types-tqdm~=4.67",

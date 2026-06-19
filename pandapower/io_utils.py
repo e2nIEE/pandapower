@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -29,15 +27,6 @@ from enum import Enum
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 
-try:
-    import psycopg2
-    import psycopg2.errors
-    import psycopg2.extras
-
-    PSYCOPG2_INSTALLED = True
-except ImportError:
-    psycopg2 = None  # type: ignore[assignment]
-    PSYCOPG2_INSTALLED = False
 try:
     from pandas.testing import assert_series_equal, assert_frame_equal
 except ImportError:
