@@ -47,14 +47,14 @@ def match_sql_type(dtype):
 
 
 def check_if_sql_table_exists(cursor, table_name):
-    query = r"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = %s AND table_name = %s);"
+    query = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = %s AND table_name = %s);"
     cursor.execute(query, (table_name.split('.')[0], table_name.split('.')[-1]))
     (exists,) = cursor.fetchone()
     return exists
 
 
 def get_sql_table_columns(cursor, table_name):
-    query = r"SELECT * FROM information_schema.columns WHERE table_schema = %s AND table_name = %s;"
+    query = "SELECT * FROM information_schema.columns WHERE table_schema = %s AND table_name = %s;"
     cursor.execute(query, (table_name.split('.')[0], table_name.split('.')[-1]))
     colnames = [desc[0] for desc in cursor.description]
     list_idx = colnames.index("column_name")
@@ -70,14 +70,18 @@ def download_sql_table(cursor, table_name, **id_columns):
         raise UserWarning(f"table {table_name} does not exist or the user has no access to it")
 
     if len(id_columns.keys()) == 0:
-        query = r"SELECT * FROM %s"
-        params = (table_name,)
+        query = "SELECT * FROM {0}".format(
+            psql.Identifier(table_name).as_string(cursor)
+        )
     else:
-        columns_string = ' and '.join([f"{str(k)} = '{str(v)}'" for k, v in id_columns.items()])
-        query = r"SELECT * FROM %s WHERE %s"
-        params = (table_name, columns_string)
-
-    cursor.execute(query, params)
+        columns_string = ' AND '.join(
+            ["{0} = {1}".format(psql.Identifier(k).as_string(cursor), psql.Identifier(v).as_string(cursor)) for k, v in
+             id_columns.items()])
+        query = "SELECT * FROM {0} WHERE {1}".format(
+            psql.Identifier(table_name).as_string(cursor),
+            columns_string
+        )
+    cursor.execute(query)
     colnames = [desc[0] for desc in cursor.description]
     table = cursor.fetchall()
     df = pd.DataFrame(table, columns=colnames)
@@ -121,11 +125,15 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
 
     # check if all columns already exist and if not, add more columns
     existing_columns = get_sql_table_columns(cursor, table_name)
-    new_columns = [('"%s"' % c, t) for c, t in zip(sql_columns, sql_column_types) if c not in existing_columns]
+    new_columns = [('{0}'.format(psql.Identifier(c).as_string(cursor)), t) for c, t in
+                   zip(sql_columns, sql_column_types) if c not in existing_columns]
     if len(new_columns) > 0:
         logger.info(f"adding columns {new_columns} to table {table_name}")
         column_statement = ", ".join(f"ADD COLUMN {c} {t}" for c, t in new_columns)
-        query = f"ALTER TABLE {table_name} {column_statement};"
+        query = "ALTER TABLE {0} {1};".format(
+            psql.Identifier(table_name).as_string(cursor),
+            column_statement
+        )
         cursor.execute(query)
         conn.commit()
 
@@ -166,8 +174,11 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
             if download:
                 raise UserWarning(f"grid_id ({grid_id_column}) is None: {grid_id}")
             return  # we don't need to check for duplicates if grid_id is None (means we are uploading a new net)
-        query = "SELECT COUNT(*) FROM %s where %s=%s"
-        cursor.execute(query, (table_name, grid_id_column, grid_id))
+        query = "SELECT COUNT(*) FROM {0} where {1}=%s".format(
+            psql.Identifier(table_name).as_string(cursor),
+            psql.Identifier(grid_id_column).as_string(cursor)
+        )
+        cursor.execute(query, (grid_id,))
         (found,) = cursor.fetchone()
         if download and found == 0:
             raise UserWarning(f"found no entries in {table_name} where {grid_id_column}={grid_id}")
@@ -230,8 +241,11 @@ def delete_postgresql_net(
         cursor = conn.cursor()
         catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
         check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
-        query = r"DELETE FROM %s WHERE %s=%s;"
-        cursor.execute(query, (catalogue_table_name, grid_id_column, grid_id))
+        query = "DELETE FROM {0} WHERE {1}=%s;".format(
+            psql.Identifier(catalogue_table_name).as_string(cursor),
+            psql.Identifier(grid_id_column).as_string(cursor),
+        )
+        cursor.execute(query, (grid_id,))
         conn.commit()
 
 
