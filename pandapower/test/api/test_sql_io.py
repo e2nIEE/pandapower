@@ -13,12 +13,12 @@ import numpy as np
 import pytest
 import time
 
-from pandapower import reset_results, runpp, pp_dir
+from pandapower import reset_results, runpp
 from pandapower.networks import case9, case14, case39, simple_mv_open_ring_net, create_cigre_network_hv, mv_oberrhein
 from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.auxiliary import _preserve_dtypes
 from pandapower.sql_io import download_sql_table, to_postgresql, from_postgresql, delete_postgresql_net
-from pandapower.test import assert_res_equal
+from pandapower.test import assert_res_equal, test_path
 
 try:
     import psycopg2
@@ -51,7 +51,7 @@ def net_in(request):
 
 
 def get_postgresql_connection_data():
-    filename = os.path.join(pp_dir, "test", "test_files", "postgresql_connect_data.json")
+    filename = os.path.join(test_path, "test_files", "postgresql_connect_data.json")
     if not os.path.isfile(filename):
         return {}, None
     with open(filename) as fp:
