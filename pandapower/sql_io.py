@@ -144,7 +144,7 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
         add_timestamp_column(conn, cursor, table_name)
 
     # SQL query to execute
-    columns = [to_sql_str(c.replace('%', '%%').as_string(cursor)) for c in sql_columns]
+    columns = [to_sql_str(c.replace('%', '%%')) for c in sql_columns]
     query = psql.SQL("INSERT INTO {tbl}({fields}) VALUES({placeholders})").format(
         tbl=to_sql_str(table_name),
         fields=psql.SQL(',').join(columns),
