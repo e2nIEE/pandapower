@@ -199,10 +199,14 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
     # check if a grid with the provided ids was already added
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column)
     # create a "catalogue" table to keep track of all grids available in the DB
-    query = psql.SQL("INSERT INTO {catalogue}({column}) VALUES({value}) RETURNING {column}").format(
+    if grid_id is None:
+        query_str: psql.LiteralString = "INSERT INTO {catalogue}({column}) VALUES(DEFAULT) RETURNING {column}"
+    else:
+        query_str: psql.LiteralString = "INSERT INTO {catalogue}({column}) VALUES({value}) RETURNING {column}"
+    query = psql.SQL(query_str).format(
         catalogue=to_sql_str(catalogue_table_name),
         column=to_sql_str(grid_id_column),
-        value='DEFAULT' if grid_id is None else to_sql_str(grid_id),
+        value=to_sql_str(grid_id),
     )
     cursor.execute(query)
     conn.commit()
