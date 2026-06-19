@@ -31,6 +31,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def to_sql_str(cursor: psycopg.Cursor, string: str) -> str:
+    return psql.Identifier(*string.split('.')).as_string(cursor)
+
+
+
 def match_sql_type(dtype):
     if dtype in ("float", "float32", "float64"):
         return "double precision"
@@ -71,14 +76,14 @@ def download_sql_table(cursor, table_name, **id_columns):
 
     if len(id_columns.keys()) == 0:
         query = "SELECT * FROM {0}".format(
-            psql.Identifier(table_name).as_string(cursor)
+            to_sql_str(cursor, table_name)
         )
     else:
         columns_string = ' AND '.join(
-            ["{0} = {1}".format(psql.Identifier(k).as_string(cursor), psql.Identifier(v).as_string(cursor)) for k, v in
+            ["{0} = {1}".format(to_sql_str(cursor, k), to_sql_str(cursor, v)) for k, v in
              id_columns.items()])
         query = "SELECT * FROM {0} WHERE {1}".format(
-            psql.Identifier(table_name).as_string(cursor),
+            to_sql_str(cursor, table_name),
             columns_string
         )
     cursor.execute(query)
@@ -125,13 +130,13 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
 
     # check if all columns already exist and if not, add more columns
     existing_columns = get_sql_table_columns(cursor, table_name)
-    new_columns = [('{0}'.format(psql.Identifier(c).as_string(cursor)), t) for c, t in
+    new_columns = [('{0}'.format(to_sql_str(cursor, c)), t) for c, t in
                    zip(sql_columns, sql_column_types) if c not in existing_columns]
     if len(new_columns) > 0:
         logger.info(f"adding columns {new_columns} to table {table_name}")
         column_statement = ", ".join(f"ADD COLUMN {c} {t}" for c, t in new_columns)
         query = "ALTER TABLE {0} {1};".format(
-            psql.Identifier(table_name).as_string(cursor),
+            to_sql_str(cursor, table_name),
             column_statement
         )
         cursor.execute(query)
@@ -141,9 +146,9 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
         add_timestamp_column(conn, cursor, table_name)
 
     # SQL query to execute
-    columns = [psql.Identifier(c.replace('%', '%%')) for c in sql_columns]
+    columns = [to_sql_str(cursor, c.replace('%', '%%')) for c in sql_columns]
     query = psql.SQL("INSERT INTO {tbl}({fields}) VALUES({placeholders})").format(
-        tbl=psql.Identifier(*table_name.split('.')),
+        tbl=to_sql_str(cursor, table_name),
         fields=psql.SQL(',').join(columns),
         placeholders=psql.SQL(',').join(psql.Placeholder() * len(sql_columns))
     )
@@ -175,8 +180,8 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
                 raise UserWarning(f"grid_id ({grid_id_column}) is None: {grid_id}")
             return  # we don't need to check for duplicates if grid_id is None (means we are uploading a new net)
         query = "SELECT COUNT(*) FROM {0} where {1}=%s".format(
-            psql.Identifier(table_name).as_string(cursor),
-            psql.Identifier(grid_id_column).as_string(cursor)
+            to_sql_str(cursor, table_name),
+            to_sql_str(cursor, grid_id_column)
         )
         cursor.execute(query, (grid_id,))
         (found,) = cursor.fetchone()
@@ -190,8 +195,12 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
     # check if a grid with the provided ids was already added
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column)
     # create a "catalogue" table to keep track of all grids available in the DB
-    query = f"INSERT INTO {catalogue_table_name}({grid_id_column}) VALUES({'DEFAULT' if grid_id is None else grid_id}) " \
-            f"RETURNING {grid_id_column}"
+    query = "INSERT INTO {0}({1}) VALUES({2}) RETURNING {3}".format(
+        to_sql_str(cursor, catalogue_table_name),
+        to_sql_str(cursor, grid_id_column),
+        'DEFAULT' if grid_id is None else to_sql_str(cursor, grid_id),
+        to_sql_str(cursor, grid_id_column)
+    )
     cursor.execute(query)
     conn.commit()
     (written_grid_id,) = cursor.fetchone()
@@ -199,16 +208,24 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
 
 
 def add_timestamp_column(conn, cursor, table_name):
-    cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;")
+    cursor.execute("ALTER TABLE {0} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;".format(
+        to_sql_str(cursor, table_name)
+    ))
     conn.commit()
-    cursor.execute(f"ALTER TABLE {table_name} ALTER COLUMN timestamp SET DEFAULT now();")
+    cursor.execute(f"ALTER TABLE {0} ALTER COLUMN timestamp SET DEFAULT now();".format(
+        to_sql_str(cursor, table_name)
+    ))
     conn.commit()
 
 
 def create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name):
-    query = f"CREATE TABLE IF NOT EXISTS {table_name}({grid_id_column} BIGINT, " \
-            f"FOREIGN KEY({grid_id_column}) REFERENCES {catalogue_table_name}({grid_id_column})" \
-            f"ON DELETE CASCADE);"
+    query = "CREATE TABLE IF NOT EXISTS {0}({1} BIGINT, FOREIGN KEY({2}) REFERENCES {3}({4}) ON DELETE CASCADE);".format(
+        to_sql_str(cursor, table_name),
+        to_sql_str(cursor, grid_id_column),
+        to_sql_str(cursor, grid_id_column),
+        to_sql_str(cursor, catalogue_table_name),
+        to_sql_str(cursor, grid_id_column),
+    )
     cursor.execute(query)
     conn.commit()
 
@@ -242,8 +259,8 @@ def delete_postgresql_net(
         catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
         check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
         query = "DELETE FROM {0} WHERE {1}=%s;".format(
-            psql.Identifier(catalogue_table_name).as_string(cursor),
-            psql.Identifier(grid_id_column).as_string(cursor),
+            to_sql_str(cursor, catalogue_table_name),
+            to_sql_str(cursor, grid_id_column),
         )
         cursor.execute(query, (grid_id,))
         conn.commit()
