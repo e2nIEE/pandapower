@@ -10,7 +10,6 @@ from pandapower import io_utils, pandapowerNet
 
 try:
     import psycopg
-    import psycopg.extras
     import psycopg.errors
     import psycopg.sql as psql
 
@@ -145,7 +144,7 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
     # for chunk in tqdm(chunked(tuples, batch_size)):
     #     cursor.executemany(query, chunk)
     #     conn.commit()
-    psycopg.extras.execute_batch(cursor, query, tuples, page_size=100)
+    cursor.executemany(query, tuples)
     conn.commit()
 
 
