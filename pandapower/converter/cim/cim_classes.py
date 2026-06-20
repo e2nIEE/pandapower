@@ -385,16 +385,18 @@ class CimParser:
     def _parse_element(self, element, parsed=None):
         if parsed is None:
             parsed = {}
-        for key in element.keys():
-            combined_key = element.tag + '-' + key
+        tag = element.tag
+        for key, value in element.attrib.items():
+            combined_key = tag + '-' + key
             if combined_key not in parsed:
-                parsed[combined_key] = element.attrib.get(key)
+                parsed[combined_key] = value
             else:
-                if not isinstance(parsed[combined_key], list):
-                    parsed[combined_key] = [parsed[combined_key]]
-                parsed[combined_key].append(element.attrib.get(key))
-        if element.tag not in parsed and element.text is not None and element.text.strip(' \t\n\r'):
-            parsed[element.tag] = element.text
+                existing = parsed[combined_key]
+                if not isinstance(existing, list):
+                    existing = parsed[combined_key] = [existing]
+                existing.append(value)
+        if tag not in parsed and element.text is not None and element.text.strip(' \t\n\r'):
+            parsed[tag] = element.text
         for child in element:
             self._parse_element(child, parsed)
         return parsed
@@ -507,19 +509,22 @@ class CimParser:
 
     def _parse_xml_tree(self, xml_tree, profile_name: str, output: dict | None = None):
         output = self.cim if output is None else output
-        # get all CIM elements to parse
-        element_types = pd.Series([ele.tag for ele in xml_tree])
-        element_types = element_types.drop_duplicates()
+        # group the direct children by tag in a single pass; dict insertion order matches the previous
+        # drop_duplicates ordering while avoiding a separate findall scan of the tree per element type
+        elements_by_type: dict[str, list] = {}
+        for ele in xml_tree:
+            tag = ele.tag
+            if not isinstance(tag, str):
+                continue
+            elements_by_type.setdefault(tag, []).append(ele)
         prf_content: dict[str, pd.DataFrame] = {}
         ns_dict = {}
         prf = profile_name
         if prf not in ns_dict:
             ns_dict[prf] = {}
-        for _, element_type in element_types.items():
-            if not isinstance(element_type, str):
-                continue
+        for element_type, elements in elements_by_type.items():
             element_type_c = re.sub('{.*}', '', element_type)
-            prf_content[element_type_c] = self._get_df(xml_tree.findall(element_type))
+            prf_content[element_type_c] = self._get_df(elements)
             # rename the columns (remove the namespaces)
             if element_type_c not in ns_dict[prf]:
                 ns_dict[prf][element_type_c] = {}
