@@ -15,6 +15,28 @@ from pandapower.run import runopp
 import logging
 
 
+def _create_controllable_load_and_sgen_cost_net():
+    vm_max = 1.05
+    vm_min = 0.95
+
+    net = create_empty_network()
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    create_ext_grid(net, 0, controllable=False)
+    create_line_from_parameters(net, 0, 1, 1, name="line2", r_ohm_per_km=0.1,
+                                c_nf_per_km=0.0, max_i_ka=1.0, x_ohm_per_km=0.1,
+                                max_loading_percent=100)
+    load = create_load(net, 1, p_mw=0.5, q_mvar=0.1, controllable=True,
+                       min_p_mw=0.1, max_p_mw=1.0, min_q_mvar=-0.5, max_q_mvar=0.5)
+    sgen = create_sgen(net, 1, p_mw=0.5, q_mvar=0.1, controllable=True,
+                       min_p_mw=0.1, max_p_mw=1.0, min_q_mvar=-0.5, max_q_mvar=0.5)
+
+    create_poly_cost(net, load, "load", cp0_eur=3, cp1_eur_per_mw=1, cp2_eur_per_mw2=2)
+    create_poly_cost(net, sgen, "sgen", cp0_eur=30, cp1_eur_per_mw=10, cp2_eur_per_mw2=20)
+
+    return net, load, sgen
+
+
 def test_cost_pol_gen():
     """ Testing a very simple network for the resulting cost value
     constraints with OPF """
@@ -90,24 +112,7 @@ def test_cost_pol_all_elements():
 
 def test_controllable_load_polynomial_cost_signs():
     """Controllable loads use the opposite active-power sign in PYPOWER."""
-    vm_max = 1.05
-    vm_min = 0.95
-
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    create_ext_grid(net, 0, controllable=False)
-    create_line_from_parameters(net, 0, 1, 1, name="line2", r_ohm_per_km=0.1,
-                                c_nf_per_km=0.0, max_i_ka=1.0, x_ohm_per_km=0.1,
-                                max_loading_percent=100)
-    load = create_load(net, 1, p_mw=0.5, q_mvar=0.1, controllable=True,
-                       min_p_mw=0.1, max_p_mw=1.0, min_q_mvar=-0.5, max_q_mvar=0.5)
-    sgen = create_sgen(net, 1, p_mw=0.5, q_mvar=0.1, controllable=True,
-                       min_p_mw=0.1, max_p_mw=1.0, min_q_mvar=-0.5, max_q_mvar=0.5)
-
-    create_poly_cost(net, load, "load", cp0_eur=3, cp1_eur_per_mw=1, cp2_eur_per_mw2=2)
-    create_poly_cost(net, sgen, "sgen", cp0_eur=30, cp1_eur_per_mw=10, cp2_eur_per_mw2=20)
-
+    net, load, sgen = _create_controllable_load_and_sgen_cost_net()
     ppci = to_ppc(net, mode="opf", init="flat", calculate_voltage_angles=False)
     load_gen = net._pd2ppc_lookups["load_controllable"][load]
     sgen_gen = net._pd2ppc_lookups["sgen_controllable"][sgen]

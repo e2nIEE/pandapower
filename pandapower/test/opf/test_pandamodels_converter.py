@@ -13,11 +13,11 @@ import pytest
 import pandapower.test as test
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line_from_parameters, \
-    create_load, create_poly_cost, create_sgen
+from pandapower.create import create_poly_cost
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import runopp
 from pandapower.test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf
+from pandapower.test.opf.test_costs_pol import _create_controllable_load_and_sgen_cost_net
 
 try:
     from juliacall import JuliaError as UnsupportedPythonError # type: ignore
@@ -74,21 +74,7 @@ def test_obj_factors(net_3w_trafo_opf):
 
 
 def test_controllable_load_polynomial_cost_signs_for_powermodels():
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=1.05, min_vm_pu=0.95, vn_kv=10.)
-    create_bus(net, max_vm_pu=1.05, min_vm_pu=0.95, vn_kv=.4)
-    create_ext_grid(net, 0, controllable=False)
-    create_line_from_parameters(net, 0, 1, 1, name="line2", r_ohm_per_km=0.1,
-                                c_nf_per_km=0.0, max_i_ka=1.0, x_ohm_per_km=0.1,
-                                max_loading_percent=100)
-    load = create_load(net, 1, p_mw=0.5, q_mvar=0.1, controllable=True,
-                       min_p_mw=0.1, max_p_mw=1.0, min_q_mvar=-0.5, max_q_mvar=0.5)
-    sgen = create_sgen(net, 1, p_mw=0.5, q_mvar=0.1, controllable=True,
-                       min_p_mw=0.1, max_p_mw=1.0, min_q_mvar=-0.5, max_q_mvar=0.5)
-
-    create_poly_cost(net, load, "load", cp0_eur=3, cp1_eur_per_mw=1, cp2_eur_per_mw2=2)
-    create_poly_cost(net, sgen, "sgen", cp0_eur=30, cp1_eur_per_mw=10, cp2_eur_per_mw2=20)
-
+    net, load, sgen = _create_controllable_load_and_sgen_cost_net()
     pm = convert_pp_to_pm(net)
     load_gen = net._pd2ppc_lookups["load_controllable"][load] + 1
     sgen_gen = net._pd2ppc_lookups["sgen_controllable"][sgen] + 1
