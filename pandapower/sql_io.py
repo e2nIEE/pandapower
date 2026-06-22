@@ -80,7 +80,7 @@ def download_sql_table(cursor, table_name, **id_columns):
         query = psql.SQL("SELECT * FROM {}").format(to_sql_str(table_name))
     else:
         columns_string = psql.SQL(' AND ').join(
-            [psql.SQL("{} = {}").format(to_sql_str(k), to_sql_str(v)) for k, v in id_columns.items()])
+            [psql.SQL("{} = {}").format(to_sql_str(k), v) for k, v in id_columns.items()])
         query = psql.SQL("SELECT * FROM {} WHERE {}").format(to_sql_str(table_name), columns_string)
     cursor.execute(query)
     colnames = [desc[0] for desc in cursor.description]
