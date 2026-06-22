@@ -283,13 +283,13 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
             "cost_per_kw" in net.sgen:
         for index, cost in net.sgen.cost_per_kw.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "sgen", cp1_eur_per_kw=cost)
+                create_poly_cost(net, index, "sgen", cp1_eur_per_mw=cost * 1e3)
 
     if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
             "cost_per_kw" in net.ext_grid:
         for index, cost in net.ext_grid.cost_per_kw.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "ext_grid", cp1_eur_per_kw=cost)
+                create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=cost * 1e3)
 
     if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
             "cost_per_kvar" in net.gen:
