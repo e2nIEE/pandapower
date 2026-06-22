@@ -197,7 +197,7 @@ class PyPowSyBlConverter:
         if return_loadflow_table:
             return self.pandap_net, self.pyp_net, json_filename, self.loadflow_table
 
-        return self.pandap_net, self.pyp_net, json_filename
+        return self.pandap_net, self.pyp_net, json_filename, None
 
     # ======================================================
     # Helper
