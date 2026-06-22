@@ -83,7 +83,7 @@ def _fill_gencost_poly(ppci, net, is_quadratic, q_costs):
     c0 = cost["cp0_eur"].values
     c1 = cost["cp1_eur_per_mw"].values
     if is_quadratic:
-        c2 = cost["cp2_eur_per_mw2"].to_numpy()
+        c2 = cost["cp2_eur_per_mw2"]
         ppci["gencost"][gens, NCOST] = 3
         ppci["gencost"][gens, COST] = c2
         ppci["gencost"][gens, COST + 1] = c1 * signs

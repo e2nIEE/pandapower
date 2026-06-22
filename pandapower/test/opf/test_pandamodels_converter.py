@@ -17,7 +17,7 @@ from pandapower.create import create_poly_cost
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import runopp
 from pandapower.test.opf.test_basic import simple_opf_test_net, net_3w_trafo_opf
-from pandapower.test.opf.test_costs_pol import _create_controllable_load_and_sgen_cost_net
+from pandapower.test.opf.test_costs_pol import _add_controllable_load_and_sgen_costs
 
 try:
     from juliacall import JuliaError as UnsupportedPythonError # type: ignore
@@ -73,8 +73,9 @@ def test_obj_factors(net_3w_trafo_opf):
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["3"] == 3
 
 
-def test_controllable_load_polynomial_cost_signs_for_powermodels():
-    net, load, sgen = _create_controllable_load_and_sgen_cost_net()
+def test_controllable_load_polynomial_cost_signs_for_powermodels(simple_opf_test_net):
+    net = deepcopy(simple_opf_test_net)
+    load, sgen = _add_controllable_load_and_sgen_costs(net)
     pm = convert_pp_to_pm(net)
     load_gen = net._pd2ppc_lookups["load_controllable"][load] + 1
     sgen_gen = net._pd2ppc_lookups["sgen_controllable"][sgen] + 1
