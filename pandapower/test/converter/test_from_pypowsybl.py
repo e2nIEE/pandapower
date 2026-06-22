@@ -2254,7 +2254,6 @@ def _run_conversion_roundtrip_cycle(
     )
 
 
-@pytest.mark.integration
 @pytest.mark.parametrize(
     "case_name, network_factory",
     PYP_NETWORK_CASES,
@@ -2399,7 +2398,6 @@ def _run_conversion_pandapower_cycle(
     _assert_same_pandapower_network_results(original_pp_net, roundtrip_pp_net)
 
 
-@pytest.mark.integration
 @pytest.mark.parametrize(
     "case_name, network_factory",
     PANDAPOWER_NETWORK_CASES,
