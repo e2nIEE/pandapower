@@ -2153,7 +2153,7 @@ def _run_conversion_roundtrip_cycle(
     )
 
     converter = PyPowSyBlConverter()
-    pandapower_network, _, json_path = converter._powsybl_to_pandapower(
+    pandapower_network, _, json_path, _ = converter._powsybl_to_pandapower(
         filename=str(xiidm_path),
         log_static_comparison=False,
         log_loadflow_comparison=False,
@@ -2375,7 +2375,7 @@ def _run_conversion_pandapower_cycle(
 
     converter = PyPowSyBlConverter()
 
-    roundtrip_pp_net, _, json_path = converter._powsybl_to_pandapower(
+    roundtrip_pp_net, _, json_path, _ = converter._powsybl_to_pandapower(
         filename=str(xiidm_path),
         log_static_comparison=False,
         log_loadflow_comparison=False,
