@@ -91,7 +91,7 @@ typing = [
     "types-openpyxl~=3.1",
     "types-networkx~=3.4",
     "types-tqdm~=4.67",
-    "scipy-stubs",
+    "scipy-stubs<1.18",
     "pandera[mypy]~=0.29.0",
     "matplotlib~=3.10",
     "psycopg~=3.2"
