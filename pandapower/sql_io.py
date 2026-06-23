@@ -43,7 +43,7 @@ def match_sql_type(dtype):
         return "double precision"
     elif dtype in ("int", "int32", "int64", "uint32", "uint64", "Int64"):
         return "bigint"
-    elif dtype in ("object", "str"):
+    elif dtype in ("object", "str", "string"):
         return "varchar"
     elif dtype == "bool":
         return "boolean"
