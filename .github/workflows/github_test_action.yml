@@ -354,12 +354,6 @@ jobs:
     - name: List of installed packages
       run: |
         uv pip list
-    - name: Create test_schema in sandbox database
-      env:
-        PGPASSWORD: secret
-      run: |
-        psql -h localhost -U test_user -d sandbox -c "CREATE SCHEMA test_schema AUTHORIZATION test_user"
-        psql -h localhost -U test_user --list sandbox
     - name: Test postgresql available
       # Test that will fail the pipeline if the tests would be skipped. Prevents pipeline success if psycopg import fails
       env:

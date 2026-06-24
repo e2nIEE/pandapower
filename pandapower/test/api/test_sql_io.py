@@ -22,6 +22,7 @@ from pandapower.test import assert_res_equal
 if PSYCOPG_INSTALLED:
     import psycopg
     import psycopg.errors
+    import psycopg.sql as psql
 
 @pytest.fixture(params=[case9, case14, case39, simple_mv_open_ring_net,
                         create_cigre_network_hv, mv_oberrhein])
@@ -46,6 +47,9 @@ def postgresql_listening(dsn: str | None) -> bool:
         return False
     try:
         conn = psycopg.connect(dsn)
+        conn.execute(psql.SQL("CREATE SCHEMA IF NOT EXISTS test_schema AUTHORIZATION test_user"))
+        conn.commit()
+        # print(conn.execute(psql.SQL("SELECT * FROM information_schema.schemata")))
         conn.close()
         return True
     except psycopg.OperationalError:
@@ -133,6 +137,7 @@ def test_delete():
             for element in ("bus", "line", "load", "ext_grid", "gen"):
                 tab = download_sql_table(cursor, f"{schema}.{element}", grid_id=grid_id)
                 assert tab.empty
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
