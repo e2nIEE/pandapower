@@ -45,7 +45,7 @@ def match_sql_type(dtype):
         return "bigint"
     elif dtype in ("object", "str", "string"):
         return "varchar"
-    elif dtype == "bool":
+    elif dtype in ("bool", "boolean"):
         return "boolean"
     elif "datetime" in dtype:
         return "timestamp"

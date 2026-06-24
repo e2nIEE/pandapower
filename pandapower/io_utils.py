@@ -18,6 +18,7 @@ import numpy as np
 import pandas.errors
 from deepdiff.diff import DeepDiff
 from packaging.version import Version
+
 from pandapower._version import __version__
 import networkx
 import numpy
@@ -271,8 +272,9 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
                 if json_column in table.columns:
                     table[json_column] = table[json_column].apply(
                         lambda x: json.loads(x, cls=PPJSONDecoder))
-            if not isinstance(table.index, pd.MultiIndex) and item in net:
-                table = table.rename_axis(net[item].index.name)
+            if not isinstance(table.index, pd.MultiIndex):
+                name = net[item].index.name if item in net else None
+                table = table.rename_axis(name)
             net[item] = table
             # convert geodata to geojson
             if item in ["bus", "line"]:
