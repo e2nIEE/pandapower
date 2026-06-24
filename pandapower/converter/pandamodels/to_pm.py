@@ -23,6 +23,9 @@ from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYP
 from pandapower.pypower.idx_cost import MODEL, NCOST, COST
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
 from pandapower.results import init_results, verify_results
+from pandapower.auxiliary import pandapowerNet
+from collections.abc import Callable
+from typing import Literal
 
 
 # const value in branch for tnep
@@ -49,13 +52,31 @@ class NumpyEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
-                     calculate_voltage_angles=True,
-                     ac=True, silence=True, trafo_model="t", delta=1e-8, trafo3w_losses="hv",
-                     check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel",
-                     pm_solver="ipopt",
-                     pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8,
-                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, init_vm_pu="flat", init_va_degree="flat", **kwargs):
+def convert_pp_to_pm(
+        net: pandapowerNet,
+        pm_file_path: str | None = None,
+        correct_pm_network_data: bool | None = True,
+        calculate_voltage_angles: bool | None = True,
+        ac: bool | None = True,
+        silence: bool | None = True,
+        trafo_model: str | None = "t",
+        delta: float | None = 1e-8,
+        trafo3w_losses: str | None = "hv",
+        check_connectivity: bool | None = True,
+        pp_to_pm_callback: Callable | None = None,
+        pm_model: str | None = "ACPPowerModel",
+        pm_solver: str | None = "ipopt",
+        pm_mip_solver: str | None = "cbc",
+        pm_nl_solver: str | None = "ipopt",
+        opf_flow_lim: str | None = "S",
+        pm_tol: float | None = 1e-8,
+        voltage_depend_loads: bool | None = False,
+        from_time_step: int | None = None,
+        to_time_step: int | None = None,
+        init_vm_pu: Literal["flat", "results"] | float = "flat",
+        init_va_degree: Literal["dc", "flat", "results"] | float = "flat",
+        **kwargs
+):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -104,6 +125,19 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
         net.load.const_z_q_percent and net.load.const_i_q_percent are not considered,
         i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
+        **from_time_step** (int, None) - for timeseries calculation / optimization,
+        starting timestep (to_time_step must be also set!).
+
+        **to_time_step** (int, None) - for timeseries calculation / optimization,
+        starting timestep (from_time_step must be also set!).
+
+        **init_vm_pu** (["flat", "results"], float) - Allows to define initialization
+        specifically for voltage magnitudes.
+
+        **init_va_degree** (["dc", "flat", "results"], float) - Allows to define
+        initialization specifically for voltage angles.
+
+
     Returns
     -------
     """
@@ -133,8 +167,13 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_step=None, 
-                            **kwargs):
+def convert_to_pm_structure(
+        net: pandapowerNet,
+        # opf_flow_lim: str = "S", # unused, is saved in net["_opf_options"].
+        from_time_step: int | None = None,
+        to_time_step: int | None = None,
+        **kwargs
+):
     if net["_options"]["voltage_depend_loads"] and not (
             np.allclose(net.load.const_z_p_percent.values, 0) and
             np.allclose(net.load.const_i_p_percent.values, 0) and
@@ -143,6 +182,9 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
         logger.error("pandapower optimal_powerflow does not support voltage depend loads.")
     net["OPF_converged"] = False
     net["converged"] = False
+
+    add_switches_to_pm = bool(kwargs.get('add_switches_to_pm', False))
+
     _add_auxiliary_elements(net)
     if net["_options"].get("init_results"):
         verify_results(net, mode=net["_options"]["mode"])
@@ -151,7 +193,7 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
-    pm = ppc_to_pm(net, ppci)
+    pm = ppc_to_pm(net, ppci, add_switches_to_pm)
     # todo: somewhere here should RATE_A be converted to 0., because only PowerModels uses 0 as no limits (pypower opf converts the zero to inf)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
@@ -162,7 +204,10 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     return net, pm, ppc, ppci
 
 
-def dump_pm_json(pm, buffer_file=None):
+def dump_pm_json(
+        pm: dict,
+        buffer_file: str | None = None
+):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
         # if no buffer file is provided a random file name is generated
@@ -250,15 +295,26 @@ def create_pm_lookups(net, pm_lookup):
     return net
 
 
-def ppc_to_pm(net, ppci):
+def ppc_to_pm(net, ppci, add_switches_to_pm=False):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     # "per_unit == True" means that the grid data in PowerModels are per-unit values. In this
     # ppc-to-pm process, the grid data schould be transformed according to baseMVA = 1.
-    pm = {"gen": {}, "branch": {}, "bus": {}, "dcline": {}, "load": {},
-          "storage": {},
-          "ne_branch": {}, "switch": {},
-          "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": {},
-          "sourcetype": "matpower", "per_unit": True, "name": net.name}
+    pm = {
+        "gen": {},
+        "branch": {},
+        "bus": {},
+        "dcline": {},
+        "load": {},
+        "storage": {},
+        "ne_branch": {},
+        "switch": {},
+        "baseMVA": ppci["baseMVA"],
+        "source_version": "2.0.0",
+        "shunt": {},
+        "sourcetype": "matpower",
+        "per_unit": True,
+        "name": net.name
+    }
     baseMVA = ppci["baseMVA"]
     load_idx = 1
     shunt_idx = 1
@@ -313,8 +369,28 @@ def ppc_to_pm(net, ppci):
             shunt_idx += 1
         pm["bus"][str(idx)] = bus
 
+    # number of bus-bus switches in the network
+    n_bb_switches = net._impedance_bb_switches.sum()
+
     n_lines = net.line.in_service.sum()
     for idx, row in enumerate(ppci["branch"], start=1):
+
+        # the bus-bus switches are added to the end of the ppci, +1 since we use 1-indexing.
+        if idx > (n_lines - n_bb_switches + 1):
+            if add_switches_to_pm:
+                switch = {
+                    "index": idx,
+                    "f_bus": int(row[F_BUS].real) + 1,
+                    "t_bus": int(row[T_BUS].real) + 1,
+                    "status": 1,
+                    "state": 1,
+                    "thermal_rating": np.inf,
+                    "psw": 0.,
+                    "qsw": 0.,
+                }
+                pm["switch"][str(idx - n_lines)] = switch
+            # continue
+
         branch = {}
         branch["index"] = idx
         branch["transformer"] = bool(idx > n_lines)
@@ -343,6 +419,8 @@ def ppc_to_pm(net, ppci):
         branch["tap"] = row[TAP].real
         branch["shift"] = math.radians(row[SHIFT].real)
         pm["branch"][str(idx)] = branch
+
+
 
     #### create pm["gen"]
     gen_idxs_pm = [str(i+1) for i in range(len(ppci["gen"]))]
@@ -562,7 +640,12 @@ def add_params_to_pm(net, pm):
     return pm
 
 
-def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
+def add_time_series_to_pm(
+        net: pandapowerNet,
+        pm: dict,
+        from_time_step: int,
+        to_time_step: int
+):
     from pandapower.control import ConstControl
     if from_time_step is None or to_time_step is None:
         raise ValueError("please define 'from_time_step' " +
