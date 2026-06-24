@@ -92,7 +92,7 @@ def download_sql_table(cursor, table_name, **id_columns):
     if index_name in df.columns:
         df = df.set_index(index_name)
     if len(id_columns) > 0:
-        df.drop(id_columns.keys(), axis=1, inplace=True)
+        df = df.drop(list(id_columns.keys()), axis=1)
     return df
 
 
