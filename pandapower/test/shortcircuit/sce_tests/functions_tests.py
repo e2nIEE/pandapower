@@ -43,6 +43,35 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
                 (fault, case, value, 10, fault_bus, branch_test)
             )
 
+    # parameter list for WP 2.3
+    parametrize_values_wp23 = []
+    net_names_23 = ['1_four_bus_radial_1ph_grid_MP', '2_four_bus_radial_2ph_grid_MP',
+                    '3_five_bus_radial_grid_1ph_dyn_MP', '4_five_bus_radial_grid_1ph_yyn_MP',
+                    '5_five_bus_radial_grid_1ph_ynyn_MP', '6_five_bus_radial_grid_1ph_dd_MP',
+                    '7_eight_bus_radial_grid_1ph_ynyn_MP', '8_eight_bus_radial_grid_2ph_dyn_MP',
+                    '9_eight_bus_radial_grid_2ph_yyn_MP', '10_eight_bus_radial_grid_2ph_dd_MP']
+
+    for net_name in net_names_23:
+        if "four" in net_name:
+            fl_buses = [0, 1, 3]
+        elif "five" in net_name:
+            fl_buses = [0, 2, 4]
+        else:
+            fl_buses = [0, 2, 4, 6]
+
+        for fault, case, value, fault_bus, branch_test in product(
+                faults, cases, values, fl_buses, is_branch_test
+        ):
+            if case == "min":
+                for lv_tol in lv_tol_percents:
+                    parametrize_values_wp23.append(
+                        (net_name, fault, case, value, lv_tol, fault_bus, branch_test)
+                    )
+            elif case == "max":
+                parametrize_values_wp23.append(
+                    (net_name, fault, case, value, 10, fault_bus, branch_test)
+                )
+
     # parameter list for WP 2.2 and WP 2.4
     parametrize_values_wp22 = list(
         product(faults, ['max'], values, [10], fault_location_buses, is_branch_test,
@@ -116,7 +145,7 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
             fl_buses = fault_location_buses
 
         parametrize_values_vector_wp25 += list(product(
-            [net_name[10:]], faults[2:], cases, values, lv_tol_percents, vector_groups,
+            [net_name[10:]], faults, cases, values, lv_tol_percents, vector_groups,
             fl_buses, is_branch_test, grounding_types
         ))
 
@@ -130,7 +159,7 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
 
         base_wp25 += list(product(
             [net_name[10:]],
-            faults[2:],
+            faults,
             cases,
             values,
             lv_tol_percents,
@@ -165,8 +194,8 @@ def create_parameter_list(net_names, faults, cases, values, lv_tol_percents, fau
         ))
 
     return (parametrize_values_wp21, parametrize_values_vector_wp21,
-            parametrize_values_wp22, parametrize_values_vector_wp22, parametrize_values_vector_wp25,
-            parametrize_values_vector_wp25_with_ward)
+            parametrize_values_wp22, parametrize_values_vector_wp22, parametrize_values_wp23,
+            parametrize_values_vector_wp25, parametrize_values_vector_wp25_with_ward)
 
 
 def compare_results(columns_to_check, net_df, pf_results):
@@ -206,6 +235,8 @@ def compare_results(columns_to_check, net_df, pf_results):
 def load_test_case(net_name: str) -> pandapowerNet:
     if net_name.endswith("_sgen") or net_name.endswith("_sgen_act") or net_name.endswith("_gen"):
         grid_folder = "wp_2.2_2.4"
+    elif 'MP' in net_name:
+        grid_folder = "wp_2.3"
     else:
         grid_folder = "wp_2.1"
 
@@ -220,6 +251,8 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
         wp_folder = "wp_2.2_2.4"
     elif grounding_type is not None:
         wp_folder = "wp_2.5"
+    elif 'MP' in net_name:
+        wp_folder = "wp_2.3"
     else:
         wp_folder = "wp_2.1"
 
@@ -234,6 +267,12 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
             net_name = f"{net_name}_{vector_group.lower()}"
 
     net = load_test_case(net_name)
+
+    if wp_folder == "wp_2.3":
+        x = 1e-6
+        cols = ["c0_nf_per_km", "r0_ohm_per_km", "x0_ohm_per_km"]
+        net.line.loc[net.line.name.str.contains('1ph'), cols] = x
+
 
     xn = None
     rn = None
@@ -321,11 +360,6 @@ def load_test_case_data(net_name, fault_location_bus, vector_group=None, gen_idx
             ))
         except FileNotFoundError:
             logger.warning(f"File {file_name} not found in {testfiles_path}/sc_result_comparison/")
-
-    # for key, df_branch in dataframes['branch'].items():
-    #     cols = df_branch.filter(like='_degree')
-    #     dataframes['bus'][key] = dataframes['bus'][key].join(cols)
-
     return net, dataframes
 
 
@@ -688,5 +722,3 @@ def load_pf_results(excel_file):
             dataframes[sheet] = pf_results
 
     return dataframes
-
-##
