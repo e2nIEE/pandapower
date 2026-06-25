@@ -149,19 +149,18 @@ def run_tutorials(parallel=False, n_cpu=None):
     # run notebooks in tempdir to safely remove output files
     with tempfile.TemporaryDirectory() as tmpdir:
         shutil.copytree(tutorials_path, os.path.join(tmpdir, 'tmp'))
-        test_dir = tmpdir
 
         if parallel:
             if n_cpu is None:
                 n_cpu = 'auto'
-            err = pytest.main(["--nbmake", f"-n={n_cpu}", test_dir])
+            err = pytest.main(["--nbmake", f"-n={n_cpu}", tmpdir])
             if err == 4:
                 raise ModuleNotFoundError("Parallel testing not possible. Please make sure "
                                           "that pytest-xdist is installed correctly.")
             elif err > 2:
                 logger.error("Testing not successfully finished.")
         else:
-            pytest.main(["--nbmake", test_dir])
+            pytest.main(["--nbmake", tmpdir])
 
 
 if __name__ == "__main__":

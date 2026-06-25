@@ -298,8 +298,8 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     angles = orientation if hasattr(orientation, '__iter__') else [orientation] * len(node_coords)
-    assert len(node_coords) == len(angles), \
-        "The length of coordinates does not match the length of the orientation angles!"
+    if len(node_coords) != len(angles):
+        raise AssertionError("The length of coordinates does not match the length of the orientation angles!")
     if infos is None:
         infos_pc = []
         infos_lc = []

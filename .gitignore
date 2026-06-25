@@ -33,7 +33,6 @@ pandapower/timeseries/logs/*
 test/timeseries/run_timeseries_output/*
 test/opf/buffer_file.json
 test/buffer_file.json
-test/test_files/postgresql_connect_data.json
 sonar-project.properties
 .scannerwork/
 uv.lock

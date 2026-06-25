@@ -1550,6 +1550,7 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax, case):
         vkr: real-part of transformer short-circuit voltage, percent
         sn: transformer rating, kVA
         cmax: voltage factor to account for maximum worst-case currents, based on the lv side
+        case: short-circuit calculation case (str, "min"/"max")
 
     Returns:
         kt: transformer impedance correction factor for short-circuit calculations
@@ -1595,10 +1596,9 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
     # todo check magnetizing impedance implementation:
     # loss_side = net._options["trafo3w_losses"].lower()
     nr_trafos = len(net.trafo3w)
-    loss_side = net.trafo3w.loss_side.values if "loss_side" in net.trafo3w.columns else np.full(nr_trafos,
-                                                                              net._options["trafo3w_losses"].lower())
-    nr_trafos = len(net["trafo3w"])
-
+    loss_side = net.trafo3w.loss_side.values if "loss_side" in net.trafo3w.columns else np.full(
+        nr_trafos, net._options["trafo3w_losses"].lower()
+    )
     if sequence == 1:
         mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
         _calculate_sc_voltages_of_equivalent_transformers(net.trafo3w, trafo2, mode_tmp, net)
