@@ -56,19 +56,18 @@ def postgresql_listening(dsn: str | None) -> bool:
         return False
 
 
-def assert_postgresql_roundtrip(net_in, **kwargs):
+def assert_postgresql_roundtrip(net_in, include_results: bool):
     net = copy.deepcopy(net_in)
     if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):
         convert_geodata_to_geojson(net)
-    include_results = kwargs.pop("include_results", False)
     if not include_results:
         reset_results(net)
     else:
         runpp(net)
     dsn, schema = get_postgresql_connection_data()
-    grid_id = to_postgresql(net, dsn=dsn, schema=schema, include_results=include_results, **kwargs)
+    grid_id = to_postgresql(net, dsn=dsn, schema=schema, include_results=include_results)
 
-    net_out = from_postgresql(dsn=dsn, grid_id=grid_id, schema=schema, **kwargs)
+    net_out = from_postgresql(dsn=dsn, grid_id=grid_id, schema=schema)
 
     if not include_results:
         runpp(net)
