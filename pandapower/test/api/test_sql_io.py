@@ -65,6 +65,8 @@ def assert_postgresql_roundtrip(net_in, include_results: bool):
     else:
         runpp(net)
     dsn, schema = get_postgresql_connection_data()
+    if dsn is None or schema is None:
+        raise AssertionError('Could not get DSN or SCHEMA from env.')
     grid_id = to_postgresql(net, dsn=dsn, schema=schema, include_results=include_results)
 
     net_out = from_postgresql(dsn=dsn, grid_id=grid_id, schema=schema)
