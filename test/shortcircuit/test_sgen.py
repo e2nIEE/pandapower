@@ -5,35 +5,13 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus, create_ext_grid, create_transformer, create_sgen, create_buses, create_transformer_from_parameters,
+    create_bus, create_ext_grid, create_sgen, create_buses, create_transformer_from_parameters,
     create_line_from_parameters, create_lines_from_parameters, create_sgens, create_line
 )
 from pandapower.network import pandapowerNet
+from pandapower.networks.simple_pandapower_test_networks import simplest_test_grid
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.shortcircuit.calc_sc import calc_sc
-
-
-def simplest_test_grid(generator_type, step_up_trafo=False):
-    net = pandapowerNet(name="simplest_test_grid", sn_mva=6)
-    if step_up_trafo:
-        b0 = create_bus(net, 20)
-        b1 = create_bus(net, 0.4)
-        create_transformer(net, b0, b1, "0.25 MVA 20/0.4 kV", parallel=10)
-    else:
-        b0 = b1 = create_bus(net, 20)
-
-    create_ext_grid(net, b0, s_sc_max_mva=1e-12, rx_max=0)
-    if generator_type == "async_doubly_fed":
-        create_sgen(net, b1, 0, 0, 2.5, current_source=False,
-                    generator_type=generator_type, max_ik_ka=0.388, kappa=1.7, rx=0.1)
-    elif generator_type == "current_source":
-        create_sgen(net, b1, 0, 0, 2.5, generator_type=generator_type, current_source=True, k=1.3, rx=0.1)
-    elif generator_type == "async":
-        create_sgen(net, b1, 0, 0, 2.5, generator_type=generator_type, current_source=False, rx=0.1, lrc_pu=5)
-    else:
-        raise NotImplementedError(f"unknown sgen generator type {generator_type}, can be one of "
-                                  f"'full_size_converter', 'async', 'async_doubly_fed'")
-    return net
 
 
 def wind_park_grid(case):

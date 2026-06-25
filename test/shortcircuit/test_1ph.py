@@ -13,6 +13,7 @@ from pandapower.create import (
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
+from pandapower.networks.simple_pandapower_test_networks import vde_232
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.std_types import create_std_type, add_zero_impedance_parameters
 
@@ -286,35 +287,6 @@ def iec_60909_4_t1():
                                             mag0_rx=0, si0_hv_partial=0.5, power_station_unit=True)
     create_gen(net, 1, p_mw=0.85 * 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150, pg_percent=0,
                power_station_trafo=t1)
-    return net
-
-
-def vde_232():
-    net = pandapowerNet(name="vde_232", sn_mva=12)
-    # hv buses
-    create_bus(net, 110, geodata=(0, 0))
-    create_bus(net, 21, geodata=(1, 0))
-
-    create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328, x0x_max=3.47927,
-                    r0x0_max=3.03361 * 0.20328 / 3.47927)
-    create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16, pfe_kw=0, i0_percent=0, tap_step_percent=1,
-                                       tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv', vector_group="YNd",
-                                       vk0_percent=np.sqrt(np.square(0.95 * 15.99219) + np.square(0.5)),
-                                       vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.9, pt_percent=12,
-                                       oltc=True, power_station_unit=True, xn_ohm=22, tap_changer_type="Ratio")
-
-    create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0,
-               pg_percent=5)
-
-    # z_q
-    u_nq = 110
-    i_kqss = 13.61213
-    z_q = 1.1 * u_nq / (np.sqrt(3) * i_kqss)
-    rx_max = 0.20328
-    x_q = z_q / np.sqrt(1 + rx_max ** 2)
-    x_0q = x_q * 3.47927
-    r_0q = x_0q * 3.03361 * 0.20328 / 3.47927
-    z_0q = r_0q + 1j * x_0q
     return net
 
 

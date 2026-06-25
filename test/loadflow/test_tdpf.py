@@ -9,11 +9,11 @@ import pytest
 import copy
 
 from pandapower.create import (
-    create_bus, create_line, create_load, create_ext_grid, create_buses, create_sgen, create_gen, create_gens,
-    create_line_from_parameters
+    create_bus, create_line, create_load, create_ext_grid, create_gens, create_line_from_parameters
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9, case30
+from pandapower.networks.simple_pandapower_test_networks import simple_test_grid
 from pandapower.pf.create_jacobian_tdpf import (
     calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta,
     calc_T_frank, ALPHA_TDPF
@@ -104,62 +104,6 @@ def prepare_case_30():
     net.line["solar_radiation_w_per_sq_m"] = 900
     net.line["solar_absorptivity"] = 0.5
     net.line["emissivity"] = 0.5
-    return net
-
-
-def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distributed_slack=False):
-    s_base = 100
-
-    net = pandapowerNet(name="simple_test_grid", sn_mva=s_base)
-    std_type = "490-AL1/64-ST1A 110.0"
-    r = 0.059
-    v_base = 132
-    z_base = v_base ** 2 / s_base
-
-    create_buses(net, 5, v_base, geodata=[(0, 1), (-1, 0.5), (0, 0), (1, 0.5), (0, 0.5)])
-
-    create_line(net, 0, 1, 0.84e-2 * z_base / r, std_type, name="1-2")
-    create_line(net, 0, 3, 0.84e-2 * z_base / r, std_type, name="1-4")
-    create_line(net, 1, 2, 0.67e-2 * z_base / r, std_type, name="2-3")
-    create_line(net, 1, 4, 0.42e-2 * z_base / r, std_type, name="2-5")
-    create_line(net, 2, 3, 0.67e-2 * z_base / r, std_type, name="3-4")
-    create_line(net, 3, 4, 0.42e-2 * z_base / r, std_type, name="4-5")
-    net.line.c_nf_per_km = 0
-
-    net.line["temperature_degree_celsius"] = 20
-    net.line["reference_temperature_degree_celsius"] = 20
-    net.line["air_temperature_degree_celsius"] = 35
-    net.line["alpha"] = ALPHA_TDPF
-    net.line["conductor_outer_diameter_m"] = 30.6e-3
-    net.line["mc_joule_per_m_k"] = 1490
-    net.line["wind_speed_m_per_s"] = 0.6
-    net.line["wind_angle_degree"] = 45
-    net.line["solar_radiation_w_per_sq_m"] = 900
-    net.line["solar_absorptivity"] = 0.5
-    net.line["emissivity"] = 0.5
-    net.line["tdpf"] = True
-
-    create_ext_grid(net, 3, 1.05, name="G1")
-    create_sgen(net, 0, 200, scaling=sgen_scaling, name="R1")
-    create_sgen(net, 1, 250, scaling=sgen_scaling, name="R2")
-    if with_gen:
-        idx = create_gen(net, 2, 600, 1., scaling=sgen_scaling, name="G3")
-        create_gen(net, 4, 300, 1., scaling=sgen_scaling, name="G5")
-    else:
-        idx = create_sgen(net, 2, 600, scaling=sgen_scaling, name="G3")
-        create_sgen(net, 4, 300, scaling=sgen_scaling, name="G5")
-
-    if distributed_slack:
-        if with_gen:  # distributed slack is currently not supported for sgen.
-            net["gen"]["slack_weight"] = 0.0
-            net["gen"].at[idx, 'slack_weight'] = 1
-        set_user_pf_options(net, distributed_slack=True)
-        net.sn_mva = 1000  # otherwise numerical issues
-
-    create_load(net, 1, 600, 240, scaling=load_scaling)
-    create_load(net, 3, 1000, 400, scaling=load_scaling)
-    create_load(net, 4, 400, 160, scaling=load_scaling)
-
     return net
 
 
