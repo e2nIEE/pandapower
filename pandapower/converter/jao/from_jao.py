@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-nt
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -246,8 +244,10 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
         name_end = "</b>"
         pos0 = st.find(name_start) + len(name_start)
         pos1 = st.find(name_end, pos0)
-        assert pos0 >= 0
-        assert pos1 >= len(name_start)
+        if pos0 < 0:
+            raise AssertionError('pos0 < 0')
+        if pos1 < len(name_start):
+            raise AssertionError('pos1 < len(name_start)')
         return st[pos0:pos1]
 
     json_start_str = '<script type="application/json" data-for="htmlwidget-216030e6806f328c00fb">'
@@ -294,7 +294,8 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
     bus_df = _drop_duplicates_and_join_TSO(bus_df)
     new_bus_idx = create_buses(
         net, len(bus_df), vn_kv=bus_df.vn_kv, name=bus_df.name, zone=bus_df.TSO)
-    assert np.allclose(new_bus_idx, bus_df.index)
+    if any(new_bus_idx != bus_df.index):
+        raise AssertionError("Not all values of now_bus_idx are identical to bus_df.index")
 
 
 def _create_lines(
@@ -829,9 +830,10 @@ def _allocate_trafos_to_buses_and_create_buses(
                 f"{trafo_connections.at[idx_max_dev, next_col]}. The best locations were "
                 f"nevertheless applied, due to {rel_deviation_threshold_for_trafo_bus_creation=}")
 
-    assert (trafo_connections.hv_bus > -1).all()
-    assert (trafo_connections.lv_bus > -1).all()
-    assert (trafo_connections.hv_bus != trafo_connections.lv_bus).all()
+    if (not (trafo_connections.hv_bus > -1).all() or
+            not (trafo_connections.lv_bus > -1).all() or
+            not (trafo_connections.hv_bus != trafo_connections.lv_bus).all()):
+        raise AssertionError("A trafo")
 
     return trafo_connections
 
@@ -885,7 +887,8 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
     # just keep one bus per name and vn_kv. If there are multiple buses of different TSOs, join the
     # TSO strings:
     bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: '/'.join(x)})
-    assert not bus_df.duplicated(["name", "vn_kv"]).any()
+    if bus_df.duplicated(["name", "vn_kv"]).any():
+        raise AssertionError("bus_df contains duplicate names with identical vn_kv")
     return bus_df
 
 

@@ -7,7 +7,7 @@ body:
   - type: checkboxes
     id: checks
     attributes:
-      label: Bug report checklis
+      label: Bug report checklist
       options:
         - label: >
             Searched the [issues page](https://github.com/e2nIEE/pandapower/issues) for similar reports

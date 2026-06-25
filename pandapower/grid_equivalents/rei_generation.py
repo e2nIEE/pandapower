@@ -302,7 +302,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 else:  # value_types[0] is None:
                     other_cols_none |= {c}
                 other_cols -= {c}
-            assert len(other_cols) == 0
+            if len(other_cols) != 0:
+                raise AssertionError('other_cols should be empty now.')
         if "integrated" in key:
             if "voltLvl" in other_cols_number:
                 net_zpbn[elm].loc[elm_idx, "voltLvl"] = \

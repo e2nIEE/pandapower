@@ -87,12 +87,12 @@ typing = [
     "mypy~=1.18",
     "pandas-stubs~=2.3",
     "types-shapely~=2.1",
-    "types-psycopg2~=2.9",
     "types-openpyxl~=3.1",
     "types-networkx~=3.4",
     "types-tqdm~=4.67",
-    "scipy-stubs~=1.15",
-    "pandera[mypy]~=0.26.1"
+    "scipy-stubs>=1.15,<1.18",
+    "pandera[mypy]~=0.26.1",
+    "psycopg~=3.2"
 ]
 
 all = ["pandapower[plotting,performance,fileio,converter,pgm,control]"]

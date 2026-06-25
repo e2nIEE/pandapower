@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] sql_io now requires single dsn string for database connection instead of separate host, user, etc. keywords.
+- [FIXED] sql_io not working with version of psycopg installed
 - [FIXED] cim2pp add GeographicalRegion from eqbd profile
 - [FIXED] behavior of PowerFactory2pp-converter if coordinates are saved at cpSubstat.
 - [CHANGED] differing behavior for :code:`in_service=False` depending on `voltage_depend_loads` has been fixed. Out of Service elements for res_bus now always contain `nan` as result.
