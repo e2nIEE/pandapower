@@ -366,7 +366,7 @@ jobs:
         DSN: 'postgresql://test_user:secret@localhost/sandbox'
         SCHEMA: 'test_schema'
       run: |
-        uv run pytest pandapower/test/api/test_sql_io.py
+        uv run pytest test/api/test_sql_io.py
     - name: Test pandapower File I/O against alternative port
       env:
         DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
