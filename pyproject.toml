@@ -109,9 +109,6 @@ version = {attr = "pandapower._version.__version__"}
 include = [
     "pandapower*",
 ]
-exclude = [
-    "test*",
-]
 
 [tool.setuptools.package-data]
 "*" = [
@@ -142,10 +139,6 @@ filterwarnings = [
 #log_file = "./pytest.log"
 #log_file_level = "WARN"
 
-[tool.coverage.run]
-omit = [
-    "test/*"
-]
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
