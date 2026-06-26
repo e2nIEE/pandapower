@@ -145,7 +145,7 @@ jobs:
         # remove it also in pyproject.toml 'requires-python'
     steps:
       - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
+      - uses: julia-actions/setup-julia@v3.0.2
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
