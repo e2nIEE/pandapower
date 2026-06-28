@@ -18,4 +18,5 @@ These tools are:
     converter/cgmes
     converter/ucte
     converter/jao
+    converter/opendss
 

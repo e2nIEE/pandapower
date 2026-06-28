@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] OpenDSS converter: ``from_opendss`` imports an OpenDSS feeder into a balanced positive-sequence pandapower net (revisits #1442).
 - [CHANGED] sql_io now requires single dsn string for database connection instead of separate host, user, etc. keywords.
 - [FIXED] sql_io not working with version of psycopg installed
 - [FIXED] cim2pp add GeographicalRegion from eqbd profile
