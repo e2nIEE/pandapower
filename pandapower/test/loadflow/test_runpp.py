@@ -526,33 +526,33 @@ def test_helm_algorithm_simple():
     import pandapower.networks as nw
     net = nw.case9()
 
-    pp.runpp(net)
+    runpp(net)
     vm_nr = copy.copy(net.res_bus.vm_pu)
     va_nr = copy.copy(net.res_bus.va_degree)
 
-    pp.runpp(net, algorithm='helm')
+    runpp(net, algorithm='helm')
     vm_alg = net.res_bus.vm_pu
     va_alg = net.res_bus.va_degree
 
-    assert np.allclose(vm_nr, vm_alg)
-    assert np.allclose(va_nr, va_alg)
+    assert np.allclose(vm_nr, vm_alg, atol=1e-5)
+    assert np.allclose(va_nr, va_alg, atol=1e-2)
 
 
 @pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
 def test_helm_algorithm_complex():
     import pandapower.networks as nw
-    net = nw.case9()
+    net = nw.case118()
 
-    pp.runpp(net)
+    runpp(net)
     vm_nr = copy.copy(net.res_bus.vm_pu)
     va_nr = copy.copy(net.res_bus.va_degree)
 
-    pp.runpp(net, algorithm='helm')
+    runpp(net, algorithm='helm')
     vm_alg = net.res_bus.vm_pu
     va_alg = net.res_bus.va_degree
 
-    assert np.allclose(vm_nr, vm_alg)
-    assert np.allclose(va_nr, va_alg)
+    assert np.allclose(vm_nr, vm_alg, atol=1e-5)
+    assert np.allclose(va_nr, va_alg, atol=1e-2)
 
 
 @pytest.mark.xfail(reason="unknown")

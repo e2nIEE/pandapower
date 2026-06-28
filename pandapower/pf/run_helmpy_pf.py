@@ -1,11 +1,13 @@
 from time import perf_counter
+
 import numpy as np
-from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF, GS, BS, BUS_I, VM, VA
-from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, VG, MBASE
-from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.makeSbus import makeSbus
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 import pandas as pd
+
+from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, GS, BS, BUS_I, VM, VA, SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_gen import PG, QMAX, QMIN, GEN_BUS, VG, MBASE, GEN_STATUS, SL_FAC
+from pandapower.pf.run_newton_raphson_pf import ppci_to_pfsoln, _get_numba_functions, _get_Y_bus
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 try:
     import pandaplan.core.pplog as logging
@@ -15,59 +17,30 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def convert_complex_to_polar_voltages(complex_voltage):
-    """Separate each voltage value in magnitude and phase angle (degrees)"""
-    polar_voltage = np.zeros((len(complex_voltage), 2), dtype=float)
-    polar_voltage[:, 0] = np.absolute(complex_voltage)
-    polar_voltage[:, 1] = np.angle(complex_voltage, deg=True)
-    return polar_voltage
+def _build_helm_case(ppci):
+    """Build a HELMpy ``CaseData`` object from a pandapower internal ppc (ppci).
 
-
-def _runpf_helmpy_pf(ppci, options: dict, **kwargs):
+    The bus ordering of ``ppci`` is preserved: HELMpy bus index ``i`` corresponds
+    to ppci bus row ``i``, so the resulting complex voltage profile can be written
+    back to ``ppci`` without any reordering.
     """
-    Runs a HELM based power flow.
-
-    INPUT
-    ppci (dict) - the "internal" ppc (without out ot service elements and sorted elements)
-    options(dict) - options for the power flow
-
-    """
-
-    from helmpy import helm
     from helmpy.core.classes import CaseData, process_branches
 
-    t0 = perf_counter()
-    # we cannot run DC pf before running newton with distributed slack because the slacks come pre-solved after the DC pf
-    # if isinstance(options["init_va_degree"], str) and options["init_va_degree"] == "dc":
-    #     if options['distributed_slack']:
-    #         pg_copy = ppci['gen'][:, PG].copy()
-    #         pd_copy = ppci['bus'][:, PD].copy()
-    #         ppci = _run_dc_pf(ppci, options["recycle"])
-    #         ppci['gen'][:, PG] = pg_copy
-    #         ppci['bus'][:, PD] = pd_copy
-    #     else:
-    #         ppci = _run_dc_pf(ppci, options["recycle"])
-
-    max_coefficients = options['max_iteration']
-
-    enforce_Q_limits = False
-    if options["enforce_q_lims"]:
-        enforce_Q_limits = True
-    # else:
-    #     ppci, success, iterations = _run_ac_pf_without_qlims_enforced(ppci, options)
-    #     # update data matrices with solution store in ppci
-    #     bus, gen, branch = ppci_to_pfsoln(ppci, options)
-
-    DSB_model = False
-    if options['distributed_slack']:
-        DSB_model = True
-
-# -------------------------------------------- Calculation Case preparation --------------------------------------------
     buses = ppci['bus'].copy()
     generators = ppci['gen'].copy()
     branches = ppci['branch'].copy()
 
+    # pandapower does not always set MBASE on the internal gen matrix
     generators[:, MBASE] = 100.
+
+    # HELMpy follows MATPOWER's 1-based bus numbering and internally subtracts 1
+    # (e.g. process_branches does ``int(branch[F_BUS]) - 1``). pandapower's internal
+    # ppci uses 0-based, contiguous bus indices, so shift bus references by +1 to
+    # match the convention HELMpy expects.
+    buses[:, BUS_I] += 1
+    generators[:, GEN_BUS] += 1
+    branches[:, F_BUS] += 1
+    branches[:, T_BUS] += 1
 
     N = len(buses)
     N_generators = len(generators)
@@ -78,35 +51,34 @@ def _runpf_helmpy_pf(ppci, options: dict, **kwargs):
     case.Pd[:] = buses[:, PD] / 100
     case.Qd[:] = buses[:, QD] / 100
 
-    # weird but has to be done in this order. Otherwise, the values are wrong...
-    case.Shunt[:] = (buses[:, BS].copy()*1j + buses[:, GS])
+    # Bus shunt admittance. pandapower stores GS/BS in MW/MVAr at 1 p.u.; convert to
+    # per-unit on the 100 MVA base that HELMpy assumes (matches the xlsx case builder,
+    # which divides by 100, and pandapower's makeYbus, which divides by baseMVA).
+    case.Shunt[:] = (buses[:, BS].copy() * 1j + buses[:, GS]) / 100
     case.Yshunt[:] = np.copy(case.Shunt)
-    case.Shunt[:] = case.Shunt[:] / 100
 
     for i in range(N):
-        case.Number_bus[buses[i][BUS_I]] = i
+        case.Number_bus[int(buses[i][BUS_I]) - 1] = i
         if buses[i][BUS_TYPE] == 3:
-            case.slack_bus = buses[i][BUS_I]
+            case.slack_bus = int(buses[i][BUS_I])
             case.slack = i
 
     pos = 0
     for i in range(N_generators):
-        bus_i = case.Number_bus[generators[i][GEN_BUS]]
+        bus_i = case.Number_bus[int(generators[i][GEN_BUS]) - 1]
         if bus_i != case.slack:
             case.list_gen[pos] = bus_i
             pos += 1
         case.Buses_type[bus_i] = 'PVLIM'
         case.V[bus_i] = generators[i][VG]
-        case.Pg[bus_i] = generators[i][PG]/100
-        case.Qgmax[bus_i] = generators[i][QMAX]/100
-        case.Qgmin[bus_i] = generators[i][QMIN]/100
+        case.Pg[bus_i] = generators[i][PG] / 100
+        case.Qgmax[bus_i] = generators[i][QMAX] / 100
+        case.Qgmin[bus_i] = generators[i][QMIN] / 100
 
     case.Buses_type[case.slack] = 'Slack'
     case.Pg[case.slack] = 0
 
-    branches_df = pd.DataFrame(branches)
-
-    process_branches(branches_df, N_branches, case)
+    process_branches(pd.DataFrame(branches), N_branches, case)
 
     for i in range(N):
         case.branches_buses[i].sort()    # Variable that saves the branches
@@ -120,22 +92,106 @@ def _runpf_helmpy_pf(ppci, options: dict, **kwargs):
             for k in range(len(case.phase_dict[i][0])):
                 case.Y[i, case.phase_dict[i][0][k]] += case.phase_dict[i][1][k]
 
-    run, series_large, flag_divergence = helm(case, detailed_run_print=False, mismatch=1e-8, scale=1,
-                                              max_coefficients=max_coefficients, enforce_Q_limits=enforce_Q_limits,
-                                              results_file_name=None, save_results=False, pv_bus_model=1,
-                                              DSB_model=DSB_model, DSB_model_method=None,)
+    return case
+
+
+def _get_slack_weights(ppci):
+    """Collect pandapower's distributed-slack participation factors as a per-bus array.
+
+    Weights come from in-service generators (``gen[:, SL_FAC]``, accumulated on their bus)
+    and from buses directly (``bus[:, SL_FAC_BUS]``, e.g. xwards). The bus order matches
+    the ppci bus rows, which is also HELMpy's internal bus order. Returns ``None`` when no
+    weights are set so the caller lets HELMpy use its default behaviour.
+    """
+    bus = ppci["bus"]
+    gen = ppci["gen"]
+    N = len(bus)
+    weights = np.zeros(N, dtype=np.float64)
+
+    weights += bus[:, SL_FAC_BUS]
+
+    on = gen[:, GEN_STATUS] > 0
+    gen_buses = gen[on, GEN_BUS].astype(np.int64)
+    np.add.at(weights, gen_buses, gen[on, SL_FAC])
+
+    if not np.any(weights):
+        return None
+    return weights
+
+
+def _runpf_helmpy_pf(ppci, options, **kwargs):
+    """
+    Runs a HELM (Holomorphic Embedding Load flow Method) based power flow,
+    provided by the optional HELMpy package.
+
+    INPUT
+    ppci (dict) - the "internal" ppc (without out of service elements and sorted elements)
+    options (dict) - options for the power flow
+
+    The converged complex voltage profile is routed through pandapower's regular
+    ``pfsoln`` result extraction (the same one used by Newton-Raphson) so that
+    generator reactive power, slack injections and branch flows are populated
+    identically to the other algorithms.
+    """
+    try:
+        from helmpy import helm
+    except ImportError:
+        raise ImportError("The HELM algorithm requires the optional 'helmpy' package. "
+                          "Install it (pip install helmpy) to use algorithm='helm'.")
+
+    t0 = perf_counter()
+
+    max_coefficients = options['max_iteration']
+    enforce_Q_limits = bool(options["enforce_q_lims"])
+    DSB_model = bool(options['distributed_slack'])
+
+    # ---------------------------------------------------- run HELM ----------------------------------------------------
+    case = _build_helm_case(ppci)
+
+    # For distributed slack, pass pandapower's user-defined slack_weight factors so HELM
+    # distributes the imbalance the same way as Newton-Raphson. If no weights are set,
+    # K_factors stays None and HELM falls back to its generation-proportional default.
+    K_factors = _get_slack_weights(ppci) if DSB_model else None
+
+    run, series_large, flag_divergence = helm(
+        case, detailed_run_print=False, mismatch=1e-8, scale=1,
+        max_coefficients=max_coefficients, enforce_Q_limits=enforce_Q_limits,
+        results_file_name=None, save_results=False, pv_bus_model=1,
+        DSB_model=DSB_model, DSB_model_method=None, K_factors=K_factors,
+    )
+
+    success = not flag_divergence
+    V = run.V_complex_profile.copy()
+
+    # HELMpy fixes the slack bus angle at 0 degrees. pandapower references all angles
+    # to the slack's va_degree setpoint (carried in ppci["bus"][slack, VA]), so rotate
+    # the whole profile by that reference angle to align with the other algorithms.
+    slack_va_rad = np.deg2rad(ppci["bus"][case.slack, VA])
+    if slack_va_rad != 0:
+        V *= np.exp(1j * slack_va_rad)
+
+    # ------------------------------------------- result extraction via pfsoln -----------------------------------------
+    # Store the converged voltage and admittance matrices in ppci["internal"] so that the
+    # standard pfsoln-based extraction (shared with Newton-Raphson) computes all results.
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = \
+        _get_pf_variables_from_ppci(ppci)
+
+    makeYbus, _ = _get_numba_functions(ppci, options)
+    ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
+
+    # write voltage to the bus matrix as well (needed by only_v_results / time series hack)
+    bus[:, VM] = np.abs(V)
+    bus[:, VA] = np.angle(V, deg=True)
+
+    internal = ppci["internal"]
+    internal.update({"bus": bus, "gen": gen, "branch": branch, "svc": svc, "tcsc": tcsc,
+                     "ssc": ssc, "vsc": vsc, "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq,
+                     "ref": ref, "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt})
+
+    if success:
+        bus, gen, branch = ppci_to_pfsoln(ppci, options)
 
     et = perf_counter() - t0
-    complex_voltage = run.V_complex_profile.copy()
-    polar_voltage = convert_complex_to_polar_voltages(complex_voltage)  # Calculate polar voltage
-
-    buses[:, VM] = polar_voltage[:, 0]
-    buses[:, VA] = polar_voltage[:, 1]
-
-    ppci["bus"], ppci["gen"], ppci["branch"] = buses, generators, branches
-    ppci["success"] = not flag_divergence
-    ppci["internal"]["V"] = complex_voltage
-    ppci["iterations"] = series_large
-    ppci["et"] = et
+    ppci = _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, series_large, et)
 
     return ppci
