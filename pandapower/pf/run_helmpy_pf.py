@@ -132,6 +132,18 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     ``pfsoln`` result extraction (the same one used by Newton-Raphson) so that
     generator reactive power, slack injections and branch flows are populated
     identically to the other algorithms.
+
+    The HELM-specific option ``pv_bus_model`` (1 or 2, default 2) selects how PV
+    (voltage-controlled) buses are embedded into the holomorphic equations:
+
+    - model 1: the real part of each PV-bus voltage coefficient is precomputed
+      analytically from the |V| = const constraint, leaving only the imaginary part
+      as a matrix unknown.
+    - model 2: both real and imaginary parts stay unknowns and the |V| = const
+      constraint is added as an explicit equation row.
+
+    Both formulations converge to the same load-flow solution (verified to machine
+    precision); they differ only in internal bookkeeping.
     """
     try:
         from helmpy import helm
@@ -144,6 +156,8 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     max_coefficients = options['max_iteration']
     enforce_Q_limits = bool(options["enforce_q_lims"])
     DSB_model = bool(options['distributed_slack'])
+    # HELMpy PV-bus embedding model (1 or 2). Both give the same solution; see module docstring.
+    pv_bus_model = options.get('pv_bus_model', 2)
 
     # ---------------------------------------------------- run HELM ----------------------------------------------------
     case = _build_helm_case(ppci)
@@ -156,7 +170,7 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     run, series_large, flag_divergence = helm(
         case, detailed_run_print=False, mismatch=1e-8, scale=1,
         max_coefficients=max_coefficients, enforce_Q_limits=enforce_Q_limits,
-        results_file_name=None, save_results=False, pv_bus_model=1,
+        results_file_name=None, save_results=False, pv_bus_model=pv_bus_model,
         DSB_model=DSB_model, DSB_model_method=None, K_factors=K_factors,
     )
 
