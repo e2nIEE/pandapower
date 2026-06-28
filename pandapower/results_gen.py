@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 from numpy import complex128
+
 from pandapower.pypower.idx_bus import VM, VA,BASE_KV
-from pandapower.pypower.idx_bus_dc import DC_PD
+from pandapower.pypower.idx_bus_dc import DC_PD, DC_REF, DC_BUS_TYPE
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
+from pandapower.pypower.idx_source_dc import SOURCE_DC_STATUS, SOURCE_DC_BUS
 
 from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
     I_from_SV_elementwise, S_from_VI_elementwise, SVabc_from_SV012
@@ -39,10 +41,6 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
         b = np.hstack([b, net.dcline[["from_bus", "to_bus"]].values.flatten()])
         p = np.hstack([p, net.res_dcline[["p_from_mw", "p_to_mw"]].values.flatten()])
         q = np.hstack([q, net.res_dcline[["q_from_mvar", "q_to_mvar"]].values.flatten()])
-
-    # if len(net.vsc) > 0:
-    #     # not necessary actually because the pq results already read from bus.
-    #     b, p, q = _get_vsc_slack_results(net, ppc, b, p, q)
 
     if not ac:
         q = np.zeros(len(p))
@@ -78,26 +76,38 @@ def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
 
 
 def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
-    ac = net["_options"]["ac"]
+    #ac = net["_options"]["ac"]
 
-    eg_end = sum(net['ext_grid'].in_service)
-    gen_end = eg_end + len(net['gen'])
+    #eg_end = sum(net['source_dc'].in_service)
+    #gen_end = eg_end + len(net['vsc'])
 
-    vsc_slack = net["_is_elements"]['vsc'] & (net.vsc.control_mode_dc == "vm_pu")
-    bus_dc_slack = net.vsc.loc[vsc_slack, "bus_dc"].values
+    # TODO: Check why this code is NOT needed.
+    # vsc_slack = net["_is_elements"]['vsc'] & (net.vsc.control_mode_dc == "vm_pu")
+    # bus_dc_slack = net.vsc.loc[vsc_slack, "bus_dc"].values
+    #
+    # if len(bus_dc_slack) > 0:
+    #     p = ppc["bus_dc"][bus_dc_lookup_aranged[bus_dc_slack], DC_PD]
+    #     #p = np.array([2])
+    #     # todo: check fro different vsc connected at the same bus and obtain the p for the vsc with V DC mode
+    #     net.res_vsc.loc[vsc_slack, "p_dc_mw"] = -p  # todo: divide by number of slack vsc's at the same bus
+    #     net["res_vsc"].index = net['vsc'].index
+    # else:
+    #     return
 
-    if len(bus_dc_slack) > 0:
-        p = ppc["bus_dc"][bus_dc_lookup_aranged[bus_dc_slack], DC_PD]
-        #p = np.array([2])
-        # todo: check fro different vsc connected at the same bus and obtain the p for the vsc with V DC mode
-        net.res_vsc.loc[vsc_slack, "p_dc_mw"] = -p  # todo: divide by number of slack vsc's at the same bus
-        net["res_vsc"].index = net['vsc'].index
-    else:
-        return
+    scd_relevant = net["_is_elements"]['source_dc'] & (ppc["source_dc"][:, SOURCE_DC_STATUS] > 0)
 
-    b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
-    b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]
-    bus_p_dc[b, 0] -= p_sum
+    p = np.zeros(len(net['source_dc']))
+
+    # read results from ppc for these buses
+    scd_bus = ppc["source_dc"][scd_relevant, SOURCE_DC_BUS].astype(int).tolist()
+    p[scd_relevant] = ppc["bus_dc"][scd_bus, DC_PD]
+    net['res_source_dc']['p_dc_mw'] = p
+
+    #bus_dc_slack = ppc['bus_dc'][:, DC_BUS_TYPE] == DC_REF
+
+    #b_sum, p_sum, _ = _sum_by_group(bus_dc_slack, p, p)
+    #b = bus_dc_lookup_aranged[b_sum.astype(np.int64)]
+    #bus_p_dc[b, 0] -= p_sum
 
 
 def _get_vsc_slack_results(net, ppc, b, p, q):
@@ -179,7 +189,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
                                    * ppc["gen"][eg_idx_ppc, QG]) \
                                     for ppc in [ppc0, ppc1, ppc2]])
 
-    Sabc, Vabc = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
+    Sabc, _ = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
@@ -218,22 +228,16 @@ def _get_p_q_gen_results(net, ppc):
     if net["_options"]["ac"]:
         q_gen = np.zeros(n_res_gen)
         q_gen[gen_is] = ppc["gen"][gen_idx_ppc, QG]
-        net["res_gen"]["q_mvar"].values[:] = q_gen
+        net["res_gen"].loc[:, "q_mvar"] = q_gen
 
-    net["res_gen"]["p_mw"].values[:] = p_gen
+    net["res_gen"].loc[:, "p_mw"] = p_gen
     return p_gen, q_gen
 
 def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     _is_elements = net["_is_elements"]
-    ac = net["_options"]["ac"]
     gen_is_mask = _is_elements['gen']
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
     gen_is_idx = net["gen"].index[gen_is_mask]
-    # indices of in service gens in the ppc
-    if np.any(_is_elements["gen"]):
-        gen_idx_ppc = gen_lookup[gen_is_idx]
-    else:
-        gen_idx_ppc = []
 
     # read results from ppc for these buses
     n_res_gen = len(net['gen'])
@@ -287,8 +291,8 @@ def _get_v_gen_resuts(net, ppc):
     v_a = np.zeros(n_res_gen)
     v_a[gen_is] = ppc["bus"][bus_idx_ppc][:, VA]
 
-    net["res_gen"]["vm_pu"].values[:] = v_pu
-    net["res_gen"]["va_degree"].values[:] = v_a
+    net["res_gen"].loc[:, "vm_pu"] = v_pu
+    net["res_gen"].loc[:, "va_degree"] = v_a
     return v_pu, v_a
 
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -16,6 +16,7 @@ from pandapower.pypower.idx_bus import bus_cols
 
 import logging
 std_logger = logging.getLogger(__name__)
+std_logger.setLevel(logging.DEBUG)
 
 __all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm", "IRWLSAlgorithm"]
 
@@ -35,22 +36,24 @@ class BaseAlgorithm:
     def check_observability(self, eppci: ExtendedPPCI, z):
         # Check if observability criterion is fulfilled and the state estimation is possible
         num_slacks = sum(~eppci.non_slack_bus_mask)
-        if len(z) < 2 * eppci["bus"].shape[0] - num_slacks:
+        measurements_available = 2 * eppci["bus"].shape[0] - num_slacks
+        if len(z) < measurements_available:
             self.logger.error("System is not observable (cancelling)")
-            self.logger.error("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * eppci["bus"].shape[0] - num_slacks))
-            raise UserWarning("Measurements available: %d. Measurements required: %d" %
-                              (len(z), 2 * eppci["bus"].shape[0] - num_slacks))
+            self.logger.error(f"Measurements available: {len(z)}. Measurements required: {measurements_available}")
+            raise UserWarning(f"Measurements available: {len(z)}. Measurements required: {measurements_available}")
 
     def check_result(self, current_error, cur_it):
         # print output for results
         if current_error <= self.tolerance:
             self.successful = True
-            self.logger.debug("State Estimation successful ({:d} iterations)".format(cur_it))
+            self.logger.debug(
+                f"State Estimation successful ({cur_it:d} iterations)"
+            )
         else:
             self.successful = False
-            self.logger.debug("State Estimation not successful ({:d}/{:d} iterations)".format(cur_it,
-                                                                                              self.max_iterations))
+            self.logger.debug(
+                f"State Estimation not successful ({cur_it:d}/{self.max_iterations:d} iterations)"
+            )
 
     def initialize(self, eppci: ExtendedPPCI):
         # Check observability
@@ -75,7 +78,6 @@ class WLSAlgorithm(BaseAlgorithm):
         self.hx = None
         self.iterations = None
         self.obj_func = None
-        logging.basicConfig(level=logging.DEBUG)
 
     def estimate(self, eppci: ExtendedPPCI, debug_mode=False, **kwargs):
         self.initialize(eppci)
@@ -142,15 +144,15 @@ class WLSAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
 
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
 
-        # check if the estimation is successfull
+        # check if the estimation is successful
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        if debug_mode: 
+        if debug_mode:
             self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
@@ -225,7 +227,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
                 cur_it += 1
                 current_error = np.max(np.abs(d_E_ext[:len(eppci.non_slack_buses) + num_bus]))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
@@ -267,7 +269,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
@@ -348,7 +350,7 @@ class AFWLSAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
 
-            except np.linalg.linalg.LinAlgError:
+            except np.linalg.LinAlgError:
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False

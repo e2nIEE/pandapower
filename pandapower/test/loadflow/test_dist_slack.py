@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 import pytest
-
+import copy
 from pandapower.control import ContinuousTapControl
 from pandapower.create import create_empty_network, create_buses, create_gen, create_load, create_ext_grid, \
     create_line_from_parameters, create_xward, create_bus, create_shunt
@@ -54,7 +54,7 @@ def _get_xward_result(net):
     internal_results = np.array([])
     ppc = net._ppc
 
-    ft = net._pd2ppc_lookups.get('branch', dict()).get('xward', [])
+    ft = net._pd2ppc_lookups.get('branch', {}).get('xward', [])
     if len(ft) > 0:
         f, t = ft
         p_impedance = ppc['branch'][f:t, PF].real
@@ -145,7 +145,7 @@ def check_xward_results(net, tol=1e-9):
 
 def run_and_assert_numba(net, **kwargs):
     if numba_installed:
-        net_temp = net.deepcopy()
+        net_temp = copy.deepcopy(net)
         runpp(net_temp, distributed_slack=True, numba=False, **kwargs)
         runpp(net, distributed_slack=True, **kwargs)
         assert_res_equal(net, net_temp)
@@ -179,7 +179,7 @@ def test_small_example():
     # ext_grids are responsible to take the slack power
     net.gen["slack_weight"] = 1
 
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
 
     runpp(net, distributed_slack=True, numba=False)
 
@@ -386,7 +386,6 @@ def test_case9():
     """
     tol_mw = 1e-6
     net = case9()
-    # net = case9_simplified()
 
     # set slack_weight (distributed slack participation factor)
     net.ext_grid['slack_weight'] = 1 / 3
@@ -416,7 +415,7 @@ def test_case9():
     assert np.allclose(gen_diff, p_target_gen, atol=tol_mw)
 
     # check balance of power
-    injected_p_mw, consumed_p_mw, xward_p_mw = _get_injection_consumption(net)
+    _, consumed_p_mw, xward_p_mw = _get_injection_consumption(net)
     assert abs(net.res_ext_grid.p_mw.sum() + net.res_gen.p_mw.sum() - consumed_p_mw - xward_p_mw) < 1e-6
 
     # check the distribution formula of the slack power difference
@@ -453,7 +452,7 @@ def test_multivoltage_example_with_controller():
     expected_slack_power = load_disp + expected_losses - gen_disp  # MW
     tol = 0.5  # MW
 
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
     # test distributed_slack
     run_and_assert_numba(net)
 
@@ -507,7 +506,7 @@ def test_dist_slack_user_pf_options():
     # ext_grids are responsible to take the slack power
     net.gen["slack_weight"] = 1
 
-    net2 = net.deepcopy()
+    net2 = copy.deepcopy(net)
 
     runpp(net, distributed_slack=True)
 

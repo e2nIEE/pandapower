@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -18,7 +18,8 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.control import DiscreteTapControl, ConstControl, ContinuousTapControl, Characteristic, \
     SplineCharacteristic
 from pandapower.create import create_transformer
-from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, convert_format, from_json, to_json, \
+from pandapower.convert_format import convert_format
+from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, from_json, to_json, \
     from_json_string, create_empty_network
 from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
 from pandapower.networks import mv_oberrhein, simple_four_bus_system, case9, case14, create_kerber_dorfnetz
@@ -26,11 +27,11 @@ from pandapower.run import set_user_pf_options, runpp
 from pandapower.sql_io import to_sqlite, from_sqlite
 from pandapower.test.helper_functions import assert_net_equal, create_test_network, create_test_network2
 from pandapower.timeseries import DFData
-from pandapower.toolbox import nets_equal, dataframes_equal
+from pandapower.toolbox.comparison import nets_equal, dataframes_equal
 from pandapower.topology.create_graph import create_nxgraph
 
 try:
-    import cryptography.fernet
+    import cryptography.fernet # type: ignore
 
     cryptography_INSTALLED = True
 except ImportError:
@@ -72,10 +73,6 @@ def net_in(request):
 @pytest.fixture()
 def net_charactistics():
     return from_json(os.path.join(pp_dir, "test", "test_files", "from_excel_characteristics.json"))
-
-
-#    if request.param == 2:
-#        return networks.case145()
 
 
 def test_pickle(net_in, tmp_path):
@@ -163,15 +160,13 @@ def test_json(net_in, tmp_path):
         import geopandas as gpd
 
         bus_geometry = net_geo.bus["geo"].dropna().apply(geojson.loads).apply(shape)
-        net_geo["bus_geodata"] = gpd.GeoDataFrame(geometry=bus_geometry, crs=f"epsg:4326")
+        net_geo["bus_geodata"] = gpd.GeoDataFrame(geometry=bus_geometry, crs="epsg:4326")
         line_geometry = net_geo.line["geo"].dropna().apply(geojson.loads).apply(shape)
-        net_geo["line_geodata"] = gpd.GeoDataFrame(geometry=line_geometry, crs=f"epsg:4326")
+        net_geo["line_geodata"] = gpd.GeoDataFrame(geometry=line_geometry, crs="epsg:4326")
 
         to_json(net_geo, filename)
         net_out = from_json(filename)
         assert_net_equal(net_geo, net_out)
-        # assert isinstance(net_out.line_geodata, gpd.GeoDataFrame)
-        # assert isinstance(net_out.bus_geodata, gpd.GeoDataFrame)
         assert isinstance(net_out.bus_geodata.geometry.iat[0], Point)
         assert isinstance(net_out.line_geodata.geometry.iat[0], LineString)
 
@@ -262,7 +257,7 @@ def test_json_encoding_decoding():
     net.tuple = (1, "4")
     net.mg = create_nxgraph(net)
     s = {'1', 4}
-    t = tuple(['2', 3])
+    t = ('2', 3)
     f = frozenset(['12', 3])
     a = np.array([1., 2.])
     d = {"a": net, "b": f}
@@ -524,13 +519,13 @@ def test_json_generalized():
                 "col4": "i8"}
     }))
     general_net1 = copy.deepcopy(general_net0)
-    general_net1.df1.loc[0] = ["hey", 1.2]
-    general_net1.df2.loc[2] = [False, 2]
+    general_net1.df1.loc[0, ["col1", "col2"]] = ["hey", 1.2]
+    general_net1.df2.loc[2, ["col3", "col4"]] = [False, 2]
 
     for general_in in [general_net0, general_net1]:
         out = from_json_string(to_json(general_in),
                                empty_dict_like_object=pandapowerNet({}))
-        assert sorted(list(out.keys())) == ["df1", "df2"]
+        assert sorted(out.keys()) == ["df1", "df2"]
         assert nets_equal(out, general_in)
 
 
@@ -545,14 +540,13 @@ def test_json_simple_index_type():
     df4 = pd.DataFrame(s4)
     df5, df6, df7, df8 = df1.T, df2.T, df3.T, df4.T
     df9 = pd.DataFrame([[1, 2, 3], [4, 5, 7]], index=[1, "2"], columns=[4, "5", 6])
-    input = {key: val for key, val in zip("abcdefghijkl", [
-        s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9])}
-    json_str = to_json(input)
+    json_input = dict(zip("abcdefghijkl", [s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9]))
+    json_str = to_json(json_input)
     output = from_json_string(json_str, convert=False)
-    for key in list("abcd"):
-        assert_series_equal(input[key], output[key], check_dtype=False)
-    for key in list("efghijkl"):
-        assert_frame_equal(input[key], output[key], check_dtype=False)
+    for key in [*"abcd"]:
+        assert_series_equal(json_input[key], output[key], check_dtype=False)
+    for key in [*"efghijkl"]:
+        assert_frame_equal(json_input[key], output[key], check_dtype=False)
 
 
 def test_json_index_names():
@@ -569,7 +563,6 @@ def test_json_index_names():
 
 
 def test_json_multiindex_and_index_names():
-    # idx_tuples = tuple(zip(["a", "a", "b", "b"], ["bar", "baz", "foo", "qux"]))
     idx_tuples = tuple(zip([1, 1, 2, 2], ["bar", "baz", "foo", "qux"]))
     col_tuples = tuple(zip(["d", "d", "e"], ["bak", "baq", "fuu"]))
     idx1 = pd.MultiIndex.from_tuples(idx_tuples)
@@ -586,13 +579,13 @@ def test_json_multiindex_and_index_names():
         df_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), columns=col)
         df_mi_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), index=idx, columns=col)
 
-        input = {key: val for key, val in zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc])}
-        json_str = to_json(input)
+        json_input = dict(zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc]))
+        json_str = to_json(json_input)
         output = from_json_string(json_str, convert=False)
-        assert_series_equal(input["a"], output["a"], check_dtype=False)
-        assert_frame_equal(input["b"], output["b"], check_dtype=False, check_column_type=False)
-        assert_frame_equal(input["c"], output["c"], check_dtype=False, check_index_type=False)
-        assert_frame_equal(input["d"], output["d"], check_dtype=False, check_column_type=False,
+        assert_series_equal(json_input["a"], output["a"], check_dtype=False)
+        assert_frame_equal(json_input["b"], output["b"], check_dtype=False, check_column_type=False)
+        assert_frame_equal(json_input["c"], output["c"], check_dtype=False, check_index_type=False)
+        assert_frame_equal(json_input["d"], output["d"], check_dtype=False, check_column_type=False,
                            check_index_type=False)
 
 
@@ -657,10 +650,27 @@ def test_ignore_unknown_objects():
     assert isinstance(net4.controller.object.at[0], dict)
 
     # make sure that the loaded net equals the original net except for the controller
-    net3.controller.object.at[0] = net.controller.object.at[0]
-    net4.controller.object.at[0] = net.controller.object.at[0]
+    net3.controller.at[0, "object"] = net.controller.object.at[0]
+    net4.controller.at[0, "object"] = net.controller.object.at[0]
     assert_net_equal(net, net3)
     assert_net_equal(net, net4)
+
+
+def test_omitting_tables_from_json(net_in):
+    net = copy.deepcopy(net_in)
+    ConstControl(net, 'load', 'p_mw', 0)
+    json_string = to_json(net)
+    net1 = from_json(json_string, omit_tables=['controller'])
+    net2 = from_json(json_string)
+    net3 = from_json(json_string, omit_modules=['control.controller'])
+
+    assert(nets_equal(net, net2))
+    assert(not nets_equal(net, net1))
+    net.controller.drop(0, inplace=True)
+    assert(nets_equal(net, net1))
+    assert(not nets_equal(net, net3))
+    net3.controller.drop(net3.controller.index, inplace=True)
+    assert(nets_equal(net, net3))
 
 
 if __name__ == "__main__":

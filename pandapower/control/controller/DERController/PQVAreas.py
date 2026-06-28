@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -146,7 +144,8 @@ class QVAreaPOLYGON(BaseArea):
         return np.array([self.polygon.contains(Point(vmi, qi)) for vmi, qi in zip(vm_pu, q_pu)])
 
     def q_flexibility(self, p_pu, vm_pu):
-        assert all(vm_pu >= 0) and all(vm_pu <= 2)
+        if not (all(vm_pu >= 0) and all(vm_pu <= 2)):
+            raise AssertionError("vm_pu not always between 0 and 2")
         def _q_flex(vm_pu):
             line = LineString([(vm_pu, -1), (vm_pu, 1)])
             if line.intersects(self.polygon):

@@ -1,0 +1,88 @@
+import pandas as pd
+import pandera.pandas as pa
+
+from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
+
+_dcline_columns = {
+    "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the generator"),
+    "from_bus": pa.Column(
+        int,
+        pa.Check.ge(0),
+        description="Index of bus where the dc line starts",
+        metadata={"foreign_key": "bus.index"},
+    ),
+    "to_bus": pa.Column(
+        int,
+        pa.Check.ge(0),
+        description="Index of bus where the dc line ends",
+        metadata={"foreign_key": "bus.index"},
+    ),
+    "p_mw": pa.Column(float, description="Active power transmitted from ‘from_bus’ to ‘to_bus’"),
+    "loss_percent": pa.Column(
+        float,
+        pa.Check.ge(0),
+        description="Relative transmission loss in percent of active power transmission",
+    ),
+    "loss_mw": pa.Column(float, pa.Check.ge(0), description="Total transmission loss in MW"),
+    "vm_from_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at from bus"),
+    "vm_to_pu": pa.Column(float, pa.Check.gt(0), description="Voltage setpoint at to bus"),
+    "max_p_mw": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="Maximum active power transmission",
+        metadata={"opf": True},
+    ),
+    "min_p_mw": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="Minimum active power transmission",
+        metadata={"opf": True},
+    ),
+    "min_q_from_mvar": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="Minimum reactive power at from bus",
+        metadata={"opf": True},
+    ),
+    "max_q_from_mvar": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="Maximum reactive power at from bus",
+        metadata={"opf": True},
+    ),
+    "min_q_to_mvar": pa.Column(
+        float, nullable=True, required=False, description="Minimum reactive power at to bus", metadata={"opf": True}
+    ),
+    "max_q_to_mvar": pa.Column(
+        float, nullable=True, required=False, description="Maximum reactive power at to bus", metadata={"opf": True}
+    ),
+    "in_service": pa.Column(bool, description="specifies if the line is in service."),
+}
+dcline_schema = pa.DataFrameSchema(
+    _dcline_columns,
+    checks=create_column_dependency_checks_from_metadata(["opf"], _dcline_columns),
+    strict=False,
+)
+
+res_dcline_schema = pa.DataFrameSchema(
+    {
+        "p_from_mw": pa.Column(float, nullable=True, description="active power flow into the line at ‘from_bus’ [MW]"),
+        "q_from_mvar": pa.Column(
+            float, nullable=True, description="reactive power flow into the line at ‘from_bus’ [kVar]"
+        ),
+        "p_to_mw": pa.Column(float, nullable=True, description="active power flow into the line at ‘to_bus’ [MW]"),
+        "q_to_mvar": pa.Column(
+            float, nullable=True, description="reactive power flow into the line at ‘to_bus’ [kVar]"
+        ),
+        "pl_mw": pa.Column(float, nullable=True, description="active power losses of the line [MW]"),
+        "vm_from_pu": pa.Column(float, nullable=True, description="voltage magnitude at ‘from_bus’ [p.u]"),
+        "va_from_degree": pa.Column(float, nullable=True, description="voltage angle at ‘from_bus’ [degree]"),
+        "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at ‘to_bus’ [p.u]"),
+        "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at ‘to_bus’ [degree]"),
+    },
+    strict=False,
+)

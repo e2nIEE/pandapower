@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -38,10 +38,11 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     """
     Calculates P/Q values from rated apparent power and cosine(phi) values.
 
-       - s: rated apparent power
-       - cosphi: cosine phi of the
-       - qmode: "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
-       - pmode: "load" for load or "gen" for generation
+    Parameters:
+       s: rated apparent power
+       cosphi: cosine phi of the
+       qmode: "underexcited" (Q absorption, decreases voltage) or "overexcited" (Q injection, increases voltage)
+       pmode: "load" for load or "gen" for generation
 
     As all other pandapower functions this function is based on the consumer viewpoint. For active
     power, that means that loads are positive and generation is negative. For reactive power,
@@ -109,14 +110,14 @@ def _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=None):
     qmode[is_cap] = "overexcited"
 
     # qmode consideration
-    unknown_qmode = set(qmode) - set(["underexcited", "overexcited"])
+    unknown_qmode = set(qmode) - {"underexcited", "overexcited"}
     if len(unknown_qmode):
         raise ValueError("Unknown qmodes: " + str(list(unknown_qmode)))
     qsign = np.ones(qmode.shape)
     qsign[qmode == "overexcited"] = -1
 
     # pmode consideration
-    unknown_pmode = set(pmode) - set(["load", "gen"])
+    unknown_pmode = set(pmode) - {"load", "gen"}
     if len(unknown_pmode):
         raise ValueError("Unknown pmodes: " + str(list(unknown_pmode)))
     psign = np.ones(pmode.shape)
@@ -199,7 +200,7 @@ def cosphi_pos_neg_from_pq(p, q):
     Examples
     --------
     >>> import numpy as np
-    >>> from pandapower.toolbox import cosphi_pos_neg_from_pq
+    >>> from pandapower.toolbox.power_factor import cosphi_pos_neg_from_pq
     >>> np.round(cosphi_pos_neg_from_pq(0.76, 0.25), 5)
     0.94993
     >>> np.round(cosphi_pos_neg_from_pq(0.76, -0.25), 5)

@@ -72,6 +72,7 @@ Measurements are defined via the pandapower *"create_measurement"* function. The
 The *"create_measurement"* function is defined as follows:
 
 .. autofunction:: pandapower.create.create_measurement
+    :no-index:
 
 Running the State Estimation
 =============================

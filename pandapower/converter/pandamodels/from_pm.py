@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -8,17 +8,18 @@ import math
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-from pandapower.auxiliary import _clean_up
-from pandapower.converter import logger
+from pandapower.auxiliary import _clean_up, pandapowerNet
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
 from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.toolbox import pp_elements
+from logging import getLogger
+
+logger = getLogger('converter.pandamodels.from_pm')
 
 
-def read_pm_results_to_net(net, ppc, ppci, result_pm):
+def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
     """
     reads power models results from result_pm to ppc / ppci and then to pandapower net
     """
@@ -30,7 +31,6 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
         net["_pm_result"]["ne_branch"] = result_pm["solution"]["ne_branch"]
     net["_pm_result"]["solve_time"] = result_pm["solve_time"]
 
-    # net["_pm_result"] = result_pm
     success = ppc["success"]
     if success:
         if not multinetwork:
@@ -52,18 +52,18 @@ def read_pm_results_to_net(net, ppc, ppci, result_pm):
         raise OPFNotConverged("PowerModels.jl OPF not converged")
 
 
-def add_storage_results(net, result_pmi):
+def add_storage_results(net: pandapowerNet, result_pmi):
     if "storage" in result_pmi:
         df = net.res_storage
         df[["ps", "qs", "se", "qsc"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
         df[["sc", "sc_on", "sd", "sd_on"]] = pd.DataFrame([[np.nan, np.nan, np.nan, np.nan]], index=df.index)
         controllable_storages = net.storage.index[net.storage.controllable]
-        df_pm = pd.DataFrame.from_dict(result_pmi["storage"]).T
+        df_pm = pd.DataFrame.from_dict(result_pmi["storage"], orient="index")
         df_pm.index = controllable_storages
         df.loc[controllable_storages] = df_pm
 
 
-def add_time_series_data_to_net(net, controller, tp):
+def add_time_series_data_to_net(net: pandapowerNet, controller, tp):
     from pandapower.control import ConstControl
     for idx, content in controller.iterrows():
         if type(content["object"]) == ConstControl:
@@ -71,10 +71,10 @@ def add_time_series_data_to_net(net, controller, tp):
             variable = content["object"].__dict__["matching_params"]["variable"]
             elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
             df = content["object"].data_source.df
-            net[element][variable][elm_idxs] = df.loc[int(tp)]
+            net[element].loc[elm_idxs,variable] = df.loc[int(tp)].values
 
 
-def pm_results_to_ppc_results(net, ppc, ppci, result_pm):
+def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
     options = net._options
     # status if result is from multiple grids
     multinetwork = False
@@ -137,7 +137,7 @@ def pm_results_to_ppc_results_one_time_step(ppci, sol):
                 ppci["branch"][br_idx, BR_STATUS] = branch["br_status"] > 0.5
 
 
-def read_ots_results(net):
+def read_ots_results(net: pandapowerNet):
     """
     Reads the branch_status variable from ppc to pandapower net
 
@@ -155,10 +155,10 @@ def read_ots_results(net):
             net[res].loc[:, "in_service"] = net[res].loc[:, "in_service"].values
         branch_status = ppc["branch"][f:t, BR_STATUS].real
 
-        net[res]["in_service"].values[:] = branch_status
+        net[res].loc[:, "in_service"] = branch_status
 
 
-def read_tnep_results(net):
+def read_tnep_results(net: pandapowerNet):
     ne_branch = net._pm_result["ne_branch"]
     line_idx = net["res_ne_line"].index
     for pm_branch_idx, branch_data in ne_branch.items():

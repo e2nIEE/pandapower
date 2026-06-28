@@ -16,8 +16,7 @@ from pandapower.pypower.idx_bus import CID_P, CID_Q, CZD_P, CZD_Q
 def _get_Sbus(baseMVA, bus, gen_on, Cg, vm=None):
     # power injected by gens plus power injected by loads converted to p.u.
     S_load = _get_Sload(bus, vm)
-    Sbus = (Cg * (gen_on[:, PG] + 1j * gen_on[:, QG])
-            - S_load) / baseMVA
+    Sbus = (Cg * (gen_on[:, PG] + 1j * gen_on[:, QG]) - S_load) / baseMVA
     return Sbus
 
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import warnings
 
@@ -225,7 +225,7 @@ def _calc_ith(net, ppci):
     f = 50
     n = 1
     m = (np.exp(4 * f * tk_s * np.log(kappa - 1)) - 1) / (2 * f * tk_s * np.log(kappa - 1))
-    m[np.where(kappa > 1.99)] = 0
+    m[np.nonzero(kappa > 1.99)] = 0
     ppci["bus"][:, M] = m
     ith = (ppci["bus"][:, IKSS1] + ppci["bus"][:, IKSS2]) * np.sqrt(m + n)
     ppci["bus"][:, ITH] = ith
@@ -469,7 +469,7 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
     #         ikss[b] = ppci["bus"][b, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][b, PHI_IKSS1_DEGREE])) * baseI[b]
     #         V_ikss[:, ix] = ybus_fact(ikss)
 
-    # net_copy = net.deepcopy()
+    # net_copy = copy.deepcopy(net)
     # pp.runpp(net_copy)
     # Ybus_p = net_copy._ppc["internal"]["Ybus"]
     # Yf_p = net_copy._ppc["internal"]["Yf"]

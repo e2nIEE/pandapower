@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -50,6 +50,8 @@ def test_cigre_mv():
     assert len(net.switch) == 8
     assert net.converged
 
+
+def test_cigre_mv_pv_wind():
     net = create_cigre_network_mv(with_der="pv_wind")
     runpp(net)
 
@@ -66,6 +68,8 @@ def test_cigre_mv():
     assert len(net.switch) == 8
     assert net.converged
 
+
+def test_cigre_mv_all():
     net = create_cigre_network_mv(with_der="all")
     runpp(net)
 
@@ -102,5 +106,5 @@ def test_cigre_lv():
     assert net.converged
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

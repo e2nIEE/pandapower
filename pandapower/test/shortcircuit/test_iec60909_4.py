@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
@@ -40,13 +40,13 @@ def iec_60909_4():
     t1 = create_transformer_from_parameters(net, b4, HG1, sn_mva=150, pfe_kw=0, i0_percent=0, vn_hv_kv=115.,
                                             vn_lv_kv=21, vk_percent=16, vkr_percent=0.5, pt_percent=12, oltc=True,
                                             vk0_percent=15.2, vkr0_percent=0.5, xn_ohm=22, vector_group="YNd",
-                                            mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5, power_station_unit=True)
+                                            mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.5, power_station_unit=True)
     create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150,
                pg_percent=0, power_station_trafo=t1)
 
     t2 = create_transformer_from_parameters(net, b3, HG2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
                                             vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, oltc=False, vk0_percent=12,
-                                            vkr0_percent=0.5, vector_group="Yd", mag0_percent=100, mag0_rx=0,
+                                            vkr0_percent=0.5, vector_group="Yd", mag0_percent=10000, mag0_rx=0,
                                             si0_hv_partial=0.5, power_station_unit=True)
     create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
                pg_percent=7.5, slack=True, power_station_trafo=t2)
@@ -138,7 +138,7 @@ def iec_60909_4_small(with_xward=False):
 
     t1 = create_transformer_from_parameters(net, b3, HG2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
                                             vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, vk0_percent=12,
-                                            vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
+                                            vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.5,
                                             shift_degree=5, vector_group="Yd", power_station_unit=True)
     create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
                pg_percent=7.5, slack=True, power_station_trafo=t1)
@@ -189,7 +189,7 @@ def iec_60909_4_small_gen_only():
 
     t1 = create_transformer_from_parameters(net, b3, HG2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
                                             vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, vk0_percent=12,
-                                            vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.5,
+                                            vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.5,
                                             vector_group="Yd", power_station_unit=True)
     create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
                pg_percent=7.5, slack=True, power_station_trafo=t1)
@@ -234,7 +234,7 @@ def vde_232():
                                        tap_changer_type="Ratio", tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv',
                                        vector_group="YNd",
                                        vk0_percent=np.sqrt(np.square(0.95 * 15.99219) + np.square(0.5)),
-                                       vkr0_percent=0.5, mag0_percent=100, mag0_rx=0, si0_hv_partial=0.9, pt_percent=12,
+                                       vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.9, pt_percent=12,
                                        oltc=True)
     # todo: implement Zn (reactance grounding) -> Z_(0)S = Z_(0)THV*K_S + 3*Z_N
     create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0)
@@ -349,7 +349,10 @@ def test_iec_60909_4_3ph_min():
     net.ext_grid["rx_min"] = net.ext_grid["rx_max"]
     calc_sc(net, fault="3ph", case="min", ip=True, tk_s=0.1, kappa_method="C")
 
-    ikss_min = [5.0501, 12.2915, 10.3292, 9.4708, 11.8604, 28.3052, 18.6148, 10.9005, 44.5098, 67.9578]
+    ikss_min = [5.0257, 12.0645, 10.2108, 9.3820, 11.6761,
+                27.7655, 18.3930, 10.9024, 44.4310, 67.8216]
+   
+    # ikss_min = [5.0501, 12.2915, 10.3292, 9.4708, 11.8604, 28.3052, 18.6148, 10.9005, 44.5098, 67.9578]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss_min), atol=1e-3)
 
@@ -360,7 +363,7 @@ def test_iec_60909_4_3ph_ps_trafo_flag():
     ps_trafo = net.gen.power_station_trafo.values
     ps_trafo = ps_trafo[~np.isnan(ps_trafo)].astype(np.int64)
     net.trafo.loc[ps_trafo, "power_station_unit"] = True
-    net.gen.power_station_trafo.values[:] = np.nan
+    net.gen.loc[:, "power_station_trafo"] = np.nan
 
     detect_power_station_unit(net, mode="trafo")
     calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")

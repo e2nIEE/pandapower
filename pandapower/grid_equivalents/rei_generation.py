@@ -112,7 +112,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
 def adapt_impedance_params(Z, sign=1, adaption=1e-15):
     """
     In some extreme cases, the created admittance matrix of the
-    zpbn network is singular. The routine is unsolvalbe with it.
+    zpbn network is singular. The routine is unsolvable with it.
     In response, an impedance adaption is created and added.
     """
     rft_pu = Z.real + sign * adaption
@@ -149,7 +149,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
         **tolerance_mva** (float, 1e-3) - loadflow termination
             condition referring to P / Q mismatch of node power
-            in MVA. The loalflow hier is to get the admittance
+            in MVA. The loadflow hier is to get the admittance
             matrix of the zpbn network
 
     OUTPUT:
@@ -302,7 +302,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                 else:  # value_types[0] is None:
                     other_cols_none |= {c}
                 other_cols -= {c}
-            assert len(other_cols) == 0
+            if len(other_cols) != 0:
+                raise AssertionError('other_cols should be empty now.')
         if "integrated" in key:
             if "voltLvl" in other_cols_number:
                 net_zpbn[elm].loc[elm_idx, "voltLvl"] = \
@@ -401,8 +402,8 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                                               (df.et == elm)]
                             if len(pc_idx) > 1:
                                 logger.debug("Attention! There are at least two " + elm + "s connected to a " +
-                                             "common bus. The " + elm + "s with commen bus are modeled as an " +
-                                             "aggreated " + elm + " during the equivalencing. " +
+                                             "common bus. The " + elm + "s with common bus are modeled as an " +
+                                             "aggregated " + elm + " during the equivalencing. " +
                                              "The " + cost_elm + " data of the first " + elm + " is used as the " +
                                              cost_elm + " data of the aggregated " + elm + ". " +
                                              "It is NOT correct at present.")
@@ -522,36 +523,35 @@ def _get_internal_and_external_nets(net, boundary_buses, all_internal_buses,
                                     all_external_buses, show_computing_time=False,
                                     calc_volt_angles=True,
                                     runpp_fct=_runpp_except_voltage_angles, **kwargs):
-    "This function identifies the internal area and the external area"
+    """
+    This function identifies the internal area and the external area
+    """
     t_start = time.perf_counter()
     if not all_internal_buses:
         net_internal = None
     else:
         net_internal = deepcopy(net)
         drop_measurements_and_controllers(net_internal, all_external_buses, True)
-        drop_and_edit_cost_functions(net_internal,
-                                     all_external_buses + boundary_buses,
-                                     True, True)
+        drop_and_edit_cost_functions(net_internal, all_external_buses + boundary_buses, True, True)
         drop_buses(net_internal, all_external_buses)
 
     net_external = deepcopy(net)
     if "group" in net_external:
-        net_external.group = net_external.group.drop(net_external.group.index)
-    drop_and_edit_cost_functions(net_external, all_internal_buses,
-                                 True, True)
+        net_external.group = net_external.group[:0]  # clear dataframe
+    drop_and_edit_cost_functions(net_external, all_internal_buses, True, True)
     drop_measurements_and_controllers(net_external, net_external.bus.index.tolist())
     drop_buses(net_external, all_internal_buses)
     replace_motor_by_load(net_external, all_external_buses)
     #    add_ext_grids_to_boundaries(net_external, boundary_buses, runpp_fct=runpp_fct, **kwargs)
     #    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
-    _integrate_power_elements_connected_with_switch_buses(net, net_external,
-                                                          all_external_buses)  # for sgens, gens, and loads
+    
+    # for sgens, gens, and loads:
+    _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses)
+    
     runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, **kwargs)
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("\"get_int_and_ext_nets\" " +
-                    "finished in %s seconds:" % round((t_end - t_start), 2))
-
+        logger.info(f'"get_int_and_ext_nets" finished in {t_end - t_start:.02f} seconds.')
     return net_internal, net_external
 
 

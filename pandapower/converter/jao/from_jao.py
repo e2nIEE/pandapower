@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-nt
-
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
@@ -16,7 +14,7 @@ from pandapower.create import create_empty_network, create_buses, create_lines_f
     create_transformers_from_parameters
 from pandapower.topology import create_nxgraph, connected_components
 from pandapower.plotting import set_line_geodata_from_bus_geodata
-from pandapower.toolbox import drop_buses, fuse_buses
+from pandapower.toolbox.grid_modification import drop_buses, fuse_buses
 
 import logging
 
@@ -52,61 +50,45 @@ def from_jao(excel_file_path: str,
     - **Grid Group Connections:** Optionally extends the network by connecting islanded grid groups to avoid disconnected components.
     - **Data Customization:** Allows for customization through additional parameters to control transformer creation, grid group dropping, and voltage level deviations.
 
-    :param str excel_file_path:
-        input data including electrical parameters of grids' utilities, stored in multiple sheets
-        of an excel file
+    Parameters:
+        excel_file_path: input data including electrical parameters of grids' utilities, stored in multiple sheets
+            of an excel file
+        html_file_path: input data for geo information. If The converter should be run without geo information, None
+            can be passed., provided by an html file
+        extend_data_for_grid_group_connections: if True, connections (additional transformers and merging buses) are
+            created to avoid islanded grid groups, by default False
+        drop_grid_groups_islands: if True, islanded grid groups will be dropped if their number of buses is below
+            `min_bus_number` default for this is 6 (default: False)
+        apply_data_correction: _description_ (default: True)
+        max_i_ka_fillna: value to fill missing values or data of false type in max_i_ka of lines and transformers.
+            If no value should be set, you can also pass np.nan. (default: 999)
 
-    :param str html_file_path:
-        input data for geo information. If The converter should be run without geo information, None
-        can be passed., provided by an html file
-
-    :param bool extend_data_for_grid_group_connections:
-        if True, connections (additional transformers and merging buses) are created to avoid
-        islanded grid groups, by default False
-
-    :param Optional[bool] drop_grid_groups_islands:
-        if True, islanded grid groups will be dropped if their number of buses is below
-        `min_bus_number` default for this is 6 (default: False)
-
-    :param Optional[bool] apply_data_correction:
-        _description_ (default: True)
-
-    :param Optional[float|int] max_i_ka_fillna:
-        value to fill missing values or data of false type in max_i_ka of lines and transformers.
-        If no value should be set, you can also pass np.nan. (default: 999)
-
-    :param '**'kwargs: following params are available
-
-    :param Optional[bool] minimal_trafo_invention:
-        applies if extend_data_for_grid_group_connections is True. Then, if minimal_trafo_invention
-        is True, adding transformers stops when no grid groups is islanded anymore (does not apply
-        for release version 5 or 6, i.e. it does not care what value is passed to
-        minimal_trafo_invention). If False, all equally named buses that have different voltage
-        level and lay in different groups will be connected via additional transformers (default: False)
-
-    :param Optional[int|str] min_bus_number:
-        Threshold value to decide which small grid groups should be dropped and which large grid
-        groups should be kept. If all islanded grid groups should be dropped except of the one
-        largest, set "max". If all grid groups that do not contain a slack element should be
-        dropped, set "unsupplied". (default: 6)
-
-    :param Optional[float] rel_deviation_threshold_for_trafo_bus_creation:
-        If the voltage level of transformer locations is far different than the transformer data,
-        additional buses are created. rel_deviation_threshold_for_trafo_bus_creation defines the
-        tolerance in which no additional buses are created. (default: 0.2)
-
-    :param Optional[float] log_rel_vn_deviation:
-        This parameter allows a range below rel_deviation_threshold_for_trafo_bus_creation in which
-        a warning is logged instead of a creating additional buses. (default: 0.12)
-
-    :return: net created from the jao data
-    :rtype: pandapowerNet
-
-    :example:
+    Keyword Arguments:
+        minimal_trafo_invention (Optional[bool]): applies if extend_data_for_grid_group_connections is True. Then,
+            if minimal_trafo_invention is True, adding transformers stops when no grid groups is islanded anymore
+            (does not apply for release version 5 or 6, i.e. it does not care what value is passed to
+            minimal_trafo_invention). If False, all equally named buses that have different voltage level and lay in
+            different groups will be connected via additional transformers (default: False)
+        min_bus_number (Optional[int|str]): Threshold value to decide which small grid groups should be dropped and
+            which large grid groups should be kept. If all islanded grid groups should be dropped except of the one
+            largest, set "max". If all grid groups that do not contain a slack element should be dropped, set
+            "unsupplied". (default: 6)
+        rel_deviation_threshold_for_trafo_bus_creation (Optional[float]): If the voltage level of transformer locations
+            is far different than the transformer data, additional buses are created.
+            rel_deviation_threshold_for_trafo_bus_creation defines the tolerance in which no additional buses are
+            created. (default: 0.2)
+        log_rel_vn_deviation (Optional[float]): This parameter allows a range below
+            rel_deviation_threshold_for_trafo_bus_creation in which a warning is logged instead of a creating additional
+            buses. (default: 0.12)
+    
+    Returns:
+        net created from the jao data
+    
+    Example:
         >>> from pathlib import Path
         >>> import os
-        >>> import pandapower as pp
-        >>> net = pp.converter.from_jao()
+        >>> from pandapower.converter.jao.from_jao import from_jao
+        >>> net = from_jao()
         >>> home = str(Path.home())
         >>> # assume that the files are located at your desktop:
         >>> excel_file_path = os.path.join(home, "desktop", "202409_Core Static Grid Mode_6th release")
@@ -179,6 +161,7 @@ def _data_correction(
     rename_locnames = [("PSTMIKULOWA", "PST MIKULOWA"),
                        ("Chelm", "CHELM"),
                        ("OLSZTYN-MATK", "OLSZTYN-MATKI"),
+                       ("OLSZTYN-MATKII", "OLSZTYN-MATKI"),
                        ("STANISLAWOW", "Stanislawow"),
                        ("VIERRADEN", "Vierraden")]
 
@@ -261,8 +244,10 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
         name_end = "</b>"
         pos0 = st.find(name_start) + len(name_start)
         pos1 = st.find(name_end, pos0)
-        assert pos0 >= 0
-        assert pos1 >= len(name_start)
+        if pos0 < 0:
+            raise AssertionError('pos0 < 0')
+        if pos1 < len(name_start):
+            raise AssertionError('pos1 < len(name_start)')
         return st[pos0:pos1]
 
     json_start_str = '<script type="application/json" data-for="htmlwidget-216030e6806f328c00fb">'
@@ -309,7 +294,8 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
     bus_df = _drop_duplicates_and_join_TSO(bus_df)
     new_bus_idx = create_buses(
         net, len(bus_df), vn_kv=bus_df.vn_kv, name=bus_df.name, zone=bus_df.TSO)
-    assert np.allclose(new_bus_idx, bus_df.index)
+    if any(new_bus_idx != bus_df.index):
+        raise AssertionError("Not all values of now_bus_idx are identical to bus_df.index")
 
 
 def _create_lines(
@@ -378,7 +364,7 @@ def _create_transformers_and_buses(
     max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, (
         "Maximum Current Imax (A) primary", "Max")].values
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
-    z_pu = vn_lv_kv**2 / sn_mva
+    z_pu = vn_hv_kv**2 / sn_mva
     rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
     xk = data[key].xs("Reactance_X(Ω)", level=1, axis=1).values[:, 0] / z_pu
     b0 = data[key].xs("Susceptance_B (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu
@@ -625,7 +611,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                 lgd_bus.loc["EIC_Code"].index.get_level_values("identifier")),
             "name": ~line_excerpt.name.isin(
                 lgd_bus.loc["name"].index.get_level_values("identifier"))
-        }).set_axis(is_dupl.index)
+        }).set_axis(is_dupl.index, axis=0)
         is_tieline = pd.Series(net.line.loc[is_dupl.index.get_level_values("line_index"),
                                             "Tieline"].values, index=is_dupl.index)
 
@@ -844,9 +830,10 @@ def _allocate_trafos_to_buses_and_create_buses(
                 f"{trafo_connections.at[idx_max_dev, next_col]}. The best locations were "
                 f"nevertheless applied, due to {rel_deviation_threshold_for_trafo_bus_creation=}")
 
-    assert (trafo_connections.hv_bus > -1).all()
-    assert (trafo_connections.lv_bus > -1).all()
-    assert (trafo_connections.hv_bus != trafo_connections.lv_bus).all()
+    if (not (trafo_connections.hv_bus > -1).all() or
+            not (trafo_connections.lv_bus > -1).all() or
+            not (trafo_connections.hv_bus != trafo_connections.lv_bus).all()):
+        raise AssertionError("A trafo")
 
     return trafo_connections
 
@@ -900,7 +887,8 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
     # just keep one bus per name and vn_kv. If there are multiple buses of different TSOs, join the
     # TSO strings:
     bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: '/'.join(x)})
-    assert not bus_df.duplicated(["name", "vn_kv"]).any()
+    if bus_df.duplicated(["name", "vn_kv"]).any():
+        raise AssertionError("bus_df contains duplicate names with identical vn_kv")
     return bus_df
 
 
@@ -916,7 +904,7 @@ def _get_bus_idx(net: pandapowerNet) -> pd.Series:
 
 
 def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
-    notravbuses_dict = dict() if "notravbuses" not in kwargs.keys() else {
+    notravbuses_dict = {} if "notravbuses" not in kwargs.keys() else {
         "notravbuses": kwargs.pop("notravbuses")}
     grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs),
                                                               **notravbuses_dict)]
@@ -937,7 +925,7 @@ def _lng_lat_to_df(dict_: dict, line_EIC: str, line_name: str) -> pd.DataFrame:
 def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
 
     def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, Union[pd.Index, int]]:
-        av = dict()  # availablitiy of geodata
+        av = {}  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
         av["lines_fbw_tbwo"] = net.line.index[net.line.from_bus.isin(av["bus_with_geo"]) &
                                               (~net.line.to_bus.isin(av["bus_with_geo"]))]
@@ -968,13 +956,14 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
 
 def _multi_str_repl(st: str, repl: list[tuple]) -> str:
     for (old, new) in repl:
-        return st.replace(old, new)
+        st = st.replace(old, new)
+    return st
 
 
 if __name__ == "__main__":
     from pathlib import Path
     import os
-    import pandapower as pp
+    from pandapower.file_io import from_json, to_json
 
     home = str(Path.home())
     jao_data_folder = os.path.join(home, "Documents", "JAO Static Grid Model")
@@ -993,9 +982,9 @@ if __name__ == "__main__":
 
     if 1:  # read from original data
         net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
-        pp.to_json(net, pp_net_json_file)
+        to_json(net, pp_net_json_file)
     else:  # load net from already converted and stored net
-        net = pp.from_json(pp_net_json_file)
+        net = from_json(pp_net_json_file)
 
     print(net)
     grid_groups = get_grid_groups(net)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
@@ -8,16 +8,18 @@ import pytest
 import numpy as np
 import pandas as pd
 
-import pandapower as pp
-import pandapower.converter as pc
-
+from pandapower import pp_dir
+from pandapower.auxiliary import pandapowerNet
+from pandapower.run import runpp
+from pandapower.toolbox.element_selection import count_elements
+import pandapower.converter.ucte as ucte_converter
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 def _testfiles_folder():
-    return os.path.join(pp.pp_dir, 'test', 'converter', "testfiles")
+    return os.path.join(pp_dir, 'test', 'converter', "testfiles")
 
 
 def _results_from_powerfactory():
@@ -82,13 +84,13 @@ def test_from_ucte(test_case):
     ucte_file = os.path.join(_testfiles_folder(), f"{ucte_file_name}.uct")
 
     # --- convert UCTE data -------------------------------------------------------------------
-    net = pc.from_ucte(ucte_file, slack_as_gen=False)
+    net = ucte_converter.from_ucte(ucte_file, slack_as_gen=False)
 
-    assert isinstance(net, pp.pandapowerNet)
+    assert isinstance(net, pandapowerNet)
     assert len(net.bus)
 
     # --- run power flow ----------------------------------------------------------------------
-    pp.runpp(net)
+    runpp(net)
     assert net.converged
 
     # --- check expected element counts -------------------------------------------------------
@@ -96,15 +98,15 @@ def test_from_ucte(test_case):
         _testfiles_folder(), "ucte_expected_element_counts.csv"), sep=";", index_col=0)
     exp_elm_count = exp_elm_count_df.loc[country_code]
     exp_elm_count = exp_elm_count.loc[exp_elm_count > 0]
-    assert dict(pp.count_elements(net)) == dict(exp_elm_count)
+    assert dict(count_elements(net)) == dict(exp_elm_count)
 
     # --- compare results ---------------------------------------------------------------------
     res_target = _results_from_powerfactory()
-    failed = list()
+    failed = []
     atol_dict = {
         "res_bus": {"vm_pu": 1e-4, "va_degree": 7e-3},
         "res_line": {"p_from_mw": 5e-2, "q_from_mvar": 2e-1},
-        "res_trafo": {"p_hv_mw": 5e-2, "q_hv_mvar": 1e-1},
+        "res_trafo": {"p_hv_mw": 1e-3, "q_hv_mvar": 1e-3},
     }
     if test_case == "test_ucte_xward":
         atol_dict["res_line"]["q_from_mvar"] = 0.8  # xwards are converted as
@@ -155,12 +157,4 @@ def test_from_ucte(test_case):
 
 
 if __name__ == '__main__':
-    if 1:
         pytest.main([__file__, "-s"])
-    else:
-
-        ucte_file = os.path.join(_testfiles_folder(), "test_ucte_DE.uct")
-        net = pc.from_ucte(ucte_file, slack_as_gen=False)
-
-        print(net)
-        print()
