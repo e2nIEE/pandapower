@@ -18,6 +18,7 @@ Possible Solver Algorithm
 -----------------------------
 
 Pandapower brings a variety of powerflow algorithm, some through the pypower core, other via external libraries:
+
 - "nr" Newton-Raphson (pypower implementation with numba accelerations)
 - "iwamoto_nr" Newton-Raphson with Iwamoto multiplier (maybe slower than NR but more robust)
 - "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
