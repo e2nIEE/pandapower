@@ -66,12 +66,6 @@ try:
 except ImportError:
     lightsim2grid_available = False
 
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
 import logging
 
 try:
@@ -2051,7 +2045,7 @@ def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -
 
 def _init_runpp_options(
     net: pandapowerNet,
-    algorithm: Literal["nr", "iwamoto_nr", "bfsw", "gs", "fdxb", "fdbx"],
+    algorithm: Literal["nr", "iwamoto_nr", "bfsw", "gs", "fdxb", "fdbx", "helm"],
     calculate_voltage_angles: Literal["auto"] | bool,
     init: Literal["auto", "dc", "flat", "results"] | float,
     max_iteration: Literal["auto"] | int,

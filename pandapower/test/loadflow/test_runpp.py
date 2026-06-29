@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 
 from pandapower import pp_dir
-from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available, helmpy_available
+from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
 from pandapower.control import _create_trafo_characteristics, SplineCharacteristic
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
     create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
@@ -49,6 +49,13 @@ try:
     numba_installed = True
 except ImportError:
     numba_installed = False
+
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
 
 
 def test_minimal_net(**kwargs):

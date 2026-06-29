@@ -16,8 +16,13 @@ import pytest
 
 import pandapower as pp
 import pandapower.networks as nw
-from pandapower.auxiliary import helmpy_available
 from pandapower.powerflow import LoadflowNotConverged
+
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
 
 pytestmark = pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
 
