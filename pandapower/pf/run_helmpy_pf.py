@@ -18,11 +18,12 @@ logger = logging.getLogger(__name__)
 
 
 def _build_helm_case(ppci):
-    """Build a HELMpy ``CaseData`` object from a pandapower internal ppc (ppci).
+    """
+    Build a HELMpy :code:`CaseData` object from a pandapower internal ppc (ppci).
 
-    The bus ordering of ``ppci`` is preserved: HELMpy bus index ``i`` corresponds
-    to ppci bus row ``i``, so the resulting complex voltage profile can be written
-    back to ``ppci`` without any reordering.
+    The bus ordering of :code:`ppci` is preserved: HELMpy bus index :code:`i` corresponds
+    to ppci bus row :code:`i`, so the resulting complex voltage profile can be written
+    back to :code:`ppci` without any reordering.
     """
     from helmpy.core.classes import CaseData, process_branches  # type: ignore[import-not-found, import-untyped]
 
@@ -96,12 +97,13 @@ def _build_helm_case(ppci):
 
 
 def _get_slack_weights(ppci):
-    """Collect pandapower's distributed-slack participation factors as a per-bus array.
+    """
+    Collect pandapower's distributed-slack participation factors as a per-bus array.
 
-    Weights come from in-service generators (``gen[:, SL_FAC]``, accumulated on their bus)
-    and from buses directly (``bus[:, SL_FAC_BUS]``, e.g. xwards). The bus order matches
+    Weights come from in-service generators (:code:`gen[:, SL_FAC]`, accumulated on their bus)
+    and from buses directly (:code:`bus[:, SL_FAC_BUS]`, e.g. xwards). The bus order matches
     the ppci bus rows, which is also HELMpy's internal bus order. Returns ``None`` when no
-    weights are set so the caller lets HELMpy use its default behaviour.
+    weights are set so the caller lets HELMpy use its default behavior.
     """
     bus = ppci["bus"]
     gen = ppci["gen"]
@@ -121,12 +123,7 @@ def _get_slack_weights(ppci):
 
 def _runpf_helmpy_pf(ppci, options, **kwargs):
     """
-    Runs a HELM (Holomorphic Embedding Load flow Method) based power flow,
-    provided by the optional HELMpy package.
-
-    INPUT
-    ppci (dict) - the "internal" ppc (without out of service elements and sorted elements)
-    options (dict) - options for the power flow
+    Runs a HELM (Holomorphic Embedding Load flow Method) based power flow, provided by the optional HELMpy package.
 
     The converged complex voltage profile is routed through pandapower's regular
     ``pfsoln`` result extraction (the same one used by Newton-Raphson) so that
@@ -136,14 +133,25 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     The HELM-specific option ``pv_bus_model`` (1 or 2, default 2) selects how PV
     (voltage-controlled) buses are embedded into the holomorphic equations:
 
-    - model 1: the real part of each PV-bus voltage coefficient is precomputed
-      analytically from the |V| = const constraint, leaving only the imaginary part
-      as a matrix unknown.
-    - model 2: both real and imaginary parts stay unknowns and the |V| = const
-      constraint is added as an explicit equation row.
+    Parameters:
+        ppci (dict): the "internal" ppc (without out of service elements and sorted elements)
+        options (dict): options for the power flow
 
-    Both formulations converge to the same load-flow solution (verified to machine
-    precision); they differ only in internal bookkeeping.
+            pv_bus_model - 1 or 2
+
+            - model 1:
+              the real part of each PV-bus voltage coefficient is precomputed
+              analytically from the |V| = const constraint, leaving only the imaginary part
+              as a matrix unknown.
+            - model 2:
+              both real and imaginary parts stay unknowns and the |V| = const
+              constraint is added as an explicit equation row.
+
+            Both formulations converge to the same load-flow solution (verified to machine
+            precision); they differ only in internal bookkeeping.
+
+    Returns:
+        ppci (dict)
     """
     try:
         from helmpy import helm  # type: ignore[import-not-found, import-untyped]
