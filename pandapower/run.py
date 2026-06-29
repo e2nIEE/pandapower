@@ -121,6 +121,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             - 30 for "fdbx"
             - 30 for "fdxb"
             - 30 for "nr" with "tdpf"
+            - 40 for "helm"
 
         tolerance_mva (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
         trafo_model (str, "t"): transformer equivalent circuit model

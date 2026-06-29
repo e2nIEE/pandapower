@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] HELMpy as an additional solver
 - [CHANGED] sql_io now requires single dsn string for database connection instead of separate host, user, etc. keywords.
 - [FIXED] sql_io not working with version of psycopg installed
 - [FIXED] cim2pp add GeographicalRegion from eqbd profile
