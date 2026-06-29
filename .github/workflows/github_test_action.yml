@@ -386,7 +386,7 @@ jobs:
       - name: Check sphinx build
         uses: ammaraskar/sphinx-action@54e52bfb642e9b60ea5b6bcb05fe3f74b40d290a #8.2.3
         with:
-          pre-build-command: "pip install .[dev]"
+          pre-build-command: "apt-get install git && pip install .[dev]"
           build-command: "sphinx-build -b html . _build -W"
           docs-folder: "doc/"
 
