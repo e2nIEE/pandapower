@@ -67,7 +67,7 @@ except ImportError:
     lightsim2grid_available = False
 
 try:
-    from helmpy.core import helm  # type: ignore[import-not-found]
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
     helmpy_available = True
 except ImportError:
     helmpy_available = False

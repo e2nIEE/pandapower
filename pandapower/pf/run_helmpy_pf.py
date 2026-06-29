@@ -24,7 +24,7 @@ def _build_helm_case(ppci):
     to ppci bus row ``i``, so the resulting complex voltage profile can be written
     back to ``ppci`` without any reordering.
     """
-    from helmpy.core.classes import CaseData, process_branches  # type: ignore[import-not-found]
+    from helmpy.core.classes import CaseData, process_branches  # type: ignore[import-not-found, import-untyped]
 
     buses = ppci['bus'].copy()
     generators = ppci['gen'].copy()
@@ -146,7 +146,7 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     precision); they differ only in internal bookkeeping.
     """
     try:
-        from helmpy import helm  # type: ignore[import-not-found]
+        from helmpy import helm  # type: ignore[import-not-found, import-untyped]
     except ImportError:
         raise ImportError("The HELM algorithm requires the optional 'helmpy' package. "
                           "Install it (pip install helmpy) to use algorithm='helm'.")
