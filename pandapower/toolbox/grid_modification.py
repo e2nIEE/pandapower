@@ -1930,8 +1930,8 @@ def replace_xward_by_ward(net, index=None, drop=True):
 
 def _replace_group_member_element_type(
         net, old_elements, old_element_type, new_elements, new_element_type, detach_from_gr=True):
-    assert not isinstance(old_element_type, set)
-    assert not isinstance(new_element_type, set)
+    if isinstance(old_element_type, set) or isinstance(new_element_type, set):
+        raise AssertionError("either element_type is a set")
     old_elements = pd.Series(old_elements)
     new_elements = pd.Series(new_elements)
 
