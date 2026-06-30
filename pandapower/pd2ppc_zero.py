@@ -266,7 +266,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         if mode == "sc":  # or trafo_model == "pi":
             case = net._options["case"]
             trafo_df = net["trafo"]
-            bus_index = bus_lookup[get_trafo_values(trafo_df, "lv_bus")]
+            # bus_index = bus_lookup[get_trafo_values(trafo_df, "lv_bus")]
+            bus_index = trafos.lv_bus.values[0]
             column_index = C_MAX if case == "max" else C_MIN
             c = ppc["bus"][bus_index, column_index]
             if not net._options["use_pre_fault_voltage"]:
