@@ -46,7 +46,7 @@ class BinarySearchControl(Controller):
         Indicates whether each output element is in service.
     distribution_method : str -> ControlModusEnum
         Takes string to select one of the different available reactive power distribution
-        methods: 'rel_P' -Q is relative to used Power, 'rel_rated_S' -Q is relative to the rated power S, currently
+        methods: 'rel_P' -Q is relative to dispatched Power, 'rel_rated_S' -Q is relative to the rated apparent power S, currently
         using the sgen attribute 'sn_mva', 'set_Q' -set individual reactive power for each output element,
         'max_Q' -maximized reactive power reserve for the output elements, 'rel_V_pu' -Q is relative to the voltage
         limits of the output element.
