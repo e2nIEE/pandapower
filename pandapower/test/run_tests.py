@@ -12,11 +12,9 @@ from multiprocessing import cpu_count
 
 import pytest
 
-from pandapower import pp_dir
-from pandapower.test import tutorials_path
+from pandapower.test import test_path, tutorials_path
 
 import logging
-test_dir = os.path.abspath(os.path.join(pp_dir, "test"))
 
 logger = logging.getLogger()
 
@@ -45,14 +43,14 @@ def run_all_tests(parallel=False, n_cpu=None):
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        err = pytest.main([test_dir, "-xs", "-n", str(n_cpu), "-log_cli=false"])
+        err = pytest.main([test_path, "-xs", "-n", str(n_cpu), "-log_cli=false"])
         if err == 4:
             raise ModuleNotFoundError("Parallel testing not possible. "
                                       "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
     else:
-        pytest.main([test_dir, "-xs"])
+        pytest.main([test_path, "-xs"])
     logger.setLevel(logging.INFO)
 
 
@@ -70,14 +68,14 @@ def run_fast_tests(parallel=False, n_cpu=None):
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        err = pytest.main([test_dir, "-xs", "-m", "not slow", "-n", str(n_cpu)])
+        err = pytest.main([test_path, "-xs", "-m", "not slow", "-n", str(n_cpu)])
         if err == 4:
             raise ModuleNotFoundError("Parallel testing not possible. "
                                       "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
     else:
-        pytest.main([test_dir, "-xs", "-m", "not slow"])
+        pytest.main([test_path, "-xs", "-m", "not slow"])
 
 
 def run_slow_tests(parallel=False, n_cpu=None):
@@ -93,14 +91,14 @@ def run_slow_tests(parallel=False, n_cpu=None):
     if parallel:
         if n_cpu is None:
             n_cpu = _get_cpus()
-        err = pytest.main([test_dir, "-xs", "-m", "slow", "-n", str(n_cpu)])
+        err = pytest.main([test_path, "-xs", "-m", "slow", "-n", str(n_cpu)])
         if err == 4:
             raise ModuleNotFoundError("Parallel testing not possible. "
                                       "Please make sure that pytest-xdist is installed correctly.")
         elif err > 2:
             logger.error("Testing not successfully finished.")
     else:
-        pytest.main([test_dir, "-xs", "-m", "slow"])
+        pytest.main([test_path, "-xs", "-m", "slow"])
 
 
 def get_command_line_args():
@@ -153,19 +151,18 @@ def run_tutorials(parallel=False, n_cpu=None):
     # run notebooks in tempdir to safely remove output files
     with tempfile.TemporaryDirectory() as tmpdir:
         shutil.copytree(tutorials_path, os.path.join(tmpdir, 'tmp'))
-        test_dir = tmpdir
 
         if parallel:
             if n_cpu is None:
                 n_cpu = 'auto'
-            err = pytest.main(["--nbmake", f"-n={n_cpu}", test_dir])
+            err = pytest.main(["--nbmake", f"-n={n_cpu}", tmpdir])
             if err == 4:
                 raise ModuleNotFoundError("Parallel testing not possible. Please make sure "
                                           "that pytest-xdist is installed correctly.")
             elif err > 2:
                 logger.error("Testing not successfully finished.")
         else:
-            pytest.main(["--nbmake", test_dir])
+            pytest.main(["--nbmake", tmpdir])
 
 
 if __name__ == "__main__":
