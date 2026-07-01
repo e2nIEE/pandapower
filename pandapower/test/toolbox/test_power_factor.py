@@ -7,9 +7,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from pandapower.networks import create_cigre_network_mv
 from pandapower.toolbox.element_selection import pp_elements
 from pandapower.toolbox.power_factor import signing_system_value, cosphi_pos_neg_from_pq, pq_from_cosphi, \
-    cosphi_to_pos, cosphi_from_pq, cosphi_from_pos
+    cosphi_to_pos, cosphi_from_pq, cosphi_from_pos, sync_q_from_cos_phi, create_cos_phi_from_network, \
+    create_cos_phi_constant
 
 
 def test_signing_system_value():
@@ -101,6 +103,122 @@ def test_cosphi_pos_neg():
             [0.25, -0.25, 0.25, 0.1, 0.1, 0]), 5),
         np.array([0.94993, -0.94993, 0.94993, 0.99145, np.nan, 1]), equal_nan=True)
 
+def test_create_cos_phi_from_network():
+    net = create_cigre_network_mv("pv_wind")
+
+    # Loads have both p>0 and q>0 in this network
+    create_cos_phi_from_network(net, "load")
+    assert "cos_phi" in net.load.columns
+    assert len(net.load["cos_phi"]) == len(net.load)
+
+    # All loads have p>0, so all cos_phi should be valid (not 1.0 default)
+    cos_phi = net.load["cos_phi"].values
+    assert np.all(np.abs(cos_phi) <= 1.0)
+    assert np.all(np.abs(cos_phi) > 0.0)
+    # Loads have positive q → positive cos_phi (pos_neg convention)
+    assert np.all(cos_phi > 0)
+
+    # Roundtrip: sync should reproduce original q
+    original_q = net.load["q_mvar"].values.copy()
+    sync_q_from_cos_phi(net, "load", net.load.index)
+    assert np.allclose(net.load["q_mvar"].values, original_q, atol=1e-6)
+
+    # Sgens in CIGRE MV have q=0 → cos_phi should be 1.0
+    create_cos_phi_from_network(net, "sgen")
+    assert np.allclose(net.sgen["cos_phi"].values, 1.0)
+
+    # Set some nonzero q on sgens and re-extract
+    net.sgen.loc[0, "q_mvar"] = -0.5
+    net.sgen.loc[1, "q_mvar"] = 0.3
+    net.sgen.loc[0, "p_mw"] = 2.0
+    net.sgen.loc[1, "p_mw"] = 1.5
+    create_cos_phi_from_network(net, "sgen")
+    assert net.sgen.at[0, "cos_phi"] < 0  # negative q → negative cos_phi
+    assert net.sgen.at[1, "cos_phi"] > 0  # positive q → positive cos_phi
+
+    # Roundtrip for those two
+    original_q_sgen = net.sgen.loc[[0, 1], "q_mvar"].values.copy()
+    sync_q_from_cos_phi(net, "sgen", [0, 1])
+    assert np.allclose(net.sgen.loc[[0, 1], "q_mvar"].values, original_q_sgen, atol=1e-6)
+
+    # p=0 element gets cos_phi=1.0
+    net.sgen.loc[2, "p_mw"] = 0.0
+    net.sgen.loc[2, "q_mvar"] = 0.0
+    create_cos_phi_from_network(net, "sgen")
+    assert np.isclose(net.sgen.at[2, "cos_phi"], 1.0)
+
+
+def test_create_cos_phi_constant():
+    net = create_cigre_network_mv("pv_wind")
+
+    # sgen + underexcited → signing_system_value("sgen")=-1 → negative cos_phi
+    create_cos_phi_constant(net, "sgen", cos_phi=0.95, mode="underexcited")
+    assert np.all(net.sgen["cos_phi"] == -0.95)
+
+    # sgen + overexcited → sign flipped → positive
+    create_cos_phi_constant(net, "sgen", cos_phi=0.95, mode="overexcited")
+    assert np.all(net.sgen["cos_phi"] == 0.95)
+
+    # load + underexcited → signing_system_value("load")=+1 → positive
+    create_cos_phi_constant(net, "load", cos_phi=0.9, mode="underexcited")
+    assert np.all(net.load["cos_phi"] == 0.9)
+
+    # load + overexcited → negative
+    create_cos_phi_constant(net, "load", cos_phi=0.9, mode="overexcited")
+    assert np.all(net.load["cos_phi"] == -0.9)
+
+    # Does NOT modify q_mvar
+    original_q = net.sgen["q_mvar"].values.copy()
+    create_cos_phi_constant(net, "sgen", cos_phi=0.8)
+    assert np.allclose(net.sgen["q_mvar"].values, original_q)
+
+
+def test_sync_q_from_cos_phi():
+    net = create_cigre_network_mv("pv_wind")
+
+    # Raises without cos_phi column
+    with pytest.raises(KeyError, match="cos_phi"):
+        sync_q_from_cos_phi(net, "sgen", net.sgen.index)
+
+    # Setup constant cos_phi and verify formula
+    create_cos_phi_constant(net, "sgen", cos_phi=0.95, mode="underexcited")
+    net.sgen["p_mw"] = 1.0
+    sync_q_from_cos_phi(net, "sgen", net.sgen.index)
+
+    # cos_phi = -0.95 → q = abs(1.0) * tan(arccos(0.95)) * sign(-0.95) = -0.3287...
+    expected_q = -np.tan(np.arccos(0.95))
+    assert np.allclose(net.sgen["q_mvar"].values, expected_q, atol=1e-6)
+
+    # p=0 → q=0 regardless of cos_phi
+    net.sgen["p_mw"] = 0.0
+    sync_q_from_cos_phi(net, "sgen", net.sgen.index)
+    assert np.allclose(net.sgen["q_mvar"].values, 0.0)
+
+    # cos_phi=1.0 → q=0 regardless of p
+    net.sgen["cos_phi"] = 1.0
+    net.sgen["p_mw"] = 5.0
+    sync_q_from_cos_phi(net, "sgen", net.sgen.index)
+    assert np.allclose(net.sgen["q_mvar"].values, 0.0, atol=1e-10)
+
+    # Partial index: only selected elements are synced
+    create_cos_phi_constant(net, "sgen", cos_phi=0.9, mode="underexcited")
+    net.sgen["p_mw"] = 2.0
+    net.sgen["q_mvar"] = 999.0  # sentinel
+    sync_q_from_cos_phi(net, "sgen", [net.sgen.index[0]])
+    assert not np.isclose(net.sgen.at[net.sgen.index[0], "q_mvar"], 999.0)
+    assert np.all(net.sgen["q_mvar"].values[1:] == 999.0)
+
+    # q sign follows cos_phi sign, q magnitude uses abs(p)
+    net.sgen.loc[0, "cos_phi"] = 0.9
+    net.sgen.loc[1, "cos_phi"] = -0.9
+    net.sgen.loc[0, "p_mw"] = 2.0
+    net.sgen.loc[1, "p_mw"] = -2.0  # negative p (unusual)
+    sync_q_from_cos_phi(net, "sgen", [0, 1])
+    # Both have abs(p)=2, abs(cos_phi)=0.9 → same |q|
+    assert np.isclose(abs(net.sgen.at[0, "q_mvar"]), abs(net.sgen.at[1, "q_mvar"]))
+    # Signs follow cos_phi sign
+    assert net.sgen.at[0, "q_mvar"] > 0  # cos_phi=+0.9
+    assert net.sgen.at[1, "q_mvar"] < 0  # cos_phi=-0.9
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

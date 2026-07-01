@@ -5,11 +5,13 @@
 
 import numpy as np
 
+from pandapower import pandapowerNet
 from pandapower.auxiliary import ensure_iterability
 from pandapower.toolbox.element_selection import pp_elements
 
 try:
     from networkx.utils.misc import graphs_equal
+
     GRAPHS_EQUAL_POSSIBLE = True
 except ImportError:
     GRAPHS_EQUAL_POSSIBLE = False
@@ -60,6 +62,85 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     else:
         return _pq_from_cosphi(s, cosphi, qmode, pmode)
     return _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=len_)
+
+def create_cos_phi_from_network(net: pandapowerNet, element_type: str) -> None:
+    """
+    Compute signed cos_phi from current p_mw/q_mvar and store in element table.
+
+    Uses cosphi_pos_neg convention: sign(cos_phi) encodes sign of q_mvar.
+    Elements with p_mw == 0 get cos_phi = 1.0 (produces q = 0 on sync).
+
+    Args:
+        net: pandapower network (modified in-place)
+        element_type: "sgen" or "load"
+    """
+    table = net[element_type]
+    if len(table) == 0:
+        return
+
+    p = table["p_mw"].values.astype(np.float64)
+    q = table["q_mvar"].values.astype(np.float64)
+
+    cos_phi = np.ones(len(table), dtype=np.float64)
+    nonzero = np.abs(p) > 1e-10
+    if nonzero.any():
+        cos_phi[nonzero] = cosphi_pos_neg_from_pq(p[nonzero], q[nonzero])
+
+    table["cos_phi"] = cos_phi
+
+
+def create_cos_phi_constant(net: pandapowerNet, element_type: str, cos_phi: float = 0.95, mode: str ="underexcited") -> None:
+    """
+    Store a constant signed cos_phi for all elements of given type.
+
+    Sign is determined from element_type + mode following pandapower convention:
+      - sgen + underexcited → negative cos_phi (q < 0)
+      - load + underexcited → positive cos_phi (q > 0)
+
+    Does NOT modify q_mvar. Call sync_q_from_cos_phi to apply.
+
+    Args:
+        net: pandapower network (modified in-place)
+        element_type: "sgen" or "load"
+        cos_phi: power factor magnitude, in (0, 1]
+        mode: "underexcited" or "overexcited"
+    """
+    table = net[element_type]
+    if len(table) == 0:
+        return
+
+    sign = signing_system_value(element_type)
+    if mode == "overexcited":
+        sign *= -1
+
+    table["cos_phi"] = sign * abs(cos_phi)
+
+
+def sync_q_from_cos_phi(net: pandapowerNet, element_type, indices) -> None:
+    """
+    Recompute q_mvar = abs(p_mw) * tan(arccos(abs(cos_phi))) * sign(cos_phi).
+
+    Args:
+        net: pandapower network (modified in-place)
+        element_type: "sgen" or "load"
+        indices: element indices
+
+    Raises KeyError if 'cos_phi' column does not exist.
+    """
+    table = net[element_type]
+    if "cos_phi" not in table.columns:
+        raise KeyError(
+            f"net.{element_type} has no 'cos_phi' column. "
+            f"Call create_cos_phi_from_network or create_cos_phi_constant first."
+        )
+
+    cos_phi = table.loc[indices, "cos_phi"].values.astype(np.float64)
+    p_mw = table.loc[indices, "p_mw"].values.astype(np.float64)
+
+    abs_cos = np.clip(np.abs(cos_phi), 1e-10, 1.0)
+    q = np.abs(p_mw) * np.tan(np.arccos(abs_cos)) * np.sign(cos_phi)
+
+    table.loc[indices, "q_mvar"] = q
 
 
 def _pq_from_cosphi(s, cosphi, qmode, pmode):
@@ -223,7 +304,6 @@ def cosphi_pos_neg_from_pq(p, q):
     """
     cosphis = cosphi_from_pq(p, q)[0]
     return np.copysign(cosphis, q)
-
 
 
 def cosphi_to_pos(cosphi):
