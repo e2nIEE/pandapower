@@ -5,7 +5,8 @@ from pandapower.plotting.powerflow_results import *
 from pandapower.plotting.simple_plot import *
 from pandapower.plotting.plotly import *
 from pandapower.plotting.geo import *
-from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
+from pandapower.plotting.plotting_toolbox import (set_line_geo_from_bus_geo,
+                                                  set_bus_geo_from_line_geo)
 from pandapower.plotting.to_html import to_html
 
 import types

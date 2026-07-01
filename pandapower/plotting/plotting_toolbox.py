@@ -4,8 +4,10 @@ import re
 import numpy as np
 import pandas as pd
 import geojson
-
+from typing import Any
 from typing_extensions import deprecated
+
+from pandapower import pandapowerNet
 
 import logging
 
@@ -212,7 +214,150 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
         return coords[~no_geo_diff], np.array(element_indices)[in_geo & not_nan][~no_geo_diff]
 
 
-def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ignore_no_geo_diff=True):
+def _gparse(geo: Any) -> Any:
+    return geojson.loads(geo) if isinstance(geo, str) else geo
+
+
+def _point_xy(geo: Any) -> tuple[float, float] | None:
+    """
+    Extract ``(longitude, latitude)`` from a GeoJSON ``Point`` cell.
+
+    Parameters
+    ----------
+    geo : Any
+        Raw cell value from ``net.bus['geo']``.
+
+    Returns
+    -------
+    tuple[float, float] or None
+        ``(x, y)`` on success, ``None`` otherwise.
+    """
+    try:
+        g = _gparse(geo)
+        if not isinstance(g, dict):
+            return None
+        c = g.get("coordinates")
+        if c is None or len(c) < 2:
+            return None
+        return (float(c[0]), float(c[1]))
+    except (TypeError, ValueError, KeyError, OSError):
+        return None
+
+
+def _bus_point_is_valid(geo: Any) -> bool:
+    """
+    Check whether a ``geo`` cell contains a valid GeoJSON ``Point``.
+
+    Parameters
+    ----------
+    geo : Any
+        Raw cell value from ``net.bus['geo']``.
+
+    Returns
+    -------
+    bool
+        ``True`` if *geo* is a parseable GeoJSON ``Point`` with non-NaN,
+        non-placeholder coordinates.
+    """
+    if geo is None or (isinstance(geo, float) and pd.isna(geo)):
+        return False
+    try:
+        g = _gparse(geo)
+        if not isinstance(g, dict) or g.get("type") != "Point":
+            return False
+        c = g.get("coordinates")
+        if c is None or len(c) < 2:
+            return False
+        x, y = float(c[0]), float(c[1])
+        if pd.isna(x) or pd.isna(y):
+            return False
+        if _wgs84_point_is_data_placeholder(x, y):
+            return False
+        return True
+    except (TypeError, ValueError, KeyError, OSError):
+        return False
+
+
+def _dump_point(x: float, y: float) -> str:
+    """
+    Serialize a coordinate pair to a GeoJSON ``Point`` string.
+
+    Parameters
+    ----------
+    x : float
+        Longitude.
+    y : float
+        Latitude.
+
+    Returns
+    -------
+    str
+        JSON-encoded GeoJSON ``Point``.
+    """
+    return geojson.dumps(geojson.Point((x, y)), sort_keys=True)
+
+
+def _linestring_endpoints(
+    geo: Any,
+) -> tuple[tuple[float, float], tuple[float, float]] | None:
+    """
+    Return the first and last coordinate of a GeoJSON ``LineString``.
+
+    Parameters
+    ----------
+    geo : Any
+        Raw cell value from ``net.line['geo']``.
+
+    Returns
+    -------
+    tuple[tuple[float, float], tuple[float, float]] or None
+        ``((x0, y0), (x1, y1))`` on success, ``None`` otherwise.
+    """
+    try:
+        g = _gparse(geo)
+        if not isinstance(g, dict) or g.get("type") != "LineString":
+            return None
+        c = g.get("coordinates")
+        if not c or len(c) < 2:
+            return None
+        a, b = c[0], c[-1]
+        return (float(a[0]), float(a[1])), (float(b[0]), float(b[1]))
+    except (TypeError, ValueError, KeyError, IndexError, OSError):
+        return None
+
+
+def _wgs84_point_is_data_placeholder(x: float, y: float) -> bool:
+    """
+    Detect coordinates that appear in network exports as stand-ins for unknown locations.
+
+    ``(0, 0)`` and ``(1, 0)`` are not plausible WGS84 points for German grids and are
+    treated the same as missing ``geo`` entries.  Without WGS84 anchors, NetworkX layout
+    algorithms (Kamada / Fruchterman) often produce values inside the unit square
+    ``(0, 1)²``, which would be misinterpreted as valid degree values (e.g. 0.5° / 0.5°
+    instead of ~13° / 53°).
+
+    Parameters
+    ----------
+    x : float
+        Longitude candidate.
+    y : float
+        Latitude candidate.
+
+    Returns
+    -------
+    bool
+        ``True`` if the coordinate pair is considered a placeholder.
+    """
+    if abs(x) < 1e-9 and abs(y) < 1e-9:
+        return True
+    if abs(x - 1.0) < 1e-9 and abs(y) < 1e-9:
+        return True
+    if 0.0 < x < 1.0 and 0.0 < y < 1.0:
+        return True
+    return False
+
+
+def set_line_geo_from_bus_geo(net, line_index=None, overwrite=False, ignore_no_geo_diff=True):
     """
     Sets coordinates in net.line.geo based on the from_bus and to_bus coordinates
     in net.bus.geo
@@ -246,6 +391,70 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ign
     num_failed = len(line_index) - len(line_index_successful)
     if num_failed > 0:
         logger.info(f"failed to set coordinates of {num_failed} lines")
+
+
+def set_bus_geo_from_line_geo(
+    net: pandapowerNet,
+    buses: Any | None = None,
+    *,
+    overwrite: bool = False,
+) -> int:
+    """
+    Populate missing bus ``geo`` ``Point`` entries from adjacent ``line.geo`` ``LineString`` data.
+
+    For every line with a valid ``LineString`` geometry the function assigns the
+    *from*-endpoint to ``from_bus`` and the *to*-endpoint to ``to_bus``.  Functionally
+    equivalent to ``set_bus_geodata_from_line_geodata``, but operates on the ``geo``
+    columns instead of the legacy ``bus_geodata`` / ``line_geodata`` tables.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower network to modify in-place.
+    buses : array-like or None, optional
+        Subset of bus indices to process.  If ``None``, all buses are considered.
+    overwrite : bool, optional
+        If ``True``, replace already-valid ``geo`` entries as well.
+
+    Returns
+    -------
+    int
+        Number of bus ``geo`` cells that were actually written.
+
+    Raises
+    ------
+    TypeError
+        If *net* is not a ``pandapowerNet``.
+    """
+    if not isinstance(net, pandapowerNet):
+        raise TypeError("net must be a pandapower.pandapowerNet instance.")
+    if "geo" not in net.bus.columns:
+        net.bus["geo"] = None
+        net.bus["geo"] = net.bus["geo"].astype(object)
+    if "geo" not in net.line.columns or net.line is None or net.line.empty:
+        return 0
+
+    todo = set(int(b) for b in (buses if buses is not None else net.bus.index))
+    n_set = 0
+    for li in net.line.index:
+        g = net.line.at[li, "geo"] if "geo" in net.line.columns else None
+        if g is None or (isinstance(g, float) and pd.isna(g)):
+            continue
+        ep = _linestring_endpoints(g)
+        if ep is None:
+            continue
+        (fx, fy), (tx, ty) = ep
+        fb = int(net.line.at[li, "from_bus"])
+        tb = int(net.line.at[li, "to_bus"])
+        for bus, (px, py) in ((fb, (fx, fy)), (tb, (tx, ty))):
+            if bus not in todo:
+                continue
+            existing = net.bus.at[bus, "geo"] if "geo" in net.bus.columns else None
+            if not overwrite and _bus_point_is_valid(existing):
+                continue
+            net.bus.at[bus, "geo"] = _dump_point(px, py)
+            n_set += 1
+    return n_set
 
 
 @deprecated("Use of busbar is not by bus_geodata anymore.")
