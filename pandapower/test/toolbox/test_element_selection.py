@@ -6,13 +6,14 @@
 import pandas as pd
 import pytest
 
+from pandapower import runpp
 from pandapower.create import create_empty_network, create_bus, create_transformer3w, create_transformer, create_line, \
     create_switch, create_buses, create_gens, create_sgens, create_measurement, create_poly_cost
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.toolbox.element_selection import get_element_indices, next_bus, get_connected_elements, \
     get_connected_buses, false_elm_links_loop, get_connected_buses_at_switches, pp_elements, element_bus_tuples, \
-    count_elements, branch_element_bus_dict
+    count_elements, branch_element_bus_dict, get_all_elements
 
 
 def test_get_element_indices():
@@ -36,7 +37,7 @@ def test_next_bus():
     bus4 = create_bus(net, vn_kv=0.4)
     bus5 = create_bus(net, vn_kv=20)
 
-    trafo0 = create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, name='trafo0',
+    create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, name='trafo0',
                                   std_type='63/25/38 MVA 110/20/10 kV')
     trafo1 = create_transformer(net, hv_bus=bus2, lv_bus=bus3, std_type='0.4 MVA 10/0.4 kV')
 
@@ -45,8 +46,8 @@ def test_next_bus():
 
     # switch0=create_switch(net, bus = bus0, element = trafo0, et = 't3') #~~~~~ not implementable now
     switch1 = create_switch(net, bus=bus1, element=bus5, et='b')
-    switch2 = create_switch(net, bus=bus2, element=trafo1, et='t')
-    switch3 = create_switch(net, bus=bus3, element=line1, et='l')
+    create_switch(net, bus=bus2, element=trafo1, et='t')
+    create_switch(net, bus=bus3, element=line1, et='l')
 
     # assert next_bus(net,bus0,trafo0,et='trafo3w')==bus1                         # not implemented in existing toolbox
     # assert next_bus(net,bus0,trafo0,et='trafo3w',choice_for_trafo3w='lv')==bus2 # not implemented in existing toolbox
@@ -108,7 +109,7 @@ def test_get_connected_buses():
     line1 = create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1,
                         std_type='24-AL1/4-ST1A 0.4')
 
-    switch0a = create_switch(net, bus=bus0, element=trafo0, et='t3')
+    create_switch(net, bus=bus0, element=trafo0, et='t3')
     switch0b = create_switch(net, bus=bus2, element=trafo0, et='t3')
     switch1 = create_switch(net, bus=bus1, element=bus5, et='b')
     switch2 = create_switch(net, bus=bus2, element=trafo1, et='t')
@@ -235,6 +236,26 @@ def test_count_elements():
     assert len(received.index) == len(pp_elements())
     assert set(received.index) == pp_elements()
 
+
+def test_get_all_elements():
+    net = case9()
+    # get res_ tables
+    runpp(net)
+
+    overview_no_res = get_all_elements(net, include_results=False)
+    overview_with_res = get_all_elements(net, include_results=True)
+
+    res_tables = {
+        name
+        for name, df in net.items()
+        if isinstance(df, pd.DataFrame) and name.startswith("res_") and not df.empty
+    }
+
+    assert not (res_tables & set(overview_no_res["pp_type"].unique()))
+    assert res_tables.issubset(set(overview_with_res["pp_type"].unique()))
+
+    assert len(overview_no_res) == sum(count_elements(net, cost_tables=True))
+    assert len(overview_with_res) == sum(count_elements(net, cost_tables=True, res_elements=True))
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

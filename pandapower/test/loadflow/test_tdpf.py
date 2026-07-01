@@ -8,20 +8,18 @@ import numpy as np
 import pandas as pd
 import pytest
 import copy
+
 from pandapower import pp_dir
 from pandapower.create import create_empty_network, create_bus, create_line, create_load, create_ext_grid, \
     create_buses, create_sgen, create_gen, create_gens, create_line_from_parameters
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.pf.create_jacobian_tdpf import calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, \
-    calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank
+    calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta, calc_T_frank, ALPHA_TDPF
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.run import set_user_pf_options, runpp
 from pandapower.std_types import parameter_from_std_type
 from pandapower.test.helper_functions import assert_res_equal
 
-
-# pd.set_option("display.max_columns", 1000)
-# pd.set_option("display.width", 1000)
 
 @pytest.fixture(
     params=["94-AL1/15-ST1A 0.4", "70-AL1/11-ST1A 10.0", "94-AL1/15-ST1A 10.0", "122-AL1/20-ST1A 10.0",
@@ -109,8 +107,6 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
 
     net = create_empty_network(sn_mva=s_base)
     std_type = "490-AL1/64-ST1A 110.0"
-    # r = 0.1188
-    # std_type = "490-AL1/64-ST1A 220.0"
     r = 0.059
     v_base = 132
     z_base = v_base ** 2 / s_base
@@ -128,7 +124,7 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
     net.line["temperature_degree_celsius"] = 20
     net.line["reference_temperature_degree_celsius"] = 20
     net.line["air_temperature_degree_celsius"] = 35
-    net.line["alpha"] = 0.004
+    net.line["alpha"] = ALPHA_TDPF
     net.line["conductor_outer_diameter_m"] = 30.6e-3
     net.line["mc_joule_per_m_k"] = 1490
     net.line["wind_speed_m_per_s"] = 0.6
@@ -184,7 +180,6 @@ def test_tdpf_frank():
 
     v_base_kv = net.bus.loc[net.line.from_bus].vn_kv.values
     z_base_ohm = np.square(v_base_kv) / net.sn_mva
-    temperature = net.res_line.temperature_degree_celsius
     net.line["r1"] = net.line.r_ohm_per_km / z_base_ohm
     net.line["r2"] = net.res_line.r_ohm_per_km / z_base_ohm
     r_delta = (net.res_line.r_ohm_per_km - net.line.r_ohm_per_km) / net.line.r_ohm_per_km * 100
@@ -209,36 +204,43 @@ def test_tdpf_frank():
     assert np.allclose(ref2.pctloading_TDPF, line_loading, rtol=0, atol=0.025)
 
 
-def test_temperature_r():
+@pytest.fixture(scope="module")
+def calc_a0_a1_a2_tau_for_simple_test_grid():
     net = simple_test_grid()
     r_ref = net.line.r_ohm_per_km.values / 1e3
-    a0, a1, a2, tau = calc_a0_a1_a2_tau(35, 80, 20, r_ref, 30.6e-3, 1490, 0.6, 45, 900, 4e-3, 0.5, 0.5)
+    return calc_a0_a1_a2_tau(35, 80, 20, r_ref, 30.6e-3, 1490, 0.6, 45, 900, 4e-3, 0.5, 0.5)
 
-    for with_gen in (False, True):
-        for distributed_slack in (False, True):
-            net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
-                                   distributed_slack=distributed_slack)
-            runpp(net, tdpf=True, max_iteration=100)
 
-            T = calc_T_ngoko(np.square(net.res_line.i_ka.values * 1e3), a0, a1, a2, None, None, None)
-            assert np.allclose(net.res_line.temperature_degree_celsius, T, rtol=0, atol=1e-6)
+@pytest.mark.parametrize('with_gen', [False, True])
+@pytest.mark.parametrize('distributed_slack', [False, True])
+def test_temperature_r(calc_a0_a1_a2_tau_for_simple_test_grid, with_gen, distributed_slack):
+    a0, a1, a2, _ = calc_a0_a1_a2_tau_for_simple_test_grid
+    net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
+                           distributed_slack=distributed_slack)
+    runpp(net, tdpf=True, max_iteration=100)
 
-            net2 = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
-                                    distributed_slack=distributed_slack)
-            net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
-            runpp(net2, consider_line_temperature=True)
+    T = calc_T_ngoko(np.square(net.res_line.i_ka.values * 1e3), a0, a1, a2, None, None, None)
+    assert np.allclose(net.res_line.temperature_degree_celsius, T, rtol=0, atol=1e-6)
 
-            net.res_line = net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
-            assert_res_equal(net, net2)
+    net2 = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
+                            distributed_slack=distributed_slack)
+    net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
+    runpp(net2, consider_line_temperature=True)
 
-            # now test transient results -> after 5 min
-            runpp(net, tdpf=True, tdpf_delay_s=5 * 60, max_iteration=100)
+    net.res_line = net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
+    assert_res_equal(net, net2)
 
-            net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
-            runpp(net2, consider_line_temperature=True)
+    # now test transient results -> after 5 min
+    runpp(net, tdpf=True, tdpf_delay_s=5 * 60, max_iteration=100)
 
-            net.res_line = net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
-            assert_res_equal(net, net2)
+    net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
+    # test default value for alpha = 0.004
+    net2.line.drop(columns="alpha", inplace=True)
+    runpp(net2, consider_line_temperature=True)
+    net2.line["alpha"] = ALPHA_TDPF
+
+    net.res_line = net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)
+    assert_res_equal(net, net2)
 
 
 def test_ngoko_vs_frank():
@@ -248,19 +250,17 @@ def test_ngoko_vs_frank():
     t_air_pu = 35
     alpha_pu = 4e-3
     r_ref = net.line.r_ohm_per_km.values / 1e3
-    a0, a1, a2, tau = calc_a0_a1_a2_tau(t_air_pu, 80, 20, r_ref, 30.6e-3, 1490, 0.6, 45, 900, alpha_pu, 0.5, 0.5)
+    a0, a1, a2, _ = calc_a0_a1_a2_tau(t_air_pu, 80, 20, r_ref, 30.6e-3, 1490, 0.6, 45, 900, alpha_pu, 0.5, 0.5)
     T_ngoko = calc_T_ngoko(np.square(net.res_line.i_ka.values * 1e3), a0, a1, a2, None, None, None)
 
     branch = net._ppc["branch"]
     tdpf_lines = np.ones(len(branch)).astype(bool)
     r = branch[tdpf_lines, BR_R].real
-    # r = r * (1 + alpha_pu * (T - 20))
     x = branch[tdpf_lines, BR_X].real
     g, b = calc_g_b(r, x)
     Vm = abs(net._ppc["internal"]["V"])
     Va = np.angle(net._ppc["internal"]["V"])
     i_square_pu, p_loss_pu = calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va)
-    # i_square_pu = np.square(net.res_line.i_ka.values*1e3)
     r_theta_pu = calc_r_theta(t_air_pu, a0, a1, a2, np.square(net.res_line.i_ka.values * 1e3), p_loss_pu)
     T_frank = calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, None, None, None)
 
@@ -270,29 +270,25 @@ def test_ngoko_vs_frank():
     assert np.allclose(net.res_line.i_ka, 1e-3 * i_base_a * np.sqrt(i_square_pu), rtol=0, atol=1e-6)
     assert np.allclose(net.res_line.pl_mw, p_loss_pu * net.sn_mva, rtol=0, atol=1e-6)
 
+@pytest.mark.parametrize('with_gen', [False, True])
+@pytest.mark.parametrize('distributed_slack', [False, True])
+def test_tdpf_delay(calc_a0_a1_a2_tau_for_simple_test_grid, with_gen, distributed_slack):
+    _, _, _, tau = calc_a0_a1_a2_tau_for_simple_test_grid
+    net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
+                           distributed_slack=distributed_slack)
+    # no delay
+    runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=0)
+    assert np.allclose(net.res_line.temperature_degree_celsius, 20, rtol=0, atol=1e-6)
 
-def test_tdpf_delay():
-    net = simple_test_grid()
-    r_ref = net.line.r_ohm_per_km.values / 1e3
-    a0, a1, a2, tau = calc_a0_a1_a2_tau(35, 80, 20, r_ref, 30.6e-3, 1490, 0.6, 45, 900, 4e-3, 0.5, 0.5)
+    # infinite delay (steady state)
+    runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=np.inf)
+    temp = net.res_line.temperature_degree_celsius.values.copy()
+    runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=None)
+    assert np.allclose(net.res_line.temperature_degree_celsius, temp, rtol=0, atol=1e-6)
 
-    for with_gen in (False, True):
-        for distributed_slack in (False, True):
-            net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
-                                   distributed_slack=distributed_slack)
-            # no delay
-            runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=0)
-            assert np.allclose(net.res_line.temperature_degree_celsius, 20, rtol=0, atol=1e-6)
-
-            # infinite delay (steady state)
-            runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=np.inf)
-            temp = net.res_line.temperature_degree_celsius.values.copy()
-            runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=None)
-            assert np.allclose(net.res_line.temperature_degree_celsius, temp, rtol=0, atol=1e-6)
-
-            # check tau: time to "charge" to approx. 63.2 %; we cannot match it very accurately though
-            runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=tau)
-            assert np.allclose(net.res_line.temperature_degree_celsius, 20 + (temp - 20) * 0.632, rtol=0, atol=0.6)
+    # check tau: time to "charge" to approx. 63.2 %; we cannot match it very accurately though
+    runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=tau)
+    assert np.allclose(net.res_line.temperature_degree_celsius, 20 + (temp - 20) * 0.632, rtol=0, atol=0.6)
 
 
 def test_only_pv():

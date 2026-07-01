@@ -20,6 +20,7 @@ from pandapower.toolbox.data_modification import reindex_elements, reindex_buses
     add_column_from_element_to_elements, create_continuous_bus_index, create_continuous_elements_index, \
     set_scaling_by_type
 from pandapower.toolbox.element_selection import pp_elements
+from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
 
 def test_add_column_from_node_to_elements():
@@ -95,6 +96,23 @@ def test_reindex_buses():
                 assert all(np.array(list(net[elm].index)) == np.array(list(
                     net_orig[elm].index)) + to_add)
 
+def test_reindex_buses__create_duplicate_index():
+    net = example_simple()
+    bus_lookup = dict(zip(range(2,7), range(0,5)))
+
+    with pytest.raises(
+        ValueError,
+        match="These bus indices are already used and not being updated." +
+        " Thus they cannot be used as new index: {0, 1}"
+    ):
+        reindex_buses(net, bus_lookup)
+
+    bus_lookup = dict(zip(range(7), [0, 1, 2, 3, 0, 1, 2]))
+    with pytest.raises(
+        ValueError,
+        match=r"Duplicate values for new indices not allowed: \[0, 1, 2\]"
+    ):
+        reindex_buses(net, bus_lookup)
 
 def test_continuos_bus_numbering():
     net = create_empty_network()
@@ -178,7 +196,6 @@ def test_reindex_elements():
 
 
 def test_continuous_element_numbering():
-    from pandapower.estimation.util import add_virtual_meas_from_loadflow
     net = example_multivoltage()
 
     # Add noises to index with some large number

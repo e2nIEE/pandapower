@@ -3,8 +3,49 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] sql_io now requires single dsn string for database connection instead of separate host, user, etc. keywords.
+- [FIXED] sql_io not working with version of psycopg installed
+- [FIXED] cim2pp add GeographicalRegion from eqbd profile
+- [FIXED] behavior of PowerFactory2pp-converter if coordinates are saved at cpSubstat.
+- [CHANGED] differing behavior for :code:`in_service=False` depending on `voltage_depend_loads` has been fixed. Out of Service elements for res_bus now always contain `nan` as result.
+- [FIXED] `DiscreteTapControl` to work with `negative tap_step_percent`.
+- [CHANGED] updated the contributing file and documentation
+- [ADDED] `allow_duplicate_index` parameter to `reindex_buses` with default to `false`.
+- [ADDED] `add_basic_std_types` parameter to `from_excel`
+- [FIXED] runopp(init="results") now preserves the warm-start vector in the PIPS-backed AC OPF solver
+- [ADDED] added more functions to diagnostic
+- [ADDED] check to check if vkr_percent values are reasonable (see issue #786).
+- [FIXED] cim2pp shift_lv_degree was translated from wrong entry
+- [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
+- [ADDED] LTDS support
+- [FIXED] ucte2pp: voltage setpoints from gens connected to the same busbar are now averaged
+- [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
+- [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
+- [FIXED] ucte2pp: prevent nan values for impedances and transformers for B/G/P_fe/i0
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cim_version)
+- [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
+- [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
+- [ADDED] plotting: highlighting feature and hovering functionality to :code:`simple_plot()`
+- [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
+- [FIXED] pf2pp: static generator without a bus does not cause import errors (it is ignored)
+- [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
+- [ADDED] cim2pp: mapping SV data to the assets with flag use_sv_data_for_assets=True
+
+[3.4.0] - 2026-02-09
+-------------------------------
+- [FIXED] `mag0_percent` is treated as a percent instead of ratio, consistent with its name.
+- [CHANGED] setup: remove extra dependencies from `all` set.
+- [ADDED] setup: add `dev` set for all dependencies required for development.
+- [ADDED] runpp: enforce_p_lims optional argument to consider max & min p limits for gen and sgen elements (from min/max_p_mw parameters)
+- [CHANGED] runpp: expanded enforce_q_lims functionality to consider max & min q limits for sgen elements (from either net.sgen.min/max_q_mvar parameters or reactive power capability curves)
+- [FIXED] cim2pp: prevent crash with comments in xml, by dropping them via library
 - [FIXED] cim2pp: ACLineSegments with invalid terminals no longer cause all valid lines to be discarded
 - [FIXED] pf2pp: create_switch removed and create_vsc fixed (changed to create_pp_vsc)
+- [ADDED] rundcpp: Added DC elements to DC powerflow
+- [ADDED] python: support for version 3.14 added to the test pipelines
+- [FIXED] renamed b2b_vsc to vsc_stacked
+- [ADDED] Station Controller support for power factor control and tangens control
+- [CHANGED] attribute voltage_ctrl in Station Controller to control_modus to select new control modi. Changed the type from boolean to enum class
 
 [3.3.2] - 2026-01-13
 -------------------------------
@@ -784,7 +825,7 @@ Change Log
 
 [1.6.0] - 2018-09-18
 ----------------------
-- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (http://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
+- [CHANGED] Cost definition changed for optimal powerflow, see OPF documentation (https://pandapower.readthedocs.io/en/v1.6.0/powerflow/opf.html) and opf_changes-may18.ipynb
 - [ADDED] OPF data (controllable, max_loading, costs, min_p_kw, ...) in Power System Test Cases
 - [ADDED] case_ieee30, case5, case_illinois200
 - [FIXED] 1 additional Trafo in case39, vn_kv change in case118, sgen indices in polynomial_cost in case 1888rte, case2848rte

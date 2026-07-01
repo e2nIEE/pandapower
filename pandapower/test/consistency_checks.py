@@ -42,7 +42,7 @@ def runpp_pgm_3ph_with_consistency_checks(net):
     return True
 
 
-def consistent_b2b_vsc(net, rtol):
+def consistent_vsc_stacked(net, rtol):
     pass
 
 
@@ -50,7 +50,7 @@ def consistency_checks(net, rtol=1e-3, test_q=True):
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net, rtol)
     element_power_consistent_with_bus_power(net, rtol, test_q)
-    # consistent_b2b_vsc(net, rtol)  # todo
+    # consistent_vsc_stacked(net, rtol)  # todo
 
 
 def indices_consistent(net):
@@ -72,13 +72,19 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
     bus_surplus_q = -net.res_bus.q_mvar.sum()
     bus_dc_surplus_p = -net.res_bus_dc.p_mw.sum()
 
-    branch_loss_p = net.res_line.pl_mw.values.sum() + net.res_trafo.pl_mw.values.sum() + \
-                    net.res_trafo3w.pl_mw.values.sum() + net.res_impedance.pl_mw.values.sum() + \
-                    net.res_dcline.pl_mw.values.sum() + net.res_tcsc.pl_mw.values.sum()
-    branch_loss_q = net.res_line.ql_mvar.values.sum() + net.res_trafo.ql_mvar.values.sum() + \
-                    net.res_trafo3w.ql_mvar.values.sum() + net.res_impedance.ql_mvar.values.sum() + \
-                    net.res_dcline.q_to_mvar.values.sum() + net.res_dcline.q_from_mvar.values.sum() + \
-                    net.res_tcsc.ql_mvar.values.sum()
+    branch_loss_p = (net.res_line.pl_mw.values.sum()
+                     + net.res_trafo.pl_mw.values.sum()
+                     + net.res_trafo3w.pl_mw.values.sum()
+                     + net.res_impedance.pl_mw.values.sum()
+                     + net.res_dcline.pl_mw.values.sum()
+                     + net.res_tcsc.pl_mw.values.sum())
+    branch_loss_q = (net.res_line.ql_mvar.values.sum()
+                     + net.res_trafo.ql_mvar.values.sum()
+                     + net.res_trafo3w.ql_mvar.values.sum()
+                     + net.res_impedance.ql_mvar.values.sum()
+                     + net.res_dcline.q_to_mvar.values.sum()
+                     + net.res_dcline.q_from_mvar.values.sum()
+                     + net.res_tcsc.ql_mvar.values.sum())
     branch_dc_loss = net.res_line_dc.pl_mw.values.sum()
 
     try:
@@ -102,6 +108,9 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     bus_p = pd.Series(data=0., index=net.bus.index)
     bus_q = pd.Series(data=0., index=net.bus.index)
     bus_p_dc = pd.Series(data=0., index=net.bus_dc.index)
+
+    bus_p[~net.bus.in_service] = np.nan
+    bus_q[~net.bus.in_service] = np.nan
 
     for idx, tab in net.ext_grid.iterrows():
         if tab.in_service:
@@ -156,11 +165,11 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         bus_q.at[tab.bus] += net.res_vsc.q_mvar.at[idx]
         bus_p_dc.at[tab.bus_dc] += net.res_vsc.p_dc_mw.at[idx]
 
-    for idx, tab in net.b2b_vsc.iterrows():
-        bus_p.at[tab.bus] += net.res_b2b_vsc.p_mw.at[idx]
-        bus_q.at[tab.bus] += net.res_b2b_vsc.q_mvar.at[idx]
-        bus_p_dc.at[tab.bus_dc_plus] += net.res_b2b_vsc.p_dc_mw_p.at[idx]
-        bus_p_dc.at[tab.bus_dc_minus] += net.res_b2b_vsc.p_dc_mw_m.at[idx]
+    for idx, tab in net.vsc_stacked.iterrows():
+        bus_p.at[tab.bus] += net.res_vsc_stacked.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_vsc_stacked.q_mvar.at[idx]
+        bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_stacked.p_dc_mw_p.at[idx]
+        bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_stacked.p_dc_mw_m.at[idx]
 
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)

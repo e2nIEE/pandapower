@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -25,18 +23,10 @@ import networkx
 import numpy
 import geojson
 import pandas as pd
+from enum import Enum
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 
-try:
-    import psycopg2
-    import psycopg2.errors
-    import psycopg2.extras
-
-    PSYCOPG2_INSTALLED = True
-except ImportError:
-    psycopg2 = None  # type: ignore[assignment]
-    PSYCOPG2_INSTALLED = False
 try:
     from pandas.testing import assert_series_equal, assert_frame_equal
 except ImportError:
@@ -237,15 +227,18 @@ def df_to_coords(net, item, table):
             net[item].loc[i, "coords"] = coord
 
 
-def from_dict_of_dfs(dodfs, net=None):
+def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
     if net is None:
-        net = create_empty_network()
+        net = create_empty_network(add_stdtypes=add_basic_std_types)
     for item, table in dodfs.items():
         if item == "dtypes":
             continue
         elif item == "parameters":
             for c in dodfs["parameters"].columns:
-                net[c] = dodfs["parameters"].at[0, c]
+                val = dodfs["parameters"].at[0, c]
+                if isinstance(val, (bool, np.bool_)):
+                    val = bool(val)
+                net[c] = val
                 if c == "name" and pd.isnull(net[c]):
                     net[c] = ''
             continue
@@ -518,6 +511,7 @@ class FromSerializableRegistry():
         self.omit_modules = omit_modules
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
+    @from_serializable.register(class_name='Series', module_name='pandas')
     def Series(self):
         is_multiindex = self.d.pop('is_multiindex', False)
         index_name = self.d.pop('index_name', None)
@@ -542,6 +536,7 @@ class FromSerializableRegistry():
         return ser
 
     @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
+    @from_serializable.register(class_name='DataFrame', module_name='pandas')
     def DataFrame(self):
         is_multiindex = self.d.pop('is_multiindex', False)
         is_multicolumn = self.d.pop('is_multicolumn', False)
@@ -649,6 +644,10 @@ class FromSerializableRegistry():
                               (self.obj, module.__name__))
         class_ = getattr(module, self.obj)  # works
         return class_
+    
+    @from_serializable.register(class_name='bool', module_name='numpy')
+    def bool_handling(self):
+        return bool(self.obj)
 
     @from_serializable.register()
     def rest(self):
@@ -1044,6 +1043,14 @@ def json_dataframe(obj):
 
     return d
 
+@to_serializable.register(Enum)
+def json_enum(obj):
+    return with_signature(
+        obj,
+        obj.value,
+        obj_module=obj.__class__.__module__,
+        obj_class=obj.__class__.__name__,
+    )
 
 if GEOPANDAS_INSTALLED:
     @to_serializable.register(geopandas.GeoDataFrame)

@@ -84,7 +84,6 @@ def dataframes_equal(df1, df2, ignore_index_order=True, assume_geojson_strings=T
         except AssertionError:
             logger.warning(not_eq_warn)
             return False
-        return geo_eq
 
     elif "geo" not in df1.columns and "geo" not in df2.columns:
         return True
@@ -117,24 +116,16 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
     If the element tables contain JSONSerializableClass objects, they will also be compared:
     attributes are compared but not the addresses of the objects.
 
-    INPUT:
-        **net1** (pandapowerNet)
+    Parameters:
+        net1 (pandapowerNet):
+        net2 (pandapowerNet):
+        check_only_results (bool, False): if True, only result tables (starting with ``res_``) are compared
+        check_without_results (bool, False): if True, result tables (starting with ``res_``) are ignored for comparison
+        exclude_elms (list, None): list of element tables which should be ignored in the comparison
+        name_selection (list, None): list of element tables which should be compared
 
-        **net2** (pandapowerNet)
-
-    OPTIONAL:
-        **check_only_results** (bool, False) - if True, only result tables (starting with ``res_``)
-        are compared
-
-        **check_without_results** (bool, False) - if True, result tables (starting with ``res_``)
-        are ignored for comparison
-
-        **exclude_elms** (list, None) - list of element tables which should be ignored in the
-        comparison
-
-        **name_selection** (list, None) - list of element tables which should be compared
-
-        **kwargs** - key word arguments for dataframes_equal()
+    Keyword Arguments:
+        any: are passed to :func:`dataframes_equal`
     """
     if not (isinstance(net1, pandapowerNet) and isinstance(net2, pandapowerNet)):
         logger.warning("At least one net is not of type pandapowerNet.")
@@ -156,7 +147,7 @@ def nets_equal(net1, net2, check_only_results=False, check_without_results=False
 def nets_equal_keys(net1, net2, check_only_results, check_without_results, exclude_elms,
                      name_selection, assume_geojson_strings, **kwargs):
     """ Returns a lists of keys which are 1) not equal and 2) not checked.
-    Used within nets_equal(). """
+    Used within :func:`nets_equal`."""
     if check_without_results and check_only_results:
         raise UserWarning("Please provide only one of the options to check without results or to "
                           "exclude results in comparison.")

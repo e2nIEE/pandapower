@@ -4,6 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import time
+from typing import overload
+from typing_extensions import deprecated
 
 import numpy as np
 import pandas as pd
@@ -102,21 +104,15 @@ def _controller_attributes_query(controller, parameters):
 def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
     """ Returns indices of searched controllers. Parameters can specify the search query.
 
-    INPUT:
-        **net** (pandapowerNet) - The pandapower network
+    Parameters:
+        net (pandapowerNet): The pandapower network
+        controller_type (controller object or string name of controller object):
+        parameters (dict): Dict of parameter names, which are in the controller object or net.controller DataFrame
+        idx (list): list of indices in net.controller to be searched for. If list is empty all indices are considered.
 
-    OPTIONAL:
-        **controller_type** (controller object or string name of controller object)
-
-        **parameters** (None, dict) - Dict of parameter names, which are in the controller object or
-            net.controller DataFrame
-
-        **idx** ([], list) - list of indices in net.controller to be searched for. If list is empty
-            all indices are considered.
-
-    OUTPUT:
-        **idx** (list) - index / indices of controllers in net.controller which are in idx and
-            matches given ctrl_type or parameters
+    Returns:
+        idx (list): index / indices of controllers in net.controller which are in idx and matches given ctrl_type or
+            parameters
     """
     #    logger.debug(ctrl_type, parameters, idx)
     idx = idx if len(idx) else net.controller.index
@@ -139,22 +135,25 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
     return idx
 
 
-def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None,
-                                       **kwargs):
+@overload
+def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None): ...
+
+@overload
+@deprecated("Keyword args are no longer supported for `log_same_type_existing_controllers`")
+def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None, **kwargs):...
+
+def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None, **kwargs):
     """
     Logs same type controllers, if a controller is created.
-    INPUT:
-        **net** - pandapower net
 
-        **this_ctrl_type** (controller object or string name of controller object)
+    Parameters:
+        net: pandapower net
+        this_ctrl_type (controller object or string name of controller object):
+        index (int): index in net.controller of the controller to be created
+        matching_params (dict): parameters, which must be equal if same type controller should be logged.
 
-    OPTIONAL:
-        **index** (int) - index in net.controller of the controller to be created
-
-        **matching_params** (dict) - parameters, which must be equal if same type controller should
-            be logged.
-
-        ****kwargs** - unused arguments, given to avoid unexpected input arguments
+    Keyword Arguments:
+        *deprecated*: unused arguments, given to avoid unexpected input arguments
     """
     index = str(index)
     if isinstance(matching_params, dict):
@@ -261,7 +260,7 @@ def create_trafo_characteristic_object(net):
         logger.info("trafo_characteristic_table has no values for 3w-trafos - no characteristic objects created.")
 
     # pivot spline characteristic objects to have one row per trafo/trafo3w
-    net["trafo_characteristic_spline"] = net["trafo_characteristic_spline_temp"].applymap(
+    net["trafo_characteristic_spline"] = net["trafo_characteristic_spline_temp"].map(
         lambda x: net["trafo_characteristic_spline"].loc[x, 'object'] if pd.notna(x) else pd.NA).sort_index()
     # create id_characteristic column
     net["trafo_characteristic_spline"]["id_characteristic"] = net["trafo_characteristic_spline"].index
@@ -337,7 +336,7 @@ def create_shunt_characteristic_object(net):
         logger.info("shunt_characteristic_table is empty - no characteristic objects created.")
 
     # pivot spline characteristic objects to have one row per shunt
-    net["shunt_characteristic_spline"] = net["shunt_characteristic_spline_temp"].applymap(
+    net["shunt_characteristic_spline"] = net["shunt_characteristic_spline_temp"].map(
         lambda x: net["shunt_characteristic_spline"].loc[x, 'object'] if pd.notna(x) else pd.NA).sort_index()
     # create id_characteristic column
     net["shunt_characteristic_spline"]["id_characteristic"] = net["shunt_characteristic_spline"].index

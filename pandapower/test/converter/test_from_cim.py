@@ -15,7 +15,7 @@ from pandapower.run import runpp
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mini_sc_mod():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -23,7 +23,7 @@ def mini_sc_mod():
 
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mini_sc():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -32,7 +32,7 @@ def mini_sc():
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def mirco_sc():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -41,7 +41,7 @@ def mirco_sc():
     return from_cim(file_list=cgmes_files, ignore_errors=False)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v2():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -51,7 +51,7 @@ def fullgrid_v2():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v2_spline():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -65,7 +65,7 @@ def fullgrid_v2_spline():
     return net
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_v3():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -74,7 +74,7 @@ def fullgrid_v3():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def smallgrid_GL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -84,7 +84,7 @@ def smallgrid_GL():
     return from_cim(file_list=cgmes_files, use_GL_or_DL_profile='GL')
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def smallgrid_DL():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -94,7 +94,7 @@ def smallgrid_DL():
     return from_cim(file_list=cgmes_files, use_GL_or_DL_profile='DL')
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def realgrid():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -103,7 +103,7 @@ def realgrid():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def SimBench_1_HVMVmixed_1_105_0_sw_modified():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -112,7 +112,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified():
     return from_cim(file_list=cgmes_files, run_powerflow=True)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def Simbench_1_EHV_mixed__2_no_sw():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -121,7 +121,7 @@ def Simbench_1_EHV_mixed__2_no_sw():
     return from_cim(file_list=cgmes_files, create_measurements='SV', run_powerflow=True)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def example_multivoltage():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -132,7 +132,7 @@ def example_multivoltage():
     return net
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -141,7 +141,7 @@ def SimBench_1_HVMVmixed_1_105_0_sw_modified_no_load_flow():
     return from_cim(file_list=cgmes_files)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fullgrid_node_breaker():
     folder_path = os.path.join(test_path, "test_files", "example_cim")
 
@@ -315,17 +315,29 @@ def test_Simbench_1_EHV_mixed__2_no_sw_res_dcline(Simbench_1_EHV_mixed__2_no_sw)
 
 
 def test_Simbench_1_EHV_mixed__2_no_sw_measurement(Simbench_1_EHV_mixed__2_no_sw):
-    assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 571
+    assert len(Simbench_1_EHV_mixed__2_no_sw.measurement.index) == 1142
     element_0 = Simbench_1_EHV_mixed__2_no_sw.measurement[
-        Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
         Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus[
-                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]]
+                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]) &
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['measurement_type'] == 'v')]
     assert element_0['name'].item() == 'EHV Bus 1'
     assert element_0['measurement_type'].item() == 'v'
     assert element_0['element_type'].item() == 'bus'
     assert element_0['value'].item() == pytest.approx(1.0920, abs=0.000001)
     assert element_0['std_dev'].item() == pytest.approx(0.001092, abs=0.000001)
     assert element_0['side'].item() is None
+    element_1 = Simbench_1_EHV_mixed__2_no_sw.measurement[
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['element'] ==
+        Simbench_1_EHV_mixed__2_no_sw.bus[Simbench_1_EHV_mixed__2_no_sw.bus[
+                                              'origin_id'] == '_1cdc1d88-56de-465b-b1a0-968722f2b287'].index[0]) &
+        (Simbench_1_EHV_mixed__2_no_sw.measurement['measurement_type'] == 'angle')]
+    assert element_1['name'].item() == 'EHV Bus 1'
+    assert element_1['measurement_type'].item() == 'angle'
+    assert element_1['element_type'].item() == 'bus'
+    assert element_1['value'].item() == pytest.approx(0.0, abs=0.000001)
+    assert element_1['std_dev'].item() == pytest.approx(0.001, abs=0.000001)
+    assert element_1['side'].item() is None
 
 
 def test_SimBench_1_HVMVmixed_1_105_0_sw_modified_res_xward(SimBench_1_HVMVmixed_1_105_0_sw_modified):
@@ -1554,6 +1566,308 @@ def test_acline_segment_with_only_rdf_id_should_not_empty_all_lines():
         f"Expected the valid ACLineSegment '{valid_line_id}' to be converted, "
         f"but it was not found in net.line."
     )
+
+
+def test_sv_mapping():
+    cim_parser = CimParser(cgmes_version='2.4.15')
+    cim = cim_parser.get_cim_data_structure()
+    # ── Base Voltages ──────────────────────────────────────────────────────────
+    cim['eq']['BaseVoltage'] = pd.DataFrame({
+        'rdfId': ['_bv110', '_bv20'],
+        'name':  ['110kV',  '20kV'],
+        'nominalVoltage': [110.0, 20.0]
+    })
+
+    # ── Geography / Substation / VoltageLevels ─────────────────────────────────
+    cim['eq']['GeographicalRegion'] = pd.DataFrame({
+        'rdfId': ['_geo1'], 'name': ['Region1']
+    })
+    cim['eq']['SubGeographicalRegion'] = pd.DataFrame({
+        'rdfId': ['_subgeo1'], 'name': ['SubRegion1'], 'Region': ['_geo1']
+    })
+    cim['eq']['Substation'] = pd.DataFrame({
+        'rdfId': ['_sub1'], 'name': ['Substation1'], 'Region': ['_subgeo1']
+    })
+    cim['eq']['VoltageLevel'] = pd.DataFrame({
+        'rdfId':     ['_vl110',  '_vl20'],
+        'name':      ['VL_110kV', 'VL_20kV'],
+        'shortName': ['VL110',    'VL20'],
+        'BaseVoltage': ['_bv110', '_bv20'],
+        'Substation':  ['_sub1',  '_sub1']
+    })
+
+    # ── Connectivity Nodes (3 buses) ───────────────────────────────────────────
+    # _cn1, _cn2 → 110 kV side;  _cn3 → 20 kV side
+    cim['eq']['ConnectivityNode'] = pd.DataFrame({
+        'rdfId': ['_cn1', '_cn2', '_cn3'],
+        'name':  ['CN1',  'CN2',  'CN3'],
+        'description': ['HV Bus 1', 'HV Bus 2', 'LV Bus'],
+        'ConnectivityNodeContainer': ['_vl110', '_vl110', '_vl20']
+    })
+
+    # ── Topological Nodes ──────────────────────────────────────────────────────
+    cim['tp']['TopologicalNode'] = pd.DataFrame({
+        'rdfId': ['_tn1', '_tn2', '_tn3'],
+        'name':  ['TN1',  'TN2',  'TN3'],
+        'description': ['HV TN1', 'HV TN2', 'LV TN3'],
+        'ConnectivityNodeContainer': ['_vl110', '_vl110', '_vl20'],
+        'BaseVoltage': ['_bv110', '_bv110', '_bv20']
+    })
+    cim['tp']['ConnectivityNode'] = pd.DataFrame({
+        'rdfId': ['_cn1', '_cn2', '_cn3'],
+        'TopologicalNode': ['_tn1', '_tn2', '_tn3']
+    })
+
+    # ── SvVoltage ──────────────────────────────────────────────────────────────
+    cim['sv']['SvVoltage'] = pd.DataFrame({
+        'rdfId': ['_svv1', '_svv2', '_svv3'],
+        'TopologicalNode': ['_tn1', '_tn2', '_tn3'],
+        'v':     [110.0,   109.5,   20.1],
+        'angle': [0.0,     -0.5,    -2.0]
+    })
+
+    # ── Generators (2 × SynchronousMachine + GeneratingUnit) ──────────────────
+    cim['eq']['GeneratingUnit'] = pd.DataFrame({
+        'rdfId': ['_gu1', '_gu2'],
+        'name':  ['GenUnit1', 'GenUnit2'],
+        'nominalP':     [100.0, 200.0],
+        'initialP':     [80.0,  150.0],
+        'minOperatingP': [10.0,  20.0],
+        'maxOperatingP': [100.0, 200.0],
+        'EquipmentContainer': ['_vl110', '_vl110'],
+        'governorSCD': [0.0, 0.0]
+    })
+    cim['ssh']['GeneratingUnit'] = pd.DataFrame({
+        'rdfId': ['_gu1', '_gu2'],
+        'normalPF': [1.0, 1.0]
+    })
+
+    cim['eq']['RegulatingControl'] = pd.DataFrame({
+        'rdfId': ['_rc1', '_rc2'],
+        'name':  ['RC_Gen1', 'RC_Gen2'],
+        'mode':  ['voltage', 'voltage'],
+        'Terminal': ['_term_gen1', '_term_gen2']
+    })
+    cim['ssh']['RegulatingControl'] = pd.DataFrame({
+        'rdfId':   ['_rc1', '_rc2'],
+        'discrete': [False, False],
+        'enabled':  [True,  True],
+        'targetValue': [110.0, 110.0],
+        'targetValueUnitMultiplier': ['k', 'k']
+    })
+
+    cim['eq']['SynchronousMachine'] = pd.DataFrame({
+        'rdfId': ['_sm1', '_sm2'],
+        'name':  ['SyncMach1', 'SyncMach2'],
+        'description': ['Generator 1', 'Generator 2'],
+        'GeneratingUnit': ['_gu1', '_gu2'],
+        'EquipmentContainer': ['_vl110', '_vl110'],
+        'ratedU': [110.0, 110.0],
+        'ratedS': [120.0, 220.0],
+        'type':   ['generator', 'generator'],
+        'minQ': [-50.0, -80.0],
+        'maxQ': [ 50.0,  80.0],
+        'RegulatingControl': ['_rc1', '_rc2'],
+        'InitialReactiveCapabilityCurve': [np.nan, np.nan],
+        'r2': [np.nan, np.nan],
+        'x2': [np.nan, np.nan],
+        'ratedPowerFactor': [0.95, 0.95],
+        'voltageRegulationRange': [np.nan, np.nan]
+    })
+    cim['ssh']['SynchronousMachine'] = pd.DataFrame({
+        'rdfId': ['_sm1', '_sm2'],
+        'p':  [-80.0,  -150.0],
+        'q':  [-20.0,   -30.0],
+        'referencePriority': [1, 2],
+        'operatingMode': ['generator', 'generator'],
+        'controlEnabled': [True, True]
+    })
+
+    # ── EnergySchedulingType ───────────────────────────────────────────────────
+    cim['eq']['EnergySchedulingType'] = pd.DataFrame({
+        'rdfId': ['_est1'],
+        'name': ['DefaultSchedulingType']
+    })
+
+    # ── EnergySource (eq) ──────────────────────────────────────────────────────
+    cim['eq']['EnergySource'] = pd.DataFrame({
+        'rdfId': ['_es1', '_es2'],
+        'name': ['EnergySource1', 'EnergySource2'],
+        'description': ['Slack HV', 'Slack LV'],
+        'nominalVoltage': [110.0, 20.0],
+        'EnergySchedulingType': ['_est1', '_est1'],
+        'BaseVoltage': ['_bv110', '_bv20'],
+        'EquipmentContainer': ['_vl110', '_vl20'],
+    })
+
+    # ── EnergySource (ssh) ─────────────────────────────────────────────────────
+    cim['ssh']['EnergySource'] = pd.DataFrame({
+        'rdfId': ['_es1', '_es2'],
+        'activePower': [-50.0, -10.0],
+        'reactivePower': [-10.0, -5.0]
+    })
+
+    # ── EnergyConsumer (eq) ────────────────────────────────────────────────────
+    cim['eq']['EnergyConsumer'] = pd.DataFrame({
+        'rdfId': ['_ec1'],
+        'name': ['EnergyConsumer1'],
+        'description': ['EnergyConsumer1'],
+        'EquipmentContainer': ['_vl110'],
+    })
+
+    # ── EnergyConsumer (ssh) ───────────────────────────────────────────────────
+    cim['ssh']['EnergyConsumer'] = pd.DataFrame({
+        'rdfId': ['_ec1'],
+        'p': [10.0],
+        'q': [10.0]
+    })
+
+    cim['sv']['SvPowerFlow'] = pd.DataFrame({
+        'rdfId': ['_svpf_gen1', '_svpf_gen2', '_svpf_es1', '_svpf_es2', '_svpf_ec1'],
+        'Terminal': ['_term_gen1', '_term_gen2', '_term_es1', '_term_es2', '_term_ec1'],
+        'p': [-90.0, -160.0, -60.0, -15.0, 20.0],
+        'q': [-30.0, -40.0, -15.0,  -10.0, 20.0]
+    })
+
+    # ── LinearShuntCompensator ─────────────────────────────────────────────────
+    cim['eq']['LinearShuntCompensator'] = pd.DataFrame({
+        'rdfId': ['_shunt1'],
+        'name':  ['Shunt1'],
+        'description': ['HV Shunt'],
+        'nomU': [110.0],
+        'bPerSection': [1e-4],
+        'gPerSection': [0.0],
+        'maximumSections': [2],
+        'normalSections': [1],
+        'EquipmentContainer': ['_vl110']
+    })
+    cim['ssh']['LinearShuntCompensator'] = pd.DataFrame({
+        'rdfId': ['_shunt1'],
+        'sections': [1],
+        'controlEnabled': [False]
+    })
+    cim['sv']['SvShuntCompensatorSections'] = pd.DataFrame({
+        'rdfId': ['_svsh1'],
+        'ShuntCompensator': ['_shunt1'],
+        'sections': [2]
+    })
+
+    # ── PowerTransformer (110/20 kV) + PowerTransformerEnd ────────────────────
+    cim['eq']['PowerTransformer'] = pd.DataFrame({
+        'rdfId': ['_trafo1'],
+        'name':  ['Trafo1'],
+        'description': ['110/20 kV Transformer'],
+        'EquipmentContainer': ['_sub1'],
+        'isPartOfGeneratorUnit': [False]
+    })
+    cim['eq']['PowerTransformerEnd'] = pd.DataFrame({
+        'rdfId':    ['_pte_hv', '_pte_lv'],
+        'name':     ['PTE_HV',  'PTE_LV'],
+        'PowerTransformer': ['_trafo1', '_trafo1'],
+        'endNumber': [1, 2],
+        'Terminal':  ['_term_trafo_hv', '_term_trafo_lv'],
+        'ratedS': [100.0, 100.0],
+        'ratedU': [110.0,  20.0],
+        'r':  [0.5,  0.0],
+        'x':  [10.0, 0.0],
+        'r0': [1.0,  0.0],
+        'x0': [30.0, 0.0],
+        'b':  [0.0,  0.0],
+        'g':  [0.0,  0.0],
+        'BaseVoltage':    ['_bv110', '_bv20'],
+        'phaseAngleClock': [0, 0],
+        'connectionKind': ['Yn', 'yn'],
+        'grounded': [True, True],
+        'xground':  [0.0,  0.0]
+    })
+
+    # ── RatioTapChanger on HV end ──────────────────────────────────────────────
+    cim['eq']['TapChangerControl'] = pd.DataFrame({
+        'rdfId': ['_tcc1'],
+        'name':  ['TCC1'],
+        'mode':  ['voltage'],
+        'Terminal': ['_term_trafo_lv']
+    })
+    cim['ssh']['TapChangerControl'] = pd.DataFrame({
+        'rdfId': ['_tcc1'],
+        'discrete': [True],
+        'enabled':  [True],
+        'targetValue': [20.0],
+        'targetValueUnitMultiplier': ['k'],
+        'targetDeadband': [0.5]
+    })
+
+    cim['eq']['RatioTapChanger'] = pd.DataFrame({
+        'rdfId': ['_rtc1'],
+        'name':  ['RTC1'],
+        'TransformerEnd': ['_pte_hv'],
+        'neutralStep': [10],
+        'lowStep':     [1],
+        'highStep':    [19],
+        'normalStep':  [10],
+        'stepVoltageIncrement': [1.0],
+        'neutralU': [110.0],
+        'ltcFlag':  [True],
+        'tculControlMode': ['volt'],
+        'TapChangerControl': ['_tcc1'],
+        'RatioTapChangerTable': [np.nan]
+    })
+    cim['ssh']['RatioTapChanger'] = pd.DataFrame({
+        'rdfId': ['_rtc1'],
+        'step':  [10],
+        'controlEnabled': [True]
+    })
+    cim['sv']['SvTapStep'] = pd.DataFrame({
+        'rdfId': ['_svts1'],
+        'TapChanger': ['_rtc1'],
+        'position': [12]
+    })
+
+    # ── Terminals ──────────────────────────────────────────────────────────────
+    cim['eq']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term_gen1', '_term_gen2', '_term_shunt1', '_term_trafo_hv', '_term_trafo_lv',
+                  '_term_es1', '_term_es2', '_term_ec1'],
+        'name': ['T_Gen1', 'T_Gen2', 'T_Shunt1', 'T_Trafo_HV', 'T_Trafo_LV', 'T_ES1', 'T_ES2', 'T_EC1'],
+        'ConnectivityNode': ['_cn1', '_cn2', '_cn1', '_cn2', '_cn3', '_cn1',  '_cn3', '_cn1'],
+        'ConductingEquipment': ['_sm1', '_sm2', '_shunt1', '_trafo1', '_trafo1', '_es1', '_es2', '_ec1'],
+        'sequenceNumber': [1, 1, 1, 1, 2, 1, 1, 1]
+    })
+    cim['ssh']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term_gen1', '_term_gen2', '_term_shunt1', '_term_trafo_hv', '_term_trafo_lv',
+                  '_term_es1', '_term_es2', '_term_ec1'],
+        'connected': [True, True, True, True, True, True, True, True]
+    })
+    cim['tp']['Terminal'] = pd.DataFrame({
+        'rdfId': ['_term_gen1', '_term_gen2', '_term_shunt1',
+                  '_term_trafo_hv', '_term_trafo_lv', '_term_es1', '_term_es2', '_term_ec1'],
+        'TopologicalNode': ['_tn1', '_tn2', '_tn1', '_tn2', '_tn3', '_tn1', '_tn3', '_tn1']
+    })
+
+    # Set the cim dict and prepare
+    cim_parser.set_cim_dict(cim)
+    cim_parser.prepare_cim_net()
+    cim_parser.set_cim_data_types()
+
+    net = from_cim_dict(cim_parser, ignore_errors=True, use_sv_data_for_assets=True)
+
+    # test the generators
+    assert net.sgen.loc[net.sgen['origin_id'] == '_es1', 'p_mw'].item() == pytest.approx(60.0, abs=0.000001)
+    assert net.sgen.loc[net.sgen['origin_id'] == '_es2', 'p_mw'].item() == pytest.approx(15.0, abs=0.000001)
+    assert net.sgen.loc[net.sgen['origin_id'] == '_es1', 'q_mvar'].item() == pytest.approx(15.0, abs=0.000001)
+    assert net.sgen.loc[net.sgen['origin_id'] == '_es2', 'q_mvar'].item() == pytest.approx(10.0, abs=0.000001)
+
+    assert net.gen.loc[net.gen['origin_id'] == '_sm1', 'p_mw'].item() == pytest.approx(90.0, abs=0.000001)
+    assert net.gen.loc[net.gen['origin_id'] == '_sm2', 'p_mw'].item() == pytest.approx(160.0, abs=0.000001)
+
+    # test the loads
+    assert net.load.loc[net.load['origin_id'] == '_ec1', 'p_mw'].item() == pytest.approx(20.0, abs=0.000001)
+    assert net.load.loc[net.load['origin_id'] == '_ec1', 'q_mvar'].item() == pytest.approx(20.0, abs=0.000001)
+
+    # test the shunts
+    assert net.shunt.loc[net.shunt['origin_id'] == '_shunt1', 'step'].item() == pytest.approx(2.0, abs=0.000001)
+
+    # test the trafo tap changer
+    assert net.trafo.loc[net.trafo['origin_id'] == '_trafo1', 'tap_pos'].item() == pytest.approx(12.0, abs=0.000001)
 
 
 if __name__ == "__main__":

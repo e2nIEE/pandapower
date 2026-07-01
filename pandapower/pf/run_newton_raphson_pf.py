@@ -145,7 +145,7 @@ def _get_Sbus(ppci, recycle=None):
 
 
 def _run_ac_pf_without_qlims_enforced(ppci, options):
-    makeYbus, pfsoln = _get_numba_functions(ppci, options)
+    makeYbus, _ = _get_numba_functions(ppci, options)
 
     baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci, True)
 
@@ -180,7 +180,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, on, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    _, bus, gen, branch, _, _, _, _, ref, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
     bus_backup_p_q = bus[:, [PD, QD]].copy()
     gen_backup_p = gen[:, PG].copy()
 
@@ -230,7 +230,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  # & set bus type to PQ
 
             # update bus index lists of each type of bus
-            ref, pv, pq = bustypes(bus, gen)
+            ref, _, _ = bustypes(bus, gen)
 
             limited = r_[limited, mx].astype(int64)
 
