@@ -21,8 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def _build_helm_case(ppci):
-    """
-    Build a HELMpy :code:`CaseData` object from a pandapower internal ppc (ppci).
+    """Build a HELMpy :code:`CaseData` object from a pandapower internal ppc (ppci).
 
     The bus ordering of :code:`ppci` is preserved: HELMpy bus index :code:`i` corresponds
     to ppci bus row :code:`i`, so the resulting complex voltage profile can be written
@@ -100,8 +99,7 @@ def _build_helm_case(ppci):
 
 
 def _get_slack_weights(ppci):
-    """
-    Collect pandapower's distributed-slack participation factors as a per-bus array.
+    """Collect pandapower's distributed-slack participation factors as a per-bus array.
 
     Weights come from in-service generators (:code:`gen[:, SL_FAC]`, accumulated on their bus)
     and from buses directly (:code:`bus[:, SL_FAC_BUS]`, e.g. xwards). The bus order matches
@@ -125,8 +123,7 @@ def _get_slack_weights(ppci):
 
 
 def _runpf_helmpy_pf(ppci, options, **kwargs):
-    """
-    Runs a HELM (Holomorphic Embedding Load flow Method) based power flow, provided by the optional HELMpy package.
+    """Runs a HELM (Holomorphic Embedding Load flow Method) based power flow, provided by the optional HELMpy package.
 
     The converged complex voltage profile is routed through pandapower's regular
     ``pfsoln`` result extraction (the same one used by Newton-Raphson) so that
@@ -198,7 +195,7 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     # ------------------------------------------- result extraction via pfsoln -----------------------------------------
     # Store the converged voltage and admittance matrices in ppci["internal"] so that the
     # standard pfsoln-based extraction (shared with Newton-Raphson) computes all results.
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = \
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, ref_gens = \
         _get_pf_variables_from_ppci(ppci)
 
     makeYbus, _ = _get_numba_functions(ppci, options)
