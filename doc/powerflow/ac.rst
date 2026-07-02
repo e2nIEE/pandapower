@@ -27,7 +27,7 @@ Pandapower brings a variety of powerflow algorithm, some through the pypower cor
 - "fdxb" fast-decoupled (pypower implementation)
 - "helm" holomorphic embedded loadflow method (Copyright (C) 2019 Tulio Molina tuliojose8@gmail.com and Juan José Ortega juanjoseop10@gmail.com)
 
-All of these algorithm provide pro and cons, the user can select an algorithm via :code:`runpp(algorithm="nr", ...)`
+An algorithm might be better suited for a peculiar use case. The user can select an algorithm via :code:`runpp(algorithm="nr", ...)`
 If the algorithm option is not given, "nr" is selected as a default. Please note, not all features / power system elements
 are equally supported in all solvers. The most feature complete at the moment is "nr".
 
