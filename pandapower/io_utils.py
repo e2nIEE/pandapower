@@ -511,12 +511,13 @@ class FromSerializableRegistry():
     module_name = ''
     omit_modules = ''
 
-    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False, omit_modules=None):
+    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False, omit_modules=None, load_controllers=False):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
         self.ignore_unknown_objects = ignore_unknown_objects
         self.omit_modules = omit_modules
+        self.load_controllers = load_controllers
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     @from_serializable.register(class_name='Series', module_name='pandas')
@@ -646,12 +647,18 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name='function')
     def function(self):
-        module = importlib.import_module(self.module_name)
-        if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
-            raise UserWarning('Could not find the definition of the function %s in the module %s' %
-                              (self.obj, module.__name__))
-        class_ = getattr(module, self.obj)  # works
-        return class_
+        if self.load_controllers:
+            module = importlib.import_module(self.module_name)
+            if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
+                raise UserWarning(f'Could not find the definition of the function {self.obj} '
+                                  f'in the module {module.__name__}')
+            class_ = getattr(module, self.obj)  # works
+            return class_
+        else:
+            logger.warning(f"Deserialization of function {self.obj} is blocked, if you trust the source of the json file,"
+                           f"set load_controllers=True to allow deserialization of objects.")
+            return self.obj
+        
     
     @from_serializable.register(class_name='bool', module_name='numpy')
     def bool_handling(self):
@@ -659,6 +666,11 @@ class FromSerializableRegistry():
 
     @from_serializable.register()
     def rest(self):
+        if not self.load_controllers:
+            logger.warning(f"Deserialization of object {self.obj} is blocked, if you trust the source of the json file,"
+                           f"set load_controllers=True to allow deserialization of objects.")
+            return self.obj
+
         try:
             module = importlib.import_module(self.module_name)
         except ModuleNotFoundError as e:
@@ -681,7 +693,10 @@ class FromSerializableRegistry():
                     self.obj,
                     cls=PPJSONDecoder,
                     object_hook=partial(
-                        pp_hook, ignore_unknown_objects=self.ignore_unknown_objects, omit_modules=self.omit_modules
+                        pp_hook,
+                        ignore_unknown_objects=self.ignore_unknown_objects,
+                        omit_modules=self.omit_modules,
+                        load_controllers=self.load_controllers
                     )
                 )
                 # backwards compatibility
@@ -701,9 +716,9 @@ class FromSerializableRegistry():
                         df.at[idx, prop] = val
                 return df
 
-    if GEOPANDAS_INSTALLED:
-        @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
-        def GeoDataFrame(self):
+    @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
+    def geoDataFrame(self):
+        if GEOPANDAS_INSTALLED:
             fs = json.loads(self.obj)
             # for some reason, the id is not parsed as dataframe id, this is a workaround
             if isinstance(fs, dict) and fs.get("type") == "FeatureCollection":
@@ -724,11 +739,15 @@ class FromSerializableRegistry():
             # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it
             _preserve_dtypes(df, dtypes=self.d["dtype"])
             return df
+        else:
+            return self.obj
 
-    if SHAPELY_INSTALLED:
-        @from_serializable.register(module_name='shapely')
-        def shapely(self):
+    @from_serializable.register(module_name='shapely')
+    def shapely(self):
+        if SHAPELY_INSTALLED:
             return shapely.geometry.shape(self.obj)
+        else:
+            return self.obj
 
 
 class PPJSONDecoder(json.JSONDecoder):
@@ -749,6 +768,7 @@ class PPJSONDecoder(json.JSONDecoder):
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
+            load_controllers=kwargs.pop('load_controllers', False)
         )}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
@@ -761,7 +781,8 @@ def pp_hook(
         registry_class=FromSerializableRegistry,
         ignore_unknown_objects=False,
         omit_tables=None,
-        omit_modules=None
+        omit_modules=None,
+        load_controllers=False,
 ):
     try:
         if not omit_tables is None:
@@ -784,7 +805,8 @@ def pp_hook(
                 return obj  # backwards compatibility
             else:
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, pp_hook, ignore_unknown_objects, omit_modules=omit_modules)
+            fs = registry_class(obj, d, pp_hook, ignore_unknown_objects, omit_modules=omit_modules,
+                                load_controllers=load_controllers)
 
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')

@@ -673,5 +673,18 @@ def test_omitting_tables_from_json(net_in):
     assert(nets_equal(net, net3))
 
 
+hardened = True
+def test_json_deserialization_hardening():
+    global hardened
+    t = {"_module": "builtins", "_class": "exec", "_object": "global hardened; hardened = False"}
+
+    from_json_string(json.dumps(t))
+    assert(hardened)
+
+    from_json_string(json.dumps(t), load_controllers=True)
+    assert not (hardened)
+
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
