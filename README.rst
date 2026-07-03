@@ -1,5 +1,4 @@
-
-.. image:: https://www.pandapower.org/images/pp.svg
+.. image:: https://www.pandapower.org/images/pandapower_color.svg
    :target: https://www.pandapower.org
    :alt: logo
 
@@ -74,7 +73,7 @@ To get realistic load profile data and grid models across all voltage levels tha
 be used in pandapower, have a look at the *SimBench* `project website <https://www.simbench.net>`_ or
 `on GitHub <https://github.com/e2nIEE/simbench>`_.
 
-.. image:: https://www.pandapipes.org/images/pp.svg
+.. image:: https://www.pandapipes.org/images/pandapipes_color.svg
    :target: https://www.pandapipes.org
    :width: 270pt
    :alt: pandapipes_logo

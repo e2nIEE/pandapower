@@ -277,10 +277,9 @@ def create_bus_lookup(net, bus_index, bus_is_idx, numba):
         net._impedance_bb_switches = np.zeros(switches_with_pos_z_ohm.shape)
 
     if numba:
-        bus_lookup, merged_bus = create_bus_lookup_numba(net, bus_index, bus_is_idx)
+        return create_bus_lookup_numba(net, bus_index, bus_is_idx)
     else:
-        bus_lookup, merged_bus = create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask)
-    return bus_lookup, merged_bus
+        return create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask)
 
 
 def get_voltage_init_vector(net, init_v, mode, sequence=None):
@@ -1012,12 +1011,12 @@ def _add_ext_grid_sc_impedance(net, ppc):
     else:
         c = 1.1
     if not "s_sc_%s_mva" % case in eg:
-        raise ValueError(("short circuit apparent power s_sc_%s_mva needs to be specified for "
-                          "external grid \n Try: net.ext_grid['s_sc_max_mva'] = 1000") % case)
+        raise ValueError(f"short circuit apparent power s_sc_{case}_mva needs to be specified for external grid \n"
+                         f" Try: net.ext_grid['s_sc_{case}_mva'] = 1000")
     s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
     if not "rx_%s" % case in eg:
-        raise ValueError(("short circuit R/X rate rx_%s needs to be specified for external grid \n"
-                          " Try: net.ext_grid['rx_max'] = 0.1") % case)
+        raise ValueError(f"short circuit R/X rate rx_{case} needs to be specified for external grid \n"
+                         f" Try: net.ext_grid['rx_{case}'] = 0.1")
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
@@ -1113,11 +1112,13 @@ def _add_c_to_ppc(net, ppc):
     if len(lv_buses) > 0:
         lv_tol_percent = net["_options"]["lv_tol_percent"]
         if lv_tol_percent == 10:
-            c_ns = 1.1
+            c_max = 1.1
+            c_min = 0.9
         elif lv_tol_percent == 6:
-            c_ns = 1.05
+            c_max = 1.05
+            c_min = 0.95
         else:
             raise ValueError("Voltage tolerance in the low voltage grid has" +
                              " to be either 6% or 10% according to IEC 60909")
-        ppc["bus"][lv_buses, C_MAX] = c_ns
-        ppc["bus"][lv_buses, C_MIN] = .95
+        ppc["bus"][lv_buses, C_MAX] = c_max
+        ppc["bus"][lv_buses, C_MIN] = c_min

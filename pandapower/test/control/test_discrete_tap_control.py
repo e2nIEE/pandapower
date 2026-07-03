@@ -3,6 +3,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import math
 from copy import deepcopy
 import numpy as np
 from pandapower.control import DiscreteTapControl
@@ -145,7 +146,6 @@ def test_discrete_tap_control_hv():
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item()))
     assert net.trafo.tap_pos.at[0] == -1
 
-
 def test_discrete_tap_control_lv_from_tap_step_percent():
     # --- load system and run power flow
     net = simple_four_bus_system()
@@ -217,7 +217,8 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     assert net.trafo.tap_pos.at[0] == 1
 
 
-def test_discrete_tap_control_hv_from_tap_step_percent():
+@pytest.mark.parametrize("tap_step_percent", [1.25, -1.25])
+def test_discrete_tap_control_hv_from_tap_step_percent(tap_step_percent):
     # --- load system and run power flow
     net = simple_four_bus_system()
     set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
@@ -226,8 +227,9 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     net.trafo.tap_neutral = 0
     net.trafo.tap_min = -2
     net.trafo.tap_max = 2
-    net.trafo.tap_step_percent = 1.25
+    net.trafo.tap_step_percent = tap_step_percent
     net.trafo.tap_pos = 0
+    tap_step_sign = int(math.copysign(1, tap_step_percent))
     # --- run loadflow
     runpp(net)
 
@@ -242,7 +244,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item()))
-    assert net.trafo.tap_pos.at[0] ==  1
+    assert net.trafo.tap_pos.at[0] ==  (1 * tap_step_sign)
 
     # check if it changes the lower and upper limits
     net.controller.object.at[0].vm_set_pu = 1
@@ -269,7 +271,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item()))
-    assert net.trafo.tap_pos.at[0] == 2
+    assert net.trafo.tap_pos.at[0] == (2 * tap_step_sign)
     # reduce voltage from 1.03 pu to 0.969 pu
     net.ext_grid.vm_pu = 0.969
     # switch back tap position
@@ -285,7 +287,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent():
     logger.info(
         "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
         % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item()))
-    assert net.trafo.tap_pos.at[0] == -1
+    assert net.trafo.tap_pos.at[0] == (-1 * tap_step_sign)
 
 
 def test_discrete_tap_control_vectorized_lv():

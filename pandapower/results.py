@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -7,7 +5,7 @@
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_vsc_stacked_names
+from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
@@ -24,6 +22,11 @@ BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
                        "branch_ith_f", "branch_ith_t")
 
 suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
+
+
+def _overwrite_out_of_service(net: pandapowerNet) -> None:
+    net.res_bus[~net.bus.in_service] = np.nan
+    # TODO: add other out of service elements
 
 
 def _extract_results(net, ppc):
@@ -43,6 +46,7 @@ def _extract_results(net, ppc):
     # _get_branch_dc_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc) # not needed since it is calculated in _get_branch_results
     _get_bus_dc_results(net, bus_p_dc)
     _get_vsc_stacked_results(net)
+    _overwrite_out_of_service(net)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:

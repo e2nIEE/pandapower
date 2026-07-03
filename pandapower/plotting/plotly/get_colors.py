@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -54,7 +52,8 @@ def _to_plotly_palette(scl, transparence=None):
     for color in scl:
         plotly_col = [255 * _c for _c in mplc.to_rgba(color)]
         if transparence:
-            assert 0. <= transparence <= 1.0
+            if not (0 <= transparence <= 1):
+                raise AssertionError('transparence should be between 0 and 1')
             plotly_col[3] = transparence
             plotly_col = "rgba({:.0f}, {:.0f}, {:.0f}, {:.4f})".format(*plotly_col)
         else:

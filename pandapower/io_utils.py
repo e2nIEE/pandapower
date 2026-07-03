@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -29,15 +27,6 @@ from enum import Enum
 from networkx.readwrite import json_graph
 from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
 
-try:
-    import psycopg2
-    import psycopg2.errors
-    import psycopg2.extras
-
-    PSYCOPG2_INSTALLED = True
-except ImportError:
-    psycopg2 = None  # type: ignore[assignment]
-    PSYCOPG2_INSTALLED = False
 try:
     from pandas.testing import assert_series_equal, assert_frame_equal
 except ImportError:
@@ -238,15 +227,18 @@ def df_to_coords(net, item, table):
             net[item].loc[i, "coords"] = coord
 
 
-def from_dict_of_dfs(dodfs, net=None):
+def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
     if net is None:
-        net = create_empty_network()
+        net = create_empty_network(add_stdtypes=add_basic_std_types)
     for item, table in dodfs.items():
         if item == "dtypes":
             continue
         elif item == "parameters":
             for c in dodfs["parameters"].columns:
-                net[c] = dodfs["parameters"].at[0, c]
+                val = dodfs["parameters"].at[0, c]
+                if isinstance(val, (bool, np.bool_)):
+                    val = bool(val)
+                net[c] = val
                 if c == "name" and pd.isnull(net[c]):
                     net[c] = ''
             continue

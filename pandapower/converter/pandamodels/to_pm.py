@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -552,8 +550,10 @@ def add_params_to_pm(net, pm):
     
     # add objective factors for multi optimization
     if "obj_factors" in net.keys():
-        assert isinstance(net.obj_factors, list)
-        assert sum(net.obj_factors) <= 1
+        if not isinstance(net.obj_factors, list):
+            raise AssertionError("net.obj_factors is not a list")
+        if sum(net.obj_factors) > 1:
+            raise AssertionError("sum of net.obj_factors is greater than 1")
         dic = {}
         for i, k in enumerate(net.obj_factors):
             dic["fac_"+str(i+1)] = k        
