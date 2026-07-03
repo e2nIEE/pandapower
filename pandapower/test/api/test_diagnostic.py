@@ -43,6 +43,7 @@ from pandapower.diagnostic.diagnostic_functions import (
     WrongLineReactance,
     WrongLineResistance,
 )
+from pandapower.diagnostic.diagnostic_functions import DisableVoltageDependentLoads
 
 try:
     import numba
@@ -874,6 +875,13 @@ def test_diagnostic_report_does_not_raise_for_overloaded_example_simple():
 
     Diagnostic().diagnose_network(net, report_style="detailed")
 
+def test_disable_voltage_dependent_loads_report_branches():
+    check = DisableVoltageDependentLoads()
+
+    check.report(RuntimeError("test error"), None)
+    check.report(None, None)
+    check.report(None, True)
+    check.report(None, False)
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

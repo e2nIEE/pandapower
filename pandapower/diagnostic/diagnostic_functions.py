@@ -684,7 +684,7 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
         if self.reactance_scaling_factor is not None:
             reactance_scaling_factor = self.reactance_scaling_factor
         else:
-            raise RuntimeError("diagnostic was not executed before calling results?")
+            raise RuntimeError('diagnostic was not executed before calling results?')
 
         osf_percent = f"{reactance_scaling_factor * 100} percent."
 
@@ -768,7 +768,7 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
         if self.resistance_scaling_factor is not None:
             resistance_scaling_factor = self.resistance_scaling_factor
         else:
-            raise RuntimeError("diagnostic was not executed before calling results?")
+            raise RuntimeError('diagnostic was not executed before calling results?')
 
         osf_percent = f"{resistance_scaling_factor * 100} percent."
 
