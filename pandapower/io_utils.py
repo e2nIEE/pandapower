@@ -511,7 +511,7 @@ class FromSerializableRegistry():
     module_name = ''
     omit_modules = ''
 
-    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False, omit_modules=None, load_controllers=False):
+    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False, omit_modules=None, skip_checks=False):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
@@ -715,7 +715,7 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name='function')
     def function(self):
-        if self.skip_checks:
+        if not self.skip_checks:
             module = importlib.import_module(self.module_name)
             if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
                 raise UserWarning(f'Could not find the definition of the function {self.obj} '
