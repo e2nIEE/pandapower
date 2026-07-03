@@ -17,6 +17,15 @@ except ImportError:
 logger = pplog.getLogger(__name__)
 
 
+def _make_hashable(obj):
+    if isinstance(obj, dict):
+        return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
+    if isinstance(obj, (list, tuple)):
+        return tuple(_make_hashable(v) for v in obj)
+    if isinstance(obj, np.ndarray):
+        return tuple(_make_hashable(v) for v in obj.tolist())
+    return obj
+
 class Characteristic(JSONSerializableClass):
     """
     This class represents a characteristics curve. The curve is described as a piecewise linear function.
@@ -188,23 +197,34 @@ class SplineCharacteristic(Characteristic):
             The interpolated y-value.
         """
         return self.interpolator(x)
-    
-    def __eq__(self, other):
-        """Compares two SplineCharacteristics
-        
-        :param other: The other SplineCharacteristic to compare with
 
-        """
-        if self.interpolator_kind != other.interpolator_kind:
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
             return False
-        if self.kwargs != other.kwargs:
-            return False
-        if self.x_vals != other.x_vals:
-            return False
-        if self.y_vals != other.y_vals:
-            return False
-        
-        return True
+        return (
+            self.interpolator_kind == other.interpolator_kind
+            and self.kwargs == other.kwargs
+            and np.array_equal(self.x_vals, other.x_vals)
+            and np.array_equal(self.y_vals, other.y_vals)
+        )
+
+
+    def __repr__(self):
+        return self.__class__.__name__ + f"({self.interpolator_kind}, {self.kwargs})"
+
+    def __str__(self):
+        return self.__class__.__name__ + f"({self.interpolator_kind}, {self.kwargs})"
+
+    def __hash__(self):
+        return hash(
+            (
+                self.__class__,
+                self.interpolator_kind,
+                _make_hashable(self.kwargs),
+                _make_hashable(self.x_vals),
+                _make_hashable(self.y_vals),
+            )
+        )
 
 
 class LogSplineCharacteristic(SplineCharacteristic):
@@ -234,23 +254,6 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     def __call__(self, x):
         return np.power(10, self.interpolator(np.log10(x)))
-
-    def __eq__(self, other):
-        """Compares two SplineCharacteristics
-
-        :param other: The other SplineCharacteristic to compare with
-
-        """
-        if self.interpolator_kind != other.interpolator_kind:
-            return False
-        if self.kwargs != other.kwargs:
-            return False
-        if self._x_vals != other._x_vals:
-            return False
-        if self._y_vals != other._y_vals:
-            return False
-
-        return True
 
 
 def default_interp1d(x, y, kind="quadratic", bounds_error=False, fill_value="extrapolate", **kwargs):
