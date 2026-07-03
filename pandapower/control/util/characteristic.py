@@ -154,6 +154,8 @@ class SplineCharacteristic(Characteristic):
         super().__init__(net, x_values=x_values, y_values=y_values, table=table)
         self.kwargs = kwargs
         self.interpolator_kind = interpolator_kind
+        self._interpolator = None
+
 
     @property
     def interpolator(self):
@@ -165,11 +167,7 @@ class SplineCharacteristic(Characteristic):
         demand. As soon as the characteristic is called, if the interpolator is there,
         we can use it. If not, we recreate it.
         """
-        return self._interpolator
-
-    @interpolator.getter
-    def interpolator(self):
-        if not hasattr(self, '_interpolator'):
+        if self._interpolator is None:
             if self.interpolator_kind == "interp1d":
                 self._interpolator = default_interp1d(self.x_vals, self.y_vals, **self.kwargs)
             elif self.interpolator_kind == "Pchip":
@@ -196,6 +194,8 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__(net, x_values, y_values, **kwargs)
+        self._x_vals = None
+        self._y_vals = None
 
     @property
     def x_vals(self):

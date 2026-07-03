@@ -640,6 +640,71 @@ class FromSerializableRegistry():
             mg.add_edge(n1, n2, **ed)
         return mg
 
+    @from_serializable.register(class_name="SplineCharacteristic", module_name="pandapower.control.util.characteristic")
+    def splinecharacteristic(self):
+        if isinstance(self.obj, str):
+            from pandapower.control.util.characteristic import SplineCharacteristic
+            my_hook = partial(
+                self.pp_hook,
+                ignore_unknown_objects=self.ignore_unknown_objects,
+                omit_modules=self.omit_modules,
+                load_controllers=self.load_controllers
+            )
+
+            dt = json.loads(self.obj)
+            index = my_hook(dt["index"]['_object'])
+            x_vals = my_hook(dt["x_vals"])
+            y_vals = my_hook(dt["y_vals"])
+
+            kwarg = {}
+            for ind, val in dt["kwargs"].items():
+                kwarg[ind] = my_hook(val)
+
+            sc = SplineCharacteristic(
+                net=None,
+                x_values=x_vals,
+                y_values=y_vals,
+                interpolator_kind=dt["interpolator_kind"],
+                table="characteristic",
+                **kwarg,
+            )
+            sc.index = index
+
+            return sc
+
+    @from_serializable.register(class_name="LogSplineCharacteristic", module_name="pandapower.control.util.characteristic")
+    def logsplinecharacteristic(self):
+        if isinstance(self.obj, str):
+            from pandapower.control.util.characteristic import LogSplineCharacteristic
+            my_hook = partial(
+                self.pp_hook,
+                ignore_unknown_objects=self.ignore_unknown_objects,
+                omit_modules=self.omit_modules,
+                load_controllers=self.load_controllers
+            )
+            dt = json.loads(self.obj)
+            index = my_hook(dt["index"]['_object'])
+            x_vals = my_hook(dt["_x_vals"])
+            x_vals = [my_hook(x) for x in x_vals]
+            y_vals = my_hook(dt["_y_vals"])
+            y_vals = [my_hook(y) for y in y_vals]
+
+            kwarg = {}
+            for ind, val in dt["kwargs"].items():
+                kwarg[ind] = my_hook(val)
+
+            lsc = LogSplineCharacteristic(
+                net=None,
+                x_values=x_vals,
+                y_values=y_vals,
+                interpolator_kind=dt["interpolator_kind"],
+                table="characteristic",
+                **kwarg,
+            )
+
+            lsc.index = index
+            return lsc
+
     @from_serializable.register(class_name="method")
     def method(self):
         logger.warning('deserializing of method not implemented')
