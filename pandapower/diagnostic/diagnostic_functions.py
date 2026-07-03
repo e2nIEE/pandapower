@@ -1038,11 +1038,11 @@ class TestContinuousBusIndices(DiagnosticFunction[pandapowerNet, bool]):
         net = copy.deepcopy(net)
 
         try:
+            create_continuous_bus_index(net)
             run(net)
             return None
         except expected_exceptions:
-            create_continuous_bus_index(net)
-            return True
+            return False
         except Exception as e:
             self.out.error(f"Continuous bus index calculation failed: {str(e)}")
             raise e
