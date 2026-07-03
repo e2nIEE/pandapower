@@ -833,5 +833,18 @@ def test_runpp_errors(test_net, diag_params, diag_errors):
     Diagnostic().diagnose_network(net, report_style=None)
 
 
+# def test_wrong_line_impedance_reports_do_not_raise():
+#     net = example_simple()
+#     net.load.at[0, "p_mw"] = 1000
+
+#     Diagnostic().diagnose_network(net, report_style="detailed")
+
+def test_diagnostic_report_does_not_raise_for_overloaded_example_simple():
+    net = example_simple()
+    net.load.at[0, "p_mw"] = 1000
+
+    Diagnostic().diagnose_network(net, report_style="detailed")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

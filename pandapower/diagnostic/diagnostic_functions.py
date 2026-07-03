@@ -520,34 +520,64 @@ class DisableVoltageDependentLoads(DiagnosticFunction[pandapowerNet, bool]):
 
         return check_result
 
+    # def report(self, error: Exception | None, results: bool | None) -> None:
+    #     # error and success checks
+    #     if error is not None:
+    #         self.out.warning("Check for convergence error failed due to the following error:")
+    #         self.out.warning(error)
+    #         return
+    #     if results is None:
+    #         self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+    #         return
+
+    #     # message header
+    #     self.out.compact("line problems:\n")
+    #     self.out.detailed("Checking for too high line capacitance...\n")
+
+    #     # message body
+    #     if self.capacitance_scaling_factor is not None:
+    #         capacitance_scaling_factor = self.capacitance_scaling_factor
+    #     else:
+    #         raise RuntimeError('diagnostic was not executed before calling results?')
+
+    #     osf_percent = f"{capacitance_scaling_factor * 100} percent."
+
+    #     if results:
+    #         self.out.warning(
+    #             f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+    #     else:
+    #         self.out.warning(
+    #             f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
+
+
     def report(self, error: Exception | None, results: bool | None) -> None:
         # error and success checks
         if error is not None:
-            self.out.warning("Check for convergence error failed due to the following error:")
+            self.out.warning("Check for voltage dependent loads failed due to the following error:")
             self.out.warning(error)
             return
+
         if results is None:
-            self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+            self.out.info("PASSED: Power flow converges. No voltage dependent load problem found.")
             return
 
         # message header
-        self.out.compact("line problems:\n")
-        self.out.detailed("Checking for too high line capacitance...\n")
+        self.out.compact("voltage dependent loads:\n")
+        self.out.detailed("Checking power flow with voltage_depend_loads=False...\n")
 
         # message body
-        if self.capacitance_scaling_factor is not None:
-            capacitance_scaling_factor = self.capacitance_scaling_factor
-        else:
-            raise RuntimeError('diagnostic was not executed before calling results?')
-
-        osf_percent = f"{capacitance_scaling_factor * 100} percent."
-
         if results:
             self.out.warning(
-                f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+                "Power flow converges when voltage dependent loads are disabled "
+                "with voltage_depend_loads=False."
+            )
         else:
             self.out.warning(
-                f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
+                "Power flow still does not converge when voltage dependent loads are disabled "
+                "with voltage_depend_loads=False."
+            )
+
+
 
 
 class WrongLineCapacitance(DiagnosticFunction[pandapowerNet, bool]):
@@ -674,34 +704,69 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
 
         return check_result
 
+    # def report(self, error: Exception | None, results: bool | None) -> None:
+    #     # error and success checks
+    #     if error is not None:
+    #         self.out.warning("Check for convergence error failed due to the following error:")
+    #         self.out.warning(error)
+    #         return
+    #     if results is None:
+    #         self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+    #         return
+
+    #     # message header
+    #     self.out.compact("line problems:\n")
+    #     self.out.detailed("Checking for too high line capacitance...\n")
+
+    #     # message body
+    #     if self.capacitance_scaling_factor is not None:
+    #         capacitance_scaling_factor = self.capacitance_scaling_factor
+    #     else:
+    #         raise RuntimeError('diagnostic was not executed before calling results?')
+
+    #     osf_percent = f"{capacitance_scaling_factor * 100} percent."
+
+    #     if results:
+    #         self.out.warning(
+    #             f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+    #     else:
+    #         self.out.warning(
+    #             f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
+
     def report(self, error: Exception | None, results: bool | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for convergence error failed due to the following error:")
             self.out.warning(error)
             return
+
         if results is None:
-            self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+            self.out.info("PASSED: Power flow converges. No line reactance problems found.")
             return
 
         # message header
         self.out.compact("line problems:\n")
-        self.out.detailed("Checking for too high line capacitance...\n")
+        self.out.detailed("Checking for too high line reactance...\n")
 
         # message body
-        if self.capacitance_scaling_factor is not None:
-            capacitance_scaling_factor = self.capacitance_scaling_factor
+        if self.reactance_scaling_factor is not None:
+            reactance_scaling_factor = self.reactance_scaling_factor
         else:
-            raise RuntimeError('diagnostic was not executed before calling results?')
+            raise RuntimeError("diagnostic was not executed before calling results?")
 
-        osf_percent = f"{capacitance_scaling_factor * 100} percent."
+        osf_percent = f"{reactance_scaling_factor * 100} percent."
 
         if results:
             self.out.warning(
-                f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+                f"Too high reactance found: Power flow converges with "
+                f"line.x_ohm_per_km scaled down to {osf_percent}"
+            )
         else:
             self.out.warning(
-                f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
+                f"Too high reactance tested: Power flow did not converge with "
+                f"line.x_ohm_per_km scaled down to {osf_percent}"
+            )
+
 
 
 class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
@@ -751,35 +816,69 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
 
         return check_result
 
+    # def report(self, error: Exception | None, results: bool | None) -> None:
+    #     # error and success checks
+    #     if error is not None:
+    #         self.out.warning("Check for convergence error failed due to the following error:")
+    #         self.out.warning(error)
+    #         return
+    #     if results is None:
+    #         self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+    #         return
+
+    #     # message header
+    #     self.out.compact("line problems:\n")
+    #     self.out.detailed("Checking for too high line capacitance...\n")
+
+    #     # message body
+    #     if self.capacitance_scaling_factor is not None:
+    #         capacitance_scaling_factor = self.capacitance_scaling_factor
+    #     else:
+    #         raise RuntimeError('diagnostic was not executed before calling results?')
+
+    #     osf_percent = f"{capacitance_scaling_factor * 100} percent."
+
+    #     if results:
+    #         self.out.warning(
+    #             f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+    #     else:
+    #         self.out.warning(
+    #             f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
+
+
     def report(self, error: Exception | None, results: bool | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for convergence error failed due to the following error:")
             self.out.warning(error)
             return
+
         if results is None:
-            self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+            self.out.info("PASSED: Power flow converges. No line resistance problems found.")
             return
 
         # message header
         self.out.compact("line problems:\n")
-        self.out.detailed("Checking for too high line capacitance...\n")
+        self.out.detailed("Checking for too high line resistance...\n")
 
         # message body
-        if self.capacitance_scaling_factor is not None:
-            capacitance_scaling_factor = self.capacitance_scaling_factor
+        if self.resistance_scaling_factor is not None:
+            resistance_scaling_factor = self.resistance_scaling_factor
         else:
-            raise RuntimeError('diagnostic was not executed before calling results?')
+            raise RuntimeError("diagnostic was not executed before calling results?")
 
-        osf_percent = f"{capacitance_scaling_factor * 100} percent."
+        osf_percent = f"{resistance_scaling_factor * 100} percent."
 
         if results:
             self.out.warning(
-                f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+                f"Too high resistance found: Power flow converges with "
+                f"line.r_ohm_per_km scaled down to {osf_percent}"
+            )
         else:
             self.out.warning(
-                f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
-
+                f"Too high resistance tested: Power flow did not converge with "
+                f"line.r_ohm_per_km scaled down to {osf_percent}"
+            )
 
 class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
     """
