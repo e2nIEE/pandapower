@@ -188,6 +188,23 @@ class SplineCharacteristic(Characteristic):
             The interpolated y-value.
         """
         return self.interpolator(x)
+    
+    def __eq__(self, other):
+        """Compares two SplineCharacteristics
+        
+        :param other: The other SplineCharacteristic to compare with
+
+        """
+        if self.interpolator_kind != other.interpolator_kind:
+            return False
+        if self.kwargs != other.kwargs:
+            return False
+        if self.x_vals != other.x_vals:
+            return False
+        if self.y_vals != other.y_vals:
+            return False
+        
+        return True
 
 
 class LogSplineCharacteristic(SplineCharacteristic):
@@ -217,6 +234,23 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     def __call__(self, x):
         return np.power(10, self.interpolator(np.log10(x)))
+
+    def __eq__(self, other):
+        """Compares two SplineCharacteristics
+
+        :param other: The other SplineCharacteristic to compare with
+
+        """
+        if self.interpolator_kind != other.interpolator_kind:
+            return False
+        if self.kwargs != other.kwargs:
+            return False
+        if self._x_vals != other._x_vals:
+            return False
+        if self._y_vals != other._y_vals:
+            return False
+
+        return True
 
 
 def default_interp1d(x, y, kind="quadratic", bounds_error=False, fill_value="extrapolate", **kwargs):

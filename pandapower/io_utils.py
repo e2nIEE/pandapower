@@ -660,14 +660,19 @@ class FromSerializableRegistry():
             y_vals = my_hook(dt["y_vals"])
 
             kwarg = {}
-            for ind, val in dt["kwargs"].items():
-                kwarg[ind] = my_hook(val)
+            if "kwargs" in dt:
+                for ind, val in dt["kwargs"].items():
+                    kwarg[ind] = my_hook(val)
+
+            interpolator_kind = "interp1d"
+            if "interpolator_kind" in dt:
+                interpolator_kind = dt["interpolator_kind"]
 
             sc = SplineCharacteristic(
                 net=None,
                 x_values=x_vals,
                 y_values=y_vals,
-                interpolator_kind=dt["interpolator_kind"],
+                interpolator_kind=interpolator_kind,
                 table="characteristic",
                 **kwarg,
             )
@@ -693,14 +698,19 @@ class FromSerializableRegistry():
             y_vals = [my_hook(y) for y in y_vals]
 
             kwarg = {}
-            for ind, val in dt["kwargs"].items():
-                kwarg[ind] = my_hook(val)
+            if "kwargs" in dt:
+                for ind, val in dt["kwargs"].items():
+                    kwarg[ind] = my_hook(val)
+
+            interpolator_kind = "Pchip"
+            if "interpolator_kind" in dt:
+                interpolator_kind = dt["interpolator_kind"]
 
             lsc = LogSplineCharacteristic(
                 net=None,
                 x_values=x_vals,
                 y_values=y_vals,
-                interpolator_kind=dt["interpolator_kind"],
+                interpolator_kind=interpolator_kind,
                 table="characteristic",
                 **kwarg,
             )
