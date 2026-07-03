@@ -4,10 +4,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+from typing import Callable
 
 import pytest
 import numpy as np
 
+from pandapower import create_empty_network
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_ext_grid, create_switch
 from pandapower.toolbox.grid_modification import drop_trafos, change_std_type
@@ -27,7 +29,14 @@ from pandapower.diagnostic.diagnostic_functions import (
     DisconnectedElements,
     DeviationFromStdType,
     NumbaComparison,
-    MissingBusIndices
+    MissingBusIndices,
+    CheckDCPowerflow,
+    DisableVoltageDependentLoads,
+    WrongLineCapacitance,
+    WrongLineResistance,
+    WrongLineReactance,
+    SubNetProblemTest,
+    OptimisticPowerflow
 )
 
 try:
@@ -64,24 +73,28 @@ def test_net():
     return net
 
 
-@pytest.fixture(scope="module")
-def diag_functions():
-    return [
-        MissingBusIndices,
-        DisconnectedElements,
-        DifferentVoltageLevelsConnected,
-        ImplausibleImpedanceValues,
-        NominalVoltagesMismatch,
-        InvalidValues,
-        Overload,
-        MultipleVoltageControllingElementsPerBus,
-        WrongSwitchConfiguration,
-        NoExtGrid,
-        WrongReferenceSystem,
-        DeviationFromStdType,
-        NumbaComparison,
-        ParallelSwitches,
-    ]
+diag_functions: list[Callable] = [
+    MissingBusIndices,
+    DisconnectedElements,
+    DifferentVoltageLevelsConnected,
+    ImplausibleImpedanceValues,
+    NominalVoltagesMismatch,
+    InvalidValues,
+    Overload,
+    MultipleVoltageControllingElementsPerBus,
+    WrongSwitchConfiguration,
+    NoExtGrid,
+    WrongReferenceSystem,
+    DeviationFromStdType,
+    NumbaComparison,
+    ParallelSwitches,
+    CheckDCPowerflow,
+    DisableVoltageDependentLoads,
+    WrongLineCapacitance,
+    WrongLineReactance,
+    WrongLineResistance,
+    SubNetProblemTest,
+]
 
 
 def check_report_function(func: DiagnosticFunction, error, result):
@@ -91,13 +104,13 @@ def check_report_function(func: DiagnosticFunction, error, result):
         raise AssertionError(f"Report function '{func.__class__.__name__}' failed: {e}")
 
 
-def test_no_issues(diag_params, diag_errors, diag_functions):
+@pytest.mark.parametrize("diag_function", diag_functions)
+def test_no_issues(diag_params, diag_errors, diag_function):
     net = example_simple()
     diag = Diagnostic()
     diag_results = diag.diagnose_network(net, report_style=None)
     assert diag_results == {}
-    for check_function in diag_functions:
-        check_report_function(check_function(), None, None)
+    check_report_function(diag_function(), None, None)
 
 
 class TestInvalidValues:
@@ -831,6 +844,39 @@ def test_runpp_errors(test_net, diag_params, diag_errors):
     net = copy.deepcopy(test_net)
     net.load.p_mw *= 100
     Diagnostic().diagnose_network(net, report_style=None)
+
+
+def test_check_dc_powerflow_report_without_diagnostic():
+    net = example_simple()
+    check = CheckDCPowerflow()
+    check.report(None, None)
+    check.report(net, None)
+
+
+def test_disable_voltage_dependent_loads_report_without_diagnostic():
+    net = example_simple()
+    check = DisableVoltageDependentLoads()
+    check.report(None, None)
+    check.report(net, None)
+
+
+def test_wrong_line_reactance_report():
+    net = example_simple()
+    check = WrongLineReactance()
+    check.report(net, None)
+
+
+def test_wrong_line_resistance_report():
+    net = example_simple()
+    check = WrongLineResistance()
+    check.report(net, None)
+
+
+def test_sub_net_problem_test_with_zones():
+    net = example_simple()
+    net.bus["zone"] = 0
+    check = SubNetProblemTest()
+    check.diagnostic(net)
 
 
 if __name__ == "__main__":
