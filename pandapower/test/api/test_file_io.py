@@ -673,17 +673,42 @@ def test_omitting_tables_from_json(net_in):
     assert(nets_equal(net, net3))
 
 
-hardened = True
 def test_json_deserialization_hardening():
-    global hardened
     t = {"_module": "builtins", "_class": "exec", "_object": "global hardened; hardened = False"}
 
-    from_json_string(json.dumps(t))
-    assert(hardened)
+    with pytest.raises(ValueError, match="class exec is not allowed in pandapowerNet!"):
+        from_json_string(json.dumps(t))
 
-    from_json_string(json.dumps(t), load_controllers=True)
-    assert not (hardened)
+    t = {"_module": "os", "_class": "system", "_object": "global hardened; hardened = False"}
 
+    with pytest.raises(ValueError, match="module os not allowed in pandapowerNet!"):
+        from_json_string(json.dumps(t))
+
+    hardened_json = json.dumps(
+        {
+            "version": "2.13.1",
+            "software": "pandapower",
+            "net": {
+                "_module": "os",
+                "_class": "system",
+                "_object": "Qg==",  # base64-encoded empty bytes
+            },
+        }
+    )
+
+    # Writing to a temp file
+    import tempfile
+    import os
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        f.write(hardened_json)
+        tmp_path = f.name
+
+    with pytest.raises(UserWarning, match="Failed to load as json or file: module os not allowed in pandapowerNet!"):
+        # This call triggers pp_hook() which calls importlib.import_module("os")
+        _ = from_json(tmp_path)
+
+    os.remove(tmp_path)
 
 
 if __name__ == "__main__":

@@ -235,7 +235,7 @@ def from_json(
         filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
         keep_serialized_elements=True, add_basic_std_types=False,
         replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False,
-        omit_tables=None, omit_modules=None, load_controllers=False
+        omit_tables=None, omit_modules=None, load_controllers=True
 ):
     """
     Load a pandapower network from a JSON file.
@@ -317,7 +317,7 @@ def from_json_string(
         drop_invalid_geodata=False,
         omit_tables=None,
         omit_modules=None,
-        load_controllers=False
+        load_controllers=True
 ):
     """
     Load a pandapower network from a JSON string.

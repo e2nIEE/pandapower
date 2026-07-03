@@ -607,7 +607,10 @@ class FromSerializableRegistry():
         df_obj = df.select_dtypes(include=['object'])
         for col in df_obj:
             df[col] = df[col].apply(partial(
-                self.pp_hook, ignore_unknown_objects=self.ignore_unknown_objects, omit_modules=self.omit_modules
+                self.pp_hook,
+                ignore_unknown_objects=self.ignore_unknown_objects, 
+                omit_modules=self.omit_modules,
+                load_controllers=self.load_controllers
             ))
             df[col] = df[col].astype(dtype='object')
             df.loc[pd.isnull(df[col]), col] = None
@@ -735,6 +738,12 @@ class FromSerializableRegistry():
             logger.warning(f"Deserialization of object {self.obj} is blocked, if you trust the source of the json file,"
                            f"set load_controllers=True to allow deserialization of objects.")
             return self.obj
+
+        if self.class_name == "exec":
+            raise ValueError(f"class {self.class_name} is not allowed in pandapowerNet!")
+
+        if self.module_name == "os" or self.module_name != "builtins":
+            raise ValueError(f"module {self.module_name} not allowed in pandapowerNet!")
 
         try:
             module = importlib.import_module(self.module_name)
@@ -947,6 +956,8 @@ class JSONSerializableClass(object):
 
     def add_to_net(self, net, element, index=None, column="object", overwrite=False,
                    preserve_dtypes=False, fill_dict=None):
+        if net is None:
+            return None
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
         if index is None:
