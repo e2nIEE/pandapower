@@ -741,7 +741,7 @@ class FromSerializableRegistry():
             if self.class_name == "exec":
                 raise ValueError(f"class {self.class_name} is not allowed in pandapowerNet!")
 
-            if self.module_name == "os" or self.module_name != "builtins":
+            if self.module_name == "os":
                 raise ValueError(f"module {self.module_name} not allowed in pandapowerNet!")
 
         try:
