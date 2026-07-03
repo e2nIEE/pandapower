@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -292,12 +290,14 @@ def _check_overlapping_constraints(opf_task_overview):
             max_col = [col for col in df.columns if "max" in col]
             n_col = min(len(min_col), len(max_col))
             for i_col in range(n_col):
-                assert min_col[i_col].replace("min", "") == max_col[i_col].replace("max", "")
+                if min_col[i_col].replace("min", "") != max_col[i_col].replace("max", ""):
+                    raise AssertionError("min and max are not equal.")
                 if (df[min_col[i_col]] > df[max_col[i_col]]).any():
                     overlap.append(key)
     if len(overlap):
-        logger.error("At these variables, there is a minimum constraint exceeding the maximum " +
-                     "constraint value: " + str(overlap))
+        logger.error(
+            "At these variables, there is a minimum constraint exceeding the maximum constraint value: " + str(overlap)
+        )
 
 
 def _log_opf_task_overview(opf_task_overview):
@@ -307,15 +307,18 @@ def _log_opf_task_overview(opf_task_overview):
     s = ""
     for dict_key, data in opf_task_overview.items():
         if isinstance(data, str):
-            assert dict_key == "flexibilities_without_costs"
+            if dict_key != "flexibilities_without_costs":
+                raise AssertionError("dict_key is not 'flexibilities_without_costs'")
             s += "\n\n%s flexibilities without costs" % data
             continue
         else:
-            assert isinstance(data, dict)
+            if not isinstance(data, dict):
+                raise AssertionError("data is not a dict")
         heading_logged = False
         keys, elms = _get_keys_and_elements_from_opf_task_dict(data)
         for key, elm in zip(keys, elms):
-            assert elm in key
+            if elm not in key:
+                raise AssertionError('elm should be in key')
             df = data[key]
 
             if dict_key in ["flexibilities", "network_constraints"]:
