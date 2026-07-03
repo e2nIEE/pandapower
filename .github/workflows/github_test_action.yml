@@ -360,14 +360,6 @@ jobs:
         DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
         SCHEMA: 'test_schema'
       run: |
-        psql -h localhost -U test_user -d sandbox -c "CREATE SCHEMA test_schema AUTHORIZATION test_user"
-        psql -h localhost -U test_user --list sandbox
-    - name: Test postgresql available
-      # Test that will fail the pipeline if the tests would be skipped. Prevents pipeline success if psycopg import fails
-      env:
-        DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
-        SCHEMA: 'test_schema'
-      run: |
         uv run python -c "import sys; from pandapower.test.api.test_sql_io import POSTGRESQL_AVAILABLE; sys.exit(not POSTGRESQL_AVAILABLE);"
     - name: Test pandapower File I/O
       env:
