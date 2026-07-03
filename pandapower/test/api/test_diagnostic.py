@@ -4,10 +4,13 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+from typing import Callable
 
 import pytest
 import numpy as np
 
+from diagnostic.diagnostic_functions import CheckDCPowerflow, DisableVoltageDependentLoads, WrongLineCapacitance, \
+    WrongLineResistance, WrongLineReactance, SubNetProblemTest
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_ext_grid, create_switch
 from pandapower.toolbox.grid_modification import drop_trafos, change_std_type
@@ -64,24 +67,28 @@ def test_net():
     return net
 
 
-@pytest.fixture(scope="module")
-def diag_functions():
-    return [
-        MissingBusIndices,
-        DisconnectedElements,
-        DifferentVoltageLevelsConnected,
-        ImplausibleImpedanceValues,
-        NominalVoltagesMismatch,
-        InvalidValues,
-        Overload,
-        MultipleVoltageControllingElementsPerBus,
-        WrongSwitchConfiguration,
-        NoExtGrid,
-        WrongReferenceSystem,
-        DeviationFromStdType,
-        NumbaComparison,
-        ParallelSwitches,
-    ]
+diag_functions: list[Callable] = [
+    MissingBusIndices,
+    DisconnectedElements,
+    DifferentVoltageLevelsConnected,
+    ImplausibleImpedanceValues,
+    NominalVoltagesMismatch,
+    InvalidValues,
+    Overload,
+    MultipleVoltageControllingElementsPerBus,
+    WrongSwitchConfiguration,
+    NoExtGrid,
+    WrongReferenceSystem,
+    DeviationFromStdType,
+    NumbaComparison,
+    ParallelSwitches,
+    CheckDCPowerflow,
+    DisableVoltageDependentLoads,
+    WrongLineCapacitance,
+    WrongLineReactance,
+    WrongLineResistance,
+    SubNetProblemTest,
+]
 
 
 def check_report_function(func: DiagnosticFunction, error, result):
@@ -91,13 +98,13 @@ def check_report_function(func: DiagnosticFunction, error, result):
         raise AssertionError(f"Report function '{func.__class__.__name__}' failed: {e}")
 
 
-def test_no_issues(diag_params, diag_errors, diag_functions):
+@pytest.mark.parametrize("diag_function", diag_functions)
+def test_no_issues(diag_params, diag_errors, diag_function):
     net = example_simple()
     diag = Diagnostic()
     diag_results = diag.diagnose_network(net, report_style=None)
     assert diag_results == {}
-    for check_function in diag_functions:
-        check_report_function(check_function(), None, None)
+    check_report_function(diag_function(), None, None)
 
 
 class TestInvalidValues:
