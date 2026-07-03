@@ -3,6 +3,8 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] hardening of from_json function witha white list
+- [FIXED] (Log)SplineCharacteristic now have their own de-/serializer
 - [ADDED] HELMpy as an additional solver
 - [CHANGED] sql_io now requires single dsn string for database connection instead of separate host, user, etc. keywords.
 - [FIXED] sql_io not working with version of psycopg installed
