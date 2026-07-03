@@ -235,7 +235,7 @@ def from_json(
         filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
         keep_serialized_elements=True, add_basic_std_types=False,
         replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False,
-        omit_tables=None, omit_modules=None, load_controllers=True
+        omit_tables=None, omit_modules=None, skip_checks=False
 ):
     """
     Load a pandapower network from a JSON file.
@@ -264,11 +264,10 @@ def from_json(
     :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be
         deserialized instead of raising an error, default False
     :param bool drop_invalid_geodata: If set to True, invalid geodata is dropped instead of raising an error,
-        default False
-    :param list omit_tables: List of tables to omit from loading, default None
-    :param list omit_modules: List of modules to omit from loading, default None
-    :param bool load_controllers: If set to True, controllers and functions are loaded, default False
-
+    :param list omit_tables: List of tables to omit from loading
+    :param list omit_modules: List of modules to omit from loading
+    :param bool skip_checks: If set to True, no checks will be performed.
+        .. warning:: Only perform on trusted data sources / networks!
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -298,7 +297,7 @@ def from_json(
             drop_invalid_geodata=drop_invalid_geodata,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
-            load_controllers=load_controllers
+            skip_checks=skip_checks
         )
     except ValueError as e:
         raise UserWarning(f"Failed to load as json or file: {e}")
@@ -317,7 +316,7 @@ def from_json_string(
         drop_invalid_geodata=False,
         omit_tables=None,
         omit_modules=None,
-        load_controllers=True
+        skip_checks=False
 ):
     """
     Load a pandapower network from a JSON string.
@@ -344,11 +343,11 @@ def from_json_string(
     :type empty_dict_like_object: dict or pandapowerNet or None
     :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be deserialized instead of
         raising an error, default False
-    :param bool drop_invalid_geodata: If set to True, invalid geodata is dropped instead of raising an error, 
-        default False
-    :param list omit_tables: List of tables to omit from loading, default None
-    :param list omit_modules: List of modules to omit from loading, default None
-    :param bool load_controllers: If set to True, controllers and functions are loaded, default False
+    :param bool drop_invalid_geodata: If set to True, invalid geodata is dropped instead of raising an error,
+    :param list omit_tables: List of tables to omit from loading
+    :param list omit_modules: List of modules to omit from loading
+    :param bool skip_checks: If set to True, skips all checks
+        .. warning:: Only perform on trusted data sources / networks!
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -372,7 +371,7 @@ def from_json_string(
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
-            load_controllers=load_controllers,
+            skip_checks=skip_checks,
         )
     else:
         net = json.loads(
@@ -383,7 +382,7 @@ def from_json_string(
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
-            load_controllers=load_controllers
+            skip_checks=skip_checks
         )
         net_dummy = create_empty_network()
         if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
@@ -391,7 +390,7 @@ def from_json_string(
                               'Convert and save your net first.')
         if keep_serialized_elements:
             for key in elements_to_deserialize:
-                net[key] = json.loads(net[key], cls=PPJSONDecoder, load_controllers=load_controllers)
+                net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
         else:
             if (('version' not in net.keys()) or (net['version'] != net_dummy.version)) and \
                     not convert:
@@ -402,7 +401,7 @@ def from_json_string(
                     % (net['version'], net_dummy.version))
             for key in net.keys():
                 if key in elements_to_deserialize:
-                    net[key] = json.loads(net[key], cls=PPJSONDecoder, load_controllers=load_controllers)
+                    net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
                 elif not isinstance(net[key], str):
                     continue
                 elif 'pandas' in net[key]:

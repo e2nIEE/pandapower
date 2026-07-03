@@ -517,7 +517,7 @@ class FromSerializableRegistry():
         self.pp_hook = pp_hook_funct
         self.ignore_unknown_objects = ignore_unknown_objects
         self.omit_modules = omit_modules
-        self.load_controllers = load_controllers
+        self.skip_checks = skip_checks
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     @from_serializable.register(class_name='Series', module_name='pandas')
@@ -610,7 +610,7 @@ class FromSerializableRegistry():
                 self.pp_hook,
                 ignore_unknown_objects=self.ignore_unknown_objects, 
                 omit_modules=self.omit_modules,
-                load_controllers=self.load_controllers
+                skip_checks=self.skip_checks
             ))
             df[col] = df[col].astype(dtype='object')
             df.loc[pd.isnull(df[col]), col] = None
@@ -651,7 +651,7 @@ class FromSerializableRegistry():
                 self.pp_hook,
                 ignore_unknown_objects=self.ignore_unknown_objects,
                 omit_modules=self.omit_modules,
-                load_controllers=self.load_controllers
+                skip_checks=self.skip_checks
             )
 
             dt = json.loads(self.obj)
@@ -683,7 +683,7 @@ class FromSerializableRegistry():
                 self.pp_hook,
                 ignore_unknown_objects=self.ignore_unknown_objects,
                 omit_modules=self.omit_modules,
-                load_controllers=self.load_controllers
+                skip_checks=self.skip_checks
             )
             dt = json.loads(self.obj)
             index = my_hook(dt["index"]['_object'])
@@ -715,7 +715,7 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name='function')
     def function(self):
-        if self.load_controllers:
+        if self.skip_checks:
             module = importlib.import_module(self.module_name)
             if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
                 raise UserWarning(f'Could not find the definition of the function {self.obj} '
@@ -724,7 +724,7 @@ class FromSerializableRegistry():
             return class_
         else:
             logger.warning(f"Deserialization of function {self.obj} is blocked, if you trust the source of the json file,"
-                           f"set load_controllers=True to allow deserialization of objects.")
+                           f"set skip_checks=True to allow deserialization of objects.")
             return self.obj
         
     
@@ -734,16 +734,15 @@ class FromSerializableRegistry():
 
     @from_serializable.register()
     def rest(self):
-        if not self.load_controllers:
+        if not self.skip_checks:
             logger.warning(f"Deserialization of object {self.obj} is blocked, if you trust the source of the json file,"
-                           f"set load_controllers=True to allow deserialization of objects.")
-            return self.obj
+                           f"set skip_checks=True to allow deserialization of objects.")
 
-        if self.class_name == "exec":
-            raise ValueError(f"class {self.class_name} is not allowed in pandapowerNet!")
+            if self.class_name == "exec":
+                raise ValueError(f"class {self.class_name} is not allowed in pandapowerNet!")
 
-        if self.module_name == "os" or self.module_name != "builtins":
-            raise ValueError(f"module {self.module_name} not allowed in pandapowerNet!")
+            if self.module_name == "os" or self.module_name != "builtins":
+                raise ValueError(f"module {self.module_name} not allowed in pandapowerNet!")
 
         try:
             module = importlib.import_module(self.module_name)
@@ -770,7 +769,7 @@ class FromSerializableRegistry():
                         pp_hook,
                         ignore_unknown_objects=self.ignore_unknown_objects,
                         omit_modules=self.omit_modules,
-                        load_controllers=self.load_controllers
+                        skip_checks=self.skip_checks
                     )
                 )
                 # backwards compatibility
@@ -842,7 +841,7 @@ class PPJSONDecoder(json.JSONDecoder):
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
-            load_controllers=kwargs.pop('load_controllers', False)
+            skip_checks=kwargs.pop('skip_checks', False)
         )}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
@@ -856,7 +855,7 @@ def pp_hook(
         ignore_unknown_objects=False,
         omit_tables=None,
         omit_modules=None,
-        load_controllers=False,
+        skip_checks=False,
 ):
     try:
         if not omit_tables is None:
@@ -880,7 +879,7 @@ def pp_hook(
             else:
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
             fs = registry_class(obj, d, pp_hook, ignore_unknown_objects, omit_modules=omit_modules,
-                                load_controllers=load_controllers)
+                                skip_checks=skip_checks)
 
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
