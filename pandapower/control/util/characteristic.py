@@ -194,8 +194,6 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__(net, x_values, y_values, **kwargs)
-        self._x_vals = None
-        self._y_vals = None
 
     @property
     def x_vals(self):
