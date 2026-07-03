@@ -647,7 +647,7 @@ class FromSerializableRegistry():
             )
 
             dt = json.loads(self.obj)
-            index = my_hook(dt["index"]['_object'])
+            index = my_hook(dt["index"])
             x_vals = my_hook(dt["x_vals"])
             y_vals = my_hook(dt["y_vals"])
 
@@ -683,11 +683,9 @@ class FromSerializableRegistry():
                 skip_checks=self.skip_checks
             )
             dt = json.loads(self.obj)
-            index = my_hook(dt["index"]['_object'])
+            index = my_hook(dt["index"])
             x_vals = my_hook(dt["_x_vals"])
-            x_vals = [my_hook(x) for x in x_vals]
             y_vals = my_hook(dt["_y_vals"])
-            y_vals = [my_hook(y) for y in y_vals]
 
             kwarg = {}
             if "kwargs" in dt:
@@ -706,7 +704,8 @@ class FromSerializableRegistry():
                 table="characteristic",
                 **kwarg,
             )
-
+            lsc._x_vals = x_vals
+            lsc._y_vals = y_vals
             lsc.index = index
             return lsc
 
@@ -733,6 +732,18 @@ class FromSerializableRegistry():
     @from_serializable.register(class_name='bool', module_name='numpy')
     def bool_handling(self):
         return bool(self.obj)
+
+    @from_serializable.register(class_name='array', module_name='numpy')
+    def array_handling(self):
+        my_hook = partial(
+            self.pp_hook,
+            ignore_unknown_objects=self.ignore_unknown_objects,
+            omit_modules=self.omit_modules,
+            skip_checks=self.skip_checks
+        )
+
+        return np.array([my_hook(x) for x in self.obj])
+
 
     @from_serializable.register()
     def rest(self):
