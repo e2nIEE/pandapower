@@ -94,7 +94,7 @@ def opf_costfcn(x, om, return_hessian=False):
         i_nd = r_[i_lt, i_eq, i_gt]           # rows outside dead zone
 
         i_l = find(dd == 1)                # linear rows
-        i_q= find(dd == 2)                # quadratic rows
+        i_q = find(dd == 2)                # quadratic rows
 
         ll = sparse((ones(len(i_l)), (i_l, i_l)), (nw, nw))
         qq = sparse((ones(len(i_q)), (i_q, i_q)), (nw, nw))
@@ -110,7 +110,6 @@ def opf_costfcn(x, om, return_hessian=False):
         w = m.dot(ll + qq.dot(diagrr)).dot(rr)
 
         f = f + 0.5 * dot(w, H.dot(w)) + dot(Cw, w)    
-
     ##----- evaluate cost gradient -----
     ## index ranges
     iPg = range(vv["i1"]["Pg"], vv["iN"]["Pg"])

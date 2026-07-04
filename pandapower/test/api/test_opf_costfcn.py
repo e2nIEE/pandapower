@@ -59,3 +59,22 @@ def test_opf_costfcn_generalized_cost_hessian():
             [8.0, 16.0],
         ])
     )
+
+
+def test_opf_costfcn_generalized_cost_hessian_with_none_H():
+    om = SimpleOPFCostModel()
+    om.cost_params["H"] = None
+
+    x = array([1.0, 0.5])
+
+    f, df, d2f = opf_costfcn(x, om, return_hessian=True)
+
+    assert_allclose(f, 1106.0)
+    assert_allclose(df, array([2103.0, 6.0]))
+    assert_allclose(
+        d2f.toarray(),
+        array([
+            [2000.0, 0.0],
+            [0.0, 0.0],
+        ])
+    )
