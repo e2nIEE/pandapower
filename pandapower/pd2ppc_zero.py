@@ -280,13 +280,13 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_bus_hv
         # z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
         z0_k = (r_sc + x_sc * 1j) / parallel
-        z_n_ohm = trafos["xn_ohm"].fillna(0).values
+        xn_ohm = trafos["xn_ohm"].fillna(0).values
         # Neutral earthing impedance Z_N (e.g. an earthing transformer star point
         # grounded through a neutral earthing resistor/reactor). xn_ohm carries
         # the reactance, rn_ohm the resistance.
-        r_n_ohm = (trafos["rn_ohm"].fillna(0).values
-                   if "rn_ohm" in trafos.columns else np.zeros_like(z_n_ohm))
-        z_n_ohm_cplx = r_n_ohm + 1j * z_n_ohm
+        rn_ohm = (trafos["rn_ohm"].fillna(0).values
+                   if "rn_ohm" in trafos.columns else np.zeros_like(xn_ohm))
+        zn_ohm = rn_ohm + 1j * xn_ohm
         k_st_tr = trafos["k_st"].fillna(1).values
 
         if mode == "sc":  # or trafo_model == "pi":
@@ -304,7 +304,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                 * (np.square(vn_trafo_hv) / sn_trafo_mva)
                 / parallel
             )
-            z0_k_psu = (z_othv * k_st_tr + 3 * z_n_ohm_cplx) / ((vn_bus_hv**2) / net.sn_mva)
+            z0_k_psu = (z_othv * k_st_tr + 3 * zn_ohm) / ((vn_bus_hv**2) / net.sn_mva)
             z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
 
         # Neutral earthing impedance for ordinary earthed-star transformers (not
@@ -316,17 +316,17 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # transformer impedance and must not be scaled by kt).
         _earthed_hv = ("ynd", "yny", "ynyn", "znyn", "znd", "zny", "zd")
         _zigzag = ("znyn", "znd", "zny", "zd")
-        z_n_pu = np.zeros(len(trafos), dtype=np.complex128)
-        if np.any(np.abs(z_n_ohm_cplx) > 0) and vector_group.lower() in (
+        zn_pu = np.zeros(len(trafos), dtype=np.complex128)
+        if np.any(np.abs(zn_ohm) > 0) and vector_group.lower() in (
                 "dyn", "ynd", "yyn", "ynyn", "yny", "yzn",
                 "znyn", "znd", "zny", "zd"):
             vn_earth = vn_bus_hv if vector_group.lower() in _earthed_hv else vn_bus_lv
-            z_n_pu = 3 * z_n_ohm_cplx / ((vn_earth ** 2) / net.sn_mva)
+            zn_pu = 3 * zn_ohm / ((vn_earth ** 2) / net.sn_mva)
             # Ordinary earthed-star groups: add 3*Z_N in series with z0_k here.
             # Zigzag groups place 3*Z_N at the star-point node in their own branch
             # below (so z0_k stays the bare leakage for the si0 split).
             if vector_group.lower() not in _zigzag:
-                z0_k = np.where(power_station_unit, z0_k, z0_k + z_n_pu)
+                z0_k = np.where(power_station_unit, z0_k, z0_k + zn_pu)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
         # y0_k = 1 / (z0_k * k_st_tr + 3j * z_n_ohm)  # adding admittance for "pi" model
@@ -438,7 +438,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             # shunt = the HV-WINDING leakage portion (si0_hv_partial) in series
             # with 3*Z_N at the star-point node -- NOT the full HV+LV leakage.
             z0_leak = z0_k          # for zigzag groups z0_k is the bare leakage
-            z0_hv = si0_hv_partial * z0_leak + z_n_pu
+            z0_hv = si0_hv_partial * z0_leak + zn_pu
             ys_hv = (ppc["baseMVA"] * in_service.values / z0_hv).astype(complex)
             np.add.at(ppc["bus"][:, GS], hv_buses_ppc, ys_hv.real)
             np.add.at(ppc["bus"][:, BS], hv_buses_ppc, ys_hv.imag)
