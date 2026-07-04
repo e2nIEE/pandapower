@@ -3,7 +3,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-"""Import an OpenDSS feeder into a balanced (positive-sequence) pandapower net.
+"""
+Import an OpenDSS feeder into a balanced (positive-sequence) pandapower net.
 
 Why balanced / positive-sequence (and not unsymmetrical 3-phase): pandapower's
 ``runpp_3ph`` is a sequence-frame solver that cannot represent truly unsymmetrical
@@ -57,6 +58,7 @@ _SQRT3 = math.sqrt(3.0)
 
 @dataclass
 class _ImportReport:
+
     """Diagnostics attached to the net as ``net["opendss_import"]``."""
 
     n_buses: int = 0
@@ -78,11 +80,13 @@ class _ImportReport:
         logger.warning(message)
 
     def as_dict(self):
-        return {k: v for k, v in self.__dict__.items()}
+        """Return the report as a plain dict for attaching to the net."""
+        return dict(self.__dict__)
 
 
 def _busname(token):
-    """Strip the node-connection suffix from an OpenDSS bus token.
+    """
+    Strip the node-connection suffix from an OpenDSS bus token.
 
     ``"b2.1.2.3" -> "b2"``; OpenDSS is case-insensitive and ``AllBusNames``
     returns lower-case, so we normalise here too.
@@ -91,7 +95,8 @@ def _busname(token):
 
 
 def _connected_phases(token):
-    """Count the phase nodes encoded in a bus token (``b2.1.2.3`` -> 3).
+    """
+    Count the phase nodes encoded in a bus token (``b2.1.2.3`` -> 3).
 
     A bare name (no suffix) means all phases are connected; the caller passes the
     element's declared phase count as the fallback in that case.
@@ -102,7 +107,8 @@ def _connected_phases(token):
 
 
 def from_opendss(master_path, solve=True):
-    """Build a balanced (positive-sequence) pandapower net from an OpenDSS feeder.
+    """
+    Build a balanced (positive-sequence) pandapower net from an OpenDSS feeder.
 
     The OpenDSS circuit is compiled through ``OpenDSSDirect.py`` and its elements
     are mapped to pandapower as follows:
@@ -127,21 +133,26 @@ def from_opendss(master_path, solve=True):
     equivalent; positive-sequence cannot represent 120/240 V split phase (#873), so
     those LV voltages carry the largest approximation error.
 
-    Parameters:
-        master_path: Path to the OpenDSS master ``.dss`` file (the one you would
-            ``Redirect`` to). All ``Redirect``-ed component files are followed.
-        solve (bool, True): If True, solve the circuit in OpenDSS first and capture
-            the per-bus voltage magnitudes (pu, phase-averaged) into the import
-            report, so a round-trip can be validated without re-solving OpenDSS.
+    Requires the optional dependency ``OpenDSSDirect.py``
+    (``pip install pandapower[opendss]``).
 
-    Returns:
-        pandapowerNet: a balanced net carrying an ``opendss_import`` diagnostics
-        dict (element counts, per-bus phase counts, the OpenDSS-solved voltages and
-        the list of approximations/skips made during the import).
+    Parameters
+    ----------
+    master_path : str
+        Path to the OpenDSS master ``.dss`` file (the one you would ``Redirect``
+        to). All ``Redirect``-ed component files are followed.
+    solve : bool, default: True
+        If True, solve the circuit in OpenDSS first and capture the per-bus
+        voltage magnitudes (pu, phase-averaged) into the import report, so a
+        round-trip can be validated without re-solving OpenDSS.
 
-    .. note::
-        Requires the optional dependency ``OpenDSSDirect.py``
-        (``pip install pandapower[opendss]``).
+    Returns
+    -------
+    pandapowerNet
+        A balanced net carrying an ``opendss_import`` diagnostics dict (element
+        counts, per-bus phase counts, the OpenDSS-solved voltages and the list of
+        approximations/skips made during the import).
+
     """
     if not opendssdirect_imported:
         raise NotImplementedError(
@@ -176,8 +187,10 @@ def _add_buses(net, report):
     for name in dss.Circuit.AllBusNames():
         dss.Circuit.SetActiveBus(name)
         kv_ln = dss.Bus.kVBase()  # OpenDSS bus base is line-to-neutral
-        vn_kv = kv_ln * _SQRT3 if kv_ln > 0 else 0.0  # pandapower wants line-to-line
-        if vn_kv == 0.0:
+        if kv_ln > 0:
+            vn_kv = kv_ln * _SQRT3  # pandapower wants line-to-line
+        else:
+            vn_kv = 0.0
             report.warn(f"bus {name!r} has no voltage base (kVBase=0); "
                         "set 'VoltageBases' and call 'CalcVoltageBases' in the master")
         report.bus_phases[name.lower()] = len([n for n in dss.Bus.Nodes() if n != 0])
@@ -318,7 +331,7 @@ def _add_one_transformer(net, bus_map, report):
             "(RegControl baked in as a fixed tap)")
 
     vkr = pct_r[hv_w] + pct_r[lv_w]           # copper/short-circuit R, % (= %loadloss)
-    vk = math.hypot(vkr, xhl)                  # vk = sqrt(vkr^2 + vx^2)
+    vk = math.hypot(vkr, xhl)                  # short-circuit voltage: hypot of the R and X parts
     pp.create_transformer_from_parameters(
         net, hv_bus=bus_hv, lv_bus=bus_lv,
         sn_mva=max(kva) / 1000.0,
