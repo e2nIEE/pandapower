@@ -24,7 +24,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _build_gen_ppc(net: pandapowerNet, ppc: dict):
+def _build_gen_ppc(net: pandapowerNet, ppc: dict, sequence=None):
     """
     Takes the empty ppc network and fills it with the gen values. The gen
     datatype will be floated afterwards.
@@ -53,7 +53,7 @@ def _build_gen_ppc(net: pandapowerNet, ppc: dict):
 
     _init_ppc_gen(net, ppc, f)
     for element, (f, t) in gen_order.items():
-        add_element_to_gen(net, ppc, element, f, t)
+        add_element_to_gen(net, ppc, element, f, t, sequence=sequence)
     net._gen_order = gen_order
 
     if distributed_slack:
@@ -86,11 +86,11 @@ def _init_ppc_gen(net, ppc, nr_gens):
     ppc["gen"][:, QMIN] = -q_lim_default
 
 
-def add_element_to_gen(net, ppc, element, f, t):
+def add_element_to_gen(net, ppc, element, f, t, sequence):
     if element == "ext_grid":
         _build_pp_ext_grid(net, ppc, f, t)
     elif element == "gen":
-        _build_pp_gen(net, ppc, f, t)
+        _build_pp_gen(net, ppc, f, t, sequence)
     elif element == "sgen_controllable":
         _build_pp_pq_element(net, ppc, "sgen", f, t)
     elif element == "load_controllable":
@@ -202,7 +202,7 @@ def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
     return ppc
 
 
-def _build_pp_gen(net, ppc, f, t):
+def _build_pp_gen(net, ppc, f, t, sequence):
     delta = net["_options"]["delta"]
     gen_is = net._is_elements["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -233,6 +233,11 @@ def _build_pp_gen(net, ppc, f, t):
             )
     else:
         p_mw = net["gen"]["p_mw"].values[gen_is]
+
+    if sequence == 1:
+        p_mw /= 3
+    elif sequence == 0 or sequence == 2:
+        p_mw *= 0
 
     ppc["gen"][f:t, PG] = (p_mw * net["gen"]["scaling"].values[gen_is])
 
