@@ -72,6 +72,46 @@ def opf_costfcn(x, om, return_hessian=False):
     else:
         ccost = zeros(nxyz)
 
+
+    ## generalized cost term
+    have_generalized_cost = N is not None and issparse(N) and N.shape[0] > 0
+    if have_generalized_cost:
+        nw = N.shape[0]
+
+        Cw = array(Cw).flatten()
+        dd = array(dd).flatten()
+        rh = array(rh).flatten()
+        kk = array(kk).flatten()
+        mm = array(mm).flatten()
+
+        if H is None:
+            H = sparse((nw, nw))
+
+        r = N.dot(x) - rh                 # Nx - rhat
+        iLT = find(r < -kk)               # below dead zone
+        iEQ = find((r == 0) & (kk == 0))  # no dead zone
+        iGT = find(r > kk)                # above dead zone
+        iND = r_[iLT, iEQ, iGT]           # rows outside dead zone
+
+        iL = find(dd == 1)                # linear rows
+        iQ = find(dd == 2)                # quadratic rows
+
+        LL = sparse((ones(len(iL)), (iL, iL)), (nw, nw))
+        QQ = sparse((ones(len(iQ)), (iQ, iQ)), (nw, nw))
+
+        kbar = sparse(
+            (r_[ones(len(iLT)), zeros(len(iEQ)), -ones(len(iGT))], (iND, iND)),
+            (nw, nw)
+        ).dot(kk)
+
+        rr = r + kbar
+        M = sparse((mm[iND], (iND, iND)), (nw, nw))
+        diagrr = sparse((rr, (arange(nw), arange(nw))), (nw, nw))
+
+        w = M.dot(LL + QQ.dot(diagrr)).dot(rr)
+
+        f = f + 0.5 * dot(w, H.dot(w)) + dot(Cw, w)    
+
     ##----- evaluate cost gradient -----
     ## index ranges
     iPg = range(vv["i1"]["Pg"], vv["iN"]["Pg"])
@@ -87,6 +127,12 @@ def opf_costfcn(x, om, return_hessian=False):
 
     ## piecewise linear cost of P and Q
     df = df + ccost  # The linear cost row is additive wrt any nonlinear cost.
+    
+    ## generalized cost term
+    if have_generalized_cost:
+        HwC = array(H.dot(w)).flatten() + Cw
+        AA = N.T.dot(M).dot(LL + 2 * QQ.dot(diagrr))
+        df = df + array(AA.dot(HwC)).flatten()
 
     if not return_hessian:
         return f, df
@@ -111,9 +157,17 @@ def opf_costfcn(x, om, return_hessian=False):
     i = r_[iPg, iQg].T
     d2f = sparse((r_[d2f_dPg2, d2f_dQg2], (i, i)), (nxyz, nxyz))
 
+    # ## generalized cost
+    # if N is not None and issparse(N):
+    #     d2f = d2f + AA * H * AA.T + 2 * N.T * M * QQ * \
+    #             sparse((HwC, (range(nw), range(nw))), (nw, nw)) * N
+
+   
+
     ## generalized cost
-    if N is not None and issparse(N):
-        d2f = d2f + AA * H * AA.T + 2 * N.T * M * QQ * \
-                sparse((HwC, (range(nw), range(nw))), (nw, nw)) * N
+    if have_generalized_cost:
+        diag_HwC = sparse((HwC, (arange(nw), arange(nw))), (nw, nw))
+        d2f = d2f + AA.dot(H).dot(AA.T) + \
+            2 * N.T.dot(M).dot(QQ).dot(diag_HwC).dot(N)
 
     return f, df, d2f
