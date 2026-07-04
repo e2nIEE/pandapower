@@ -503,12 +503,13 @@ class FromSerializableRegistry():
     module_name = ''
     omit_modules = ''
 
-    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False, omit_modules=None):
+    def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False, omit_modules=None, skip_checks=False):
         self.obj = obj
         self.d = d
         self.pp_hook = pp_hook_funct
         self.ignore_unknown_objects = ignore_unknown_objects
         self.omit_modules = omit_modules
+        self.skip_checks = skip_checks
 
     @from_serializable.register(class_name='Series', module_name='pandas.core.series')
     @from_serializable.register(class_name='Series', module_name='pandas')
@@ -598,7 +599,10 @@ class FromSerializableRegistry():
         df_obj = df.select_dtypes(include=['object'])
         for col in df_obj:
             df[col] = df[col].apply(partial(
-                self.pp_hook, ignore_unknown_objects=self.ignore_unknown_objects, omit_modules=self.omit_modules
+                self.pp_hook,
+                ignore_unknown_objects=self.ignore_unknown_objects, 
+                omit_modules=self.omit_modules,
+                skip_checks=self.skip_checks
             ))
             df[col] = df[col].astype(dtype='object')
             df.loc[pd.isnull(df[col]), col] = None
@@ -631,6 +635,80 @@ class FromSerializableRegistry():
             mg.add_edge(n1, n2, **ed)
         return mg
 
+    @from_serializable.register(class_name="SplineCharacteristic", module_name="pandapower.control.util.characteristic")
+    def splinecharacteristic(self):
+        if isinstance(self.obj, str):
+            from pandapower.control.util.characteristic import SplineCharacteristic
+            my_hook = partial(
+                self.pp_hook,
+                ignore_unknown_objects=self.ignore_unknown_objects,
+                omit_modules=self.omit_modules,
+                skip_checks=self.skip_checks
+            )
+
+            dt = json.loads(self.obj)
+            index = my_hook(dt["index"])
+            x_vals = my_hook(dt["x_vals"])
+            y_vals = my_hook(dt["y_vals"])
+
+            kwarg = {}
+            if "kwargs" in dt:
+                for ind, val in dt["kwargs"].items():
+                    kwarg[ind] = my_hook(val)
+
+            interpolator_kind = "interp1d"
+            if "interpolator_kind" in dt:
+                interpolator_kind = dt["interpolator_kind"]
+
+            sc = SplineCharacteristic(
+                net=None,
+                x_values=x_vals,
+                y_values=y_vals,
+                interpolator_kind=interpolator_kind,
+                table="characteristic",
+                **kwarg,
+            )
+            sc.index = index
+
+            return sc
+
+    @from_serializable.register(class_name="LogSplineCharacteristic", module_name="pandapower.control.util.characteristic")
+    def logsplinecharacteristic(self):
+        if isinstance(self.obj, str):
+            from pandapower.control.util.characteristic import LogSplineCharacteristic
+            my_hook = partial(
+                self.pp_hook,
+                ignore_unknown_objects=self.ignore_unknown_objects,
+                omit_modules=self.omit_modules,
+                skip_checks=self.skip_checks
+            )
+            dt = json.loads(self.obj)
+            index = my_hook(dt["index"])
+            x_vals = my_hook(dt["_x_vals"])
+            y_vals = my_hook(dt["_y_vals"])
+
+            kwarg = {}
+            if "kwargs" in dt:
+                for ind, val in dt["kwargs"].items():
+                    kwarg[ind] = my_hook(val)
+
+            interpolator_kind = "Pchip"
+            if "interpolator_kind" in dt:
+                interpolator_kind = dt["interpolator_kind"]
+
+            lsc = LogSplineCharacteristic(
+                net=None,
+                x_values=x_vals,
+                y_values=y_vals,
+                interpolator_kind=interpolator_kind,
+                table="characteristic",
+                **kwarg,
+            )
+            lsc._x_vals = x_vals
+            lsc._y_vals = y_vals
+            lsc.index = index
+            return lsc
+
     @from_serializable.register(class_name="method")
     def method(self):
         logger.warning('deserializing of method not implemented')
@@ -638,19 +716,47 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name='function')
     def function(self):
-        module = importlib.import_module(self.module_name)
-        if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
-            raise UserWarning('Could not find the definition of the function %s in the module %s' %
-                              (self.obj, module.__name__))
-        class_ = getattr(module, self.obj)  # works
-        return class_
+        if not self.skip_checks:
+            module = importlib.import_module(self.module_name)
+            if not hasattr(module, self.obj):  # in case a function is a lambda or is not defined
+                raise UserWarning(f'Could not find the definition of the function {self.obj} '
+                                  f'in the module {module.__name__}')
+            class_ = getattr(module, self.obj)  # works
+            return class_
+        else:
+            logger.warning(f"Deserialization of function {self.obj} is blocked, if you trust the source of the json file,"
+                           f"set skip_checks=True to allow deserialization of objects.")
+            return self.obj
+        
     
     @from_serializable.register(class_name='bool', module_name='numpy')
     def bool_handling(self):
         return bool(self.obj)
 
+    @from_serializable.register(class_name='array', module_name='numpy')
+    def array_handling(self):
+        my_hook = partial(
+            self.pp_hook,
+            ignore_unknown_objects=self.ignore_unknown_objects,
+            omit_modules=self.omit_modules,
+            skip_checks=self.skip_checks
+        )
+
+        return np.array([my_hook(x) for x in self.obj])
+
+
     @from_serializable.register()
     def rest(self):
+        if not self.skip_checks:
+            logger.warning(f"Deserialization of object {self.obj} is blocked, if you trust the source of the json file,"
+                           f"set skip_checks=True to allow deserialization of objects.")
+
+            if self.class_name == "exec":
+                raise ValueError(f"class {self.class_name} is not allowed in pandapowerNet!")
+
+            if self.module_name == "os":
+                raise ValueError(f"module {self.module_name} not allowed in pandapowerNet!")
+
         try:
             module = importlib.import_module(self.module_name)
         except ModuleNotFoundError as e:
@@ -673,7 +779,10 @@ class FromSerializableRegistry():
                     self.obj,
                     cls=PPJSONDecoder,
                     object_hook=partial(
-                        pp_hook, ignore_unknown_objects=self.ignore_unknown_objects, omit_modules=self.omit_modules
+                        pp_hook,
+                        ignore_unknown_objects=self.ignore_unknown_objects,
+                        omit_modules=self.omit_modules,
+                        skip_checks=self.skip_checks
                     )
                 )
                 # backwards compatibility
@@ -693,9 +802,9 @@ class FromSerializableRegistry():
                         df.at[idx, prop] = val
                 return df
 
-    if GEOPANDAS_INSTALLED:
-        @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
-        def GeoDataFrame(self):
+    @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
+    def geoDataFrame(self):
+        if GEOPANDAS_INSTALLED:
             fs = json.loads(self.obj)
             # for some reason, the id is not parsed as dataframe id, this is a workaround
             if isinstance(fs, dict) and fs.get("type") == "FeatureCollection":
@@ -716,11 +825,15 @@ class FromSerializableRegistry():
             # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it
             _preserve_dtypes(df, dtypes=self.d["dtype"])
             return df
+        else:
+            return self.obj
 
-    if SHAPELY_INSTALLED:
-        @from_serializable.register(module_name='shapely')
-        def shapely(self):
+    @from_serializable.register(module_name='shapely')
+    def shapely(self):
+        if SHAPELY_INSTALLED:
             return shapely.geometry.shape(self.obj)
+        else:
+            return self.obj
 
 
 class PPJSONDecoder(json.JSONDecoder):
@@ -741,6 +854,7 @@ class PPJSONDecoder(json.JSONDecoder):
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
+            skip_checks=kwargs.pop('skip_checks', False)
         )}
         super_kwargs.update(kwargs)
         super().__init__(**super_kwargs)
@@ -753,7 +867,8 @@ def pp_hook(
         registry_class=FromSerializableRegistry,
         ignore_unknown_objects=False,
         omit_tables=None,
-        omit_modules=None
+        omit_modules=None,
+        skip_checks=False,
 ):
     try:
         if not omit_tables is None:
@@ -776,7 +891,8 @@ def pp_hook(
                 return obj  # backwards compatibility
             else:
                 obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
-            fs = registry_class(obj, d, pp_hook, ignore_unknown_objects, omit_modules=omit_modules)
+            fs = registry_class(obj, d, pp_hook, ignore_unknown_objects, omit_modules=omit_modules,
+                                skip_checks=skip_checks)
 
             fs.class_name = d.pop('_class', '')
             fs.module_name = d.pop('_module', '')
@@ -852,6 +968,8 @@ class JSONSerializableClass(object):
 
     def add_to_net(self, net, element, index=None, column="object", overwrite=False,
                    preserve_dtypes=False, fill_dict=None):
+        if net is None:
+            return None
         if element not in net:
             net[element] = pd.DataFrame(columns=[column])
         if index is None:

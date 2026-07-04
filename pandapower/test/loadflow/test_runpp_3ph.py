@@ -1036,6 +1036,45 @@ def test_3ph_enforce_q_lims(result_test_network):
     assert abs(net.res_bus.vm_pu.at[b3] - u3) < v_tol
     assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < s_tol
 
+def test_gen_3ph_loadflow():
+    net = create_empty_network(f_hz=50, add_stdtypes=False)
+    add_zero_impedance_parameters(net)
+
+    create_bus(net, vn_kv=110., index=0)
+    create_bus(net, vn_kv=110., index=1)
+    create_bus(net, vn_kv=110., index=2)
+
+    create_line_from_parameters(net, 0, 1, 25, 0, 10/25, 238.78/25, 100)
+    create_line_from_parameters(net, 0, 2, 25, 0, 10/25, 238.78/25, 100)
+    create_line_from_parameters(net, 2, 1, 25, 0, 10/25, 238.78/25, 100)
+
+    create_ext_grid(net, bus=2, vm_pu=1.018182, s_sc_max_mva=1e34)
+
+    create_gen(net, bus=1, p_mw=70, q_mvar=0, vm_pu=1.027273)
+
+    create_load(net, bus=0, p_mw=100, q_mvar=30)
+
+    net.ext_grid.rx_max = 0.1
+    net.ext_grid.x0x_max = 1
+    net.ext_grid.r0x0_max = 0.1
+    net.line.r0_ohm_per_km = 3 * net.line.r_ohm_per_km
+    net.line.x0_ohm_per_km = 3 * net.line.x_ohm_per_km
+    net.line.c0_nf_per_km = net.line.c_nf_per_km
+
+    runpp_3ph(net)
+
+    assert "res_gen_3ph" in net
+    
+    assert net.res_gen_3ph.p_a_mw[0] < 100
+    assert net.res_gen_3ph.p_b_mw[0] < 100
+    assert net.res_gen_3ph.p_c_mw[0] < 100
+
+    assert net.res_gen_3ph.q_a_mvar[0] < 100
+    assert net.res_gen_3ph.q_a_mvar[0] < 100
+    assert net.res_gen_3ph.q_a_mvar[0] < 100
+
+    assert np.isclose(net.res_gen_3ph.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(), 70.0)
+    assert np.isclose(net.res_gen_3ph.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum(), 33.165882)
 
 @pytest.mark.xfail
 def test_recycle_pq():
