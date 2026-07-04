@@ -128,6 +128,8 @@ def from_cim(file_list: Union[str, List[str]] = None, encoding: str = None, conv
     - ignore_errors (bool): Option to disable raising of internal errors. Useful if you need to get a network not matter
     if there are errors in the conversion. Default: True.
     - set_switch_impedance (bool): Set the line impedance for lines that will be converted to switches
+    - use_sv_data_for_assets (bool): Use the SV PowerFlow, SvTapStep and SvShuntCompensatorSections and map them to the
+    assets in the grid.  Default: False.
 
     :param file_list: The path to the CGMES files as a string or list.
     :param encoding: The encoding from the files. Optional, default: None

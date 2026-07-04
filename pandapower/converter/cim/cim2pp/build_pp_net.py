@@ -169,6 +169,10 @@ class CimConverter:
                 self.report_container.add_log(Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION_CONVERTING,
                                                      message=traceback.format_exc()))
 
+        # check if SV data should be considered
+        if kwargs.get('use_sv_data_for_assets', False):
+            CreateMeasurements(self.net, self.cim).map_sv_data_from_assets()
+
         # set the datatypes after the conversion, especially for integer and boolean columns
         self.net = pp_tools.set_pp_col_types(net=self.net)
         # create transformer tap controller
