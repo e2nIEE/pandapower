@@ -84,7 +84,7 @@ def dataframes_equal(df1, df2, ignore_index_order=True, assume_geojson_strings=T
         except AssertionError:
             logger.warning(not_eq_warn)
             return False
-        return geo_eq
+        # return geo_eq
 
     elif "geo" not in df1.columns and "geo" not in df2.columns:
         return True

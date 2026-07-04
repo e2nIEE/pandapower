@@ -321,14 +321,25 @@ jobs:
       run: |
         psql -h localhost -U test_user -d sandbox -c "CREATE SCHEMA test_schema AUTHORIZATION test_user"
         psql -h localhost -U test_user --list sandbox
+    - name: Test postgresql available
+      # Test that will fail the pipeline if the tests would be skipped. Prevents pipeline success if psycopg import fails
+      env:
+        DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
+        SCHEMA: 'test_schema'
+      run: |
+        uv run python -c "import sys; from pandapower.test.api.test_sql_io import POSTGRESQL_AVAILABLE; sys.exit(not POSTGRESQL_AVAILABLE);"
     - name: Test pandapower File I/O
+      env:
+        DSN: 'postgresql://test_user:secret@localhost/sandbox'
+        SCHEMA: 'test_schema'
       run: |
-        uv run python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema'}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
-        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
+        uv run pytest pandapower/test/api/test_sql_io.py
     - name: Test pandapower File I/O against alternative port
+      env:
+        DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
+        SCHEMA: 'test_schema'
       run: |
-        uv run python -c "import os; import json; from pandapower import pp_dir; conn_data={'host': 'localhost', 'user': 'test_user', 'database': 'sandbox', 'password': 'secret', 'schema': 'test_schema', 'port': 55432}; fp = open(os.path.join(pp_dir, 'test', 'test_files', 'postgresql_connect_data.json'), 'w'); json.dump(conn_data, fp); fp.close()"
-        uv run python -c "from pandapower import pp_dir; import pytest; import sys; import os; ec = pytest.main([os.path.join(pp_dir,'test','api','test_sql_io.py')]); sys.exit(ec)"
+        uv run pytest pandapower/test/api/test_sql_io.py
 
   tutorial_tests:
     needs: build
@@ -375,7 +386,7 @@ jobs:
       - name: Check sphinx build
         uses: ammaraskar/sphinx-action@54e52bfb642e9b60ea5b6bcb05fe3f74b40d290a #8.2.3
         with:
-          pre-build-command: "python -m pip install uv && uv pip install .[dev] --system --link-mode=copy"
+          pre-build-command: "python -m pip install uv && uv pip install .[docs] --system --link-mode=copy"
           build-command: "sphinx-build -b html . _build -W"
           docs-folder: "doc/"
 
