@@ -3,23 +3,21 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-"""
-Import an OpenDSS feeder into a balanced (positive-sequence) pandapower net.
+"""Import an OpenDSS feeder into a balanced (positive-sequence) pandapower net."""
 
-Why balanced / positive-sequence (and not unsymmetrical 3-phase): pandapower's
-``runpp_3ph`` is a sequence-frame solver that cannot represent truly unsymmetrical
-North-American topology (single-phase laterals, center-tapped split-phase) -- see
-issues #873 and #1442. Positive-sequence is sufficient for the symmetric (European
-/ 3-phase 4-wire) feeders that pandapower targets, and OpenDSS exposes the
-positive-sequence ``R1/X1/C1`` of every line directly, so the phase->sequence
-reduction is free. Single-phase laterals are folded into the balanced model as
-full three-phase equivalents; that is the main documented fidelity loss, and it is
-reported per-import in ``net["opendss_import"]`` together with element counts, the
-OpenDSS-solved per-bus voltages and any approximations made.
-
-The circuit is read through the ``OpenDSSDirect.py`` API (lazy-imported), not a
-text parser, so every OpenDSS-supported master file is understood.
-"""
+# Why balanced / positive-sequence (and not unsymmetrical 3-phase): pandapower's
+# ``runpp_3ph`` is a sequence-frame solver that cannot represent truly unsymmetrical
+# North-American topology (single-phase laterals, center-tapped split-phase) -- see
+# issues #873 and #1442. Positive-sequence is sufficient for the symmetric (European
+# / 3-phase 4-wire) feeders that pandapower targets, and OpenDSS exposes the
+# positive-sequence ``R1/X1/C1`` of every line directly, so the phase->sequence
+# reduction is free. Single-phase laterals are folded into the balanced model as
+# full three-phase equivalents; that is the main documented fidelity loss, and it is
+# reported per-import in ``net["opendss_import"]`` together with element counts, the
+# OpenDSS-solved per-bus voltages and any approximations made.
+#
+# The circuit is read through the ``OpenDSSDirect.py`` API (lazy-imported), not a
+# text parser, so every OpenDSS-supported master file is understood.
 
 import logging
 import math
@@ -56,11 +54,9 @@ _LINE_UNITS_TO_KM = {
 _SQRT3 = math.sqrt(3.0)
 
 
+# Diagnostics attached to the net as ``net["opendss_import"]``.
 @dataclass
 class _ImportReport:
-
-    """Diagnostics attached to the net as ``net["opendss_import"]``."""
-
     n_buses: int = 0
     n_lines: int = 0
     n_switches: int = 0
