@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] OPF: fixed generalized cost Hessian evaluation in ``opf_costfcn``.
 - [ADDED] hardening of from_json function witha white list
 - [FIXED] (Log)SplineCharacteristic now have their own de-/serializer
 - [ADDED] HELMpy as an additional solver
