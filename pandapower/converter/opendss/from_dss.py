@@ -57,26 +57,43 @@ _SQRT3 = math.sqrt(3.0)
 
 
 def _kron_positive_sequence(rmat, xmat, n):
-    """Positive-sequence (R1, X1) for an n>3-conductor matrix-defined line.
+    """Positive-sequence (R1, X1) for a matrix-defined (``rmatrix``/``xmatrix``)
+    line of any conductor count, computed directly from the declared matrix.
 
-    OpenDSS's own ``Lines.R1()``/``X1()`` do not Kron-reduce explicit-neutral
-    (4+ conductor) matrix LineCodes before forming the sequence value -- the
-    standard format for European 3-phase-plus-neutral cables. Bus tokens order
-    phases before neutral by OpenDSS convention (``.1.2.3.4`` = A,B,C,N), so
-    eliminating the trailing rows/columns (indices 3..n-1) via a standard Kron
-    reduction, then averaging self/mutual over the remaining 3x3 phase block,
-    is the correct positive-sequence impedance.
+    OpenDSS's own ``Lines.R1()``/``X1()``/``C1()`` are *symmetrical-component*
+    fields: they hold whatever was last assigned via ``r1=``/``x1=``/``c1=``
+    (which also makes OpenDSS internally regenerate an equivalent matrix), but
+    switching a line/LineCode to matrix mode (``rmatrix=``/``xmatrix=``) does
+    **not** clear or recompute them -- verified against OpenDSS's own source
+    (``TLineObj``/``TLineCodeObj`` construction hard-codes ``R1 := 0.0580``,
+    ``X1 := 0.1206`` and the *text* property interface correctly reports
+    those fields as ``'----'``/not-applicable once matrix mode is active, but
+    the direct numeric getters used here do not). So for a matrix-defined
+    line, ``R1()`` silently returns that stale default, not a value derived
+    from the declared matrix -- confirmed both for a 4-wire (3 phase + explicit
+    neutral) European LineCode and for a plain 3-conductor matrix LineCode.
+
+    Always deriving from the raw matrix instead is safe for every case: for a
+    symmetric-components-defined line OpenDSS auto-generates a consistent
+    equivalent matrix (``CalcMatricesFromZ1Z0``), so re-deriving from it
+    reproduces the declared R1/X1 exactly (verified). Bus tokens order phases
+    before neutral by OpenDSS convention (``.1.2.3.4`` = A,B,C,N), so for
+    n>3 conductors the trailing rows/columns (indices 3..n-1) are the ones to
+    Kron-eliminate before averaging self/mutual over the remaining <=3 phase
+    block; for n<=3 (the common case, and the only case OpenDSS's own R1/X1
+    ever cover) there is nothing to eliminate.
     """
     z = np.asarray(rmat, dtype=float).reshape(n, n) + 1j * np.asarray(xmat, dtype=float).reshape(n, n)
-    zpp = z[:3, :3]
-    if n > 3:
-        zpn, znp, znn = z[:3, 3:], z[3:, :3], z[3:, 3:]
+    p = min(n, 3)
+    zpp = z[:p, :p]
+    if n > p:
+        zpn, znp, znn = z[:p, p:], z[p:, :p], z[p:, p:]
         try:
             zpp = zpp - zpn @ np.linalg.solve(znn, znp)
         except np.linalg.LinAlgError:
             pass  # degenerate neutral block; fall back to the un-reduced phase block
-    self_avg = np.trace(zpp) / 3.0
-    mutual_avg = (zpp.sum() - np.trace(zpp)) / 6.0
+    self_avg = np.trace(zpp) / p
+    mutual_avg = (zpp.sum() - np.trace(zpp)) / (p * (p - 1)) if p > 1 else 0.0
     z1 = self_avg - mutual_avg
     return float(z1.real), float(z1.imag)
 
@@ -264,16 +281,14 @@ def _add_lines(net, bus_map, report):
             i = dss.Lines.Next()
             continue
 
-        # Explicit-neutral (4+ conductor) matrix LineCodes need a Kron reduction
-        # before the sequence value is meaningful -- OpenDSS's own R1()/X1() skip
-        # it (see `_kron_positive_sequence`). The common <=3-conductor case keeps
-        # using the direct, already-validated R1/X1/C1 sequence properties.
+        # Always derive R1/X1/C1 from the declared matrix rather than trusting
+        # OpenDSS's own Lines.R1()/X1()/C1() -- those are stale symmetric-
+        # component fields for any matrix-defined line, not just >3-conductor
+        # ones (see `_kron_positive_sequence`). Safe for every case: it exactly
+        # reproduces R1/X1 for a symmetric-components-defined line too.
         n_cond = dss.Lines.Phases()
-        if n_cond > 3:
-            r1, x1 = _kron_positive_sequence(dss.Lines.RMatrix(), dss.Lines.XMatrix(), n_cond)
-            c1, _ = _kron_positive_sequence(dss.Lines.CMatrix(), [0.0] * (n_cond * n_cond), n_cond)
-        else:
-            r1, x1, c1 = dss.Lines.R1(), dss.Lines.X1(), dss.Lines.C1()
+        r1, x1 = _kron_positive_sequence(dss.Lines.RMatrix(), dss.Lines.XMatrix(), n_cond)
+        c1, _ = _kron_positive_sequence(dss.Lines.CMatrix(), [0.0] * (n_cond * n_cond), n_cond)
 
         # The OpenDSS LineCode names the physical conductor; carry it through as
         # pandapower's std_type so the conductor identity survives the import.

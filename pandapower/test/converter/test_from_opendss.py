@@ -120,6 +120,43 @@ calcvoltagebases
 solve
 """
 
+# The bug above turned out not to be specific to >3-conductor/neutral lines at
+# all: OpenDSS's Lines.R1()/X1()/C1() are stale symmetric-component fields for
+# *any* matrix-defined (rmatrix=/xmatrix=) line, regardless of conductor count
+# -- confirmed against OpenDSS's own source, and empirically against a plain
+# 3-conductor matrix LineCode with no neutral at all (declares 0.868/0.077
+# ohm/km, R1()/X1() returned the hard-coded default 0.058/0.1206 instead).
+THREE_WIRE_MATRIX_FEEDER = """
+clear
+new circuit.tw basekv=0.4 pu=1.0 phases=3 bus1=a
+new linecode.lc_tw nphases=3 baseFreq=50 units=km
+~ rmatrix=[0.868 | 0.1 0.868 | 0.1 0.1 0.868]
+~ xmatrix=[0.077 | 0.01 0.077 | 0.01 0.01 0.077]
+new line.l1 bus1=a.1.2.3 bus2=b.1.2.3 phases=3 linecode=lc_tw length=1 units=km
+new load.load1 bus1=b.1.2.3 phases=3 kv=0.4 kw=30 kvar=10
+set voltagebases=[0.4]
+calcvoltagebases
+solve
+"""
+
+# A single-conductor matrix-defined lateral (the common SMART-DS/IEEE-test-
+# feeder pattern for single-phase service drops) -- guards against the naive
+# generalization of the Kron-reduction formula (self-avg over 3, mutual-avg
+# over 6) misfiring when there are fewer than 3 conductors to average over.
+ONE_WIRE_MATRIX_FEEDER = """
+clear
+new circuit.ow basekv=0.4 pu=1.0 phases=3 bus1=src
+new line.lmain bus1=src bus2=a phases=3 r1=0.1 x1=0.2 c1=0 length=0.5 units=km normamps=400
+new linecode.lc_ow nphases=1 baseFreq=50 units=km
+~ rmatrix=[0.868]
+~ xmatrix=[0.077]
+new line.l1 bus1=a.1 bus2=b.1 phases=1 linecode=lc_ow length=1 units=km
+new load.load1 bus1=b.1 phases=1 kv=0.231 kw=5 kvar=2
+set voltagebases=[0.4]
+calcvoltagebases
+solve
+"""
+
 
 @pytest.fixture
 def four_wire_zero_mutual_net(tmp_path):
@@ -132,6 +169,20 @@ def four_wire_zero_mutual_net(tmp_path):
 def four_wire_asymmetric_net(tmp_path):
     p = tmp_path / "am.dss"
     p.write_text(FOUR_WIRE_ASYMMETRIC_FEEDER)
+    return from_opendss(str(p))
+
+
+@pytest.fixture
+def three_wire_matrix_net(tmp_path):
+    p = tmp_path / "tw.dss"
+    p.write_text(THREE_WIRE_MATRIX_FEEDER)
+    return from_opendss(str(p))
+
+
+@pytest.fixture
+def one_wire_matrix_net(tmp_path):
+    p = tmp_path / "ow.dss"
+    p.write_text(ONE_WIRE_MATRIX_FEEDER)
     return from_opendss(str(p))
 
 
@@ -235,3 +286,31 @@ def test_four_wire_feeders_converge(four_wire_zero_mutual_net, four_wire_asymmet
     assert four_wire_zero_mutual_net["converged"]
     pp.runpp(four_wire_asymmetric_net)
     assert four_wire_asymmetric_net["converged"]
+
+
+def test_three_wire_matrix_matches_declared_conductor(three_wire_matrix_net):
+    # The bug wasn't neutral-specific: a plain 3-conductor matrix LineCode (no
+    # neutral at all) also got the hard-coded 0.058/0.1206 default through
+    # Lines.R1()/X1(). Expected R1/X1 = self-avg - mutual-avg = 0.868-0.1,
+    # 0.077-0.01 (independently computed, not hand-picked to match a bug).
+    line = three_wire_matrix_net.line.iloc[0]
+    assert line["r_ohm_per_km"] == pytest.approx(0.768, rel=1e-4)
+    assert line["x_ohm_per_km"] == pytest.approx(0.067, rel=1e-4)
+
+
+def test_one_wire_matrix_matches_declared_conductor(one_wire_matrix_net):
+    # A single-conductor matrix lateral (SMART-DS/IEEE-test-feeder style):
+    # guards the Kron-reduction formula's self/mutual averaging against
+    # misfiring when there are fewer than 3 conductors to average over (no
+    # mutual term exists at all here, so R1/X1 must equal the single declared
+    # self-impedance exactly, not that value divided by 3).
+    line = one_wire_matrix_net.line.iloc[-1]  # l1, the single-phase lateral
+    assert line["r_ohm_per_km"] == pytest.approx(0.868, rel=1e-4)
+    assert line["x_ohm_per_km"] == pytest.approx(0.077, rel=1e-4)
+
+
+def test_three_and_one_wire_matrix_feeders_converge(three_wire_matrix_net, one_wire_matrix_net):
+    pp.runpp(three_wire_matrix_net)
+    assert three_wire_matrix_net["converged"]
+    pp.runpp(one_wire_matrix_net)
+    assert one_wire_matrix_net["converged"]
