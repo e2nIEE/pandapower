@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
+from typing import Literal
 
 # Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
 import pandas as pd
 
-from pandapower.run import runpp
+from pandapower.auxiliary import pandapowerNet
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.mapbox_plot import *
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces
+from pandapower.plotting.plotly.mapbox_plot import geo_data_to_latlong
+from pandapower.plotting.plotly.traces import (
+    create_bus_trace,
+    create_line_trace,
+    create_trafo_trace,
+    draw_traces,
+)
+from pandapower.run import runpp
 
 try:
     import pandaplan.core.pplog as logging
@@ -19,10 +23,25 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=None,
-                  map_style='basic', figsize=1, aspectratio='auto', line_width=2, bus_size=10,
-                  climits_volt=(0.9, 1.1), climits_load=(0, 100), cpos_volt=1.0, cpos_load=1.1,
-                  filename="temp-plot.html", auto_open=True, power_unit="k", current_unit="", voltage_unit=""):
+def pf_res_plotly(net: pandapowerNet,
+                  cmap: str="Jet",
+                  use_line_geo=None,
+                  on_map: bool=False,
+                  projection: str|None=None,
+                  map_style: str='basic',
+                  figsize: int=1,
+                  aspectratio: str='auto',
+                  line_width: int=2,
+                  bus_size: int=10,
+                  climits_volt: tuple[float, float]=(0.9, 1.1),
+                  climits_load: tuple[float, float]=(0, 100),
+                  cpos_volt: float=1.0,
+                  cpos_load: float=1.1,
+                  filename: str="temp-plot.html",
+                  auto_open: bool=True,
+                  power_unit: Literal["", "k", "M"]="M",
+                  current_unit: Literal["", "k"]="k",
+                  voltage_unit: Literal["", "k"]="k"):
     """
         Plots a pandapower network in plotly
 
@@ -121,16 +140,17 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
     # hoverinfo which contains name and pf results
     precision = 3
 
-    if voltage_unit == "":
-        voltage_factor = 1e3
-    else:
+    if voltage_unit == "k":
         voltage_factor = 1
-    if power_unit == "":
-        power_factor = 1e6
+    else:
+        voltage_factor = 1e3
+
+    if power_unit == "M":
+        power_factor = 1
     elif power_unit == "k":
         power_factor = 1e3
     else:
-        power_factor = 1
+        power_factor = 1e6
 
     hoverinfo = (
         net.bus.name.astype(str) + '<br />' +
@@ -154,11 +174,13 @@ def pf_res_plotly(net, cmap="Jet", use_line_geo=None, on_map=False, projection=N
         logger.warning(
             "No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geo = False
-    # hoverinfo which contains name and pf results
-    if current_unit == "":
-        current_factor = 1e3
-    else:
+
+    # hoverinfo that contains name and pf results
+    if current_unit == "k":
         current_factor = 1
+    else:
+        current_factor = 1e3
+
     hoverinfo = (
         net.line.name.astype(str) + '<br />' +
         'I = ' + net.res_line.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
