@@ -244,9 +244,8 @@ def _from_excel_old(xls, add_basic_std_types=True):
 def from_json(
         filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
         keep_serialized_elements=True, add_basic_std_types=False,
-        replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False,
-        drop_invalid_geodata=False, omit_tables=None, omit_modules=None,
-        ignore_version_conflicts=False
+        replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False,
+        omit_tables=None, omit_modules=None, ignore_version_conflicts=False, skip_checks=False
 ):
     """
     Load a pandapower network from a JSON file.
@@ -283,6 +282,8 @@ def from_json(
     :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
         being loaded and the pandapower version. This can lead to errors when loading nets saved in older
         formats. Use with caution! default False
+    :param bool skip_checks: If set to True, no checks will be performed.
+        .. warning:: Only perform on trusted data sources / networks!
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -313,6 +314,7 @@ def from_json(
             omit_tables=omit_tables,
             omit_modules=omit_modules,
             ignore_version_conflicts=ignore_version_conflicts,
+            skip_checks=skip_checks
         )
     except ValueError as e:
         raise UserWarning(f"Failed to load as json or file: {e}")
@@ -332,6 +334,7 @@ def from_json_string(
         omit_tables=None,
         omit_modules=None,
         ignore_version_conflicts=False
+        skip_checks=False
 ):
     """
     Load a pandapower network from a JSON string.
@@ -367,7 +370,8 @@ def from_json_string(
     :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
         being loaded and the pandapower version. This can lead to errors when loading nets saved in
         older formats. Use with caution! default False
-
+    :param bool skip_checks: If set to True, skips all checks
+        .. warning:: Only perform on trusted data sources / networks!
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -390,7 +394,8 @@ def from_json_string(
             empty_dict_like_object=empty_dict_like_object,
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
-            omit_modules=omit_modules
+            omit_modules=omit_modules,
+            skip_checks=skip_checks,
         )
     else:
         net = json.loads(
@@ -400,7 +405,8 @@ def from_json_string(
             empty_dict_like_object=empty_dict_like_object,
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
-            omit_modules=omit_modules
+            omit_modules=omit_modules,
+            skip_checks=skip_checks
         )
         net_dummy = create_empty_network()
         if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
@@ -408,7 +414,7 @@ def from_json_string(
                               'Convert and save your net first.')
         if keep_serialized_elements:
             for key in elements_to_deserialize:
-                net[key] = json.loads(net[key], cls=PPJSONDecoder)
+                net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
         else:
             if (('version' not in net.keys()) or (net['version'] != net_dummy.version)) and \
                     not convert:
@@ -419,7 +425,7 @@ def from_json_string(
                     % (net['version'], net_dummy.version))
             for key in net.keys():
                 if key in elements_to_deserialize:
-                    net[key] = json.loads(net[key], cls=PPJSONDecoder)
+                    net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
                 elif not isinstance(net[key], str):
                     continue
                 elif 'pandas' in net[key]:
