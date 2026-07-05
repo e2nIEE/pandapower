@@ -4,6 +4,7 @@ Change Log
 [upcoming release] - 2026-..-..
 -------------------------------
 - [ADDED] OpenDSS converter: ``from_opendss`` imports an OpenDSS feeder into a balanced positive-sequence pandapower net (revisits #1442).
+- [FIXED] OPF: fixed generalized cost Hessian evaluation in ``opf_costfcn``.
 - [FIXED] kwargs handling in pandamodels functions
 - [ADDED] added optional init_pq parameter to the PandaModels opf runpm wrappers for active/reactive power starts
 - [ADDED] zigzag earthing transformer vector groups (`ZNyn`, `ZNd`, `ZNy`, `ZN`) in the zero-sequence short-circuit model. Per the YNzn zero-sequence model (IEC / transformer references), the zigzag winding completely decouples the primary and secondary zero sequences, presenting a low-impedance shunt-to-ground at its terminal: the HV-winding leakage portion (`si0_hv_partial`) in series with the neutral earthing impedance `3·(rn_ohm + j·xn_ohm)` at the star point. An earthed-wye secondary (`ZNyn`) gets its own decoupled zero-sequence path to ground (LV leakage portion + zero-sequence magnetising); a delta / unearthed secondary (`ZNd`/`ZNy`) has none. Enables single-phase earth-fault studies on delta-fed systems earthed via a zigzag transformer.
