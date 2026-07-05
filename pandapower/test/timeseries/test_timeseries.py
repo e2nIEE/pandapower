@@ -1,54 +1,57 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import io
+import logging
 import tempfile
 
 import numpy as np
 import pandas as pd
 import pytest
 
-import pandapower.control.util.diagnostic
-import pandapower as pp
-import logging
 from pandapower.control import ContinuousTapControl, ConstControl
-
+from pandapower.control.util.diagnostic import logger as diagnostic_logger
+from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line, create_transformer, \
+    create_load, create_loads, create_buses, create_switch, create_lines, create_transformer3w_from_parameters
+from pandapower.run import set_user_pf_options, runpp
 from pandapower.timeseries import DFData
 from pandapower.timeseries import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries, control_diagnostic
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.fixture
 def simple_test_net():
-    net = pp.create_empty_network()
-    pp.set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
-    b0 = pp.create_bus(net, 110)
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 20)
-    b3 = pp.create_bus(net, 20)
-    b4 = pp.create_bus(net, 6)
+    net = create_empty_network()
+    set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    b0 = create_bus(net, 110)
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 20)
+    b4 = create_bus(net, 6)
 
-    pp.create_ext_grid(net, b0)
-    pp.create_line(net, b0, b1, 10, "149-AL1/24-ST1A 110.0")
+    create_ext_grid(net, b0)
+    create_line(net, b0, b1, 10, "149-AL1/24-ST1A 110.0")
 
-    pp.create_transformer(net, b1, b2, "25 MVA 110/20 kV", name='tr1')
+    create_transformer(net, b1, b2, "25 MVA 110/20 kV", name='tr1')
 
-    pp.create_transformer3w_from_parameters(net, b1, b3, b4, 110, 20, 6, 1e2, 1e2, 1e1, 3, 2, 2, 1,
-                                            1, 1, 100, 1, 60, 30, 'hv', tap_step_percent=1.5,
-                                            tap_step_degree=0, tap_pos=0, tap_neutral=0, tap_max=10,
-                                            tap_min=-10, name='tr2')
+    create_transformer3w_from_parameters(net, b1, b3, b4, 110, 20, 6, 1e2, 1e2, 1e1, 3, 2, 2, 1,
+                                         1, 1, 100, 1, 60, 30, 'hv', tap_step_percent=1.5,
+                                         tap_step_degree=0, tap_pos=0, tap_neutral=0, tap_max=10,
+                                         tap_min=-10, name='tr2', tap_changer_type="Ratio")
 
-    pp.create_load(net, b2, 1.5e1, 1, name='trafo1')
-    pp.create_load(net, b3, 3e1, 1.5, name='trafo2_mv')
-    pp.create_load(net, b4, 2, -0.15, name='trafo2_lv')
+    create_load(net, b2, 1.5e1, 1, name='trafo1')
+    create_load(net, b3, 3e1, 1.5, name='trafo2_mv')
+    create_load(net, b4, 2, -0.15, name='trafo2_lv')
 
     return net
 
 
 def create_rand_data_source(net, n_timesteps=10):
-    profiles = dict()
+    profiles = {}
     elements = ["load", "sgen"]
     for el in elements:
         element = net[el]
@@ -107,17 +110,17 @@ def test_const_control(simple_test_net):
 
     run_timeseries(net, time_steps, verbose=False)
 
-    assert np.all(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
-    assert np.all(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
+    assert np.all(np.isclose(profiles['load1'].values * 0.85, ow.output['load.p_mw'][0].values))
+    assert np.all(np.isclose(profiles['slack_v'].values, ow.output['res_bus.vm_pu'][0].values))
 
 
 def test_switch_states_in_time_series():
-    net = pp.create_empty_network()
-    pp.create_buses(net, 3, 0.4)
-    pp.create_ext_grid(net, 0)
-    pp.create_loads(net, [1, 2], 0.1)
-    pp.create_lines(net, [0, 0], [1, 2], 0.1, "NAYY 4x50 SE")
-    pp.create_switch(net, 0, 0, "l")
+    net = create_empty_network()
+    create_buses(net, 3, 0.4)
+    create_ext_grid(net, 0)
+    create_loads(net, [1, 2], 0.1)
+    create_lines(net, [0, 0], [1, 2], 0.1, "NAYY 4x50 SE")
+    create_switch(net, 0, 0, "l")
 
     n_timesteps = 5
     time_steps = range(n_timesteps)
@@ -137,9 +140,9 @@ def test_switch_states_in_time_series():
 
     assert np.allclose(
         profiles['load1'].values * profiles["switch_pos"].values + 0.1 + \
-            ow.output['res_line.pl_mw'].sum(axis=1).values,
+        ow.output['res_line.pl_mw'].sum(axis=1).values,
         ow.output['res_ext_grid.p_mw'][0].values
-        )
+    )
 
 
 def test_const_control_write_to_object_attribute(simple_test_net):
@@ -161,16 +164,16 @@ def test_const_control_write_to_object_attribute(simple_test_net):
 
     assert np.all(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
     assert np.all(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
-    assert np.allclose(profiles['trafo_v'].values, ow.output['res_bus.vm_pu'][net.trafo.at[0, 'lv_bus']].values, atol=1e-3, rtol=0)
+    assert np.allclose(profiles['trafo_v'].values, ow.output['res_bus.vm_pu'][net.trafo.at[0, 'lv_bus']].values,
+                       atol=1e-3, rtol=0)
 
 
 def test_false_alarm_trafos(simple_test_net):
     net = simple_test_net
 
-    import io
     s = io.StringIO()
     h = logging.StreamHandler(stream=s)
-    pandapower.control.util.diagnostic.logger.addHandler(h)
+    diagnostic_logger.addHandler(h)
 
     ContinuousTapControl(net, 0, 1)
     ContinuousTapControl(net, 0, 1, trafotype='3W')
@@ -184,7 +187,7 @@ def test_false_alarm_trafos(simple_test_net):
         raise UserWarning('Control diagnostic raises false alarm! Controllers are fine, '
                           'but warning is raised: %s' % s.getvalue())
 
-    pandapower.control.util.diagnostic.logger.removeHandler(h)
+    diagnostic_logger.removeHandler(h)
     del h
     del s
 
@@ -193,7 +196,7 @@ def test_timeseries_results(simple_test_net):
     # This test compares output writer results with input
     # test net
     net = simple_test_net
-    net.user_pf_options = dict()
+    net.user_pf_options = {}
 
     n_timesteps = 5
     profiles, ds = create_data_source(n_timesteps)
@@ -231,7 +234,7 @@ def test_timeseries_var_func(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 5
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
 
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
@@ -269,7 +272,7 @@ def test_timeseries_var_func(simple_test_net):
 def test_time_steps(simple_test_net):
     net = simple_test_net
     n_timesteps = 11
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
                  data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
@@ -288,7 +291,7 @@ def test_output_dump_after_time(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 100
-    profiles, ds = create_data_source(n_timesteps)
+    _, ds = create_data_source(n_timesteps)
 
     # 1load
     ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
@@ -309,7 +312,7 @@ def test_output_dump_after_time(simple_test_net):
 
 def test_pf_options(simple_test_net):
     net = simple_test_net
-    profiles, ds = create_data_source()
+    _, ds = create_data_source()
     time_steps = range(0, 3)
     ow = setup_output_writer(net, time_steps)
 
@@ -324,7 +327,7 @@ def test_pf_options(simple_test_net):
 
 def test_user_pf_options(simple_test_net):
     net = simple_test_net
-    profiles, ds = create_data_source()
+    _, ds = create_data_source()
     time_steps = range(0, 3)
     ow = setup_output_writer(net, time_steps)
 
@@ -333,11 +336,11 @@ def test_user_pf_options(simple_test_net):
 
     ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
 
-    pp.set_user_pf_options(net, distributed_slack=True)
+    set_user_pf_options(net, distributed_slack=True)
     run_timeseries(net, time_steps, verbose=False)
     assert net._options["distributed_slack"]
 
-    pp.runpp(net, distributed_slack=False)
+    runpp(net, distributed_slack=False)
 
     run_timeseries(net, time_steps, verbose=False)
     assert net._options["distributed_slack"]
@@ -345,7 +348,7 @@ def test_user_pf_options(simple_test_net):
 
 def test_user_pf_options_init_run(simple_test_net):
     net = simple_test_net
-    profiles, ds = create_data_source()
+    _, ds = create_data_source()
     time_steps = range(0, 3)
     ow = setup_output_writer(net, time_steps)
 
@@ -354,16 +357,16 @@ def test_user_pf_options_init_run(simple_test_net):
 
     ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
 
-    pp.runpp(net)
+    runpp(net)
 
-    pp.set_user_pf_options(net, distributed_slack=True)
+    set_user_pf_options(net, distributed_slack=True)
     run_timeseries(net, time_steps, verbose=False)
     assert net._options["distributed_slack"]
 
 
 def test_user_pf_options_recycle_manual(simple_test_net):
     net = simple_test_net
-    profiles, ds = create_data_source()
+    _, ds = create_data_source()
     time_steps = range(0, 3)
     ow = setup_output_writer(net, time_steps)
 
@@ -372,9 +375,9 @@ def test_user_pf_options_recycle_manual(simple_test_net):
 
     ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
 
-    pp.runpp(net)
+    runpp(net)
 
-    pp.set_user_pf_options(net, distributed_slack=True, recycle=True)
+    set_user_pf_options(net, distributed_slack=True, recycle=True)
     run_timeseries(net, time_steps, verbose=False)
     assert net._options["distributed_slack"]
 

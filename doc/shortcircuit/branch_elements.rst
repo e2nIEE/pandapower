@@ -30,7 +30,7 @@ where the correction factor for the short-circuit resistance  :math:`K_L` is def
             1 + 0.04 K^{-1} (endtemp\_degree - 20°C) & \text{ for minimum short-circuit calculations} 
   \end{array}\right.
 
-The end temperature in degree after a fault has to be defined with the parameter endtemp\_degre in the line table.
+The end temperature in degree after a fault has to be defined with the parameter endtemp\_degree in the line table.
 
 Two-Winding Transformer
 -------------------------
@@ -87,7 +87,7 @@ two-winding transformers.
 
 Impedance
 --------------------------
-The impedance element is a generic element that is not desribed in the standard. It is considered in the short-circuit calculation just as in the power flow as described :ref:`here <impedance_model>`.
+The impedance element is a generic element that is not described in the standard. It is considered in the short-circuit calculation just as in the power flow as described :ref:`here <impedance_model>`.
 
 
 

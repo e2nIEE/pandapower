@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -57,7 +57,7 @@ def _kappa_method_c(net, ppc):
     # zero_conductance = np.where(ppc["bus"][:,GS] == 0)
     # ppc_c["bus"][zero_conductance, BS] *= net.f_hz / fc
 
-    conductance = np.where(ppc["bus"][:,GS] != 0)
+    conductance = np.nonzero(ppc["bus"][:, GS])
     z_shunt = 1 / (ppc_c["bus"][conductance, GS] + 1j * ppc_c["bus"][conductance, BS])
     y_shunt = 1 / (z_shunt.real + 1j * z_shunt.imag * fc / net.f_hz)
     ppc_c["bus"][conductance, GS] = y_shunt.real[0]
@@ -78,7 +78,7 @@ def _kappa_method_c(net, ppc):
 def _kappa_method_b(net, ppc):
     topology = net._options["topology"]
     kappa_max = np.full(ppc["bus"].shape[0], 2.)
-    lv_buses = np.where(ppc["bus"][:, BASE_KV] < 1.)
+    lv_buses = np.nonzero(ppc["bus"][:, BASE_KV] < 1.)
     if len(lv_buses) > 0:
         kappa_max[lv_buses] = 1.8
 

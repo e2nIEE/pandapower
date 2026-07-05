@@ -1,39 +1,99 @@
-import pandapower as pp
+from pandapower.file_io import to_json, to_pickle
 from .echo_off import echo_off, echo_on
-from .logger_setup import AppHandler, set_PF_level
 from .pf_export_functions import run_load_flow, create_network_dict
 from .pp_import_functions import from_pf
-from .run_import import choose_imp_dir, clear_dir, prj_dgs_import, prj_import
+from .run_import import choose_imp_dir, clear_dir, prj_dgs_import
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
 
-def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p_loads='plini',
-             pf_variable_p_gen='pgini', flag_graphics='GPS', tap_opt='nntap',
-             export_controller=True, handle_us="Deactivate", is_unbalanced=False, create_sections=True):
+def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_dst=None,
+             pv_as_slack=False, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
+             flag_graphics='GPS', tap_opt='nntap', export_controller=True, handle_us="Deactivate",
+             is_unbalanced=False, create_sections=True, export_pf_ZoneArea=False, sc_name=None):
     """
+    Import a DIgSILENT PowerFactory project into a pandapower network.
 
-    Args:
-        prj_name: Name (”Project”), full qualified name (”Project.IntPrj”) or full qualified path
-            (”nUsernProject.IntPrj”) of a project.
-        path_dst: Destination for the export of .p file (full file path)
-        pv_as_slack: whether "PV" nodes are imported as "Slack" nodes
-        pf_variable_p_loads: PowerFactory variable for generators: "plini", "plini_a", "m:P:bus1"
-        pf_variable_p_gen: PowerFactory variable for generators: "pgini", "pgini_a", "m:P:bus1"
-        flag_graphics: whether geodata comes from graphic objects (*.IntGrf) or GPS
-        tap_opt: PowerFactory variable for tap position: "nntap" or "c:nntap"
-        export_controller: whether to create and export controllers
-        handle_us (str, "Deactivate"): What to do with unsupplied buses -> Can be "Deactivate", "Drop" or "Nothing"
+    Optionally executes a DPL script and a load flow in PowerFactory before converting the
+    active project to a pandapower network. The resulting pandapower network can optionally
+    be stored as a JSON (.p) file. A flag indicating whether the PowerFactory load flow
+    converged is stored in ``net["pf_converged"]``.
 
-    Returns: pandapower network "net" and controller, saves pp-network as .p file at path_dst
+    Parameters
+    ----------
+    app :
+        PowerFactory application object returned by ``GetApplication()``.
+    prj_name : str
+        Name (``"Project"``), fully qualified name (``"Project.IntPrj"``) or fully qualified
+        path (``"nUsernProject.IntPrj"``) of the PowerFactory project to be activated.
+    script_name : str or None, optional
+        Name of the DPL script that shall be executed prior to the import to pandapower.
+        If None, no script is executed.
+    script_settings : dict or None, optional
+        Dictionary of arguments for the DPL script, e.g.
+        ``{"Script variable name in PF": value}``. Keys must match the
+        script's parameter names in PowerFactory. Ignored if ``script_name`` is None.
+    path_dst : str or None, optional
+        Destination file path for exporting the pandapower network as JSON (.p file)
+        using :func:`pandapower.to_json`. If None, the network is not written to disk.
+    pv_as_slack : bool, optional
+        If True, PowerFactory PV nodes are imported as slack nodes in pandapower.
+        Default is False.
+    pf_variable_p_loads : str, optional
+        PowerFactory variable name used for active power of loads, e.g. ``"plini"``,
+        ``"plini_a"`` or ``"m:P:bus1"``. Default is ``"plini"``.
+    pf_variable_p_gen : str, optional
+        PowerFactory variable name used for active power of generators, e.g. ``"pgini"``,
+        ``"pgini_a"`` or ``"m:P:bus1"``. Default is ``"pgini"``.
+    flag_graphics : {"GPS", "IntGrf"}, optional
+        Source for geodata. If ``"GPS"``, geodata comes from GPS information.
+        If ``"IntGrf"``, geodata is taken from graphic objects (``*.IntGrf``).
+        Default is ``"GPS"``.
+    tap_opt : str, optional
+        PowerFactory variable for tap position, e.g. ``"nntap"`` or ``"c:nntap"``.
+        Default is ``"nntap"``.
+    export_controller : bool, optional
+        If True, creates and exports controllers to the pandapower network.
+        Default is True.
+    handle_us : {"Deactivate", "Drop", "Nothing"}, optional
+        Action to be taken for unsupplied buses:
+        - ``"Deactivate"``: deactivate unsupplied buses and connected elements
+        - ``"Drop"``: remove unsupplied buses from the network
+        - ``"Nothing"``: leave unsupplied buses unchanged
 
+        Default is ``"Deactivate"``.
+    is_unbalanced : bool, optional
+        If True, import the network as an unbalanced system. Default is False.
+    create_sections : bool, optional
+        If True, create network sections during the import. Default is True.
+    export_pf_ZoneArea : bool, optional
+        If True, export Zone and Area information from PowerFactory to the pandapower buses.
+        Default is False.
+    sc_name : str or None, optional
+        Name of the PowerFactory Study Case (scenario) to activate before running the
+        load flow and exporting. If None, the currently active Study Case is used.
+
+    Returns
+    -------
+    net : pandapowerNet
+        The imported pandapower network. Contains the key ``"pf_converged"`` indicating
+        whether the PowerFactory load flow converged (True/False).
+
+    Raises
+    ------
+    RuntimeError
+        If the specified PowerFactory project cannot be found or activated.
+    UserWarning
+        If the provided script settings are inconsistent with the script definition or the
+        script execution fails.
+
+    Notes
+    -----
+    If ``path_dst`` is not None, the resulting pandapower network is additionally written
+    to disk as a JSON file using :func:`pandapower.to_json`.
     """
-
     logger.debug('started')
     echo_off(app)
     user = app.GetCurrentUser()
@@ -45,15 +105,47 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
 
     prj = app.GetActiveProject()
 
+    # scenario | Study Cases | Betriebsfall
+    scenario_name_list = [sc.loc_name for sc in app.GetProjectFolder("scen").GetContents()]
+    logger.info(f"Available 'Study Cases': {scenario_name_list}")
+
+    if sc_name is not None and sc_name in scenario_name_list:
+        sc = app.GetProjectFolder('scen').GetContents(sc_name)[0]
+        sc.Activate()
+        logger.info(f"Study Case {app.GetActiveScenario().loc_name} is currently active!")
+    else:
+        logger.info(f"No Study Case is currently active!")
+
     logger.info('gathering network elements')
     dict_net = create_network_dict(app, flag_graphics)
-    pf_load_flow_failed = run_load_flow(app)
+
+    if script_name is not None:
+        script = get_script(user, script_name)
+        script_values = script.IntExpr
+        for parameter_name, new_value in script_settings.items():
+            if parameter_name not in script_settings:
+                raise UserWarning('Script settings are faulty. Some parameters do not exist!')
+            pos = script.IntName.index(parameter_name)
+            if script_values[pos] != new_value:
+                script_values[pos] = new_value
+            else:
+                continue
+        script.SetAttribute('IntExpr', script_values)
+        pf_script_execution_failed = script.Execute()
+        if pf_script_execution_failed != 0:
+            logger.error('Script execution failed.')
+        pf_load_flow_failed = run_load_flow(app)
+        if pf_load_flow_failed != 0:
+            logger.error('Load flow failed after executing DPL script.')
+    else:
+        pf_load_flow_failed = run_load_flow(app)
+
     logger.info('exporting network to pandapower')
     app.SetAttributeModeInternal(1)
     net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
                   pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
                   export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced,
-                  create_sections=create_sections)
+                  create_sections=create_sections, export_pf_ZoneArea=export_pf_ZoneArea)
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
@@ -63,10 +155,22 @@ def from_pfd(app, prj_name: str, path_dst=None, pv_as_slack=False, pf_variable_p
     prj.Deactivate()
     echo_on(app)
     if path_dst is not None:
-        pp.to_json(net, path_dst)
+        to_json(net, path_dst)
         logger.info('saved net as %s', path_dst)
     return net
 
+def get_script(user, script_name):
+    script = None
+
+    for obj in user.GetContents():
+        if obj.loc_name == script_name:
+            script = obj
+            break
+
+    if script is None:
+        raise UserWarning(f"Could not find script with name {script_name}.")
+
+    return script
 
 # experimental feature
 def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_load='plini',
@@ -105,7 +209,7 @@ def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_
     prj.Deactivate()
     echo_on(app)
 
-    pp.to_pickle(net, path_dst)
+    to_pickle(net, path_dst)
 
     return net, trafo_name, trafo_desc
 
@@ -197,16 +301,3 @@ def _check_network(app):
             # raise Exception('Adjusted by load scaling set to True')
 
     return trafos[0].loc_name, trafos[0].desc
-
-
-if __name__ == '__main__':
-    try:
-        import powerfactory as pf
-
-        app = pf.GetApplication()
-        app_handler = AppHandler(app, freeze_app_between_messages=True)
-        logger.addHandler(app_handler)
-        set_PF_level(logger, app_handler, 'INFO')
-    except:
-        pass
-

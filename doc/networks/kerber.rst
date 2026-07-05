@@ -65,9 +65,9 @@ You can include the kerber networks by simply using:
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_kerber_net
 
- net1 = pn.create_kerber_net()
+ net1 = create_kerber_net()
 
 
 
@@ -81,9 +81,9 @@ Kerber Landnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_kerber_landnetz_freileitung_1, create_kerber_landnetz_freileitung_2
 
- net1 = pn.create_kerber_landnetz_freileitung_1()
+ net1 = create_kerber_landnetz_freileitung_1()
 
  '''
  This pandapower network includes the following parameter tables:
@@ -94,7 +94,7 @@ Kerber Landnetze
    - ext_grid (1 elements)
  '''
 
- net2 = pn.create_kerber_landnetz_freileitung_2()
+ net2 = create_kerber_landnetz_freileitung_2()
 
  '''
  This pandapower network includes the following parameter tables:
@@ -121,9 +121,9 @@ Kerber Landnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_kerber_landnetz_kabel_1, create_kerber_landnetz_kabel_2
 
- net1 = pn.create_kerber_landnetz_kabel_1()
+ net1 = create_kerber_landnetz_kabel_1()
 
  '''
  This pandapower network includes the following parameter tables:
@@ -134,7 +134,7 @@ Kerber Landnetze
    - ext_grid (1 elements)
  '''
 
- net2 = pn.create_kerber_landnetz_kabel_2()
+ net2 = create_kerber_landnetz_kabel_2()
 
  '''
  This pandapower network includes the following parameter tables:
@@ -161,9 +161,9 @@ Kerber Dorfnetz
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_kerber_dorfnetz
 
- net = pn.create_kerber_dorfnetz()
+ net = create_kerber_dorfnetz()
 
  '''
  This pandapower network includes the following parameter tables:
@@ -192,9 +192,9 @@ Kerber Vorstadtnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_kerber_vorstadtnetz_kabel_1
 
- net1 = pn.create_kerber_vorstadtnetz_kabel_1()
+ net1 = create_kerber_vorstadtnetz_kabel_1()
 
  '''
  This pandapower network includes the following parameter tables:
@@ -220,9 +220,9 @@ Kerber Vorstadtnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_kerber_vorstadtnetz_kabel_2
 
- net2 = pn.create_kerber_vorstadtnetz_kabel_2()
+ net2 = create_kerber_vorstadtnetz_kabel_2()
 
  '''
  This pandapower network includes the following parameter tables:
@@ -293,14 +293,14 @@ Extreme Kerber Landnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import kb_extrem_landnetz_freileitung, kb_extrem_landnetz_kabel
 
  '''Extrem Landnetz Freileitung Typ I'''
- net = pn.kb_extrem_landnetz_freileitung()
+ net = kb_extrem_landnetz_freileitung()
 
 
  '''Extrem Landnetz Kabel Typ I'''
- net = pn.kb_extrem_landnetz_kabel()
+ net = kb_extrem_landnetz_kabel()
 
 
 
@@ -318,14 +318,14 @@ Extreme Kerber Landnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import kb_extrem_landnetz_freileitung_trafo, kb_extrem_landnetz_kabel_trafo
 
  '''Extrem Landnetz Freileitung Typ II'''
- net = pn.kb_extrem_landnetz_freileitung_trafo()
+ net = kb_extrem_landnetz_freileitung_trafo()
 
 
  '''Extrem Landnetz Kabel Typ II'''
- net = pn.kb_extrem_landnetz_kabel_trafo()
+ net = kb_extrem_landnetz_kabel_trafo()
 
 
 
@@ -344,10 +344,10 @@ Extreme Kerber Dorfnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import kb_extrem_dorfnetz
 
  '''Extrem Dorfnetz Kabel Typ I'''
- net = pn.kb_extrem_dorfnetz()
+ net = kb_extrem_dorfnetz()
 
 
 
@@ -364,10 +364,10 @@ Extreme Kerber Dorfnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import kb_extrem_dorfnetz_trafo
 
  '''Extrem Dorfnetz Kabel Typ II'''
- net = pn.kb_extrem_dorfnetz_trafo()
+ net = kb_extrem_dorfnetz_trafo()
 
 
 
@@ -383,10 +383,10 @@ Extreme Kerber Vorstadtnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import kb_extrem_vorstadtnetz_1
 
  '''Extrem Vorstadtnetz Kabel_a Typ I'''
- net = pn.kb_extrem_vorstadtnetz_1()
+ net = kb_extrem_vorstadtnetz_1()
 
 
 .. image:: /pics/networks/kerber//kerber_extrem_vorstadt_a_typ_1.png
@@ -401,10 +401,10 @@ Extreme Kerber Vorstadtnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import kb_extrem_vorstadtnetz_2
 
  '''Extrem Vorstadtnetz Kabel_b Typ I'''
- net = pn.kb_extrem_vorstadtnetz_2()
+ net = kb_extrem_vorstadtnetz_2()
 
 
 .. image:: /pics/networks/kerber//kerber_extrem_vorstadt_b_typ_1.png
@@ -419,10 +419,10 @@ Extreme Kerber Vorstadtnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import kb_extrem_vorstadtnetz_trafo_1
 
  '''Extrem Vorstadtnetz Kabel_c Typ II'''
- net = pn.kb_extrem_vorstadtnetz_trafo_1()
+ net = kb_extrem_vorstadtnetz_trafo_1()
 
 
 .. image:: /pics/networks/kerber//kerber_extrem_vorstadt_c_typ_2.png
@@ -437,10 +437,10 @@ Extreme Kerber Vorstadtnetze
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import kb_extrem_vorstadtnetz_trafo_2
 
  '''Extrem Vorstadtnetz Kabel_d Typ II'''
- net = pn.kb_extrem_vorstadtnetz_trafo_2()
+ net = kb_extrem_vorstadtnetz_trafo_2()
 
 
 .. image:: /pics/networks/kerber//kerber_extrem_vorstadt_d_typ_2.png

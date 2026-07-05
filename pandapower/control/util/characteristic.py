@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from builtins import zip
-from builtins import object
 import numpy as np
-
 from numpy import interp
 from scipy.interpolate import interp1d, PchipInterpolator
+
 from pandapower.io_utils import JSONSerializableClass
 
 try:
@@ -19,20 +17,27 @@ except ImportError:
 logger = pplog.getLogger(__name__)
 
 
+def _make_hashable(obj):
+    if isinstance(obj, dict):
+        return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
+    if isinstance(obj, (list, tuple)):
+        return tuple(_make_hashable(v) for v in obj)
+    if isinstance(obj, np.ndarray):
+        return tuple(_make_hashable(v) for v in obj.tolist())
+    return obj
+
 class Characteristic(JSONSerializableClass):
     """
     This class represents a characteristics curve. The curve is described as a piecewise linear function.
 
-    INPUT:
-        **pts** - Expects two (or more) points of the function (i.e. kneepoints)
-
-    OPTIONAL:
-        **eps** - An epsilon to compare the difference to
+    Parameters:
+        pts: Expects two (or more) points of the function (i.e. kneepoints)
+        eps: An epsilon to compare the difference to
 
     The class has an implementation of the ``__call__`` method, which allows using it interchangeably with other interpolator objects,
     e.g. ``scipy.interpolate.interp1d``, ``scipy.interpolate.CubicSpline``, ``scipy.interpolate.PPoly``, etc.
 
-    Example usage:
+    Example:
         Create a simple function from two points and ask for the target y-value for a
         given x-value.
         Assume a characteristics curve in which for voltages < 0.95pu a power of 10kW
@@ -74,11 +79,12 @@ class Characteristic(JSONSerializableClass):
         >>> c.satisfies(x=2.5, measured=3.1, epsilon=0.1)
         False
     """
-    def __init__(self, net, x_values, y_values, **kwargs):
+
+    def __init__(self, net, x_values, y_values, table="characteristic", **kwargs):
         super().__init__()
         self.x_vals = x_values
         self.y_vals = y_values
-        self.index = super().add_to_net(net, "characteristic")
+        self.index = super().add_to_net(net, table)
 
     # @property
     # def x_vals(self):
@@ -102,24 +108,24 @@ class Characteristic(JSONSerializableClass):
     def diff(self, x, measured):
         """
 
-        INPUT:
-            **x** - The x-value at which the current y-value is measured
-            **actual** - The actual y-value being measured.
-            **return** - The difference between actual and expected value.
+        Parameters:
+            x: The x-value at which the current y-value is measured
+            actual: The actual y-value being measured.
+            
+        Returns:
+             The difference between actual and expected value.
         """
         return measured - self(x)
 
     def satisfies(self, x, measured, epsilon):
         """
 
-        INPUT:
-            **x** - The x-value at which the current y-value is measured
+        Parameters:
+            x: The x-value at which the current y-value is measured
+            measured: The actual y-value being measured.
 
-            **measured** - The actual y-value being measured.
-
-        OUTPUT:
-            Whether or not the point satisfies the characteristics curve with respect to the
-            epsilon being set
+        Returns:
+            Whether or not the point satisfies the characteristics curve with respect to the epsilon being set
         """
         if abs(self.diff(x, measured)) < epsilon:
             return True
@@ -129,10 +135,10 @@ class Characteristic(JSONSerializableClass):
     def __call__(self, x):
         """
 
-        INPUT:
-            **x** - An x-value
+        Parameters:
+            x: An x-value
 
-        OUTPUT:
+        Returns:
             The corresponding target value of this characteristics
         """
         return interp(x, self.x_vals, self.y_vals)
@@ -150,38 +156,27 @@ class SplineCharacteristic(Characteristic):
     range can be used and yield y-values outside the specified y range. Alternatively, the behavior of
     Characteristic can be followed by providing a tuple for the fill value for x outside the specified range,
     refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
-
-    INPUT:
-        **net**
-
-        **x_values**
-
-        **y_values**
-
-        **fill_value**
     """
     json_excludes = ["self", "__class__", "_interpolator"]
 
-    def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", **kwargs):
-        super().__init__(net, x_values=x_values, y_values=y_values)
+    def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", table="characteristic", **kwargs):
+        super().__init__(net, x_values=x_values, y_values=y_values, table=table)
         self.kwargs = kwargs
         self.interpolator_kind = interpolator_kind
+        self._interpolator = None
+
 
     @property
     def interpolator(self):
         """
         We need to store the interpolator in a property because we need to serialize
         the characteristic. Instead of storing the serialized interpolator, we store the
-        x_values and y_values (the attribute _interpolator is ecluded from serialization by
+        x_values and y_values (the attribute _interpolator is excluded from serialization by
         adding it to json_excludes). For it to work, we need to recreate the interpolator on
         demand. As soon as the characteristic is called, if the interpolator is there,
         we can use it. If not, we recreate it.
         """
-        return self._interpolator
-
-    @interpolator.getter
-    def interpolator(self):
-        if not hasattr(self, '_interpolator'):
+        if self._interpolator is None:
             if self.interpolator_kind == "interp1d":
                 self._interpolator = default_interp1d(self.x_vals, self.y_vals, **self.kwargs)
             elif self.interpolator_kind == "Pchip":
@@ -195,13 +190,41 @@ class SplineCharacteristic(Characteristic):
         This method allows calling the SciPy interpolator object directly.
         Codacy is complaining about this, but it is not a problem.
 
-        INPUT:
-            **x** (float) -  The x-value at which the current y-value is interpolated for.
+        Parameters:
+            x (float): The x-value at which the current y-value is interpolated for.
 
-        OUTPUT:
+        Returns:
             The interpolated y-value.
         """
         return self.interpolator(x)
+
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            return False
+        return (
+            self.interpolator_kind == other.interpolator_kind
+            and self.kwargs == other.kwargs
+            and np.array_equal(self.x_vals, other.x_vals)
+            and np.array_equal(self.y_vals, other.y_vals)
+        )
+
+
+    def __repr__(self):
+        return self.__class__.__name__ + f"({self.interpolator_kind}, {self.kwargs})"
+
+    def __str__(self):
+        return self.__class__.__name__ + f"({self.interpolator_kind}, {self.kwargs})"
+
+    def __hash__(self):
+        return hash(
+            (
+                self.__class__,
+                self.interpolator_kind,
+                _make_hashable(self.kwargs),
+                _make_hashable(self.x_vals),
+                _make_hashable(self.y_vals),
+            )
+        )
 
 
 class LogSplineCharacteristic(SplineCharacteristic):

@@ -1,7 +1,6 @@
 import pytest
 from pandapower.estimation import estimate
 from pandapower.test.estimation.test_wls_estimation import create_net_with_bb_switch
-import pandapower as pp
 
 
 def test_none_net():

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
+import pandas as pd
 
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.bustypes import bustypes_dc
@@ -12,38 +13,32 @@ from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VM
 from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC, gen_cols
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.auxiliary import _subnetworks, _sum_by_group
+from pandapower.auxiliary import _subnetworks, _sum_by_group, pandapowerNet
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_SET_VM_PU, SSC_CONTROLLABLE
-from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE, VSC_MODE_AC_V, \
-    VSC_MODE_AC_SL
+from pandapower.pypower.idx_vsc import (
+    VSC_MODE_AC, VSC_BUS, VSC_VALUE_AC, VSC_CONTROLLABLE, VSC_MODE_AC_V, VSC_MODE_AC_SL
+)
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
 
-def _build_gen_ppc(net, ppc):
-    '''
+def _build_gen_ppc(net: pandapowerNet, ppc: dict, sequence=None):
+    """
     Takes the empty ppc network and fills it with the gen values. The gen
-    datatype will be float afterwards.
+    datatype will be floated afterwards.
 
-    **INPUT**:
-        **net** -The pandapower format network
-
-        **ppc** - The PYPOWER format network to fill in values
-    '''
+    Parameters:
+        net: The pandapower format network
+        ppc: The PYPOWER format network to fill in values
+    """
 
     mode = net["_options"]["mode"]
     distributed_slack = net["_options"]["distributed_slack"]
 
-    if mode == "estimate":
-        return
-
     _is_elements = net["_is_elements"]
-    gen_order = dict()
+    gen_order: dict[str, tuple[int, int]] = {}
     f = 0
     for element in ["ext_grid", "gen"]:
         f = add_gen_order(gen_order, element, _is_elements, f)
@@ -58,7 +53,7 @@ def _build_gen_ppc(net, ppc):
 
     _init_ppc_gen(net, ppc, f)
     for element, (f, t) in gen_order.items():
-        add_element_to_gen(net, ppc, element, f, t)
+        add_element_to_gen(net, ppc, element, f, t, sequence=sequence)
     net._gen_order = gen_order
 
     if distributed_slack:
@@ -83,7 +78,7 @@ def _init_ppc_gen(net, ppc, nr_gens):
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.,
                               1., 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0])
-    q_lim_default = net._options["p_lim_default"]
+    q_lim_default = net._options["q_lim_default"]
     p_lim_default = net._options["p_lim_default"]
     ppc["gen"][:, PMAX] = p_lim_default
     ppc["gen"][:, PMIN] = -p_lim_default
@@ -91,11 +86,11 @@ def _init_ppc_gen(net, ppc, nr_gens):
     ppc["gen"][:, QMIN] = -q_lim_default
 
 
-def add_element_to_gen(net, ppc, element, f, t):
+def add_element_to_gen(net, ppc, element, f, t, sequence):
     if element == "ext_grid":
         _build_pp_ext_grid(net, ppc, f, t)
     elif element == "gen":
-        _build_pp_gen(net, ppc, f, t)
+        _build_pp_gen(net, ppc, f, t, sequence)
     elif element == "sgen_controllable":
         _build_pp_pq_element(net, ppc, "sgen", f, t)
     elif element == "load_controllable":
@@ -191,11 +186,11 @@ def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
     controllable = net["gen"]["controllable"].values[gen_is]
     not_controllable = ~controllable.astype(bool)
 
-    # if there are some non controllable gens -> set vm_pu and p_mw fixed
+    # if there are some non-controllable gens -> set vm_pu and p_mw fixed
     if np.any(not_controllable):
-        bus = net["gen"]["bus"].values[not_controllable]
-        vm_pu = net["gen"]["vm_pu"].values[not_controllable]
-        p_mw = net["gen"]["p_mw"].values[not_controllable]
+        bus = net["gen"]["bus"][gen_is].values[not_controllable]
+        vm_pu = net["gen"]["vm_pu"][gen_is].values[not_controllable]
+        p_mw = net["gen"]["p_mw"][gen_is].values[not_controllable]
 
         not_controllable_buses = bus_lookup[bus]
         ppc["bus"][not_controllable_buses, VMAX] = vm_pu + delta
@@ -207,33 +202,64 @@ def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
     return ppc
 
 
-def _build_pp_gen(net, ppc, f, t):
+def _build_pp_gen(net, ppc, f, t, sequence):
     delta = net["_options"]["delta"]
     gen_is = net._is_elements["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    mode = net["_options"]["mode"]
 
     gen_buses = bus_lookup[net["gen"]["bus"].values[gen_is]]
     gen_is_vm = net["gen"]["vm_pu"].values[gen_is]
     ppc["gen"][f:t, GEN_BUS] = gen_buses
-    ppc["gen"][f:t, PG] = (net["gen"]["p_mw"].values[gen_is] * net["gen"]["scaling"].values[gen_is])
+
+    # enforce gen active power limits
+    if net._options["enforce_p_lims"]:
+        min_p = net["gen"]["min_p_mw"] if "min_p_mw" in net["gen"].columns else pd.Series(index=net["gen"].index,
+                                                                                          data=np.nan, dtype=float)
+        max_p = net["gen"]["max_p_mw"] if "max_p_mw" in net["gen"].columns else pd.Series(index=net["gen"].index,
+                                                                                          data=np.nan, dtype=float)
+
+        p_used_full = net["gen"]["p_mw"].clip(lower=min_p, upper=max_p)
+        p_mw = p_used_full.values[gen_is]
+
+        # detect clipping
+        orig_p = net["gen"]["p_mw"].values[gen_is]
+        clipped_mask = ~np.isclose(orig_p, p_mw, equal_nan=True)
+        if np.any(clipped_mask):
+            # emit debug-level log message notifying user of clipping
+            logger.debug(
+                "Active power limits enforced for gen elements at indices %s",
+                net["gen"].index[gen_is][clipped_mask].tolist(),
+            )
+    else:
+        p_mw = net["gen"]["p_mw"].values[gen_is]
+
+    if sequence == 1:
+        p_mw /= 3
+    elif sequence == 0 or sequence == 2:
+        p_mw *= 0
+
+    ppc["gen"][f:t, PG] = (p_mw * net["gen"]["scaling"].values[gen_is])
+
     ppc["gen"][f:t, MBASE] = net["gen"]["sn_mva"].values[gen_is]
     ppc["gen"][f:t, SL_FAC] = net["gen"]["slack_weight"].values[gen_is]
     ppc["gen"][f:t, VG] = gen_is_vm
 
     # set bus values for generator buses
     ppc["bus"][gen_buses[ppc["bus"][gen_buses, BUS_TYPE] != REF], BUS_TYPE] = PV
-    ppc["bus"][gen_buses, VM] = gen_is_vm
+    if mode != "se":
+        ppc["bus"][gen_buses, VM] = gen_is_vm
 
     add_q_constraints(net, "gen", gen_is, ppc, f, t, delta)
-    add_p_constraints(net, "gen", gen_is, ppc, f, t, delta)
-    if net._options["mode"] == "opf":
+    add_p_constraints(net, "gen", gen_is, ppc, f, t, delta)  # OPF related
+    if mode == "opf":
         # this considers the vm limits for gens
         ppc = _check_gen_vm_limits(net, ppc, gen_buses, gen_is)
         if "controllable" in net.gen.columns:
             ppc = _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t)
 
 
-def _build_pp_xward(net, ppc, f, t, update_lookup=True):
+def _build_pp_xward(net, ppc, f, t):
     delta = net["_options"]["delta"]
     q_lim_default = net._options["q_lim_default"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -276,16 +302,51 @@ def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
 
 def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
     tab = net[element]
+    elem_idx = tab.index[is_element]
+    gen_rows = np.arange(f, t)
+
+    min_max_q_lims = pd.DataFrame(index=elem_idx, columns=["min_q_mvar", "max_q_mvar"], dtype=float)
+    min_max_q_lims[:] = np.nan
+
+    # add qmin and qmax limit from q_capability_characteristic
+    capability_curve_condition = (
+            "q_capability_characteristic" in net.keys()
+            and net._options["enforce_q_lims"]
+            and element in ["gen", "sgen"]
+    )
+    if capability_curve_condition:
+        curve_q = _calculate_qmin_qmax_from_q_capability_characteristics(net, element)
+        if curve_q is not None and not curve_q.empty:
+            min_max_q_lims.update(curve_q[["min_q_mvar", "max_q_mvar"]])
+
+    # fill NaNs with limits taken from min/max_q_mvar columns (do not overwrite capability-curve values)
     if "min_q_mvar" in tab.columns:
-        if inverted:
-            ppc["gen"][f:t, QMAX] = -tab["min_q_mvar"].values[is_element] + delta
-        else:
-            ppc["gen"][f:t, QMIN] = tab["min_q_mvar"].values[is_element] - delta
+        min_defaults = tab["min_q_mvar"].reindex(min_max_q_lims.index)
+        min_max_q_lims["min_q_mvar"] = min_max_q_lims["min_q_mvar"].fillna(min_defaults)
     if "max_q_mvar" in tab.columns:
-        if inverted:
-            ppc["gen"][f:t, QMIN] = -tab["max_q_mvar"].values[is_element] - delta
-        else:
-            ppc["gen"][f:t, QMAX] = tab["max_q_mvar"].values[is_element] + delta
+        max_defaults = tab["max_q_mvar"].reindex(min_max_q_lims.index)
+        min_max_q_lims["max_q_mvar"] = min_max_q_lims["max_q_mvar"].fillna(max_defaults)
+
+    qmin = min_max_q_lims["min_q_mvar"].to_numpy()
+    qmax = min_max_q_lims["max_q_mvar"].to_numpy()
+
+    # keep only non-NaN limits
+    valid_min = ~np.isnan(qmin)
+    valid_max = ~np.isnan(qmax)
+
+    # populate limits in ppc structure
+    if inverted:
+        qmin_dest_col, qmin_sign, qmin_delta = QMAX, -1.0, +delta
+        qmax_dest_col, qmax_sign, qmax_delta = QMIN, -1.0, -delta
+    else:
+        qmin_dest_col, qmin_sign, qmin_delta = QMIN, +1.0, -delta
+        qmax_dest_col, qmax_sign, qmax_delta = QMAX, +1.0, +delta
+
+    if valid_min.any():
+        ppc["gen"][gen_rows[valid_min], qmin_dest_col] = (qmin_sign * qmin[valid_min] + qmin_delta)
+
+    if valid_max.any():
+        ppc["gen"][gen_rows[valid_max], qmax_dest_col] = (qmax_sign * qmax[valid_max] + qmax_delta)
 
 
 def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
@@ -302,7 +363,7 @@ def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
             ppc["gen"][f:t, PMAX] = tab["max_p_mw"].values[is_element] + delta
 
 
-def _check_voltage_setpoints_at_same_bus(ppc):
+def _check_voltage_setpoints_at_same_bus(ppc: dict):
     """
     Checks if voltage-controlling elements (generators, SSC, VSC) at the same bus have different setpoints.
 
@@ -311,21 +372,17 @@ def _check_voltage_setpoints_at_same_bus(ppc):
     It raises a UserWarning if such discrepancies are found.
 
     Parameters:
-    -----------
-    ppc : dict
-        The grid data structure, that contains grid data arrays
+        ppc: The grid data structure, that contains grid data arrays
 
     Raises:
-    -------
-    UserWarning:
-        If there are buses with voltage controlling elements that have different voltage setpoints.
+        UserWarning:
+            If there are buses with voltage controlling elements that have different voltage setpoints.
 
     Notes:
-    ------
-    The function specifically checks for voltage setpoints discrepancies between:
-    1. Generators
-    2. Controllable SSCs
-    3. VSCs with voltage control mode on the AC side and controllable state
+        The function specifically checks for voltage setpoints discrepancies between:
+        1. Generators
+        2. Controllable SSCs
+        3. VSCs with voltage control mode on the AC side and controllable state
     """
     # generator buses:
     gen_bus = ppc['gen'][:, GEN_BUS].astype(np.int64)
@@ -360,7 +417,7 @@ def _check_voltage_angles_at_same_bus(net, ppc):
 
 def _check_for_reference_bus(ppc):
     # todo implement VSC also as slack
-    ref, _, _ = bustypes(ppc["bus"], ppc["gen"])
+    ref, _, _ = bustypes(ppc["bus"], ppc["gen"], ppc['vsc'])
     # throw an error since no reference bus is defined
     if len(ref) == 0:
         raise UserWarning("No reference bus is available. Either add an ext_grid or a gen with slack=True")
@@ -383,7 +440,7 @@ def _different_values_at_one_bus(buses, values):
     # buses with one or more generators and their index
     unique_bus, index_first_bus = np.unique(buses, return_index=True)
 
-    # voltage setpoint lookup with the voltage of the first occurence of that bus
+    # voltage setpoint lookup with the voltage of the first occurrence of that bus
     first_values = -np.ones(buses.max() + 1)
     first_values[unique_bus] = values[index_first_bus]
 
@@ -401,7 +458,8 @@ def _gen_xward_mask(net, ppc):
 
 
 def _get_xward_pq_buses(net, ppc):
-    # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to the auxiliary PV bus
+    # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to
+    # the auxiliary PV bus
     ft = net["_pd2ppc_lookups"].get('branch', dict()).get("xward", [])
     if len(ft) > 0:
         f, t = ft
@@ -415,14 +473,14 @@ def _get_xward_pq_buses(net, ppc):
 
 
 def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
-    """Unitise the slack contribution factors in each island to sum to 1."""
+    """Unitise the slack contribution factors on each island to sum to 1."""
     subnets = _subnetworks(ppc)
     gen_buses = ppc['gen'][gen_mask, GEN_BUS].astype(np.int64)
 
     # it is possible that xward and gen are at the same bus (but not reasonable)
     if len(np.intersect1d(gen_buses, xward_pq_buses)):
-        raise NotImplementedError("Found some of the xward PQ buses with slack weight > 0 that coincide with PV or SL buses."
-                                  "This configuration is not supported.")
+        raise NotImplementedError("Found some of the xward PQ buses with slack weight > 0 that coincide with PV or "
+                                  "SL buses. This configuration is not supported.")
 
     gen_buses = np.r_[gen_buses, xward_pq_buses]
     slack_weights_gen = np.r_[ppc['gen'][gen_mask, SL_FAC], ppc['gen'][xward_mask, SL_FAC]].astype(np.float64)
@@ -448,10 +506,58 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
         else:
             # ppc['gen'][subnet_gen_mask, SL_FAC] /= sum_slack_weights
             slack_weights_gen /= sum_slack_weights
-            buses, slack_weights_bus, _ = _sum_by_group(gen_buses[subnet_gen_mask], slack_weights_gen[subnet_gen_mask], slack_weights_gen[subnet_gen_mask])
+            buses, slack_weights_bus, _ = _sum_by_group(gen_buses[subnet_gen_mask], slack_weights_gen[subnet_gen_mask],
+                                                        slack_weights_gen[subnet_gen_mask])
             ppc['bus'][buses, SL_FAC_BUS] = slack_weights_bus
 
     # raise NotImplementedError if there are several separate zones for distributed slack:
     if not np.isclose(sum(ppc['bus'][:, SL_FAC_BUS]), 1):
-        raise NotImplementedError("Distributed slack calculation is not implemented for several separate zones at once, "
+        raise NotImplementedError("Distributed slack calculation is not implemented for several separate zones at once,"
                                   "please calculate the zones separately.")
+
+
+def _calculate_qmin_qmax_from_q_capability_characteristics(net, element):
+    """
+    For gen/sgen elements with reactive_capability_curve == True, compute min_q_mvar / max_q_mvar from the
+    q_capability_characteristic table at the current p_mw.
+    """
+    if element not in ["gen", "sgen"]:
+        logger.warning(f"The given element type is not valid for q_min and q_max reactive power capability calculation "
+                       f"of the {element}. Please give gen or sgen as an argument of the function")
+        return None
+
+    if net[element].empty:
+        logger.warning(f"No. of {element} elements is zero.")
+        return None
+
+    # Filter rows with True 'reactive_capability_curve'
+    element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
+
+    if element_data.empty:
+        logger.warning(f"No {element} elements with reactive_capability_curve == True found.")
+        return None
+
+    # Extract the relevant data
+    q_table_ids = element_data['id_q_capability_characteristic']
+    p_mw_values = element_data['p_mw']
+
+    # Retrieve the q_max and q_min characteristic functions as vectorized callables
+    q_max_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_max_characteristic']
+    q_min_funcs = net.q_capability_characteristic.loc[q_table_ids, 'q_min_characteristic']
+
+    # Calculate max & min limits from capability curves
+    calc_q_max = np.vectorize(lambda func, p: func(p))(q_max_funcs, p_mw_values)
+    calc_q_min = np.vectorize(lambda func, p: func(p))(q_min_funcs, p_mw_values)
+
+    curve_q = pd.DataFrame(
+        index=element_data.index,
+        data={"min_q_mvar": calc_q_min, "max_q_mvar": calc_q_max},
+    )
+
+    if curve_q.isna().any().any():
+        logger.warning(
+            f"Some q capability values for {element} evaluated to NaN. "
+            f"For those elements, default Q limits will still be used."
+        )
+
+    return curve_q

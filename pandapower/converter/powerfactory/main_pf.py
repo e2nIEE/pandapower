@@ -5,17 +5,14 @@ import tkinter as tk
 from tkinter.filedialog import askdirectory
 import pandas
 
-import pandapower as pp
-from pandapower import diagnostic
-
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
 
+from pandapower.file_io import to_json, to_excel
+from pandapower.toolbox.grid_modification import create_replacement_switch_for_branch, replace_xward_by_ward
+from pandapower.diagnostic import diagnostic
 from pandapower.converter.powerfactory.echo_off import echo_off, echo_on
 from pandapower.converter.powerfactory.pp_import_functions import from_pf
 from pandapower.converter.powerfactory import pf_export_functions as pef
@@ -61,7 +58,7 @@ def get_filename(entry_fname, save_as="JSON"):
     logger.debug('filename extension: %s' % extension)
     if filename == '':
         raise RuntimeError('No filename given!')
-    elif not extension == goal_extension:
+    elif extension != goal_extension:
         logger.debug('setting correct file extension')
         entry_fname.insert(len(filename), goal_extension)
         filename = entry_fname.get()
@@ -70,9 +67,9 @@ def get_filename(entry_fname, save_as="JSON"):
 
 def save_net(net, filepath, save_as):
     if save_as == "JSON":
-        pp.to_json(net, filepath)
+        to_json(net, filepath)
     elif save_as == "Excel":
-        pp.to_excel(net, filepath)
+        to_excel(net, filepath)
     else:
         raise ValueError('tried to save grid as %s to %s and failed :(' % (save_as, filepath))
 
@@ -83,7 +80,8 @@ def exit_gracefully(app, input_panel, msg, is_err):
     else:
         logger.info('Execution finished: %s' % msg)
     echo_on(app)
-    input_panel.destroy()
+    if input_panel is not None:
+        input_panel.destroy()
     # del(app)
     # quit()
     sys.exit(1 if is_err else 0)
@@ -173,7 +171,7 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
             to_replace = (np.abs(net.line.x_ohm_per_km * net.line.length_km) <= min_ohm) & net.line.in_service
 
             for i in net.line.loc[to_replace].index.values:
-                pp.create_replacement_switch_for_branch(net, "line", i)
+                create_replacement_switch_for_branch(net, "line", i)
                 net.line.at[i, "in_service"] = False
             if np.any(to_replace):
                 logger.info(f"replaced {sum(to_replace)} lines with switches")
@@ -182,7 +180,7 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
             #                   net.xward.in_service].index.values
             xward = net.xward[(np.abs(net.xward.x_ohm) <= min_ohm) & net.xward.in_service].index.values
             if len(xward) > 0:
-                pp.replace_xward_by_ward(net, index=xward, drop=False)
+                replace_xward_by_ward(net, index=xward, drop=False)
                 logger.info(f"replaced {len(xward)} xwards with wards")
 
             zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values) / net.impedance.sn_mva
@@ -193,7 +191,7 @@ def calc(app, input_panel, entry_path_dst, entry_fname, pv_as_slack, export_cont
             impedance = ((np.abs(net.impedance.xft_pu) <= min_ohm / zb_f_ohm) |
                          (np.abs(net.impedance.xtf_pu) <= min_ohm / zb_t_ohm)) & net.impedance.in_service
             for i in net.impedance.loc[impedance].index.values:
-                pp.create_replacement_switch_for_branch(net, "impedance", i)
+                create_replacement_switch_for_branch(net, "impedance", i)
                 net.impedance.at[i, "in_service"] = False
             if any(impedance):
                 logger.info(f"replaced {sum(impedance)} impedance elements with switches")

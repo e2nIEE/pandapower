@@ -1,29 +1,32 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import os
+
 import numpy as np
 import pytest
 
-import pandapower as pp
-import pandapower.shortcircuit as sc
+from pandapower import pp_dir
+from pandapower.create import create_bus, create_switch
+from pandapower.file_io import from_json
+from pandapower.shortcircuit.calc_sc import calc_sc
 
 
 @pytest.fixture
 def meshed_grid():
-    net = pp.from_json(os.path.join(pp.pp_dir, "test", "shortcircuit", "sc_test_meshed_grid.json"))
-    bid = pp.create_bus(net, vn_kv=10.)
-    pp.create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
+    net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sc_test_meshed_grid.json"))
+    bid = create_bus(net, vn_kv=10.)
+    create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
     net.ext_grid.loc[net.ext_grid.index[0], "bus"] = bid
-    pp.create_bus(net, vn_kv=0.4, in_service=False)
+    create_bus(net, vn_kv=0.4, in_service=False)
     return net
+
 
 def test_max_10_meshed_grid(meshed_grid):
     net = meshed_grid
-    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent= 10., kappa_method="B")
+    calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=10., kappa_method="B")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10],
                        [5.773503, 14.82619, 4.606440, 4.068637, 13.61509,
                         2.812111, 1.212288, 1.525655, 1.781087, 1.568337], atol=1e-5)
@@ -39,7 +42,7 @@ def test_max_10_meshed_grid(meshed_grid):
 
 def test_max_6_meshed_grid(meshed_grid):
     net = meshed_grid
-    sc.calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent = 6., kappa_method="B")
+    calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., kappa_method="B")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10],
                        [5.773503, 14.75419, 4.437882, 4.068637, 13.53425,
                         2.701411, 1.159945, 1.460757, 1.705172, 1.501673], atol=1e-5)
@@ -55,34 +58,35 @@ def test_max_6_meshed_grid(meshed_grid):
 
 def test_min_10_meshed_grid(meshed_grid):
     net = meshed_grid
-    sc.calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent= 10., kappa_method="B")
+    calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent=10., kappa_method="B")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10],
-                       [2.309401, 11.3267, 2.879343, 1.884323, 10.40083,
-                        1.693922, 0.7107017, 0.9000445, 1.055881, 0.928488], atol=1e-5)
+                       [2.30940108, 10.80899841, 2.73086839, 1.8843233, 10.01555843,
+                        1.60750709, 0.67371107, 0.85335292, 1.00063643, 0.88033414], atol=1e-5)
 
     assert np.allclose(net.res_bus_sc.ip_ka.values[:10],
-                       [5.702418, 26.01655, 4.166047, 3.124163, 20.04053,
-                        2.813883, 1.179085, 1.493293, 1.523338, 1.540432], atol=1e-5)
+                       [5.70241817, 24.83069026, 3.95097937, 3.12416275, 19.28070305,
+                        2.67020762, 1.11771254, 1.4158181, 1.44363159, 1.46053461], atol=1e-5)
 
     assert np.allclose(net.res_bus_sc.ith_ka.values[:10],
-                       [2.348476, 11.44622, 2.883161, 1.889675, 10.45195,
-                        1.698768, 0.712725, 0.9026074, 1.057233, 0.9311316], atol=1e-5)
+                       [2.34847641, 10.9231429, 2.73448698, 1.88967457, 10.06461948,
+                        1.61210535, 0.67562908, 0.85578283, 1.00191702, 0.88284056], atol=1e-5)
 
 
 def test_min_6_meshed_grid(meshed_grid):
     net = meshed_grid
-    sc.calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent = 6., kappa_method="B")
+    calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent=6., kappa_method="B")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10],
-                       [2.309401, 11.75072, 2.895465, 1.884323, 10.77961,
-                        1.700202, 0.7116519, 0.9016006, 1.0576, 0.9301236], atol=1e-5)
+                       [2.309401, 11.409498, 2.882583, 1.884323, 10.571978,
+                        1.696813, 0.711139, 0.900761, 1.056227, 0.929242], atol=1e-5)
 
     assert np.allclose(net.res_bus_sc.ip_ka.values[:10],
-                       [5.702418, 27.00861, 4.18812, 3.124163, 20.72881,
-                        2.824028, 1.180654, 1.495858, 1.525799, 1.543131], atol=1e-5)
+                       [5.702418, 26.210173, 4.170478, 3.124163, 20.351853,
+                        2.818552, 1.179808, 1.494475, 1.523833, 1.541675], atol=1e-5)
 
     assert np.allclose(net.res_bus_sc.ith_ka.values[:10],
-                       [2.348476, 11.87518, 2.899291, 1.889675, 10.8322,
-                        1.705064, 0.7136779, 0.9041679, 1.058954, 0.9327717], atol=1e-5)
+                       [2.348476, 11.529984, 2.886403, 1.889675, 10.623765,
+                        1.701667, 0.713164, 0.903326, 1.057579, 0.931887], atol=1e-5)
+
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

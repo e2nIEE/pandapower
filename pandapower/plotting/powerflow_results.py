@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import sys
@@ -17,7 +17,8 @@ except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 from pandapower.auxiliary import soft_dependency_error, warn_and_fix_parameter_renaming
-import pandapower.topology as top
+from pandapower.topology.create_graph import create_nxgraph
+from pandapower.topology.graph_searches import calc_distance_to_bus
 
 
 def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance from Slack [km]",
@@ -81,7 +82,7 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
         net.ext_grid.loc[net.ext_grid.in_service, "bus"].values,
         net.gen.loc[net.gen.slack & net.gen.in_service, "bus"].values)
     for eg in sl_buses:
-        d = top.calc_distance_to_bus(net, eg)
+        d = calc_distance_to_bus(net, eg)
         for lix, line in net.line[net.line.in_service & net.line.index.isin(lines)].iterrows():
             if line.from_bus not in d.index:
                 continue
@@ -101,11 +102,11 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
                             color=line_color, **kwargs)
                 if bus_colors is not None:
                     if isinstance(bus_colors, str):
-                        bus_colors = {b: bus_colors for b in net.bus.index}
+                        bus_colors = dict.fromkeys(net.bus.index, bus_colors)
                     for bus, x, y in zip((from_bus, to_bus), x, y):
                         if bus in bus_colors:
                             ax.plot(x, y, 'o', color=bus_colors[bus], ms=bus_size)
-                kwargs = {k: v for k, v in kwargs.items() if not k == "label"}
+                kwargs = {k: v for k, v in kwargs.items() if k != "label"}
 
         # trafo geodata
         if plot_transformers:
@@ -125,7 +126,7 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
                         tr_coords = ([x0 + d.loc[bi], x0 + d.loc[bj]],
                                      [net.res_bus.at[bi, 'vm_pu'], net.res_bus.at[bj, 'vm_pu']])
                         ax.plot(*tr_coords, color=trafo_color,
-                                **{k: v for k, v in kwargs.items() if not k == "color"})
+                                **{k: v for k, v in kwargs.items() if k != "color"})
 
         if xlabel:
             ax.set_xlabel(xlabel, fontweight="bold", color=(.4, .4, .4))
@@ -200,7 +201,7 @@ def voltage_profile_to_bus_geodata(net, voltages=None, root_bus=None):
             raise ValueError("no results in this pandapower network")
         voltages = net.res_bus.vm_pu
 
-    mg = top.create_nxgraph(net, respect_switches=True)
+    mg = create_nxgraph(net, respect_switches=True)
     sl_buses = np.r_[
         net.ext_grid.loc[net.ext_grid.in_service, "bus"].values,
         net.gen.loc[net.gen.slack & net.gen.in_service, "bus"].values]
@@ -216,11 +217,11 @@ def voltage_profile_to_bus_geodata(net, voltages=None, root_bus=None):
 
 
 if __name__ == "__main__":
-    import pandapower as pp
-    import pandapower.networks as nw
+    from pandapower.run import runpp
+    from pandapower.networks.mv_oberrhein import mv_oberrhein
 
-    net = nw.mv_oberrhein()
-    pp.runpp(net)
+    net = mv_oberrhein()
+    runpp(net)
 
     fig, axs = plt.subplots(ncols=2, figsize=(8, 5), gridspec_kw={"width_ratios": [4, 1]})
     plot_voltage_profile(net, ax=axs[0])

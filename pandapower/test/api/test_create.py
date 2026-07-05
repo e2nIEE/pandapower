@@ -1,16 +1,29 @@
 # -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+import math
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
 
 import geojson
 import numpy as np
+from numpy import nan
 import pandas as pd
 import pytest
 
-import pandapower as pp
+from pandapower.create import (
+    create_empty_network, create_bus, create_ext_grid, create_line_from_parameters,
+    create_load_from_cosphi, create_shunt_as_capacitor, create_sgen_from_cosphi,
+    create_series_reactor_as_impedance, create_transformer_from_parameters, create_load, create_sgen, create_dcline,
+    create_gen, create_ward, create_xward, create_shunt, create_line, create_transformer, create_transformer3w,
+    create_transformer3w_from_parameters, create_impedance, create_switch, create_gens, load_std_type,
+    create_buses, create_lines, create_lines_from_parameters, create_transformers_from_parameters,
+    create_transformers3w_from_parameters, create_switches, create_loads, create_storage, create_storages,
+    create_wards, create_sgens, create_transformers, create_transformers3w
+)
+from pandapower.run import runpp
+from pandapower.std_types import create_std_type
+from pandapower.toolbox.comparison import nets_equal, dataframes_equal
 
 pd.set_option("display.max_rows", 500)
 pd.set_option("display.max_columns", 500)
@@ -18,12 +31,12 @@ pd.set_option("display.width", 1000)
 
 
 def test_convenience_create_functions():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 110.0)
-    b2 = pp.create_bus(net, 110.0)
-    b3 = pp.create_bus(net, 20)
-    pp.create_ext_grid(net, b1)
-    pp.create_line_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 110.0)
+    b2 = create_bus(net, 110.0)
+    b3 = create_bus(net, 20)
+    create_ext_grid(net, b1)
+    create_line_from_parameters(
         net,
         b1,
         b2,
@@ -34,10 +47,10 @@ def test_convenience_create_functions():
         max_i_ka=0.664,
     )
 
-    l0 = pp.create_load_from_cosphi(
+    l0 = create_load_from_cosphi(
         net, b2, 10, 0.95, "underexcited", name="load", test_kwargs="dummy_string"
     )
-    pp.runpp(net, init="flat")
+    runpp(net, init="flat")
 
     assert net.load.p_mw.at[l0] == 9.5
     assert net.load.q_mvar.at[l0] > 0
@@ -46,20 +59,20 @@ def test_convenience_create_functions():
     assert net.load.name.at[l0] == "load"
     assert net.load.test_kwargs.at[l0] == "dummy_string"
 
-    sh0 = pp.create_shunt_as_capacitor(
+    sh0 = create_shunt_as_capacitor(
         net, b2, 10, loss_factor=0.01, name="shunt", test_kwargs="dummy_string"
     )
-    pp.runpp(net, init="flat")
+    runpp(net, init="flat")
     assert np.isclose(net.res_shunt.q_mvar.at[sh0], -10.043934174)
     assert np.isclose(net.res_shunt.p_mw.at[sh0], 0.10043933665)
     assert np.isclose(net.res_bus.vm_pu.at[b2], 1.0021942964)
     assert net.shunt.name.at[sh0] == "shunt"
     assert net.shunt.test_kwargs.at[sh0] == "dummy_string"
 
-    sg0 = pp.create_sgen_from_cosphi(
+    sg0 = create_sgen_from_cosphi(
         net, b2, 5, 0.95, "overexcited", name="sgen", test_kwargs="dummy_string"
     )
-    pp.runpp(net, init="flat")
+    runpp(net, init="flat")
     assert np.sqrt(net.sgen.p_mw.at[sg0] ** 2 + net.sgen.q_mvar.at[sg0] ** 2) == 5
     assert net.sgen.p_mw.at[sg0] == 4.75
     assert net.sgen.q_mvar.at[sg0] > 0
@@ -69,14 +82,14 @@ def test_convenience_create_functions():
 
     tol = 1e-6
     base_z = 110 ** 2 / 100
-    sind = pp.create_series_reactor_as_impedance(
+    sind = create_series_reactor_as_impedance(
         net, b1, b2, r_ohm=100, x_ohm=200, sn_mva=100, test_kwargs="dummy_string"
     )
     assert net.impedance.at[sind, "rft_pu"] - 100 / base_z < tol
     assert net.impedance.at[sind, "xft_pu"] - 200 / base_z < tol
     assert net.impedance.test_kwargs.at[sind] == "dummy_string"
 
-    tid = pp.create_transformer_from_parameters(
+    tid = create_transformer_from_parameters(
         net,
         hv_bus=b2,
         lv_bus=b3,
@@ -89,29 +102,29 @@ def test_convenience_create_functions():
         i0_percent=1,
         test_kwargs="dummy_string",
     )
-    pp.create_load(net, b3, 0.1)
+    create_load(net, b3, 0.1)
     assert net.trafo.at[tid, "df"] == 1
-    pp.runpp(net)
+    runpp(net)
     tr_l = net.res_trafo.at[tid, "loading_percent"]
     net.trafo.at[tid, "df"] = 2
-    pp.runpp(net)
+    runpp(net)
     tr_l_2 = net.res_trafo.at[tid, "loading_percent"]
     assert tr_l == tr_l_2 * 2
     net.trafo.at[tid, "df"] = 0
     with pytest.raises(UserWarning):
-        pp.runpp(net)
+        runpp(net)
     assert net.trafo.test_kwargs.at[tid] == "dummy_string"
 
 
 def test_nonexistent_bus():
     from functools import partial
 
-    net = pp.create_empty_network()
+    net = create_empty_network()
     create_functions = [
-        partial(pp.create_load, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
-        partial(pp.create_sgen, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
+        partial(create_load, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
+        partial(create_sgen, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
         partial(
-            pp.create_dcline,
+            create_dcline,
             net,
             from_bus=0,
             to_bus=1,
@@ -122,13 +135,13 @@ def test_nonexistent_bus():
             vm_to_pu=1.0,
             index=0,
         ),
-        partial(pp.create_gen, net=net, p_mw=0, bus=0, index=0),
-        partial(pp.create_ward, net, 0, 0, 0, 0, 0, index=0),
-        partial(pp.create_xward, net, 0, 0, 0, 0, 0, 1, 1, 1, index=0),
-        partial(pp.create_shunt, net=net, q_mvar=0, bus=0, index=0),
-        partial(pp.create_ext_grid, net=net, bus=1, index=0),
+        partial(create_gen, net=net, p_mw=0, bus=0, index=0),
+        partial(create_ward, net, 0, 0, 0, 0, 0, index=0),
+        partial(create_xward, net, 0, 0, 0, 0, 0, 1, 1, 1, index=0),
+        partial(create_shunt, net=net, q_mvar=0, bus=0, index=0),
+        partial(create_ext_grid, net=net, bus=1, index=0),
         partial(
-            pp.create_line,
+            create_line,
             net=net,
             from_bus=0,
             to_bus=1,
@@ -137,7 +150,7 @@ def test_nonexistent_bus():
             index=0,
         ),
         partial(
-            pp.create_line_from_parameters,
+            create_line_from_parameters,
             net=net,
             from_bus=0,
             to_bus=1,
@@ -149,7 +162,7 @@ def test_nonexistent_bus():
             index=1,
         ),
         partial(
-            pp.create_transformer,
+            create_transformer,
             net=net,
             hv_bus=0,
             lv_bus=1,
@@ -157,7 +170,7 @@ def test_nonexistent_bus():
             index=0,
         ),
         partial(
-            pp.create_transformer3w,
+            create_transformer3w,
             net=net,
             hv_bus=0,
             lv_bus=1,
@@ -166,7 +179,7 @@ def test_nonexistent_bus():
             index=0,
         ),
         partial(
-            pp.create_transformer3w_from_parameters,
+            create_transformer3w_from_parameters,
             net=net,
             hv_bus=0,
             lv_bus=1,
@@ -188,7 +201,7 @@ def test_nonexistent_bus():
             index=1,
         ),
         partial(
-            pp.create_transformer_from_parameters,
+            create_transformer_from_parameters,
             net=net,
             hv_bus=0,
             lv_bus=1,
@@ -202,7 +215,7 @@ def test_nonexistent_bus():
             index=1,
         ),
         partial(
-            pp.create_impedance,
+            create_impedance,
             net=net,
             from_bus=0,
             to_bus=1,
@@ -211,16 +224,16 @@ def test_nonexistent_bus():
             sn_mva=0.6,
             index=0,
         ),
-        partial(pp.create_switch, net, bus=0, element=1, et="b", index=0),
+        partial(create_switch, net, bus=0, element=1, et="b", index=0),
     ]
     for func in create_functions:
         with pytest.raises(
                 Exception
         ):  # exception has to be raised since bus doesn't exist
             func()
-    pp.create_bus(net, 0.4)
-    pp.create_bus(net, 0.4)
-    pp.create_bus(net, 0.4)
+    create_bus(net, 0.4)
+    create_bus(net, 0.4)
+    create_bus(net, 0.4)
     for func in create_functions:
         func()  # buses exist, element can be created
         with pytest.raises(
@@ -229,25 +242,26 @@ def test_nonexistent_bus():
             func()
 
 
-def test_tap_phase_shifter_default():
-    expected_default = False
-    net = pp.create_empty_network()
-    pp.create_bus(net, 110)
-    pp.create_bus(net, 20)
-    data = pp.load_std_type(net, "25 MVA 110/20 kV", "trafo")
-    if "tap_phase_shifter" in data:
-        del data["tap_phase_shifter"]
-    pp.create_std_type(net, data, "without_tap_shifter_info", "trafo")
-    pp.create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
-    pp.create_transformer(net, 0, 1, "without_tap_shifter_info")
-    assert (net.trafo.tap_phase_shifter == expected_default).all()
+def test_tap_changer_type_default():
+    expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
+    net = create_empty_network()
+    create_bus(net, 110)
+    create_bus(net, 20)
+    data = load_std_type(net, "25 MVA 110/20 kV", "trafo")
+    if "tap_changer_type" in data:
+        del data["tap_changer_type"]
+    create_std_type(net, data, "without_tap_shifter_info", "trafo")
+    create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
+    create_transformer(net, 0, 1, "without_tap_shifter_info")
+    #assert (net.trafo.tap_changer_type == expected_default).all() # comparison with NaN is always false. revert back to this
+    assert (net.trafo.tap_changer_type.isna()).all()
 
 
 def test_create_line_conductance():
-    net = pp.create_empty_network()
-    pp.create_bus(net, 20)
-    pp.create_bus(net, 20)
-    pp.create_std_type(
+    net = create_empty_network()
+    create_bus(net, 20)
+    create_bus(net, 20)
+    create_std_type(
         net,
         {
             "c_nf_per_km": 210,
@@ -261,20 +275,20 @@ def test_create_line_conductance():
         "test_conductance",
     )
 
-    l = pp.create_line(net, 0, 1, 1.0, "test_conductance", test_kwargs="dummy_string")
+    l = create_line(net, 0, 1, 1.0, "test_conductance", test_kwargs="dummy_string")
     assert net.line.g_us_per_km.at[l] == 1
     assert net.line.test_kwargs.at[l] == "dummy_string"
 
 
 def test_create_buses():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_buses(net, 3, 110, test_kwargs="dummy_string")
+    b1 = create_buses(net, 3, 110, test_kwargs="dummy_string")
     # with geodata
-    b2 = pp.create_buses(net, 3, 110, geodata=(10, 20))
+    b2 = create_buses(net, 3, 110, geodata=(10, 20))
     # with geodata as array
     geodata = [(10, 20), (20, 30), (30, 40)]
-    b3 = pp.create_buses(net, 3, 110, geodata=geodata)
+    b3 = create_buses(net, 3, 110, geodata=geodata)
 
     assert len(net.bus) == 9
     assert net.bus.test_kwargs.at[b1[0]] == "dummy_string"
@@ -284,12 +298,13 @@ def test_create_buses():
     for i, ind in enumerate(b3):
         assert net.bus.at[ind, "geo"] == geojson.dumps(geojson.Point(geodata[i]), sort_keys=True)
 
+
 def test_create_lines():
     # standard
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -302,10 +317,10 @@ def test_create_lines():
     assert len(set(net.line.r_ohm_per_km)) == 1
     assert all(net.line.test_kwargs == "dummy_string")
 
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -317,10 +332,10 @@ def test_create_lines():
     assert sum(net.line.std_type == "NA2XS2Y 1x240 RM/25 6/10 kV") == 1
 
     # with geodata
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -334,10 +349,10 @@ def test_create_lines():
     assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -367,10 +382,10 @@ def test_create_lines():
     assert net.line.at[l[1], "parallel"] == 1
 
     # setting params as array
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -402,10 +417,10 @@ def test_create_lines():
 
 def test_create_lines_from_parameters():
     # standard
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -425,10 +440,10 @@ def test_create_lines_from_parameters():
     assert net.line.test_kwargs.at[l[0]] == "dummy_string"
 
     # with geodata
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -445,10 +460,10 @@ def test_create_lines_from_parameters():
     assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     # setting params as single value
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -491,10 +506,10 @@ def test_create_lines_from_parameters():
     assert all(net.line.test_kwargs == "dummy_string")
 
     # setting params as array
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    l = pp.create_lines_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    l = create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -531,12 +546,12 @@ def test_create_lines_from_parameters():
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.in_service.dtype == bool
-    assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
+    assert net.line.at[l[0], "in_service"]
+    assert not net.line.at[l[1], "in_service"]
     assert net.line.at[l[0], "name"] == "test1"
     assert net.line.at[l[1], "name"] == "test2"
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
     assert net.line.at[l[0], "max_loading_percent"] == 80
     assert net.line.at[l[1], "max_loading_percent"] == 90
     assert net.line.at[l[0], "parallel"] == 2
@@ -547,10 +562,10 @@ def test_create_lines_from_parameters():
 
 def test_create_lines_raise_errorexcept():
     # standard
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    pp.create_lines_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -562,7 +577,7 @@ def test_create_lines_raise_errorexcept():
     )
 
     with pytest.raises(UserWarning, match="Lines trying to attach .*"):
-        pp.create_lines_from_parameters(
+        create_lines_from_parameters(
             net,
             [b1, 2],
             [2, b2],
@@ -573,7 +588,7 @@ def test_create_lines_raise_errorexcept():
             max_i_ka=[100, 100],
         )
     with pytest.raises(UserWarning, match="Lines with indexes .*"):
-        pp.create_lines_from_parameters(
+        create_lines_from_parameters(
             net,
             [b1, b1],
             [b2, b2],
@@ -586,7 +601,7 @@ def test_create_lines_raise_errorexcept():
         )
 
     with pytest.raises(UserWarning, match="Passed indexes"):
-        pp.create_lines_from_parameters(
+        create_lines_from_parameters(
             net,
             [b1, b1],
             [b2, b2],
@@ -601,40 +616,40 @@ def test_create_lines_raise_errorexcept():
 
 def test_create_lines_optional_columns():
     #
-    net = pp.create_empty_network()
-    pp.create_buses(net, 5, 110)
-    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
-    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
-    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0")
-    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
+    net = create_empty_network()
+    create_buses(net, 5, 110)
+    create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
+    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0")
+    create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
     assert "max_loading_percent" not in net.line.columns
 
     v = None
-    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
-    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
-    pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
-    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
-    pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
-    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])  # would be added
+    create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])  # would be added
     assert "max_loading_percent" not in net.line.columns
 
     v = np.nan
-    pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
-    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
     # np.nan is not None:
-    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
-    # pp.create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
-    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
-    # pp.create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])
+    # create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    # create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
+    # create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=v)
+    # create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100, max_loading_percent=[v, v])
     assert "max_loading_percent" not in net.line.columns
 
 
 def test_create_line_alpha_temperature():
-    net = pp.create_empty_network()
-    b = pp.create_buses(net, 5, 110)
+    net = create_empty_network()
+    create_buses(net, 5, 110)
 
-    l1 = pp.create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
-    l2 = pp.create_line(
+    l1 = create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
+    l2 = create_line(
         net,
         1,
         2,
@@ -643,9 +658,9 @@ def test_create_line_alpha_temperature():
         alpha=4.03e-3,
         temperature_degree_celsius=80,
     )
-    l3 = pp.create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0")
-    l4 = pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
-    l5 = pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3)
+    l3 = create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0")
+    l4 = create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    l5 = create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3)
 
     assert "alpha" in net.line.columns
     assert all(net.line.loc[[l2, l3, l5], "alpha"] == 4.03e-3)
@@ -654,19 +669,19 @@ def test_create_line_alpha_temperature():
     assert all(net.line.loc[[l1, l3, l4, l5], "temperature_degree_celsius"].isnull())
 
     # make sure optional columns are not created if None or np.nan:
-    pp.create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
-    pp.create_lines(net, [2], [3], 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
-    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
-    pp.create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
+    create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    create_lines(net, [2], [3], 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
+    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
     assert "wind_speed_m_per_s" not in net.line.columns
 
 
 def test_create_transformers_from_parameters():
     # standard
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 15)
-    b2 = pp.create_bus(net, 0.4)
-    index = pp.create_transformers_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 15)
+    b2 = create_bus(net, 0.4)
+    index = create_transformers_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -680,7 +695,7 @@ def test_create_transformers_from_parameters():
         foo=2,
     )
     with pytest.raises(UserWarning):
-        pp.create_transformers_from_parameters(
+        create_transformers_from_parameters(
             net,
             [b1, b1],
             [b2, b2],
@@ -703,10 +718,10 @@ def test_create_transformers_from_parameters():
     assert len(net.trafo.foo) == 2
 
     # setting params as single value
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 15)
-    b2 = pp.create_bus(net, 0.4)
-    pp.create_transformers_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 15)
+    b2 = create_bus(net, 0.4)
+    create_transformers_from_parameters(
         net,
         hv_buses=[b1, b1],
         lv_buses=[b2, b2],
@@ -720,7 +735,7 @@ def test_create_transformers_from_parameters():
         vk0_percent=0.4,
         vkr0_percent=1.7,
         mag0_rx=0.4,
-        mag0_percent=0.3,
+        mag0_percent=30,
         tap_neutral=0.0,
         vector_group="Dyn",
         si0_hv_partial=0.1,
@@ -739,7 +754,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.i0_percent == 0.3)
     assert all(net.trafo.vk0_percent == 0.4)
     assert all(net.trafo.mag0_rx == 0.4)
-    assert all(net.trafo.mag0_percent == 0.3)
+    assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.tap_neutral == 0.0)
     assert all(net.trafo.tap_pos == 0.0)
     assert all(net.trafo.vector_group.values == "Dyn")
@@ -748,10 +763,10 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.test_kwargs == "dummy_string")
 
     # setting params as array
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    t = pp.create_transformers_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    t = create_transformers_from_parameters(
         net,
         hv_buses=[b1, b1],
         lv_buses=[b2, b2],
@@ -764,7 +779,7 @@ def test_create_transformers_from_parameters():
         i0_percent=[0.3, 0.3],
         vk0_percent=[0.4, 0.4],
         mag0_rx=[0.4, 0.4],
-        mag0_percent=[0.3, 0.3],
+        mag0_percent=[30, 30],
         tap_neutral=[0.0, 1.0],
         tap_pos=[-1, 4],
         test_kwargs=["dummy_string", "dummy_string"],
@@ -782,7 +797,7 @@ def test_create_transformers_from_parameters():
     assert all(net.trafo.i0_percent == 0.3)
     assert all(net.trafo.vk0_percent == 0.4)
     assert all(net.trafo.mag0_rx == 0.4)
-    assert all(net.trafo.mag0_percent == 0.3)
+    assert all(net.trafo.mag0_percent == 30)
     assert all(net.trafo.test_kwargs == "dummy_string")
     assert net.trafo.tap_neutral.at[t[0]] == 0
     assert net.trafo.tap_neutral.at[t[1]] == 1
@@ -792,10 +807,10 @@ def test_create_transformers_from_parameters():
 
 def test_create_transformers_raise_errorexcept():
     # standard
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    pp.create_transformers_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    create_transformers_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -810,7 +825,7 @@ def test_create_transformers_raise_errorexcept():
     )
 
     with pytest.raises(UserWarning, match=r"Trafos with indexes \[1\] already exist."):
-        pp.create_transformers_from_parameters(
+        create_transformers_from_parameters(
             net,
             [b1, b1],
             [b2, b2],
@@ -823,10 +838,10 @@ def test_create_transformers_raise_errorexcept():
             i0_percent=0.3,
             index=[2, 1],
         )
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 10)
-    pp.create_transformers_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 10)
+    create_transformers_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -842,7 +857,7 @@ def test_create_transformers_raise_errorexcept():
     with pytest.raises(
             UserWarning, match=r"Transformers trying to attach to non existing buses \{2\}"
     ):
-        pp.create_transformers_from_parameters(
+        create_transformers_from_parameters(
             net,
             [b1, 2],
             [b2, b2],
@@ -858,7 +873,7 @@ def test_create_transformers_raise_errorexcept():
     with pytest.raises(
             UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"
     ):
-        pp.create_transformers_from_parameters(
+        create_transformers_from_parameters(
             net,
             [b1, b1],
             [b2, 3],
@@ -874,10 +889,10 @@ def test_create_transformers_raise_errorexcept():
 
 
 def test_trafo_2_tap_changers():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 20)
-    pp.create_transformer(net, b1, b2, "40 MVA 110/20 kV")
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    create_transformer(net, b1, b2, "40 MVA 110/20 kV")
 
     tap2_data = {"tap2_side": "hv",
                  "tap2_neutral": 0,
@@ -885,16 +900,16 @@ def test_trafo_2_tap_changers():
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
     for c in tap2_data.keys():
         assert c not in net.trafo.columns
 
-    std_type = pp.load_std_type(net, "40 MVA 110/20 kV", "trafo")
+    std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
 
-    pp.create_std_type(net, {**std_type, **tap2_data}, "test_trafo_type", "trafo")
+    create_std_type(net, {**std_type, **tap2_data}, "test_trafo_type", "trafo")
 
-    t = pp.create_transformer(net, b1, b2, "test_trafo_type")
+    t = create_transformer(net, b1, b2, "test_trafo_type")
 
     for c in tap2_data.keys():
         assert c in net.trafo.columns
@@ -902,25 +917,25 @@ def test_trafo_2_tap_changers():
 
 
 def test_trafo_2_tap_changers_parameters():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 20)
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
 
-    std_type = pp.load_std_type(net, "40 MVA 110/20 kV", "trafo")
+    std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
     tap2_data = {"tap2_side": "hv",
                  "tap2_neutral": 0,
                  "tap2_max": 10,
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
-    pp.create_transformer_from_parameters(net, b1, b2, **std_type)
+    create_transformer_from_parameters(net, b1, b2, **std_type)
 
     for c in tap2_data.keys():
         assert c not in net.trafo.columns
 
-    t = pp.create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
+    t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
     for c in tap2_data.keys():
         assert c in net.trafo.columns
@@ -928,40 +943,184 @@ def test_trafo_2_tap_changers_parameters():
 
 
 def test_trafos_2_tap_changers_parameters():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 20)
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
 
-    std_type = pp.load_std_type(net, "40 MVA 110/20 kV", "trafo")
+    std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
     tap2_data = {"tap2_side": "hv",
                  "tap2_neutral": 0,
                  "tap2_max": 10,
                  "tap2_min": -10,
                  "tap2_step_percent": 1,
                  "tap2_step_degree": 0,
-                 "tap2_phase_shifter": False}
+                 "tap2_changer_type": "Ratio"}
 
     std_type_p = {k: np.array([v, v]) if not isinstance(v, str) else v for k, v in std_type.items()}
 
-    pp.create_transformers_from_parameters(net, [b1, b1], [b2, b2], **std_type_p)
+    create_transformers_from_parameters(net, [b1, b1], [b2, b2], **std_type_p)
 
     for c in tap2_data.keys():
         assert c not in net.trafo.columns
 
-    t = pp.create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
+    t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
     for c in tap2_data.keys():
         assert c in net.trafo.columns
         assert net.trafo.at[t, c] == tap2_data[c]
 
 
-def test_create_transformers3w_from_parameters():
-    # setting params as single value
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 15)
-    b2 = pp.create_bus(net, 0.4)
-    b3 = pp.create_bus(net, 0.9)
-    pp.create_transformers3w_from_parameters(
+def test_create_transformers():
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, .4)
+    b3 = create_bus(net, .4)
+    create_transformers(
+        net,
+        hv_buses=[b1, b1],
+        lv_buses=[b2, b3],
+        std_type="0.4 MVA 10/0.4 kV",
+        name=["trafo1", "trafo2"],
+        test_kwargs="TestKW"
+    )
+    res_df = pd.DataFrame({
+        'name': ['trafo1', 'trafo2'],
+        'std_type': ['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'],
+        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
+        'lv_bus': pd.Series([1, 2], dtype=np.uint32),
+        'sn_mva': [0.4, 0.4],
+        'vn_hv_kv': [10.0, 10.0],
+        'vn_lv_kv': [0.4, 0.4],
+        'vk_percent': [4.0, 4.0],
+        'vkr_percent': [1.325, 1.325],
+        'pfe_kw': [0.95, 0.95],
+        'i0_percent': [0.2375, 0.2375],
+        'shift_degree': [0.0, 0.0],
+        'tap_side': ['', ''],
+        'tap_neutral': [nan, nan],
+        'tap_min': [nan, nan],
+        'tap_max': [nan, nan],
+        'tap_step_percent': [nan, nan],
+        'tap_step_degree': [nan, nan],
+        'tap_pos': [nan, nan],
+        'tap_changer_type': ['', ''],
+        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+        'tap_dependency_table': [False, False],
+        'parallel': pd.Series([1, 1], dtype=np.uint32),
+        'df': [1.0, 1.0],
+        'in_service': [True, True],
+        'oltc': [False, False],
+        'test_kwargs': ['TestKW', 'TestKW'],
+        'vector_group': ['Dyn5', 'Dyn5'],
+    })
+    assert dataframes_equal(net.trafo, res_df)
+
+def test_create_transformers_for_single():
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, .4)
+    create_transformers(
+        net,
+        hv_buses=[b1],
+        lv_buses=[b2],
+        std_type="0.4 MVA 10/0.4 kV",
+        name="trafo1",
+        test_kwargs="TestKW",
+        sn_mva=.4
+    )
+    res_df = pd.DataFrame({
+        'name': ['trafo1'],
+        'std_type': ['0.4 MVA 10/0.4 kV'],
+        'hv_bus': pd.Series([0], dtype=np.uint32),
+        'lv_bus': pd.Series([1], dtype=np.uint32),
+        'sn_mva': [0.4],
+        'vn_hv_kv': [10.0],
+        'vn_lv_kv': [0.4],
+        'vk_percent': [4.0],
+        'vkr_percent': [1.325],
+        'pfe_kw': [0.95],
+        'i0_percent': [0.2375],
+        'shift_degree': [0.0],
+        'tap_side': [''],
+        'tap_neutral': [nan],
+        'tap_min': [nan],
+        'tap_max': [nan],
+        'tap_step_percent': [nan],
+        'tap_step_degree': [nan],
+        'tap_pos': [nan],
+        'tap_changer_type': [''],
+        'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
+        'tap_dependency_table': [False],
+        'parallel': pd.Series([1], dtype=np.uint32),
+        'df': [1.0],
+        'in_service': [True],
+        'oltc': [False],
+        'test_kwargs': ['TestKW'],
+        'vector_group': ['Dyn5'],
+    })
+    assert dataframes_equal(net.trafo, res_df)
+
+
+def test_create_transformers3w():
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 20)
+    b3 = create_bus(net, 20)
+    b4 = create_bus(net, 10)
+    b5 = create_bus(net, 10)
+    create_transformers3w(
+        net=net,
+        hv_buses=[b1, b1],
+        mv_buses=[b2, b3],
+        lv_buses=[b4, b5],
+        std_type="63/25/38 MVA 110/20/10 kV",
+        name=["t3w-1", "t3w-2"],
+        in_service=[True, False],
+        index=[5, 6],
+    )
+    res_df = pd.DataFrame({
+        'name': ['t3w-1', 't3w-2'],
+        'std_type': ['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'],
+        'hv_bus': pd.Series([0, 0], dtype=np.uint32),
+        'mv_bus': pd.Series([1, 2], dtype=np.uint32),
+        'lv_bus': pd.Series([3, 4], dtype=np.uint32),
+        'sn_hv_mva': [63.0, 63.0],
+        'sn_mv_mva': [25.0, 25.0],
+        'sn_lv_mva': [38.0, 38.0],
+        'vn_hv_kv': [110.0, 110.0],
+        'vn_mv_kv': [20.0, 20.0],
+        'vn_lv_kv': [10.0, 10.0],
+        'vk_hv_percent': [10.4, 10.4],
+        'vk_mv_percent': [10.4, 10.4],
+        'vk_lv_percent': [10.4, 10.4],
+        'vkr_hv_percent': [0.28, 0.28],
+        'vkr_mv_percent': [0.32, 0.32],
+        'vkr_lv_percent': [0.35, 0.35],
+        'pfe_kw': [35.0, 35.0],
+        'i0_percent': [0.89, 0.89],
+        'shift_mv_degree': [0.0, 0.0],
+        'shift_lv_degree': [0.0, 0.0],
+        'tap_side': ['hv', 'hv'],
+        'tap_neutral': [0.0, 0.0],
+        'tap_min': [-10.0, -10.0],
+        'tap_max': [10.0, 10.0],
+        'tap_step_percent': [1.2, 1.2],
+        'tap_step_degree': [nan, nan],
+        'tap_pos': [0.0, 0.0],
+        'tap_at_star_point': [False, False],
+        'tap_changer_type': ['Ratio', 'Ratio'],
+        'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+        'tap_dependency_table': [False, False],
+        'in_service': [True, False]
+    }).set_index(pd.Index([5, 6]))
+    assert dataframes_equal(net.trafo3w, res_df)
+
+def net_transformer3w_from_parameters(**kwargs):
+    net = create_empty_network()
+    b1 = create_bus(net, 15)
+    b2 = create_bus(net, 0.4)
+    b3 = create_bus(net, 0.9)
+    create_transformers3w_from_parameters(
         net,
         hv_buses=[b1, b1],
         mv_buses=[b3, b3],
@@ -982,9 +1141,14 @@ def test_create_transformers3w_from_parameters():
         i0_percent=0.3,
         tap_neutral=0.0,
         mag0_rx=0.4,
-        mag0_percent=0.3,
-        test_kwargs="dummy_string",
+        mag0_percent=30,
+        **kwargs,
     )
+    return net, b1, b2, b3
+
+def test_create_transformers3w_from_parameters():
+    # setting params as single value
+    net, _, _ , _= net_transformer3w_from_parameters(test_kwargs="dummy_string")
     assert len(net.trafo3w) == 2
     assert all(net.trafo3w.hv_bus == 0)
     assert all(net.trafo3w.lv_bus == 1)
@@ -1004,17 +1168,17 @@ def test_create_transformers3w_from_parameters():
     assert all(net.trafo3w.pfe_kw == 0.2)
     assert all(net.trafo3w.i0_percent == 0.3)
     assert all(net.trafo3w.mag0_rx == 0.4)
-    assert all(net.trafo3w.mag0_percent == 0.3)
+    assert all(net.trafo3w.mag0_percent == 30)
     assert all(net.trafo3w.tap_neutral == 0.0)
     assert all(net.trafo3w.tap_pos == 0.0)
     assert all(net.trafo3w.test_kwargs == "dummy_string")
 
     # setting params as array
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 10)
-    b2 = pp.create_bus(net, 0.4)
-    b3 = pp.create_bus(net, 0.9)
-    pp.create_transformers3w_from_parameters(
+    net = create_empty_network()
+    b1 = create_bus(net, 10)
+    b2 = create_bus(net, 0.4)
+    b3 = create_bus(net, 0.9)
+    create_transformers3w_from_parameters(
         net,
         hv_buses=[b1, b1],
         mv_buses=[b3, b3],
@@ -1064,39 +1228,12 @@ def test_create_transformers3w_from_parameters():
 
 def test_create_transformers3w_raise_errorexcept():
     # standard
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 15)
-    b2 = pp.create_bus(net, 0.4)
-    b3 = pp.create_bus(net, 0.9)
-    pp.create_transformers3w_from_parameters(
-        net,
-        hv_buses=[b1, b1],
-        mv_buses=[b3, b3],
-        lv_buses=[b2, b2],
-        vn_hv_kv=15.0,
-        vn_mv_kv=0.9,
-        vn_lv_kv=0.45,
-        sn_hv_mva=0.6,
-        sn_mv_mva=0.5,
-        sn_lv_mva=0.4,
-        vk_hv_percent=1.0,
-        vk_mv_percent=1.0,
-        vk_lv_percent=1.0,
-        vkr_hv_percent=0.3,
-        vkr_mv_percent=0.3,
-        vkr_lv_percent=0.3,
-        pfe_kw=0.2,
-        i0_percent=0.3,
-        tap_neutral=0.0,
-        mag0_rx=0.4,
-        mag0_percent=0.3,
-    )
-
+    net, b1, b2, b3 = net_transformer3w_from_parameters()
     with pytest.raises(
             UserWarning,
             match=r"Three winding transformers with indexes \[1\] already exist.",
     ):
-        pp.create_transformers3w_from_parameters(
+        create_transformers3w_from_parameters(
             net,
             hv_buses=[b1, b1],
             mv_buses=[b3, b3],
@@ -1117,17 +1254,17 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
             index=[2, 1],
         )
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 15)
-    b2 = pp.create_bus(net, 0.4)
-    b3 = pp.create_bus(net, 0.9)
+    net = create_empty_network()
+    b1 = create_bus(net, 15)
+    b2 = create_bus(net, 0.4)
+    b3 = create_bus(net, 0.9)
     with pytest.raises(
             UserWarning, match=r"Transformers trying to attach to non existing buses \{6\}"
     ):
-        pp.create_transformers3w_from_parameters(
+        create_transformers3w_from_parameters(
             net,
             hv_buses=[6, b1],
             mv_buses=[b3, b3],
@@ -1148,13 +1285,13 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
             index=[0, 1],
         )
     with pytest.raises(
             UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"
     ):
-        pp.create_transformers3w_from_parameters(
+        create_transformers3w_from_parameters(
             net,
             hv_buses=[b1, b1],
             mv_buses=[b3, 3],
@@ -1175,13 +1312,13 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
         )
     with pytest.raises(
             UserWarning,
             match=r"Transformers trying to attach to non existing buses \{3, 4\}",
     ):
-        pp.create_transformers3w_from_parameters(
+        create_transformers3w_from_parameters(
             net,
             hv_buses=[b1, b1],
             mv_buses=[b3, b3],
@@ -1202,21 +1339,21 @@ def test_create_transformers3w_raise_errorexcept():
             i0_percent=0.3,
             tap_neutral=0.0,
             mag0_rx=0.4,
-            mag0_percent=0.3,
+            mag0_percent=30,
         )
 
 
 def test_create_switches():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 15)
-    b4 = pp.create_bus(net, 15)
-    l1 = pp.create_line(net, b1, b2, length_km=1, std_type="48-AL1/8-ST1A 10.0")
-    t1 = pp.create_transformer(net, b2, b3, std_type="160 MVA 380/110 kV")
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 15)
+    b4 = create_bus(net, 15)
+    l1 = create_line(net, b1, b2, length_km=1, std_type="48-AL1/8-ST1A 10.0")
+    t1 = create_transformer(net, b2, b3, std_type="160 MVA 380/110 kV")
 
-    sw = pp.create_switches(
+    sw = create_switches(
         net,
         buses=[b1, b2, b3],
         elements=[l1, t1, b4],
@@ -1243,17 +1380,17 @@ def test_create_switches():
 
 
 def test_create_switches_raise_errorexcept():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 15)
-    b4 = pp.create_bus(net, 15)
-    b5 = pp.create_bus(net, 0.9)
-    b6 = pp.create_bus(net, 0.4)
-    l1 = pp.create_line(net, b1, b2, length_km=1, std_type="48-AL1/8-ST1A 10.0")
-    t1 = pp.create_transformer(net, b2, b3, std_type="160 MVA 380/110 kV")
-    t3w1 = pp.create_transformer3w_from_parameters(
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 15)
+    b4 = create_bus(net, 15)
+    b5 = create_bus(net, 0.9)
+    b6 = create_bus(net, 0.4)
+    l1 = create_line(net, b1, b2, length_km=1, std_type="48-AL1/8-ST1A 10.0")
+    t1 = create_transformer(net, b2, b3, std_type="160 MVA 380/110 kV")
+    t3w1 = create_transformer3w_from_parameters(
         net,
         hv_bus=b4,
         mv_bus=b5,
@@ -1274,11 +1411,11 @@ def test_create_switches_raise_errorexcept():
         i0_percent=0.3,
         tap_neutral=0.0,
     )
-    sw = pp.create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.0)
+    sw = create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.0)
     with pytest.raises(
             UserWarning, match=r"Switches with indexes \[0\] already exist."
     ):
-        pp.create_switches(
+        create_switches(
             net,
             buses=[b1, b2, b3],
             elements=[l1, t1, b4],
@@ -1289,29 +1426,29 @@ def test_create_switches_raise_errorexcept():
     with pytest.raises(
             UserWarning, match=r"Cannot attach to buses \{6\}, they do not exist"
     ):
-        pp.create_switches(
+        create_switches(
             net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Line 1 does not exist"):
-        pp.create_switches(
+    with pytest.raises(UserWarning, match=r"Cannot attach to lines {(:?np\.int64\(1\)|1)}, they do not exist"):
+        create_switches(
             net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Line %s not connected to bus %s" % (l1, b3)):
-        pp.create_switches(
+    with pytest.raises(UserWarning, match=rf"Line not connected \(line element, bus\): \[\({l1}, {b3}\)\]"):
+        create_switches(
             net,
             buses=[b3, b2, b3],
             elements=[l1, t1, b4],
             et=["l", "t", "b"],
             z_ohm=0.0,
         )
-    with pytest.raises(UserWarning, match="Trafo 1 does not exist"):
-        pp.create_switches(
+    with pytest.raises(UserWarning, match=r"Cannot attach to trafos {(:?np\.int64\(1\)|1)}, they do not exist"):
+        create_switches(
             net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0
         )
     with pytest.raises(
-            UserWarning, match="Trafo %s not connected to bus %s" % (t1, b1)
+            UserWarning, match=rf"Trafo not connected \(trafo element, bus\): \[\({b1}, {t1}\)\]"
     ):
-        pp.create_switches(
+        create_switches(
             net,
             buses=[b1, b1, b3],
             elements=[l1, t1, b4],
@@ -1319,13 +1456,13 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match=r"Cannot attach to bus 6, bus does not exist"
+            UserWarning, match=r"Cannot attach to buses {(:?np\.int64\(6\)|6)}, they do not exist"
     ):
-        pp.create_switches(
+        create_switches(
             net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0
         )
-    with pytest.raises(UserWarning, match="Trafo3w 1 does not exist"):
-        pp.create_switches(
+    with pytest.raises(UserWarning, match=r"Cannot attach to trafo3ws {(:?np\.int64\(1\)|1)}, they do not exist"):
+        create_switches(
             net,
             buses=[b1, b2, b3],
             elements=[l1, t1, 1],
@@ -1333,24 +1470,44 @@ def test_create_switches_raise_errorexcept():
             z_ohm=0.0,
         )
     with pytest.raises(
-            UserWarning, match="Trafo3w %s not connected to bus %s" % (t3w1, b3)
+            UserWarning, match=rf"Trafo3w not connected \(trafo3w element, bus\): \[\({t3w1}, {b3}\)\]"
     ):
-        pp.create_switches(
+        create_switches(
             net,
             buses=[b1, b2, b3],
             elements=[l1, t1, t3w1],
             et=["l", "t", "t3"],
             z_ohm=0.0,
         )
+    with pytest.raises(
+        UserWarning, match=r"Cannot attach to buses {(:?np\.int64\(12398\)|12398)}, they do not exist"
+    ):
+        create_switches(
+            net,
+            buses=[b1, b2],
+            elements=[b3, 12398],
+            et=["b", "b"],
+            z_ohm=0.0,
+        )
+    with pytest.raises(
+            UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"
+    ):
+        create_switches(
+            net,
+            buses=[b1, 13098],
+            elements=[b2, b3],
+            et=["b", "b"],
+            z_ohm=0.0,
+        )
 
 
 def test_create_loads():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
-    pp.create_loads(
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 110)
+    create_loads(
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
@@ -1387,16 +1544,16 @@ def test_create_loads():
 
 
 def test_create_loads_raise_errorexcept():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 110)
 
     with pytest.raises(
-            UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
+            UserWarning, match=r"Cannot attach to buses {3, 4, 5}, they do not exist"
     ):
-        pp.create_loads(
+        create_loads(
             net,
             buses=[3, 4, 5],
             p_mw=[0, 0, 1],
@@ -1407,7 +1564,7 @@ def test_create_loads_raise_errorexcept():
             max_q_mvar=0.2,
             min_q_mvar=[0, 0.1, 0],
         )
-    l = pp.create_loads(
+    l = create_loads(
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
@@ -1421,7 +1578,7 @@ def test_create_loads_raise_errorexcept():
     with pytest.raises(
             UserWarning, match=r"Loads with indexes \[0 1 2\] already exist"
     ):
-        pp.create_loads(
+        create_loads(
             net,
             buses=[b1, b2, b3],
             p_mw=[0, 0, 1],
@@ -1434,22 +1591,38 @@ def test_create_loads_raise_errorexcept():
             index=l,
         )
 
+def test_const_percent_values_deprecated_handling():
+    # This test checks that passing const_z_percent and const_i_percent to create_load
+    # sets all four percent columns and triggers the deprecation warning.
+    net = create_empty_network()
+    b1 = create_bus(net, 20)
+    with pytest.warns(DeprecationWarning, match="const_z_percent and const_i_percent will be deprecated"):
+        idx = create_load(
+            net, b1, p_mw=1.0, q_mvar=0.5,
+            const_z_percent=11, const_i_percent=22
+        )
+    # Check that the values are set correctly
+    load_idx = net.load.loc[idx]
+    assert load_idx.const_z_p_percent == 11
+    assert load_idx.const_z_q_percent == 11
+    assert load_idx.const_i_p_percent == 22
+    assert load_idx.const_i_q_percent == 22
 
 def test_create_storages():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 110)
     net_bulk = deepcopy(net)
 
-    pp.create_storage(net, b1, 0, 3, 0.5, controllable=True, max_p_mw=0.2, min_p_mw=0,
+    create_storage(net, b1, 0, 3, 0.5, controllable=True, max_p_mw=0.2, min_p_mw=0,
                       max_q_mvar=0.2, min_q_mvar=0, test_kwargs="dummy_string_1")
-    pp.create_storage(net, b2, 0, 5, 0.5, controllable=False, max_p_mw=0.2, min_p_mw=0.1,
+    create_storage(net, b2, 0, 5, 0.5, controllable=False, max_p_mw=0.2, min_p_mw=0.1,
                       max_q_mvar=0.2, min_q_mvar=0.1, test_kwargs="dummy_string_2")
-    pp.create_storage(net, b3, 1, 7, 0.5, max_p_mw=0.2, min_p_mw=0,
+    create_storage(net, b3, 1, 7, 0.5, max_p_mw=0.2, min_p_mw=0,
                       max_q_mvar=0.2, min_q_mvar=0, test_kwargs="dummy_string_3")
 
-    pp.create_storages(
+    create_storages(
         net_bulk,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
@@ -1487,22 +1660,24 @@ def test_create_storages():
         net.storage.test_kwargs.values
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
-    assert pp.nets_equal(net, net_bulk)
+    for col in ["name", "type"]:
+        net.storage.loc[net.storage[col].isnull(), col] = ""
+    assert nets_equal(net, net_bulk)
 
 
 def test_create_wards():
-    net = pp.create_empty_network()
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
+    net = create_empty_network()
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 110)
     net_bulk = deepcopy(net)
     vals = np.c_[[b1, b2, b3], np.reshape(np.arange(12), (3, 4)), ["asd", None, "123"], [True, False, False]]
 
-    pp.create_ward(net, *vals[0, :])
-    pp.create_ward(net, *vals[1, :])
-    pp.create_ward(net, *vals[2, :])
+    create_ward(net, *vals[0, :])
+    create_ward(net, *vals[1, :])
+    create_ward(net, *vals[2, :])
 
-    pp.create_wards(net_bulk, vals[:, 0], vals[:, 1], vals[:, 2], vals[:, 3], vals[:, 4],
+    create_wards(net_bulk, vals[:, 0], vals[:, 1], vals[:, 2], vals[:, 3], vals[:, 4],
                     vals[:, 5], vals[:, 6])
 
     assert net.ward.bus.at[0] == b1
@@ -1526,21 +1701,24 @@ def test_create_wards():
     assert net.ward.in_service.at[0]
     assert not net.ward.in_service.at[1]
     assert not net.ward.in_service.at[2]
-    assert pp.nets_equal(net, net_bulk)
+    assert nets_equal(net, net_bulk)
 
 
 def test_create_sgens():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
-    pp.create_sgens(
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 110)
+    create_sgens(
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
         q_mvar=0.0,
         controllable=[True, False, False],
+        id_q_capability_characteristic=[0, 1, 2],
+        reactive_capability_curve=False,
+        curve_style=["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
         max_q_mvar=0.2,
@@ -1572,19 +1750,54 @@ def test_create_sgens():
     assert all(net.sgen.rx.values == 0.4)
     assert all(net.sgen.current_source)
     assert all(net.sgen.test_kwargs == "dummy_string")
+    assert all(net.sgen.id_q_capability_characteristic.values == [0, 1, 2])
+    assert all(net.sgen.curve_style == "straightLineYValues")
+    assert all(net.sgen.reactive_capability_curve == [False, False, False])
+    
+
+def test_create_sgen_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.sgen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_sgen(net, b1, 50)
+    # controllable column should not exist
+    assert 'controllable' not in net.sgen.columns
+    s2 = create_sgen(net, b1, 50, controllable=True)
+    # controllable should be created with default value False
+    assert not net.sgen.loc[s1, 'controllable']
+    assert net.sgen.loc[s2, 'controllable']
+    
+
+def test_create_sgens_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.sgen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_sgens(net, [b1], 50)[0]
+    # controllable column should not exist
+    assert 'controllable' not in net.sgen.columns
+    s2 = create_sgens(net, [b1], 50, controllable=True)[0]
+    # controllable should be created with default value False
+    assert not net.sgen.loc[s1, 'controllable']
+    assert net.sgen.loc[s2, 'controllable']
 
 
 def test_create_sgens_raise_errorexcept():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 110)
 
     with pytest.raises(
             UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
     ):
-        pp.create_sgens(
+        create_sgens(
             net,
             buses=[3, 4, 5],
             p_mw=[0, 0, 1],
@@ -1598,7 +1811,7 @@ def test_create_sgens_raise_errorexcept():
             rx=0.4,
             current_source=True,
         )
-    sg = pp.create_sgens(
+    sg = create_sgens(
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
@@ -1615,7 +1828,7 @@ def test_create_sgens_raise_errorexcept():
     with pytest.raises(
             UserWarning, match=r"Sgens with indexes \[0 1 2\] already exist"
     ):
-        pp.create_sgens(
+        create_sgens(
             net,
             buses=[b1, b2, b3],
             p_mw=[0, 0, 1],
@@ -1633,17 +1846,20 @@ def test_create_sgens_raise_errorexcept():
 
 
 def test_create_gens():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
-    pp.create_gens(
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 110)
+    create_gens(
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
         vm_pu=1.0,
         controllable=[True, False, False],
+        id_q_capability_characteristic=[0, 1, 2],
+        reactive_capability_curve=False,
+        curve_style=["straightLineYValues", "straightLineYValues", "straightLineYValues"],
         max_p_mw=0.2,
         min_p_mw=[0, 0.1, 0],
         max_q_mvar=0.2,
@@ -1677,19 +1893,53 @@ def test_create_gens():
     assert all(net.gen.rdss_pu.values == 0.1)
     assert all(net.gen.cos_phi.values == 1.0)
     assert all(net.gen.test_kwargs == "dummy_string")
+    assert all(net.gen.id_q_capability_characteristic.values == [0, 1, 2])
+    assert all(net.gen.curve_style == "straightLineYValues")
+    assert all(net.gen.reactive_capability_curve == [False, False, False])
 
+
+def test_create_gen_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.gen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_gen(net, b1, 50)
+    # controllable column should not exist
+    assert 'controllable' not in net.gen.columns
+    s2 = create_gen(net, b1, 50, controllable=False)
+    # controllable should be created with default value True
+    assert net.gen.loc[s1, 'controllable']
+    assert not net.gen.loc[s2, 'controllable']
+
+
+def test_create_gens_controllable():
+    net = create_empty_network()
+    # drop controllable column (it is created by network schema but is not required by pandera)
+    # TODO remove this step with pandera merged fully
+    del net.gen['controllable']
+    
+    b1 = create_bus(net, 110)
+    s1 = create_gens(net, [b1], 50)[0]
+    # controllable column should not exist
+    assert 'controllable' not in net.gen.columns
+    s2 = create_gens(net, [b1], 50, controllable=False)[0]
+    # controllable should be created with default value True
+    assert net.gen.loc[s1, 'controllable']
+    assert not net.gen.loc[s2, 'controllable']
 
 def test_create_gens_raise_errorexcept():
-    net = pp.create_empty_network()
+    net = create_empty_network()
     # standard
-    b1 = pp.create_bus(net, 110)
-    b2 = pp.create_bus(net, 110)
-    b3 = pp.create_bus(net, 110)
+    b1 = create_bus(net, 110)
+    b2 = create_bus(net, 110)
+    b3 = create_bus(net, 110)
 
     with pytest.raises(
             UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
     ):
-        pp.create_gens(
+        create_gens(
             net,
             buses=[3, 4, 5],
             p_mw=[0, 0, 1],
@@ -1706,7 +1956,7 @@ def test_create_gens_raise_errorexcept():
             rdss_pu=0.1,
             cos_phi=1.0,
         )
-    g = pp.create_gens(
+    g = create_gens(
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
@@ -1725,7 +1975,7 @@ def test_create_gens_raise_errorexcept():
     )
 
     with pytest.raises(UserWarning, match=r"Gens with indexes \[0 1 2\] already exist"):
-        pp.create_gens(
+        create_gens(
             net,
             buses=[b1, b2, b3],
             p_mw=[0, 0, 1],

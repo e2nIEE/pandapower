@@ -1,18 +1,24 @@
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
+
+"""
+build branch module
+
+creates the branches in the ppc structure for power flow calculations
+"""
 
 import copy
 import math
 from functools import partial
+import warnings
+from typing import Any, Literal, overload
 
 import numpy as np
+from numpy.typing import NDArray
 import pandas as pd
-from pandapower import DC_BUS_TYPE
 
-from pandapower.auxiliary import get_values
+from pandapower.auxiliary import get_values, pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, SHIFT, BR_STATUS, RATE_A, \
     BR_R_ASYM, BR_X_ASYM, BR_G_ASYM, BR_B_ASYM, branch_cols
 from pandapower.pypower.idx_brch_dc import branch_dc_cols, DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS, DC_F_BUS, \
@@ -22,29 +28,28 @@ from pandapower.pypower.idx_brch_tdpf import BR_R_REF_OHM_PER_KM, BR_LENGTH_KM, 
     GAMMA, EPSILON, T_AMBIENT_C, T_REF_C, branch_cols_tdpf
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA, BUS_TYPE, BUS_AREA, ZONE, VMAX, VMIN, PQ
-from pandapower.pypower.idx_bus_dc import DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BASE_KV
+from pandapower.pypower.idx_bus_dc import DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BASE_KV, DC_BUS_TYPE
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
+from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
 
-
-def _build_branch_ppc(net, ppc):
+def _build_branch_ppc(net: pandapowerNet, ppc: dict, sequence: int = 1) -> None:
     """
     Takes the empty ppc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.
 
     .. note:: The order of branches in the ppc is:
-            1. Lines
-            2. Transformers
-            3. 3W Transformers (each 3W Transformer takes up three branches)
-            4. Impedances
-            5. Internal branch for extended ward
+        1. Lines
+        2. Transformers
+        3. 3W Transformers (each 3W Transformer takes up three branches)
+        4. Impedances
+        5. Internal branch for extended ward
 
-    **INPUT**:
-        **net** -The pandapower format network
-
-        **ppc** - The PYPOWER format network to fill in values
-
+    Parameters:
+        net: The pandapower format network
+        ppc: The PYPOWER format network to fill in values
+        sequence: symmetrical components sequence (0, 1 or 2)
     """
     length = _initialize_branch_lookup(net)
     lookup = net._pd2ppc_lookups["branch"]
@@ -65,7 +70,7 @@ def _build_branch_ppc(net, ppc):
     if "line" in lookup:
         _calc_line_parameter(net, ppc)
     if "trafo" in lookup:
-        _calc_trafo_parameter(net, ppc)
+        _calc_trafo_parameter(net, ppc, sequence)
     if "trafo3w" in lookup:
         _calc_trafo3w_parameter(net, ppc)
     if "impedance" in lookup:
@@ -76,22 +81,21 @@ def _build_branch_ppc(net, ppc):
         _calc_switch_parameter(net, ppc)
 
 
-def _build_branch_dc_ppc(net, ppc):
+def _build_branch_dc_ppc(net: pandapowerNet, ppc: dict):
     """
     Takes the empty ppc network and fills it with the branch values. The branch
     datatype will be np.complex 128 afterwards.
 
     .. note:: The order of branches in the ppc is:
-            1. Lines
-            2. Transformers
-            3. 3W Transformers (each 3W Transformer takes up three branches)
-            4. Impedances
-            5. Internal branch for extended ward
+        1. Lines
+        2. Transformers
+        3. 3W Transformers (each 3W Transformer takes up three branches)
+        4. Impedances
+        5. Internal branch for extended ward
 
-    **INPUT**:
-        **net** -The pandapower format network
-
-        **ppc** - The PYPOWER format network to fill in values
+    Parameters:
+        net: The pandapower format network
+        ppc: The PYPOWER format network to fill in values
 
     """
     mode = net._options["mode"]
@@ -105,13 +109,19 @@ def _build_branch_dc_ppc(net, ppc):
     all_branch_columns = branch_cols_tdpf + branch_dc_cols if tdpf else branch_dc_cols
     ppc["branch_dc"] = np.zeros(shape=(length, all_branch_columns), dtype=np.float64)
     ppc["branch_dc"][:, [DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS]] = np.array([250, 250, 250, 1])
-    if mode != "pf":
-        return
-    if "line_dc" in lookup:
+    if "line_dc" in lookup and mode in ["pf", "dc"]:
         _calc_line_dc_parameter(net, ppc)
 
 
-def _build_tcsc_ppc(net, ppc, mode):
+def _build_tcsc_ppc(net: pandapowerNet, ppc: dict, mode: str):
+    """
+    Takes ppc and fills it with the values for tcsc.
+
+    Parameters:
+        net: The pandapower format network
+        ppc: The PYPOWER format network to fill
+        mode: the powerflow mode
+    """
     length = len(net.tcsc)
     ppc["tcsc"] = np.zeros(shape=(length, tcsc_cols), dtype=np.float64)
     if mode != "pf":
@@ -121,7 +131,14 @@ def _build_tcsc_ppc(net, ppc, mode):
         _calc_tcsc_parameter(net, ppc)
 
 
-def _initialize_branch_lookup(net, dc=False):
+def _initialize_branch_lookup(net: pandapowerNet, dc: bool = False):
+    """
+    create the branch lookup map
+
+    Parameters:
+        net: The pandapower format network
+        dc: weather this is a dc power flow calculation
+    """
     start = 0
     end = 0
     table = "branch" if not dc else "branch_dc"
@@ -141,14 +158,21 @@ def _initialize_branch_lookup(net, dc=False):
     return end
 
 
-def _calc_trafo3w_parameter(net, ppc):
+def _calc_trafo3w_parameter(net: pandapowerNet, ppc: dict) -> None:
+    """
+    Calculate 3 winding transformer parameters and add them to the PYPOWER Network
+
+    Parameters:
+        net: The pandapower format network
+        ppc: The PYPOWER format network to fill in values
+    """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo3w"]
     trafo_df = _trafo_df_from_trafo3w(net)
-    hv_bus = get_trafo_values(trafo_df, "hv_bus").astype(np.int64)
-    lv_bus = get_trafo_values(trafo_df, "lv_bus").astype(np.int64)
-    in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
+    hv_bus = get_trafo_values(trafo_df, "hv_bus", raise_on_missing=True).astype(np.int64)
+    lv_bus = get_trafo_values(trafo_df, "lv_bus", raise_on_missing=True).astype(np.int64)
+    in_service = get_trafo_values(trafo_df, "in_service", raise_on_missing=True).astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
     r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df)
@@ -162,33 +186,30 @@ def _calc_trafo3w_parameter(net, ppc):
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = in_service
     # always set RATE_A for completeness
-    if "max_loading_percent" in trafo_df:
-        max_load = get_trafo_values(trafo_df, "max_loading_percent")
+    # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
+    max_load = get_trafo_values(trafo_df, "max_loading_percent")
+    if max_load is not None:
         sn_mva = get_trafo_values(trafo_df, "sn_mva")
         branch[f:t, RATE_A] = max_load / 100. * sn_mva
     else:
-        sn_mva = get_trafo_values(trafo_df, "sn_mva")
-        branch[f:t, RATE_A] = sn_mva
+        # PowerModels considers "0" as "no limit"
+        # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
+        branch[f:t, RATE_A] = 0. if net["_options"]["mode"] == "opf" else 100.
 
 
 def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     """
     calculates the line parameter in per unit.
 
-    **INPUT**:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
+        ppc: the ppc array
+        elm: The pandapower element (normally "line")
+        ppc_elm: The ppc element (normally "branch")
 
-        **ppc** - the ppc array
-
-    **OPTIONAL**:
-        **elm** - The pandapower element (normally "line")
-
-        **ppc_elm** - The ppc element (normally "branch")
-
-    **RETURN**:
-        **t** - Temporary line parameter. Which is a complex128
-                Nunmpy array. with the following order:
-                0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
+    Returns:
+        Temporary line parameter. Which is a complex128 Numpy array. with the following order:
+        0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
     f, t = net._pd2ppc_lookups[ppc_elm][elm]
     branch = ppc[ppc_elm]
@@ -200,13 +221,13 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     length_km = line["length_km"].values
     parallel = line["parallel"].values
     base_kv = ppc["bus"][from_bus, BASE_KV]
-    baseR = np.square(base_kv) / (3 * net.sn_mva) if mode == "pf_3ph" else np.square(
+    base_r = np.square(base_kv) / (3 * net.sn_mva) if mode == "pf_3ph" else np.square(
         base_kv) / net.sn_mva
 
     branch[f:t, F_BUS] = from_bus
     branch[f:t, T_BUS] = to_bus
-    branch[f:t, BR_R] = line["r_ohm_per_km"].values * length_km / baseR / parallel
-    branch[f:t, BR_X] = line["x_ohm_per_km"].values * length_km / baseR / parallel
+    branch[f:t, BR_R] = line["r_ohm_per_km"].values * length_km / base_r / parallel
+    branch[f:t, BR_X] = line["x_ohm_per_km"].values * length_km / base_r / parallel
 
     if net._options["tdpf"]:
         branch[f:t, TDPF] = line["in_service"].values & line["tdpf"].fillna(False).values.astype(bool)
@@ -235,42 +256,41 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         if net["_options"]["consider_line_temperature"]:
             branch[f:t, BR_R] *= _end_temperature_correction_factor(net)
 
-        b = 2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * baseR * length_km * parallel
-        g = line["g_us_per_km"].values * 1e-6 * baseR * length_km * parallel
+        b = 2 * net.f_hz * math.pi * line["c_nf_per_km"].values * 1e-9 * base_r * length_km * parallel
+        g = line["g_us_per_km"].values * 1e-6 * base_r * length_km * parallel
         branch[f:t, BR_B] = b
         branch[f:t, BR_G] = g
 
     # in service of lines
     branch[f:t, BR_STATUS] = line["in_service"].values
     # always set RATE_A for completeness:
-    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
-    # TODO: check why OPF test fails if 100 instead of 0
-    max_load = line.max_loading_percent.values if "max_loading_percent" in line else 0.
-    vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
-    max_i_ka = line.max_i_ka.values
-    df = line.df.values
-    # This calculates the maximum apparent power at 1.0 p.u.
-    branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
+    if "max_loading_percent" in line:
+        max_load = line.max_loading_percent.values
+        vr = net.bus.loc[line["from_bus"].values, "vn_kv"].values * np.sqrt(3.)
+        max_i_ka = line.max_i_ka.values
+        df = line.df.values
+        branch[f:t, RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    else:
+        # PowerModels considers "0" as "no limit"
+        # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
+        branch[f:t, RATE_A] = 0. if mode == "opf" else 100.
 
 
-def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
+def _calc_line_dc_parameter(net: pandapowerNet, ppc: dict, elm: str = "line_dc", ppc_elm: str = "branch_dc"):
     """
     calculates the line_dc parameter in per unit.
 
-    **INPUT**:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
+        ppc: the ppc array:
+        elm: The pandapower element (normally "line_dc")
+        ppc_elm: The ppc element (normally "branch_dc")
 
-        **ppc** - the ppc array
-
-    **OPTIONAL**:
-        **elm** - The pandapower element (normally "line_dc")
-
-        **ppc_elm** - The ppc element (normally "branch_dc")
-
-    **RETURN**:
-        **t** - Temporary line_dc parameter. Which is a complex128
-                Nunmpy array. with the following order:
-                0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
+    Returns:
+        Temporary line_dc parameter. Which is a complex128
+        Numpy array. with the following order:
+        0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
     f, t = net._pd2ppc_lookups[ppc_elm][elm]
     branch_dc = ppc[ppc_elm]
@@ -320,28 +340,39 @@ def _calc_line_dc_parameter(net, ppc, elm="line_dc", ppc_elm="branch_dc"):
     # in service of lines
     branch_dc[f:t, DC_BR_STATUS] = line_dc["in_service"].values
     # always set RATE_A for completeness:
-    # RATE_A is conisdered by the (PowerModels) OPF. If zero -> unlimited
+    # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
     max_load = line_dc.max_loading_percent.values if "max_loading_percent" in line_dc else 0.
     vr = net.bus_dc.loc[line_dc["from_bus_dc"].values, "vn_kv"].values * np.sqrt(3.)
     max_i_ka = line_dc.max_i_ka.values
     df = line_dc.df.values
     # This calculates the maximum apparent power at 1.0 p.u.
     branch_dc[f:t, DC_RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
+    if "max_loading_percent" in line_dc:
+        max_load = line_dc.max_loading_percent.values
+        vr = net.bus_dc.loc[line_dc["from_bus_dc"].values, "vn_kv"].values * np.sqrt(3.)
+        max_i_ka = line_dc.max_i_ka.values
+        df = line_dc.df.values
+        # This calculates the maximum apparent power at 1.0 p.u.
+        branch_dc[f:t, DC_RATE_A] = max_load / 100. * max_i_ka * df * parallel * vr
+    else:
+        # PowerModels considers "0" as "no limit"
+        # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
+        branch_dc[f:t, DC_RATE_A] = 0. if mode == "opf" else 100.
 
 
-def _calc_trafo_parameter(net, ppc):
-    '''
+def _calc_trafo_parameter(net, ppc, sequence=1):
+    """
     Calculates the transformer parameter in per unit.
 
-    **INPUT**:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
 
-    **RETURN**:
-        **temp_para** -
+    Returns:
         Temporary transformer parameter. Which is a np.complex128
         Numpy array. with the following order:
         0:hv_bus; 1:lv_bus; 2:r_pu; 3:x_pu; 4:b_pu; 5:tab, 6:shift
-    '''
+    """
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
@@ -350,7 +381,8 @@ def _calc_trafo_parameter(net, ppc):
     parallel = trafo["parallel"].values
     branch[f:t, F_BUS] = bus_lookup[trafo["hv_bus"].values]
     branch[f:t, T_BUS] = bus_lookup[trafo["lv_bus"].values]
-    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc)
+    r, x, g, b, g_asym, b_asym, ratio, shift = _calc_branch_values_from_trafo_df(
+        net, ppc)
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x
     branch[f:t, BR_G] = g
@@ -358,23 +390,78 @@ def _calc_trafo_parameter(net, ppc):
     branch[f:t, BR_G_ASYM] = g_asym
     branch[f:t, BR_B_ASYM] = b_asym
     branch[f:t, TAP] = ratio
+    if sequence == 2:
+        shift = - shift
     branch[f:t, SHIFT] = shift
     branch[f:t, BR_STATUS] = trafo["in_service"].values
     if any(trafo.df.values <= 0):
         raise UserWarning("Rating factor df must be positive. Transformers with false "
                           "rating factors: %s" % trafo.query('df<=0').index.tolist())
     # always set RATE_A for completeness
-    max_load = trafo.max_loading_percent.values if "max_loading_percent" in trafo else 100
-    sn_mva = trafo.sn_mva.values
-    df = trafo.df.values
-    branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
-
-
-def get_trafo_values(trafo_df, par):
-    if isinstance(trafo_df, dict):
-        return trafo_df[par]
+    # RATE_A is considered by the (PowerModels) OPF. If zero -> unlimited
+    if "max_loading_percent" in trafo:
+        max_load = trafo.max_loading_percent.values
+        sn_mva = trafo.sn_mva.values
+        df = trafo.df.values
+        branch[f:t, RATE_A] = max_load / 100. * sn_mva * df * parallel
     else:
-        return trafo_df[par].values
+        # PowerModels considers "0" as "no limit"
+        # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
+        branch[f:t, RATE_A] = 0. if net["_options"]["mode"] == "opf" else 100.
+
+
+@overload
+def get_trafo_values(
+    trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA, raise_on_missing: Literal[True] = True
+) -> NDArray:
+    ...
+
+@overload
+def get_trafo_values(
+    trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA, raise_on_missing: Literal[False] = False
+) -> NDArray | None:
+    ...
+
+
+def get_trafo_values(
+    trafo_df: pd.DataFrame | dict, column: str, na_replacement: Any = pd.NA, raise_on_missing: bool = False
+) -> NDArray | None:
+    """
+    Get values from dataframe.
+
+    Parameters:
+        trafo_df: The DataFrame from which to get the column
+        column: column name to get.
+        na_replacement: Element to replace pd.NA with.
+        raise_on_missing: Raise error if column is not present in trafo_df.
+
+    Returns:
+        None if column not found in trafo_df or NDArray of the column where pd.NA is replaced by na_replacement.
+
+    Raises:
+        ValueError: if column is not present in trafo_df and raise_on_missing is True.
+    """
+    if isinstance(trafo_df, dict):
+        if column not in trafo_df:
+            if raise_on_missing:
+                raise ValueError(f'Column "{column}" not found in trafo_df.')
+            return None
+        col = trafo_df[column]
+        if na_replacement is not pd.NA:
+            col = np.where(pd.isna(col), na_replacement, col)
+        return col
+    if column not in trafo_df.columns:
+        if raise_on_missing:
+            raise ValueError(f'Column "{column}" not found in trafo_df.')
+        return None
+    if na_replacement is not pd.NA:
+        # astype(object) is required to allow float('nan') as a replacement
+        series = trafo_df[column].astype(object)
+        mask = pd.isna(series)
+        series[mask] = na_replacement
+        return series.infer_objects().to_numpy()
+    else:
+        return trafo_df[column].to_numpy()
 
 
 def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
@@ -385,10 +472,10 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
     This function calculates the resistance r, reactance x, complex susceptance c and the tap ratio
     according to the given parameters.
 
-    .. warning:: This function returns the subsceptance b as a complex number
+    .. warning:: This function returns the susceptance b as a complex number
         **(-img + -re*i)**. MAT/PYPOWER is only intended to calculate the
-        imaginary part of the subceptance. However, internally c is
-        multiplied by i. By using subsceptance in this way, it is possible
+        imaginary part of the susceptance. However, internally c is
+        multiplied by i. By using susceptance in this way, it is possible
         to consider the ferromagnetic loss of the coil. Which would
         otherwise be neglected.
 
@@ -400,14 +487,13 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
         The Sincal method in this case is questionable.
 
 
-    **INPUT**:
-        **pd_trafo** - The pandapower format Transformer Dataframe.
-                        The Transformer modell will only readfrom pd_net
+    Parameters:
+        pd_trafo: The pandapower format Transformer Dataframe. The Transformer model will only read from pd_net
 
-    **RETURN**:
-        **temp_para** - Temporary transformer parameter. Which is a complex128
-                        Nunmpy array. with the following order:
-                        0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
+    Returns:
+        Temporary transformer parameter. Which is a complex128
+        Numpy array. with the following order:
+        0:r_pu; 1:x_pu; 2:b_pu; 3:tab;
 
     """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -427,9 +513,22 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
 def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
-
-    r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva,
-                                    sequence=sequence, characteristic=net.get("characteristic"))
+    if 'tap_dependency_table' in trafo_df:
+        if 'trafo_characteristic_table' in net:
+            r, x = _calc_r_x_from_dataframe(
+                mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence,
+                trafo_characteristic_table=net.trafo_characteristic_table)
+        else:
+            r, x = _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence)
+    else:
+        warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
+                                         "unsupported net data. tap_dependency_table was introduced with "
+                                         "pandapower 3.0 and replaced spline characteristics. Spline "
+                                         "characteristics will still work, but they are deprecated and will be "
+                                         "removed in future releases."))
+        r, x = _calc_r_x_from_dataframe(
+            mode, trafo_df, vn_lv, vn_trafo_lv, net.sn_mva, sequence=sequence, characteristic=net.get("characteristic")
+        )
 
     if mode == "sc":
         if net._options.get("use_pre_fault_voltage", False):
@@ -437,12 +536,11 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
         else:
             g, b = 0, 0  # why for sc are we assigning y directly as 0?
         if isinstance(trafo_df, pd.DataFrame):  # 2w trafo is dataframe, 3w trafo is dict
-            bus_lookup = net._pd2ppc_lookups["bus"]
-            cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
-            # todo: kt is only used for case = max and only for network transformers! (IEC 60909-0:2016 section 6.3.3)
-            # kt is only calculated for network transformers (IEC 60909-0:2016 section 6.3.3)
             if not net._options.get("use_pre_fault_voltage", False):
-                kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
+                bus_lookup = net._pd2ppc_lookups["bus"]
+                cmax = ppc["bus"][bus_lookup[net.trafo.lv_bus.values], C_MAX]
+                case = net._options["case"]
+                kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax, case)
                 r *= kt
                 x *= kt
     else:
@@ -451,11 +549,16 @@ def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=
     if trafo_model == "pi":
         return r, x, g, b, 0, 0  # g_asym and b_asym are 0 here
     elif trafo_model == "t":
-        r_ratio = get_trafo_values(trafo_df, "leakage_resistance_ratio_hv") if "leakage_resistance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
-        x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv") if "leakage_reactance_ratio_hv" in trafo_df else np.full_like(r, fill_value=0.5, dtype=np.float64)
+        r_ratio = get_trafo_values(trafo_df, "leakage_resistance_ratio_hv")
+        if r_ratio is None:
+            r_ratio = np.full_like(r, fill_value=0.5, dtype=np.float64)
+        x_ratio = get_trafo_values(trafo_df, "leakage_reactance_ratio_hv")
+        if x_ratio is None:
+            x_ratio = np.full_like(r, fill_value=0.5, dtype=np.float64)
+
         return _wye_delta(r, x, g, b, r_ratio, x_ratio)
     else:
-        raise ValueError("Unkonwn Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
+        raise ValueError("Unknown Transformer Model %s - valid values ar 'pi' or 't'" % trafo_model)
 
 
 @np.errstate(all="raise")
@@ -488,28 +591,31 @@ def _wye_delta(r, x, g, b, r_ratio, x_ratio):
     return r, x, g, b, g_asym, b_asym
 
 
-def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva):
+def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva) -> NDArray[np.complex128]:
     """
-    Calculate the subsceptance y from the transformer dataframe.
+    Calculate the susceptance y from the transformer dataframe.
 
-    INPUT:
+    Parameters:
+        mode:
+        trafo_df: The dataframe in net.trafo which contains transformer calculation values.
+        vn_lv:
+        vn_trafo_lv:
+        net_sn_mva:
 
-        **trafo** (Dataframe) - The dataframe in net.trafo
-        which contains transformer calculation values.
-
-    OUTPUT:
-        **subsceptance** (1d array, np.complex128) - The subsceptance in pu in
-        the form (-b_img, -b_real)
+    Returns:
+        The susceptance in pu in the form (-b_img, -b_real)
     """
 
     baseZ = np.square(vn_lv) / (3*net_sn_mva) if mode == 'pf_3ph' else np.square(vn_lv) / net_sn_mva
-    vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv")
-    pfe_mw = (get_trafo_values(trafo_df, "pfe_kw") * 1e-3) / 3 if mode == 'pf_3ph'\
-        else get_trafo_values(trafo_df, "pfe_kw") * 1e-3
-    parallel = get_trafo_values(trafo_df, "parallel")
-    trafo_sn_mva = get_trafo_values(trafo_df, "sn_mva")
+    vn_lv_kv = get_trafo_values(trafo_df, "vn_lv_kv", raise_on_missing=True)
+    if mode == 'pf_3ph':
+        pfe_mw = (get_trafo_values(trafo_df, "pfe_kw", raise_on_missing=True) * 1e-3) / 3
+    else:
+        pfe_mw = get_trafo_values(trafo_df, "pfe_kw", raise_on_missing=True) * 1e-3
+    parallel = get_trafo_values(trafo_df, "parallel", raise_on_missing=True)
+    trafo_sn_mva = get_trafo_values(trafo_df, "sn_mva", raise_on_missing=True)
 
-    ### Calculate subsceptance ###
+    ### Calculate susceptance ###
     vnl_squared = (vn_lv_kv ** 2)/3 if mode == 'pf_3ph' else vn_lv_kv ** 2
     g_mva = pfe_mw
     i0 = get_trafo_values(trafo_df, "i0_percent") / 3 if mode == 'pf_3ph'\
@@ -525,24 +631,24 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva):
     return g_pu, b_pu
 
 
-def _calc_tap_from_dataframe(net, trafo_df):
+def _calc_tap_from_dataframe(
+        net: pandapowerNet,
+        trafo_df: pd.DataFrame
+) -> tuple[NDArray[float], NDArray[float], NDArray[float]]:
     """
-    Adjust the nominal voltage vnh and vnl to the active tab position "tap_pos".
+    Adjust the nominal voltage vnh, vnl and phase shift to the active tab position "tap_pos".
     If "side" is 1 (high-voltage side) the high voltage vnh is adjusted.
-    If "side" is 2 (low-voltage side) the low voltage vnl is adjusted
+    If "side" is 2 (low-voltage side) the low voltage vnl is adjusted.
 
-    INPUT:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
+        trafo_df: The dataframe in pd_net["structure"]["trafo"]
+            which contains transformer calculation values.
 
-        **trafo** (Dataframe) - The dataframe in pd_net["structure"]["trafo"]
-        which contains transformer calculation values.
-
-    OUTPUT:
-        **vn_hv_kv** (1d array, float) - The adusted high voltages
-
-        **vn_lv_kv** (1d array, float) - The adjusted low voltages
-
-        **trafo_shift** (1d array, float) - phase shift angle
+    Returns:
+        - vn_hv_kv, The adjusted high voltages
+        - vn_lv_kv, The adjusted low voltages
+        - trafo_shift, phase shift angle
 
     """
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
@@ -551,71 +657,338 @@ def _calc_tap_from_dataframe(net, trafo_df):
     vnl = copy.copy(get_trafo_values(trafo_df, "vn_lv_kv").astype(float))
     trafo_shift = get_trafo_values(trafo_df, "shift_degree").astype(float) if calculate_voltage_angles else \
         np.zeros(len(vnh))
-    if mode == "sc" and not net._options.get("use_pre_fault_voltage", False): # todo type c?
+    if mode == "sc" and not net._options.get("use_pre_fault_voltage", False):  # todo type c?
         return vnh, vnl, trafo_shift
 
     for t in ("", "2"):
-        if f"tap{t}_pos" not in trafo_df:
-            continue
         tap_pos = get_trafo_values(trafo_df, f"tap{t}_pos")
-        tap_neutral = get_trafo_values(trafo_df, f"tap{t}_neutral")
-        tap_diff = tap_pos - tap_neutral
-        tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
-        tap_side = get_trafo_values(trafo_df, f"tap{t}_side")
-        tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent")
-        tap_step_degree = get_trafo_values(trafo_df, f"tap{t}_step_degree")
+        if tap_pos is None:
+            continue
+        tap_side = get_trafo_values(trafo_df, f"tap{t}_side", na_replacement='')
+        tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent", na_replacement=float('nan'))
 
-        cos = lambda x: np.cos(np.deg2rad(x))
-        sin = lambda x: np.sin(np.deg2rad(x))
-        arctan = lambda x: np.rad2deg(np.arctan(x))
-
-        for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
-            phase_shifters = tap_phase_shifter & (tap_side == side)
-            tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & \
-                ~phase_shifters
-            if tap_complex.any():
-                tap_steps = tap_step_percent[tap_complex] * tap_diff[tap_complex] / 100
-                tap_angles = _replace_nan(tap_step_degree[tap_complex])
-                u1 = vn[tap_complex]
-                du = u1 * _replace_nan(tap_steps)
-                vn[tap_complex] = np.sqrt((u1 + du * cos(tap_angles)) ** 2 + (du * sin(tap_angles)) ** 2)
-                trafo_shift[tap_complex] += (arctan(direction * du * sin(tap_angles) /
-                                                    (u1 + du * cos(tap_angles))))
-            if phase_shifters.any():
-                degree_is_set = _replace_nan(tap_step_degree[phase_shifters]) != 0
-                percent_is_set = _replace_nan(tap_step_percent[phase_shifters]) != 0
-                if (degree_is_set & percent_is_set).any():
+        tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type", na_replacement='')
+        if tap_changer_type is not None:
+            # tap_changer_type is only in dataframe starting from pp Version 3.0, older version use different logic
+            if f'tap{t}_dependency_table' in trafo_df:
+                tap_dependency_table = get_trafo_values(trafo_df, "tap_dependency_table", na_replacement=False)
+            else:
+                tap_dependency_table = np.array([False])
+            tap_table = np.logical_and(tap_dependency_table, tap_changer_type is not None)
+            tap_no_table = np.logical_and(~tap_dependency_table, tap_changer_type is not None)
+            if any(tap_table):
+                id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
+                if np.any(tap_dependency_table & pd.isna(id_characteristic_table)):
                     raise UserWarning(
-                        "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
-                trafo_shift[phase_shifters] += np.where(
-                    (degree_is_set),
-                    (direction * tap_diff[phase_shifters] * tap_step_degree[phase_shifters]),
-                    (direction * 2 * np.rad2deg(np.arcsin(tap_diff[phase_shifters] * \
-                                                          tap_step_percent[phase_shifters] / 100 / 2)))
+                        "Trafo with tap_dependency_table True and id_characteristic_table NA detected.\n"
+                        "Please set an id_characteristic_table or set tap_dependency_table to False.")
+                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                    mask = tap_table & (side == tap_side)
+                    filter_df = pd.DataFrame({
+                        'id_characteristic': id_characteristic_table,
+                        'step': tap_pos,
+                        'mask': mask
+                    })
+
+                    filtered_df = net.trafo_characteristic_table.merge(filter_df[filter_df['mask']],
+                                                                       on=['id_characteristic', 'step'])
+
+                    cleaned_id_characteristic = id_characteristic_table[(~pd.isna(id_characteristic_table)) & mask]
+
+                    voltage_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['voltage_ratio']))
+                    shift_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df['angle_deg']))
+
+                    if direction == 1:
+                        ratio = [voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+                        shift = [shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+                    else:
+                        ratio = [voltage_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+                        shift = [-shift_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+
+                    if isinstance(trafo_df, dict):
+                        # Invert ratio and shift if tap_at_star_point is true
+                        relevant_tap_at_star_point = mask & trafo_df["tap_at_star_point"]
+                        count_index = 0
+                        for i in range(len(mask)):
+                            if relevant_tap_at_star_point[i]:
+                                ratio[count_index] = 1/ratio[count_index]  # Invertieren des Wertes
+                                shift[count_index] = -shift[count_index]
+                            if mask[i]:  # Increase index if mask[i] is True
+                                count_index += 1
+
+                    vn[mask] = vn[mask] * ratio
+                    trafo_shift[mask] += shift
+            if any(tap_no_table):
+                tap_ideal = np.logical_and(tap_changer_type == "Ideal", tap_no_table)
+                tap_complex = np.logical_and(
+                    np.logical_or(tap_changer_type == "Ratio", tap_changer_type == "Symmetrical"), tap_no_table
                 )
+                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                    mask_ideal = (tap_ideal & (tap_side == side))
+                    mask_complex = (tap_complex & (tap_side == side))
+                    if mask_ideal.any():
+                        trafo_shift[mask_ideal] += _get_trafo_shift(trafo_df, t, mask_ideal, direction)[0]
+                    if mask_complex.any():
+                        shift, _vn_mask_complex = _get_trafo_shift(trafo_df, t, mask_complex, direction, vn, False)
+                        vn[mask_complex] = _vn_mask_complex
+                        trafo_shift[mask_complex] += shift
+        elif f'tap{t}_phase_shifter' in trafo_df:
+            warnings.warn(DeprecationWarning(
+                f"tap{t}_phase_shifter was removed with pandapower 3.0 and replaced by "
+                f"tap{t}_changer_type. Using old net data will still work, but usage of "
+                f"tap{t}_phase_shifter is deprecated and will be removed in future releases."
+            ))
+            tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
+            for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                tap_ideal = (tap_phase_shifter & (tap_side == side)).fillna(False)
+                tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & ~tap_ideal
+                #tap_complex = tap_complex.fillna(False)
+                if tap_ideal.any():
+                    trafo_shift[tap_ideal] += _get_trafo_shift(trafo_df, t, tap_ideal, direction)[0]
+                if tap_complex.any():
+                    shift, _vn_tap_complex = _get_trafo_shift(trafo_df, t, tap_complex, direction, vn, False)
+                    vn[tap_complex] = _vn_tap_complex
+                    trafo_shift[tap_complex] += shift
+
     return vnh, vnl, trafo_shift
 
 
-def _replace_nan(array, value=0):
-    mask = np.isnan(array)
-    array[mask] = value
-    return array
+def _get_trafo_shift(
+        trafo_df: pd.DataFrame, tap: str, mask, direction: int, vn=None, ideal: bool = True
+) -> tuple[NDArray, NDArray | None]:
+    """
+    Calculate the phase shift angle for transformer tap changers.
+
+    This function computes the phase shift introduced by transformer tap changers,
+    handling both ideal and complex tap changer models. For ideal tap changers,
+    it can handle either degree-based or percent-based tap steps. For complex
+    tap changers, it performs more detailed voltage magnitude and angle calculations.
+
+    Parameters:
+        trafo_df: DataFrame containing transformer data with tap changer information
+        tap: Tap identifier (e.g., 'tap1', 'tap2') to determine which tap parameters to use
+        mask (array-like): Boolean mask to select specific transformers from the DataFrame
+        direction: Direction multiplier for the phase shift calculation (+1 or -1)
+        vn (array-like): Nominal voltage values for complex tap changer calculations.
+                                  Required when ideal=False. Defaults to None.
+        ideal: Whether to use ideal tap changer model (True) or complex model (False).
+                               Defaults to True.
+
+    Returns:
+        A tuple containing:
+            - shift_angles (numpy.ndarray): Calculated phase shift angles in degrees
+            - vn_modified (numpy.ndarray or None): Modified voltage values for complex tap changers,
+                                                  None for ideal tap changers
+
+    Raises:
+        UserWarning: If vn is not provided when ideal=False
+        UserWarning: If both tap_step_degree and tap_step_percent are set for ideal tap changers
+
+    Notes:
+        For ideal tap changers:
+        - If tap_step_degree is set: shift = direction * tap_diff * tap_step_degree
+        - If tap_step_percent is set: shift = direction * 2 * arcsin(tap_diff * tap_step_percent / 100 / 2)
+
+        For complex tap changers:
+        - Performs detailed voltage triangle calculations considering both magnitude and angle changes
+    """
+    def _cos(x: float) -> float:
+        """
+        get cosine for x
+
+        Parameters:
+            x: the value to get the cosine for
+
+        Returns:
+            the cosine of x
+        """
+        return np.cos(np.deg2rad(x))
+
+    def _sin(x: float) -> float:
+        """
+        get sine for x
+
+        Parameters:
+            x: the value to get the sine for
+
+        Returns:
+            the sine of x
+        """
+        return np.sin(np.deg2rad(x))
+
+    def _arcsin(x: float) -> float:
+        """
+        get arcsine for x
+
+        Parameters:
+            x: the value to get the arcsine for
+
+        Returns:
+            the arcsine of x
+        """
+        return np.rad2deg(np.arcsin(x))
+
+    def _arctan(x: float) -> float:
+        """
+        get arctangent for x
+
+        Parameters:
+            x: the value to get the arctangent for
+
+        Returns:
+            the arctangent of x
+        """
+        return np.rad2deg(np.arctan(x))
+
+    if vn is None and not ideal:
+        raise UserWarning("get trafo shift requires vn if tap is not ideal")
+    tap_pos = get_trafo_values(trafo_df, f"tap{tap}_pos")[mask]
+    tap_neutral = get_trafo_values(trafo_df, f"tap{tap}_neutral")[mask]
+    tap_step_percent = get_trafo_values(trafo_df, f"tap{tap}_step_percent")
+    tap_step_degree = get_trafo_values(trafo_df, f"tap{tap}_step_degree")
+
+    tap_diff = tap_pos - tap_neutral
+
+    if tap_step_percent is not None:
+        tap_step_percent = tap_step_percent[mask]
+        percent_is_set = np.nan_to_num(tap_step_percent, nan=0) != 0
+    else:
+        tap_step_percent = float('nan')
+        percent_is_set = False
+
+    if tap_step_degree is not None:
+        tap_step_degree = tap_step_degree[mask]
+        degree_is_set = np.nan_to_num(tap_step_degree, nan=0) != 0
+    else:
+        tap_step_degree = float('nan')
+        degree_is_set = False
+
+    # ideal tap changer
+    if ideal:
+        if (degree_is_set & percent_is_set).any():
+            raise UserWarning(
+                "Both tap_step_degree and tap_step_percent set for ideal phase shifter")
+
+        return np.where(
+            degree_is_set,
+            (direction * tap_diff * tap_step_degree),
+            (direction * 2 * _arcsin(tap_diff * tap_step_percent / 100 / 2))
+        ), None
+
+    # complex tap changer
+    tap_steps = tap_step_percent * tap_diff / 100
+    tap_angles = np.nan_to_num(tap_step_degree, nan=0)
+    u1 = vn[mask]
+    du = u1 * np.nan_to_num(tap_steps, nan=0)
+    _vn_modified = np.sqrt((u1 + du * _cos(tap_angles)) ** 2 + (du * _sin(tap_angles)) ** 2)
+    return _arctan(direction * du * _sin(tap_angles) / (u1 + du * _cos(tap_angles))), _vn_modified
 
 
-def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
+# FIXME: sideeffect: overwrites data in trafo_df with data from trafo_characteristic_table
+def _get_vk_values_from_table(
+        trafo_df: pd.DataFrame,
+        trafo_characteristic_table,
+        trafotype: Literal["2W", "3W"] = "2W"
+) -> tuple[str, ...]:
+    """
+    get vk values from trafo table
+
+    Parameters:
+        trafo_df: the trafo table
+        trafo_characteristic_table: the trafo characteristic table
+        trafotype: the trafo type (2W or 3W)
+
+    Returns:
+        vk values for the trafos
+
+    Raises:
+        UserWarning: if the trafo type is not 2W or 3W
+    """
     if trafotype == "2W":
-        vk_variables = ("vk_percent", "vkr_percent")
+        vk_variables: tuple[str, ...] = ("vk_percent", "vkr_percent")
     elif trafotype == "3W":
-        vk_variables = ("vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent",
-        "vk_lv_percent", "vkr_lv_percent")
+        vk_variables = (
+            "vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent", "vk_lv_percent", "vkr_lv_percent"
+        )
     else:
         raise UserWarning("Unknown trafotype")
 
+    tap_dependency_table_ = get_trafo_values(trafo_df, "tap_dependency_table", raise_on_missing=True)
+    tap_dependency_table = np.array(
+        [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table_]
+    )
+    if np.any(np.isnan(tap_dependency_table)):
+        raise UserWarning("tap_dependent_impedance has NaN values, but must be of type "
+                          "bool and set to True or False")
+    tap_pos = get_trafo_values(trafo_df, "tap_pos", raise_on_missing=True)
+
+    vals: tuple[str, ...] = ()
+
+    for _, vk_var in enumerate(vk_variables):
+        vk_value = get_trafo_values(trafo_df, vk_var).copy()
+        if any(tap_dependency_table):
+            id_characteristic_table = get_trafo_values(trafo_df, "id_characteristic_table")
+            if np.any(tap_dependency_table & pd.isna(id_characteristic_table)):
+                raise UserWarning(
+                    "Trafo with tap_dependency_table True and id_characteristic_table NA detected.\n"
+                    "Please set an id_characteristic_table or set tap_dependency_table to False.")
+            mask = tap_dependency_table
+            filter_df = pd.DataFrame({
+                'id_characteristic': id_characteristic_table,
+                'step': tap_pos,
+                'mask': mask
+            })
+
+            filtered_df = trafo_characteristic_table.merge(
+                filter_df[filter_df['mask']], on=['id_characteristic', 'step']
+            )
+            cleaned_id_characteristic = id_characteristic_table[(~pd.isna(id_characteristic_table)) & mask]
+
+            vk_mapping = dict(zip(filtered_df['id_characteristic'], filtered_df[vk_var]))
+            vk_new = [vk_mapping.get(id_val, 1) for id_val in cleaned_id_characteristic]
+
+            vk_value[mask] = vk_new
+
+            vals += (vk_value,)
+        else:
+            vals += (vk_value,)
+
+    return vals
+
+
+def _get_vk_values(trafo_df: pd.DataFrame, characteristic, trafotype: Literal["2W", "3W"] = "2W") -> tuple[str, ...]:
+    """
+    get vk values from trafo table
+
+    TODO: What is the difference to _get_vk_values_from_table?
+
+    Parameters:
+        trafo_df: the trafo table
+        characteristic: the trafo characteristic table
+        trafotype: the trafo type (2W or 3W)
+
+    Returns:
+        vk values for the trafos
+
+    Raises:
+        UserWarning: if the trafo type is not 2W or 3W
+    """
+    if trafotype == "2W":
+        vk_variables: tuple[str, ...] = ("vk_percent", "vkr_percent")
+    elif trafotype == "3W":
+        vk_variables = (
+            "vk_hv_percent", "vkr_hv_percent", "vk_mv_percent", "vkr_mv_percent", "vk_lv_percent", "vkr_lv_percent"
+        )
+    else:
+        raise UserWarning("Unknown trafotype")
+
+    # TODO: "tap_dependent_impedance" deprecated: remove this once support is dropped
     if "tap_dependent_impedance" in trafo_df:
-        tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance")
+        tap_dependent_impedance = get_trafo_values(trafo_df, "tap_dependent_impedance", raise_on_missing=True)
         if np.any(np.isnan(tap_dependent_impedance)):
-            raise UserWarning("tap_dependent_impedance has NaN values, but must be of type "
-                              "bool and set to True or False")
+            raise UserWarning(
+                "tap_dependent_impedance has NaN values, but must be of type bool and set to True or False"
+            )
         tap_pos = get_trafo_values(trafo_df, "tap_pos")
     else:
         tap_dependent_impedance = False
@@ -628,33 +1001,38 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
         if characteristic is None:
             raise UserWarning("tap_dependent_impedance of transformers requires net.characteristic")
 
-        # if any but 1 characteristic is missing per trafo, we assume it's by design; but if all are misiing, we raise error
+        # if any but 1 characteristic is missing per trafo, we assume it's by design;
+        # but if all are missing, we raise an error
         # first, we read all characteristic indices
         # we also allow that some columns are not included in the net.trafo table
         all_columns = trafo_df.keys() if isinstance(trafo_df, dict) else trafo_df.columns.values
+        # TODO: vk char columns deprecated: remove once support is dropped
         char_columns = [v for v in vk_variables if f"{v}_characteristic" in all_columns]
         if len(char_columns) == 0:
             raise UserWarning(f"At least one of the columns for characteristics "
                               f"({[v+'_characteristic' for v in vk_variables]}) "
                               f"must be defined for {trafotype} trafo")
-        # must cast to float64 unfortunately, because numpy.vstack casts arrays to object because it doesn't know pandas.NA, np.isnan fails
-        all_characteristic_idx = np.vstack([get_trafo_values(
-            trafo_df, f"{c}_characteristic").astype(np.float64) for c in char_columns]).T
+        # must cast to float64 unfortunately, because numpy.vstack casts arrays to object
+        # because it doesn't know pandas.NA, np.isnan fails
+        all_characteristic_idx = np.vstack(
+            [get_trafo_values(trafo_df, f"{c}_characteristic").astype(np.float64) for c in char_columns]
+        ).T
         index_column = {c: i for i, c in enumerate(char_columns)}
-        # now we check if any trafos that have tap_dependent_impedance have all of the characteristics missing
+        # now we check if any trafos that have tap_dependent_impedance have all characteristics missing
         all_missing = np.isnan(all_characteristic_idx).all(axis=1) & tap_dependent_impedance
         if np.any(all_missing):
             trafo_index = trafo_df['index'] if isinstance(trafo_df, dict) else trafo_df.index.values
             raise UserWarning(f"At least one characteristic must be defined for {trafotype} "
                               f"trafo: {trafo_index[all_missing]}")
 
-    vals = ()
+    vals: tuple[str, ...] = ()
 
-    for c, vk_var in enumerate(vk_variables):
+    for _, vk_var in enumerate(vk_variables):
         vk_value = get_trafo_values(trafo_df, vk_var)
+        # TODO: vk char columns deprecated: remove once support is dropped
         if use_tap_dependent_impedance and vk_var in char_columns:
             vals += (_calc_tap_dependent_value(
-                trafo_df, tap_pos, vk_value, vk_var, tap_dependent_impedance,
+                tap_pos, vk_value, tap_dependent_impedance,
                 characteristic, all_characteristic_idx[:, index_column[vk_var]]),)
         else:
             vals += (vk_value,)
@@ -662,31 +1040,63 @@ def _get_vk_values(trafo_df, characteristic, trafotype="2W"):
     return vals
 
 
-def _calc_tap_dependent_value(trafo_df, tap_pos, value, variable, tap_dependent_impedance,
-                              characteristic, characteristic_idx):
-    # we skip the trafos with NaN characteristics even if tap_dependent_impedance is True (we already checked for missing characteristics)
+def _calc_tap_dependent_value(tap_pos, value, tap_dependent_impedance, characteristic, characteristic_idx):
+    # we skip the trafos with NaN characteristics even if tap_dependent_impedance is True
+    # (we already checked for missing characteristics)
     relevant_idx = tap_dependent_impedance & ~np.isnan(characteristic_idx)
     vk_characteristic = np.zeros_like(tap_dependent_impedance, dtype="object")
     vk_characteristic[relevant_idx] = characteristic.loc[characteristic_idx[relevant_idx], 'object'].values
-    # here dtype must be float otherwise the load flow calculation will fail
-    return np.where(relevant_idx,
-                    [c(t).item() if f else np.nan for f, t, c in zip(relevant_idx, tap_pos, vk_characteristic)],
-                    value)#.astype(np.float64)  # astype not necessary, but if it fails then uncommenting this may help
+    # dtype must be float here, otherwise the load flow calculation will fail
+
+    def _get_characteristic_for_tap_pos(characteristic, tap_pos, is_relevant):
+        """
+        get tap_position in characteristic if is relevant
+        """
+        return characteristic(tap_pos).item() if is_relevant else np.nan
+
+    vec_get_char_for_tap_pos = np.vectorize(_get_characteristic_for_tap_pos)
+
+    return np.where(relevant_idx, vec_get_char_for_tap_pos(vk_characteristic, tap_pos, relevant_idx), value)
 
 
-def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1,
-                             characteristic=None):
+# FIXME: behavior differs depending on trafo_df type dict or pandas.DataFrame. This should be changed!
+#  use test: loadflow/test_runpp.py::test_tap_table_order and change output of _trafo_df_from_trafo3w to DataFrame to
+#  trigger issue
+def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequence=1, characteristic=None,
+                             trafo_characteristic_table=None):
     """
-    Calculates (Vectorized) the resitance and reactance according to the
+    Calculates (Vectorized) the resistance and reactance according to the
     transformer values
     """
     parallel = get_trafo_values(trafo_df, "parallel")
     if sequence == 1:
-        vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
+        tap_dependency = get_trafo_values(trafo_df, "tap_dependency_table")
+        if tap_dependency is not None:
+            tap_dependency = np.array(
+                [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency])
+            if any(tap_dependency) and not isinstance(trafo_df, dict):
+                if np.any(tap_dependency) and trafo_characteristic_table is None:
+                    raise UserWarning("Trafo with tap_dependency_table True, but no trafo_characteristic_table found.")
+                vk_percent, vkr_percent = _get_vk_values_from_table(trafo_df, trafo_characteristic_table)
+                # update for 3W already in _calc_sc_voltages_of_equivalent_transformers
+            else:
+                vk_percent = get_trafo_values(trafo_df, "vk_percent")
+                vkr_percent = get_trafo_values(trafo_df, "vkr_percent")
+        else:
+            warnings.warn(DeprecationWarning(
+                "tap_dependency_table is missing in net, which is most probably due to unsupported net data."
+                " tap_dependency_table was introduced with pandapower 3.0 and replaced spline characteristics. "
+                "Spline characteristics will still work, but they are deprecated and will be removed "
+                "in future releases."
+            ))
+
+            vk_percent, vkr_percent = _get_vk_values(trafo_df, characteristic)
 
     elif sequence == 0:
         vk_percent = get_trafo_values(trafo_df, "vk0_percent")
         vkr_percent = get_trafo_values(trafo_df, "vkr0_percent")
+        if vk_percent is None or vkr_percent is None:
+            raise UserWarning("Missing vk0_percent or vkr0_percent columns in trafo_df")
     else:
         raise UserWarning("Unsupported sequence")
 
@@ -703,28 +1113,29 @@ def _calc_r_x_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, sn_mva, sequenc
     return r_sc / parallel, x_sc / parallel
 
 
-def _calc_nominal_ratio_from_dataframe(ppc, trafo_df, vn_hv_kv, vn_lv_kv, bus_lookup):
+def _calc_nominal_ratio_from_dataframe(
+        ppc: dict, trafo_df: pd.DataFrame, vn_hv_kv: NDArray[float], vn_lv_kv: NDArray[float], bus_lookup: dict
+) -> NDArray[float]:
     """
     Calculates (Vectorized) the off nominal tap ratio::
-
                   (vn_hv_kv / vn_lv_kv) / (ub1_in_kv / ub2_in_kv)
 
-    INPUT:
-        **net** (Dataframe) - The net for which to calc the tap ratio.
+    Parameters:
+        ppc: the PYPOWER network
+        trafo_df: the trafo dataframe
+        vn_hv_kv: The adjusted nominal high voltages
+        vn_lv_kv: The adjusted nominal low voltages
+        bus_lookup: bus lookup
 
-        **vn_hv_kv** (1d array, float) - The adjusted nominal high voltages
-
-        **vn_lv_kv** (1d array, float) - The adjusted nominal low voltages
-
-    OUTPUT:
-        **tab** (1d array, float) - The off-nominal tap ratio
+    Returns:
+        The off-nominal tap ratio
     """
-    # Calculating tab (trasformer off nominal turns ratio)
+    # Calculating tab (transformer off nominal turns ratio)
     tap_rat = vn_hv_kv / vn_lv_kv
     hv_bus = get_trafo_values(trafo_df, "hv_bus")
     lv_bus = get_trafo_values(trafo_df, "lv_bus")
-    nom_rat = get_values(ppc["bus"][:, BASE_KV], hv_bus, bus_lookup) / \
-        get_values(ppc["bus"][:, BASE_KV], lv_bus, bus_lookup)
+    nom_rat = (get_values(ppc["bus"][:, BASE_KV], hv_bus, bus_lookup) /
+               get_values(ppc["bus"][:, BASE_KV], lv_bus, bus_lookup))
     return tap_rat / nom_rat
 
 
@@ -775,7 +1186,8 @@ def _calc_tcsc_parameter(net, ppc):
     tcsc[f:t, TCSC_MAX_FIRING_ANGLE] = np.deg2rad(net["tcsc"]["max_angle_degree"].values)
 
     tcsc[f:t, TCSC_STATUS] = net["tcsc"]["in_service"].values
-    tcsc[f:t, TCSC_CONTROLLABLE] = net["tcsc"]["controllable"].values.astype(bool) & net["tcsc"]["in_service"].values.astype(bool)
+    tcsc[f:t, TCSC_CONTROLLABLE] = (net["tcsc"]["controllable"].values.astype(bool) &
+                                    net["tcsc"]["in_service"].values.astype(bool))
 
 
 def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
@@ -797,9 +1209,9 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     sn_net = net.sn_mva
 
     # background for the sn_calculations in the next lines:
-      # r_ij_ohm = r_ij * v**2 / sn_impedance
-      # r_ij_pu_branch = r_ij_ohm / (v**2 / sn_net)
-      # r_ij_pu_branch = r_ij / sn_impedance / (1 / sn_net)
+    # r_ij_ohm = r_ij * v**2 / sn_impedance
+    # r_ij_pu_branch = r_ij_ohm / (v**2 / sn_net)
+    # r_ij_pu_branch = r_ij / sn_impedance / (1 / sn_net)
 
     r_f = (rij * sn_factor) / sn_impedance * sn_net
     x_f = (xij * sn_factor) / sn_impedance * sn_net
@@ -832,9 +1244,33 @@ def _calc_xward_parameter(net, ppc):
     branch[f:t, BR_STATUS] = xw_is
 
 
-def _gather_branch_switch_info(bus, branch_id, branch_type, net):
-    # determine at which end the switch is located
-    # 1 = to-bus/lv-bus; 0 = from-bus/hv-bus
+def _gather_branch_switch_info(
+        bus: int,
+        branch_id: int,
+        branch_type: Literal["l", "t", "t3"],
+        net: pandapowerNet
+) -> tuple[str, int, int]:
+    """
+    determine at which end of a line or trafo the switch is located
+
+    Parameters:
+        bus: what bus the switch is attached to
+        branch_id: id of the element the switch is attached to
+        branch_type: what element type the switch is located at
+        net: the pandapower network
+
+    Returns:
+        - side of the switch
+            - "to" or "from" for line
+            - "hv", "lv" for trafo
+            - "hv", "mv", "lv" for trafo3w
+        - bus index
+        - element index (line/trafo/trafo3w)
+
+    Raises:
+        UserWarning: if trafo3w lookup fails
+        ValueError: if branch_type not in ["l", "t", "t3]
+    """
     branch_id = int(branch_id)
     lookup = net._pd2ppc_lookups["branch"]
     if branch_type == "l":
@@ -856,18 +1292,28 @@ def _gather_branch_switch_info(bus, branch_id, branch_type, net):
         elif net["trafo3w"]["lv_bus"].at[branch_id] == bus:
             side = "lv"
             offset = (t - f) / 3 * 2
+        else:
+            raise UserWarning("trafo3w lookup failed")
         branch_idx = lookup["trafo3w"][0] + net["trafo3w"].index.get_loc(branch_id) + offset
         return side, int(bus), int(branch_idx)
+    raise ValueError(f'Parameter `branch_type` should be of `Literal["l", "t", "t3"]` got {branch_type=}')
 
 
-def _switch_branches(net, ppc):
+def _switch_branches(net: pandapowerNet, ppc):
+    """
+
+    Parameters:
+        net: pandapower network
+        ppc: PYPOWER network
+    """
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     calculate_voltage_angles = net._options["calculate_voltage_angles"]
     neglect_open_switch_branches = net._options["neglect_open_switch_branches"]
     mode = net._options["mode"]
     n_bus = ppc["bus"].shape[0]
-    for et, element in [("l", "line"), ("t", "trafo"), ("t3", "trafo3w")]:
-        switch_mask = ~net.switch.closed.values & (net.switch.et.values == et)
+    element_map: list[tuple[Literal["l", "t", "t3"], str]] = [("l", "line"), ("t", "trafo"), ("t3", "trafo3w")]
+    for et, element in element_map:
+        switch_mask = ~net.switch.closed.values & (net.switch.et.values == et)  # type: ignore[operator]
         if not switch_mask.any():
             continue
         nr_open_switches = np.count_nonzero(switch_mask)
@@ -883,7 +1329,7 @@ def _switch_branches(net, ppc):
             ppc["branch"][sw_branch_index, BR_STATUS] = 0
             continue
 
-        new_buses = np.zeros(shape=(nr_open_switches, ppc["bus"].shape[1]), dtype=float)
+        new_buses: NDArray[float] = np.zeros(shape=(nr_open_switches, ppc["bus"].shape[1]), dtype=float)
         new_buses[:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1.1, 0.9, 0, 0])
         new_indices = np.arange(n_bus, n_bus + nr_open_switches)
         new_buses[:, 0] = new_indices
@@ -927,7 +1373,7 @@ def _switch_branches(net, ppc):
             ppc["branch"][sw_branch_index[mask], side] = new_indices[mask]
 
 
-def _branches_with_oos_buses(net, ppc, dc=False):
+def _branches_with_oos_buses(net: pandapowerNet, ppc, dc: bool = False):
     """
     Updates the ppc["branch"] matrix with the changed from or to values
     if the branch is connected to an out of service bus
@@ -935,11 +1381,10 @@ def _branches_with_oos_buses(net, ppc, dc=False):
     Adds auxiliary buses if branch is connected to an out of service bus
     Sets branch out of service if connected to two out of service buses
 
-    **INPUT**:
-        **n** - The pandapower format network
-
-        **ppc** - The PYPOWER format network to fill in values
-        **bus_is** - The in service buses
+    Parameters:
+        net: The pandapower format network
+        ppc: The PYPOWER format network to fill in values
+        dc: True if dc power flow calculation
     """
     line_table = "line_dc" if dc else "line"
     bus_table = "bus_dc" if dc else "bus"
@@ -966,8 +1411,8 @@ def _branches_with_oos_buses(net, ppc, dc=False):
         t_bus = line_buses[:, 1]
 
         # determine on which side of the line the oos bus is located
-        mask_from = np.in1d(f_bus, bus_oos)
-        mask_to = np.in1d(t_bus, bus_oos)
+        mask_from = np.isin(f_bus, bus_oos)
+        mask_to = np.isin(t_bus, bus_oos)
 
         mask_and = mask_to & mask_from
         if np.any(mask_and):
@@ -983,10 +1428,10 @@ def _branches_with_oos_buses(net, ppc, dc=False):
 
         # only if oos_buses are at lines (they could be isolated as well)
         if n_oos_buses_at_lines > 0:
-            ls_info = np.zeros((n_oos_buses_at_lines, 3), dtype=np.int64)
+            ls_info: NDArray = np.zeros((n_oos_buses_at_lines, 3), dtype=np.int64)
             ls_info[:, 0] = mask_to[mask_or] & ~mask_from[mask_or]
             ls_info[:, 1] = oos_buses_at_lines
-            ls_info[:, 2] = np.nonzero(np.in1d(net[line_table].index, line_is_idx[mask_or]))[0]
+            ls_info[:, 2] = np.nonzero(np.isin(net[line_table].index, line_is_idx[mask_or]))[0]
 
             # ls_info = list(map(mapfunc,
             #               line_switches["bus"].values,
@@ -1023,17 +1468,17 @@ def _branches_with_oos_buses(net, ppc, dc=False):
             ppc[bus_table] = np.vstack(future_buses)
 
 
-def _calc_switch_parameter(net, ppc):
+def _calc_switch_parameter(net: pandapowerNet, ppc):
     """
     calculates the line parameter in per unit.
 
-    **INPUT**:
-        **net** -The pandapower format network
+    Parameters:
+        net:The pandapower format network
 
-    **RETURN**:
-        **t** - Temporary line parameter. Which is a complex128
-                Nunmpy array. with the following order:
-                0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
+    Returns:
+        Temporary line parameter. Which is a complex128
+        Numpy array. with the following order:
+        0:bus_a; 1:bus_b; 2:r_pu; 3:x_pu; 4:b_pu
     """
     rx_ratio = net["_options"]["switch_rx_ratio"]
     rz_ratio = rx_ratio / np.sqrt(1 + rx_ratio ** 2)
@@ -1045,14 +1490,14 @@ def _calc_switch_parameter(net, ppc):
     switch = net.switch[net._impedance_bb_switches]
     fb = bus_lookup[switch["bus"].values]
     tb = bus_lookup[switch["element"].values]
-    baseR = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
+    base_r = np.square(ppc["bus"][fb, BASE_KV]) / net.sn_mva
     branch[f:t, F_BUS] = fb
     branch[f:t, T_BUS] = tb
 
     z_switch = switch['z_ohm'].values
-    # x_switch will have the same value of r_switch to avoid zero dividence
-    branch[f:t, BR_R] = z_switch / baseR * rz_ratio
-    branch[f:t, BR_X] = z_switch / baseR * xz_ratio
+    # x_switch will have the same value of r_switch to avoid zero division
+    branch[f:t, BR_R] = z_switch / base_r * rz_ratio
+    branch[f:t, BR_X] = z_switch / base_r * xz_ratio
 
 
 def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
@@ -1066,7 +1511,7 @@ def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
     The temperature coefficient "alpha" is a constant value of 0.004 in the short circuit
     calculation standard IEC 60909-0:2016.
 
-    In case of a load flow calculation, the relelvant parameter is "temperature_degree_celsius",
+    In case of a load flow calculation, the relevant parameter is "temperature_degree_celsius",
     which is specified by the user and allows calculating load flow for a given operating
     temperature.
 
@@ -1079,7 +1524,7 @@ def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
     coefficient of resistance of the conducting material and T is the line temperature in °C.
     Accordingly, the resulting correction factor is (1+alpha*(T-20°C)).
 
-    Args:
+    Parameters:
         net: pandapowerNet
         short_circuit: whether the factor is calculated in the scope of a short circuit calculation
 
@@ -1108,33 +1553,38 @@ def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
         delta_t_degree_celsius = net[element].temperature_degree_celsius.values.astype(np.float64) - 20
 
         if 'alpha' in net[element].columns:
-            alpha = net[element].alpha.values.astype(np.float64)
+            alpha = np.nan_to_num(net[element].alpha.values.astype(np.float64), nan=0, copy=True)
         else:
-            alpha = 4e-3
+            alpha = ALPHA_TDPF
+            warnings.warn(f"'alpha' is assumed to {alpha} and required for the calculation of the temperature based resistance.")
 
     r_correction_for_temperature = 1 + alpha * delta_t_degree_celsius
 
     return r_correction_for_temperature
 
 
-def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax):
+def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax, case):
     """
-        2W-Transformer impedance correction factor in short circuit calculations,
-        based on the IEC 60909-0:2016 standard.
-        Args:
-            vk: transformer short-circuit voltage, percent
-            vkr: real-part of transformer short-circuit voltage, percent
-            sn: transformer rating, kVA
-            cmax: voltage factor to account for maximum worst-case currents, based on the lv side
+    2W-Transformer impedance correction factor in short circuit calculations,
+    based on the IEC 60909-0:2016 standard.
 
-        Returns:
-            kt: transformer impedance correction factor for short-circuit calculations
+    Parameters:
+        trafo_df: the transformer dataframe
+        vk: transformer short-circuit voltage, percent
+        vkr: real-part of transformer short-circuit voltage, percent
+        sn: transformer rating, kVA
+        cmax: voltage factor to account for maximum worst-case currents, based on the lv side
+        case: short-circuit calculation case (str, "min"/"max")
 
-    Parameters
-    ----------
-    trafo_df
+    Returns:
+        kt: transformer impedance correction factor for short-circuit calculations
 
-        """
+    """
+
+    # The transformer correction factor shall only be applied in the max case according to
+    # norm IEC 60909-0:2016 section 6.3.3
+    if case != "max":
+        return np.ones(len(trafo_df))
 
     if "power_station_unit" in trafo_df.columns:
         power_station_unit = trafo_df.power_station_unit.fillna(False).values.astype(bool)
@@ -1156,25 +1606,38 @@ def get_is_lines(net):
     _is_elements["line"] = net["line"][net["line"]["in_service"].values.astype(bool)]
 
 
-def _trafo_df_from_trafo3w(net, sequence=1):
-    trafo2 = dict()
+def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
+    """
+    translate trafo3w to trafo
+
+    Parameters:
+        net: the pandapower net
+        sequence: symmetrical components sequence (0, 1 or 2)
+    """
+    trafo2: dict[str, dict] = {}
     sides = ["hv", "mv", "lv"]
     mode = net._options["mode"]
     t3 = net["trafo3w"]
     # todo check magnetizing impedance implementation:
-    #loss_side = net._options["trafo3w_losses"].lower()
+    # loss_side = net._options["trafo3w_losses"].lower()
     loss_side = t3.loss_side.values if "loss_side" in t3.columns else np.full(len(t3),
                                                                               net._options["trafo3w_losses"].lower())
     nr_trafos = len(net["trafo3w"])
-    if sequence==1:
-        mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
-        _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
-            'characteristic'))
-    elif sequence==0:
+
+    if sequence == 1:
+        if 'tap_dependency_table' in t3:
+            mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
+            _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, net=net)
+        else:
+            mode_tmp = "type_c" if mode == "sc" and net._options.get("use_pre_fault_voltage", False) else mode
+            _calculate_sc_voltages_of_equivalent_transformers(t3, trafo2, mode_tmp, characteristic=net.get(
+                'characteristic'))
+    elif sequence == 0:
         if mode != "sc":
             raise NotImplementedError(
                 "0 seq impedance calculation only implemented for short-circuit calculation!")
-        _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2,)
+        case = net._options.get("case", 'max')
+        _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, trafo2, case=case)
     else:
         raise UserWarning("Unsupported sequence for trafo3w convertion")
     _calculate_3w_tap_changers(t3, trafo2, sides)
@@ -1184,27 +1647,51 @@ def _trafo_df_from_trafo3w(net, sequence=1):
     trafo2["lv_bus"] = {"hv": aux_buses, "mv": t3.mv_bus.values, "lv": t3.lv_bus.values}
     trafo2["in_service"] = {side: t3.in_service.values for side in sides}
     # todo check magnetizing impedance implementation:
-    #trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
-    #trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
+    # trafo2["i0_percent"] = {side: t3.i0_percent.values if loss_side == side else zeros for side in sides}
+    # trafo2["pfe_kw"] = {side: t3.pfe_kw.values if loss_side == side else zeros for side in sides}
     trafo2["i0_percent"] = {side: np.where(loss_side == side, t3.i0_percent.values, zeros) for side in sides}
     trafo2["pfe_kw"] = {side: np.where(loss_side == side, t3.pfe_kw.values, zeros) for side in sides}
     trafo2["vn_hv_kv"] = {side: t3.vn_hv_kv.values for side in sides}
     trafo2["vn_lv_kv"] = {side: t3["vn_%s_kv" % side].values for side in sides}
     trafo2["shift_degree"] = {"hv": np.zeros(nr_trafos), "mv": t3.shift_mv_degree.values,
                               "lv": t3.shift_lv_degree.values}
-    trafo2["tap_phase_shifter"] = {side: np.zeros(nr_trafos).astype(bool) for side in sides}
+    for param in ["tap_changer_type", "tap_dependency_table", "id_characteristic_table",
+                  "tap_phase_shifter", "tap_at_star_point"]:
+        if param in t3:
+            trafo2[param] = {side: t3[param] for side in sides}
     trafo2["parallel"] = {side: np.ones(nr_trafos) for side in sides}
     trafo2["df"] = {side: np.ones(nr_trafos) for side in sides}
     # even though this is not relevant (at least now), the values cannot be empty:
-    trafo2["leakage_resistance_ratio_hv"] = {side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
-    trafo2["leakage_reactance_ratio_hv"] = {side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
+    trafo2["leakage_resistance_ratio_hv"] = {
+        side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
+    trafo2["leakage_reactance_ratio_hv"] = {
+        side: np.full(nr_trafos, fill_value=0.5, dtype=np.float64) for side in sides}
     if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characteristic):
-    vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
+def _calculate_sc_voltages_of_equivalent_transformers(
+        t3, t2, mode, characteristic=None, net=None
+):
+    tap_dependency_table = get_trafo_values(t3, "tap_dependency_table")
+    if tap_dependency_table is not None:
+        tap_dependency_table = np.array(
+            [False if isinstance(x, float) and np.isnan(x) else x for x in tap_dependency_table])
+        if any(tap_dependency_table):
+            vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values_from_table(
+                t3, net.trafo_characteristic_table, "3W")
+        else:
+            vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = (
+                t3['vk_hv_percent'], t3['vkr_hv_percent'], t3['vk_mv_percent'],
+                t3['vkr_mv_percent'], t3['vk_lv_percent'], t3['vkr_lv_percent'])
+    else:
+        warnings.warn(DeprecationWarning("tap_dependency_table is missing in net, which is most probably due to "
+                                         "old net data. tap_dependency_table was introduced with "
+                                         "pandapower 3.0 and replaced spline characteristics. Spline "
+                                         "characteristics will still work, but they are deprecated and will be "
+                                         "removed in future releases."))
+        vk_hv, vkr_hv, vk_mv, vkr_mv, vk_lv, vkr_lv = _get_vk_values(t3, characteristic, "3W")
 
     vk_3w = np.stack([vk_hv, vk_mv, vk_lv])
     vkr_3w = np.stack([vkr_hv, vkr_mv, vkr_lv])
@@ -1213,7 +1700,8 @@ def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characterist
     vk_2w_delta = z_br_to_bus_vector(vk_3w, sn)
     vkr_2w_delta = z_br_to_bus_vector(vkr_3w, sn)
     if mode == "sc":
-        kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
+        case = net._options.get("case", 'max')
+        kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, case)
         vk_2w_delta *= kt
         vkr_2w_delta *= kt
     vki_2w_delta = np.sqrt(vk_2w_delta ** 2 - vkr_2w_delta ** 2)
@@ -1227,7 +1715,7 @@ def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, characterist
     t2["sn_mva"] = {"hv": sn[0, :], "mv": sn[1, :], "lv": sn[2, :]}
 
 
-def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
+def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2, case):
     vk_3w = np.stack([t3.vk_hv_percent.values, t3.vk_mv_percent.values, t3.vk_lv_percent.values])
     vkr_3w = np.stack([t3.vkr_hv_percent.values, t3.vkr_mv_percent.values, t3.vkr_lv_percent.values])
     vk0_3w = np.stack([t3.vk0_hv_percent.values, t3.vk0_mv_percent.values, t3.vk0_lv_percent.values])
@@ -1238,7 +1726,7 @@ def _calculate_sc_voltages_of_equivalent_transformers_zero_sequence(t3, t2):
     vkr0_2w_delta = z_br_to_bus_vector(vkr0_3w, sn)
 
     # Only for "sc", calculated with positive sequence value
-    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1)
+    kt = _transformer_correction_factor(t3, vk_3w, vkr_3w, sn, 1.1, case)
     vk0_2w_delta *= kt
     vkr0_2w_delta *= kt
 
@@ -1273,7 +1761,6 @@ def wye_delta_vector(zbr_n, s):
 def _calculate_3w_tap_changers(t3, t2, sides):
     tap_variables = ["tap_side", "tap_pos", "tap_neutral", "tap_max", "tap_min", "tap_step_percent",
                      "tap_step_degree"]
-    sides = ["hv", "mv", "lv"]
     nr_trafos = len(t3)
     empty = np.zeros(nr_trafos)
     empty.fill(np.nan)
@@ -1284,16 +1771,20 @@ def _calculate_3w_tap_changers(t3, t2, sides):
     for side in sides:
         tap_mask = t3.tap_side.values == side
         for var in tap_variables:
-            tap_arrays[var][side][tap_mask] = t3[var].values[tap_mask]
+            if var in t3:
+                tap_arrays[var][side][tap_mask] = t3[var].values[tap_mask]
+            else:
+                tap_arrays[var][side][tap_mask] = np.array([float("nan")]*tap_mask.sum())
 
         # t3 trafos with tap changer at terminals
         tap_arrays["tap_side"][side][tap_mask] = "hv" if side == "hv" else "lv"
 
         # t3 trafos with tap changer at star points
-        if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)): 
+        if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)):
             t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point]))
             tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
-            t_corrected = 100 * t / (100 + (t * tap_pos))
+            tap_neutral = tap_arrays["tap_neutral"][side][mask_star_point]
+            t_corrected = 100 * t / (100 + (t * (tap_pos-tap_neutral)))
             tap_arrays["tap_step_percent"][side][mask_star_point] = np.abs(t_corrected)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
             tap_arrays["tap_step_degree"][side][mask_star_point] = np.rad2deg(np.angle(t_corrected))

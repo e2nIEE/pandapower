@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 import numpy as np
 import pandas as pd
 
+from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
@@ -25,6 +24,11 @@ BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
 suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
 
 
+def _overwrite_out_of_service(net: pandapowerNet) -> None:
+    net.res_bus[~net.bus.in_service] = np.nan
+    # TODO: add other out of service elements
+
+
 def _extract_results(net, ppc):
     _set_buses_out_of_service(ppc)  # for NaN results in net.res_bus for inactive buses
     _set_dc_buses_out_of_service(ppc)  # for NaN results in net.res_bus_dc for inactive buses
@@ -38,13 +42,51 @@ def _extract_results(net, ppc):
     _get_gen_results(net, ppc, bus_lookup_aranged, bus_pq)
     _get_bus_results(net, ppc, bus_pq)
     bus_p_dc = _get_p_dc_results(net, ppc, bus_dc_lookup_aranged)
-    # _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
+    _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc)
+    # _get_branch_dc_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc) # not needed since it is calculated in _get_branch_results
     _get_bus_dc_results(net, bus_p_dc)
+    _get_vsc_stacked_results(net)
+    _overwrite_out_of_service(net)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
         _remove_costs(net)
 
+
+def _get_vsc_stacked_results(net):
+    """
+    Extract the results for the bipolar VSC from the monopolar VSC table.
+    This done via the indexes, since we have created at the beginning two net.vsc entries, for every net.b2b_vsc entry.
+    The idea is, to first lookup the indexes and recreate the naming scheme, then cut out the part needed form the
+    net.res_vsc table and afterwards grouping and aggregating everything together.
+    """
+    if len(net["vsc_stacked"]) > 0:
+        # create an index of the stacked_vsc's
+        indices = net.vsc_stacked.index.values
+        # naming scheme is stacked_0+, stacked_0-, stacked_1+, stacked_1-, ...
+        vsc_idx = net.vsc[net.vsc['name'].isin(get_vsc_stacked_names(indices))].index
+        res_vsc = net.res_vsc.loc[vsc_idx]
+
+        # Add a grouping index to split rows into pairs (0,1), (2,3), etc.
+        res_vsc['group'] = res_vsc.index // 2
+
+        net.res_vsc_stacked = res_vsc.groupby('group').agg(
+            p_mw=('p_mw', 'sum'),                               # p_mw gets summed since this is the AC power
+            q_mvar=('q_mvar', 'sum'),                           # q_mvar also gets summed
+            p_dc_mw_p=('p_dc_mw', 'first'),                     # MW of the plus DC bus
+            p_dc_mw_m=('p_dc_mw', 'last'),                      # MW of the minus DC bus
+            vm_internal_pu=('vm_internal_pu', 'mean'),          # The internal vm_pu is the average of both vsc
+            va_internal_degree=('va_internal_degree', 'mean'),  # Same for the angle
+            vm_pu=('vm_pu', 'mean'),                            # Mean of the vm_pu set point
+            va_degree = ('va_degree', 'mean'),                  # Mean of the va_degree set point
+            vm_internal_dc_pu_p=('vm_internal_dc_pu', 'first'), # Internal dc set point for the plus bus
+            vm_internal_dc_pu_m=('vm_internal_dc_pu', 'last'),  # Same for the minus bus
+            vm_dc_pu_p=('vm_dc_pu', 'first'),                   # And also for the external pu set point
+            vm_dc_pu_m=('vm_dc_pu', 'last'),                    # also for the minus bus
+        )
+
+        # remove the vsc_stacked results from the res table
+        net.res_vsc.drop(vsc_idx, axis=0, inplace=True)
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     # reset_results(net, False)
@@ -93,7 +135,7 @@ def verify_results(net, mode="pf"):
     elements = get_relevant_elements(mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
-        res_element, res_empty_element = get_result_tables(element, suffix)
+        res_element, _ = get_result_tables(element, suffix)
 
         index_equal = False if res_element not in net else net[element].index.equals(net[res_element].index)
         if not index_equal:
@@ -145,17 +187,17 @@ def init_element(net, element, suffix=None):
 
 
 def get_relevant_elements(mode="pf"):
-    if mode == "pf" or mode == "opf":
+    if mode == "pf" or mode == "opf" or mode == "dc":
         return ["bus", "bus_dc", "line", "line_dc", "trafo", "trafo3w", "impedance", "ext_grid",
-                "load", "motor", "sgen", "storage", "shunt", "gen", "ward",
-                "xward", "dcline", "asymmetric_load", "asymmetric_sgen",
-                "switch", "tcsc", "svc", "ssc", "vsc"]
+                "load", "load_dc", "motor", "sgen", "storage", "shunt", "gen", "ward",
+                "xward", "dcline", "asymmetric_load", "asymmetric_sgen", "source_dc",
+                "switch", "tcsc", "svc", "ssc", "vsc", "vsc_stacked", "vsc_bipolar"]
     elif mode == "sc":
         return ["bus", "line", "trafo", "trafo3w", "ext_grid", "gen", "sgen", "switch"]
     elif mode == "se":
-        return ["bus", "line", "trafo", "trafo3w", "impedance", "switch"]
+        return ["bus", "line", "trafo", "trafo3w", "impedance", "switch", "shunt"]
     elif mode == "pf_3ph":
-        return ["bus", "line", "trafo", "ext_grid", "shunt",
+        return ["bus", "line", "trafo", "ext_grid", "shunt", "gen",
                 "load", "sgen", "storage", "asymmetric_load", "asymmetric_sgen"]
 
 
@@ -229,7 +271,6 @@ def _ppci_internal_to_ppc(result, ppc):
         # Only for sc calculation
         # if branch current matrices have been stored they need to include out of service elements
         if key in BRANCH_RESULTS_KEYS:
-
             # n_buses = np.shape(ppc['bus'])[0]
             n_branches = np.shape(ppc['branch'])[0]
             # n_rows_result = np.shape(result['bus'])[0]

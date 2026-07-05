@@ -1,22 +1,20 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from collections import defaultdict
 import uuid
+from collections import Counter, defaultdict
 
 import numpy as np
 import pandas as pd
+
 from pandapower.auxiliary import get_indices
-from pandapower.create import create_empty_network
+from pandapower.create.network_create import create_empty_network
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -27,26 +25,20 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
     Adds column data to elements, inferring them from the column data of buses they are
     connected to.
 
-    INPUT:
-        **net** (pandapowerNet) - the pandapower net that will be changed
+    Parameters:
+        net (pandapowerNet): the pandapower net that will be changed
+        column (string): name of column that should be copied from the bus table to the element table
+        replace (bool): if True, an existing column in the element table will be overwritten
+        elements (list): list of elements that should get the column values from the bus table
+        branch_bus (list): defines which bus should be considered for branch elements. 'branch_bus' must have the length
+            of 2. One entry must be 'from_bus' or 'to_bus', the other 'hv_bus' or 'lv_bus'
 
-        **column** (string) - name of column that should be copied from the bus table to the element
-        table
-
-        **replace** (boolean) - if True, an existing column in the element table will be overwritten
-
-        **elements** (list) - list of elements that should get the column values from the bus table
-
-        **branch_bus** (list) - defines which bus should be considered for branch elements.
-        'branch_bus' must have the length of 2. One entry must be 'from_bus' or 'to_bus', the
-        other 'hv_bus' or 'lv_bus'
-
-    EXAMPLE:
-        compare to add_zones_to_elements()
+    Example:
+        See :func:`add_zones_to_elements`
     """
     branch_bus = ["from_bus", "hv_bus"] if branch_bus is None else branch_bus
     if column not in net.bus.columns:
-        raise ValueError("%s is not in net.bus.columns" % column)
+        raise ValueError(f"{column} is not in net.bus.columns")
     elements = elements if elements is not None else pp_elements(bus=False, other_elements=False)
     elements_to_replace = elements if replace else [
         el for el in elements if column not in net[el].columns or net[el][column].isnull().all()]
@@ -83,33 +75,29 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
     Adds column data to elements, inferring them from the column data of the elements linked by the
     columns "element" and "element_type" or "et".
 
-    INPUT:
-        **net** (pandapowerNet) - the pandapower net that will be changed
+    Parameters:
+        net (pandapowerNet): the pandapower net that will be changed
+        column (string): name of column that should be copied from the tables of the elements.
+        replace (bool): if True, an existing column will be overwritten
+        elements (list): list of elements that should get the column values from the linked element tables. If None, all
+            elements with the columns "element" and "element_type" or "et" are considered (these are currently
+            "measurement" and "switch").
+        continue_on_missing_column (bool, True): If False, a error will be raised in case of an element table has no
+            column 'column' although this element is refered in 'elements'. E.g. 'measurement' is in 'elements' and in
+            net.measurement is a trafo measurement but in net.trafo there is no column 'name' although column=='name'
+            in this case :func:`continue_on_missing_column` acts.
 
-        **column** (string) - name of column that should be copied from the tables of the elements.
-
-        **replace** (boolean) - if True, an existing column will be overwritten
-
-        **elements** (list) - list of elements that should get the column values from the linked
-        element tables. If None, all elements with the columns "element" and "element_type" or
-        "et" are considered (these are currently "measurement" and "switch").
-
-        **continue_on_missing_column** (Boolean, True) - If False, a error will be raised in case of
-        an element table has no column 'column' although this element is refered in 'elements'.
-        E.g. 'measurement' is in 'elements' and in net.measurement is a trafo measurement but
-        in net.trafo there is no column 'name' although column=='name' - ni this case
-        'continue_on_missing_column' acts.
-
-    EXAMPLE:
-        import pandapower as pp
-        import pandapower.networks as pn
-        net = pn.create_cigre_network_mv()
-        pp.create_measurement(net, "i", "trafo", 5, 3, 0, side="hv")
-        pp.create_measurement(net, "i", "line", 5, 3, 0, side="to")
-        pp.create_measurement(net, "p", "bus", 5, 3, 2)
-        print(net.measurement.name.values, net.switch.name.values)
-        pp.add_column_from_element_to_elements(net, "name", True)
-        print(net.measurement.name.values, net.switch.name.values)
+    Example:
+        >>> from pandapower.create import create_measurement
+        >>> from pandapower import add_column_from_element_to_elements
+        >>> from pandapower.networks.cigre_networks import create_cigre_network_mv
+        >>> net = create_cigre_network_mv()
+        >>> create_measurement(net, "i", "trafo", 5, 3, 0, side="hv")
+        >>> create_measurement(net, "i", "line", 5, 3, 0, side="to")
+        >>> create_measurement(net, "p", "bus", 5, 3, 2)
+        >>> print(net.measurement.name.values, net.switch.name.values)
+        >>> add_column_from_element_to_elements(net, "name", True)
+        >>> print(net.measurement.name.values, net.switch.name.values)
     """
     elements = elements if elements is not None else pp_elements()
     elements_with_el_and_et_column = [el for el in elements if "element" in net[el].columns and (
@@ -132,7 +120,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
                 raise KeyError(message)
             else:
                 logger.debug(message)
-        for et in list(set(element_type) - set(element_types_without_column)):
+        for et in set(element_type) - set(element_types_without_column):
             idx_et = element_type.index[element_type == et]
             net[el].loc[idx_et, column] = net[et][column].loc[net[el].element[idx_et]].values
 
@@ -141,19 +129,19 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     """
     Adds zones to elements, inferring them from the zones of buses they are connected to.
     """
-    elements = ["line", "trafo", "ext_grid", "switch"] if elements is None else elements
+    elements = pp_elements(bus=False) if elements is None else elements
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def reindex_buses(net, bus_lookup):
+def reindex_buses(net, bus_lookup, allow_duplicate_index=False):
     """
     Changes the index of net.bus and considers the new bus indices in all other pandapower element
     tables.
 
-    INPUT:
-      **net** - pandapower network
-
-      **bus_lookup** (dict) - the keys are the old bus indices, the values the new bus indices
+    Parameters:
+        net: pandapower network
+        bus_lookup (dict): the keys are the old bus indices, the values the new bus indices
+        allow_duplicate_index (bool): Flag to allow creation of duplicate bus index, default is false
     """
     not_fitting_bus_lookup_keys = set(bus_lookup.keys()) - set(net.bus.index)
     if len(not_fitting_bus_lookup_keys):
@@ -161,6 +149,15 @@ def reindex_buses(net, bus_lookup):
                      str(not_fitting_bus_lookup_keys))
 
     missing_bus_indices = sorted(set(net.bus.index) - set(bus_lookup.keys()))
+    if not allow_duplicate_index:
+        duplicate_indices = set(missing_bus_indices) & set(bus_lookup.values())
+        if len(duplicate_indices):
+            raise ValueError("These bus indices are already used and not being updated. Thus they cannot be used as new index: " +
+                        str(duplicate_indices))
+        duplicate_indices = [v for v, c in Counter(bus_lookup.values()).items() if c > 1]
+        if len(duplicate_indices):
+            raise ValueError("Duplicate values for new indices not allowed: " + str(duplicate_indices))
+
     if len(missing_bus_indices):
         bus_lookup.update({b: b for b in missing_bus_indices})
 
@@ -168,6 +165,7 @@ def reindex_buses(net, bus_lookup):
     net.bus.index = get_indices(net.bus.index, bus_lookup)
     net.res_bus.index = get_indices(net.res_bus.index, bus_lookup)
     net.res_bus_3ph.index = get_indices(net.res_bus_3ph.index, bus_lookup)
+    net.res_bus_sc.index = get_indices(net.res_bus_sc.index, bus_lookup)
 
     # --- adapt link in bus elements
     for element, value in element_bus_tuples():
@@ -178,7 +176,7 @@ def reindex_buses(net, bus_lookup):
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
-                (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
+            (net.group.element_type == "bus").values & net.group.reference_column.isnull().values]:
             net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
                 get_indices(net.group.element_index.iat[row], bus_lookup))
 
@@ -202,16 +200,13 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     Creates a continuous bus index starting at 'start' and replaces all
     references of old indices by the new ones.
 
-    INPUT:
-      **net** - pandapower network
+    Parameters:
+        net: pandapower network
+        start: index begins with "start"
+        store_old_index: if True, stores the old index in net.bus["old_index"]
 
-    OPTIONAL:
-      **start** - index begins with "start"
-
-      **store_old_index** - if True, stores the old index in net.bus["old_index"]
-
-    OUTPUT:
-      **bus_lookup** - mapping of old to new index
+    Returns:
+        mapping of old to new index
     """
     net.bus.sort_index(inplace=True)
     if store_old_index:
@@ -241,18 +236,17 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
     lookup : dict[int,int], optional
         lookup to assign new indices to old indices, by default None
 
-    Notes
-    -----
-    Either new_indices or lookup must be given.
-    old_indices can be given to limit the indices to be replaced. In case of given new_indices,
-    both must have the same length.
-    If element_type is "group", be careful to give new_indices without passing old_indices because
-    group indices do not need to be unique.
+    .. note::
+        Either new_indices or lookup must be given.
+        old_indices can be given to limit the indices to be replaced. In case of given new_indices,
+        both must have the same length.
+        If element_type is "group", be careful to give new_indices without passing old_indices because
+        group indices do not need to be unique.
 
     Examples
     --------
-    >>> net = pp.create_empty_network()
-    >>> idx0 = pp.create_bus(net, 110)
+    >>> net = create_empty_network()
+    >>> idx0 = create_bus(net, 110)
     >>> idx1 = 4
     >>> idx2 = 7
     >>> # Reindex using 'new_indices':
@@ -284,17 +278,6 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         reindex_buses(net, lookup)
         return
 
-    if element_type == "characteristic":
-        for old_id, new_id in lookup.items():
-            for ele in ['vk_percent_characteristic', 'vkr_percent_characteristic']:
-                if ele in net.trafo:
-                    net.trafo.loc[net.trafo[ele] == old_id, ele] = new_id
-
-            for ele in ['vk_hv_percent_characteristic', 'vkr_hv_percent_characteristic', 'vk_mv_percent_characteristic',
-                        'vkr_mv_percent_characteristic', 'vk_lv_percent_characteristic', 'vkr_lv_percent_characteristic']:
-                if ele in net.trafo3w:
-                    net.trafo3w.loc[net.trafo3w[ele] == old_id, ele] = new_id
-
     # --- reindex
     new_index = pd.Series(net[element_type].index, index=net[element_type].index)
     if element_type != "group":
@@ -306,8 +289,8 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
     # --- adapt group link
     if net.group.shape[0]:
         for row in np.arange(net.group.shape[0], dtype=np.int64)[
-                (net.group.element_type == element_type).values & \
-                net.group.reference_column.isnull().values]:
+            (net.group.element_type == element_type).values & \
+            net.group.reference_column.isnull().values]:
             net.group.iat[row, net.group.columns.get_loc("element_index")] = list(
                 get_indices(net.group.element_index.iat[row], lookup))
 
@@ -340,26 +323,31 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         element_in_cost_df = (net[cost_df].et == element_type) & net[cost_df].element.isin(old_indices)
         if sum(element_in_cost_df):
             net[cost_df].loc[element_in_cost_df, "element"] = get_indices(net[cost_df].element[
-                element_in_cost_df], lookup)
+                                                                              element_in_cost_df], lookup)
 
+    # --- adapt tap_characteristic
+    if "trafo_characteristic_table" in net and "id_characteristic" in net["trafo_characteristic_table"]:
+        if element_type == "trafo_characteristic_table":
+            net["trafo_characteristic_table"]["id_characteristic"] = (
+                net["trafo_characteristic_table"]["id_characteristic"].map(lookup))
+            net["trafo"]["id_characteristic_table"] = (
+                net["trafo"]["id_characteristic_table"].map(lookup))
+            net["trafo3w"]["id_characteristic_table"] = (
+                net["trafo3w"]["id_characteristic_table"].map(lookup))
 
 def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     """
     Creating a continuous index for all the elements, starting at zero and replaces all references
     of old indices by the new ones.
 
-    INPUT:
-      **net** - pandapower network with unodered indices
+    Parameters:
+        net: pandapower network with unordered indices
+        start: index begins with "start"
+        add_df_to_reindex: by default all useful pandapower elements for power flow will be selected. Customized
+            DataFrames can also be considered here.
 
-    OPTIONAL:
-      **start** - index begins with "start"
-
-      **add_df_to_reindex** - by default all useful pandapower elements for power flow will be
-      selected. Customized DataFrames can also be considered here.
-
-    OUTPUT:
-      **net** - pandapower network with odered and continuous indices
-
+    Returns:
+      net: pandapower network with ordered and continuous indices
     """
     element_types = pp_elements(res_elements=True)
 
@@ -368,15 +356,19 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     element_types -= {"bus", "bus_geodata", "res_bus"}
 
     element_types |= add_df_to_reindex
+    if "trafo_characteristic_table" in net:
+        element_types |= {"trafo_characteristic_table"}
 
     # run reindex_elements() for all element_types
-    for et in list(element_types):
-        net[et].sort_index(inplace=True)
+    for et in element_types:
+        net[et] = net[et].sort_index()
         new_index = list(np.arange(start, len(net[et]) + start))
-
-        if et in net and isinstance(net[et], pd.DataFrame):
+        if et == "trafo_characteristic_table":
+            ids = net[et].id_characteristic.dropna().unique()
+            reindex_elements(net, et, lookup = dict(zip(sorted(ids), range(0, len(ids)))))
+        elif et in net and isinstance(net[et], pd.DataFrame):
             if et in ["bus_geodata", "line_geodata"]:
-                logger.info(et + " don't need to bo included to 'add_df_to_reindex'. It is " +
+                logger.info(et + " don't need to be included to 'add_df_to_reindex'. It is " +
                             "already included by et=='" + et.split("_")[0] + "'.")
             else:
                 reindex_elements(net, et, new_index)
@@ -415,15 +407,15 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
 def set_data_type_of_columns_to_default(net):
     """
     Overwrites dtype of DataFrame columns of PandapowerNet elements to default dtypes defined in
-    pandapower. The function "convert_format" does that authomatically for nets saved with
+    pandapower. The function "convert_format" does that automatically for nets saved with
     pandapower versions below 1.6. If this is required for versions starting with 1.6, it should be
     done manually with this function.
 
-    INPUT:
-      **net** - pandapower network with unodered indices
+    Parameters:
+        net: pandapower network with unordered indices
 
-    OUTPUT:
-      No output; the net passed as input has pandapower-default dtypes of columns in element tables.
+    Returns:
+        no return value; Sideeffect: the net passed as input has pandapower-default dtypes of columns in element tables.
 
     """
     new_net = create_empty_network()

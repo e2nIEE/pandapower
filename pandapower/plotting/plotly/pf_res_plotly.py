@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 from typing import Literal
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.mapbox_plot import geo_data_to_latlong
 from pandapower.plotting.plotly.traces import (
     create_bus_trace,
     create_line_trace,
@@ -15,11 +14,9 @@ from pandapower.plotting.plotly.traces import (
     draw_traces,
 )
 from pandapower.run import runpp
+from pandapower.plotting.geo import convert_crs
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +24,7 @@ def pf_res_plotly(net: pandapowerNet,
                   cmap: str="Jet",
                   use_line_geo=None,
                   on_map: bool=False,
-                  projection: str|None=None,
+                  projection: int|None=None,
                   map_style: str='basic',
                   figsize: int=1,
                   aspectratio: str='auto',
@@ -41,35 +38,33 @@ def pf_res_plotly(net: pandapowerNet,
                   auto_open: bool=True,
                   power_unit: Literal["", "k", "M"]="M",
                   current_unit: Literal["", "k"]="k",
-                  voltage_unit: Literal["", "k"]="k"):
+                  voltage_unit: Literal["", "k"]="k",
+                  zoomlevel: int=11):
     """
-        Plots a pandapower network in plotly
+    Plots a pandapower network in plotly
 
-        using colormap for coloring lines according to line loading and buses according to voltage in p.u.
-        If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
+    using colormap for coloring lines according to line loading and buses according to voltage in p.u.
+    If no geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
-        INPUT:
-            **net** - The pandapower format network.
-
-        OPTIONAL:
-            **respect_switches** (bool, False) - Respect switches when artificial geodata is created
-
-            **cmap** (str, True) - name of the colormap
-
-            **colors_dict** (dict, None) - by default 6 basic colors from default collor palette is used.
-            Otherwise, user can define a dictionary in the form: voltage_kv : color
-
-            **on_map** (bool, False) - enables using mapbox plot in plotly. If provided geodata are not
-            real geo-coordinates in lon/lat form, on_map will be set to False.
-
-            **projection** (String, None) - defines a projection from which network geo-data will be transformed to
-            lat-long. For each projection a string can be found at http://spatialreference.org/ref/epsg/
-
-            **map_style** (str, 'basic') - enables using mapbox plot in plotly
-
-            - 'streets'
-            - 'bright'
-            - 'light'
+    Parameters:
+        net: The pandapower format network.
+        respect_switches (bool, False): Respect switches when artificial geodata is created
+        cmap (str, True): name of the colormap
+        colors_dict (dict, None): by default 6 basic colors from default collor palette is used. Otherwise, user can
+            define a dictionary in the form: voltage_kv : color
+        on_map (bool, False): enables using mapLibre plot in plotly. If provided geodata are not real
+            geo-coordinates in lon/lat form, on_map will be set to False.
+        projection (String, None): defines a projection from which network geo-data will be transformed to lat-long.
+            For each projection a string can be found at https://spatialreference.org/ref/epsg/
+        map_style (str, 'basic'): enables using mapLibre plot in plotly
+            
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
             - 'dark'
             - 'satellite'
 
@@ -100,9 +95,10 @@ def pf_res_plotly(net: pandapowerNet,
 
             **voltage_unit** (str, '') - default unit of displayed V data ["", "k"]
 
+            **zoomlevel** (int, 11): initial zoomlevel of map plot (only if on_map=True)
+
         OUTPUT:
             **figure** (graph_objs._figure.Figure) figure object
-
     """
     if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
         logger.warning(
@@ -133,7 +129,7 @@ def pf_res_plotly(net: pandapowerNet,
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
-        geo_data_to_latlong(net, projection=projection)
+        convert_crs(net, epsg_in=projection, epsg_out=4326)
 
     # ----- Buses ------
     # initializating bus trace
@@ -218,12 +214,15 @@ def pf_res_plotly(net: pandapowerNet,
                                       cmap=cmap_lines, cmin=0, cmax=100)
 
     # ----- Ext grid ------
+    ext_grid_trace = []
     # get external grid from create_bus_trace
-    marker_type = 'circle' if on_map else 'square'
-    ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
-                                      color='grey', size=bus_size * 2, trace_name='external_grid',
-                                      patch_type=marker_type)
+    if 'ext_grid' in net and len(net.ext_grid):
+        marker_type = 'circle' if on_map else 'square'
+        ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
+                                          color='grey', size=bus_size * 2, trace_name='external_grid',
+                                          patch_type=marker_type)
 
     return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
                        showlegend=False, aspectratio=aspectratio, on_map=on_map,
-                       map_style=map_style, figsize=figsize, filename=filename, auto_open=auto_open)
+                       map_style=map_style, figsize=figsize, filename=filename,
+                       auto_open=auto_open,zoomlevel=zoomlevel)

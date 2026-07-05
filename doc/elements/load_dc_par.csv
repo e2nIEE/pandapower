@@ -1,0 +1,8 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the load
+bus_dc*;integer;;index of connected bus
+p_dc_mw*;float;:math:`\geq 0`;active power of the load [MW]
+scaling *;float;:math:`\geq 0`;scaling factor for active and reactive power
+in_service*;boolean;True / False;specifies if the load is in service.
+type*;String;;A string describing the type.
+controllable**;bool;;States if load is controllable or not, load will not be used as a flexibilty if it is not controllable

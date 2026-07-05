@@ -57,11 +57,11 @@ class GraphToolInterface(Graph):
             # no edges for these buses
             return None
 
-        edge_data = dict()
+        edge_data = {}
         for e in edges:
             e_key, e_val = self.edge_properties["edge_data"][e].popitem()
-            if key is not None:
-                if key == e_key: return e_val
+            if key is not None and key == e_key:
+                return e_val
             edge_data[e_key] = e_val
         return edge_data
 

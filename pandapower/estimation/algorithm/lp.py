@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 from scipy.optimize import linprog
+from scipy.sparse import hstack
 
 # Make sure the library is installed
 # Otherwise, load the scipy linprog
@@ -49,7 +50,7 @@ class LPAlgorithm(BaseAlgorithm):
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-            except np.linalg.linalg.LinAlgError:  # pragma: no cover
+            except np.linalg.LinAlgError:  # pragma: no cover
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
@@ -74,7 +75,8 @@ class LPAlgorithm(BaseAlgorithm):
         Im = np.eye(m)
 
         c_T = np.r_[zero_n, zero_n, one_m, one_m]
-        A = np.c_[H, -H, Im, -Im]
+        # A = np.c_[H, -H, Im, -Im] # does not work with sparse matrices
+        A = hstack([H, -H, Im, -Im]).tocsr()
 
         if ortools_available and with_ortools:
             return LPAlgorithm._solve_or_tools(c_T.ravel(), A, r, n)
@@ -89,16 +91,17 @@ class LPAlgorithm(BaseAlgorithm):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
-                          method="simplex", options={'tol': 1e-5, 'disp': False, 'maxiter': 20000})
+                          method="highs", options={'tol': 1e-5, 'disp': False, 'maxiter': 20000})
         if res.success:
             d_x = np.array(res['x'][:n]).ravel() - np.array(res['x'][n:2 * n]).ravel()
             return d_x
         else:  # pragma: no cover
-            raise np.linalg.linalg.LinAlgError
+            raise np.linalg.LinAlgError
 
 
     @staticmethod
-    def _solve_or_tools(c_T, A, r, n):
+    def _solve_or_tools(c_T, A, r, n_E):
+        # n_E   = Anzahl E-Variablen (z.B. 17)
         # Just to ensure floating point precision if there are any
         error_margin = 1e-10
 
@@ -112,15 +115,27 @@ class LPAlgorithm(BaseAlgorithm):
             x.append(solver.NumVar(0, solver.infinity(), 'x_' + str(counter)))
 
 
-        # Give the equality constraints...
-        for row_counter, row in enumerate(A):
-            row_equality = 0
-            for col_counter, col in enumerate(row):
-                if abs(col) > error_margin:
-                    row_equality = row_equality + col*x[col_counter]
+        # # Give the equality constraints...
+        # for row_counter, row in enumerate(A):
+        #     row_equality = 0
+        #     for col_counter, col in enumerate(row):
+        #         if abs(col) > error_margin:
+        #             row_equality = row_equality + col*x[col_counter]
+        #
+        #     solver.Add(row_equality == r[row_counter])
+        m, _ = A.shape
+        for i in range(m):
+            start, end = A.indptr[i], A.indptr[i + 1]
+            cols = A.indices[start:end]  # Spalten-Indizes
+            vals = A.data[start:end]  # entsprechende Werte
 
-            solver.Add(row_equality == r[row_counter])
-
+            # baue OR-Tools Ausdruck nur aus den (j, val)-Paaren mit |val|>error_margin
+            expr = solver.Sum(
+                vals[k] * x[cols[k]]
+                for k in range(len(vals))
+                if abs(vals[k]) > error_margin
+            )
+            solver.Add(expr == r[i])
 
         # What to optimize?
         to_minimize = 0
@@ -140,9 +155,10 @@ class LPAlgorithm(BaseAlgorithm):
                 d_x.append(x_current.solution_value())
 
             d_x = np.array(d_x)
-            return d_x[:n] - d_x[n:2*n]
+            # return d_x[:n] - d_x[n:2*n]
+            return d_x[:n_E] - d_x[n_E:2*n_E]
         else:
             # No solution found...
-            raise np.linalg.linalg.LinAlgError
+            raise np.linalg.LinAlgError
 
 

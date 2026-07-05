@@ -1,0 +1,5 @@
+**Parameter**;**Datatype**;**Explanation**
+id_q_capability_curve;int;ID in gen or sgen table column id_q_capability_characteristic
+p_mw;float;discrete P value for the Q min and max values [MW]
+q_min_mvar;float;corresponding Q min value [MVAr]
+q_max_mvar;float;corresponding Q max value [MVAr]

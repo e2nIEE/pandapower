@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
@@ -23,7 +23,7 @@ class BasicCtrl(JSONSerializableClass):
     Base-Class of all controllable elements within a network.
     """
 
-    def __init__(self, container, index=None, **kwargs):
+    def __init__(self, container, index=None):
         super().__init__()
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None:
@@ -153,40 +153,35 @@ class BasicCtrl(JSONSerializableClass):
 
 class Controller(BasicCtrl):
     """
-    Base-Class of all controllable elements within a network.
+    Base-Class of all controllable elements within a network. Extension of BasicCtrl
     """
 
-    def __init__(self, net, in_service=True, order=0, level=0, index=None, recycle=False,
+    def __init__(self, net, name=None, in_service=True, order=0, level=0, index=None, recycle=False,
                  drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
-                 matching_params=None, **kwargs):
-        super(Controller, self).__init__(net, index, **kwargs)
+                 matching_params=None): 
+        super(Controller, self).__init__(net, index)
         self.matching_params = dict() if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         # even though this code is repeated in JSONSerializableClass, it is necessary because of how drop_same_existing_controller works
         # it is still needed in JSONSerializableClass because it is used for characteristics
         if index is None and "controller" in net.keys():
             index = get_free_id(net.controller)
-        self.index = self.add_controller_to_net(net=net, in_service=in_service, initial_run=initial_run,
+        self.index = self.add_controller_to_net(net=net, name=name, in_service=in_service, initial_run=initial_run,
                                                 order=order, level=level, index=index, recycle=recycle,
                                                 drop_same_existing_ctrl=drop_same_existing_ctrl,
-                                                overwrite=overwrite, matching_params=matching_params, **kwargs)
+                                                overwrite=overwrite, matching_params=matching_params)
 
-    def add_controller_to_net(self, net, in_service, initial_run, order, level, index, recycle,
+    def add_controller_to_net(self, net, name, in_service, initial_run, order, level, index, recycle,
                               drop_same_existing_ctrl, overwrite, **kwargs):
         """
         adds the controller to net['controller'] dataframe.
 
-        INPUT:
-            **in_service** (bool) - in service status
-
-            **order** (int) - order
-
-            **index** (int) - index
-
-            **recycle** (bool) - if controller needs a new bbm (ppc, Ybus...) or if it can be used \
-                                 with prestored values. This is mostly needed for time series \
-                                 calculations
-
+        Parameters:
+            in_service (bool): in service status
+            order: order
+            index: index
+            recycle: if controller needs a new bbm (ppc, Ybus...) or if it can be used with prestored values. This is
+                mostly needed for time series calculations
         """
         if drop_same_existing_ctrl:
             drop_same_type_existing_controllers(net, type(self), index=index, **kwargs)
@@ -195,39 +190,12 @@ class Controller(BasicCtrl):
 
         # use base class method to raise an error if the object is in DF and overwrite = False
         # if the index is None, the base class is in charge of obtaining the next free index in the data frame
-        fill_dict = {"in_service": in_service, "initial_run": initial_run, "recycle": recycle,
+        fill_dict = {"name": name, "in_service": in_service, "initial_run": initial_run, "recycle": recycle,
                      "order": order, "level": level}
         added_index = super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite,
                            fill_dict=fill_dict, preserve_dtypes=True)
         return added_index
-
-    def time_step(self, net, time):
-        super().time_step(net, time)
-
-    def initialize_control(self, net):
-        super().initialize_control(net)
-
-    def is_converged(self, net):
-        return super().is_converged(net)
-
-    def control_step(self, net):
-        super().control_step(net)
-
-    def repair_control(self, net):
-        super().repair_control(net)
-
-    def restore_init_state(self, net):
-        super().restore_init_state(net)
-
-    def finalize_control(self, net):
-        super().finalize_control(net)
-
-    def finalize_step(self, net, time):
-        super().finalize_step(net, time)
-
-    def set_active(self, net, in_service):
-        super().set_active(net, in_service)
-
+    
     def set_recycle(self, net):
         """
         Checks the recyclability of this controller and changes the recyclability of the control handler if

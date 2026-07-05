@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from pandapower.auxiliary import _detect_read_write_flag, write_to_net
 from pandapower.control.basic_controller import Controller
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -28,33 +25,19 @@ class ConstControl(Controller):
     table (e.g. net.controller["object"] -> net.controller.object.at[0, "vm_set_pu"]
     can be set if the attribute is specified as "object.attribute" (e.g. "object.vm_set_pu").
 
-    INPUT:
-
-        **net** (attrdict) - The net in which the controller resides
-
-        **element** - element table ('sgen', 'load' etc.)
-
-        **variable** - variable ('p_mw', 'q_mvar', 'vm_pu', 'tap_pos' etc.)
-
-        **element_index** (int[]) - IDs of the controlled elements
-
-        **data_source** (obj) - The data source that provides profile data
-
-        **profile_name** (str[]) - The profile names of the elements in the data source
-
-
-    OPTIONAL:
-
-        **scale_factor** (real, 1.0) - Scaling factor for time series input values
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **recycle** (bool, True) - Re-use of internal-data in a time series loop.
-
-        **drop_same_existing_ctrl** (bool, False) - Indicates if already existing controllers of
-        the same type and with the same matching parameters (e.g. at same element) should be
-        dropped
-
+    Parameters:
+        net (ADict): The net in which the controller resides
+        element: element table ('sgen', 'load' etc.)
+        variable: variable ('p_mw', 'q_mvar', 'vm_pu', 'tap_pos' etc.)
+        element_index (int[]): IDs of the controlled elements
+        data_source (obj): The data source that provides profile data
+        profile_name (str[]): The profile names of the elements in the data source
+        scale_factor (real, 1.0): Scaling factor for time series input values
+        in_service (bool, True): Indicates if the controller is currently in_service
+        recycle (bool, True): Re-use of internal-data in a time series loop.
+        drop_same_existing_ctrl (bool, False): Indicates if already existing controllers of the same type and with the
+            same matching parameters (e.g. at same element) should be dropped
+    
     .. note:: If multiple elements are represented with one controller, the data source must have
         integer columns. At the moment, only the DFData format is tested for the multiple const
         control.
@@ -70,9 +53,12 @@ class ConstControl(Controller):
                                "element_index": element_index}
         super().__init__(net, in_service=in_service, recycle=recycle, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
-                         matching_params=matching_params, initial_run=initial_run,
-                         **kwargs)
-
+                         matching_params=matching_params, initial_run=initial_run) 
+        
+        # write kwargs in self
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        
         # data source for time series values
         self.data_source = data_source
         # ids of sgens or loads

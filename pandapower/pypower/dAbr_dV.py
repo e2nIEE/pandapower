@@ -45,7 +45,7 @@ def dAbr_dV(dSf_dVa, dSf_dVm, dSt_dVa, dSt_dVm, Sf, St):
     [TN2]  R. D. Zimmerman, I{"AC Power Flows, Generalized OPF Costs and
     their Derivatives using Complex Matrix Notation"}, MATPOWER
     Technical Note 2, February 2010.
-    U{http://www.pserc.cornell.edu/matpower/TN2-OPF-Derivatives.pdf}
+    U{https://matpower.org/docs/TN2-OPF-Derivatives.pdf}
 
     @return: The partial derivatives of the squared flow magnitudes w.r.t
              voltage magnitude and voltage angle given the flows and flow

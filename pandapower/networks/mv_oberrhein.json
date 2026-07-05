@@ -18,18 +18,36 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
+    "bus_dc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"vn_kv\",\"type\",\"zone\",\"in_service\",\"geo\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "vn_kv": "float64",
+        "type": "object",
+        "zone": "object",
+        "in_service": "bool",
+        "geo": "object"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
     "load": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"const_z_percent\",\"const_i_percent\",\"sn_mva\",\"scaling\",\"in_service\",\"type\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146],\"data\":[[\"LV Load 0\",103,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 1\",174,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 2\",194,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 3\",34,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 4\",76,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 5\",159,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 6\",38,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 7\",157,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 8\",168,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 9\",216,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 10\",149,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 11\",315,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 12\",181,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 13\",45,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 14\",106,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 15\",289,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 16\",110,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 17\",1,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 18\",51,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 19\",197,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 20\",148,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 21\",117,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 22\",145,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 23\",57,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 24\",141,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 25\",100,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 26\",147,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 27\",35,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 28\",313,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 29\",169,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 30\",273,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 31\",195,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 32\",305,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 33\",111,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 34\",227,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 35\",199,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 36\",98,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 37\",50,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 38\",184,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 39\",186,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 40\",82,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 41\",239,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 42\",143,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 43\",242,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 44\",246,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 45\",172,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 46\",167,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 47\",72,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 48\",119,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 49\",188,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 50\",269,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 51\",176,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 52\",304,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 53\",4,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 54\",150,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 55\",49,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 56\",178,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 57\",56,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 58\",190,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 59\",198,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 60\",287,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 61\",5,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 62\",281,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 63\",108,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 64\",80,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 65\",170,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 66\",162,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 67\",0,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 68\",140,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 69\",240,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 70\",118,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 71\",223,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 72\",301,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 73\",3,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 74\",205,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 75\",210,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 76\",81,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 77\",290,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 78\",138,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 79\",213,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 80\",53,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 81\",102,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 82\",231,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 83\",236,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 84\",155,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 85\",36,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 86\",316,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 87\",285,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 88\",73,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 89\",77,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 90\",189,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 91\",44,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 92\",101,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 93\",192,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 94\",275,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 95\",221,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 96\",146,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 97\",71,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 98\",37,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 99\",245,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 100\",200,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 101\",8,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 102\",46,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 103\",134,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 104\",65,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 105\",271,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 106\",286,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 107\",288,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 108\",133,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 109\",314,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 110\",43,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 111\",42,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 112\",79,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 113\",219,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 114\",132,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 115\",153,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 116\",107,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 117\",47,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 118\",241,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 119\",244,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 120\",201,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 121\",41,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 122\",173,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 123\",312,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 124\",109,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 125\",196,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 126\",94,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 127\",129,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 128\",2,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 129\",144,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 130\",120,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 131\",136,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 132\",137,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 133\",161,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 134\",224,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 135\",303,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 136\",207,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 137\",229,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 138\",75,0.25,0.050764665158501,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 139\",95,0.63,0.127926956199423,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 140\",54,0.4,0.081223464253602,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"MV Load 0\",215,0.5,0.101529330317002,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 1\",6,0.5,0.101529330317002,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 2\",48,0.5,0.101529330317002,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 3\",52,0.5,0.101529330317002,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 4\",55,0.5,0.101529330317002,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 5\",235,0.5,0.101529330317002,0.0,0.0,null,0.6,true,\"MV Load\"]]}",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"p_mw\",\"q_mvar\",\"const_z_p_percent\",\"const_z_q_percent\",\"const_i_p_percent\",\"const_i_q_percent\",\"sn_mva\",\"scaling\",\"in_service\",\"type\"],\"index\":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146],\"data\":[[\"LV Load 0\",103,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 1\",174,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 2\",194,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 3\",34,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 4\",76,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 5\",159,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 6\",38,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 7\",157,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 8\",168,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 9\",216,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 10\",149,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 11\",315,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 12\",181,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 13\",45,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 14\",106,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 15\",289,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 16\",110,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 17\",1,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 18\",51,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 19\",197,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 20\",148,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 21\",117,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 22\",145,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 23\",57,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 24\",141,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 25\",100,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 26\",147,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 27\",35,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 28\",313,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 29\",169,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 30\",273,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 31\",195,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 32\",305,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 33\",111,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 34\",227,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 35\",199,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 36\",98,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 37\",50,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 38\",184,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 39\",186,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 40\",82,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 41\",239,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 42\",143,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 43\",242,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 44\",246,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 45\",172,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 46\",167,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 47\",72,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 48\",119,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 49\",188,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 50\",269,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 51\",176,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 52\",304,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 53\",4,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 54\",150,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 55\",49,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 56\",178,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 57\",56,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 58\",190,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 59\",198,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 60\",287,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 61\",5,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 62\",281,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 63\",108,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 64\",80,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 65\",170,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 66\",162,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 67\",0,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 68\",140,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 69\",240,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 70\",118,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 71\",223,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 72\",301,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 73\",3,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 74\",205,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 75\",210,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 76\",81,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 77\",290,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 78\",138,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 79\",213,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 80\",53,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 81\",102,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 82\",231,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 83\",236,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 84\",155,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 85\",36,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 86\",316,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 87\",285,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 88\",73,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 89\",77,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 90\",189,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 91\",44,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 92\",101,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 93\",192,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 94\",275,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 95\",221,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 96\",146,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 97\",71,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 98\",37,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 99\",245,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 100\",200,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 101\",8,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 102\",46,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 103\",134,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 104\",65,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 105\",271,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 106\",286,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 107\",288,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 108\",133,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 109\",314,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 110\",43,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 111\",42,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 112\",79,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 113\",219,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 114\",132,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 115\",153,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 116\",107,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 117\",47,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 118\",241,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 119\",244,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 120\",201,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 121\",41,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 122\",173,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 123\",312,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 124\",109,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 125\",196,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 126\",94,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 127\",129,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 128\",2,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 129\",144,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 130\",120,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 131\",136,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 132\",137,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 133\",161,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 134\",224,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 135\",303,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 136\",207,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 137\",229,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 138\",75,0.25,0.050764665158501,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 139\",95,0.63,0.127926956199423,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"LV Load 140\",54,0.4,0.081223464253602,0.0,0.0,0.0,0.0,null,0.6,true,\"MV\\/LV Station\"],[\"MV Load 0\",215,0.5,0.101529330317002,0.0,0.0,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 1\",6,0.5,0.101529330317002,0.0,0.0,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 2\",48,0.5,0.101529330317002,0.0,0.0,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 3\",52,0.5,0.101529330317002,0.0,0.0,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 4\",55,0.5,0.101529330317002,0.0,0.0,0.0,0.0,null,0.6,true,\"MV Load\"],[\"MV Load 5\",235,0.5,0.101529330317002,0.0,0.0,0.0,0.0,null,0.6,true,\"MV Load\"]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
         "bus": "uint32",
         "p_mw": "float64",
         "q_mvar": "float64",
-        "const_z_percent": "float64",
-        "const_i_percent": "float64",
+        "const_z_p_percent": "float64",
+        "const_z_q_percent": "float64",
+        "const_i_p_percent": "float64",
+        "const_i_q_percent": "float64",
         "sn_mva": "float64",
         "scaling": "float64",
         "in_service": "bool",
@@ -244,6 +262,29 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
+    "vsc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"bus\",\"bus_dc\",\"r_ohm\",\"x_ohm\",\"r_dc_ohm\",\"pl_dc_mw\",\"control_mode_ac\",\"control_value_ac\",\"control_mode_dc\",\"control_value_dc\",\"controllable\",\"in_service\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "bus": "uint32",
+        "bus_dc": "uint32",
+        "r_ohm": "float64",
+        "x_ohm": "float64",
+        "r_dc_ohm": "float64",
+        "pl_dc_mw": "float64",
+        "control_mode_ac": "object",
+        "control_value_ac": "float64",
+        "control_mode_dc": "object",
+        "control_value_dc": "float64",
+        "controllable": "bool",
+        "in_service": "bool"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
     "ext_grid": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -289,10 +330,33 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
+    "line_dc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"from_bus_dc\",\"to_bus_dc\",\"length_km\",\"r_ohm_per_km\",\"g_us_per_km\",\"max_i_ka\",\"df\",\"parallel\",\"type\",\"in_service\",\"geo\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "name": "object",
+        "std_type": "object",
+        "from_bus_dc": "uint32",
+        "to_bus_dc": "uint32",
+        "length_km": "float64",
+        "r_ohm_per_km": "float64",
+        "g_us_per_km": "float64",
+        "max_i_ka": "float64",
+        "df": "float64",
+        "parallel": "uint32",
+        "type": "object",
+        "in_service": "bool",
+        "geo": "object"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
     "trafo": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_phase_shifter\",\"parallel\",\"df\",\"in_service\"],\"index\":[114,142],\"data\":[[\"HV\\/MV Transformer 0\",\"25 MVA 110\\/20 kV\",58,39,25.0,110.0,20.0,11.199999999999999,0.282,29.0,0.071,150.0,\"hv\",0,-9,9,1.5,null,-2,false,1,1.0,true],[\"HV\\/MV Transformer 1\",\"25 MVA 110\\/20 kV\",318,319,25.0,110.0,20.0,11.199999999999999,0.282,29.0,0.071,150.0,\"hv\",0,-9,9,1.5,null,-3,false,1,1.0,true]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"lv_bus\",\"sn_mva\",\"vn_hv_kv\",\"vn_lv_kv\",\"vk_percent\",\"vkr_percent\",\"pfe_kw\",\"i0_percent\",\"shift_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"parallel\",\"df\",\"in_service\",\"tap_changer_type\"],\"index\":[114,142],\"data\":[[\"HV\\/MV Transformer 0\",\"25 MVA 110\\/20 kV\",58,39,25.0,110.0,20.0,11.199999999999999,0.282,29.0,0.071,150.0,\"hv\",0,-9,9,1.5,null,-2,1,1.0,true,\"Ratio\"],[\"HV\\/MV Transformer 1\",\"25 MVA 110\\/20 kV\",318,319,25.0,110.0,20.0,11.199999999999999,0.282,29.0,0.071,150.0,\"hv\",0,-9,9,1.5,null,-3,1,1.0,true,\"Ratio\"]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -314,10 +378,10 @@
         "tap_step_percent": "float64",
         "tap_step_degree": "float64",
         "tap_pos": "int32",
-        "tap_phase_shifter": "bool",
         "parallel": "uint32",
         "df": "float64",
-        "in_service": "bool"
+        "in_service": "bool",
+        "tap_changer_type": "object"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -365,7 +429,7 @@
     "impedance": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"from_bus\",\"to_bus\",\"rft_pu\",\"xft_pu\",\"rtf_pu\",\"xtf_pu\",\"sn_mva\",\"in_service\",\"r_pu\",\"x_pu\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"from_bus\",\"to_bus\",\"rft_pu\",\"xft_pu\",\"rtf_pu\",\"xtf_pu\",\"sn_mva\",\"in_service\",\"r_pu\",\"x_pu\",\"gf_pu\",\"gt_pu\",\"bf_pu\",\"bt_pu\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -378,7 +442,11 @@
         "sn_mva": "float64",
         "in_service": "bool",
         "r_pu": "float64",
-        "x_pu": "float64"
+        "x_pu": "float64",
+        "gf_pu": "float64",
+        "gt_pu": "float64",
+        "bf_pu": "float64",
+        "bt_pu": "float64"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -514,17 +582,6 @@
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "characteristic": {
-      "_module": "pandas.core.frame",
-      "_class": "DataFrame",
-      "_object": "{\"columns\":[\"object\"],\"index\":[],\"data\":[]}",
-      "orient": "split",
-      "dtype": {
-        "object": "object"
-      },
-      "is_multiindex": false,
-      "is_multicolumn": false
-    },
     "controller": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
@@ -544,19 +601,19 @@
     "group": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"element_type\",\"element\",\"reference_column\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"name\",\"element_type\",\"element_index\",\"reference_column\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "name": "object",
         "element_type": "object",
-        "element": "object",
+        "element_index": "object",
         "reference_column": "object"
       },
       "is_multiindex": false,
       "is_multicolumn": false
     },
-    "version": "2.14.0",
-    "format_version": "2.14.0",
+    "version": "3.0.0.dev1",
+    "format_version": "3.1.0",
     "converged": true,
     "OPF_converged": false,
     "name": "",
@@ -1065,7 +1122,8 @@
           "sn_mva": 63.0
         }
       },
-      "fuse": {}
+      "fuse": {},
+      "line_dc": {}
     },
     "res_bus": {
       "_module": "pandas.core.frame",
@@ -1077,6 +1135,18 @@
         "va_degree": "float64",
         "p_mw": "float64",
         "q_mvar": "float64"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "res_bus_dc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"vm_pu\",\"p_mw\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "vm_pu": "float64",
+        "p_mw": "float64"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -1100,6 +1170,25 @@
         "va_from_degree": "float64",
         "vm_to_pu": "float64",
         "va_to_degree": "float64",
+        "loading_percent": "float64"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "res_line_dc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_from_mw\",\"p_to_mw\",\"pl_mw\",\"i_from_ka\",\"i_to_ka\",\"i_ka\",\"vm_from_pu\",\"vm_to_pu\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_from_mw": "float64",
+        "p_to_mw": "float64",
+        "pl_mw": "float64",
+        "i_from_ka": "float64",
+        "i_to_ka": "float64",
+        "i_ka": "float64",
+        "vm_from_pu": "float64",
+        "vm_to_pu": "float64",
         "loading_percent": "float64"
       },
       "is_multiindex": false,
@@ -1337,11 +1426,15 @@
     "res_switch": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\",\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "i_ka": "float64",
-        "loading_percent": "float64"
+        "loading_percent": "float64",
+        "p_from_mw": "float64",
+        "q_from_mvar": "float64",
+        "p_to_mw": "float64",
+        "q_to_mvar": "float64"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -1395,6 +1488,25 @@
         "va_internal_degree": "float64",
         "vm_pu": "float64",
         "va_degree": "float64"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "res_vsc": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"p_dc_mw\",\"vm_internal_pu\",\"va_internal_degree\",\"vm_pu\",\"va_degree\",\"vm_internal_dc_pu\",\"vm_dc_pu\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64",
+        "p_dc_mw": "float64",
+        "vm_internal_pu": "float64",
+        "va_internal_degree": "float64",
+        "vm_pu": "float64",
+        "va_degree": "float64",
+        "vm_internal_dc_pu": "float64",
+        "vm_dc_pu": "float64"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -1511,11 +1623,28 @@
     "res_switch_est": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"i_ka\",\"loading_percent\",\"p_from_mw\",\"q_from_mvar\",\"p_to_mw\",\"q_to_mvar\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "i_ka": "float64",
-        "loading_percent": "float64"
+        "loading_percent": "float64",
+        "p_from_mw": "float64",
+        "q_from_mvar": "float64",
+        "p_to_mw": "float64",
+        "q_to_mvar": "float64"
+      },
+      "is_multiindex": false,
+      "is_multicolumn": false
+    },
+    "res_shunt_est": {
+      "_module": "pandas.core.frame",
+      "_class": "DataFrame",
+      "_object": "{\"columns\":[\"p_mw\",\"q_mvar\",\"vm_pu\"],\"index\":[],\"data\":[]}",
+      "orient": "split",
+      "dtype": {
+        "p_mw": "float64",
+        "q_mvar": "float64",
+        "vm_pu": "float64"
       },
       "is_multiindex": false,
       "is_multicolumn": false
@@ -1609,13 +1738,14 @@
     "res_line_3ph": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"p_a_from_mw\",\"q_a_from_mvar\",\"p_b_from_mw\",\"q_b_from_mvar\",\"q_c_from_mvar\",\"p_a_to_mw\",\"q_a_to_mvar\",\"p_b_to_mw\",\"q_b_to_mvar\",\"p_c_to_mw\",\"q_c_to_mvar\",\"p_a_l_mw\",\"q_a_l_mvar\",\"p_b_l_mw\",\"q_b_l_mvar\",\"p_c_l_mw\",\"q_c_l_mvar\",\"i_a_from_ka\",\"i_a_to_ka\",\"i_b_from_ka\",\"i_b_to_ka\",\"i_c_from_ka\",\"i_c_to_ka\",\"i_a_ka\",\"i_b_ka\",\"i_c_ka\",\"i_n_from_ka\",\"i_n_to_ka\",\"i_n_ka\",\"loading_a_percent\",\"loading_b_percent\",\"loading_c_percent\"],\"index\":[],\"data\":[]}",
+      "_object": "{\"columns\":[\"p_a_from_mw\",\"q_a_from_mvar\",\"p_b_from_mw\",\"q_b_from_mvar\",\"p_c_from_mw\",\"q_c_from_mvar\",\"p_a_to_mw\",\"q_a_to_mvar\",\"p_b_to_mw\",\"q_b_to_mvar\",\"p_c_to_mw\",\"q_c_to_mvar\",\"p_a_l_mw\",\"q_a_l_mvar\",\"p_b_l_mw\",\"q_b_l_mvar\",\"p_c_l_mw\",\"q_c_l_mvar\",\"i_a_from_ka\",\"i_a_to_ka\",\"i_b_from_ka\",\"i_b_to_ka\",\"i_c_from_ka\",\"i_c_to_ka\",\"i_a_ka\",\"i_b_ka\",\"i_c_ka\",\"i_n_from_ka\",\"i_n_to_ka\",\"i_n_ka\",\"loading_a_percent\",\"loading_b_percent\",\"loading_c_percent\"],\"index\":[],\"data\":[]}",
       "orient": "split",
       "dtype": {
         "p_a_from_mw": "float64",
         "q_a_from_mvar": "float64",
         "p_b_from_mw": "float64",
         "q_b_from_mvar": "float64",
+        "p_c_from_mw": "float64",
         "q_c_from_mvar": "float64",
         "p_a_to_mw": "float64",
         "q_a_to_mvar": "float64",

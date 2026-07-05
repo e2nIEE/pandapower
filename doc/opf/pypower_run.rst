@@ -17,9 +17,9 @@ AC OPF
 
 .. autofunction:: pandapower.runopp
 
-The internal solver uses the interior point method. By default, the initial state is the center of the operational constraints.
-Another option would be to initialize the optimisation with a valid loadflow solution.
-For optimiation of a timeseries, this warm start possibilty could imply a significant speedup.
+The internal solver uses the interior point method. By default, the initial state is the center of the operational
+constraints. Another option would be to initialize the optimisation with a valid loadflow solution.
+For optimization of a timeseries, this warm start possibility could imply a significant speedup.
 This is not yet provided in the actual version, but could be an useful extension in the future.
 
 
@@ -38,20 +38,18 @@ References:
 
 DC OPF
 ---------
-The dc optimal power flow is a linearized optimization of the grid state. It offers two cost function options, that are fitting special use cases.
-To understand the usage, the `DC OPF tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/opf_dcline.ipynb>`_ is recommended.
+The dc optimal power flow is a linearized optimization of the grid state. It offers two cost function options, that are
+fitting special use cases. To understand the usage, the
+`DC OPF tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/opf_dcline.ipynb>`__ is recommended.
 
 .. autofunction:: pandapower.rundcopp
 
 Flexibilities, costs and constraints (except voltage constraints) are handled as in the :ref:`opf`.
-Voltage constraints are not considered in the DC OPF, since voltage magnitutes are not part of the
+Voltage constraints are not considered in the DC OPF, since voltage magnitudes are not part of the
 linearized power flow equations.
 
 .. note::
 
-    If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in net["_ppc_opf"].
-    However all necessary informations are written into the pandpower format net, so the pandapower user should not usually have to deal with pypower.
-
-
-
-
+    If you are interested in the pypower casefile that pandapower is using for power flow, you can find it in
+    :code:`net["_ppc_opf"]`. However all necessary information is written into the pandapower format net, so the
+    pandapower user should not usually have to deal with pypower.

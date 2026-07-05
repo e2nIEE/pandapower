@@ -4,14 +4,7 @@ Transforming network geodata formats
 
 Geodata in pandapower can be stored in different formats.
 
-
-.. autofunction:: pandapower.plotting.geo.convert_gis_to_geodata
-
-.. autofunction:: pandapower.plotting.geo.convert_geodata_to_gis
-
 .. autofunction:: pandapower.plotting.geo.convert_gis_to_geojson
-
-.. autofunction:: pandapower.plotting.geo.convert_epsg_bus_geodata
 
 .. autofunction:: pandapower.plotting.geo.convert_crs
 

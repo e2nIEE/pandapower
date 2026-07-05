@@ -15,36 +15,25 @@ class Fuse(ProtectionDevice):
     """
     Fuse used in circuit protection
 
-    INPUT:
-        **net** (attrdict) - pandapower net
-
-        **switch_index** (int) - index of the switch that the fuse acts upon
-
-    OPTIONAL:
-
-        **fuse_type** (str, "none") - string of the fuse type to be used. If it is in the standard library, it will
-        automatically generate the characteristic curve. Otherwise, it has no effect.
-        Example: fuse_type = "Siemens NH-1-100"
-
-        **rated_i_a** (float, 0) - the rated current of the fuse in amps
-
-        **characteristic_index** (int, 0) - index of the corresponding characteristic curve. Automatically generated
-        when characteristic curve is created.
-
-        **in_service** (bool, True) - indicates if fuse is currently in service and should be included in protection
-        computations
-
-        **overwrite** (bool, False) - indicates if fuse should replace already existing protection device acting upon
-        switch
-
-        **curve_select** (int, 0) - specifies which curve should be used as characteristic curve. This only has an
-        effect for fuses that contain two different melting curves (t_min and t_total). For fuses that only have one
-        characteristic curve (t_avg), curve_select has no effect.
-
-        **z_ohm** (float, 0.0001) - gives the resistance of the fuse in ohms. This is used in calculations for bus-bus
-        switches
-
-        **name** (str, None) - name of the fuse. For example, name = "Line 2 Fuse"
+    Parameters:
+        net (ADict): pandapower net
+        switch_index (int): index of the switch that the fuse acts upon
+        fuse_type (str, "none"): string of the fuse type to be used. If it is in the standard library, it will
+            automatically generate the characteristic curve. Otherwise, it has no effect.
+            Example: fuse_type = "Siemens NH-1-100"
+        rated_i_a (float, 0): the rated current of the fuse in amp
+        characteristic_index (int, 0): index of the corresponding characteristic curve. Automatically generated
+            when characteristic curve is created.
+        in_service (bool, True): indicates if fuse is currently in service and should be included in protection
+            computations
+        overwrite (bool, False): indicates if fuse should replace already existing protection device acting upon
+            switch
+        curve_select (int, 0): specifies which curve should be used as characteristic curve. This only has an effect for
+            fuses that contain two different melting curves (t_min and t_total). For fuses that only have one
+            characteristic curve (t_avg), curve_select has no effect.
+        z_ohm (float, 0.0001): gives the resistance of the fuse in ohms. This is used in calculations for bus-bus
+            switches
+        name (str, None): name of the fuse. For example, name = "Line 2 Fuse"
     """
 
     def __init__(self, net, switch_index, fuse_type="none", rated_i_a=0, characteristic_index=None, in_service=True,
@@ -143,7 +132,48 @@ class Fuse(ProtectionDevice):
         plt.title(title)
         plt.grid(True, which="both", ls="-")
 
-    def __str__(self):  # display Fuse + name instead of Fuse
-        s = 'Protection Device: %s \nType: %s \nName: %s' % (self.__class__.__name__, self.fuse_type, self.name)
-        self.characteristic_index = 1
-        return s
+    def __str__(self):
+        return "Protection Device: %s \nType: %s \nName: %s" % (self.__class__.__name__, self.fuse_type, self.name)
+
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            return False
+
+        return (
+            self.switch_index == other.switch_index
+            and self.fuse_type == other.fuse_type
+            and np.isclose(self.rated_i_a, other.rated_i_a, equal_nan=True)
+            and self.in_service == other.in_service
+            and self.name == other.name
+            and (
+                (self.i_start_a is None and other.i_start_a is None)
+                or (self.i_start_a is not None and other.i_start_a is not None
+                    and np.isclose(self.i_start_a, other.i_start_a, equal_nan=True))
+            )
+            and (
+                (self.i_stop_a is None and other.i_stop_a is None)
+                or (self.i_stop_a is not None and other.i_stop_a is not None
+                    and np.isclose(self.i_stop_a, other.i_stop_a, equal_nan=True))
+            )
+            and self.activation_parameter == other.activation_parameter
+            and np.isclose(self.z_ohm, other.z_ohm, equal_nan=True)
+        )
+
+    def __hash__(self):
+        def _hfloat(v):
+            if v is None:
+                return None
+            return round(float(v), 12)
+
+        return hash((
+            self.__class__,
+            self.switch_index,
+            self.fuse_type,
+            _hfloat(self.rated_i_a),
+            self.in_service,
+            self.name,
+            _hfloat(self.i_start_a),
+            _hfloat(self.i_stop_a),
+            self.activation_parameter,
+            _hfloat(self.z_ohm),
+        ))

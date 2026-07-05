@@ -1,4 +1,3 @@
-
 ==============
 CIGRE Networks
 ==============
@@ -11,20 +10,22 @@ integration at high voltage, medium voltage and low voltage and at the desired d
 
 .. note::
 
-    Source for this network is the final Report of Task Force C6.04.02 [1]: `"Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources" <http://www.e-cigre.org/Order/select.asp?ID=729590>`_, 2014
+    Source for this network is the final Report of Task Force C6.04.02 [1]:
+    `Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources - Reference: 575 - 2014. <https://www.e-cigre.org/publications/detail/575-benchmark-systems-for-network-integration-of-renewable-and-distributed-energy-resources.html>`__
 
     See also a correlating Paper with tiny changed network parameters [2]:
-    `K. Rudion, A. Orths, Z. A. Styczynski and K. Strunz, Design of benchmark of medium voltage distribution network for investigation of DG integration <http://ieeexplore.ieee.org/document/1709447/?arnumber=1709447&tag=1>`_ 2006 IEEE Power Engineering Society General Meeting, Montreal, 2006
+    `K. Rudion, A. Orths, Z. A. Styczynski and K. Strunz, Design of benchmark of medium voltage distribution network for investigation of DG integration <https://ieeexplore.ieee.org/document/1709447/?arnumber=1709447&tag=1>`__
+    2006 IEEE Power Engineering Society General Meeting, Montreal, 2006
 
 High voltage transmission network
 ---------------------------------
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_cigre_network_hv
 
  # You may specify a length for the connection line between buses 6a and 6b
- net = pn.create_cigre_network_hv(length_km_6a_6b=0.1)
+ net = create_cigre_network_hv(length_km_6a_6b=0.1)
 
  '''
  This pandapower network includes the following parameter tables:
@@ -44,7 +45,7 @@ High voltage transmission network
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
 
 
 
@@ -53,9 +54,9 @@ Medium voltage distribution network
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_cigre_network_mv
 
- net = pn.create_cigre_network_mv(with_der=False)
+ net = create_cigre_network_mv(with_der=False)
 
  '''
  This pandapower network includes the following parameter tables:
@@ -74,7 +75,7 @@ Medium voltage distribution network
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
 
 
 ---------------------------
@@ -94,9 +95,9 @@ Although the case study mentions the High Voltage as 220 kV, we assume 110 kV ag
 
 .. code:: python
 
-    import pandapower.networks as pn
+    from pandapower.networks import create_cigre_network_mv
 
-    net = pn.create_cigre_network_mv(with_der="pv_wind")
+    net = create_cigre_network_mv(with_der="pv_wind")
 
     '''
     This pandapower network includes the following parameter tables:
@@ -115,7 +116,7 @@ Although the case study mentions the High Voltage as 220 kV, we assume 110 kV ag
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
 
 
 ---------------------------
@@ -138,9 +139,9 @@ considered. Although the case study mentions the High Voltage as 220 kV, we assu
 
 .. code:: python
 
-    import pandapower.networks as pn
+    from pandapower.networks import create_cigre_network_mv
 
-    net = pn.create_cigre_network_mv(with_der="all")
+    net = create_cigre_network_mv(with_der="all")
 
     '''
     This pandapower network includes the following parameter tables:
@@ -159,7 +160,7 @@ considered. Although the case study mentions the High Voltage as 220 kV, we assu
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
 
 
 ---------------------------
@@ -170,9 +171,9 @@ Low voltage distribution network
 
 .. code:: python
 
- import pandapower.networks as pn
+ from pandapower.networks import create_cigre_network_lv
 
- net = pn.create_cigre_network_lv()
+ net = create_cigre_network_lv()
 
  '''
  This pandapower network includes the following parameter tables:
@@ -191,4 +192,8 @@ Low voltage distribution network
 	:alt: alternate Text
 	:align: center
 
-`[Source: 1] <http://www.e-cigre.org/Order/select.asp?ID=729590>`_
+`[Source 1]`_
+
+
+.. _[Source 1]: https://www.e-cigre.org/publications/detail/575-benchmark-systems-for-network-integration-of-renewable-and-distributed-energy-resources.html
+.. _[Source 2]: https://ieeexplore.ieee.org/document/1709447/?arnumber=1709447&tag=1

@@ -1,0 +1,4 @@
+**Parameter**;**Datatype**;**Explanation**
+id_q_capability_curve;int;ID in gen or sgen table column id_q_capability_characteristic
+q_max_characteristic;Characteristic;corresponding Q max characteristic
+q_min_characteristic;Characteristic;corresponding Q min characteristic

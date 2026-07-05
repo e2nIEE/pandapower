@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -24,15 +22,12 @@ from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYP
      VM, PD, QD
 from pandapower.pypower.idx_cost import MODEL, NCOST, COST
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
-from pandapower.results import init_results
+from pandapower.results import init_results, verify_results
 
 
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -60,7 +55,8 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel",
                      pm_solver="ipopt",
                      pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8,
-                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, **kwargs):
+                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, init_vm_pu="flat",
+                     init_va_degree="flat", init_pq="flat", **kwargs):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -105,7 +101,8 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
         **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
 
         **voltage_depend_loads** (bool, False) - consideration of voltage-dependent loads.
-        If False, net.load.const_z_percent and net.load.const_i_percent are not considered,
+        If False, net.load.const_z_p_percent, net.load.const_i_p_percent, 
+        net.load.const_z_q_percent and net.load.const_i_q_percent are not considered,
         i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
 
     Returns
@@ -114,19 +111,42 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
 
     net._options = {}
 
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu="flat", init_va_degree="flat",
-                     enforce_q_lims=True, recycle=dict(_is_elements=False, ppc=False, Ybus=False),
-                     voltage_depend_loads=voltage_depend_loads, delta=delta,
-                     trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
-                     correct_pm_network_data=correct_pm_network_data, silence=silence,
-                     pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
+    _add_ppc_options(
+        net,
+        calculate_voltage_angles=calculate_voltage_angles,
+        trafo_model=trafo_model,
+        check_connectivity=check_connectivity,
+        mode="opf",
+        switch_rx_ratio=2,
+        init_vm_pu=init_vm_pu,
+        init_va_degree=init_va_degree,
+        enforce_p_lims=False,
+        enforce_q_lims=True,
+        recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
+        voltage_depend_loads=voltage_depend_loads,
+        delta=delta,
+        trafo3w_losses=trafo3w_losses
+    )
 
-    net, pm, ppc, ppci = convert_to_pm_structure(net, from_time_step=from_time_step, 
+    _add_opf_options(
+        net,
+        trafo_loading='power',
+        ac=ac,
+        numba=True,
+        pp_to_pm_callback=pp_to_pm_callback,
+        pm_solver=pm_solver,
+        pm_model=pm_model,
+        correct_pm_network_data=correct_pm_network_data,
+        silence=silence,
+        pm_mip_solver=pm_mip_solver,
+        pm_nl_solver=pm_nl_solver,
+        opf_flow_lim=opf_flow_lim,
+        pm_tol=pm_tol,
+        init_pq=init_pq,
+        **kwargs
+    )
+
+    net, pm, _, _ = convert_to_pm_structure(net, from_time_step=from_time_step,
                                                  to_time_step=to_time_step)
     buffer_file = dump_pm_json(pm, pm_file_path)
     if pm_file_path is None and isfile(buffer_file):
@@ -140,17 +160,26 @@ logger = logging.getLogger(__name__)
 def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_step=None, 
                             **kwargs):
     if net["_options"]["voltage_depend_loads"] and not (
-            np.allclose(net.load.const_z_percent.values, 0) and
-            np.allclose(net.load.const_i_percent.values, 0)):
+            np.allclose(net.load.const_z_p_percent.values, 0) and
+            np.allclose(net.load.const_i_p_percent.values, 0) and
+            np.allclose(net.load.const_z_q_percent.values, 0) and
+            np.allclose(net.load.const_i_q_percent.values, 0)):
         logger.error("pandapower optimal_powerflow does not support voltage depend loads.")
     net["OPF_converged"] = False
     net["converged"] = False
     _add_auxiliary_elements(net)
-    init_results(net)
+    if net["_options"].get("init_results"):
+        verify_results(net, mode=net["_options"]["mode"])
+    else:
+        init_results(net)
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
+    # todo: somewhere here should RATE_A be converted to 0., because only PowerModels uses 0 as no limits (pypower opf converts the zero to inf)
+
+    if net["_options"].get("init_pq") == "results":
+        add_pm_gen_start_values_from_results(net, pm)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
     if from_time_step is not None and to_time_step is not None:
@@ -158,6 +187,42 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     pm = allow_multi_ext_grids(net, pm)
     net._pm = pm
     return net, pm, ppc, ppci
+
+def add_pm_gen_start_values_from_results(net, pm):
+    pm_gens = pm.get("gen", {})
+    if not pm_gens:
+        return None
+
+    lookup_table_name= {"ext_grid": "res_ext_grid", "gen": "res_gen", "sgen_controllable": "res_sgen"}
+    for lookup_name, table_name in lookup_table_name.items():
+
+        if table_name not in net or lookup_name not in net._pd2pm_lookups:
+            continue
+
+        result_table = net[table_name]
+        lookup = net._pd2pm_lookups[lookup_name]
+        if result_table is None or len(result_table) == 0:
+            continue
+
+        for pp_index, row in result_table.iterrows():
+
+            pm_index = lookup[int(pp_index)]
+            if pm_index is None:
+                continue
+
+            pm_gen = pm_gens.get(str(pm_index))
+            if pm_gen is None:
+                continue
+
+            p_mw = row.get("p_mw")
+            if p_mw is not None:
+                pm_gen["pg_start"] = p_mw
+
+            q_mvar = row.get("q_mvar")
+            if q_mvar is not None:
+                pm_gen["qg_start"] = q_mvar
+
+    return None
 
 
 def dump_pm_json(pm, buffer_file=None):
@@ -231,7 +296,7 @@ def create_pm_lookups(net, pm_lookup):
     for key, val in net._pd2ppc_lookups.items():
         if isinstance(val, dict):
             # lookup is something like "branch" with dict as val -> iterate over the subdicts
-            pm_val = dict()
+            pm_val = {}
             for subkey, subval in val.items():
                 pm_val[subkey] = tuple((v + 1 for v in subval))
         elif isinstance(val, int) or isinstance(val, np.ndarray):
@@ -252,10 +317,10 @@ def ppc_to_pm(net, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     # "per_unit == True" means that the grid data in PowerModels are per-unit values. In this
     # ppc-to-pm process, the grid data schould be transformed according to baseMVA = 1.
-    pm = {"gen": dict(), "branch": dict(), "bus": dict(), "dcline": dict(), "load": dict(),
-          "storage": dict(),
-          "ne_branch": dict(), "switch": dict(),
-          "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": dict(),
+    pm = {"gen": {}, "branch": {}, "bus": {}, "dcline": {}, "load": {},
+          "storage": {},
+          "ne_branch": {}, "switch": {},
+          "baseMVA": ppci["baseMVA"], "source_version": "2.0.0", "shunt": {},
           "sourcetype": "matpower", "per_unit": True, "name": net.name}
     baseMVA = ppci["baseMVA"]
     load_idx = 1
@@ -263,8 +328,8 @@ def ppc_to_pm(net, ppci):
     # PowerModels has a load model -> add loads and sgens to pm["load"]
 
     # temp dicts which hold the sum of p, q of loads + sgens
-    pd_bus = dict()
-    qd_bus = dict()
+    pd_bus = {}
+    qd_bus = {}
     load_idx, load_lookup = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
     load_idx, sgen_lookup = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
     load_idx, storage_lookup = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
@@ -274,7 +339,7 @@ def ppc_to_pm(net, ppci):
     correct_pm_network_data = net._options["correct_pm_network_data"]
 
     for row in ppci["bus"]:
-        bus = dict()
+        bus = {}
         idx = int(row[BUS_I]) + 1
         bus["index"] = idx
         bus["bus_i"] = idx
@@ -282,7 +347,7 @@ def ppc_to_pm(net, ppci):
         bus["bus_type"] = int(row[BUS_TYPE])
         bus["vmax"] = row[VMAX]
         bus["vmin"] = row[VMIN]
-        bus["va"] = row[VA]
+        bus["va"] = math.radians(row[VA]) # PowerModels uses radians
         bus["vm"] = row[VM]
         bus["base_kv"] = row[BASE_KV]
 
@@ -313,7 +378,7 @@ def ppc_to_pm(net, ppci):
 
     n_lines = net.line.in_service.sum()
     for idx, row in enumerate(ppci["branch"], start=1):
-        branch = dict()
+        branch = {}
         branch["index"] = idx
         branch["transformer"] = bool(idx > n_lines)
         branch["br_r"] = row[BR_R].real / baseMVA
@@ -328,11 +393,7 @@ def ppc_to_pm(net, ppci):
             branch["rate_b"] = row[RATE_B].real
             branch["rate_c"] = row[RATE_C].real
         elif net._options["opf_flow_lim"] == "I":  # need to call _run_opf_cl from PowerModels
-            f = net._pd2ppc_lookups["branch"]["line"][0]
-            f = int(row[F_BUS].real)  # from bus of this line
-            vr = ppci["bus"][f][BASE_KV]
             branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["c_rating_a"] = branch["c_rating_a"]
             branch["c_rating_b"] = row[RATE_B].real
             branch["c_rating_c"] = row[RATE_C].real
         else:
@@ -369,12 +430,12 @@ def ppc_to_pm(net, ppci):
     gen_df["model"] = model_type
     # calc ncost and cost
     ncost = np.array([0] * len(ppci["gen"]))
-    cost = [[0, 0, 0] for i in gen_idxs_pm]
+    cost = [[0, 0, 0] for _ in gen_idxs_pm]
     ncost[model_type==1] = ppci["gencost"][:, NCOST][model_type==1]
     ncost[model_type==2] = 3
-    for i in np.where(model_type==1)[0]:
+    for i in np.nonzero(model_type == 1)[0]:
         cost[i] = ppci["gencost"][i, COST:COST + ncost[i] * 2].tolist()
-    for i in np.where(model_type==2)[0]:
+    for i in np.nonzero(model_type == 2)[0]:
         cost_value = ppci["gencost"][i, COST:].tolist()
         if len(cost_value) > 3:
             raise ValueError("Maximum quadratic cost function allowed")
@@ -386,7 +447,7 @@ def ppc_to_pm(net, ppci):
 
     if "ne_branch" in ppci:
         for idx, row in enumerate(ppci["ne_branch"], start=1):
-            branch = dict()
+            branch = {}
             branch["index"] = idx
             branch["transformer"] = False
             branch["br_r"] = row[BR_R].real / baseMVA
@@ -401,7 +462,6 @@ def ppc_to_pm(net, ppci):
                 branch["rate_b"] = row[RATE_B].real
                 branch["rate_c"] = row[RATE_C].real
             elif net._options["opf_flow_lim"] == "I":
-                f, t = net._pd2ppc_lookups["branch"]["line"]
                 f = int(row[F_BUS].real)  # from bus of this line
                 vr = ppci["bus"][f][BASE_KV]
                 row[RATE_A] = row[RATE_A] / (vr * np.sqrt(3))
@@ -450,7 +510,7 @@ def build_ne_branch(net, ppc):
         ppc["ne_branch"] = np.zeros(shape=(length, branch_cols + 1), dtype=np.complex128)
         ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -60, 60])
         # create branch array ne_branch like the common branch array in the ppc
-        net._pd2ppc_lookups["ne_branch"] = dict()
+        net._pd2ppc_lookups["ne_branch"] = {}
         net._pd2ppc_lookups["ne_branch"]["ne_line"] = (0, length)
         _calc_line_parameter(net, ppc, "ne_line", "ne_branch")
         ppc["ne_branch"][:, CONSTRUCTION_COST] = net["ne_line"].loc[:, "construction_cost"].values
@@ -485,7 +545,7 @@ def add_params_to_pm(net, pm):
     pd_idxs_br = []
     pm_idxs_br = []
     br_elms = ["line", "trafo"]
-    pm["user_defined_params"] = dict()
+    pm["user_defined_params"] = {}
     for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
         param_cols = [col for col in net[elm].columns if 'pm_param' in col]
         if not param_cols:
@@ -505,7 +565,7 @@ def add_params_to_pm(net, pm):
                 pd_idxs_br += net[elm].index[net[elm][param_col].notna()].tolist()
                 target_values = net[elm][param_col][pd_idxs_br].values.tolist()
             if elm in ["line", "trafo"]:
-                start, end = net._pd2pm_lookups["branch"][elm]
+                start, _ = net._pd2pm_lookups["branch"][elm]
                 pd_pos = [net[elm].index.tolist().index(p) for p in pd_idxs_br]
                 pm_idxs = [int(v) + start for v in pd_pos]
             elif elm == "sgen":
@@ -524,11 +584,6 @@ def add_params_to_pm(net, pm):
             for bp in br_param:
                 for k in pm["user_defined_params"]["side"].keys():
                     side = pm["user_defined_params"]["side"][k]["value"]
-                    side_bus_f = side + "_bus"
-                    if elm == "line":
-                        side_bus_t = "from_bus" if side == "to" else "to_bus"
-                    if elm == "trafo":
-                        side_bus_t = "hv_bus" if side == "lv" else "lv_bus"
                     pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
                     ppcidx = net._pd2pm_lookups["branch"][elm][0]-1+pd_idx   
                     
@@ -544,10 +599,6 @@ def add_params_to_pm(net, pm):
                         int(net._ppc_opf["branch"][ppcidx, ppcrow_f].real) + 1
                     pm["user_defined_params"][bp][k]["t_bus"] = \
                         int(net._ppc_opf["branch"][ppcidx, ppcrow_t].real) + 1
-                    # pm["user_defined_params"][bp][k]["f_bus"] = \
-                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_f][pd_idx]]
-                    # pm["user_defined_params"][bp][k]["t_bus"] = \
-                    #     net._pd2pm_lookups["bus"][net[elm][side_bus_t][pd_idx]]
 
     # add controllable sgen:
     dic = {}
@@ -562,8 +613,10 @@ def add_params_to_pm(net, pm):
     
     # add objective factors for multi optimization
     if "obj_factors" in net.keys():
-        assert type(net.obj_factors) == list
-        assert sum(net.obj_factors) <= 1
+        if not isinstance(net.obj_factors, list):
+            raise AssertionError("net.obj_factors is not a list")
+        if sum(net.obj_factors) > 1:
+            raise AssertionError("sum of net.obj_factors is greater than 1")
         dic = {}
         for i, k in enumerate(net.obj_factors):
             dic["fac_"+str(i+1)] = k        
@@ -584,7 +637,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
                              "from_time_step": from_time_step+1, 
                              "to_time_step": to_time_step+1} 
         for idx, content in net.controller.iterrows():
-            if not type(content["object"]) == ConstControl:
+            if type(content["object"]) != ConstControl:
                 continue
             else:
                 element = content["object"].__dict__["matching_params"]["element"]

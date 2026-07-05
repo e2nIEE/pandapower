@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -10,70 +10,61 @@ from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
     create_trafo_trace, draw_traces
 from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
-from pandapower.plotting.plotly.mapbox_plot import geo_data_to_latlong
+from pandapower.plotting.geo import convert_crs
 from pandapower.topology import create_nxgraph, connected_components
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 logger = logging.getLogger(__name__)
 
 
 def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=None, on_map=False,
                   projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-                  bus_size=10, filename="temp-plot.html", auto_open=True):
+                  bus_size=10, filename="temp-plot.html", auto_open=True, zoomlevel=11):
     """
-    Plots a pandapower network in plotly
-    using lines/buses colors according to the voltage level they belong to.
-    If no geodata is available, artificial geodata is generated. For advanced plotting see the
-    tutorial
+    Plots a pandapower network in plotly using lines/buses colors according to the voltage level they belong to. If no
+    geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
 
-    INPUT:
-        **net** - The pandapower format network.
+    Parameters:
+        net: The pandapower format network.
+        respect_switches (bool, True): Respect switches when artificial geodata is created
+        use_line_geo (bool, True): defines if lines patches are based on net.line.geo of the lines (True) or on
+            net.bus.geo of the connected buses (False)
+        colors_dict (dict, None): dictionary for customization of colors for each voltage level in the form:
+            voltage : color
+        on_map (bool, False): enables using mapLibre plot in plotly If provided geodata are not real geo-coordinates in
+            lon/lat form, on_map will be set to False.
+        projection (String, None): defines a projection from which network geo-data will be transformed to lat-long.
+            For each projection a string can be found at https://spatialreference.org/ref/epsg/
+        map_style (str, 'basic'): enables using mapLibre plot in plotly
 
-    OPTIONAL:
-        **respect_switches** (bool, True) - Respect switches when artificial geodata is created
-
-        **use_line_geo** (bool, True) - defines if lines patches are based on net.line_geodata
-        of the lines (True) or on net.bus_geodata of the connected buses (False)
-
-        *colors_dict** (dict, None) - dictionary for customization of colors for each voltage level
-        in the form: voltage : color
-
-        **on_map** (bool, False) - enables using mapbox plot in plotly If provided geodata are not
-        real geo-coordinates in lon/lat form, on_map will be set to False.
-
-        **projection** (String, None) - defines a projection from which network geo-data will be
-        transformed to lat-long. For each projection a string can be found at
-        http://spatialreference.org/ref/epsg/
-
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
-
-            - 'streets'
-            - 'bright'
-            - 'light'
+            - 'basic'
+            - 'carto-darkmatter'
+            - 'carto-darkmatter-nolabels'
+            - 'carto-positron'
+            - 'carto-positron-nolabels'
+            - 'carto-voyager'
+            - 'carto-voyager-nolabels'
             - 'dark'
-            - 'satellite'
+            - 'light'
+            - 'open-street-map'
+            - 'outdoors'           
+            - 'satellite''
+            - 'satellite-streets'
+            - 'streets'
 
-        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
+        figsize (float, 1): aspectratio is multiplied by it in order to get final image size
+        aspectratio (tuple, 'auto'): when 'auto' it preserves original aspect ratio of the network geodata any custom
+            aspectration can be given as a tuple, e.g. (1.2, 1)
+        line_width (float, 1.0): width of lines
+        bus_size (float, 10.0): size of buses to plot.
+        filename (str, "temp-plot.html"): filename / path to plot to. Should end on `*.html`
+        auto_open (bool, True): automatically open plot in browser
+        zoomlevel (int, 11): initial zoomlevel of map plot (only if on_map=True)
 
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the
-        network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
-
-        **line_width** (float, 1.0) - width of lines
-
-        **bus_size** (float, 10.0) -  size of buses to plot.
-
-        **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on `*.html`
-
-        **auto_open** (bool, True) - automatically open plot in browser
-
-    OUTPUT:
-        **figure** (graph_objs._figure.Figure) figure object
-
+    Returns:
+        graph_objs._figure.Figure: figure object
     """
-    # getting connected componenets without consideration of trafos
+    # getting connected components without consideration of trafos
     graph = create_nxgraph(net, include_trafos=False)
     vlev_buses = connected_components(graph)
     # getting unique sets of buses for each voltage level
@@ -97,13 +88,13 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
         net, bus_groups, respect_switches=respect_switches,
         use_line_geo=use_line_geo, on_map=on_map, projection=projection,
         map_style=map_style, figsize=figsize, aspectratio=aspectratio, line_width=line_width,
-        bus_size=bus_size, filename=filename, auto_open=auto_open)
+        bus_size=bus_size, filename=filename, auto_open=auto_open,zoomlevel=zoomlevel)
 
 
 def _draw_colored_bus_groups_plotly(
     net, bus_groups, respect_switches=True, use_line_geo=None,
     on_map=False, projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-    bus_size=10, filename="temp-plot.html", auto_open=True):
+    bus_size=10, filename="temp-plot.html", auto_open=True,zoomlevel=11):
     """
     Internal function of vlevel_plotly()
 
@@ -121,7 +112,7 @@ def _draw_colored_bus_groups_plotly(
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
     if on_map and projection is not None:
-        geo_data_to_latlong(net, projection=projection)
+        convert_crs(net, epsg_out=projection)
 
     # if bus geodata is available, but no line geodata
     if use_line_geo is None:
@@ -166,7 +157,7 @@ def _draw_colored_bus_groups_plotly(
 
     return draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
                        aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
-                       filename=filename, auto_open=auto_open)
+                       filename=filename, auto_open=auto_open,zoomlevel=zoomlevel)
 
 
 if __name__ == '__main__':
@@ -215,7 +206,7 @@ if __name__ == '__main__':
                               net.line.to_bus.isin(buses_vl)].index.tolist()
         print(vlev_lines)
         line_trace_vlev = create_line_trace(
-            net, lines=vlev_lines, use_line_geodata=use_line_geodata,
+            net, lines=vlev_lines, use_line_geo=use_line_geodata,
             respect_switches=respect_switches, legendgroup=str(vn_kv), color="r",
             width=line_width, trace_name='lines {0} kV'.format(vn_kv))
         if line_trace_vlev is not None:

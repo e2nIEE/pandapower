@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
@@ -14,7 +14,7 @@
 
 from time import perf_counter
 from packaging import version
-from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d, int64
+from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d, int64, isclose
 
 from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
 from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
@@ -31,10 +31,7 @@ from pandapower.pypower.gausspf import gausspf
 
 from pandapower.auxiliary import _check_if_numba_is_installed
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +118,7 @@ def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
 
 
 def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, gbus, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch)
 
@@ -138,7 +135,7 @@ def _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt):
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, on, gbus, V0, *_ = _get_pf_variables_from_ppci(ppci)
+    _, bus, gen, branch, _, _, _, _, ref, *_ = _get_pf_variables_from_ppci(ppci)
 
     qlim = ppopt["ENFORCE_Q_LIMS"]
     limited = []  ## list of indices of gens @ Q lims
@@ -154,7 +151,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
         qg_max_lim = gen[:, QG] > gen[:, QMAX]
         qg_min_lim = gen[:, QG] < gen[:, QMIN]
 
-        non_refs = (gen[:, QMAX] != 0.) & (gen[:, QMIN] != 0.)
+        non_refs = (~isclose(gen[:, QMAX], 0.0)) & (~isclose(gen[:, QMIN], 0.0))
         mx = find(gen_status & qg_max_lim & non_refs)
         mn = find(gen_status & qg_min_lim & non_refs)
 
@@ -192,7 +189,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  ## & set bus type to PQ
 
             ## update bus index lists of each type of bus
-            ref, pv, pq = bustypes(bus, gen)
+            ref, _, _ = bustypes(bus, gen)
 
             limited = r_[limited, mx].astype(int64)
         else:

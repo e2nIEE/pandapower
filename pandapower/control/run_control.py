@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandapower as pp
 import numpy as np
 
 try:
@@ -17,6 +16,8 @@ from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.control.util.auxiliary import asarray
 
 logger = pplog.getLogger(__name__)
+
+from pandapower.run import runpp
 
 
 def get_controller_order(nets, controller):
@@ -87,7 +88,7 @@ def ctrl_variables_default(net, **kwargs):
         ctrl_variables["level"], ctrl_variables["controller_order"] = [0], [[]]
     else:
         ctrl_variables["level"], ctrl_variables["controller_order"] = get_controller_order(net, net.controller)
-    ctrl_variables["run"] = kwargs.pop('run', pp.runpp)
+    ctrl_variables["run"] = kwargs.pop('run', runpp)
     ctrl_variables["initial_run"] = check_for_initial_run(ctrl_variables["controller_order"])
     ctrl_variables['continue_on_divergence'] = False
     ctrl_variables['check_each_level'] = True
@@ -223,7 +224,7 @@ def _control_step(levelorder, run_count):
     logger.debug("Controller Iteration #%i" % run_count)
     # run each controller until all are converged
     for ctrl, net in levelorder:
-        # call control step while controller ist not converged yet
+        # call control step while controller is not converged yet
         if not ctrl.is_converged(net):
             ctrl.control_step(net)
             converged = False
@@ -247,27 +248,21 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     Main function to call a net with controllers
     Function is running control loops for the controllers specified in net.controller
 
-    INPUT:
-        **net** - pandapower network with controllers included in net.controller
+    Parameters:
+        net: pandapower network with controllers included in net.controller
+        ctrl_variables (dict, None): variables needed internally to calculate the power flow. See prepare_run_ctrl()
+        max_iter (int, 30): The maximum number of iterations for controller to converge
 
-    OPTIONAL:
-        **ctrl_variables** (dict, None) - variables needed internally to calculate the power flow. See prepare_run_ctrl()
-
-        **max_iter** (int, 30) - The maximum number of iterations for controller to converge
-
-    KWARGS:
-        **continue_on_divergence** (bool, False) - if run_funct is not converging control_repair is fired \
-                                                   (only relevant if ctrl_varibales is None, otherwise it needs \
-                                                   to be defined in ctrl_variables anyway)
-
-        **check_each_level** (bool, True) - if each level shall be checked if the controllers are converged or not \
-                                           (only relevant if ctrl_varibales is None, otherwise it needs \
-                                           to be defined in ctrl_variables anyway)
+    Keyword Arguments:
+        continue_on_divergence (bool, False): if run_funct is not converging control_repair is fired (only relevant if
+            ctrl_varibales is None, otherwise it needs to be defined in ctrl_variables anyway)
+        check_each_level (bool, True): if each level shall be checked if the controllers are converged or not (only
+            relevant if ctrl_varibales is None, otherwise it needs to be defined in ctrl_variables anyway)
 
     Runs controller until each one converged or max_iter is hit.
 
     1. Call initialize_control() on each controller
-    2. Calculate an inital power flow (if it is enabled, i.e. setting the initial_run veriable to True)
+    2. Calculate an initial power flow (if it is enabled, i.e. setting the initial_run variable to True)
     3. Repeats the following steps in ascending order of controller_order until total convergence of all
        controllers for each level:
 
@@ -277,7 +272,7 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
     4. Call finalize_control() on each controller
 
     """
-    ctrl_variables = prepare_run_ctrl(net, ctrl_variables)
+    ctrl_variables = prepare_run_ctrl(net, ctrl_variables, **kwargs)
     kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)
 
     controller_order = ctrl_variables["controller_order"]

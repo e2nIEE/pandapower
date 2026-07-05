@@ -4,7 +4,8 @@ Power System Test Cases
 
 .. note::
 
-    All Power System Test Cases were converted from `PYPOWER <https:/pypi.python.org/pypi/PYPOWER>`_ or `MATPOWER <http://www.pserc.cornell.edu/matpower/>`_ case files.
+    All Power System Test Cases were converted from `PYPOWER <https://pypi.org/project/PYPOWER/>`__ or
+    `MATPOWER <https://matpower.org/>`__ case files.
 
 
 Case 4gs

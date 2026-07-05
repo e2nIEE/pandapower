@@ -1,0 +1,9 @@
+{
+    "julia": "1",
+    "packages": {
+        "PandaModels": {
+            "uuid": "2dbab86a-7cbf-476f-9afe-75ffd3079e7c",
+            "version": "0.8"
+        }
+    }
+}

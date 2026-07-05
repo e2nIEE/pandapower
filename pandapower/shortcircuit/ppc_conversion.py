@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
@@ -16,16 +16,13 @@ from pandapower.pypower.idx_bus_sc import C_MAX, K_G, K_SG, V_G, \
     PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
 from pandapower.pypower.idx_brch_sc import K_T, K_ST
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
 
 def _get_is_ppci_bus(net, bus):
-    is_bus = bus[np.in1d(bus, net._is_elements_final["bus_is_idx"])]
+    is_bus = bus[np.isin(bus, net._is_elements_final["bus_is_idx"])]
     ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
     return ppci_bus
 
@@ -73,7 +70,8 @@ def _add_kt(net, ppc):
         f, t = net["_pd2ppc_lookups"]["branch"]["trafo"]
         trafo_df = net["trafo"]
         cmax = ppc["bus"][bus_lookup[get_trafo_values(trafo_df, "lv_bus")], C_MAX]
-        kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax)
+        case = net._options["case"] if net._options.get("mode", "") == "sc" else None
+        kt = _transformer_correction_factor(trafo_df, trafo_df.vk_percent, trafo_df.vkr_percent, trafo_df.sn_mva, cmax, case)
         branch[f:t, K_T] = kt
 
 

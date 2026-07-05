@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2024 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import nan_to_num, array, allclose, int64
+from numpy import nan_to_num, array, allclose, int64, concatenate
 
 from pandapower.auxiliary import LoadflowNotConverged, AlgorithmUnknown, _clean_up, _add_auxiliary_elements
 from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
@@ -14,6 +14,7 @@ from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.pf.run_helmpy_pf import _runpf_helmpy_pf
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
@@ -21,10 +22,7 @@ from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.results import _extract_results, _copy_results_ppci_to_ppc, init_results, \
     verify_results, _ppci_bus_to_ppc, _ppci_other_to_ppc
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +41,13 @@ def _powerflow(net, **kwargs):
     _add_auxiliary_elements(net)  # create gen elements for start and end buses of dcline
 
     if not ac or net["_options"]["init_results"]:
-        verify_results(net)
+        verify_results(net, mode='pf' if ac else 'dc')
     else:
         init_results(net)
 
     if net["_options"]["voltage_depend_loads"] and algorithm not in ['nr', 'bfsw'] and not (
-            allclose(net.load.const_z_percent.values, 0) and
-            allclose(net.load.const_i_percent.values, 0)):
+            allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0) and
+            allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0)):
         logger.error(("pandapower powerflow does not support voltage depend loads for algorithm "
                       "'%s'!") % algorithm)
 
@@ -59,7 +57,7 @@ def _powerflow(net, **kwargs):
                            "branch": array([], dtype=int64), "branch_dc": array([], dtype=int64)}
 
     # convert pandapower net to ppc
-    ppc, ppci = _pd2ppc(net)
+    ppc, ppci = _pd2ppc(net, **kwargs)
 
     # store variables
     net["_ppc"] = ppc
@@ -104,7 +102,7 @@ def _recycled_powerflow(net, **kwargs):
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
-            _calc_trafo_parameter(net, ppc)
+            _calc_trafo_parameter(net, ppc,)
         if "trafo3w" in lookup:
             _calc_trafo3w_parameter(net, ppc)
 
@@ -148,11 +146,13 @@ def _run_pf_algorithm(ppci, options, **kwargs):
             # ommission not correct if distributed slack is used or facts devices are present
             result = _bypass_pf_and_set_results(ppci, options)
         elif algorithm == 'bfsw':  # forward/backward sweep power flow algorithm
-            result = _run_bfswpf(ppci, options, **kwargs)[0]
+            result = _run_bfswpf(ppci, options, **kwargs)
         elif algorithm in ['nr', 'iwamoto_nr']:
             result = _run_newton_raphson_pf(ppci, options)
         elif algorithm in ['fdbx', 'fdxb', 'gs']:  # algorithms existing within pypower
             result = _runpf_pypower(ppci, options, **kwargs)[0]
+        elif algorithm == 'helm':
+            result = _runpf_helmpy_pf(ppci, options, **kwargs)
         else:
             raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
     else:
@@ -186,7 +186,7 @@ def _ppci_to_net(result, net):
 
 def _bypass_pf_and_set_results(ppci, options):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, _, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
     V = ppci["bus"][:, VM]
     bus, gen, branch = pfsoln_pypower(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens)
     ppci["bus"], ppci["gen"], ppci["branch"] = bus, gen, branch
