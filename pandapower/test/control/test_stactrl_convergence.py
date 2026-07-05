@@ -46,9 +46,11 @@ def test_near_zero_slope_no_blowup():
         output_element_index=[0], output_element_in_service=[True], output_values_distribution=[1],
         input_element="res_line", input_variable=["q_to_mvar"], input_element_index=1,
         set_point=1, control_modus="Q_ctrl", tol=1e-6)
+    # plain NR solver (like the CI environments): the weaker solver must never be driven
+    # into voltage collapse by the controller fallback steps
     with pytest.raises(ControllerNotConverged):
-        run_control(net)
-    assert abs(net.sgen.q_mvar.at[0]) < 100, "flat-response outputs must stay bounded"
+        run_control(net, lightsim2grid=False)
+    assert abs(net.sgen.q_mvar.at[0]) < 20, "flat-response outputs must stay bounded"
 
 
 def test_pf_setpoint_not_mutated():

@@ -876,6 +876,12 @@ class BinarySearchControl(Controller):
         # it only softens the fallback steps below and the first probe
         step_diff = f - f_old
         if abs(step_diff) <= 1e-12 * max(1.0, abs(f)) or abs(total - total_old) <= 1e-12:
+            if solver['stall'] >= 5:
+                # the measurement does not respond to the output at all: hold the position
+                # instead of pushing ever more reactive power into the grid (cumulative
+                # fallback steps would eventually make the powerflow itself collapse);
+                # run_control reports ControllerNotConverged via max_iter
+                return total
             if solver['slope']:
                 # local slope unavailable (iterates collapsed): Newton with remembered slope
                 x_new = total - damping * f / solver['slope']
