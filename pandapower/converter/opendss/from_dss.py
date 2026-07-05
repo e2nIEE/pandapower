@@ -81,8 +81,7 @@ class _ImportReport:
 
 
 def _busname(token):
-    """
-    Strip the node-connection suffix from an OpenDSS bus token.
+    """Strip the node-connection suffix from an OpenDSS bus token.
 
     ``"b2.1.2.3" -> "b2"``; OpenDSS is case-insensitive and ``AllBusNames``
     returns lower-case, so we normalise here too.
@@ -91,8 +90,7 @@ def _busname(token):
 
 
 def _connected_phases(token):
-    """
-    Count the phase nodes encoded in a bus token (``b2.1.2.3`` -> 3).
+    """Count the phase nodes encoded in a bus token (``b2.1.2.3`` -> 3).
 
     A bare name (no suffix) means all phases are connected; the caller passes the
     element's declared phase count as the fallback in that case.
@@ -102,53 +100,46 @@ def _connected_phases(token):
     return len(phases)
 
 
-def from_opendss(master_path, solve=True):
-    """
-    Build a balanced (positive-sequence) pandapower net from an OpenDSS feeder.
+def from_opendss(path: str, solve: bool=True):
+    """Build a balanced (positive-sequence) pandapower net from an OpenDSS feeder.
 
     The OpenDSS circuit is compiled through ``OpenDSSDirect.py`` and its elements
     are mapped to pandapower as follows:
 
-    ===================  ===========================  =====================================
-    OpenDSS              pandapower                   notes
-    ===================  ===========================  =====================================
-    Circuit / Vsource    ``ext_grid``                 slack, vm_pu from the source pu
-    Bus                  ``bus``                      vn_kv = base kV (line-to-line)
-    Line + LineCode      ``line``                     r/x/c from R1/X1/C1; LineCode -> std_type
-    Line (switch / 0 km) ``switch``                   open status respected
-    Transformer (2W)     ``trafo``                    imported at the solved tap
-    Transformer (3W CT)  ``trafo``                    center-tapped split-phase -> 2W equiv.
-    Load                 ``load``                     kW/kvar -> p_mw/q_mvar
-    Capacitor            ``shunt``                    kvar -> -q_mvar (injection)
-    ===================  ===========================  =====================================
+    * Circuit / Vsource -> ``ext_grid``: slack, ``vm_pu`` from the source pu
+    * Bus -> ``bus``: ``vn_kv`` = base kV (line-to-line)
+    * Line + LineCode -> ``line``: r/x/c from ``R1/X1/C1``; ``LineCode`` -> std_type
+    * Line (switch / 0 km) -> ``switch``: open status respected
+    * Transformer (2W) -> ``trafo``: imported at the solved tap
+    * Transformer (3W CT) -> ``trafo``: center-tapped split-phase mapped to a 2W equivalent
+    * Load -> ``load``: kW/kvar -> p_mw/q_mvar
+    * Capacitor -> ``shunt``: kvar -> -q_mvar (injection)
 
     Transformers are imported at their *solved* tap ratio, so on-load tap changers
-    / RegControls are captured as the operating point (the controllers themselves
-    are not re-implemented). Three-winding center-tapped service transformers (two
-    LV windings on the same secondary bus) are collapsed to a balanced 2-winding
-    equivalent; positive-sequence cannot represent 120/240 V split phase (#873), so
-    those LV voltages carry the largest approximation error.
+    and RegControls are captured as the operating point; the controllers themselves
+    are not re-implemented. Three-winding center-tapped service transformers (two
+    LV windings on the same secondary bus) are collapsed to a balanced two-winding
+    equivalent. Because positive-sequence modeling cannot represent 120/240 V
+    split-phase operation (#873), those LV voltages carry the largest approximation
+    error.
 
-    Requires the optional dependency ``OpenDSSDirect.py``
+    This function requires the optional dependency ``OpenDSSDirect.py``
     (``pip install pandapower[opendss]``).
 
-    Parameters
-    ----------
-    master_path : str
-        Path to the OpenDSS master ``.dss`` file (the one you would ``Redirect``
-        to). All ``Redirect``-ed component files are followed.
-    solve : bool, default: True
-        If True, solve the circuit in OpenDSS first and capture the per-bus
-        voltage magnitudes (pu, phase-averaged) into the import report, so a
-        round-trip can be validated without re-solving OpenDSS.
+    Args:
+        path (str): Path to the OpenDSS master ``.dss`` file, i.e. the file
+            you would ``Redirect`` to. All transitively ``Redirect``-ed component
+            files are followed.
+        solve (bool): If True, solves the circuit in OpenDSS first and captures the
+            per-bus voltage magnitudes (pu, phase-averaged) in the import report so
+            that a round-trip can be validated without re-solving OpenDSS. Defaults
+            to True.
 
-    Returns
-    -------
-    pandapowerNet
-        A balanced net carrying an ``opendss_import`` diagnostics dict (element
-        counts, per-bus phase counts, the OpenDSS-solved voltages and the list of
-        approximations/skips made during the import).
-
+    Returns:
+        pandapowerNet: A balanced net carrying an ``opendss_import`` diagnostics
+        dict with element counts, per-bus phase counts, the OpenDSS-solved
+        voltages, and the list of approximations or skipped elements encountered
+        during import.
     """
     if not opendssdirect_imported:
         raise NotImplementedError(
@@ -156,7 +147,7 @@ def from_opendss(master_path, solve=True):
             "it, e.g. via 'pip install OpenDSSDirect.py' or 'pip install pandapower[opendss]'.")
 
     dss.Command("Clear")
-    dss.Command(f'Redirect "{master_path}"')
+    dss.Command(f'Redirect "{path}"')
     if solve:
         dss.Solution.Solve()
 
