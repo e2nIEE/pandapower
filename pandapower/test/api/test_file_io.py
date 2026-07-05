@@ -76,20 +76,20 @@ def net_charactistics():
 
 
 def test_pickle(net_in, tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.p"))
-    pp.to_pickle(net_in, filename)
-    net_out = pp.from_pickle(filename)
+    filename = os.path.abspath(str(tmp_path)) + "testfile.p"
+    to_pickle(net_in, filename)
+    net_out = from_pickle(filename)
     # pickle sems to changes column types
     assert_net_equal(net_in, net_out)
 
 
 @pytest.mark.skipif(not xlsxwriter_INSTALLED or not openpyxl_INSTALLED, reason=(
-    "xlsxwriter is mandatory to write excel files and openpyxl to read excels, but is not installed."
+        "xlsxwriter is mandatory to write excel files and openpyxl to read excels, but is not installed."
 ))
 def test_excel(net_in, tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.xlsx"))
-    pp.to_excel(net_in, filename)
-    net_out = pp.from_excel(filename)
+    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
+    to_excel(net_in, filename)
+    net_out = from_excel(filename)
     assert_net_equal(net_in, net_out)
 
     # test if user_pf_options are equal
@@ -103,10 +103,10 @@ def test_excel(net_in, tmp_path):
 @pytest.mark.skipif(not xlsxwriter_INSTALLED,
                     reason="xlsxwriter is mandatory to write excel files, but is not installed.")
 def test_excel_controllers(net_in, tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.xlsx"))
-    pp.control.DiscreteTapControl(net_in, 0, 0.95, 1.05)
-    pp.to_excel(net_in, filename)
-    net_out = pp.from_excel(filename)
+    filename = os.path.abspath(str(tmp_path)) + "testfile.xlsx"
+    DiscreteTapControl(net_in, 0, 0.95, 1.05)
+    to_excel(net_in, filename)
+    net_out = from_excel(filename)
     assert net_in.controller.object.at[0] == net_out.controller.object.at[0]
     assert_net_equal(net_in, net_out)
 
@@ -131,7 +131,7 @@ def test_excel_characteristics(net_charactistics, tmp_path):
 
 def test_json_basic(net_in, tmp_path):
     # tests the basic json functionality with the encoder/decoder classes
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     with open(filename, 'w') as fp:
         json.dump(net_in, fp, cls=PPJSONEncoder)
 
@@ -151,7 +151,7 @@ def test_json_controller_none():
 
 
 def test_json(net_in, tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
+    filename = os.path.join(os.path.abspath(str(tmp_path)), "testfile.json")
 
     if GEOPANDAS_INSTALLED and SHAPELY_INSTALLED:
         net_geo = copy.deepcopy(net_in)
@@ -181,18 +181,18 @@ def test_json(net_in, tmp_path):
 @pytest.mark.skipif(not cryptography_INSTALLED, reason=("cryptography is mandatory to encrypt "
                                                         "json files, but is not installed."))
 def test_encrypted_json(net_in, tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     to_json(net_in, filename, encryption_key="verysecret")
-    with pytest.raises(json.JSONDecodeError):
+    with pytest.raises(UserWarning):
         from_json(filename)
-   with pytest.raises(cryptography.fernet.InvalidToken):
+    with pytest.raises(cryptography.fernet.InvalidToken):
         from_json(filename, encryption_key="wrong")
     net_out = from_json(filename, encryption_key="verysecret")
     assert_net_equal(net_in, net_out)
 
 
 def test_type_casting_json(net_in, tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     net_in.sn_kva = 1000
     to_json(net_in, filename)
     net = from_json(filename)
@@ -200,7 +200,7 @@ def test_type_casting_json(net_in, tmp_path):
 
 
 def test_from_json_add_basic_std_types(tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile_std_types.json"))
+    filename = os.path.abspath(str(tmp_path)) + r"\testfile_std_types.json"
     # load older load network and change std-type
     net = create_test_network2()
     net.std_types["line"]['15-AL1/3-ST1A 0.4']["max_i_ka"] = 111
@@ -215,16 +215,16 @@ def test_from_json_add_basic_std_types(tmp_path):
 
 
 @pytest.mark.xfail(reason="For std_types, some dtypes are not returned correctly by sql. Therefore,"
-                   " a workaround test was created to check everything else.")
+                          " a workaround test was created to check everything else.")
 def test_sqlite(net_in, tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.db"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.db"
     to_sqlite(net_in, filename)
     net_out = from_sqlite(filename)
     assert_net_equal(net_in, net_out)
 
 
 def test_sqlite_workaround(net_in, tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.db"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.db"
     to_sqlite(net_in, filename)
     net_out = from_sqlite(filename)
     assert_net_equal(net_in, net_out, exclude_elms=["std_types"])
@@ -237,7 +237,7 @@ def test_convert_format():  # TODO what is this thing testing ?
 
 
 def test_to_json_dtypes(tmp_path):
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     net = create_test_network()
     runpp(net)
     net['res_test'] = pd.DataFrame(columns=['test'], data=[1, 2, 3])
@@ -368,7 +368,7 @@ def test_json_io_same_net(net_in, tmp_path):
     net1 = from_json_string(s)
     assert isinstance(net1.controller.object.at[0], ConstControl)
 
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     to_json(net_in, filename)
     net2 = from_json(filename)
     assert isinstance(net2.controller.object.at[0], ConstControl)
@@ -403,7 +403,7 @@ def test_deepcopy_controller():
 
 def test_elements_to_deserialize(tmp_path):
     net = mv_oberrhein()
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     to_json(net, filename)
     net_select = from_json(filename, elements_to_deserialize=['bus', 'load'])
     for key, item in net_select.items():
@@ -433,7 +433,7 @@ def test_elements_to_deserialize(tmp_path):
 
 def test_elements_to_deserialize_wo_keep(tmp_path):
     net = mv_oberrhein()
-    filename = os.path.abspath(os.path.join(str(tmp_path), "testfile.json"))
+    filename = os.path.abspath(str(tmp_path)) + "testfile.json"
     to_json(net, filename)
     net_select = from_json(filename, elements_to_deserialize=['bus', 'load'],
                            keep_serialized_elements=False)
