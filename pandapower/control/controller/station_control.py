@@ -266,7 +266,19 @@ class BinarySearchControl(Controller):
         raise AttributeError(f"{self.__class__.__name__!r} has no attribute {name!r}")
 
 
+    # derived per-run state (_vstate, cached droop links) must never end up in saved nets
+    json_excludes = Controller.json_excludes + ["_vstate", "_linked_droop_objs"]
+
+    # maps the result table an input measurement is taken from to the element table that
+    # carries the in_service information
+    _RES_TO_ELEMENT = {"res_line": "line", "res_trafo": "trafo", "res_trafo3w": "trafo3w",
+                       "res_switch": "switch", "res_impedance": "impedance", "res_bus": "bus",
+                       "res_gen": "gen"}
+
     def initialize_control(self, net):
+        if getattr(self, 'stations', None):
+            self._initialize_stations(net)
+            return
         output_element_index = np.atleast_1d(self.output_element_index)[0] if self.write_flag == 'single_index' else \
                 self.output_element_index #ruggedize for single index
         self.output_values = read_from_net(net, self.output_element, output_element_index, self.output_variable,
@@ -276,6 +288,154 @@ class BinarySearchControl(Controller):
                                             for distribution, service in zip(np.atleast_1d(self.output_values_distribution),
                                                                             np.atleast_1d(self.output_element_in_service))],
                                             dtype=bool)
+        self._build_vstate(net)
+
+    def _build_vstate(self, net):
+        """Precompute positional indices and cached lookups for the per-iteration hot path.
+
+        Rebuilt at the beginning of every run_control (initialize_control) and lazily for
+        controllers restored from JSON (from_dict does not call __init__). Never serialized
+        (see json_excludes). Falls back to the legacy label-based access paths whenever the
+        preconditions for positional access are not met.
+        """
+        vs = {}
+        # inputs: positional indices into the element table (for in_service masks)
+        element_table = self._RES_TO_ELEMENT.get(self.input_element)
+        input_idx = ([] if self.input_element_index is None
+                     else list(np.atleast_1d(self.input_element_index)))
+        read_flags = list(np.atleast_1d(getattr(self, 'read_flag', [])))
+        fast_input = (element_table is not None and element_table in net
+                      and len(read_flags) == len(input_idx)
+                      and all(flag == 'single_index' for flag in read_flags))
+        if fast_input:
+            pos = net[element_table].index.get_indexer(input_idx)
+            fast_input = not np.any(pos == -1)
+            vs['input_pos'] = pos
+        vs['fast_input'] = fast_input
+        vs['input_idx'] = input_idx
+        vs['input_element_table'] = element_table
+        vs['input_in_service_col'] = 'closed' if element_table == 'switch' else 'in_service'
+        # positional indices into the result table (for value reads) are resolved lazily on
+        # the first read because result tables are only guaranteed to exist after a powerflow
+        vs['res_pos'] = None
+        # outputs: positional indices into the output element table
+        output_idx = list(np.atleast_1d(self.output_element_index))
+        fast_output = (self.output_element in ('gen', 'sgen', 'shunt')
+                       and self.output_element in net)
+        if fast_output:
+            pos = net[self.output_element].index.get_indexer(output_idx)
+            fast_output = not np.any(pos == -1)
+            vs['output_pos'] = pos
+        vs['fast_output'] = fast_output
+        self._vstate = vs
+        # cache controllers linked to this one (droop controllers reference their binary
+        # search controller via controller_idx); avoids an O(n_controllers) scan of
+        # net.controller in every is_converged call. controller_idx is looked up via
+        # __dict__ because getattr would fall through to the (slow) __getattr__ shim on
+        # every controller that has no controller_idx
+        self._linked_droop_objs = [
+            obj for obj in net.controller['object'].values
+            if getattr(obj, '__dict__', {}).get('controller_idx') == self.index
+            and obj is not self]
+        return vs
+
+    def _refresh_in_service(self, net, vs):
+        """Update input_element_in_service / output_element_in_service from the net."""
+        if vs['fast_input']:
+            column = vs['input_in_service_col']
+            self.input_element_in_service = list(
+                net[vs['input_element_table']][column].values[vs['input_pos']])
+        else:
+            self.input_element_in_service = []
+            for input_index in np.atleast_1d(self.input_element_index):
+                if self.input_element == "res_line":
+                    self.input_element_in_service.append(net.line.in_service[input_index])
+                elif self.input_element == "res_trafo":
+                    self.input_element_in_service.append(net.trafo.in_service[input_index])
+                elif self.input_element == "res_trafo3w":
+                    self.input_element_in_service.append(net.trafo3w.in_service[input_index])
+                elif self.input_element == "res_switch":
+                    self.input_element_in_service.append(net.switch.closed[input_index])
+                elif self.input_element == "res_impedance":
+                    self.input_element_in_service.append(net.impedance.in_service[input_index])
+                elif self.input_element == "res_bus":
+                    self.input_element_in_service.append(net.bus.in_service[input_index])
+                elif self.input_element == "res_gen":
+                    self.input_element_in_service.append(net.gen.in_service[input_index])
+        if vs['fast_output']:
+            self.output_element_in_service = list(
+                net[self.output_element]['in_service'].values[vs['output_pos']])
+        else:
+            self.output_element_in_service = []
+            for output_index in np.atleast_1d(self.output_element_index):
+                if self.output_element == "gen":
+                    self.output_element_in_service.append(net.gen.in_service[output_index])
+                elif self.output_element == "sgen":
+                    self.output_element_in_service.append(net.sgen.in_service[output_index])
+                elif self.output_element == "shunt":
+                    self.output_element_in_service.append(net.shunt.in_service[output_index])
+
+    def _read_input_values(self, net, vs, need_p):
+        """Read the measurement values of all in-service input elements.
+
+        Returns plain lists in the same order as the legacy per-element read loop, so all
+        downstream arithmetic (sign multiplication, summation) is unchanged.
+        """
+        input_values, p_input_values = [], []
+        fast_read = vs['fast_input']
+        if fast_read:
+            res_pos = vs['res_pos']
+            if res_pos is None:
+                res_pos = net[self.input_element].index.get_indexer(vs['input_idx'])
+                if np.any(res_pos == -1):
+                    fast_read = False
+                    vs['fast_input'] = False
+                else:
+                    vs['res_pos'] = res_pos
+        if fast_read:
+            res_table = net[self.input_element]
+            columns = {}
+            for counter, pos in enumerate(vs['res_pos']):
+                if not self.input_element_in_service[counter]:
+                    continue
+                column = self.input_variable[counter]
+                values = columns.get(column)
+                if values is None:
+                    values = columns[column] = res_table[column].values
+                input_values.append(values[pos])
+                if need_p:
+                    p_column = self.input_variable_p[counter]
+                    p_values = columns.get(p_column)
+                    if p_values is None:
+                        p_values = columns[p_column] = res_table[p_column].values
+                    p_input_values.append(p_values[pos])
+        else:
+            counter = 0
+            for input_index in self.input_element_index:
+                if self.input_element_in_service[counter]:
+                    input_values.append(read_from_net(net, self.input_element, input_index,
+                                                      self.input_variable[counter], self.read_flag[counter]))
+                    if need_p:
+                        p_input_values.append(read_from_net(net, self.input_element, input_index,
+                                                            self.input_variable_p[counter], self.read_flag[counter]))
+                counter += 1
+        return input_values, p_input_values
+
+    def _limits_reached_else_refresh(self, log_prefix):
+        """Handle the shared "are any outputs still adjustable" block of all control modi.
+
+        Returns True (and sets converged) if every output element has reached its reactive
+        power limit; otherwise drops out-of-service outputs from output_adjustable and
+        renormalizes the distribution.
+        """
+        if not any(self.output_adjustable):
+            logging.info(log_prefix + 'All stations controlled by %s reached reactive power limits.' % self.name)
+            self.converged = True
+            return True
+        self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable in zip(
+            self.output_element_in_service, self.output_adjustable)], dtype=bool)
+        self._normalize_distribution_in_service()
+        return False
 
     def is_converged(self, net):
         """
@@ -286,31 +446,15 @@ class BinarySearchControl(Controller):
         if not self.in_service:
             self.converged = True
             return self.converged
+        if getattr(self, 'stations', None):
+            return self._is_converged_stations(net)
+        # derived state is built by initialize_control; build lazily for controllers
+        # restored from JSON or used outside run_control
+        vs = getattr(self, '_vstate', None)
+        if vs is None:
+            vs = self._build_vstate(net)
         ###updating input & output elements in service lists
-        self.input_element_in_service = []
-        self.output_element_in_service = []
-        for input_index in np.atleast_1d(self.input_element_index):
-            if self.input_element == "res_line":
-                self.input_element_in_service.append(net.line.in_service[input_index])
-            elif self.input_element == "res_trafo":
-                self.input_element_in_service.append(net.trafo.in_service[input_index])
-            elif self.input_element == "res_trafo3w":
-                self.input_element_in_service.append(net.trafo3w.in_service[input_index])
-            elif self.input_element == "res_switch":
-                self.input_element_in_service.append(net.switch.closed[input_index])
-            elif self.input_element == "res_impedance":
-                self.input_element_in_service.append(net.impedance.in_service[input_index])
-            elif self.input_element == "res_bus":
-                self.input_element_in_service.append(net.bus.in_service[input_index])
-            elif self.input_element == "res_gen":
-                self.input_element_in_service.append(net.gen.in_service[input_index])
-        for output_index in np.atleast_1d(self.output_element_index):
-            if self.output_element == "gen":
-                self.output_element_in_service.append(net.gen.in_service[output_index])
-            elif self.output_element == "sgen":
-                self.output_element_in_service.append(net.sgen.in_service[output_index])
-            elif self.output_element == "shunt":
-                self.output_element_in_service.append(net.shunt.in_service[output_index])
+        self._refresh_in_service(net, vs)
 
         # check if at least one input and one output element is in_service
         if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
@@ -329,27 +473,22 @@ class BinarySearchControl(Controller):
                     f' at index {np.array(self.output_element_index)}'
                     f' will provide 100% of the reactive power in Controller {self.index}.\n')
             else:
+                in_service_mask = np.asarray(self.output_element_in_service, dtype=bool)
                 logger.warning(
                     f'Reactive Power Distribution for one output element cannot be modified. The active '
-                    f'{self.output_element[np.array(self.output_element_in_service)]} at index '
-                    f'{self.output_element_index[np.array(self.output_element_in_service)]} will provide 100% of the'
+                    f'{self.output_element} at index '
+                    f'{np.asarray(self.output_element_index)[in_service_mask]} will provide 100% of the'
                     f' reactive power in Controller {self.index}.\n')
 
         # read input values
         input_values = [] #reactive power q
         p_input_values = [] #active power p for power factor controllers
-        counter = 0
         if self.input_element != 'res_bus':
-            for input_index in self.input_element_index:
-                if self.input_element_in_service[counter]: # input element not in service
-                    input_values.append(read_from_net(net, self.input_element, input_index,
-                                                      self.input_variable[counter], self.read_flag[counter]))
-                    if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus == ControlModusEnum.tan_phi_ctrl:
-                        p_input_values.append(read_from_net(net,self.input_element, input_index,
-                                                        self.input_variable_p[counter], self.read_flag[counter]))
-                counter += 1
+            need_p = (self.control_modus in ControlModusEnum.pf_modes()
+                      or self.control_modus == ControlModusEnum.tan_phi_ctrl)
+            input_values, p_input_values = self._read_input_values(net, vs, need_p)
             input_values = (self.input_sign * np.asarray(input_values)).tolist()
-            if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus == ControlModusEnum.tan_phi_ctrl:
+            if need_p:
                 p_input_values = (self.input_sign * np.asarray(p_input_values)).tolist()
         # compare old and new set values
         if self.control_modus in ControlModusEnum.q_modes() or (self.control_modus in ControlModusEnum.v_modes()
@@ -358,18 +497,8 @@ class BinarySearchControl(Controller):
                 logger.warning('Missing attribute self.input_element_index, defaulting to Q_ctrl\n')
                 self.control_modus = ControlModusEnum.q_ctrl
             self.diff_old = self.diff
-            if not any(self.output_adjustable):
-                logging.info('All stations controlled by %s reached reactive power limits.' %self.name)
-                self.converged = True
+            if self._limits_reached_else_refresh(''):
                 return self.converged
-            else:
-                # adapt output adjustable depending on in_service
-                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable in zip(
-                    self.output_element_in_service, self.output_adjustable
-                )], dtype=bool)
-
-                # normalize the values distribution
-                self._normalize_distribution_in_service()
 
             self.diff = self.set_point - sum(input_values)
             self.converged = np.all(np.abs(self.diff) < self.tol)
@@ -382,41 +511,23 @@ class BinarySearchControl(Controller):
                 self.reactance = -1
 
             self.diff_old = self.diff
-            if not any(self.output_adjustable):
-                logging.info('PF_ctrl: All stations controlled by %s reached reactive power limits.' %self.name)
-                self.converged = True
+            if self._limits_reached_else_refresh('PF_ctrl: '):
                 return self.converged
-            else:
-                # adapt output adjustable depending on in_service
-                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                   in zip(self.output_element_in_service, self.output_adjustable)], dtype=bool)
-                # normalize the values distribution
-                self._normalize_distribution_in_service()
-            if -0.012 < self.set_point < 0.012: #clip set_point to handle pf=0
-                min_q = -0.012
-                max_q = -min_q
-                self.set_point = float(np.where((self.set_point >= 0) & (self.set_point <= max_q), max_q, self.set_point))
-                self.set_point = float(np.where((self.set_point >= min_q) & (self.set_point < 0), float(min_q), self.set_point))
-                logger.warning(f"Power factor calculation with set_point 0 not possible with BSC {self.index}.\n"
-                               f"Maximizing Q output by clipping set_point to {self.set_point}\n")
-            q_set = self.reactance * sum(p_input_values)/len(p_input_values) * (np.tan(np.arccos(self.set_point)))
+            set_point = self.set_point
+            if -0.012 < set_point < 0.012: #clip set_point to handle pf=0, without mutating self.set_point
+                set_point = 0.012 if set_point >= 0 else -0.012
+                if not vs.get('pf_clip_warned', False):
+                    vs['pf_clip_warned'] = True
+                    logger.warning(f"Power factor calculation with set_point 0 not possible with BSC {self.index}.\n"
+                                   f"Maximizing Q output by clipping set_point to {set_point}\n")
+            q_set = self.reactance * sum(p_input_values)/len(p_input_values) * (np.tan(np.arccos(set_point)))
             self.diff = q_set - sum(input_values)/len(input_values)
             self.converged = np.all(np.abs(self.diff)<self.tol)
 
         elif self.control_modus == ControlModusEnum.tan_phi_ctrl:
             self.diff_old = self.diff
-            if not any(self.output_adjustable):
-                logging.info('tan(phi)_ctrl: All stations controlled by %s reached reactive power limits.' %self.name)
-                self.converged = True
+            if self._limits_reached_else_refresh('tan(phi)_ctrl: '):
                 return self.converged
-            else:
-                # adapt output adjustable depending on in_service
-                self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable in zip(
-                    self.output_element_in_service, self.output_adjustable
-                )], dtype=bool)
-
-                # normalize the values distribution
-                self._normalize_distribution_in_service()
 
             q_set = sum(p_input_values)/len(p_input_values) * self.set_point
             self.diff = q_set - sum(input_values)/len(input_values)
@@ -441,19 +552,8 @@ class BinarySearchControl(Controller):
                 if self.input_element != 'res_bus':  # and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
                     if hasattr(self, 'bus_idx') and getattr(self, 'bus_idx') is not None:  # legacy
                         self.diff_old = self.diff
-                        if not any(self.output_adjustable):
-                            logging.info(
-                                'Q_ctrl: All stations controlled by %s reached reactive power limits.' % self.name)
-                            self.converged = True
+                        if self._limits_reached_else_refresh('Q_ctrl: '):
                             return self.converged
-                        else:
-                            # adapt output adjustable depending on in_service
-                            self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                               in zip(self.output_element_in_service,
-                                                                      self.output_adjustable)], dtype=bool)
-
-                            # normalize the values distribution
-                            self._normalize_distribution_in_service()
 
                         self.diff = self.set_point - net.res_bus.vm_pu.at[self.bus_idx]
                         self.converged = np.all(np.abs(self.diff) < self.tol)
@@ -464,34 +564,15 @@ class BinarySearchControl(Controller):
                             logger.warning(f"'input_variable' must be 'vm_pu' for V_ctrl not {self.input_variable}, correcting ")
                             self.input_variable = 'vm_pu'
                         self.diff_old = self.diff  # V_ctrl
-                        if not any(self.output_adjustable):
-                            logging.info(
-                                'V_ctrl: All stations controlled by %s reached reactive power limits.' % self.name)
-                            self.converged = True
+                        if self._limits_reached_else_refresh('V_ctrl: '):
                             return self.converged
-                        else:
-                            # adapt output adjustable depending on in_service
-                            self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                               in zip(self.output_element_in_service, self.output_adjustable)], dtype=bool)
-
-                            # normalize the values distribution
-                            self._normalize_distribution_in_service()
 
                         self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.input_element_index)[0]]
                         self.converged = np.all(np.abs(self.diff) < self.tol)
                 else:
                     self.diff_old = self.diff  # V_ctrl
-                    if not any(self.output_adjustable):
-                        logging.info('V_ctrl: All stations controlled by %s reached reactive power limits.' % self.name)
-                        self.converged = True
+                    if self._limits_reached_else_refresh('V_ctrl: '):
                         return self.converged
-                    else:
-                        # adapt output adjustable depending on in_service
-                        self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                           in zip(self.output_element_in_service, self.output_adjustable)], dtype=bool)
-
-                        # normalize the values distribution
-                        self._normalize_distribution_in_service()
 
                     self.diff = self.set_point - net.res_bus.vm_pu.at[np.atleast_1d(self.input_element_index)[0]]
                     self.converged = np.all(np.abs(self.diff) < self.tol)
@@ -501,37 +582,44 @@ class BinarySearchControl(Controller):
                                    "Please specify 'control_modus' ('Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl')\n")
                     self.control_modus = ControlModusEnum.q_ctrl
                 self.diff_old = self.diff  # Q_ctrl
-                if not any(self.output_adjustable):
-                    logging.info('Q_ctrl: All stations controlled by %s reached reactive power limits.' % self.name)
-                    self.converged = True
+                if self._limits_reached_else_refresh('Q_ctrl: '):
                     return self.converged
-                else:
-                    # adapt output adjustable depending on in_service
-                    self.output_adjustable = np.array([in_service and adjustable for in_service, adjustable
-                                                       in zip(self.output_element_in_service, self.output_adjustable)], dtype=bool)
-
-                    # normalize the values distribution
-                    self._normalize_distribution_in_service()
 
                 self.diff = self.set_point - sum(input_values)
                 self.converged = np.all(np.abs(self.diff) < self.tol)
-        ###check convergence of linked droop controller (if exists)
-        if self.converged and net.controller['object'].apply(
-                lambda obj: getattr(obj, 'controller_idx', None) == self.index and not getattr(obj, 'converged', True)).any():
+        ###check convergence of linked droop controllers (if any); the list is cached in
+        ###_build_vstate to avoid scanning all controllers in every iteration
+        if self.converged and any(not getattr(obj, 'converged', True)
+                                  for obj in self._linked_droop_objs):
             self.converged = False
         return self.converged
 
     def control_step(self, net):
+        if getattr(self, 'stations', None):
+            self._control_step_stations(net)
+            return
         self._binary_search_control_step(net)
 
     def _binary_search_control_step(self, net):
         if not self.in_service:
             return
+        vs = getattr(self, '_vstate', None)
+        if vs is None:
+            vs = self._build_vstate(net)
+        damping = float(getattr(self, 'damping_factor', 1.0) or 1.0)
         if self.output_values_old is None:  # first step
             # is ok that values are set for all stations even though they are out of service or not adjustable --> following step will correct this
-            self.output_values_old, self.output_values = (
-                np.atleast_1d(self.output_values)[self.output_element_in_service],
-                np.atleast_1d(self.output_values)[self.output_element_in_service] + 1e-3)
+            # output_values keeps one entry per output element (also out-of-service ones);
+            # out-of-service entries are excluded when writing to the net
+            values = np.atleast_1d(self.output_values).astype(np.float64)
+            probe_total = self._initial_probe_total(values, damping)
+            if probe_total is None:
+                # V modi: the voltage response in MVAr/pu is grid specific, keep the small
+                # legacy probe (update_method="jacobian" will compute the true sensitivity)
+                self.output_values_old, self.output_values = (values, values + 1e-3)
+            else:
+                distribution = np.atleast_1d(self.output_values_distribution).astype(np.float64)
+                self.output_values_old, self.output_values = (values, values + probe_total * distribution)
             positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val]
             for i in positions_not_adjustable:
                 if self.output_values_distribution[i]==0 or not self.output_element_in_service[i] :
@@ -539,17 +627,13 @@ class BinarySearchControl(Controller):
                 else:
                     continue
         else:  #second step
-            step_diff = self.diff - self.diff_old
-            x = self.output_values - self.diff * (self.output_values - self.output_values_old) / np.where(
-                step_diff == 0, 1e-6, step_diff)  # converging
-
-            rel_cap = 2
-            cap = rel_cap * (np.abs(self.output_values) + 1e-6) + 50  # add epsilon to avoid zero; absolute cap +50 MVAr
-
-            delta = x - self.output_values
-            delta = np.clip(delta, -cap, +cap)
-
-            x = self.output_values + delta
+            # another controller or enforce_q_lims may have modified the written values in
+            # the net since the last step -- the powerflow saw the net values, so they are
+            # the true evaluation point of the secant
+            self._resync_output_values(net, vs)
+            x_total = self._safeguarded_secant_total(vs, damping)
+            distribution = np.atleast_1d(self.output_values_distribution).astype(np.float64)
+            x = x_total * distribution
 
             if not all(self.output_adjustable) and net._options.get('enforce_q_lims', False):
                 positions_adjustable = [i for i, val in enumerate(self.output_adjustable) if val]  # gives which is/are adjustable
@@ -644,12 +728,616 @@ class BinarySearchControl(Controller):
                         self.output_values = x
             else:
                 self.output_values_old, self.output_values = self.output_values, x
-        ### write new set of Q values to output elements###
-        output_element_index = (list(np.atleast_1d(self.output_element_index)[self.output_element_in_service])[0] if self.write_flag
-            == 'single_index' else list(np.array(self.output_element_index)[self.output_element_in_service])) #ruggedizing code
-        output_values = (list(self.output_values)[0] if self.write_flag
-            == 'single_index' else list(self.output_values))  # ruggedizing code
+        ### write new set of Q values to output elements (out-of-service outputs excluded)###
+        in_service_mask = np.asarray(self.output_element_in_service, dtype=bool)
+        values = np.atleast_1d(self.output_values)
+        if len(values) == len(in_service_mask):
+            values = values[in_service_mask]
+        if self.write_flag == 'single_index':
+            output_element_index = list(np.atleast_1d(self.output_element_index)[in_service_mask])[0]
+            output_values = list(values)[0]
+        else:
+            output_element_index = list(np.array(self.output_element_index)[in_service_mask])
+            output_values = list(values)
         write_to_net(net, self.output_element, output_element_index, self.output_variable, output_values, self.write_flag)
+
+    def _resync_output_values(self, net, vs):
+        """Align the internal output state with the values currently in the net tables."""
+        if not vs.get('fast_output', False) or not isinstance(self.output_variable, str):
+            return
+        current = net[self.output_element][self.output_variable].values[vs['output_pos']]
+        values = np.atleast_1d(self.output_values).astype(np.float64)
+        mask = np.asarray(self.output_element_in_service, dtype=bool)
+        if len(current) != len(values) or len(mask) != len(values):
+            return
+        values[mask] = current[mask]
+        self.output_values = values
+
+    def _initial_probe_total(self, values, damping):
+        """Total first-step perturbation for Q-type control modi, or None for the legacy probe.
+
+        For Q/PF/tan(phi) control the measured quantity follows the summed station output
+        nearly 1:1, so a residual-sized first step is already close to the Newton step; the
+        secant update afterwards corrects the remaining slope error. For V modi the voltage
+        response in MVAr/pu is grid specific, so None is returned and the caller keeps the
+        small legacy probe.
+        """
+        if self.control_modus in ControlModusEnum.v_modes():
+            return None
+        if self.diff is None or np.ndim(self.diff) != 0 or not np.isfinite(self.diff):
+            return None
+        cap = 2.0 * float(np.abs(values).sum()) + 50.0
+        probe_total = float(np.clip(damping * float(self.diff), -cap, cap))
+        if abs(probe_total) < 1e-3:
+            probe_total = 1e-3  # keep the perturbation measurable for the secant slope
+        return probe_total
+
+    def _safeguarded_secant_total(self, vs, damping):
+        """Next total station output from a bracketing-safeguarded secant update.
+
+        The update works on the summed station output. As soon as two iterates with opposite
+        residual sign are known, the solution is bracketed and an Illinois-damped regula
+        falsi keeps all further iterates inside the bracket. Without a bracket, a (damped)
+        secant step with a step-size cap is taken; a flat measurement response takes a
+        bounded unit-slope step instead of dividing by a near-zero slope.
+        """
+        solver = vs.setdefault('solver', self._new_solver_state(self.set_point))
+        values = np.atleast_1d(self.output_values).astype(np.float64)
+        values_old = np.atleast_1d(self.output_values_old).astype(np.float64)
+        total = float(values.sum())
+        total_old = float(values_old.sum())
+        try:
+            f = float(self.diff)
+            f_old = f if self.diff_old is None else float(self.diff_old)
+        except (TypeError, ValueError):
+            # non-scalar residual: legacy per-element secant as fallback
+            step_diff = self.diff - self.diff_old
+            x = values - self.diff * (values - values_old) / np.where(step_diff == 0, 1e-6, step_diff)
+            cap = 2 * (np.abs(values) + 1e-6) + 50
+            return float(np.sum(values + np.clip(x - values, -cap, cap)))
+        cap = 2.0 * float(np.abs(values).sum()) + 50.0
+        return self._secant_core(solver, f, f_old, total, total_old, damping,
+                                 self.set_point, cap, "%s (index %s)" % (self.name, self.index))
+
+    @staticmethod
+    def _new_solver_state(set_point):
+        return {'lo': None, 'hi': None, 'side': 0, 'best': None, 'stall': 0,
+                'stall_warned': False, 'slope': None, 'set_point': set_point}
+
+    @staticmethod
+    def _secant_core(solver, f, f_old, total, total_old, damping, set_point, cap, label):
+        """Bracketing-safeguarded secant update on a scalar residual, see
+        _safeguarded_secant_total. ``solver`` carries the state between calls."""
+        # a changed set point (e.g. written by a chained droop controller) changes the
+        # residual function, previously collected bracket points are no longer valid
+        if solver['set_point'] != set_point:
+            solver['lo'] = solver['hi'] = None
+            solver['side'] = 0
+            solver['set_point'] = set_point
+
+        # remember the most recent meaningful secant slope (df/dQ_total); used when the last
+        # two iterates collapse onto each other and no local slope can be computed
+        if abs(total - total_old) > 1e-12 and abs(f - f_old) > 1e-12 * max(1.0, abs(f)):
+            solver['slope'] = (f - f_old) / (total - total_old)
+
+        # stagnation diagnostics; a frozen residual with an active bracket means the bracket
+        # was collected while other controllers still moved the operating point (stale) --
+        # discard it and continue with plain secant steps on fresh information
+        if solver['best'] is None or abs(f) < 0.9 * solver['best']:
+            solver['best'] = abs(f) if solver['best'] is None else min(abs(f), solver['best'])
+            solver['stall'] = 0
+        else:
+            solver['stall'] += 1
+            if solver['stall'] >= 3 and solver['lo'] is not None:
+                logger.debug("BinarySearchControl %s: discarding stale bracket" % label)
+                solver['lo'] = solver['hi'] = None
+                solver['side'] = 0
+                solver['best'] = abs(f)
+                solver['stall'] = 0
+            elif solver['stall'] >= 8 and not solver['stall_warned']:
+                solver['stall_warned'] = True
+                logger.warning(
+                    "BinarySearchControl %s: residual %.3g is not decreasing "
+                    "after %d control steps" % (label, abs(f), solver['stall']))
+
+        # maintain the bracket around the zero crossing
+        if solver['lo'] is None:
+            if f_old * f < 0:
+                first, second = (total_old, f_old), (total, f)
+                solver['lo'], solver['hi'] = ((first, second) if first[0] <= second[0]
+                                              else (second, first))
+                solver['side'] = 0
+        else:
+            lo_x, lo_f = solver['lo']
+            hi_x, hi_f = solver['hi']
+            if f == 0.0:
+                return total
+            if f * lo_f > 0:
+                solver['lo'] = (total, f)
+                if solver['side'] == -1:
+                    solver['hi'] = (hi_x, hi_f * 0.5)  # Illinois damping
+                solver['side'] = -1
+            elif f * hi_f > 0:
+                solver['hi'] = (total, f)
+                if solver['side'] == 1:
+                    solver['lo'] = (lo_x, lo_f * 0.5)  # Illinois damping
+                solver['side'] = 1
+
+        if solver['lo'] is not None:
+            lo_x, lo_f = solver['lo']
+            hi_x, hi_f = solver['hi']
+            x_new = (lo_x * hi_f - hi_x * lo_f) / (hi_f - lo_f)
+            if not (min(lo_x, hi_x) < x_new < max(lo_x, hi_x)):
+                x_new = 0.5 * (lo_x + hi_x)  # numerical safety: bisect
+            return x_new
+
+        # no bracket yet: plain secant with a step-size cap. damping_factor is deliberately
+        # not applied to regular secant steps (it would slow every well-behaved controller);
+        # it only softens the fallback steps below and the first probe
+        step_diff = f - f_old
+        if abs(step_diff) <= 1e-12 * max(1.0, abs(f)) or abs(total - total_old) <= 1e-12:
+            if solver['slope']:
+                # local slope unavailable (iterates collapsed): Newton with remembered slope
+                x_new = total - damping * f / solver['slope']
+            else:
+                x_new = total + damping * f  # flat response: bounded unit-slope step
+        else:
+            x_new = total - f * (total - total_old) / step_diff
+        return total + float(np.clip(x_new - total, -cap, cap))
+
+    # ------------------------------------------------------------------------------------
+    # multi-station mode: one controller instance manages many stations, each with its own
+    # control modus, set point, measurement, outputs and (optionally) droop characteristic.
+    # Droop is part of the station residual (single fixed-point loop), not a chained
+    # controller. Created via BinarySearchControl.for_stations; single-station controllers
+    # created through __init__ keep the legacy code path above.
+    # ------------------------------------------------------------------------------------
+
+    @classmethod
+    def for_stations(cls, net, stations, output_element="sgen", output_variable="q_mvar",
+                     tol=1e-3, in_service=True, order=0, level=0, name="",
+                     update_method="secant", drop_same_existing_ctrl=False,
+                     matching_params=None, **kwargs):
+        """Create one BinarySearchControl instance controlling multiple stations.
+
+        Parameters
+        ----------
+        net : pandapowerNet
+        stations : list of dict
+            One dict per station with the keys:
+
+            - ``control_modus`` (str): ``"Q_ctrl"``, ``"V_ctrl"``, ``"PF_ctrl_ind"``,
+              ``"PF_ctrl_cap"``, ``"tan_phi_ctrl"``, ``"Q_ctrl_V_droop"``,
+              ``"V_ctrl_Q_droop"`` or ``"V_ctrl_Q_droop_local"``
+            - ``set_point`` (float): reactive power / voltage / power factor / tan(phi)
+              set point (base set point for droop modi)
+            - ``input_element`` (str): result table of the measurement, e.g. ``"res_line"``,
+              ``"res_trafo"``; ``"res_bus"`` for plain V_ctrl
+            - ``input_variable`` (str or list of str): measured column(s), e.g.
+              ``"q_to_mvar"``; ``"vm_pu"`` for plain V_ctrl
+            - ``input_element_index`` (int or list of int)
+            - ``input_inverted`` (bool or list of bool, optional)
+            - ``output_element_index`` (list of int): controlled elements in the (shared)
+              output table
+            - ``output_values_distribution`` (list of float): Q distribution among outputs
+            - ``tol`` (float, optional): per-station tolerance override
+            - ``name`` (str, optional)
+            - ``droop`` (dict, required for droop modi):
+              ``q_droop_mvar`` (Mvar/pu), ``bus_idx`` (measured bus),
+              ``vm_set_lb``/``vm_set_ub`` (deadband, Q_ctrl_V_droop),
+              ``vm_set_pu`` (no-deadband voltage reference, Q_ctrl_V_droop),
+              ``q_set_mvar`` (local Q reference, V_ctrl_Q_droop_local)
+        output_element : str
+            Output table shared by all stations of this instance (``"sgen"``, ``"gen"`` or
+            ``"shunt"``). Stations with different output tables need separate instances.
+        output_variable : str
+            Written column, e.g. ``"q_mvar"`` or ``"step"``.
+        update_method : str
+            ``"secant"`` (default) or ``"jacobian"``. With ``"jacobian"``, plain ``V_ctrl``
+            stations take coupled Newton steps based on the dVm/dQ sensitivities from the
+            powerflow Jacobian (captures the interaction of electrically close stations and
+            reduces the number of powerflows); all other modi and any failure case
+            automatically fall back to the safeguarded secant update.
+        """
+        self = cls.__new__(cls)
+        Controller.__init__(self, net, in_service=in_service, order=order, level=level,
+                            drop_same_existing_ctrl=drop_same_existing_ctrl,
+                            matching_params=matching_params)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        self.name = name
+        self.output_element = output_element
+        self.output_variable = output_variable
+        self.write_flag = 'loc'
+        self.tol = tol
+        self.in_service = in_service
+        self.update_method = update_method
+        self.converged = False
+        # harmless flat attributes for __str__ / external inspection
+        self.input_element = 'stations'
+        self.input_variable = []
+        self.output_element_index = []
+        self.set_point = None
+        self.diff = None
+        self.diff_old = None
+        self.stations = [cls._normalize_station(s, k, tol) for k, s in enumerate(stations)]
+        return self
+
+    @staticmethod
+    def _normalize_station(station, position, default_tol):
+        """Validate a station dict and normalize it to canonical (JSON-safe) form."""
+        s = dict(station)
+        try:
+            modus = ControlModusEnum(s.get('control_modus'))
+        except ValueError:
+            raise UserWarning(f"station {position}: unknown control_modus "
+                              f"{s.get('control_modus')!r}")
+        s['control_modus'] = modus.value
+        if 'set_point' not in s:
+            raise UserWarning(f"station {position}: set_point is required")
+        s['set_point'] = float(s['set_point'])
+        if modus in ControlModusEnum.pf_modes() and abs(s['set_point']) > 1:
+            raise UserWarning(f"station {position}: power factor set point out of range [-1, 1]")
+        s['tol'] = float(s.get('tol', default_tol))
+        s['input_element_index'] = [int(i) for i in np.atleast_1d(s['input_element_index'])]
+        n_inputs = len(s['input_element_index'])
+        variables = s['input_variable']
+        s['input_variable'] = ([variables] * n_inputs if isinstance(variables, str)
+                               else list(variables))
+        if len(s['input_variable']) != n_inputs:
+            raise UserWarning(f"station {position}: input_variable and input_element_index "
+                              f"lengths differ")
+        if (modus in ControlModusEnum.pf_modes() or modus == ControlModusEnum.tan_phi_ctrl) \
+                and s['input_element'] == 'res_bus':
+            raise UserWarning(f"station {position}: {modus.value} needs a branch measurement, "
+                              f"not res_bus")
+        inverted = np.atleast_1d(s.get('input_inverted', False))
+        if len(inverted) == 1:
+            inverted = np.repeat(inverted, n_inputs)
+        if len(inverted) != n_inputs:
+            raise UserWarning(f"station {position}: input_inverted and input_element_index "
+                              f"lengths differ")
+        s['input_sign'] = [-1.0 if inv else 1.0 for inv in inverted]
+        s.pop('input_inverted', None)
+        s['output_element_index'] = [int(i) for i in np.atleast_1d(s['output_element_index'])]
+        distribution = np.asarray(
+            np.atleast_1d(s.get('output_values_distribution',
+                                [1.0] * len(s['output_element_index']))), dtype=np.float64)
+        if len(distribution) != len(s['output_element_index']):
+            raise UserWarning(f"station {position}: output_values_distribution and "
+                              f"output_element_index lengths differ")
+        s['output_values_distribution'] = [float(v) for v in distribution / distribution.sum()]
+        droop = s.get('droop')
+        if modus in ControlModusEnum.droop_modes():
+            if not droop or 'q_droop_mvar' not in droop or 'bus_idx' not in droop:
+                raise UserWarning(f"station {position}: droop modus {modus.value} requires a "
+                                  f"droop dict with q_droop_mvar and bus_idx")
+            if (modus == ControlModusEnum.q_ctrl_v_droop
+                    and ('vm_set_lb' in droop) != ('vm_set_ub' in droop)):
+                raise UserWarning(f"station {position}: Q_ctrl_V_droop needs both or none of "
+                                  f"vm_set_lb/vm_set_ub")
+            if (modus == ControlModusEnum.q_ctrl_v_droop and 'vm_set_lb' not in droop
+                    and 'vm_set_pu' not in droop):
+                raise UserWarning(f"station {position}: Q_ctrl_V_droop without deadband needs "
+                                  f"a vm_set_pu voltage reference")
+        elif modus in ControlModusEnum.v_modes():
+            if s['input_element'] != 'res_bus' and (not droop or 'bus_idx' not in droop):
+                raise UserWarning(f"station {position}: V_ctrl needs input_element 'res_bus' "
+                                  f"or a droop dict with bus_idx")
+        return s
+
+    def _initialize_stations(self, net):
+        """Build the runtime state (positional indices, solver state) for all stations."""
+        vs = {'stations': [], 'res_resolved': False}
+        output_table = net[self.output_element]
+        output_values = output_table[self.output_variable].values
+        for k, s in enumerate(self.stations):
+            rt = {'cfg': s, 'label': s.get('name') or f"{self.name}[{k}]"}
+            rt['modus'] = ControlModusEnum(s['control_modus'])
+            rt['set_point'] = s['set_point']
+            rt['tol'] = s['tol']
+            rt['droop'] = s.get('droop')
+            rt['out_idx'] = np.asarray(s['output_element_index'])
+            rt['out_pos'] = output_table.index.get_indexer(rt['out_idx'])
+            if np.any(rt['out_pos'] == -1):
+                raise UserWarning(f"station {rt['label']}: output element(s) "
+                                  f"{s['output_element_index']} not found in "
+                                  f"{self.output_element}")
+            rt['dist_base'] = np.asarray(s['output_values_distribution'], dtype=np.float64)
+            rt['at_limit'] = np.zeros(len(rt['out_idx']), dtype=bool)
+            rt['values'] = output_values[rt['out_pos']].astype(np.float64)
+            rt['values_old'] = None
+            rt['solver'] = self._new_solver_state(rt['set_point'])
+            rt['f'] = None
+            rt['f_old'] = None
+            rt['converged'] = False
+            rt['disabled'] = False
+            rt['warned'] = False
+            element_table = self._RES_TO_ELEMENT.get(s['input_element'])
+            if element_table is None or element_table not in net:
+                raise UserWarning(f"station {rt['label']}: unsupported input_element "
+                                  f"{s['input_element']!r}")
+            rt['in_res'] = s['input_element']
+            rt['in_element_table'] = element_table
+            rt['in_service_col'] = 'closed' if element_table == 'switch' else 'in_service'
+            rt['in_idx'] = list(s['input_element_index'])
+            rt['in_pos'] = net[element_table].index.get_indexer(rt['in_idx'])
+            if np.any(rt['in_pos'] == -1):
+                raise UserWarning(f"station {rt['label']}: input element(s) {rt['in_idx']} "
+                                  f"not found in {element_table}")
+            rt['in_cols'] = list(s['input_variable'])
+            rt['in_sign'] = np.asarray(s['input_sign'], dtype=np.float64)
+            rt['res_pos'] = None  # resolved lazily against the result table
+            if rt['modus'] in ControlModusEnum.pf_modes() or rt['modus'] == ControlModusEnum.tan_phi_ctrl:
+                rt['p_cols'] = [c.replace('q', 'p').replace('var', 'w') for c in rt['in_cols']]
+            rt['reactance'] = -1.0 if rt['modus'] == ControlModusEnum.PF_ctrl_cap else 1.0
+            # controlled bus (V modi and droop modi)
+            bus = None
+            if rt['droop'] and 'bus_idx' in rt['droop']:
+                bus = rt['droop']['bus_idx']
+            elif rt['modus'] in ControlModusEnum.v_modes():
+                bus = rt['in_idx'][0]
+            rt['bus'] = bus
+            rt['bus_pos'] = None if bus is None else net.bus.index.get_loc(bus)
+            vs['stations'].append(rt)
+        self._vstate = vs
+        self._linked_droop_objs = []
+
+    @staticmethod
+    def _station_effective_residual(rt, q_meas, vm):
+        """Residual of one station; droop characteristics are folded into the residual."""
+        modus = rt['modus']
+        set_point = rt['set_point']
+        droop = rt['droop']
+        if modus == ControlModusEnum.q_ctrl:
+            return set_point - q_meas
+        if modus == ControlModusEnum.q_ctrl_v_droop:
+            k = droop['q_droop_mvar']
+            if droop.get('vm_set_lb') is not None and droop.get('vm_set_ub') is not None:
+                if vm > droop['vm_set_ub']:
+                    q_set = set_point - (droop['vm_set_ub'] - vm) * k
+                elif vm < droop['vm_set_lb']:
+                    q_set = set_point + (droop['vm_set_lb'] - vm) * k
+                else:
+                    q_set = set_point
+            else:
+                q_set = set_point + (droop['vm_set_pu'] - vm) * k
+            return q_set - q_meas
+        if modus == ControlModusEnum.v_ctrl:
+            return set_point - vm
+        if modus == ControlModusEnum.v_ctrl_q_droop:
+            return set_point + q_meas / droop['q_droop_mvar'] - vm
+        if modus == ControlModusEnum.v_ctrl_q_droop_local:
+            q_set = droop.get('q_set_mvar', 0.0) or 0.0
+            return set_point - (q_meas - q_set) / droop['q_droop_mvar'] - vm
+        raise UserWarning(f"unsupported control modus {modus} in multi-station mode")
+
+    def _is_converged_stations(self, net):
+        vs = getattr(self, '_vstate', None)
+        if vs is None or 'stations' not in vs:
+            self._initialize_stations(net)
+            vs = self._vstate
+        cache = {}
+
+        def col(table, column):
+            key = (table, column)
+            if key not in cache:
+                cache[key] = net[table][column].values
+            return cache[key]
+
+        all_converged = True
+        for rt in vs['stations']:
+            if rt['disabled']:
+                continue
+            out_in_service = col(self.output_element, 'in_service')[rt['out_pos']].astype(bool)
+            in_mask = col(rt['in_element_table'],
+                          rt['in_service_col'])[rt['in_pos']].astype(bool)
+            if not out_in_service.any() or not in_mask.any():
+                if not rt['warned']:
+                    logger.warning("station %s: all input or output elements out of service, "
+                                   "skipping station" % rt['label'])
+                    rt['warned'] = True
+                rt['disabled'] = True
+                continue
+            rt['out_in_service'] = out_in_service
+            rt['in_mask'] = in_mask
+            # distribution over outputs that are in service and not at a Q limit
+            dist = rt['dist_base'] * out_in_service * ~rt['at_limit']
+            total_dist = dist.sum()
+            adjustable = dist != 0
+            if total_dist > 0:
+                dist = dist / total_dist
+            rt['dist'] = dist
+            rt['adjustable'] = adjustable
+            if not adjustable.any():
+                if not rt['warned']:
+                    logging.info('All outputs of station %s reached their reactive power '
+                                 'limits.' % rt['label'])
+                    rt['warned'] = True
+                rt['converged'] = True
+                continue
+
+            if rt['in_res'] == 'res_bus':
+                q_meas = 0.0
+            else:
+                res_pos = rt['res_pos']
+                if res_pos is None:
+                    res_pos = net[rt['in_res']].index.get_indexer(rt['in_idx'])
+                    rt['res_pos'] = res_pos
+                q_meas = 0.0
+                p_meas = 0.0
+                n_active = 0
+                for i, pos in enumerate(res_pos):
+                    if not in_mask[i]:
+                        continue
+                    q_meas += rt['in_sign'][i] * col(rt['in_res'], rt['in_cols'][i])[pos]
+                    if 'p_cols' in rt:
+                        p_meas += rt['in_sign'][i] * col(rt['in_res'], rt['p_cols'][i])[pos]
+                    n_active += 1
+            vm = None if rt['bus_pos'] is None else col('res_bus', 'vm_pu')[rt['bus_pos']]
+            modus = rt['modus']
+            if modus in ControlModusEnum.pf_modes():
+                set_point = rt['set_point']
+                if -0.012 < set_point < 0.012:
+                    set_point = 0.012 if set_point >= 0 else -0.012
+                q_set = rt['reactance'] * p_meas / n_active * np.tan(np.arccos(set_point))
+                f = q_set - q_meas / n_active
+            elif modus == ControlModusEnum.tan_phi_ctrl:
+                f = p_meas / n_active * rt['set_point'] - q_meas / n_active
+            else:
+                f = self._station_effective_residual(rt, q_meas, vm)
+            rt['f_old'], rt['f'] = rt['f'], float(f)
+            rt['converged'] = abs(rt['f']) < rt['tol']
+            if not rt['converged']:
+                all_converged = False
+        self.converged = all_converged
+        return self.converged
+
+    def _jacobian_deltas(self, net, vs, damping):
+        """Coupled Newton steps {station position: dQ_total} for plain V_ctrl stations.
+
+        Builds the cross-station sensitivity matrix M[s, t] = dVm(bus_s)/dQ_total(t) from the
+        Newton-Raphson Jacobian of the last powerflow and solves M * dQ = r for all eligible
+        stations simultaneously -- this captures the interaction between electrically close
+        stations that makes independent per-station updates oscillate. Any failure returns {}
+        and the caller falls back to the safeguarded secant for this iteration.
+        """
+        from pandapower.control.util.sensitivity import calc_dvm_dq
+        stations = vs['stations']
+        candidates = [k for k, rt in enumerate(stations)
+                      if not rt['disabled'] and not rt['converged'] and rt['f'] is not None
+                      and rt['modus'] == ControlModusEnum.v_ctrl and rt['bus'] is not None
+                      and rt['adjustable'].any()]
+        if not candidates:
+            return {}
+        output_buses = net[self.output_element]['bus'].values
+        vm_buses = [stations[k]['bus'] for k in candidates]
+        q_buses, q_slices = [], []
+        for k in candidates:
+            buses = output_buses[stations[k]['out_pos']]
+            q_slices.append((len(q_buses), len(q_buses) + len(buses)))
+            q_buses.extend(buses)
+        sensitivity = calc_dvm_dq(net, q_buses, vm_buses)
+        if sensitivity is None:
+            logger.debug("%s: no Jacobian available, secant fallback" % self.name)
+            return {}
+        # station-total sensitivities: outputs weighted with the current distribution.
+        # deliberately no dense BLAS calls (@ / dot) anywhere in this method: powerflow
+        # backends shipping their own BLAS (e.g. lightsim2grid with MKL numpy on Windows)
+        # crash inside dense LAPACK/BLAS kernels
+        matrix = np.empty((len(candidates), len(candidates)))
+        for j, k in enumerate(candidates):
+            start, stop = q_slices[j]
+            matrix[:, j] = np.sum(sensitivity[:, start:stop] * stations[k]['dist'], axis=1)
+        # drop stations touching non-PQ buses (NaN sensitivities)
+        valid = ~(np.isnan(matrix).any(axis=1) | np.isnan(matrix).any(axis=0))
+        if not valid.all():
+            logger.debug("%s: stations at non-PQ buses use the secant fallback" % self.name)
+            candidates = [k for k, ok in zip(candidates, valid) if ok]
+            if not candidates:
+                return {}
+            matrix = matrix[np.ix_(valid, valid)]
+        residual = np.array([stations[k]['f'] for k in candidates])
+        # step rejection: if the previous jacobian step increased the residual norm, take a
+        # safeguarded secant step on fresh information instead
+        jac_state = vs.setdefault('jac', {'prev_rnorm': None})
+        rnorm = float(np.max(np.abs(residual)))
+        if jac_state['prev_rnorm'] is not None and rnorm > jac_state['prev_rnorm']:
+            jac_state['prev_rnorm'] = None
+            logger.debug("%s: jacobian step increased the residual, secant fallback" % self.name)
+            return {}
+        diagonal = np.diag(matrix)
+        if np.any(diagonal == 0):
+            return {}
+        # the solve goes through SuperLU (like the sensitivity computation) instead of dense
+        # LAPACK: environments where a powerflow backend ships its own BLAS (e.g.
+        # lightsim2grid + MKL numpy on Windows) crash inside dense LAPACK calls
+        from scipy.sparse import csc_matrix
+        from scipy.sparse.linalg import spsolve
+        sparse_matrix = csc_matrix(matrix)
+        try:
+            dq = np.atleast_1d(spsolve(sparse_matrix, residual))
+            # validate instead of a cond() estimate: fall back to the decoupled diagonal
+            # update when the solution is unusable
+            if (not np.all(np.isfinite(dq))
+                    or np.max(np.abs(sparse_matrix.dot(dq) - residual)) > 1e-8 * max(1.0, rnorm)):
+                dq = residual / diagonal
+        except RuntimeError:
+            dq = residual / diagonal
+        if not np.all(np.isfinite(dq)):
+            return {}
+        jac_state['prev_rnorm'] = rnorm
+        return {k: damping * delta for k, delta in zip(candidates, dq)}
+
+    def _control_step_stations(self, net):
+        vs = self._vstate
+        damping = float(getattr(self, 'damping_factor', 1.0) or 1.0)
+        enforce_q_lims = net._options.get('enforce_q_lims', False)
+        output_table = net[self.output_element]
+        current_values = output_table[self.output_variable].values
+        min_q = max_q = None
+        if enforce_q_lims and 'min_q_mvar' in output_table.columns:
+            min_q = np.nan_to_num(output_table['min_q_mvar'].values.astype(np.float64),
+                                  nan=-np.inf)
+        if enforce_q_lims and 'max_q_mvar' in output_table.columns:
+            max_q = np.nan_to_num(output_table['max_q_mvar'].values.astype(np.float64),
+                                  nan=np.inf)
+        jacobian_deltas = {}
+        if getattr(self, 'update_method', 'secant') == 'jacobian':
+            jacobian_deltas = self._jacobian_deltas(net, vs, damping)
+        write_index, write_values = [], []
+        for position, rt in enumerate(vs['stations']):
+            if rt['disabled'] or rt['converged'] or rt['f'] is None:
+                continue
+            out_in_service = rt['out_in_service']
+            # the powerflow saw the values currently in the net -> true evaluation point
+            values = current_values[rt['out_pos']].astype(np.float64) * out_in_service
+            f = rt['f']
+            cap = 2.0 * float(np.abs(values).sum()) + 50.0
+            frozen = rt['at_limit'] & out_in_service
+            if position in jacobian_deltas:
+                total = float(values.sum())
+                x_total = total + float(np.clip(jacobian_deltas[position], -cap, cap))
+                x = (x_total - float(values[frozen].sum())) * rt['dist']
+                x[frozen] = values[frozen]
+            elif rt['values_old'] is None:  # first step: probe
+                if rt['modus'] in ControlModusEnum.v_modes():
+                    x = values + 1e-3 * (rt['dist'] > 0)
+                else:
+                    probe_total = float(np.clip(damping * f, -cap, cap))
+                    if abs(probe_total) < 1e-3:
+                        probe_total = 1e-3
+                    x = values + probe_total * rt['dist']
+            else:
+                total = float(values.sum())
+                total_old = float((rt['values_old'] * out_in_service).sum())
+                f_old = f if rt['f_old'] is None else rt['f_old']
+                x_total = self._secant_core(rt['solver'], f, f_old, total, total_old,
+                                            damping, rt['set_point'], cap, rt['label'])
+                # outputs at a limit keep their clamped value, the rest shares the remainder
+                x = (x_total - float(values[frozen].sum())) * rt['dist']
+                x[frozen] = values[frozen]
+            if enforce_q_lims and (min_q is not None or max_q is not None):
+                station_min = (min_q[rt['out_pos']] if min_q is not None
+                               else np.full(len(x), -np.inf))
+                station_max = (max_q[rt['out_pos']] if max_q is not None
+                               else np.full(len(x), np.inf))
+                over = (x > station_max) & rt['adjustable']
+                under = (x < station_min) & rt['adjustable']
+                if over.any() or under.any():
+                    reached = over | under
+                    x = np.where(over, station_max, x)
+                    x = np.where(under, station_min, x)
+                    rt['at_limit'] = rt['at_limit'] | reached
+                    logging.info('Station %s: output element(s) %s reached a reactive power '
+                                 'limit.' % (rt['label'],
+                                             list(rt['out_idx'][reached])))
+            rt['values_old'], rt['values'] = values, x
+            write_index.extend(rt['out_idx'][out_in_service])
+            write_values.extend(x[out_in_service])
+        if write_index:
+            write_to_net(net, self.output_element, write_index, self.output_variable,
+                         write_values, 'loc')
 
     def _normalize_distribution_in_service(self, initial_pf_distribution=None):
         # normalize distribution depending on in service of stations
@@ -833,27 +1521,27 @@ class DroopControl(Controller):
                 self.control_modus = net.controller.at[self.controller_idx, 'object'].control_modus
 
     def is_converged(self, net):
-        if (not net.controller.at[self.controller_idx, "object"].in_service or
-                net.controller.at[self.controller_idx, "object"].converged):
+        bsc = net.controller.at[self.controller_idx, "object"]
+        if not bsc.in_service or bsc.converged:
             self.converged = True
             return self.converged
         ###check control_modus###
         self.check_control_modus_and_values(net)
         if self.control_modus in ControlModusEnum.v_modes():
-            self.diff = (net.controller.at[self.controller_idx, "object"].set_point -
+            self.diff = (bsc.set_point -
                          read_from_net(net, "res_bus", int(self.bus_idx), "vm_pu", self.read_flag))
         else:
             counter = 0
             input_values = []
-            for input_index in net.controller.at[self.controller_idx, "object"].input_element_index:
+            for input_index in bsc.input_element_index:
                 input_values.append(
-                    read_from_net(net, net.controller.at[self.controller_idx, "object"].input_element, input_index,
-                                  net.controller.at[self.controller_idx, "object"].input_variable[counter],
-                                  net.controller.at[self.controller_idx, "object"].read_flag[counter]))
+                    read_from_net(net, bsc.input_element, input_index,
+                                  bsc.input_variable[counter],
+                                  bsc.read_flag[counter]))
                 counter += 1
-            input_sign = np.asarray(net.controller.at[self.controller_idx, "object"].input_sign)
+            input_sign = np.asarray(bsc.input_sign)
             input_values = (input_sign * np.asarray(input_values)).tolist()
-            self.diff = (net.controller.at[self.controller_idx, "object"].set_point - sum(input_values))
+            self.diff = (bsc.set_point - sum(input_values))
         self.converged = np.all(np.abs(self.diff) < self.tol)
         return self.converged
 
@@ -861,11 +1549,12 @@ class DroopControl(Controller):
         self._droop_control_step(net)
 
     def _droop_control_step(self, net):
+        bsc = net.controller.at[self.controller_idx, "object"]
         self.vm_pu_old = self.vm_pu
         self.vm_pu = read_from_net(net, "res_bus", self.bus_idx, "vm_pu", flag=self.read_flag)
         if self.control_modus not in ControlModusEnum.v_modes():
             if self.q_set_mvar_bsc is None:
-                self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
+                self.q_set_mvar_bsc = bsc.set_point
             if self.lb_voltage is not None and self.ub_voltage is not None:
                 if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
@@ -883,24 +1572,23 @@ class DroopControl(Controller):
             if self.q_set_old_mvar is not None:
                 self.diff = self.q_set_mvar - self.q_set_old_mvar
             if self.q_set_mvar is not None:
-                net.controller.at[self.controller_idx, "object"].set_point = self.q_set_mvar
+                bsc.set_point = self.q_set_mvar
 
         else:
-            input_element = net.controller.at[self.controller_idx, "object"].input_element
-            input_element_index = net.controller.at[self.controller_idx, "object"].input_element_index
-            input_variable = net.controller.at[self.controller_idx, "object"].input_variable
-            read_flag = net.controller.at[self.controller_idx, "object"].read_flag
+            input_element = bsc.input_element
+            input_element_index = bsc.input_element_index
+            input_variable = bsc.input_variable
+            read_flag = bsc.read_flag
             input_values = []
             counter = 0
             for input_index in input_element_index:
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
-            input_values = (
-                        net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
-            self.vm_set_pu = getattr(self, 'vm_set_pu', net.controller.object[self.controller_idx].set_point)
+            input_values = (bsc.input_sign * np.asarray(input_values)).tolist()
+            self.vm_set_pu = getattr(self, 'vm_set_pu', bsc.set_point)
             self.vm_set_pu_new = self.vm_set_pu + sum(
                 input_values) / self.q_droop_mvar
-            net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
+            bsc.set_point = self.vm_set_pu_new
 
 
 class VDroopControl_local(Controller):

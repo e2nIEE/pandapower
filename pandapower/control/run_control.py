@@ -49,7 +49,9 @@ def get_controller_order(nets, controller):
         controller_order.append([*zip(rel_controller[order.argsort()], nets[to_add][order.argsort()])])
         # controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
 
-    if logger.level <= pplog.DEBUG:
+    # getEffectiveLevel resolves the NOTSET (0) default to the parent logger level; comparing
+    # logger.level directly made every run build the huge debug string below
+    if logger.getEffectiveLevel() <= pplog.DEBUG:
         logger.debug("levellist: " + str(level_list))
         logger.debug("order: " + str(controller_order)) # Note: creates a long string if many controllers are present
 

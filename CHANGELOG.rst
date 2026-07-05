@@ -3,6 +3,11 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] :code:`BinarySearchControl.for_stations`: one station controller instance managing many stations, each with its own control modus, set point, measurement, outputs and optional droop characteristic (droop is folded into the station residual instead of a chained :code:`DroopControl`); reduces run_control overhead by >10x for hundreds of stations
+- [ADDED] opt-in :code:`update_method="jacobian"` for multi-station controllers: coupled Newton steps for V_ctrl stations from the dVm/dQ sensitivities of the powerflow Jacobian (fewer powerflows, converges electrically coupled stations that oscillate under independent iterations); new utility :code:`pandapower.control.util.sensitivity.calc_dvm_dq`
+- [CHANGED] stabilized the BinarySearchControl update: residual-scaled first step for Q/PF/tan(phi) modi, bracketing (Illinois regula falsi) safeguards, bounded steps on flat measurement response (no more output blow-up), stagnation diagnostics; the power factor set point is no longer permanently overwritten by the near-zero clipping
+- [CHANGED] vectorized the BinarySearchControl hot path (positional lookups precomputed in initialize_control, no per-iteration scan of all controllers); fixed crashes with partially out-of-service output elements
+- [ADDED] station controller characterization and benchmark suites (pandapower/test/control/test_stactrl_characterization.py, .../benchmarks/)
 - [ADDED] OpenDSS converter: ``from_opendss`` imports an OpenDSS feeder into a balanced positive-sequence pandapower net (revisits #1442).
 - [FIXED] OPF: fixed generalized cost Hessian evaluation in ``opf_costfcn``.
 - [FIXED] kwargs handling in pandamodels functions
