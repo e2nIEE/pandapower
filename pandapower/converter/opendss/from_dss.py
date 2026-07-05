@@ -23,6 +23,8 @@ import logging
 import math
 from dataclasses import dataclass, field
 
+import numpy as np
+
 import pandapower as pp
 
 try:
@@ -52,6 +54,31 @@ _LINE_UNITS_TO_KM = {
 }
 
 _SQRT3 = math.sqrt(3.0)
+
+
+def _kron_positive_sequence(rmat, xmat, n):
+    """Positive-sequence (R1, X1) for an n>3-conductor matrix-defined line.
+
+    OpenDSS's own ``Lines.R1()``/``X1()`` do not Kron-reduce explicit-neutral
+    (4+ conductor) matrix LineCodes before forming the sequence value -- the
+    standard format for European 3-phase-plus-neutral cables. Bus tokens order
+    phases before neutral by OpenDSS convention (``.1.2.3.4`` = A,B,C,N), so
+    eliminating the trailing rows/columns (indices 3..n-1) via a standard Kron
+    reduction, then averaging self/mutual over the remaining 3x3 phase block,
+    is the correct positive-sequence impedance.
+    """
+    z = np.asarray(rmat, dtype=float).reshape(n, n) + 1j * np.asarray(xmat, dtype=float).reshape(n, n)
+    zpp = z[:3, :3]
+    if n > 3:
+        zpn, znp, znn = z[:3, 3:], z[3:, :3], z[3:, 3:]
+        try:
+            zpp = zpp - zpn @ np.linalg.solve(znn, znp)
+        except np.linalg.LinAlgError:
+            pass  # degenerate neutral block; fall back to the un-reduced phase block
+    self_avg = np.trace(zpp) / 3.0
+    mutual_avg = (zpp.sum() - np.trace(zpp)) / 6.0
+    z1 = self_avg - mutual_avg
+    return float(z1.real), float(z1.imag)
 
 
 # Diagnostics attached to the net as ``net["opendss_import"]``.
@@ -237,13 +264,24 @@ def _add_lines(net, bus_map, report):
             i = dss.Lines.Next()
             continue
 
+        # Explicit-neutral (4+ conductor) matrix LineCodes need a Kron reduction
+        # before the sequence value is meaningful -- OpenDSS's own R1()/X1() skip
+        # it (see `_kron_positive_sequence`). The common <=3-conductor case keeps
+        # using the direct, already-validated R1/X1/C1 sequence properties.
+        n_cond = dss.Lines.Phases()
+        if n_cond > 3:
+            r1, x1 = _kron_positive_sequence(dss.Lines.RMatrix(), dss.Lines.XMatrix(), n_cond)
+            c1, _ = _kron_positive_sequence(dss.Lines.CMatrix(), [0.0] * (n_cond * n_cond), n_cond)
+        else:
+            r1, x1, c1 = dss.Lines.R1(), dss.Lines.X1(), dss.Lines.C1()
+
         # The OpenDSS LineCode names the physical conductor; carry it through as
         # pandapower's std_type so the conductor identity survives the import.
         pp.create_line_from_parameters(
             net, from_bus=f, to_bus=t, length_km=length_km,
-            r_ohm_per_km=dss.Lines.R1() / km,
-            x_ohm_per_km=dss.Lines.X1() / km,
-            c_nf_per_km=dss.Lines.C1() / km,
+            r_ohm_per_km=r1 / km,
+            x_ohm_per_km=x1 / km,
+            c_nf_per_km=c1 / km,
             max_i_ka=dss.Lines.NormAmps() / 1000.0,
             std_type=dss.Lines.LineCode() or None,
             name=name,
