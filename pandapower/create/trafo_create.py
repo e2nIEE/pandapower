@@ -216,7 +216,7 @@ def create_transformers(
     rn_ohm: float | Iterable[float] = nan,
     tap2_pos: int | Iterable[int] | float = nan,
     **kwargs,
-) -> npt.NDArray[integer]:
+) -> npt.NDArray[Int]:
     """
     Creates several two-winding transformers in table net.trafo.
     Additional parameters passed will be added to the transformers dataframe. If keywords are passed that are present
@@ -272,15 +272,30 @@ def create_transformers(
     params = {param: std_params[param] for param in params_from_std_type if param in std_params}
 
     if tap_changer_type is None and "tap_changer_type" in std_params:
-        tap_changer_type = std_params["tap_changer_type"]
+        tap_changer_type = std_params.get("tap_changer_type", None)
         
     params.update(kwargs)
 
     return create_transformers_from_parameters(
-        net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
-        max_loading_percent=max_loading_percent, parallel=parallel, df=df, tap_changer_type=tap_changer_type,
-        tap_dependency_table=tap_dependency_table, id_characteristic_table=id_characteristic_table,
-        pt_percent=pt_percent, oltc=oltc, xn_ohm=xn_ohm, rn_ohm=rn_ohm, tap2_pos=tap2_pos, std_type=std_type,
+        net=net,
+        hv_buses=hv_buses,
+        lv_buses=lv_buses,
+        name=name,
+        tap_pos=tap_pos,
+        in_service=in_service,
+        index=index,
+        max_loading_percent=max_loading_percent,
+        parallel=parallel,
+        df=df,
+        tap_changer_type=tap_changer_type,
+        tap_dependency_table=tap_dependency_table,
+        id_characteristic_table=id_characteristic_table,
+        pt_percent=pt_percent,
+        oltc=oltc,
+        xn_ohm=xn_ohm,
+        rn_ohm=rn_ohm,
+        tap2_pos=tap2_pos,
+        std_type=std_type,
         **params
     )
 
