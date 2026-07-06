@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+from collections.abc import Collection
 from itertools import chain
+import logging
 
 import numpy as np
 import pandas as pd
+
+from pandapower.auxiliary import pandapowerNet
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.toolbox.element_selection import pp_elements
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -65,20 +65,18 @@ def opf_task(net, delta_pq=1e-3, keep=False, log=True):
     return opf_task_overview
 
 
-def _determine_flexibilities_dict(net, data, delta_pq, **kwargs):
+def _determine_flexibilities_dict(net: pandapowerNet, data: dict, delta_pq: float, **kwargs):
     """
     Determines which flexibilities exists in the net.
 
-    INPUT:
-        **net** - panpdapower net
+    Parameters:
+        net: the panpdapower net
+        data: to store flexibilities information
+        delta_pq: if (abs(max - min) <= delta_pq) the variable is not assumed as flexible, since the range is as small
+            as delta_pq (should be small, too).
 
-        **data** (dict) - to store flexibilities information
-
-        **delta_pq** (float) - if (abs(max - min) <= delta_pq) the variable is not assumed as
-        flexible, since the range is as small as delta_pq (should be small, too).
-
-    OPTIONAL:
-        **kwargs**** - for comparing constraint columns with numpy.isclose(): rtol and atol
+    Keyword Arguments:
+        for comparing constraint columns with numpy.isclose(): rtol and atol
     """
     flex_elements = ["ext_grid", "gen", "dcline", "sgen", "load", "storage"]
     flex_tuple = tuple(zip(flex_elements, [True] * 3 + [False] * 3))
@@ -164,17 +162,16 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
         return idx.difference(idx_no_delta)
 
 
-def _determine_network_constraints_dict(net, data, **kwargs):
+def _determine_network_constraints_dict(net: pandapowerNet, data: dict, **kwargs):
     """
     Determines which flexibilities exists in the net.
 
-    INPUT:
-        **net** - panpdapower net
+    Parameters:
+        net: the panpdapower net
+        data: to store constraints information
 
-        **data** (dict) - to store constraints information
-
-    OPTIONAL:
-        **kwargs**** - for comparing constraint columns with numpy.isclose(): rtol and atol
+    Keyword Arguments:
+         for comparing constraint columns with numpy.isclose(): rtol and atol
     """
 
     const_tuple = [("VMbus", "bus", ["min_vm_pu", "max_vm_pu"]),
@@ -196,17 +193,15 @@ def _determine_network_constraints_dict(net, data, **kwargs):
                 data[key].columns = shorted
 
 
-def _determine_costs_dict(net, opf_task_overview):
+def _determine_costs_dict(net: pandapowerNet, opf_task_overview: dict):
     """
     Determines which flexibilities do not have costs in the net. Each element is considered as one,
     i.e. if ext_grid 0, for instance,  is flexible in both, P and Q, and has one cost entry for P,
     it is not considered as 'flexibilities_without_costs'.
 
-    INPUT:
-        **net** - panpdapower net
-
-        **opf_task_overview** (dict of dicts) - both, "flexibilities_without_costs" and
-        "flexibilities" must be in opf_task_overview.keys()
+    Parameters:
+        net: the panpdapower net
+        opf_task_overview: both, "flexibilities_without_costs" and "flexibilities" must be in opf_task_overview.keys()
     """
 
     cost_dfs = [df for df in ["poly_cost", "pwl_cost"] if net[df].shape[0]]
@@ -242,46 +237,45 @@ def _determine_costs_dict(net, opf_task_overview):
             opf_task_overview["flexibilities_without_costs"][flex_element] = list(idx_without_cost)
 
 
-def _cluster_same_floats(df, subset=None, **kwargs):
+def _cluster_same_floats(df: pd.DataFrame, subset: Collection[str] | None = None, **kwargs) -> pd.DataFrame:
     """
     Clusters indices with close values. The values of df[subset] must be numericals.
 
-    INPUT:
-        **df** (DataFrame)
+    Parameters:
+        df: DataFrame on which the clustering should be done
+        subset: list of columns of df which should be considered to cluster
 
-    OPTIONAL:
-        **subset** (iterable, None) - list of columns of df which should be considered to cluster
+    Keyword Arguments:
+        used for numpy.isclose(): rtol and atol
 
-        **kwargs**** - for numpy.isclose(): rtol and atol
-
-    OUTPUT:
-        **cluster_df** (DataFrame) - table of clustered values and corresponding lists of indices
+    Returns:
+        DataFrame of clustered values and corresponding lists of indices
     """
     if df.index.duplicated().any():
         logger.error("There are duplicated indices in df. Clusters will be determined but remain " +
                      "ambiguous.")
-    subset = subset if subset is not None else df.select_dtypes(include=[
-        np.number]).columns.tolist()
-    uniq = ~df.duplicated(subset=subset).values
+    if subset is None:
+        subset = df.select_dtypes(include=[np.number]).columns.tolist()
+    uniq: list[bool] = [not x for x in df.duplicated(subset=subset)]
 
     # prepare cluster_df
-    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + subset)
+    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + list(subset))
     cluster_df["index"] = cluster_df["index"].astype(object)
     cluster_df[subset] = df.loc[uniq, subset].values
 
     if sum(uniq) == df.shape[0]:  # fast return if df has no duplicates
         for i1, idx in enumerate(df.index):
-            cluster_df.at[i1, "index"] = [idx]
-    else:  # determine index clusters
-        i2 = 0
-        for i1, uni in enumerate(uniq):
-            if uni:
-                cluster_df.at[i2, "index"] = list(df.index[np.isclose(
-                    df[subset].values.astype(float),
-                    df[subset].iloc[[i1]].values.astype(float),
-                    equal_nan=True, **kwargs).all(axis=1)])
-                i2 += 1
+            # assignment is safe because "index" column has been converted to object and the index is now added as list
+            cluster_df.at[i1, "index"] = [idx]  # type: ignore[assignment]
+        return cluster_df
 
+    i2 = 0
+    for i1, uni in enumerate(uniq):
+        if uni:
+            cluster_df.at[i2, "index"] = list(df.index[np.isclose(  # type: ignore[assignment] # see comment above
+                df[subset].astype(float), df[subset].iloc[[i1]].astype(float), equal_nan=True, **kwargs
+            ).all(axis=1)])  # type: ignore[call-overload] # for some reason mypy does not like the axis=1 part.
+            i2 += 1
     return cluster_df
 
 
@@ -296,12 +290,14 @@ def _check_overlapping_constraints(opf_task_overview):
             max_col = [col for col in df.columns if "max" in col]
             n_col = min(len(min_col), len(max_col))
             for i_col in range(n_col):
-                assert min_col[i_col].replace("min", "") == max_col[i_col].replace("max", "")
+                if min_col[i_col].replace("min", "") != max_col[i_col].replace("max", ""):
+                    raise AssertionError("min and max are not equal.")
                 if (df[min_col[i_col]] > df[max_col[i_col]]).any():
                     overlap.append(key)
     if len(overlap):
-        logger.error("At these variables, there is a minimum constraint exceeding the maximum " +
-                     "constraint value: " + str(overlap))
+        logger.error(
+            "At these variables, there is a minimum constraint exceeding the maximum constraint value: " + str(overlap)
+        )
 
 
 def _log_opf_task_overview(opf_task_overview):
@@ -311,15 +307,18 @@ def _log_opf_task_overview(opf_task_overview):
     s = ""
     for dict_key, data in opf_task_overview.items():
         if isinstance(data, str):
-            assert dict_key == "flexibilities_without_costs"
+            if dict_key != "flexibilities_without_costs":
+                raise AssertionError("dict_key is not 'flexibilities_without_costs'")
             s += "\n\n%s flexibilities without costs" % data
             continue
         else:
-            assert isinstance(data, dict)
+            if not isinstance(data, dict):
+                raise AssertionError("data is not a dict")
         heading_logged = False
         keys, elms = _get_keys_and_elements_from_opf_task_dict(data)
         for key, elm in zip(keys, elms):
-            assert elm in key
+            if elm not in key:
+                raise AssertionError('elm should be in key')
             df = data[key]
 
             if dict_key in ["flexibilities", "network_constraints"]:

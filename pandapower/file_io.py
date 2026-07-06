@@ -172,13 +172,15 @@ def from_pickle(filename, convert=True):
     return net
 
 
-def from_excel(filename, convert=True):
+def from_excel(filename, convert=True, add_basic_std_types=True):
     """
     Load a pandapower network from an Excel file
 
     :param str filename: The absolute or relative path to the input file.
     :param bool convert: If True, converts the format of the net loaded from Excel from
             the older version of pandapower to the newer version format, default True
+    :param bool add_basic_std_types: If True, Adds missing standard-types from pandapower
+            standard type library, default True.
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -196,9 +198,9 @@ def from_excel(filename, convert=True):
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:
-        net = from_dict_of_dfs(xls)
+        net = from_dict_of_dfs(xls, add_basic_std_types=add_basic_std_types)
     except:
-        net = _from_excel_old(xls)
+        net = _from_excel_old(xls, add_basic_std_types=add_basic_std_types)
     if convert:
         convert_format(net)
 
@@ -208,10 +210,10 @@ def from_excel(filename, convert=True):
     return net
 
 
-def _from_excel_old(xls):
+def _from_excel_old(xls, add_basic_std_types=True):
     par = xls["parameters"]["parameter"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
-    net = create_empty_network(name=name, f_hz=par.at["f_hz"])
+    net = create_empty_network(name=name, f_hz=par.at["f_hz"], add_stdtypes=add_basic_std_types)
     net.update(par)
     for item, table in xls.items():
         if item == "parameters":
@@ -235,7 +237,7 @@ def from_json(
         filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
         keep_serialized_elements=True, add_basic_std_types=False,
         replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False,
-        omit_tables=None, omit_modules=None
+        omit_tables=None, omit_modules=None, skip_checks=False
 ):
     """
     Load a pandapower network from a JSON file.
@@ -262,7 +264,12 @@ def from_json(
         object with the json data, default None
     :type empty_dict_like_object: dict or pandapowerNet or None
     :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be
-         deserialized instead of raising an error, default False
+        deserialized instead of raising an error, default False
+    :param bool drop_invalid_geodata: If set to True, invalid geodata is dropped instead of raising an error,
+    :param list omit_tables: List of tables to omit from loading
+    :param list omit_modules: List of modules to omit from loading
+    :param bool skip_checks: If set to True, no checks will be performed.
+        .. warning:: Only perform on trusted data sources / networks!
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -292,6 +299,7 @@ def from_json(
             drop_invalid_geodata=drop_invalid_geodata,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
+            skip_checks=skip_checks
         )
     except ValueError as e:
         raise UserWarning(f"Failed to load as json or file: {e}")
@@ -309,7 +317,8 @@ def from_json_string(
         ignore_unknown_objects=False,
         drop_invalid_geodata=False,
         omit_tables=None,
-        omit_modules=None
+        omit_modules=None,
+        skip_checks=False
 ):
     """
     Load a pandapower network from a JSON string.
@@ -336,6 +345,11 @@ def from_json_string(
     :type empty_dict_like_object: dict or pandapowerNet or None
     :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be deserialized instead of
         raising an error, default False
+    :param bool drop_invalid_geodata: If set to True, invalid geodata is dropped instead of raising an error,
+    :param list omit_tables: List of tables to omit from loading
+    :param list omit_modules: List of modules to omit from loading
+    :param bool skip_checks: If set to True, skips all checks
+        .. warning:: Only perform on trusted data sources / networks!
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -358,7 +372,8 @@ def from_json_string(
             empty_dict_like_object=empty_dict_like_object,
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
-            omit_modules=omit_modules
+            omit_modules=omit_modules,
+            skip_checks=skip_checks,
         )
     else:
         net = json.loads(
@@ -368,7 +383,8 @@ def from_json_string(
             empty_dict_like_object=empty_dict_like_object,
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
-            omit_modules=omit_modules
+            omit_modules=omit_modules,
+            skip_checks=skip_checks
         )
         net_dummy = create_empty_network()
         if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
@@ -376,7 +392,7 @@ def from_json_string(
                               'Convert and save your net first.')
         if keep_serialized_elements:
             for key in elements_to_deserialize:
-                net[key] = json.loads(net[key], cls=PPJSONDecoder)
+                net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
         else:
             if (('version' not in net.keys()) or (net['version'] != net_dummy.version)) and \
                     not convert:
@@ -387,7 +403,7 @@ def from_json_string(
                     % (net['version'], net_dummy.version))
             for key in net.keys():
                 if key in elements_to_deserialize:
-                    net[key] = json.loads(net[key], cls=PPJSONDecoder)
+                    net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
                 elif not isinstance(net[key], str):
                     continue
                 elif 'pandas' in net[key]:

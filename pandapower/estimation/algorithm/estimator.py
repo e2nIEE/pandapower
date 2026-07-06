@@ -20,7 +20,8 @@ from pandapower.estimation.ppc_conversion import ExtendedPPCI
 
 
 def get_estimator(base_class, estimator_name):
-    assert base_class in (BaseEstimatorIRWLS, BaseEstimatorOpt)
+    if base_class not in (BaseEstimatorIRWLS, BaseEstimatorOpt):
+        raise AssertionError(f"class {base_class} is not a BaseEstimatorIRWLS or BaseEstimatorOpt")
 
     available_estimators = {estm_cls.__name__.split("Estimator")[0].lower(): estm_cls
                             for estm_cls in base_class.__subclasses__()}
@@ -84,7 +85,8 @@ class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
 class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
     def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
         super(SHGMEstimatorIRWLS, self).__init__(eppci, **hyperparameters)
-        assert 'a' in hyperparameters
+        if 'a' not in hyperparameters:
+            raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters.get('a')
 
     def create_phi(self, E):
@@ -166,7 +168,8 @@ class LAVEstimator(BaseEstimatorOpt):
 class QCEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, eppci, **hyperparameters):
         super(QCEstimatorOpt, self).__init__(eppci, **hyperparameters)
-        assert 'a' in hyperparameters
+        if 'a' not in hyperparameters:
+            raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters['a']
 
     def cost_function(self, E):
@@ -196,7 +199,8 @@ class QCEstimatorOpt(BaseEstimatorOpt):
 class QLEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, eppci, **hyperparameters):
         super(QLEstimatorOpt, self).__init__(eppci, **hyperparameters)
-        assert 'a' in hyperparameters
+        if 'a' not in hyperparameters:
+            raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters['a']
 
     def cost_function(self, E):

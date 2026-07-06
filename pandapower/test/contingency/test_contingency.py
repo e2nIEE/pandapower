@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
-import copy
 
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+import copy
 
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
-import time
 import pytest
 
 from pandapower.control import ConstControl
@@ -134,10 +132,10 @@ def test_contingency_timeseries(get_net):
 
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
-def test_with_lightsim2grid(get_net, get_case):
+@pytest.mark.parametrize("case", [0, 1, 2])
+def test_with_lightsim2grid(get_net, case):
     net = get_net
-    case = get_case
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(seed=1)
 
     if case == 0:
         nminus1_cases = {"line": {"index": net.line.index.values}}
@@ -584,11 +582,6 @@ def get_net(request):
         net.line.max_i_ka = 1
 
     return net
-
-
-@pytest.fixture(params=[0, 1, 2])
-def get_case(request):
-    return request.param
 
 
 if __name__ == "__main__":
