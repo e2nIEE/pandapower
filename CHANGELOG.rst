@@ -35,6 +35,10 @@ Change Log
 -------------------------------
 - [FIXED] upload pipeline
 
+[3.5.1] - 2026-07-06
+-------------------------------
+- [FIXED] upload pipeline
+
 [3.5.0] - 2026-07-06
 -------------------------------
 - [ADDED] toolbox: :code:`compute_switch_flows` computes power flow through zero-impedance bus-bus switches via nodal balance
