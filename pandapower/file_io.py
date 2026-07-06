@@ -189,17 +189,15 @@ def from_excel(filename,
 
     :param str filename: The absolute or relative path to the input file.
     :param bool convert: If True, converts the format of the net loaded from Excel from
-            the older version of pandapower to the newer version format, default True
-    :param bool add_basic_std_types: If True, Adds missing standard-types from pandapower
-            standard type library, default True.
         the older version of pandapower to the newer version format, default True
-    :param drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
+    :param bool add_basic_std_types: If True, Adds missing standard-types from pandapower
+        standard type library, default True.
+        the older version of pandapower to the newer version format, default True
+    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
         instead of raising an error, default True
-    :type drop_invalid_geodata: bool
-    :param ignore_version_conflicts: If set to True, ignore version conflicts between the net
+    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
         being loaded and the pandapower version. This can lead to errors when loading nets saved in older
         formats. Use with caution! default False
-    :type ignore_version_conflicts: bool
 
     :return: The pandapower network
     :rtype: pandapowerNet
