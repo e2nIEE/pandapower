@@ -35,6 +35,10 @@ Change Log
 -------------------------------
 - [FIXED] upload pipeline
 
+[3.5.2] - 2026-07-06
+-------------------------------
+- [REMOVED] direct dependency to helmpy, if you want to use it, you have to install it manually or uncomment the line in pyproject.toml. Otherwise pypi.org rejects the package.
+
 [3.5.1] - 2026-07-06
 -------------------------------
 - [FIXED] upload pipeline
