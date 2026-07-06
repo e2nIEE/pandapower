@@ -4,6 +4,16 @@ Change Log
 [upcoming release] - 2026-..-..
 -------------------------------
 - [CHANGED] integrated deprecation guidelines from documentation into CONTRIBUTING.md (#2974)
+- [ADDED] OpenDSS converter: ``from_opendss`` imports an OpenDSS feeder into a balanced positive-sequence pandapower net (revisits #1442).
+- [FIXED] OPF: fixed generalized cost Hessian evaluation in ``opf_costfcn``.
+- [FIXED] kwargs handling in pandamodels functions
+- [ADDED] added optional init_pq parameter to the PandaModels opf runpm wrappers for active/reactive power starts
+- [ADDED] zigzag earthing transformer vector groups (`ZNyn`, `ZNd`, `ZNy`, `ZN`) in the zero-sequence short-circuit model. Per the YNzn zero-sequence model (IEC / transformer references), the zigzag winding completely decouples the primary and secondary zero sequences, presenting a low-impedance shunt-to-ground at its terminal: the HV-winding leakage portion (`si0_hv_partial`) in series with the neutral earthing impedance `3·(rn_ohm + j·xn_ohm)` at the star point. An earthed-wye secondary (`ZNyn`) gets its own decoupled zero-sequence path to ground (LV leakage portion + zero-sequence magnetising); a delta / unearthed secondary (`ZNd`/`ZNy`) has none. Enables single-phase earth-fault studies on delta-fed systems earthed via a zigzag transformer.
+- [ADDED] `rn_ohm` (resistive neutral earthing impedance) for two-winding transformers; the neutral earthing impedance `(rn_ohm + j*xn_ohm)` is now applied as `3*Z_N` to the zero sequence of all earthed-star vector groups in the short-circuit calculation (previously `xn_ohm` was only considered for power station unit transformers, and only as a reactance). Enables modelling neutral earthing resistors (NER/NGR) for single-phase earth-fault studies.
+- [FIXED] gen for 3ph load flow, so load flow is run without errors.
+- [ADDED] hardening of from_json function witha white list
+- [FIXED] (Log)SplineCharacteristic now have their own de-/serializer
+- [ADDED] HELMpy as an additional solver
 - [CHANGED] sql_io now requires single dsn string for database connection instead of separate host, user, etc. keywords.
 - [FIXED] sql_io not working with version of psycopg installed
 - [FIXED] cim2pp add GeographicalRegion from eqbd profile
