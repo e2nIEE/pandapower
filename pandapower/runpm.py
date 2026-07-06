@@ -3,8 +3,11 @@
 # Use of this source code is governed by a BSD-style license that can be found in the LICENSE file.
 
 
+from functools import partial
+
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.pandamodels.from_pm import read_ots_results, read_tnep_results
+from pandapower.converter.pandamodels.to_pm import add_redispatch_params
 from pandapower.opf.pm_storage import add_storage_opf_settings
 from pandapower.opf.run_pandamodels import _runpm
 
@@ -161,6 +164,64 @@ def runpm_ac_opf(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
 
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
+
+
+def runpm_redispatch(net, redispatch_cost=False, pp_to_pm_callback=None,
+                     calculate_voltage_angles=True, trafo_model="t", delta=1e-8,
+                     trafo3w_losses="hv", check_connectivity=True, pm_model="ACPPowerModel",
+                     pm_solver="ipopt", correct_pm_network_data=True, silence=True,
+                     pm_time_limits=None, pm_log_level=0, pm_file_path=None, delete_buffer_file=True,
+                     opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False,
+                     init_vm_pu="results", init_va_degree="results", init_pq="results", **kwargs):
+    """
+    Runs a simple redispatch optimization from PandaModels.jl.
+
+    Redispatch keeps the generators as close as possible to a base dispatch (their scheduled
+    operating point) while respecting the network constraints (branch loading, bus voltage limits,
+    generator limits). The base dispatch pg0 is read from the result tables (res_gen / res_sgen), so
+    a power flow result must be available - by default (init_pq="results") the generator setpoints
+    are taken from a previously run power flow.
+
+    Only controllable ``gen`` and ``sgen`` that have a ``poly_cost`` entry with non-NaN
+    ``redispatch_up_eur_per_mw`` and ``redispatch_down_eur_per_mw`` participate in the redispatch.
+    All other injectors stay fixed at their base dispatch.
+
+    Two objective modes are available:
+
+        - ``redispatch_cost=False`` (default): minimize the squared deviation from the base dispatch,
+          i.e. sum((pg - pg0)^2). This finds the "least redispatch" that satisfies the constraints.
+        - ``redispatch_cost=True``: split each participating generator into an upward and a downward
+          adjustment and minimize the total redispatch cost using ``redispatch_up_eur_per_mw`` and
+          ``redispatch_down_eur_per_mw`` from the poly_cost table.
+
+    Works with both ``ACPPowerModel`` (default) and ``DCPPowerModel``.
+
+    Parameters:
+        net: The pandapower format network (with a valid power flow result for the base dispatch)
+        redispatch_cost (bool, False): if True, minimize redispatch cost instead of deviation
+        pm_model (str, "ACPPowerModel"): "ACPPowerModel" or "DCPPowerModel"
+
+    See :func:`runpm` for the remaining keyword arguments.
+    """
+    ac = True if "DC" not in pm_model else False
+    if pp_to_pm_callback is None:
+        pp_to_pm_callback = partial(add_redispatch_params, redispatch_cost=redispatch_cost)
+    net._options = {}
+    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
+                     trafo_model=trafo_model, check_connectivity=check_connectivity,
+                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree,
+                     enforce_p_lims=False, enforce_q_lims=True,
+                     recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
+                     voltage_depend_loads=False, delta=delta, trafo3w_losses=trafo3w_losses)
+    _add_opf_options(net, trafo_loading='power', ac=ac, init_pq=init_pq, numba=True,
+                     pp_to_pm_callback=pp_to_pm_callback, julia_file="run_pandamodels_redispatch",
+                     pm_model=pm_model, pm_solver=pm_solver,
+                     correct_pm_network_data=correct_pm_network_data, silence=silence,
+                     pm_time_limits=pm_time_limits, pm_log_level=pm_log_level,
+                     opf_flow_lim=opf_flow_lim, pm_tol=pm_tol, **kwargs)
+
+    _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path,
+           pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
 def runpm_tnep(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,

@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] Redispatch optimizer based on a custom formulation in pandamodels.jl, supports cost based and power based redispatch.
 - [ADDED] OpenDSS converter: ``from_opendss`` imports an OpenDSS feeder into a balanced positive-sequence pandapower net (revisits #1442).
 - [FIXED] OPF: fixed generalized cost Hessian evaluation in ``opf_costfcn``.
 - [FIXED] kwargs handling in pandamodels functions

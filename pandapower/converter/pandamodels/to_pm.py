@@ -625,6 +625,139 @@ def add_params_to_pm(net, pm):
     return pm
 
 
+def _get_redispatch_elements(net):
+    """
+    Returns a list of (element_type, pp_index, cost_up, cost_down) tuples for every controllable
+    gen / sgen that is selected for redispatch, i.e. that is controllable and has a poly_cost entry
+    with non-NaN redispatch up/down costs.
+    """
+    selected = []
+    if "poly_cost" not in net or len(net.poly_cost) == 0:
+        return selected
+    pc = net.poly_cost
+    if "redispatch_up_eur_per_mw" not in pc.columns or "redispatch_down_eur_per_mw" not in pc.columns:
+        return selected
+    for elm in ["gen", "sgen"]:
+        if elm not in net or len(net[elm]) == 0:
+            continue
+        if "controllable" not in net[elm].columns:
+            continue
+        rows = pc[(pc["et"] == elm) &
+                  pc["redispatch_up_eur_per_mw"].notna() &
+                  pc["redispatch_down_eur_per_mw"].notna()]
+        for _, row in rows.iterrows():
+            pp_idx = int(row["element"])
+            if pp_idx not in net[elm].index:
+                continue
+            if not bool(net[elm].at[pp_idx, "controllable"]):
+                continue
+            selected.append((elm, pp_idx,
+                             float(row["redispatch_up_eur_per_mw"]),
+                             float(row["redispatch_down_eur_per_mw"])))
+    return selected
+
+
+def _get_controllable_gen_elements(net):
+    """
+    Returns a list of (element_type, pp_index) tuples for every controllable gen / sgen. These are
+    exactly the gens / sgens that become free PowerModels generators (non-controllable sgens are
+    converted to fixed loads and non-controllable gens are pinned via tight bounds already).
+    """
+    elements = []
+    for elm in ["gen", "sgen"]:
+        if elm not in net or len(net[elm]) == 0:
+            continue
+        if "controllable" not in net[elm].columns:
+            continue
+        for pp_idx in net[elm].index[net[elm]["controllable"].fillna(False).astype(bool)]:
+            elements.append((elm, int(pp_idx)))
+    return elements
+
+
+def _pm_gen_index_for(net, elm, pp_idx):
+    """
+    Maps a pandapower gen / controllable-sgen index to the PowerModels gen index (1-based) using the
+    lookups built during conversion. Returns None if the element has no PowerModels gen.
+    """
+    lookup_name = "gen" if elm == "gen" else "sgen_controllable"
+    if lookup_name not in net._pd2pm_lookups:
+        return None
+    lookup = net._pd2pm_lookups[lookup_name]
+    if pp_idx >= len(lookup):
+        return None
+    pm_idx = int(lookup[pp_idx])
+    return None if pm_idx == -1 else pm_idx
+
+
+def _redispatch_base_p_mw(net, elm, pp_idx, res_lookup):
+    """base dispatch p_mw of a gen / sgen from its result table (raises if no power flow result)."""
+    res_table = res_lookup[elm]
+    if res_table not in net or pp_idx not in net[res_table].index:
+        raise ValueError("redispatch base dispatch requires a prior power flow result: "
+                         "%s[%d] missing. Run a power flow or use init_pq='results'."
+                         % (res_table, pp_idx))
+    return float(net[res_table].at[pp_idx, "p_mw"])
+
+
+def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
+    """
+    pp_to_pm_callback for :func:`runpm_redispatch`. Writes the base dispatch (pg0) and, in cost mode,
+    per-generator up/down redispatch costs into pm["user_defined_params"].
+
+    Only controllable gens / sgens that have a poly_cost entry with non-NaN redispatch up/down costs
+    (see :func:`_get_redispatch_elements`) participate in the redispatch: their active power is free
+    and driven towards pg0. Every other controllable gen / sgen keeps its base dispatch fixed
+    (pg == pg0) via ``fixed_pg`` - non-controllable gens / sgens are already fixed during conversion
+    (sgens become fixed loads, gens are pinned by tight bounds), and the ext_grid / slack stays free.
+
+    The base dispatch pg0 is taken from the result tables (res_gen / res_sgen), so a power flow (or
+    init_pq="results") must have populated them before conversion.
+    """
+    if "user_defined_params" not in pm:
+        pm["user_defined_params"] = {}
+
+    baseMVA = pm["baseMVA"]
+    res_lookup = {"gen": "res_gen", "sgen": "res_sgen"}
+
+    # participating (priced) redispatch generators -> free pg, driven towards pg0
+    base_pg = {}
+    cost_up = {}
+    cost_down = {}
+    participating = set()
+    for elm, pp_idx, c_up, c_down in _get_redispatch_elements(net):
+        pm_idx = _pm_gen_index_for(net, elm, pp_idx)
+        if pm_idx is None:
+            logger.warning("redispatch: %s %d has no PowerModels gen (is it controllable and "
+                           "in service?) - skipped", elm, pp_idx)
+            continue
+        p_mw = _redispatch_base_p_mw(net, elm, pp_idx, res_lookup)
+        # PowerModels works in per unit (baseMVA), same convention as pg in ppci->pm conversion
+        base_pg[str(pm_idx)] = p_mw / baseMVA
+        cost_up[str(pm_idx)] = c_up
+        cost_down[str(pm_idx)] = c_down
+        participating.add(pm_idx)
+
+    # controllable but non-participating gens / sgens -> pin pg to the base dispatch
+    fixed_pg = {}
+    for elm, pp_idx in _get_controllable_gen_elements(net):
+        pm_idx = _pm_gen_index_for(net, elm, pp_idx)
+        if pm_idx is None or pm_idx in participating:
+            continue
+        p_mw = _redispatch_base_p_mw(net, elm, pp_idx, res_lookup)
+        fixed_pg[str(pm_idx)] = p_mw / baseMVA
+
+    pm["user_defined_params"]["base_pg"] = base_pg
+    if fixed_pg:
+        pm["user_defined_params"]["fixed_pg"] = fixed_pg
+    # The redispatch mode is inferred on the Julia side from the presence of the cost dicts:
+    # if redispatch_cost_up / redispatch_cost_down are present -> cost objective, else deviation.
+    # (every user_defined_params value must be a Dict, so we do not pass a plain bool flag here.)
+    if redispatch_cost:
+        pm["user_defined_params"]["redispatch_cost_up"] = cost_up
+        pm["user_defined_params"]["redispatch_cost_down"] = cost_down
+    return pm
+
+
 def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
     from pandapower.control import ConstControl
     if from_time_step is None or to_time_step is None:
