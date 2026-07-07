@@ -391,6 +391,7 @@ def isinstance_partial(obj, cls):
 
 
 class DeserializationNotAllowed(Exception):
+
     """Raised when deserialization of a type is blocked by the security allowlist."""
 
 
@@ -399,7 +400,8 @@ _SAFE_BUILTIN_NAMES = frozenset({"complex", "tuple", "set", "frozenset"})
 
 
 def _is_safe_to_deserialize(module_name, class_name, class_):
-    """True if this (module, name) is an explicitly permitted non-JSONSerializableClass type.
+    """
+    True if this (module, name) is an explicitly permitted non-JSONSerializableClass type.
 
     Covers the types produced by pandapower's to_serializable registry:
       builtins  — complex, tuple, set, frozenset
@@ -416,6 +418,9 @@ def _is_safe_to_deserialize(module_name, class_name, class_):
         return isclass(class_) and issubclass(class_, numpy.generic)
     if module_name.startswith("pandas"):
         return isclass(class_) and issubclass(class_, pd.Index)
+    # Enums from unknown modules could have a custom __new__ that executes arbitrary code.
+    if module_name.startswith("pandapower") and isclass(class_) and issubclass(class_, Enum):
+        return True
     return False
 
 
