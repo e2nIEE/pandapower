@@ -40,7 +40,7 @@ classifiers = [
 dependencies = [
     "pandas~=2.3",
     "networkx~=3.6",
-    "scipy~=1.18",
+    "scipy!=1.17",
     "numpy>=1.26,<2.5",
     "packaging~=26.0",
     "tqdm~=4.68",
@@ -93,7 +93,7 @@ typing = [
     "types-openpyxl~=3.1",
     "types-networkx~=3.6",
     "types-tqdm~=4.68",
-    "scipy-stubs~=1.18",
+    "scipy-stubs!=1.17",
     "pandera[mypy]~=0.32",
     "psycopg~=3.2"
 ]
