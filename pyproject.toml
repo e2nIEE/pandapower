@@ -66,7 +66,8 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 docs = [
     "numpydoc~=1.10",
     "matplotlib~=3.11",
-    "sphinx~=9.1",
+    "sphinx~=9.1; python_version > '3.11'",
+    "sphinx~=8.1; python_version <= '3.11'",
     "sphinx_rtd_theme~=3.1",
     "sphinx-pyproject~=0.3",
     "sphinxcontrib-imagesvg~=0.1",
