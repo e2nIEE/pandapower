@@ -390,6 +390,40 @@ def isinstance_partial(obj, cls):
     return isinstance(obj, cls)
 
 
+class DeserializationNotAllowed(Exception):
+
+    """Raised when deserialization of a type is blocked by the security allowlist."""
+
+
+# builtins names that pandapower serializes (json_tuple/set/frozenset/complex), excluding unsafe `builtins` like eval, exec, type
+_SAFE_BUILTIN_NAMES = frozenset({"complex", "tuple", "set", "frozenset"})
+
+
+def _is_safe_to_deserialize(module_name, class_name, class_):
+    """
+    True if this (module, name) is an explicitly permitted non-JSONSerializableClass type.
+
+    Covers the types produced by pandapower's to_serializable registry:
+      builtins  — complex, tuple, set, frozenset
+      numpy     — numpy.array constructor (a C function, not a class) + all numpy.generic subclasses
+      pandas    — pd.Index and its subclasses (RangeIndex, Int64Index, DatetimeIndex, …)
+    """
+    if module_name == "builtins":
+        return class_name in _SAFE_BUILTIN_NAMES
+    if module_name == "numpy":
+        # numpy.array is a C function (not a class) used to reconstruct ndarrays
+        if class_name == "array":
+            return True
+        # int8/16/32/64, uint*, float16/32/64, complex64/128, bool_, etc.
+        return isclass(class_) and issubclass(class_, numpy.generic)
+    if module_name.startswith("pandas"):
+        return isclass(class_) and issubclass(class_, pd.Index)
+    # Enums from unknown modules could have a custom __new__ that executes arbitrary code.
+    if module_name.startswith("pandapower") and isclass(class_) and issubclass(class_, Enum):
+        return True
+    return False
+
+
 class PPJSONEncoder(json.JSONEncoder):
     def __init__(self, isinstance_func=isinstance_partial, **kwargs):
         super().__init__(**kwargs)
@@ -593,7 +627,7 @@ class FromSerializableRegistry():
         for col in df_obj:
             df[col] = df[col].apply(partial(
                 self.pp_hook,
-                ignore_unknown_objects=self.ignore_unknown_objects, 
+                ignore_unknown_objects=self.ignore_unknown_objects,
                 omit_modules=self.omit_modules,
                 skip_checks=self.skip_checks
             ))
@@ -720,7 +754,7 @@ class FromSerializableRegistry():
             logger.warning(f"Deserialization of function {self.obj} is blocked, if you trust the source of the json file,"
                            f"set skip_checks=True to allow deserialization of objects.")
             return self.obj
-        
+
     
     @from_serializable.register(class_name='bool', module_name='numpy')
     def bool_handling(self):
@@ -789,17 +823,11 @@ class FromSerializableRegistry():
                 del self.obj["net"]
             return class_.from_dict(self.obj)
         else:
-            # for non-pp objects, e.g. tuple
-            try:
-                return class_(self.obj, **self.d)
-            except ValueError:
-                data = json.loads(self.obj)
-                df = pd.DataFrame(columns=self.d["columns"])
-                for d in data["features"]:
-                    idx = int(d["id"])
-                    for prop, val in d["properties"].items():
-                        df.at[idx, prop] = val
-                return df
+            # only permit the specific primitive types pandapower serializes
+            if not _is_safe_to_deserialize(self.module_name, self.class_name, class_):
+                msg = f"Deserializing '{self.module_name}.{self.class_name}' is not allowed"
+                raise DeserializationNotAllowed(msg)
+            return class_(self.obj, **self.d)
 
     @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
     def geoDataFrame(self):
