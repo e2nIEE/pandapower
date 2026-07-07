@@ -39,7 +39,8 @@ classifiers = [
 ]
 dependencies = [
     "pandas~=2.3",
-    "networkx~=3.6",
+    "networkx~=3.6; python_version >= '3.11'",
+    "networkx~=3.4; python_version == '3.10'",
     "scipy!=1.17",
     "numpy>=1.26,<2.5",
     "packaging~=26.0",
