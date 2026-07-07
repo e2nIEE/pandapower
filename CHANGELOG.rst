@@ -4,6 +4,10 @@ Change Log
 [upcoming release] - 2026-..-..
 -------------------------------
 
+[3.5.2] - 2026-07-07
+-------------------------------
+- [FIXED] moved a misleading logger.warning message
+
 [3.5.2] - 2026-07-06
 -------------------------------
 - [REMOVED] direct dependency to helmpy, if you want to use it, you have to install it manually or uncomment the line in pyproject.toml. Otherwise pypi.org rejects the package.

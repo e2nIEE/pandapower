@@ -775,13 +775,19 @@ class FromSerializableRegistry():
     @from_serializable.register()
     def rest(self):
         if not self.skip_checks:
-            logger.warning(f"Deserialization of object {self.obj} is blocked, if you trust the source of the json file,"
-                           f"set skip_checks=True to allow deserialization of objects.")
 
             if self.class_name == "exec":
+                logger.warning(
+                    f"Deserialization of object {self.obj} is blocked, if you trust the source of the json file,"
+                    f"set skip_checks=True to allow deserialization of objects."
+                )
                 raise ValueError(f"class {self.class_name} is not allowed in pandapowerNet!")
 
             if self.module_name == "os":
+                logger.warning(
+                    f"Deserialization of object {self.obj} is blocked, if you trust the source of the json file,"
+                    f"set skip_checks=True to allow deserialization of objects."
+                )
                 raise ValueError(f"module {self.module_name} not allowed in pandapowerNet!")
 
         try:
