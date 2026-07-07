@@ -812,16 +812,7 @@ class FromSerializableRegistry():
             if not _is_safe_to_deserialize(self.module_name, self.class_name, class_):
                 msg = f"Deserializing '{self.module_name}.{self.class_name}' is not allowed"
                 raise TypeError(msg)
-            try:
-                return class_(self.obj, **self.d)
-            except ValueError:
-                data = json.loads(self.obj)
-                df = pd.DataFrame(columns=self.d["columns"])
-                for d in data["features"]:
-                    idx = int(d["id"])
-                    for prop, val in d["properties"].items():
-                        df.at[idx, prop] = val
-                return df
+            return class_(self.obj, **self.d)
 
     @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
     def geoDataFrame(self):
