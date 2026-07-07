@@ -390,13 +390,6 @@ def isinstance_partial(obj, cls):
     return isinstance(obj, cls)
 
 
-def check_net_version(net):
-    if Version(net["format_version"]) > Version(__version__):
-        logger.warning(f"pandapowerNet-version ({net['format_version']}) is newer than your "
-                       f"pandapower version ({__version__}). Please update pandapower "
-                       "`pip install --upgrade pandapower`.")
-
-
 class PPJSONEncoder(json.JSONEncoder):
     def __init__(self, isinstance_func=isinstance_partial, **kwargs):
         super().__init__(**kwargs)

@@ -389,6 +389,8 @@ def get_structure_dict() -> dict:
             "cq0_eur": "f8",
             "cq1_eur_per_mvar": "f8",
             "cq2_eur_per_mvar2": "f8",
+            "redispatch_up_eur_per_mw": "f8",
+            "redispatch_down_eur_per_mw": "f8",
         },
         "controller": {
             "object": dtype(object),
