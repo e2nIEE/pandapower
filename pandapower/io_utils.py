@@ -390,6 +390,10 @@ def isinstance_partial(obj, cls):
     return isinstance(obj, cls)
 
 
+class DeserializationNotAllowed(Exception):
+    """Raised when deserialization of a type is blocked by the security allowlist."""
+
+
 # builtins names that pandapower serializes (json_tuple/set/frozenset/complex), excluding unsafe `builtins` like eval, exec, type
 _SAFE_BUILTIN_NAMES = frozenset({"complex", "tuple", "set", "frozenset"})
 
@@ -811,7 +815,7 @@ class FromSerializableRegistry():
             # only permit the specific primitive types pandapower serializes
             if not _is_safe_to_deserialize(self.module_name, self.class_name, class_):
                 msg = f"Deserializing '{self.module_name}.{self.class_name}' is not allowed"
-                raise TypeError(msg)
+                raise DeserializationNotAllowed(msg)
             return class_(self.obj, **self.d)
 
     @from_serializable.register(class_name='GeoDataFrame', module_name='geopandas.geodataframe')
