@@ -3,6 +3,38 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+
+[3.5.2] - 2026-07-07
+-------------------------------
+- [FIXED] moved a misleading logger.warning message
+
+[3.5.2] - 2026-07-06
+-------------------------------
+- [REMOVED] direct dependency to helmpy, if you want to use it, you have to install it manually or uncomment the line in pyproject.toml. Otherwise pypi.org rejects the package.
+
+[3.5.1] - 2026-07-06
+-------------------------------
+- [FIXED] upload pipeline
+
+[3.5.0] - 2026-07-06
+-------------------------------
+- [ADDED] toolbox: :code:`compute_switch_flows` computes power flow through zero-impedance bus-bus switches via nodal balance
+- [ADDED] Redispatch optimizer based on a custom formulation in pandamodels.jl, supports cost based and power based redispatch.
+- [ADDED] OpenDSS converter: ``from_opendss`` imports an OpenDSS feeder into a balanced positive-sequence pandapower net (revisits #1442).
+- [FIXED] OPF: fixed generalized cost Hessian evaluation in ``opf_costfcn``.
+- [FIXED] kwargs handling in pandamodels functions
+- [ADDED] added optional init_pq parameter to the PandaModels opf runpm wrappers for active/reactive power starts
+- [ADDED] zigzag earthing transformer vector groups (`ZNyn`, `ZNd`, `ZNy`, `ZN`) in the zero-sequence short-circuit model. Per the YNzn zero-sequence model (IEC / transformer references), the zigzag winding completely decouples the primary and secondary zero sequences, presenting a low-impedance shunt-to-ground at its terminal: the HV-winding leakage portion (`si0_hv_partial`) in series with the neutral earthing impedance `3·(rn_ohm + j·xn_ohm)` at the star point. An earthed-wye secondary (`ZNyn`) gets its own decoupled zero-sequence path to ground (LV leakage portion + zero-sequence magnetising); a delta / unearthed secondary (`ZNd`/`ZNy`) has none. Enables single-phase earth-fault studies on delta-fed systems earthed via a zigzag transformer.
+- [ADDED] `rn_ohm` (resistive neutral earthing impedance) for two-winding transformers; the neutral earthing impedance `(rn_ohm + j*xn_ohm)` is now applied as `3*Z_N` to the zero sequence of all earthed-star vector groups in the short-circuit calculation (previously `xn_ohm` was only considered for power station unit transformers, and only as a reactance). Enables modelling neutral earthing resistors (NER/NGR) for single-phase earth-fault studies.
+- [FIXED] gen for 3ph load flow, so load flow is run without errors.
+- [ADDED] hardening of from_json function with a white list
+- [FIXED] (Log)SplineCharacteristic now have their own de-/serializer
+- [ADDED] HELMpy as an additional solver
+- [CHANGED] sql_io now requires single dsn string for database connection instead of separate host, user, etc. keywords.
+- [FIXED] sql_io not working with version of psycopg installed
+- [FIXED] cim2pp add GeographicalRegion from eqbd profile
+- [FIXED] behavior of PowerFactory2pp-converter if coordinates are saved at cpSubstat.
+- [CHANGED] differing behavior for :code:`in_service=False` depending on `voltage_depend_loads` has been fixed. Out of Service elements for res_bus now always contain `nan` as result.
 - [FIXED] `DiscreteTapControl` to work with `negative tap_step_percent`.
 - [CHANGED] updated the contributing file and documentation
 - [ADDED] `allow_duplicate_index` parameter to `reindex_buses` with default to `false`.
@@ -12,17 +44,20 @@ Change Log
 - [ADDED] check to check if vkr_percent values are reasonable (see issue #786).
 - [FIXED] cim2pp shift_lv_degree was translated from wrong entry
 - [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
+- [FIXED] incompatible network versions (i.e. networks with newer format versions than the currently installed pandapower version) are identified in convert_format and raise an error
 - [ADDED] LTDS support
 - [FIXED] ucte2pp: voltage setpoints from gens connected to the same busbar are now averaged
 - [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
 - [FIXED] ucte2pp: symmetrical tap changers are now handled as symmetrical tap changers in pandapower (not ideal phase shifters)
 - [FIXED] ucte2pp: prevent nan values for impedances and transformers for B/G/P_fe/i0
-- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cin_version)
+- [FIXED] cim2pp: CimConverter backwards-compatible (default value for cim_version)
 - [FIXED] jao converter: calculation of trafo parameters is based on primary side (hv) now
 - [ADDED] toolbox: :code:`get_all_elements` returns all elements of a pp.pandapowerNet as a DataFrame
 - [ADDED] plotting: highlighting feature and hovering functionality to :code:`simple_plot()`
 - [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
+- [FIXED] pf2pp: static generator without a bus does not cause import errors (it is ignored)
 - [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
+- [ADDED] cim2pp: mapping SV data to the assets with flag use_sv_data_for_assets=True
 
 [3.4.0] - 2026-02-09
 -------------------------------

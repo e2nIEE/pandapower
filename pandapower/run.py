@@ -78,12 +78,13 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         algorithm (str, "nr"): algorithm that is used to solve the power flow problem.
             The following algorithms are available:
 
-            - "nr" Newton-Raphson (pypower implementation with numba accelerations)
-            - "iwamoto_nr" Newton-Raphson with Iwamoto multiplier (maybe slower than NR but more robust)
-            - "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
-            - "gs" gauss-seidel (pypower implementation)
-            - "fdbx" fast-decoupled (pypower implementation)
-            - "fdxb" fast-decoupled (pypower implementation)
+                - "nr" Newton-Raphson (pypower implementation with numba accelerations)
+                - "iwamoto_nr" Newton-Raphson with Iwamoto multiplier (maybe slower than NR but more robust)
+                - "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
+                - "gs" gauss-seidel (pypower implementation)
+                - "fdbx" fast-decoupled (pypower implementation)
+                - "fdxb" fast-decoupled (pypower implementation)
+                - "helm" holomorphic embedded loadflow method
 
         calculate_voltage_angles (str or bool, True): consider voltage angles in loadflow calculation
             If True, voltage angles of ext_grids and transformer shifts are considered in the
@@ -120,6 +121,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             - 30 for "fdbx"
             - 30 for "fdxb"
             - 30 for "nr" with "tdpf"
+            - 40 for "helm"
 
         tolerance_mva (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
         trafo_model (str, "t"): transformer equivalent circuit model

@@ -67,13 +67,13 @@ def test_group_create(nets_to_test_group):
     assert net.group.name.loc[[idxs[1]]].values[0] == 'Group of transformers'
 
     with pytest.raises(
-            UserWarning, match="Cannot create group with xward members Index\(\['?0'?\], dtype='(?:int64|object)'\)\."
+            UserWarning, match=r"Cannot create group with xward members Index\(\['?0'?\], dtype='(?:int64|object)'\)\."
     ):
         # no xward in net
         create_group_from_dict(net, {"xward": typed_list([0], type_)}, reference_column=rc)
 
     with pytest.raises(
-            UserWarning, match="Cannot create group with sgen members Index\(\['?100'?\], dtype='(?:int64|object)'\)\."
+            UserWarning, match=r"Cannot create group with sgen members Index\(\['?100'?\], dtype='(?:int64|object)'\)\."
     ):
         # no sgen 100 in net
         create_group_from_dict(net, {"sgen": typed_list([3, 100], type_)}, reference_column=rc)
@@ -193,12 +193,12 @@ def test_check_unique_group_rows():
         ["Gr1", "sgen", [3, 4]],
         ["Gr1", "gen", [2, 5]],
     ], index=[0, 0, 0], columns=["name", "element_type", "element_index"])])
-    with pytest.raises(ValueError, match="There are multiple group rows with same index, name and element_type\."):
+    with pytest.raises(ValueError, match=r"There are multiple group rows with same index, name and element_type\."):
         check_unique_group_rows(net)
 
     # test with different reference_columns
     net.group.iat[0, 3] = "hallo"
-    with pytest.raises(ValueError, match="There are multiple group rows with same index, name and element_type\."):
+    with pytest.raises(ValueError, match=r"There are multiple group rows with same index, name and element_type\."):
         check_unique_group_rows(net)
 
     # test with duplicated group name and index
@@ -208,7 +208,7 @@ def test_check_unique_group_rows():
         ["Gr2", "gen", [2, 5]],
         ["Gr3", "line", [0, 1]]
     ], index=[0, 0, 1, 0], columns=["name", "element_type", "element_index"])])
-    with pytest.raises(UserWarning, match="Groups with different names have the same index\."):
+    with pytest.raises(UserWarning, match=r"Groups with different names have the same index\."):
         check_unique_group_rows(net)
     check_unique_group_rows(net, raise_error=False, log_level="debug")
 
@@ -293,7 +293,7 @@ def test_attach_to_group(nets_to_test_group):
     assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo"}
 
     with pytest.raises(
-            UserWarning, match="Cannot create group with xward members Index\(\[\'?0\'?\], dtype='(?:int64|object)'\)\."
+            UserWarning, match=r"Cannot create group with xward members Index\(\[\'?0\'?\], dtype='(?:int64|object)'\)\."
     ):
         attach_to_group(net, idxs[1], ["xward"], [typed_list([0], type_)],
                         reference_columns=rc)
