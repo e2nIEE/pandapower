@@ -20,7 +20,7 @@ from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.run import runpp
 from pandapower.timeseries import DFData
-from pandapower.toolbox.comparison import nets_equal, dataframes_equal
+from pandapower.toolbox.comparison import nets_equal, dataframes_equal, compare_arrays
 from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.element_selection import pp_elements
 from pandapower.toolbox.grid_modification import select_subnet, replace_gen_by_sgen, replace_ext_grid_by_gen
@@ -178,31 +178,31 @@ def test_cost_consideration():
 
         # --- check poly cost
         # eq_net1
-        assert np.all(net[cost_type].loc[net[cost_type].et == "ext_grid"].values ==
-                      eq_net1[cost_type].loc[eq_net1[cost_type].et == "ext_grid"])
+        assert np.all(compare_arrays(net[cost_type].loc[net[cost_type].et == "ext_grid"].to_numpy(),
+                                     eq_net1[cost_type].loc[eq_net1[cost_type].et == "ext_grid"].to_numpy()))
         for i in range(3):
             idx_net = net.sgen.sort_values("p_mw").index[i]
             idx_eq_net = eq_net1.sgen.sort_values("p_mw").index[i]
-            assert np.all(net[cost_type].loc[(net[cost_type].element == idx_net) &
+            assert np.all(compare_arrays(net[cost_type].loc[(net[cost_type].element == idx_net) &
                                              (net[cost_type].et == "sgen")].drop(
-                columns=["element"]).values ==
+                columns=["element"]).to_numpy(),
                           eq_net1[cost_type].loc[(eq_net1[cost_type].element == idx_eq_net) &
                                                  (eq_net1[cost_type].et == "sgen")].drop(
-                              columns=["element"]).values)
+                              columns=["element"]).to_numpy()))
 
         # eq_net2
-        assert np.all(net[cost_type].loc[net[cost_type].et == "ext_grid"].values ==
-                      eq_net2[cost_type].loc[eq_net2[cost_type].et == "ext_grid"])
+        assert np.all(compare_arrays(net[cost_type].loc[net[cost_type].et == "ext_grid"].to_numpy(),
+                                     eq_net2[cost_type].loc[eq_net2[cost_type].et == "ext_grid"].to_numpy()))
         for i in range(2):
             idx_net = net.sgen.loc[~net.sgen.bus.isin(boundary_buses + internal_buses)].sort_values(
                 "p_mw").index[i]
             idx_eq_net = eq_net2.sgen.sort_values("p_mw").index[i]
-            assert np.all(net[cost_type].loc[(net[cost_type].element == idx_net) &
+            assert np.all(compare_arrays(net[cost_type].loc[(net[cost_type].element == idx_net) &
                                              (net[cost_type].et == "sgen")].drop(
-                columns=["element"]).values ==
+                columns=["element"]).to_numpy(),
                           eq_net2[cost_type].loc[(eq_net2[cost_type].element == idx_eq_net) &
                                                  (eq_net2[cost_type].et == "sgen")].drop(
-                              columns=["element"]).values)
+                              columns=["element"]).to_numpy()))
 
 
 @pytest.mark.parametrize("eq_type", ["rei", "ward", "xward"])
