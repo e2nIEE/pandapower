@@ -35,7 +35,12 @@ Change Log
 -------------------------------
 - [FIXED] upload pipeline
 
-[3.5.2] - 2026-07-07
+[3.5.4] - 2026-07-08
+-------------------------------
+- [UPDATED] versions of dependent libraries
+- [FIXED] improved from_json even further
+
+[3.5.3] - 2026-07-07
 -------------------------------
 - [FIXED] moved a misleading logger.warning message
 
