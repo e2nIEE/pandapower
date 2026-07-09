@@ -112,20 +112,20 @@ def test_create_cos_phi_from_network():
     assert len(net.load["cos_phi"]) == len(net.load)
 
     # All loads have p>0, so all cos_phi should be valid (not 1.0 default)
-    cos_phi = net.load["cos_phi"].values
+    cos_phi = net.load["cos_phi"].to_numpy()
     assert np.all(np.abs(cos_phi) <= 1.0)
     assert np.all(np.abs(cos_phi) > 0.0)
     # Loads have positive q → positive cos_phi (pos_neg convention)
     assert np.all(cos_phi > 0)
 
     # Roundtrip: sync should reproduce original q
-    original_q = net.load["q_mvar"].values.copy()
+    original_q = net.load["q_mvar"].to_numpy().copy()
     sync_q_from_cos_phi(net, "load", net.load.index)
-    assert np.allclose(net.load["q_mvar"].values, original_q, atol=1e-6)
+    assert np.allclose(net.load["q_mvar"].to_numpy(), original_q, atol=1e-6)
 
     # Sgens in CIGRE MV have q=0 → cos_phi should be 1.0
     create_cos_phi_from_network(net, "sgen")
-    assert np.allclose(net.sgen["cos_phi"].values, 1.0)
+    assert np.allclose(net.sgen["cos_phi"].to_numpy(), 1.0)
 
     # Set some nonzero q on sgens and re-extract
     net.sgen.loc[0, "q_mvar"] = -0.5
@@ -137,9 +137,9 @@ def test_create_cos_phi_from_network():
     assert net.sgen.at[1, "cos_phi"] > 0  # positive q → positive cos_phi
 
     # Roundtrip for those two
-    original_q_sgen = net.sgen.loc[[0, 1], "q_mvar"].values.copy()
+    original_q_sgen = net.sgen.loc[[0, 1], "q_mvar"].to_numpy().copy()
     sync_q_from_cos_phi(net, "sgen", [0, 1])
-    assert np.allclose(net.sgen.loc[[0, 1], "q_mvar"].values, original_q_sgen, atol=1e-6)
+    assert np.allclose(net.sgen.loc[[0, 1], "q_mvar"].to_numpy(), original_q_sgen, atol=1e-6)
 
     # p=0 element gets cos_phi=1.0
     net.sgen.loc[2, "p_mw"] = 0.0
@@ -153,24 +153,24 @@ def test_create_cos_phi_constant():
 
     # sgen + underexcited → signing_system_value("sgen")=-1 → negative cos_phi
     create_cos_phi_constant(net, "sgen", cos_phi=0.95, mode="underexcited")
-    assert np.all(net.sgen["cos_phi"] == -0.95)
+    assert np.allclose(net.sgen["cos_phi"].to_numpy(), -0.95)
 
     # sgen + overexcited → sign flipped → positive
     create_cos_phi_constant(net, "sgen", cos_phi=0.95, mode="overexcited")
-    assert np.all(net.sgen["cos_phi"] == 0.95)
+    assert np.allclose(net.sgen["cos_phi"].to_numpy(), 0.95)
 
     # load + underexcited → signing_system_value("load")=+1 → positive
     create_cos_phi_constant(net, "load", cos_phi=0.9, mode="underexcited")
-    assert np.all(net.load["cos_phi"] == 0.9)
+    assert np.allclose(net.load["cos_phi"].to_numpy(), 0.9)
 
     # load + overexcited → negative
     create_cos_phi_constant(net, "load", cos_phi=0.9, mode="overexcited")
-    assert np.all(net.load["cos_phi"] == -0.9)
+    assert np.allclose(net.load["cos_phi"].to_numpy(), -0.9)
 
     # Does NOT modify q_mvar
-    original_q = net.sgen["q_mvar"].values.copy()
+    original_q = net.sgen["q_mvar"].to_numpy().copy()
     create_cos_phi_constant(net, "sgen", cos_phi=0.8)
-    assert np.allclose(net.sgen["q_mvar"].values, original_q)
+    assert np.allclose(net.sgen["q_mvar"].to_numpy(), original_q)
 
 
 def test_sync_q_from_cos_phi():
@@ -187,18 +187,18 @@ def test_sync_q_from_cos_phi():
 
     # cos_phi = -0.95 → q = abs(1.0) * tan(arccos(0.95)) * sign(-0.95) = -0.3287...
     expected_q = -np.tan(np.arccos(0.95))
-    assert np.allclose(net.sgen["q_mvar"].values, expected_q, atol=1e-6)
+    assert np.allclose(net.sgen["q_mvar"].to_numpy(), expected_q, atol=1e-6)
 
     # p=0 → q=0 regardless of cos_phi
     net.sgen["p_mw"] = 0.0
     sync_q_from_cos_phi(net, "sgen", net.sgen.index)
-    assert np.allclose(net.sgen["q_mvar"].values, 0.0)
+    assert np.allclose(net.sgen["q_mvar"].to_numpy(), 0.0)
 
     # cos_phi=1.0 → q=0 regardless of p
     net.sgen["cos_phi"] = 1.0
     net.sgen["p_mw"] = 5.0
     sync_q_from_cos_phi(net, "sgen", net.sgen.index)
-    assert np.allclose(net.sgen["q_mvar"].values, 0.0, atol=1e-10)
+    assert np.allclose(net.sgen["q_mvar"].to_numpy(), 0.0, atol=1e-10)
 
     # Partial index: only selected elements are synced
     create_cos_phi_constant(net, "sgen", cos_phi=0.9, mode="underexcited")
@@ -206,7 +206,7 @@ def test_sync_q_from_cos_phi():
     net.sgen["q_mvar"] = 999.0  # sentinel
     sync_q_from_cos_phi(net, "sgen", [net.sgen.index[0]])
     assert not np.isclose(net.sgen.at[net.sgen.index[0], "q_mvar"], 999.0)
-    assert np.all(net.sgen["q_mvar"].values[1:] == 999.0)
+    assert np.allclose(net.sgen["q_mvar"].to_numpy()[1:], 999.0)
 
     # q sign follows cos_phi sign, q magnitude uses abs(p)
     net.sgen.loc[0, "cos_phi"] = 0.9

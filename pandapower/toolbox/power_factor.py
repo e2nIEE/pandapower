@@ -79,8 +79,8 @@ def create_cos_phi_from_network(net: pandapowerNet, element_type: str) -> None:
     if len(table) == 0:
         return
 
-    p = table["p_mw"].values.astype(np.float64)
-    q = table["q_mvar"].values.astype(np.float64)
+    p = table["p_mw"].to_numpy(dtype=np.float64)
+    q = table["q_mvar"].to_numpy(dtype=np.float64)
 
     cos_phi: np.ndarray = np.ones(len(table), dtype=np.float64)
     nonzero = np.abs(p) > 1e-10
@@ -123,6 +123,12 @@ def sync_q_from_cos_phi(net: pandapowerNet, element_type: str, indices: Any) -> 
     """
     Recompute q_mvar = abs(p_mw) * tan(arccos(abs(cos_phi))) * sign(cos_phi).
 
+    Use to sync q_mvar from p_mw via cos phi for e.g. time series or OPF studies.
+    Before, you must set up the "cos_phi" column either manually or use the helper functions:
+    from the initial state (create_cos_phi_from_network)
+    or as fixed factor (create_cos_phi_constant).
+
+
     Args:
         net: pandapower network (modified in-place)
         element_type: "sgen" or "load"
@@ -141,8 +147,8 @@ def sync_q_from_cos_phi(net: pandapowerNet, element_type: str, indices: Any) -> 
     valid_mask = cos_phi_series.notna()
 
     valid_idx = cos_phi_series.index[valid_mask]
-    cos_phi = cos_phi_series.loc[valid_idx].values.astype(np.float64)
-    p_mw = table.loc[valid_idx, "p_mw"].values.astype(np.float64)
+    cos_phi = cos_phi_series.loc[valid_idx].to_numpy(dtype=np.float64)
+    p_mw = table.loc[valid_idx, "p_mw"].to_numpy(dtype=np.float64)
 
     abs_cos = np.clip(np.abs(cos_phi), 1e-10, 1.0)
     q = np.abs(p_mw) * np.tan(np.arccos(abs_cos)) * np.sign(cos_phi)

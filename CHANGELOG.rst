@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] toolbox: ``sync_q_from_cos_phi'' helper for studies
 
 [3.5.2] - 2026-07-07
 -------------------------------
