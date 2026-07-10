@@ -64,7 +64,7 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     return _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=len_)
 
 
-def create_cos_phi_from_network_state(net: pandapowerNet, element_type: Literal["sgen", "load"]) -> None:
+def set_cos_phi_from_network_state(net: pandapowerNet, element_type: Literal["sgen", "load"]) -> None:
     """
     Compute signed cos_phi from current p_mw/q_mvar and store in element table.
 

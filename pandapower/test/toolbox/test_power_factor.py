@@ -17,7 +17,7 @@ from pandapower.toolbox.power_factor import (
     cosphi_from_pq,
     cosphi_from_pos,
     sync_q_from_cos_phi,
-    create_cos_phi_from_network_state,
+    set_cos_phi_from_network_state,
     set_constant_cos_phi,
 )
 
@@ -117,7 +117,7 @@ def test_create_cos_phi_from_network():
     net = create_cigre_network_mv("pv_wind")
 
     # Loads have both p>0 and q>0 in this network
-    create_cos_phi_from_network_state(net, "load")
+    set_cos_phi_from_network_state(net, "load")
     assert "cos_phi" in net.load.columns
     assert len(net.load["cos_phi"]) == len(net.load)
 
@@ -134,7 +134,7 @@ def test_create_cos_phi_from_network():
     assert np.allclose(net.load["q_mvar"].to_numpy(), original_q, atol=1e-6)
 
     # Sgens in CIGRE MV have q=0 → cos_phi should be 1.0
-    create_cos_phi_from_network_state(net, "sgen")
+    set_cos_phi_from_network_state(net, "sgen")
     assert np.allclose(net.sgen["cos_phi"].to_numpy(), 1.0)
 
     # Set some nonzero q on sgens and re-extract
@@ -142,7 +142,7 @@ def test_create_cos_phi_from_network():
     net.sgen.loc[1, "q_mvar"] = 0.3
     net.sgen.loc[0, "p_mw"] = 2.0
     net.sgen.loc[1, "p_mw"] = 1.5
-    create_cos_phi_from_network_state(net, "sgen")
+    set_cos_phi_from_network_state(net, "sgen")
     assert net.sgen.at[0, "cos_phi"] < 0  # negative q → negative cos_phi
     assert net.sgen.at[1, "cos_phi"] > 0  # positive q → positive cos_phi
 
@@ -154,7 +154,7 @@ def test_create_cos_phi_from_network():
     # p=0 element gets cos_phi=1.0
     net.sgen.loc[2, "p_mw"] = 0.0
     net.sgen.loc[2, "q_mvar"] = 0.0
-    create_cos_phi_from_network_state(net, "sgen")
+    set_cos_phi_from_network_state(net, "sgen")
     assert np.isclose(net.sgen.at[2, "cos_phi"], 1.0)
 
 
