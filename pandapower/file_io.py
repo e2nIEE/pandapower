@@ -10,6 +10,7 @@ import sys
 import json
 from typing import Union, TextIO, overload as function_overload
 from warnings import warn
+
 import numpy
 import pandas as pd
 from packaging.version import Version
@@ -25,14 +26,13 @@ try:
 except ImportError:
     openpyxl_INSTALLED = False
 
-from pandapower._version import __version__ as pp_version
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.auxiliary import pandapowerNet
 from pandapower.std_types import basic_std_types
 from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
 from pandapower.io_utils import to_dict_with_coord_transform, to_dict_of_dfs, PPJSONEncoder, encrypt_string, \
-    get_raw_data_from_pickle, transform_net_with_df_and_geo, check_net_version, from_dict_of_dfs, decrypt_string, \
+    get_raw_data_from_pickle, transform_net_with_df_and_geo, from_dict_of_dfs, decrypt_string, \
     PPJSONDecoder
 
 import logging
@@ -142,7 +142,11 @@ def to_json(
     return None
 
 
-def from_pickle(filename, convert=True):
+def from_pickle(filename,
+                convert=True,
+                drop_invalid_geodata=False,
+                ignore_version_conflicts=False
+):
     """
     Load a pandapower format Network from pickle file
 
@@ -150,6 +154,11 @@ def from_pickle(filename, convert=True):
     :type filename: str or file
     :param bool convert: If True, converts the format of the net loaded from pickle
         from the older version of pandapower to the newer version format, default True
+    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
+        instead of raising an error, default True
+    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net being
+        loaded and the pandapower version. This can lead to errors when loading nets saved in older
+        formats. Use with caution! default False
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -164,23 +173,31 @@ def from_pickle(filename, convert=True):
     transform_net_with_df_and_geo(net, ["bus_geodata"], ["line_geodata"])
 
     if convert:
-        convert_format(net)
-
-        # compare pandapowerNet-format_version and package-version
-        # check if installed pandapower version is older than imported network file
-        check_net_version(net)
+        convert_format(net, drop_invalid_geodata=drop_invalid_geodata,
+                       donot_open_newer=not ignore_version_conflicts)
     return net
 
 
-def from_excel(filename, convert=True, add_basic_std_types=True):
+def from_excel(filename,
+               convert=True,
+               add_basic_std_types=True,
+               drop_invalid_geodata=False,
+               ignore_version_conflicts=False
+):
     """
     Load a pandapower network from an Excel file
 
     :param str filename: The absolute or relative path to the input file.
     :param bool convert: If True, converts the format of the net loaded from Excel from
-            the older version of pandapower to the newer version format, default True
+        the older version of pandapower to the newer version format, default True
     :param bool add_basic_std_types: If True, Adds missing standard-types from pandapower
-            standard type library, default True.
+        standard type library, default True.
+        the older version of pandapower to the newer version format, default True
+    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
+        instead of raising an error, default True
+    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
+        being loaded and the pandapower version. This can lead to errors when loading nets saved in older
+        formats. Use with caution! default False
 
     :return: The pandapower network
     :rtype: pandapowerNet
@@ -202,11 +219,8 @@ def from_excel(filename, convert=True, add_basic_std_types=True):
     except:
         net = _from_excel_old(xls, add_basic_std_types=add_basic_std_types)
     if convert:
-        convert_format(net)
-
-        # compare pandapowerNet-format_version and package-version
-        # check if installed pandapower version is older than imported network file
-        check_net_version(net)
+        convert_format(net, drop_invalid_geodata=drop_invalid_geodata,
+                       donot_open_newer=not ignore_version_conflicts)
     return net
 
 
@@ -234,10 +248,20 @@ def _from_excel_old(xls, add_basic_std_types=True):
 
 
 def from_json(
-        filename_or_str, convert=True, encryption_key=None, elements_to_deserialize=None,
-        keep_serialized_elements=True, add_basic_std_types=False,
-        replace_elements=None, empty_dict_like_object=None, ignore_unknown_objects=False, drop_invalid_geodata=False,
-        omit_tables=None, omit_modules=None, skip_checks=False
+        filename_or_str,
+        convert=True,
+        encryption_key=None,
+        elements_to_deserialize=None,
+        keep_serialized_elements=True,
+        add_basic_std_types=False,
+        replace_elements=None,
+        empty_dict_like_object=None,
+        ignore_unknown_objects=False,
+        drop_invalid_geodata=False,
+        omit_tables=None,
+        omit_modules=None,
+        ignore_version_conflicts=False,
+        skip_checks=False
 ):
     """
     Load a pandapower network from a JSON file.
@@ -264,10 +288,16 @@ def from_json(
         object with the json data, default None
     :type empty_dict_like_object: dict or pandapowerNet or None
     :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be
-        deserialized instead of raising an error, default False
-    :param bool drop_invalid_geodata: If set to True, invalid geodata is dropped instead of raising an error,
-    :param list omit_tables: List of tables to omit from loading
-    :param list omit_modules: List of modules to omit from loading
+         deserialized instead of raising an error, default False
+    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid
+        coordinates instead of raising an error, default False
+    :param omit_tables: List of tables to omit during deserialization, default None
+    :type omit_tables: list or None
+    :param omit_modules: List of modules to omit during deserialization, default None
+    :type omit_modules: list or None
+    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
+        being loaded and the pandapower version. This can lead to errors when loading nets saved in older
+        formats. Use with caution! default False
     :param bool skip_checks: If set to True, no checks will be performed.
         .. warning:: Only perform on trusted data sources / networks!
 
@@ -299,6 +329,7 @@ def from_json(
             drop_invalid_geodata=drop_invalid_geodata,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
+            ignore_version_conflicts=ignore_version_conflicts,
             skip_checks=skip_checks
         )
     except ValueError as e:
@@ -318,6 +349,7 @@ def from_json_string(
         drop_invalid_geodata=False,
         omit_tables=None,
         omit_modules=None,
+        ignore_version_conflicts=False,
         skip_checks=False
 ):
     """
@@ -345,9 +377,15 @@ def from_json_string(
     :type empty_dict_like_object: dict or pandapowerNet or None
     :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be deserialized instead of
         raising an error, default False
-    :param bool drop_invalid_geodata: If set to True, invalid geodata is dropped instead of raising an error,
-    :param list omit_tables: List of tables to omit from loading
-    :param list omit_modules: List of modules to omit from loading
+    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
+        instead of raising an error, default False
+    :param omit_tables: List of tables to omit during deserialization, default None
+    :type omit_tables: list or None
+    :param omit_modules: List of modules to omit during deserialization, default None
+    :type omit_modules: list or None
+    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
+        being loaded and the pandapower version. This can lead to errors when loading nets saved in
+        older formats. Use with caution! default False
     :param bool skip_checks: If set to True, skips all checks
         .. warning:: Only perform on trusted data sources / networks!
 
@@ -419,11 +457,9 @@ def from_json_string(
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net, elements_to_deserialize=elements_to_deserialize, drop_invalid_geodata=drop_invalid_geodata)
-
-        # compare pandapowerNet-format_version and package-version
-        # check if installed pandapower version is older than imported network file
-        check_net_version(net)
+        convert_format(net, elements_to_deserialize=elements_to_deserialize,
+                       drop_invalid_geodata=drop_invalid_geodata,
+                       donot_open_newer=not ignore_version_conflicts)
     if add_basic_std_types:
         # get std-types and add only new keys ones
         for key, std_types in basic_std_types().items():
