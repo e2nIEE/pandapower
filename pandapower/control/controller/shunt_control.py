@@ -45,11 +45,7 @@ class ShuntController(Controller):
         self.tol = tol
         self.shunt_index = shunt_index
         self.element_in_service = net.shunt.loc[self.shunt_index, 'in_service']
-        if bus_index is None:
-            self.controlled_bus = net.shunt.at[self.shunt_index, 'bus']
-        else:
-            self.controlled_bus = bus_index
-
+        self.bus_index = bus_index
         self.step = net.shunt.at[shunt_index, 'step']
 
         self.check_step_bounds = check_step_bounds
@@ -58,9 +54,14 @@ class ShuntController(Controller):
             self.step_max = net.shunt.at[self.shunt_index, 'max_step']
 
         ext_grid_buses = net.ext_grid.loc[net.ext_grid.in_service, 'bus'].values
-        if self.controlled_bus in ext_grid_buses:
+        if self.controlled_bus(net) in ext_grid_buses:
             logging.warning("Controlled Bus is Slack Bus - deactivating controller")
             self.set_active(net, False)
+
+    def controlled_bus(self, net):
+        if self.bus_index is not None:
+            return self.bus_index
+        return net.shunt.at[self.shunt_index, "bus"]
 
 
 class DiscreteShuntController(ShuntController):
@@ -110,7 +111,7 @@ class DiscreteShuntController(ShuntController):
             net.shunt.at[self.shunt_index, 'step'] = 0
 
     def control_step(self, net):
-        vm_pu = net.res_bus.at[self.controlled_bus, 'vm_pu']
+        vm_pu = net.res_bus.at[self.controlled_bus(net), 'vm_pu']
         self.step = net.shunt.at[self.shunt_index, "step"]
 
         sign = np.sign(net.shunt.at[self.shunt_index, 'q_mvar'])
@@ -129,7 +130,7 @@ class DiscreteShuntController(ShuntController):
         if not net.shunt.at[self.shunt_index, 'in_service']:
             return True
 
-        vm_pu = net.res_bus.at[self.controlled_bus, "vm_pu"]
+        vm_pu = net.res_bus.at[self.controlled_bus(net), "vm_pu"]
         if abs(vm_pu - self.vm_set_pu) < self.tol:
             return True
 
