@@ -2122,39 +2122,43 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     categories = {"wgen": "WKA", "pv": "PV", "reng": "REN", "stg": "SGEN"}
     params.name = item.loc_name
     logger.debug('>> creating genstat <%s>' % params)
+    av_mode = item.av_mode  # Get voltage regulation mode
 
-    av_mode = item.av_mode
+    # If there is no connecting bus, do not create pandapower object
+    try:
+        params.bus, _ = get_connection_nodes(net, item, 1)
+    except:
+        logger.error("Static gen '%s': has no connecting bus, no pandapower object will be created!" % params.name)
+        return
 
+    # Get information if static generator is labeled as reference machine
     if (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
         is_reference_machine = True
-        #item.SetAttribute('bustp', 'SL')
+        # item.SetAttribute('bustp', 'SL')
         is_definite_ext_grid = True
     else:
         is_reference_machine = bool(item.ip_ctrl)
         is_definite_ext_grid = False
 
+    # Specify function to extract static gen parameters
     ask = ask_unbalanced_sgen_params if is_unbalanced else ask_gen_params
 
+    # Cases: to which pandapower object should static gen be mapped?
     if is_reference_machine or (av_mode == 'constv' and pv_as_slack):
-        logger.info('Genstat <%s> to be imported as external grid' % params.name)
+        # Case 1: map to pandapower ext grid
+        logger.info('Genstat <%s> is imported as external grid' % params.name)
         logger.debug('genstat parameters: %s' % params)
         multiplier = get_power_multiplier(item, pf_variable_p_gen)
-        sg, element = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=is_unbalanced,
-                                     multiplier=multiplier, is_definite_ext_grid=is_definite_ext_grid)
-        #element = 'ext_grid'
-    else:
-        try:
-            params.bus, _ = get_connection_nodes(net, item, 1)
-        except:
-            logger.error("Cannot add Sgen '%s': not connected" % params.name)
-            return
-
+        sg, element = create_ext_net(net, item=item, pv_as_slack=pv_as_slack,
+                                     is_unbalanced=is_unbalanced,
+                                     multiplier=multiplier,
+                                     is_definite_ext_grid=is_definite_ext_grid)
+    else:  # Case 2-4: map to pandapower gen or (asymmetric) sgen
         params.update(ask(item, pf_variable_p_gen, 'p_mw', 'q_mvar', 'sn_mva'))
+        params.in_service = monopolar_in_service(item)
         logger.debug(f'genstat parameters: {params}')
 
-        params.in_service = monopolar_in_service(item)
-
-        # category (wind, PV, etc):
+        # Get category
         if item.GetClassName() == 'ElmPvsys':
             cat = 'PV'
         else:
@@ -2164,10 +2168,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 cat = None
                 logger.debug('sgen <%s> with category <%s> imported as <%s>' %
                              (params.name, item.aCategory, cat))
-        # parallel units:
+
+        # Get number of parallel units:
         ngnum = item.ngnum
         logger.debug('%d parallel generators of type %s' % (ngnum, cat))
-
         for param in params.keys():
             if any(param.startswith(prefix) for prefix in ["p_", "q_", "sn_"]):
                 params[param] *= ngnum
@@ -2180,24 +2184,15 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         else:
             params.type = cat
 
-        # create...
-        pstac = item.c_pstac  # None if station controller is not available
+        # Check if static gen has a station controller (if not available->None)
+        pstac = item.c_pstac
         if pstac is not None and not pstac.outserv and export_ctrl:
-            if pstac.i_droop and pstac.i_ctrl == 0:
-                av_mode = 'constq'
-            else:
-                if pstac.i_ctrl == 0:
-                    av_mode = 'constq'
-                elif pstac.i_ctrl == 1:
-                    av_mode = 'constq'
-                elif pstac.i_ctrl == 2:
-                    av_mode='constq' #other devices
-                elif pstac.i_ctrl == 3:
-                    av_mode='constq' #implementing other devices?
-                else:
-                    logger.error('Error! av_mode undefined')
-                    return
-        if av_mode == 'constv' or av_mode == 'vdroop':
+            if pstac.i_ctrl not in [0, 1, 2, 3]:
+                logger.error('Error! av_mode undefined')
+                return
+            av_mode = "constq"
+
+        if av_mode == 'constv' or av_mode == 'vdroop':  # Case 2: map to gen
             logger.debug('av_mode: %s - creating as gen' % av_mode)
             params.vm_pu = item.usetp
             if pstac is not None and not pstac.outserv and export_ctrl:
@@ -2239,17 +2234,19 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 
             sg = create_gen(net, **params)
             element = 'gen'
+            logger.debug('created gen at index <%d>' % sg)
         else:
-            if is_unbalanced:
+            if is_unbalanced:  # Case 3: map to asymmetric sgen
                 sg = create_asymmetric_sgen(net, **params)
                 element = "asymmetric_sgen"
-            else:
-                # add reactive and active power limits
+                logger.debug('created asymmetric sgen at index <%d>' % sg)
+            else:  # Case 4: map to symmetric sgen                
                 if pstac is not None and not pstac.outserv and export_ctrl:
                     try:
                         params['q_mvar'] = item.GetAttribute('m:Q:bus1')
                     except AttributeError:
                         pass
+
                 # add reactive and active power limits
                 params.min_q_mvar = item.cQ_min
                 params.max_q_mvar = item.cQ_max
@@ -2263,12 +2260,19 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     else:
         return
 
+    # Add description and additional attributes
     net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg, attr_dict={"for_name": "equipment", "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"},
+    add_additional_attributes(item, net, element, sg,
+                              attr_dict={"for_name": "equipment",
+                                         "cpSite.loc_name": "site",
+                                         "c_pstac.loc_name": "sta_ctrl"},
                               attr_list=["sernum", "chr_name"])
+
+    # Add scaling
     net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
+    # Create capability curve in case of sgen or gen
     if item.pQlimType and element != 'ext_grid':
         id = create_q_capability_curve(net, item.pQlimType)
         net[element].loc[sg, 'id_q_capability_characteristic'] = id

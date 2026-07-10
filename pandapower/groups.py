@@ -909,7 +909,7 @@ def elements_connected_to_group(
         respect_switches: bool = True,
         respect_in_service: bool = False,
         include_empty_lists: bool = False
-) -> dict[str, list[int]]:
+) -> dict[str, Collection[int]]:
     """
     Returns a dict of indices of elements that are connected to the group.
 
