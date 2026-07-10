@@ -10,7 +10,7 @@ import pandas as pd
 from pandapower import pp_dir
 from pandapower import __version__ as pp_version
 from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
-from pandapower.control.util.auxiliary import create_trafo_characteristic_object#_create_trafo_characteristics
+from pandapower.control.util.auxiliary import create_trafo_characteristic_object
 from pandapower.file_io import to_json
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.run import runpp
@@ -27,4 +27,4 @@ net["trafo_characteristic_table"] = pd.DataFrame(
 net.trafo.at[1, 'id_characteristic_table'] = 0
 create_trafo_characteristic_object(net)
 runpp(net, run_control=True)
-to_json(net, os.path.join(f"{pp_dir}/test/test_files/old_versions", "example_%s.json" % pp_version))
+to_json(net, os.path.join(pp_dir, "test", "test_files", "old_versions", f"example_{pp_version}.json"))
