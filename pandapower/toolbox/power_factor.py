@@ -4,7 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
-from typing import Any, Literal, Iterable
+from typing import Literal, Iterable
 
 from pandapower import pandapowerNet, Int
 from pandapower.auxiliary import ensure_iterability
