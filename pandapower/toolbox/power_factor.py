@@ -4,9 +4,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
-from typing import Any
+from typing import Any, Literal, Iterable
 
-from pandapower import pandapowerNet
+from pandapower import pandapowerNet, Int
 from pandapower.auxiliary import ensure_iterability
 from pandapower.toolbox.element_selection import pp_elements
 
@@ -64,7 +64,7 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
     return _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=len_)
 
 
-def create_cos_phi_from_network(net: pandapowerNet, element_type: str) -> None:
+def create_cos_phi_from_network_state(net: pandapowerNet, element_type: Literal["sgen", "load"]) -> None:
     """
     Compute signed cos_phi from current p_mw/q_mvar and store in element table.
 
@@ -90,8 +90,11 @@ def create_cos_phi_from_network(net: pandapowerNet, element_type: str) -> None:
     table["cos_phi"] = cos_phi
 
 
-def create_cos_phi_constant(
-    net: pandapowerNet, element_type: str, cos_phi: float = 0.95, mode: str = "underexcited"
+def set_constant_cos_phi(
+    net: pandapowerNet,
+    element_type: Literal["load", "sgen"],
+    cos_phi: float = 0.95,
+    mode: Literal["underexcited", "overexcited"] = "underexcited",
 ) -> None:
     """
     Store a constant signed cos_phi for all elements of given type.
@@ -119,7 +122,9 @@ def create_cos_phi_constant(
     table["cos_phi"] = sign * abs(cos_phi)
 
 
-def sync_q_from_cos_phi(net: pandapowerNet, element_type: str, indices: Any) -> None:
+def sync_q_from_cos_phi(
+    net: pandapowerNet, element_type: Literal["load", "sgen"], indices: Iterable[Int] | Int
+) -> None:
     """
     Recompute q_mvar = abs(p_mw) * tan(arccos(abs(cos_phi))) * sign(cos_phi).
 
