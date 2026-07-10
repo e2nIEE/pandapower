@@ -9,10 +9,11 @@ The control module allows you to simulate these control strategies by either usi
 controller in an object oriented framework. The controller module is closely integrated with the timeseries module, which allows you to run quasi-static timeseries
 simulations with controlled elements.
 
-.. toctree:: 
+.. toctree::
     :maxdepth: 2
-    
+
     control/control_loop
     control/run
     control/controller
+    control/station_control
     control/tutorials

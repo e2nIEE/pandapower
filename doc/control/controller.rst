@@ -115,6 +115,11 @@ Station Controller
 The following controllers are used for the representation of station controllers as used in PowerFactory. The Vdroop is
 a new controller class used for the local droop voltage control.
 
+A ``BinarySearchControl`` created through its constructor controls one station; one controller instance can
+also manage many stations at once via :meth:`BinarySearchControl.for_stations`, including per-station droop
+characteristics and an opt-in Jacobian-based update (``update_method="jacobian"``). Usage, convergence
+behaviour and benchmark results are documented in :doc:`station_control`.
+
 **********************
 Binary Search Control
 **********************
