@@ -103,6 +103,7 @@ def _kron_positive_sequence(rmat, xmat, n):
 class _ImportReport:
     n_buses: int = 0
     n_lines: int = 0
+    n_reactors: int = 0
     n_switches: int = 0
     n_transformers: int = 0
     n_split_phase_transformers: int = 0
@@ -154,6 +155,8 @@ def from_opendss(path: str, solve: bool=True):
     * Bus -> ``bus``: ``vn_kv`` = base kV (line-to-line)
     * Line + LineCode -> ``line``: r/x/c from ``R1/X1/C1``; ``LineCode`` -> std_type
     * Line (switch / 0 km) -> ``switch``: open status respected
+    * Reactor (series, bus-to-bus) -> ``line``: fixed impedance from ``R``/``X``;
+      a shunt reactor (single bus) is not a branch and is skipped
     * Transformer (2W) -> ``trafo``: imported at the solved tap
     * Transformer (3W CT) -> ``trafo``: center-tapped split-phase mapped to a 2W equivalent
     * Load -> ``load``: kW/kvar -> p_mw/q_mvar
@@ -204,6 +207,7 @@ def from_opendss(path: str, solve: bool=True):
 
     _add_source(net, bus_map, report)
     _add_lines(net, bus_map, report)
+    _add_reactors(net, bus_map, report)
     _add_transformers(net, bus_map, report)
     _add_loads(net, bus_map, report)
     _add_capacitors(net, bus_map, report)
@@ -303,6 +307,44 @@ def _add_lines(net, bus_map, report):
         )
         report.n_lines += 1
         i = dss.Lines.Next()
+
+
+def _add_reactors(net, bus_map, report):
+    """Series (bus-to-bus) Reactor elements as a fixed-impedance pandapower line.
+
+    Some feeder libraries (e.g. EPRI's Ckt5/Ckt7 test circuits) model the
+    substation's Thevenin-equivalent source impedance as a ``Reactor`` between
+    ``SourceBus`` and the feeder head bus rather than a ``Transformer`` -- this
+    picks that pattern up as an ordinary series impedance so the link is
+    carried into the pandapower net. A shunt reactor (single bus, to ground)
+    is a different physical element (not a branch) and is out of scope here.
+    """
+    i = dss.Reactors.First()
+    while i:
+        name = dss.Reactors.Name()
+        dss.Circuit.SetActiveElement("Reactor." + name)
+        buses = dss.CktElement.BusNames()
+        if len(buses) < 2 or _busname(buses[0]) == _busname(buses[1]):
+            report.warn(f"reactor {name!r} is a shunt (single bus); skipped")
+            i = dss.Reactors.Next()
+            continue
+
+        f = bus_map.get(_busname(buses[0]))
+        t = bus_map.get(_busname(buses[1]))
+        if f is None or t is None:
+            report.warn(f"reactor {name!r} references an unknown bus; skipped")
+            i = dss.Reactors.Next()
+            continue
+
+        max_i_ka = dss.CktElement.NormalAmps() / 1000.0
+        pp.create_line_from_parameters(
+            net, from_bus=f, to_bus=t, length_km=1.0,
+            r_ohm_per_km=dss.Reactors.R(), x_ohm_per_km=dss.Reactors.X(), c_nf_per_km=0.0,
+            max_i_ka=max_i_ka if max_i_ka > 0 else 10.0,
+            name=name,
+        )
+        report.n_reactors += 1
+        i = dss.Reactors.Next()
 
 
 def _add_transformers(net, bus_map, report):
