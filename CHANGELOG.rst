@@ -3,9 +3,14 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
-- [ADDED] toolbox: ``sync_q_from_cos_phi'' helper for studies
+- [ADDED] toolbox: :code:`sync_q_from_cos_phi` helper for studies
 
-[3.5.2] - 2026-07-07
+[3.5.4] - 2026-07-08
+-------------------------------
+- [UPDATED] versions of dependent libraries
+- [FIXED] improved from_json even further
+
+[3.5.3] - 2026-07-07
 -------------------------------
 - [FIXED] moved a misleading logger.warning message
 
