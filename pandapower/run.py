@@ -35,14 +35,14 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     :param net: pandaPower network
     :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e.g. tolerance_mva = 1e-3
+    :param kwargs: load flow options, e.g. solver_tolerance = 1e-3
     :return: None
     """
     standard_parameters = ['calculate_voltage_angles', 'trafo_model', 'check_connectivity', 'mode',
                            'copy_constraints_to_ppc', 'switch_rx_ratio', 'enforce_p_lims', 'enforce_q_lims',
                            'recycle', 'voltage_depend_loads', 'consider_line_temperature', 'delta',
                            'trafo3w_losses', 'init', 'init_vm_pu', 'init_va_degree', 'init_results',
-                           'tolerance_mva', 'trafo_loading', 'numba', 'ac', 'algorithm',
+                           'tolerance_mva', "solver_tolerance", 'trafo_loading', 'numba', 'ac', 'algorithm',
                            'max_iteration', 'v_debug', 'run_control', 'distributed_slack', 'lightsim2grid',
                            'tdpf', 'tdpf_delay_s', 'tdpf_update_r_theta']
 
@@ -67,7 +67,7 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
           max_iteration="auto", tolerance_mva=1e-8, trafo_model="t",
           trafo_loading="current", enforce_p_lims=False, enforce_q_lims=False, check_connectivity=True,
           voltage_depend_loads=True, consider_line_temperature=False,
-          run_control=False, distributed_slack=False, tdpf=False, tdpf_delay_s=None, **kwargs):
+          run_control=False, distributed_slack=False, tdpf=False, tdpf_delay_s=None, solver_tolerance=None, **kwargs):
     """
     Runs a power flow
 
@@ -121,7 +121,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
             - 30 for "nr" with "tdpf"
             - 40 for "helm"
 
-        tolerance_mva (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
+        solver_tolerance (float, 1e-8): unitless internal solver termination tolerance for the power-flow mismatch equations.
+        tolerance_mva (float, 1e-8): deprecated alias for solver_tolerance. The name is kept for backward compatibility, but the value is treated as a unitless solver tolerance, not as an MVA quantity.
         trafo_model (str, "t"): transformer equivalent circuit model
             pandapower provides two equivalent circuit models for the transformer:
 
@@ -226,6 +227,8 @@ def runpp(net, algorithm='nr', calculate_voltage_angles=True, init="auto",
         parameters["run_control"] = False
         run_control(**parameters)
     else:
+        if solver_tolerance is not None:
+            tolerance_mva = solver_tolerance
         passed_parameters = _passed_runpp_parameters(locals())
         _init_runpp_options(net, algorithm=algorithm,
                             calculate_voltage_angles=calculate_voltage_angles,

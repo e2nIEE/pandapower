@@ -7,6 +7,7 @@ Change Log
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
+- [ADDED] Added ``solver_tolerance`` as a unitless power-flow solver tolerance option while keeping ``tolerance_mva`` as a backward-compatible alias.
 
 [upcoming release] - 2026-..-..
 -------------------------------

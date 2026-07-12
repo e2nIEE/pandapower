@@ -1724,6 +1724,8 @@ def _init_runpp_options(
                             if key not in passed_parameters.keys()}
 
     kwargs.update(overrule_options)
+    solver_tolerance = kwargs.pop("solver_tolerance", None)
+
 
     trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
     v_debug = kwargs.get("v_debug", False)
@@ -1854,6 +1856,8 @@ def _init_runpp_options(
                      consider_line_temperature=consider_line_temperature,
                      distributed_slack=distributed_slack,
                      tdpf=tdpf, tdpf_update_r_theta=tdpf_update_r_theta, tdpf_delay_s=tdpf_delay_s)
+    if solver_tolerance is not None:
+        tolerance_mva = solver_tolerance
     _add_pf_options(net, tolerance_mva=tolerance_mva, trafo_loading=trafo_loading,
                     numba=numba, ac=ac, algorithm=algorithm, max_iteration=max_iteration,
                     v_debug=v_debug, only_v_results=only_v_results, use_umfpack=use_umfpack,
