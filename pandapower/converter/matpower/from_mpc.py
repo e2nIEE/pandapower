@@ -51,8 +51,7 @@ def from_mpc(
         load_case_engine (object, None): External engine used to call MATPOWER `loadcase` (e.g. Oct2Py() object from
             matpower.start_instance()). Defaults to None. If None, parse data using
             matpowercaseframes.reader.parse_file.
-        set_opf_controllable (bool, False): If True, marks converted ``ext_grid`` and ``gen`` elements as controllable in the pandapower   network.
-            Useful when importing MATPOWER OPF cases as converted ``ext_grid`` elements are fixed by default, but MATPOWER does not imply controllability for any element.
+        set_opf_controllable (bool, False): If True, marks converted ``ext_grid`` and ``gen`` elements as controllable in the pandapower network. This is needed for correct conversion for OPF purposes, as MATPOWER cannot imply controllability directly for gen types.
 
     Keyword Arguments:
         any: are passed to :func:`from_ppc`
