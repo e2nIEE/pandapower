@@ -49,6 +49,7 @@ def create_transformer(
     pt_percent: float = nan,
     oltc: bool = False,
     xn_ohm: float = nan,
+    rn_ohm: float = nan,
     tap2_pos: int | float = nan,
     **kwargs,
 ) -> Int:
@@ -89,7 +90,8 @@ def create_transformer(
             net.trafo_characteristic_table
         tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular", None: no tap
             changer)
-        xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation
+        xn_ohm: reactance of the neutral earthing impedance (Z_N) for short circuit calculation
+        rn_ohm: resistance of the neutral earthing impedance (Z_N, e.g. a neutral earthing resistor) for short circuit calculation
         tap2_pos: current tap position of the second tap changer of the transformer. Defaults to the medium position
             (tap2_neutral)
 
@@ -188,6 +190,7 @@ def create_transformer(
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
     _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
+    _set_value_if_not_nan(net, index, rn_ohm, "rn_ohm", "trafo")
 
     return index
 
@@ -210,6 +213,7 @@ def create_transformers(
     pt_percent: float | Iterable[float] = nan,
     oltc: bool | Iterable[bool] = False,
     xn_ohm: float | Iterable[float] = nan,
+    rn_ohm: float | Iterable[float] = nan,
     tap2_pos: int | Iterable[int] | float = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
@@ -237,7 +241,8 @@ def create_transformers(
         id_characteristic_table: id of the SplineCharacteristic, default None
         pt_percent: default nan
         oltc: default False
-        xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation, default nan
+        xn_ohm: reactance of the neutral earthing impedance (Z_N) for short circuit calculation, default nan
+        rn_ohm: resistance of the neutral earthing impedance (Z_N, e.g. a neutral earthing resistor) for short circuit calculation, default nan
         tap2_pos: current tap position of the second tap changer ot the transformer. Defaults to the medium position
             (tap2_neutral), default nan
 
@@ -253,20 +258,44 @@ def create_transformers(
     std_params = load_std_type(net, std_type, "trafo")
 
     required_params = ("sn_mva", "vn_lv_kv", "vn_hv_kv", "vk_percent", "vkr_percent", "pfe_kw")
+
     if not all(param in std_params for param in required_params):
         raise ValueError(f"std_type is missing a required value. Required values: {', '.join(required_params)}")
+    
     params_from_std_type = (
-        "i0_percent", "vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", "si0_hv_partial", "vector_group",
+        "i0_percent", "vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", 
+        "si0_hv_partial", "vector_group", "shift_degree", "tap_side", "tap_neutral", 
+        "tap_min", "tap_max", "tap_step_degree", "tap_step_percent", "trafo_characteristic_table",
         *required_params
     )
+    
     params = {param: std_params[param] for param in params_from_std_type if param in std_params}
+
+    if tap_changer_type is None and "tap_changer_type" in std_params:
+        tap_changer_type = std_params.get("tap_changer_type", None)
+        
     params.update(kwargs)
 
     return create_transformers_from_parameters(
-        net=net, hv_buses=hv_buses, lv_buses=lv_buses, name=name, tap_pos=tap_pos, in_service=in_service, index=index,
-        max_loading_percent=max_loading_percent, parallel=parallel, df=df, tap_changer_type=tap_changer_type,
-        tap_dependency_table=tap_dependency_table, id_characteristic_table=id_characteristic_table,
-        pt_percent=pt_percent, oltc=oltc, xn_ohm=xn_ohm, tap2_pos=tap2_pos, std_type=std_type,
+        net=net,
+        hv_buses=hv_buses,
+        lv_buses=lv_buses,
+        name=name,
+        tap_pos=tap_pos,
+        in_service=in_service,
+        index=index,
+        max_loading_percent=max_loading_percent,
+        parallel=parallel,
+        df=df,
+        tap_changer_type=tap_changer_type,
+        tap_dependency_table=tap_dependency_table,
+        id_characteristic_table=id_characteristic_table,
+        pt_percent=pt_percent,
+        oltc=oltc,
+        xn_ohm=xn_ohm,
+        rn_ohm=rn_ohm,
+        tap2_pos=tap2_pos,
+        std_type=std_type,
         **params
     )
 
@@ -282,7 +311,7 @@ def create_transformer_from_parameters(
     vk_percent: float,
     pfe_kw: float,
     i0_percent: float,
-    shift_degree: float = 0,
+    shift_degree: float = 0.0,
     tap_side: HVLVType | None = None,
     tap_neutral: int | float = nan,
     tap_max: int | float = nan,
@@ -308,6 +337,7 @@ def create_transformer_from_parameters(
     oltc: bool = False,
     tap_dependency_table: bool = False,
     xn_ohm: float = nan,
+    rn_ohm: float = nan,
     tap2_side: HVLVType | None = None,
     tap2_neutral: int | float = nan,
     tap2_max: int | float = nan,
@@ -366,7 +396,8 @@ def create_transformer_from_parameters(
             net.trafo_characteristic_table
         pt_percent: (short circuit only)
         oltc: (short circuit only)
-        xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation
+        xn_ohm: reactance of the neutral earthing impedance (Z_N) for short circuit calculation
+        rn_ohm: resistance of the neutral earthing impedance (Z_N, e.g. a neutral earthing resistor) for short circuit calculation
         tap2_side: position of the second tap changer ("hv", "lv")
         tap2_pos: current tap position of the second tap changer of the transformer. Defaults to the medium position
             (tap2_neutral)
@@ -499,6 +530,7 @@ def create_transformer_from_parameters(
     _set_value_if_not_nan(net, index, pt_percent, "pt_percent", "trafo")
     _set_value_if_not_nan(net, index, oltc, "oltc", "trafo", dtype=bool_, default_val=False)
     _set_value_if_not_nan(net, index, xn_ohm, "xn_ohm", "trafo")
+    _set_value_if_not_nan(net, index, rn_ohm, "rn_ohm", "trafo")
 
     return index
 
@@ -514,7 +546,7 @@ def create_transformers_from_parameters(  # index missing ?
     vk_percent: float | Iterable[float],
     pfe_kw: float | Iterable[float],
     i0_percent: float | Iterable[float],
-    shift_degree: float | Iterable[float] = 0,
+    shift_degree: float | Iterable[float] = 0.0,
     tap_side: HVLVType | Iterable[str] | None = None,
     tap_neutral: int | Iterable[int] | float = nan,
     tap_max: int | Iterable[int] | float = nan,
@@ -540,6 +572,7 @@ def create_transformers_from_parameters(  # index missing ?
     oltc: bool | Iterable[bool] = False,
     tap_dependency_table: bool | Iterable[bool] = False,
     xn_ohm: float | Iterable[float] = nan,
+    rn_ohm: float | Iterable[float] = nan,
     tap2_side: HVLVType | Iterable[str] | None = None,
     tap2_neutral: int | Iterable[int] | float = nan,
     tap2_max: int | Iterable[int] | float = nan,
@@ -598,7 +631,8 @@ def create_transformers_from_parameters(  # index missing ?
             net.trafo_characteristic_table
         pt_percent: (short circuit only)
         oltc: (short circuit only)
-        xn_ohm: impedance of the grounding reactor (Z_N) for short circuit calculation
+        xn_ohm: reactance of the neutral earthing impedance (Z_N) for short circuit calculation
+        rn_ohm: resistance of the neutral earthing impedance (Z_N, e.g. a neutral earthing resistor) for short circuit calculation
         tap2_side: position of the second tap changer ("hv", "lv")
         tap2_pos: current tap position of the second tap changer of the transformer. Defaults to the medium position
             (tap2_neutral)
@@ -670,6 +704,7 @@ def create_transformers_from_parameters(  # index missing ?
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, bool_, False)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "pt_percent", pt_percent)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "xn_ohm", xn_ohm)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "rn_ohm", rn_ohm)
 
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_side", tap2_side, dtype=str)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "tap2_neutral", tap2_neutral)

@@ -115,6 +115,41 @@ The usage is explained in the `PandaModels tutorial <https://github.com/e2nIEE/p
 
 .. autofunction:: pandapower.runpm
 
+
+Redispatch
+------------
+
+A simple redispatch optimization is available via :code:`runpm_redispatch`. Starting from a base
+dispatch (the generator setpoints of a previously computed power flow), it adjusts the participating
+generators as little as possible - or at minimal cost - so that all network constraints (branch
+loading, bus voltage limits, generator limits) are satisfied.
+
+Only controllable ``gen`` and ``sgen`` participate. An element is selected for redispatch if it is
+``controllable`` **and** has a ``poly_cost`` entry with (non-NaN) ``redispatch_up_eur_per_mw`` and
+``redispatch_down_eur_per_mw``. These two coefficients are added to
+:code:`create_poly_cost`/:code:`create_poly_costs`:
+
+::
+
+    pp.create_poly_cost(net, gen_idx, "gen", cp1_eur_per_mw=cp1,
+                        redispatch_up_eur_per_mw=cost_up,
+                        redispatch_down_eur_per_mw=cost_down)
+
+Two objective modes are available:
+
+- ``redispatch_cost=False`` (default): minimize the squared deviation from the base dispatch
+  (``sum((pg - pg0)^2)``) - the "least redispatch" that satisfies the constraints.
+- ``redispatch_cost=True``: minimize the total redispatch cost, splitting each generator's
+  adjustment into an upward and downward part weighted by ``redispatch_up_eur_per_mw`` and
+  ``redispatch_down_eur_per_mw``.
+
+The base dispatch is read from the result tables, so a power flow result must be present. By default
+(``init_pq="results"``) the generator setpoints are taken from a previously run power flow. Both
+``ACPPowerModel`` (default) and ``DCPPowerModel`` are supported.
+
+.. autofunction:: pandapower.runpm_redispatch
+
+
 The TNEP optimization is explained in the `PandaModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/pandamodels_tnep.ipynb>`_. Additional packages including "juniper"
 
 .. autofunction:: pandapower.runpm_tnep

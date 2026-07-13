@@ -1,4 +1,4 @@
-﻿.. _switch_model:
+.. _switch_model:
 
 =============
 Switch
@@ -41,6 +41,13 @@ This has the following advantages compared to modelling the switch as a small im
     - there is no voltage drop over the switch (ideal switch)
     - no convergence problems due to small impedances / large admittances
     - less buses in the admittance matrix
+
+.. note::
+
+   Because fused buses share one internal node, ``res_switch`` contains NaN for
+   bus-bus switches with ``z_ohm=0`` after ``runpp()``.  To compute the power
+   flow through these switches via nodal balance, call
+   :func:`pandapower.toolbox.compute_switch_flows` after the load flow.
     
 *Bus-Element-Switches:*
 

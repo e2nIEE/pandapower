@@ -13,6 +13,42 @@ except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 
+def _float_equal(a, b, atol=1e-12):
+    if a is None and b is None:
+        return True
+    if a is None or b is None:
+        return False
+    return np.isclose(a, b, atol=atol, rtol=0, equal_nan=True)
+
+def _hash_float(v, ndigits=12):
+    if v is None:
+        return None
+    return round(float(v), ndigits)
+
+def _make_hashable(obj):
+    if isinstance(obj, dict):
+        return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
+    if isinstance(obj, (list, tuple)):
+        return tuple(_make_hashable(v) for v in obj)
+    if isinstance(obj, np.ndarray):
+        return ("ndarray", obj.dtype.str, obj.shape, tuple(obj.tolist()))
+    if isinstance(obj, pd.DataFrame):
+        return (
+            "DataFrame",
+            tuple(obj.columns),
+            tuple(tuple(row) for row in obj.itertuples(index=False, name=None))
+        )
+    if isinstance(obj, pd.Series):
+        return (
+            "Series",
+            obj.name,
+            tuple(obj.items())
+        )
+    if isinstance(obj, float):
+        return _hash_float(obj)
+    return obj
+
+
 class OCRelay(ProtectionDevice):
     """
     OC Relay used in circuit protection
@@ -271,9 +307,68 @@ class OCRelay(ProtectionDevice):
         plt.grid(True, which="both", ls="-")
 
     def __str__(self):
-        s = 'Protection Device: %s \nType: %s \nIndex: %s' % (self.__class__.__name__, self.oc_relay_type, self.switch_index)
-        self.characteristic_index = 1
-        return s
+        return "Protection Device: %s \nType: %s \nIndex: %s" % (
+            self.__class__.__name__,
+            self.oc_relay_type,
+            self.switch_index,
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.__class__,
+                self.switch_index,
+                self.oc_relay_type,
+                _make_hashable(self.time_settings),
+                _hash_float(self.overload_factor),
+                _hash_float(self.ct_current_factor),
+                _hash_float(self.safety_factor),
+                _hash_float(self.inverse_overload_factor),
+                _make_hashable(self.pickup_current_manual),
+                self.in_service,
+                _hash_float(self.sc_fraction),
+                self.curve_type,
+                self.activation_parameter,
+                _hash_float(self.I_g),
+                _hash_float(self.I_gg),
+                _hash_float(self.I_s),
+                _hash_float(getattr(self, "k", None)),
+                _hash_float(getattr(self, "alpha", None)),
+                _hash_float(self.t_g),
+                _hash_float(self.t_gg),
+                _hash_float(self.t_grade),
+                _hash_float(self.tms),
+            )
+        )
+
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            return False
+
+        return (
+            self.switch_index == other.switch_index
+            and self.oc_relay_type == other.oc_relay_type
+            and _make_hashable(self.time_settings) == _make_hashable(other.time_settings)
+            and _float_equal(self.overload_factor, other.overload_factor)
+            and _float_equal(self.ct_current_factor, other.ct_current_factor)
+            and _float_equal(self.safety_factor, other.safety_factor)
+            and _float_equal(self.inverse_overload_factor, other.inverse_overload_factor)
+            and _make_hashable(self.pickup_current_manual) == _make_hashable(other.pickup_current_manual)
+            and self.in_service == other.in_service
+            and _float_equal(self.sc_fraction, other.sc_fraction)
+            and self.curve_type == other.curve_type
+            and self.activation_parameter == other.activation_parameter
+            and _float_equal(self.I_g, other.I_g)
+            and _float_equal(self.I_gg, other.I_gg)
+            and _float_equal(self.I_s, other.I_s)
+            and _float_equal(getattr(self, "k", None), getattr(other, "k", None))
+            and _float_equal(getattr(self, "alpha", None), getattr(other, "alpha", None))
+            and _float_equal(self.t_g, other.t_g)
+            and _float_equal(self.t_gg, other.t_gg)
+            and _float_equal(self.t_grade, other.t_grade)
+            and _float_equal(self.tms, other.tms)
+        )
+    
 def time_grading(net,time_settings):
 
     # Automated time grading calculation

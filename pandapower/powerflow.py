@@ -14,6 +14,7 @@ from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.pf.run_helmpy_pf import _runpf_helmpy_pf
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
@@ -150,6 +151,8 @@ def _run_pf_algorithm(ppci, options, **kwargs):
             result = _run_newton_raphson_pf(ppci, options)
         elif algorithm in ['fdbx', 'fdxb', 'gs']:  # algorithms existing within pypower
             result = _runpf_pypower(ppci, options, **kwargs)[0]
+        elif algorithm == 'helm':
+            result = _runpf_helmpy_pf(ppci, options, **kwargs)
         else:
             raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
     else:

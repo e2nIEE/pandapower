@@ -10,8 +10,8 @@ import geojson
 import numpy as np
 import pandas as pd
 
-from pandapower.control import SplineCharacteristic, Characteristic
-from pandapower.control.util.characteristic import LogSplineCharacteristic
+from pandapower.control import Characteristic
+from pandapower.control.util.characteristic import SplineCharacteristic, LogSplineCharacteristic
 from math import isclose
 
 try:
@@ -28,7 +28,6 @@ from pandapower.auxiliary import get_indices, pandapowerNet
 from pandapower.networks import example_simple, example_multivoltage, mv_oberrhein
 from pandapower.timeseries import DFData
 from pandapower.control import (
-    SplineCharacteristic,
     ContinuousTapControl,
     ConstControl,
     create_trafo_characteristic_object,

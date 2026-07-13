@@ -854,14 +854,14 @@ def _get_trafo_shift(
         percent_is_set = np.nan_to_num(tap_step_percent, nan=0) != 0
     else:
         tap_step_percent = float('nan')
-        percent_is_set = False
+        percent_is_set = np.False_
 
     if tap_step_degree is not None:
         tap_step_degree = tap_step_degree[mask]
         degree_is_set = np.nan_to_num(tap_step_degree, nan=0) != 0
     else:
         tap_step_degree = float('nan')
-        degree_is_set = False
+        degree_is_set = np.False_
 
     # ideal tap changer
     if ideal:

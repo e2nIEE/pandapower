@@ -254,7 +254,7 @@ def delete_postgresql_net(
     if not PSYCOPG_INSTALLED:
         raise UserWarning("install the package psycopg to use PostgreSQL I/O in pandapower")
 
-    with psycopg.connect(conninfo=dsn) as conn:
+    with psycopg.connect(conninfo=dsn) as conn: # type: ignore[union-attr]
         cursor = conn.cursor()
         catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
         check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
@@ -448,7 +448,8 @@ def to_postgresql(
     if not PSYCOPG_INSTALLED:
         raise UserWarning("install the package psycopg to use PostgreSQL I/O in pandapower")
     logger.debug(f"Uploading the grid data to the DB schema {schema}")
-    with psycopg.connect(dsn) as conn:
+
+    with psycopg.connect(dsn) as conn: # type: ignore[union-attr]
         grid_id = to_sql(net, conn, schema, include_results, grid_id, grid_id_column, grid_catalogue_name, index_name)
     return grid_id
 
@@ -483,7 +484,7 @@ def from_postgresql(
     if not PSYCOPG_INSTALLED:
         raise UserWarning("install the package psycopg to use PostgreSQL I/O in pandapower")
 
-    with psycopg.connect(dsn) as conn:
+    with psycopg.connect(dsn) as conn: # type: ignore[union-attr]
         net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name, empty_dict_like_object, grid_tables)
 
     return net
