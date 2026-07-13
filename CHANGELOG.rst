@@ -4,8 +4,14 @@ Change Log
 [upcoming release] - 2026-..-..
 -------------------------------
 - [CHANGED] integrated deprecation guidelines from documentation into CONTRIBUTING.md (#2974)
+- [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
 
-[3.5.2] - 2026-07-07
+[3.5.4] - 2026-07-08
+-------------------------------
+- [UPDATED] versions of dependent libraries
+- [FIXED] improved from_json even further
+
+[3.5.3] - 2026-07-07
 -------------------------------
 - [FIXED] moved a misleading logger.warning message
 
