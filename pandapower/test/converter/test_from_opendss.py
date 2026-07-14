@@ -186,6 +186,31 @@ def one_wire_matrix_net(tmp_path):
     return from_opendss(str(p))
 
 
+# A series Reactor bridging sourcebus to the rest of the feeder -- some feeder
+# libraries (e.g. EPRI's Ckt5/Ckt7) model the substation's Thevenin-equivalent
+# source impedance this way rather than as a Transformer. A shunt reactor
+# (single bus, to ground) is a different element and must be skipped, not
+# misread as a second bus-to-bus branch.
+REACTOR_FEEDER = """
+clear
+new circuit.rx basekv=12.47 pu=1.05 phases=3 bus1=sourcebus
+new reactor.subrx bus1=sourcebus bus2=head phases=3 r=0.01 x=5.0
+new reactor.shuntrx bus1=head phases=3 kvar=100
+new line.l1 bus1=head bus2=b1 r1=0.1 x1=0.2 c1=0 length=1.0 units=km normamps=400 phases=3
+new load.load1 bus1=b1 phases=3 kv=12.47 kw=500 kvar=150
+set voltagebases=[12.47]
+calcvoltagebases
+solve
+"""
+
+
+@pytest.fixture
+def reactor_net(tmp_path):
+    p = tmp_path / "rx.dss"
+    p.write_text(REACTOR_FEEDER)
+    return from_opendss(str(p))
+
+
 def test_element_counts(net):
     assert len(net.bus) == 4          # sourcebus, b1, b2, b3
     assert len(net.line) == 2         # l1, l2
@@ -314,3 +339,32 @@ def test_three_and_one_wire_matrix_feeders_converge(three_wire_matrix_net, one_w
     assert three_wire_matrix_net["converged"]
     pp.runpp(one_wire_matrix_net)
     assert one_wire_matrix_net["converged"]
+
+
+def test_series_reactor_imported_as_a_branch(reactor_net):
+    # subrx bridges sourcebus->head; one series reactor -> one extra line
+    # (l1 is the only OTHER line), and the shunt reactor must not add a second.
+    assert reactor_net["opendss_import"]["n_reactors"] == 1
+    assert len(reactor_net.line) == 2  # l1 + the series reactor's branch
+    reactor_line = reactor_net.line[reactor_net.line["name"] == "subrx"].iloc[0]
+    assert reactor_line["r_ohm_per_km"] == pytest.approx(0.01, rel=1e-6)
+    assert reactor_line["x_ohm_per_km"] == pytest.approx(5.0, rel=1e-6)
+
+
+def test_shunt_reactor_is_skipped_not_misread_as_a_branch(reactor_net):
+    warnings = reactor_net["opendss_import"]["warnings"]
+    assert any("shuntrx" in w and "shunt" in w for w in warnings)
+
+
+def test_reactor_feeder_reaches_every_bus(reactor_net):
+    import pandapower.topology as top
+    assert top.unsupplied_buses(reactor_net) == set()
+
+
+def test_reactor_feeder_converges_with_real_voltage_drop(reactor_net):
+    pp.runpp(reactor_net)
+    assert reactor_net["converged"]
+    # without the series reactor, every bus would stay at exactly the source's
+    # 1.05 pu (no power flowing past sourcebus) -- guard against that regression.
+    assert reactor_net.res_bus.vm_pu.nunique() > 1
+    assert reactor_net.res_bus.vm_pu.min() < 1.05
