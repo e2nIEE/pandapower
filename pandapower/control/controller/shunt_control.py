@@ -45,7 +45,6 @@ class ShuntController(Controller):
         self.tol = tol
         self.shunt_index = shunt_index
         self.element_in_service = net.shunt.loc[self.shunt_index, 'in_service']
-        self.bus_index = bus_index
         self.step = net.shunt.at[shunt_index, 'step']
 
         self.check_step_bounds = check_step_bounds
@@ -59,8 +58,6 @@ class ShuntController(Controller):
             self.set_active(net, False)
 
     def controlled_bus(self, net):
-        if self.bus_index is not None:
-            return self.bus_index
         return net.shunt.at[self.shunt_index, "bus"]
 
 
@@ -111,7 +108,8 @@ class DiscreteShuntController(ShuntController):
             net.shunt.at[self.shunt_index, 'step'] = 0
 
     def control_step(self, net):
-        vm_pu = net.res_bus.at[self.controlled_bus(net), 'vm_pu']
+        controlled_bus = self.controlled_bus(net)
+        vm_pu = net.res_bus.at[controlled_bus, 'vm_pu']
         self.step = net.shunt.at[self.shunt_index, "step"]
 
         sign = np.sign(net.shunt.at[self.shunt_index, 'q_mvar'])
@@ -130,7 +128,8 @@ class DiscreteShuntController(ShuntController):
         if not net.shunt.at[self.shunt_index, 'in_service']:
             return True
 
-        vm_pu = net.res_bus.at[self.controlled_bus(net), "vm_pu"]
+        controlled_bus = self.controlled_bus(net)
+        vm_pu = net.res_bus.at[controlled_bus, "vm_pu"]
         if abs(vm_pu - self.vm_set_pu) < self.tol:
             return True
 
