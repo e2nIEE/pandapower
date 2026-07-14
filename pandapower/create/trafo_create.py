@@ -263,9 +263,21 @@ def create_transformers(
         raise ValueError(f"std_type is missing a required value. Required values: {', '.join(required_params)}")
     
     params_from_std_type = (
-        "i0_percent", "vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", 
-        "si0_hv_partial", "vector_group", "shift_degree", "tap_side", "tap_neutral", 
-        "tap_min", "tap_max", "tap_step_degree", "tap_step_percent", "trafo_characteristic_table",
+        "i0_percent",
+        "vk0_percent",
+        "vkr0_percent",
+        "mag0_percent",
+        "mag0_rx",
+        "si0_hv_partial",
+        "vector_group",
+        "shift_degree",
+        "tap_side",
+        "tap_neutral",
+        "tap_min",
+        "tap_max",
+        "tap_step_degree",
+        "tap_step_percent",
+        "trafo_characteristic_table",
         *required_params
     )
     
