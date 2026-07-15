@@ -368,3 +368,243 @@ def test_reactor_feeder_converges_with_real_voltage_drop(reactor_net):
     # 1.05 pu (no power flowing past sourcebus) -- guard against that regression.
     assert reactor_net.res_bus.vm_pu.nunique() > 1
     assert reactor_net.res_bus.vm_pu.min() < 1.05
+
+
+# An LTC-style transformer with an OpenDSS RegControl. ptratio is chosen so the PT
+# secondary's nominal 120 V corresponds to the LV bus's actual line-to-neutral
+# voltage (0.48 kV / sqrt(3) / 120 V = 2.3094): unlike an arbitrary ptratio, this
+# makes vreg=122 a physically sensible ~1.017 pu target, so the solved tap lands
+# inside the tap range instead of pinned at a limit, and the regulated band is a
+# realistic sanity check rather than a degenerate one.
+REGCONTROL_FEEDER = """
+clear
+new circuit.reg basekv=12.47 pu=1.0 phases=3 bus1=sourcebus
+new linecode.lc1 nphases=3 r1=0.1 x1=0.2 c1=3.0 units=km normamps=400
+new line.l1 bus1=sourcebus bus2=b1 linecode=lc1 length=1.0 units=km
+new transformer.t1 phases=3 windings=2 xhl=5.0
+~ wdg=1 bus=b1 conn=wye kv=12.47 kva=500 %r=0.5
+~ wdg=2 bus=b2 conn=wye kv=0.48 kva=500 %r=0.5 maxtap=1.1 mintap=0.9 numtaps=32
+new regcontrol.reg1 transformer=t1 winding=2 vreg=122 band=2 ptratio=2.3094
+new line.l2 bus1=b2 bus2=b3 r1=0.05 x1=0.08 c1=0 length=0.2 units=km normamps=600 phases=3
+new load.load1 bus1=b3 phases=3 kv=0.48 kw=200 kvar=80 conn=wye
+set voltagebases=[12.47, 0.48]
+calcvoltagebases
+solve
+"""
+
+# Same RegControl, but with line-drop compensation (R/X) and reverse mode enabled.
+# Neither is implemented, so importing this must warn about both explicitly
+# instead of silently ignoring or guessing at them.
+REGCONTROL_LDC_REVERSIBLE_FEEDER = """
+clear
+new circuit.regldc basekv=12.47 pu=1.0 phases=3 bus1=sourcebus
+new transformer.t1 phases=3 windings=2 xhl=5.0
+~ wdg=1 bus=sourcebus conn=wye kv=12.47 kva=500 %r=0.5
+~ wdg=2 bus=b2 conn=wye kv=0.48 kva=500 %r=0.5 maxtap=1.1 mintap=0.9 numtaps=32
+new regcontrol.reg1 transformer=t1 winding=2 vreg=122 band=2 ptratio=2.3094 R=3 X=1 reversible=yes
+new load.load1 bus1=b2 phases=3 kv=0.48 kw=200 kvar=80 conn=wye
+set voltagebases=[12.47, 0.48]
+calcvoltagebases
+solve
+"""
+
+# The RegControl's "bus=" (-> RegControls.MonitoredBus) points at a bus downstream
+# of the transformer's own LV terminal, not the terminal itself. DiscreteTapControl
+# can only regulate its own trafo terminal, so this must be skipped rather than
+# silently imported as if it were regulating the wrong bus.
+REGCONTROL_REMOTE_BUS_FEEDER = """
+clear
+new circuit.regremote basekv=12.47 pu=1.0 phases=3 bus1=sourcebus
+new line.l1 bus1=sourcebus bus2=b1 r1=0.1 x1=0.2 c1=0 length=1.0 units=km phases=3 normamps=400
+new transformer.t1 phases=3 windings=2 xhl=5.0
+~ wdg=1 bus=b1 conn=wye kv=12.47 kva=500 %r=0.5
+~ wdg=2 bus=b2 conn=wye kv=0.48 kva=500 %r=0.5 maxtap=1.1 mintap=0.9 numtaps=32
+new regcontrol.reg1 transformer=t1 winding=2 vreg=122 band=2 ptratio=2.3094 bus=b3
+new line.l2 bus1=b2 bus2=b3 r1=0.05 x1=0.08 c1=0 length=0.2 units=km normamps=600 phases=3
+new load.load1 bus1=b3 phases=3 kv=0.48 kw=200 kvar=80 conn=wye
+set voltagebases=[12.47, 0.48]
+calcvoltagebases
+solve
+"""
+
+
+@pytest.fixture
+def regcontrol_feeder_path(tmp_path):
+    p = tmp_path / "regcontrol.dss"
+    p.write_text(REGCONTROL_FEEDER)
+    return str(p)
+
+
+@pytest.fixture
+def regcontrol_net(regcontrol_feeder_path):
+    return from_opendss(regcontrol_feeder_path)
+
+
+@pytest.fixture
+def regcontrol_net_controlled(regcontrol_feeder_path):
+    return from_opendss(regcontrol_feeder_path, import_controllers=True)
+
+
+def test_regcontrol_tap_fields_populated_not_baked_into_vn(regcontrol_net):
+    # OpenDSS solves this RegControl to tap ratio 1.025 (verified independently
+    # against RegControls.TapNumber()): tap_step_percent=(1.1-0.9)/32*100=0.625,
+    # tap_min=-16, tap_max=16, tap_neutral=0 (symmetric range), and
+    # tap_pos=(1.025-0.9)/0.00625-16=4. vn_hv_kv/vn_lv_kv stay at nominal -- the
+    # ratio now lives in tap_pos, not folded into the winding voltages.
+    t = regcontrol_net.trafo.iloc[0]
+    assert t["vn_hv_kv"] == pytest.approx(12.47)
+    assert t["vn_lv_kv"] == pytest.approx(0.48)
+    assert t["tap_side"] == "lv"
+    assert t["tap_step_percent"] == pytest.approx(0.625)
+    assert t["tap_min"] == -16
+    assert t["tap_max"] == 16
+    assert t["tap_neutral"] == 0
+    assert t["tap_pos"] == 4
+    assert t["tap_changer_type"] == "Ratio"
+
+
+def test_regcontrol_default_has_no_controller(regcontrol_net):
+    # import_controllers defaults to False: nothing beyond the tap_* fields
+    # changes, so existing code that calls from_opendss(...) then pp.runpp(net)
+    # -- never touching net.controller -- sees the same voltages as before.
+    assert len(regcontrol_net.controller) == 0
+
+
+def test_regcontrol_roundtrip_voltage_matches_opendss(regcontrol_net):
+    # The regression gate for turning the baked-in tap ratio into an explicit
+    # tap_pos: with no controller running, runpp must still reproduce the
+    # OpenDSS-solved voltages as tightly as the no-RegControl feeder does.
+    pp.runpp(regcontrol_net)
+    odss = regcontrol_net["opendss_import"]["vm_pu_opendss"]
+    diffs = [
+        abs(odss[row["name"].lower()] - regcontrol_net.res_bus.vm_pu[idx])
+        for idx, row in regcontrol_net.bus.iterrows()
+        if row["name"].lower() in odss
+    ]
+    assert np.max(diffs) < 1e-3
+
+
+def test_regcontrol_creates_discrete_tap_control(regcontrol_net_controlled):
+    from pandapower.control import DiscreteTapControl
+
+    assert regcontrol_net_controlled["opendss_import"]["n_reg_controls"] == 1
+    assert len(regcontrol_net_controlled.controller) == 1
+    ctrl = regcontrol_net_controlled.controller.object.iloc[0]
+    assert isinstance(ctrl, DiscreteTapControl)
+    assert ctrl.element_index == regcontrol_net_controlled.trafo.index[0]
+    assert ctrl.side == "lv"
+    # vreg=122, band=2, ptratio=2.3094: PT secondary volts referred to the
+    # primary by ptratio, then to pu via sqrt(3) (the PT is line-to-neutral)
+    # over the (line-to-line) bus vn_kv -- independently computed, not read
+    # back from the code under test.
+    assert ctrl.vm_lower_pu == pytest.approx(1.008333, rel=1e-4)
+    assert ctrl.vm_upper_pu == pytest.approx(1.025000, rel=1e-4)
+
+
+def test_regcontrol_pv_export_taps_down(regcontrol_feeder_path):
+    # The whole point of the feature: with no PV, run_control holds the
+    # baseline tap; adding enough PV export at the far bus raises the monitored
+    # voltage above the band, so run_control must step the tap DOWN relative to
+    # baseline -- a frozen tap (today's behaviour without this feature) could
+    # never do this.
+    baseline = from_opendss(regcontrol_feeder_path, import_controllers=True)
+    pp.control.run_control(baseline)
+    baseline_tap = baseline.trafo.tap_pos.iloc[0]
+
+    net = from_opendss(regcontrol_feeder_path, import_controllers=True)
+    b3 = net.bus[net.bus["name"].str.lower() == "b3"].index[0]
+    pp.create_sgen(net, b3, p_mw=0.9, q_mvar=0.0, name="pv")
+    pp.control.run_control(net)
+
+    assert net.trafo.tap_pos.iloc[0] < baseline_tap
+
+
+def test_regcontrol_ldc_and_reverse_mode_warn_not_silently_ignored(tmp_path):
+    p = tmp_path / "regldc.dss"
+    p.write_text(REGCONTROL_LDC_REVERSIBLE_FEEDER)
+    net = from_opendss(str(p), import_controllers=True)
+
+    warnings = " ".join(net["opendss_import"]["warnings"])
+    assert "line-drop compensation" in warnings
+    assert "reverse-mode" in warnings
+    # LDC/reverse mode are unsupported, but the controller is still created
+    # (regulating its own terminal, without compensation): an imperfect
+    # regulator beats a frozen tap, provided the user is told what's missing.
+    assert len(net.controller) == 1
+
+
+def test_regcontrol_remote_monitored_bus_skips_controller(tmp_path):
+    p = tmp_path / "regremote.dss"
+    p.write_text(REGCONTROL_REMOTE_BUS_FEEDER)
+    net = from_opendss(str(p), import_controllers=True)
+
+    # DiscreteTapControl can only regulate the trafo's own terminal: silently
+    # regulating the wrong (remote) bus would be worse than not importing it.
+    assert len(net.controller) == 0
+    assert any("not the tapped winding's own terminal" in w
+              for w in net["opendss_import"]["warnings"])
+
+
+# A transformer with a manually fixed tap (no RegControl) but NumTaps=0 -- a
+# degenerate/unusable OpenDSS tap grid (used, in practice, to fix a tap at a
+# value that isn't meant to be steppable). tap_pos has nothing valid to
+# represent here, so this must fall back to the pre-this-feature behaviour
+# (baking the ratio into vn_lv_kv) instead of silently dropping a real 5% ratio.
+DEGENERATE_TAP_RANGE_FEEDER = """
+clear
+new circuit.deg basekv=12.47 pu=1.0 phases=3 bus1=sourcebus
+new line.l1 bus1=sourcebus bus2=b1 r1=0.1 x1=0.2 c1=0 length=1.0 units=km phases=3 normamps=400
+new transformer.t1 phases=3 windings=2 xhl=5.0
+~ wdg=1 bus=b1 conn=wye kv=12.47 kva=500 %r=0.5
+~ wdg=2 bus=b2 conn=wye kv=0.48 kva=500 %r=0.5 tap=1.05 numtaps=0
+new load.load1 bus1=b2 phases=3 kv=0.48 kw=200 kvar=80 conn=wye
+set voltagebases=[12.47, 0.48]
+calcvoltagebases
+solve
+"""
+
+
+def test_degenerate_tap_range_falls_back_to_baked_in_ratio(tmp_path):
+    p = tmp_path / "degtap.dss"
+    p.write_text(DEGENERATE_TAP_RANGE_FEEDER)
+    net = from_opendss(str(p))
+
+    t = net.trafo.iloc[0]
+    assert np.isnan(t["tap_pos"])
+    assert t["vn_hv_kv"] == pytest.approx(12.47)
+    assert t["vn_lv_kv"] == pytest.approx(0.48 * 1.05)
+    assert any("baked into vn_lv_kv" in w for w in net["opendss_import"]["warnings"])
+
+    pp.runpp(net)
+    assert net["converged"]
+
+
+# tapwinding=3 references a winding that doesn't exist on this 2-winding
+# transformer. OpenDSS itself does not validate TapWinding against the
+# transformer's actual winding count (verified: this feeder solves without
+# error), so an out-of-range value silently reaches the converter -- this must
+# be reported, not dropped without a trace, unlike every other malformed-input
+# case in this feature (LDC, reverse mode, remote monitored bus all warn).
+INVALID_TAP_WINDING_FEEDER = """
+clear
+new circuit.badtapwdg basekv=12.47 pu=1.0 phases=3 bus1=sourcebus
+new line.l0 bus1=sourcebus bus2=b1 r1=0.01 x1=0.02 c1=0 length=0.1 units=km phases=3 normamps=400
+new transformer.t1 phases=3 windings=2 xhl=5.0
+~ wdg=1 bus=b1 conn=wye kv=12.47 kva=500 %r=0.5
+~ wdg=2 bus=b2 conn=wye kv=0.48 kva=500 %r=0.5 maxtap=1.1 mintap=0.9 numtaps=32
+new regcontrol.reg1 transformer=t1 winding=2 tapwinding=3 vreg=122 band=2 ptratio=2.3094
+new load.load1 bus1=b2 phases=3 kv=0.48 kw=200 kvar=80 conn=wye
+set voltagebases=[12.47, 0.48]
+calcvoltagebases
+solve
+"""
+
+
+def test_invalid_tap_winding_warns_instead_of_silently_falling_back(tmp_path):
+    p = tmp_path / "badtapwdg.dss"
+    p.write_text(INVALID_TAP_WINDING_FEEDER)
+    net = from_opendss(str(p))
+
+    assert any("invalid" in w and "tap_winding" in w for w in net["opendss_import"]["warnings"])
+    pp.runpp(net)
+    assert net["converged"]
