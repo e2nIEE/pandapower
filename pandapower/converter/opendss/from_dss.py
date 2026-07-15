@@ -128,7 +128,9 @@ class _ImportReport:
 
 @dataclass
 class _RegControlInfo:
+
     """One OpenDSS ``RegControl``, captured while it was the active element."""
+
     name: str
     transformer: str    # lower-cased transformer name
     winding: int         # 1-based: the monitored (PT/CT) winding
@@ -146,10 +148,12 @@ class _RegControlInfo:
 
 
 def _collect_regcontrols():
-    """Read every OpenDSS RegControl, keyed by the (lower-cased) name of the
-    transformer it controls. Called once, before transformers are imported, so
-    a transformer can pick its tapped winding using the RegControl that targets
-    it (see `_pick_tap_fields`).
+    """
+    Read every OpenDSS RegControl, keyed by the (lower-cased) name of the transformer it controls.
+
+    Called once, before transformers are imported, so a transformer can pick
+    its tapped winding using the RegControl that targets it (see
+    `_pick_tap_fields`).
     """
     by_trafo = {}
     i = dss.RegControls.First()
@@ -181,8 +185,10 @@ def _has_tap_grid(min_tap, max_tap, num_taps):
 
 
 def _tap_fields_from_dss(min_tap, max_tap, num_taps, ratio):
-    """Translate one OpenDSS winding's declared tap range and a solved ratio
-    into pandapower's (tap_step_percent, tap_min, tap_max, tap_neutral, tap_pos).
+    """
+    Translate an OpenDSS winding's tap range and solved ratio into pandapower tap fields.
+
+    Returns (tap_step_percent, tap_min, tap_max, tap_neutral, tap_pos).
 
     OpenDSS's tap-position axis is always centered on zero -- from
     ``-(NumTaps // 2)`` to ``-(NumTaps // 2) + NumTaps`` -- *independent* of
@@ -211,9 +217,11 @@ def _tap_fields_from_dss(min_tap, max_tap, num_taps, ratio):
 
 def _pick_tap_fields(name, report, regcontrols_by_trafo, hv_w, lv_w, tap, min_tap, max_tap,
                      num_taps, split_phase):
-    """Pick the transformer's tapped winding and translate its OpenDSS tap
-    range into pandapower tap_* fields, so the solved tap becomes an explicit,
-    movable ``tap_pos`` instead of being folded into ``vn_hv_kv``/``vn_lv_kv``.
+    """
+    Pick the transformer's tapped winding and translate its OpenDSS tap range into pandapower tap_* fields.
+
+    This lets the solved tap become an explicit, movable ``tap_pos`` instead of
+    being folded into ``vn_hv_kv``/``vn_lv_kv``.
 
     Returns ``(tap_kwargs, legacy)``:
 
@@ -640,11 +648,13 @@ def _add_one_transformer(net, bus_map, report, regcontrols_by_trafo, trafo_index
 
 
 def _add_reg_controls(net, report, regcontrols_by_trafo, trafo_index_by_name, import_controllers):
-    """Create a ``DiscreteTapControl`` for each RegControl whose transformer was
-    imported, so the tap responds to voltage instead of staying pinned at the
-    OpenDSS-solved position. Only called with effect when ``import_controllers``
-    is True; regardless of that flag, an unreachable transformer is still
-    reported so the omission isn't silent.
+    """
+    Create a ``DiscreteTapControl`` for each RegControl whose transformer was imported.
+
+    This makes the tap respond to voltage instead of staying pinned at the
+    OpenDSS-solved position. Only called with effect when
+    ``import_controllers`` is True; regardless of that flag, an unreachable
+    transformer is still reported so the omission isn't silent.
     """
     for trafo_name, regctrls in regcontrols_by_trafo.items():
         tid = trafo_index_by_name.get(trafo_name)
