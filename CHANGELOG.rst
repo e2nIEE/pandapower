@@ -3,7 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
-- [FIXED] restored ``OpenDSSDirect.py`` to the ``all``/``dev`` extras so the OpenDSS converter is exercised (and its coverage reported) in CI again; it was dropped in #3062 because installing it alongside ``pytest~=9.1`` crashes the pytest process on Windows (upstream bug, see `dss-extensions/OpenDSSDirect.py#148 <https://github.com/dss-extensions/OpenDSSDirect.py/issues/148>`_). The OpenDSS converter tests now skip on Windows instead of crashing the run; Linux/macOS are unaffected.
+- [FIXED] restored ``OpenDSSDirect.py`` to the ``all``/``dev`` extras so the OpenDSS converter is exercised (and its coverage reported) in CI again; it was dropped in #3062 because installing it alongside ``pytest~=9.1`` crashed the pytest process on Windows. Root cause (see `dss-extensions/OpenDSSDirect.py#148 <https://github.com/dss-extensions/OpenDSSDirect.py/issues/148>`_): pytest enables Python's ``faulthandler`` by default, which intercepts a first-chance Windows structured exception that OpenDSSDirect.py's native backend raises -- and normally handles itself -- during import, and misreports it as fatal. Bracketing the import with ``faulthandler.disable()``/``.enable()`` avoids the false crash while leaving ``faulthandler`` protecting the rest of the test run; the converter now runs on Windows instead of merely skipping there.
 - [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
 
 [3.5.4] - 2026-07-08
