@@ -12,27 +12,27 @@ OpenDSS per-bus voltage to a tight tolerance -- exactly what the positive-sequen
 import promises for symmetric feeders.
 """
 
-import sys
+import faulthandler
 
 import numpy as np
 import pytest
 
 import pandapower as pp
 
-# On Windows, OpenDSSDirect.py's native backend crashes the whole pytest process
-# (not a catchable ImportError) when it is loaded through pytest's import machinery,
-# even though a plain `python -c "import opendssdirect"` works fine there. Skip
-# before even attempting the import on that platform.
-# See https://github.com/dss-extensions/OpenDSSDirect.py/issues/148
-if sys.platform.startswith("win"):
-    pytest.skip(
-        "OpenDSSDirect.py crashes the pytest process on Windows, see "
-        "https://github.com/dss-extensions/OpenDSSDirect.py/issues/148",
-        allow_module_level=True,
-    )
-
-# OpenDSSDirect.py is an optional dependency; skip the whole module without it.
-pytest.importorskip("opendssdirect")
+# pytest enables faulthandler by default, which on Windows intercepts a first-chance
+# structured exception that OpenDSSDirect.py's native backend raises (and normally
+# handles itself) during import -- see pandapower/converter/opendss/from_dss.py for
+# the full explanation and https://github.com/dss-extensions/OpenDSSDirect.py/issues/148.
+# Disable faulthandler for this pre-flight import check the same way, so it doesn't
+# crash here before from_dss's own guarded import ever runs.
+faulthandler_was_enabled = faulthandler.is_enabled()
+faulthandler.disable()
+try:
+    # OpenDSSDirect.py is an optional dependency; skip the whole module without it.
+    pytest.importorskip("opendssdirect")
+finally:
+    if faulthandler_was_enabled:
+        faulthandler.enable()
 
 from pandapower.converter.opendss import from_opendss
 
