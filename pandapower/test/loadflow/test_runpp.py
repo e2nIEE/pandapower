@@ -14,6 +14,7 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
+from pandapower.control import _create_trafo_characteristics, SplineCharacteristic
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
     create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
     create_line_from_parameters, create_line, create_impedance, create_storage, create_buses, \
@@ -48,6 +49,13 @@ try:
     numba_installed = True
 except ImportError:
     numba_installed = False
+
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
 
 
 def test_minimal_net(**kwargs):
@@ -523,6 +531,40 @@ def test_bsfw_algorithm():
 
     assert np.allclose(vm_nr, vm_alg)
     assert np.allclose(va_nr, va_alg)
+
+
+@pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
+def test_helm_algorithm_simple():
+    import pandapower.networks as nw
+    net = nw.case9()
+
+    runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    runpp(net, algorithm='helm')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg, atol=1e-5)
+    assert np.allclose(va_nr, va_alg, atol=1e-2)
+
+
+@pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
+def test_helm_algorithm_complex():
+    import pandapower.networks as nw
+    net = nw.case118()
+
+    runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    runpp(net, algorithm='helm')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg, atol=1e-5)
+    assert np.allclose(va_nr, va_alg, atol=1e-2)
 
 
 @pytest.mark.xfail(reason="unknown")
