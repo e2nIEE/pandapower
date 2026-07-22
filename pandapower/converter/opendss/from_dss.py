@@ -19,6 +19,7 @@
 # The circuit is read through the ``OpenDSSDirect.py`` API (lazy-imported), not a
 # text parser, so every OpenDSS-supported master file is understood.
 
+import faulthandler
 import logging
 import math
 from dataclasses import dataclass, field
@@ -28,7 +29,22 @@ import numpy as np
 import pandapower as pp
 
 try:
-    import opendssdirect as dss
+    # On Windows, OpenDSSDirect.py's native backend (dss_python_backend) raises an
+    # internal, first-chance structured exception during its own startup -- one its
+    # Free Pascal runtime normally handles and silences itself. If a Windows crash
+    # handler is already installed (as Python's faulthandler does, and pytest enables
+    # faulthandler by default), it intercepts that exception first and misreports it
+    # as fatal, killing the whole process instead of a clean ImportError. Disable
+    # faulthandler for just this import, then restore it -- it's still needed to
+    # catch genuine crashes elsewhere. See
+    # https://github.com/dss-extensions/OpenDSSDirect.py/issues/148
+    faulthandler_was_enabled = faulthandler.is_enabled()
+    faulthandler.disable()
+    try:
+        import opendssdirect as dss
+    finally:
+        if faulthandler_was_enabled:
+            faulthandler.enable()
 
     opendssdirect_imported = True
 except ImportError:
