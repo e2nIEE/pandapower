@@ -79,15 +79,14 @@ class TestAsymmetricSgenRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["p_a_mw"], [*positiv_floats, *not_floats_list]),
-                itertools.product(["p_b_mw"], [*positiv_floats, *not_floats_list]),
-                itertools.product(["p_c_mw"], [*positiv_floats, *not_floats_list]),
-                itertools.product(["q_a_mvar"], not_floats_list),
-                itertools.product(["q_b_mvar"], not_floats_list),
-                itertools.product(["q_c_mvar"], not_floats_list),
-                itertools.product(["scaling"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
-                # itertools.product(["current_source"], not_boolean_list), # TODO: disabled in schema so also disabled here
+                itertools.product(["p_a_mw"], [float(np.nan), pd.NA, *positiv_floats, *not_floats_list]),
+                itertools.product(["p_b_mw"], [float(np.nan), pd.NA, *positiv_floats, *not_floats_list]),
+                itertools.product(["p_c_mw"], [float(np.nan), pd.NA, *positiv_floats, *not_floats_list]),
+                itertools.product(["q_a_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["q_b_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["q_c_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["scaling"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -108,7 +107,7 @@ class TestAsymmetricSgenRequiredFields:
             q_c_mvar=0.5,
             scaling=1.0,
             in_service=True,
-            # current_source=False, # See todo above, this is treated as custom currently
+            # current_source=False,
             type="PV",
             name="test",
             sn_mva=10.0,
