@@ -84,18 +84,18 @@ class TestMotorRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["pn_mech_mw"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["cos_phi"], [*ratio_invalid, *not_floats_list]),
+                itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["pn_mech_mw"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["cos_phi"], [float(np.nan), pd.NA, *ratio_invalid, *not_floats_list]),
                 itertools.product(["cos_phi_n"], [*ratio_invalid, *not_floats_list]),
-                itertools.product(["efficiency_percent"], [*percent_invalid, *not_floats_list]),
+                itertools.product(["efficiency_percent"], [float(np.nan), pd.NA, *percent_invalid, *not_floats_list]),
                 itertools.product(["efficiency_n_percent"], [*percent_invalid, *not_floats_list]),
-                itertools.product(["loading_percent"], [*percent_invalid, *not_floats_list]),
-                itertools.product(["scaling"], [*negativ_floats, *not_floats_list]),
+                itertools.product(["loading_percent"], [float(np.nan), pd.NA, *percent_invalid, *not_floats_list]),
+                itertools.product(["scaling"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
                 itertools.product(["lrc_pu"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["rx"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["vn_kv"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -159,6 +159,33 @@ class TestMotorOptionalFields:
         net.motor["name"] = pd.Series([pd.NA, "M2"], dtype="string")
         validate_network(net)
 
+    def test_all_optional_fields_valid(self):
+        """Test: all optional fields can be set to valid values"""
+        net = pandapowerNet(name="test_all_optional_fields_valid")
+        b0 = create_bus(net, 0.4)
+
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=1.0,
+            cos_phi=0.9,
+            cos_phi_n=0.8,
+            efficiency_percent=90.0,
+            efficiency_n_percent=92.0,
+            loading_percent=50.0,
+            scaling=1.0,
+            lrc_pu=6.0,
+            rx=0.1,
+            vn_kv=0.4,
+            in_service=True,
+            name="M1",
+            origin_id="id1",
+            origin_class="class1",
+            terminal="t1",
+            description="desc1",
+        )
+        validate_network(net)
+
     @pytest.mark.parametrize(
         "parameter,invalid_value",
         list(
@@ -180,7 +207,6 @@ class TestMotorOptionalFields:
             bus=b0,
             pn_mech_mw=1.0,
             cos_phi=0.9,
-            cos_phi_n=0.8,
             efficiency_percent=90.0,
             loading_percent=60.0,
             scaling=1.0,
@@ -225,8 +251,8 @@ class TestMotorOptionalFields:
 class TestMotorScGroupFields:
     """Tests for short-circuit (sc) group fields with dependency validation"""
 
-    def test_optional_fields_with_nulls(self):
-        net = pandapowerNet(name="test_optional_fields_with_nulls")
+    def test_sc_group_with_complete_values(self):
+        net = pandapowerNet(name="test_sc_group_with_complete_values")
         b0 = create_bus(net, 0.4)
 
         create_motor(
@@ -393,8 +419,8 @@ class TestMotorScGroupFields:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
-    def test_invalid_bus_index(self):
-        net = pandapowerNet(name="test_invalid_bus_index")
+    def test_multiple_motors_mixed_sc_groups(self):
+        net = pandapowerNet(name="test_multiple_motors_mixed_sc_groups")
         b0 = create_bus(net, 0.4)
 
         # Row 1: sc group complete
@@ -471,7 +497,7 @@ class TestMotorForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

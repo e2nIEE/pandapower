@@ -418,7 +418,7 @@ class TestLineDependencyGroupNullValues:
     )
     def test_individual_nullable_float_column_nan_valid(self, column_name):
         """Test: Each nullable float column (not in TDPF group) accepts NaN individually"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_individual_nullable_float_column_nan_valid")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -429,7 +429,7 @@ class TestLineDependencyGroupNullValues:
 
     def test_mixed_null_and_valid_values_in_rows(self):
         """Test: Multiple rows with mixed NA and valid values"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -488,7 +488,7 @@ class TestLineDependencyGroupNullValues:
 
     def test_cim_columns_all_na_valid(self):
         """Test: All CIM-related columns can be NA"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_cim_columns_all_na_valid")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -535,7 +535,7 @@ class TestLineForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FKs work with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

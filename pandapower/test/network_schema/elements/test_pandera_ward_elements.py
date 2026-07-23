@@ -97,7 +97,7 @@ class TestWardOptionalFields:
 
     def test_all_optional_nullable_fields_with_nulls(self):
         """Test: all nullable optional fields with null values are accepted"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_optional_nullable_fields_with_nulls")
         b0 = create_bus(net, 0.4)
 
         create_ward(net, bus=b0, ps_mw=1.0, qs_mvar=0.2, pz_mw=0.1, qz_mvar=0.05, in_service=True)

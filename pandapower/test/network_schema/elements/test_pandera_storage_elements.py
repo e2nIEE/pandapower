@@ -144,7 +144,7 @@ class TestStorageOptionalFields:
 
     def test_opf_group_complete_valid(self):
         """OPF group with all columns present is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_complete_valid")
         b0 = create_bus(net, 0.4)
         create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
 
@@ -185,7 +185,7 @@ class TestStorageOptionalFields:
             validate_network(net)
 
         # Case 4: missing only controllable
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_partial_missing_invalid3")
         b0 = create_bus(net, 0.4)
         create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["max_p_mw"] = 1.0
@@ -275,7 +275,7 @@ class TestStorageOptionalFields:
     @pytest.mark.xfail
     def test_opf_group_all_null_valid(self): #TODO controllable is not nullable
         """Test: OPF group columns can all be NA/NaN together (group not triggered)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_all_null_valid")
         b0 = create_bus(net, 0.4)
 
         create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
@@ -291,7 +291,7 @@ class TestStorageOptionalFields:
     @pytest.mark.xfail #TODO controllable is not nullable
     def test_opf_group_mixed_rows_valid(self):
         """Test: Multiple rows where OPF group is complete in some rows, all NaN in others"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_mixed_rows_valid")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -325,7 +325,7 @@ class TestStorageForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

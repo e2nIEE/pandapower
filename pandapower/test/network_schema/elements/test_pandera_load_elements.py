@@ -155,7 +155,7 @@ class TestLoadOptionalFields:
 
     def test_zip_group_complete_valid(self):
         """Test: ZIP group with all columns present is valid"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_zip_group_complete_valid")
         b0 = create_bus(net, 0.4)
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
 
@@ -278,7 +278,7 @@ class TestLoadDependencyGroupNullValues:
 
     def test_all_nullable_string_columns_na_valid(self):
         """Test: All nullable string columns can be NA"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_nullable_string_columns_na_valid")
         b0 = create_bus(net, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -296,7 +296,7 @@ class TestLoadDependencyGroupNullValues:
 
     def test_all_nullable_float_columns_nan_valid(self):
         """Test: All nullable float columns (not in ZIP group) can be NaN"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_all_nullable_float_columns_nan_valid")
         b0 = create_bus(net, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -316,7 +316,7 @@ class TestLoadDependencyGroupNullValues:
     )
     def test_individual_nullable_string_column_na_valid(self, column_name):
         """Test: Each nullable string column accepts NA individually"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_individual_nullable_string_column_na_valid")
         b0 = create_bus(net, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -330,7 +330,7 @@ class TestLoadDependencyGroupNullValues:
     )
     def test_individual_nullable_float_column_nan_valid(self, column_name):
         """Test: Each nullable float column (not in ZIP group) accepts NaN individually"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_individual_nullable_float_column_nan_valid")
         b0 = create_bus(net, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -340,7 +340,7 @@ class TestLoadDependencyGroupNullValues:
 
     def test_mixed_null_and_valid_values_in_rows(self):
         """Test: Multiple rows with mixed NA and valid values"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
         b0 = create_bus(net, 0.4)
 
         # Row 1: all optional string fields filled, ZIP group complete
@@ -396,7 +396,7 @@ class TestLoadDependencyGroupNullValues:
 
     def test_cim_columns_all_na_valid(self):
         """Test: All CIM-related columns can be NA"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_cim_columns_all_na_valid")
         b0 = create_bus(net, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -411,7 +411,7 @@ class TestLoadDependencyGroupNullValues:
 
     def test_type_column_na_valid(self):
         """Test: type column can be NA (despite isin constraint)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_type_column_na_valid")
         b0 = create_bus(net, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -437,7 +437,7 @@ class TestLoadForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

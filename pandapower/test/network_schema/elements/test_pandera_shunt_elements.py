@@ -280,7 +280,7 @@ class TestShuntOptionalFields:
 
     def test_step_equal_max_check_passes(self):
         """Test: 'step' == 'max_step' passes"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_step_equal_max_check_passes")
         b0 = create_bus(net, 0.4)
         create_shunt(
             net,
@@ -316,7 +316,7 @@ class TestShuntOptionalFields:
 
     def test_max_step_na_step_any_valid(self):
         """Test: When max_step is NA, any valid step value passes"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_max_step_na_step_any_valid")
         b0 = create_bus(net, 0.4)
         create_shunt(
             net,
@@ -334,7 +334,7 @@ class TestShuntOptionalFields:
 
     def test_mixed_null_and_valid_values_in_rows(self):
         """Test: Multiple rows with mixed NA and valid values"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -388,7 +388,7 @@ class TestShuntOptionalFields:
 
     def test_cim_columns_all_na_valid(self):
         """Test: All CIM-related columns can be NA"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_cim_columns_all_na_valid")
         b0 = create_bus(net, 0.4)
 
         create_shunt(
@@ -415,7 +415,7 @@ class TestShuntColumnConditionWithNulls:
 
     def test_step_max_step_check_with_na_max_step(self):
         """Test: step <= max_step check passes when max_step is NA"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_step_max_step_check_with_na_max_step")
         b0 = create_bus(net, 0.4)
 
         create_shunt(
@@ -435,7 +435,7 @@ class TestShuntColumnConditionWithNulls:
 
     def test_step_max_step_check_row_wise_consistency(self):
         """Test: step <= max_step check works row-wise with mixed NA"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_step_max_step_check_row_wise_consistency")
         b0 = create_bus(net, 0.4)
 
         # Row 1: step=2, max_step=3 (valid)
@@ -451,7 +451,7 @@ class TestShuntColumnConditionWithNulls:
 
     def test_step_max_step_check_row_wise_fails_when_exceeded(self):
         """Test: step <= max_step check fails when step > max_step in any row"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_step_max_step_check_row_wise_fails_when_exceeded")
         b0 = create_bus(net, 0.4)
 
         # Row 1: step=2, max_step=3 (valid)
@@ -488,7 +488,7 @@ class TestShuntForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)
