@@ -139,7 +139,7 @@ _gen_columns = {
     ),
     "max_vm_pu": pa.Column(
         float,
-        pa.Check.gt(0),
+        checks=[pa.Check.gt(0), pa.Check.le(2)],
         nullable=False,
         required=False,
         description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF",
