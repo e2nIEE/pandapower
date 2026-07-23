@@ -145,6 +145,55 @@ class TestBusDCOptionalFields:
             validate_network(net)
 
 
+class TestBusDCGroupDependency:
+    """Tests for group dependency constraints"""
+
+    def test_opf_columns_must_appear_together(self):
+        """Test: opf columns must both be present if one is present"""
+        net = pandapowerNet(name="test_opf_columns_together")
+        create_bus_dc(net, vn_kv=1.0, in_service=True, max_vm_pu=1.1)
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_opf_columns_both_absent_valid(self):
+        """Test: both opf columns absent is valid"""
+        net = pandapowerNet(name="test_opf_columns_absent")
+        create_bus_dc(net, vn_kv=1.0, in_service=True)
+        validate_network(net)
+
+
+class TestBusDCCrossFieldConstraints:
+    """Tests for cross-field constraints"""
+
+    def test_min_vm_pu_greater_than_max_vm_pu_rejected(self):
+        """Test: min_vm_pu must be <= max_vm_pu"""
+        net = pandapowerNet(name="test_min_max_constraint")
+        create_bus_dc(net, vn_kv=1.0, in_service=True, min_vm_pu=1.5, max_vm_pu=1.0)
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_max_vm_pu_valid_upper_bound(self):
+        """Test: max_vm_pu = 2 is valid (boundary)"""
+        net = pandapowerNet(name="test_max_vm_pu_valid_upper_bound")
+        create_bus_dc(net, vn_kv=1.0, in_service=True, min_vm_pu=0.0, max_vm_pu=2.0)
+        validate_network(net)
+
+    def test_min_vm_pu_valid_zero(self):
+        """Test: min_vm_pu = 0 is valid (boundary)"""
+        net = pandapowerNet(name="test_min_vm_pu_valid_zero")
+        create_bus_dc(net, vn_kv=1.0, in_service=True, min_vm_pu=0.0, max_vm_pu=1.0)
+        validate_network(net)
+
+    @pytest.mark.parametrize("invalid_value", [2.1, 3.0, 100.0])
+    def test_max_vm_pu_upper_bound(self, invalid_value):
+        """Test: max_vm_pu must be <= 2"""
+        net = pandapowerNet(name="test_max_vm_pu_upper_bound")
+        create_bus_dc(net, vn_kv=1.0, in_service=True, min_vm_pu=0.0)
+        net.bus_dc["max_vm_pu"] = invalid_value
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
 class TestBusDCResults:
     """Tests for bus_dc results after calculations"""
 
