@@ -812,7 +812,7 @@ class TestTrafo3wForeignKeys:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 110.0, index=10)
         create_bus(net, 20.0, index=20)
         create_bus(net, 10.0, index=42)

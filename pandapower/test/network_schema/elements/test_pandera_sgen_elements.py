@@ -296,7 +296,7 @@ class TestSgenDependencyGroupNullValues:
 
     def test_opf_group_all_nan_valid(self):
         """Test: OPF group columns can all be NaN together (group not triggered)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_all_nan_valid")
         b0 = create_bus(net, 0.4)
 
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
@@ -311,7 +311,7 @@ class TestSgenDependencyGroupNullValues:
 
     def test_qcc_group_all_na_valid(self):
         """Test: QCC group columns can all be NA/NaN together (group not triggered)"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_qcc_group_all_na_valid")
         b0 = create_bus(net, 0.4)
 
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
@@ -325,7 +325,7 @@ class TestSgenDependencyGroupNullValues:
 
     def test_mixed_null_and_valid_values_in_rows(self):
         """Test: Multiple rows with mixed NA and valid values"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -395,7 +395,7 @@ class TestSgenDependencyGroupNullValues:
 
     def test_cim_columns_all_na_valid(self):
         """Test: All CIM-related columns can be NA"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_cim_columns_all_na_valid")
         b0 = create_bus(net, 0.4)
 
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
@@ -410,7 +410,7 @@ class TestSgenDependencyGroupNullValues:
 
     def test_opf_group_row_consistency_valid(self):
         """Test: OPF group - each row must have all values or all NaN"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_row_consistency_valid")
         b0 = create_bus(net, 0.4)
 
         # Row 1: all OPF values present
@@ -427,7 +427,7 @@ class TestSgenDependencyGroupNullValues:
 
     def test_opf_group_row_partial_invalid(self):
         """Test: OPF group - partial values in a row should fail"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_opf_group_row_partial_invalid")
         b0 = create_bus(net, 0.4)
 
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
@@ -445,7 +445,7 @@ class TestSgenDependencyGroupNullValues:
 
     def test_qcc_group_row_consistency_valid(self):
         """Test: QCC group - each row must have all values or all NA"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_qcc_group_row_consistency_valid")
         b0 = create_bus(net, 0.4)
 
         # Row 1: all QCC values present
@@ -462,7 +462,7 @@ class TestSgenDependencyGroupNullValues:
     @pytest.mark.xfail  # TODO add back when reactive_capability_curve is removed
     def test_qcc_group_row_partial_invalid(self):
         """Test: QCC group - partial values in a row should fail"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_qcc_group_row_partial_invalid")
         b0 = create_bus(net, 0.4)
 
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
@@ -492,7 +492,7 @@ class TestSgenForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

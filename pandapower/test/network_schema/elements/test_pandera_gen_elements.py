@@ -325,7 +325,7 @@ class TestGenOptionalFields:
             validate_network(net, "qcc")
 
         # Reset and set only curve_style
-        net = create_empty_network()
+        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid1")
         b0 = create_bus(net, 0.4)
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
         net.gen["curve_style"] = pd.Series(["straightLineYValues"], dtype="string")
@@ -333,7 +333,7 @@ class TestGenOptionalFields:
             validate_network(net, "qcc")
 
         # Reset and set only reactive_capability_curve
-        net = create_empty_network()
+        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid2")
         b0 = create_bus(net, 0.4)
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
         net.gen["reactive_capability_curve"] = pd.Series([True], dtype="boolean")
@@ -433,7 +433,7 @@ class TestGenDependencyGroupNullValues:
         }
 
         for col_name, dtype in cim_nullable_columns.items():
-            net = create_empty_network()
+            net = pandapowerNet(name="test_cim_columns_individual_na_valid")
             create_bus(net, 0.4)
             create_gen(
                 net,
@@ -463,7 +463,7 @@ class TestGenForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

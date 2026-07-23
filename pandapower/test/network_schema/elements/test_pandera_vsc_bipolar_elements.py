@@ -185,7 +185,7 @@ class TestVscBipolarForeignKey:
 
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_index")
         create_bus(net, 0.4)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
@@ -212,7 +212,7 @@ class TestVscBipolarForeignKey:
 
     def test_invalid_bus_dc_plus_index(self):
         """Test: bus_dc_plus FK must reference an existing bus_dc index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_dc_plus_index")
         create_bus(net, 0.4)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1
@@ -239,7 +239,7 @@ class TestVscBipolarForeignKey:
 
     def test_invalid_bus_dc_minus_index(self):
         """Test: bus_dc_minus FK must reference an existing bus_dc index"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_invalid_bus_dc_minus_index")
         create_bus(net, 0.4)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 0
         create_bus_dc(net, vn_kv=110.0)  # index 1

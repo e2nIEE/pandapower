@@ -317,7 +317,7 @@ class TestImpedanceForeignKey:
 
     def test_invalid_from_bus_index(self):
         """Test: from_bus FK must reference an existing bus index"""
-        net = pandapowerNet(name="test_invalid_from_bus_index")()
+        net = pandapowerNet(name="test_invalid_from_bus_index")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -343,7 +343,7 @@ class TestImpedanceForeignKey:
 
     def test_invalid_to_bus_index(self):
         """Test: to_bus FK must reference an existing bus index"""
-        net = pandapowerNet(name="test_invalid_to_bus_index")()
+        net = pandapowerNet(name="test_invalid_to_bus_index")
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
@@ -369,7 +369,7 @@ class TestImpedanceForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FKs work with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

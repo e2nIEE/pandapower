@@ -569,7 +569,7 @@ class TestLineDcForeignKey:
 
     def test_valid_bus_dc_index_non_sequential(self):
         """Test: bus_dc FKs work with non-sequential bus_dc indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_dc_index_non_sequential")
         create_bus_dc(net, 0.4, index=10)
         create_bus_dc(net, 0.4, index=42)
         create_bus_dc(net, 0.4, index=100)
