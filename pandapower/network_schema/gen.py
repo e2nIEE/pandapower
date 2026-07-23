@@ -234,3 +234,24 @@ res_gen_schema = pa.DataFrameSchema(
     name="res_gen",
     strict=False,
 )
+
+# TODO: decide if this should be added (it will be missing in docs if not added)
+#  Remember to add it to the ini to make EmptyResults use it.
+# res_gen_3ph_schema = pa.DataFrameSchema(
+#     {
+#         "vm_a_pu": pa.Column(float, required=False, nullable=True, description=""),
+#         "va_a_degree": pa.Column(float, required=False, nullable=True, description=""),
+#         "vm_b_pu": pa.Column(float, required=False, nullable=True, description=""),
+#         "va_b_degree": pa.Column(float, required=False, nullable=True, description=""),
+#         "vm_c_pu": pa.Column(float, required=False, nullable=True, description=""),
+#         "va_c_degree": pa.Column(float, required=False, nullable=True, description=""),
+#         "p_a_mw": pa.Column(float, required=False, nullable=True, description=""),
+#         "q_a_mvar": pa.Column(float, required=False, nullable=True, description=""),
+#         "p_b_mw": pa.Column(float, required=False, nullable=True, description=""),
+#         "q_b_mvar": pa.Column(float, required=False, nullable=True, description=""),
+#         "p_c_mw": pa.Column(float, required=False, nullable=True, description=""),
+#         "q_c_mvar": pa.Column(float, required=False, nullable=True, description=""),
+#     },
+#     name="res_gen_3ph",
+#     strict=False,
+# )

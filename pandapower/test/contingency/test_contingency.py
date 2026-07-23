@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import logging
 from typing import Callable
 
 import numpy as np
@@ -44,8 +45,6 @@ try:
     lightsim2grid_installed = True
 except ImportError:
     lightsim2grid_installed = False
-
-import logging
 
 logger = logging.getLogger(__name__)
 

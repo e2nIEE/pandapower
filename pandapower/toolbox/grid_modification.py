@@ -3,6 +3,7 @@
 
 import copy
 from collections.abc import Iterable, Collection
+import warnings
 from typing import Literal, get_type_hints, cast
 
 import numpy as np
@@ -1789,6 +1790,7 @@ def replace_ward_by_internal_elements(net: pandapowerNet, wards: Collection[int]
                                   * net.ward.qz_mvar.loc[wards].to_numpy()
                                   * sign_in_service
                                   * sign_not_isolated)
+
         df_lst: list[pd.DataFrame] = [net.res_shunt, to_add_shunt]
         net.res_shunt = pd.concat(df_lst)
 

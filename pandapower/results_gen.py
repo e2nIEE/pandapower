@@ -1,21 +1,21 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import numpy as np
-from numpy import complex128
 
+from pandapower.auxiliary import (
+    _sum_by_group,
+    sequence_to_phase,
+    _sum_by_group_nvals,
+    I_from_SV_elementwise,
+    S_from_VI_elementwise,
+    SVabc_from_SV012,
+)
+from pandapower.create._utils import add_column_to_df
 from pandapower.pypower.idx_bus import VM, VA,BASE_KV
 from pandapower.pypower.idx_bus_dc import DC_PD, DC_REF, DC_BUS_TYPE
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
 from pandapower.pypower.idx_source_dc import SOURCE_DC_STATUS, SOURCE_DC_BUS
-
-from pandapower.auxiliary import _sum_by_group, sequence_to_phase, _sum_by_group_nvals, \
-    I_from_SV_elementwise, S_from_VI_elementwise, SVabc_from_SV012
-
-from pandapower.auxiliary import _sum_by_group
-from pandapower.pypower.idx_bus import VM, VA
-from pandapower.pypower.idx_gen import PG, QG
 from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_MODE_AC_SL, VSC_P, VSC_Q
 
 
@@ -244,20 +244,20 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
     gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(np.int64)
 
-    V012 = np.array(np.zeros((3, n_res_gen)))
+    V012 = np.array(np.zeros((3, n_res_gen), dtype=complex))
     V012[:, gen_is_idx] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
 
-    S012 = np.array(np.zeros((3, n_res_gen)))
+    S012 = np.array(np.zeros((3, n_res_gen), dtype=complex))
     S012[:, gen_is_idx] = np.array(
         [-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]])
-    I012 = np.array(np.zeros((3, n_res_gen)))
-    I012[:, gen_is_idx] = I_from_SV_elementwise(S012[:, gen_is_idx], V012[:, gen_is_idx])
+    I012 = np.array(np.zeros((3, n_res_gen), dtype=complex))
+    I012[:, gen_is_idx] = I_from_SV_elementwise(S012[:, gen_is_idx] * 1e3, V012[:, gen_is_idx])
 
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
-    Sabc = S_from_VI_elementwise(Vabc, Iabc) * 1e3
+    Sabc = S_from_VI_elementwise(Vabc, Iabc) * 1e-3 * -1
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
 
@@ -297,19 +297,17 @@ def _get_v_gen_resuts(net, ppc):
 
 def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
     # lookups for ppc
-    bus_lookup = net["_pd2ppc_lookups"]["bus"]
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
 
     # in service gens
     gen_is_mask = net["_is_elements"]['gen']
     gen_is_idx = net["gen"].index[gen_is_mask]
-    bus_idx_ppc = bus_lookup[net["gen"]["bus"].values[gen_is_mask]]
 
     n_res_gen = len(net['gen'])
     gen_idx_ppc = gen_lookup[gen_is_idx]
     """ # 2 ext_grids Fix: Instead of the generator index, bus indices of the generators are used"""
     gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(np.int64)
-    V012 = np.array(np.zeros((3, n_res_gen)))
+    V012 = np.array(np.zeros((3, n_res_gen), dtype=complex))
     V012[:, gen_is_mask] = np.array([ppc["bus"][gen_bus_idx_ppc, VM]
                                       * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
                                       for ppc in [ppc0, ppc1, ppc2]])
@@ -327,12 +325,12 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
     vB_a[gen_is_idx] = np.rad2deg(np.angle(VABC[1, gen_is_idx]))
     vC_a[gen_is_idx] = np.rad2deg(np.angle(VABC[2, gen_is_idx]))
 
-    net["res_gen_3ph"]["vmA_pu"] = vA_pu
-    net["res_gen_3ph"]["vmB_pu"] = vB_pu
-    net["res_gen_3ph"]["vmC_pu"] = vC_pu
-    net["res_gen_3ph"]["vaA_degree"] = vA_a
-    net["res_gen_3ph"]["vaB_degree"] = vB_a
-    net["res_gen_3ph"]["vaC_degree"] = vC_a
+    net["res_gen_3ph"]["vm_a_pu"] = vA_pu
+    net["res_gen_3ph"]["vm_b_pu"] = vB_pu
+    net["res_gen_3ph"]["vm_c_pu"] = vC_pu
+    net["res_gen_3ph"]["va_a_degree"] = vA_a
+    net["res_gen_3ph"]["va_b_degree"] = vB_a
+    net["res_gen_3ph"]["va_c_degree"] = vC_a
     return vA_pu, vA_a, vB_pu, vB_a, vC_pu, vC_a
 
 

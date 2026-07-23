@@ -253,12 +253,26 @@ _trafo_columns = {
         description="impedance of the grounding reactor (Z_N) for short circuit calculation",
         metadata={"sc": True, "cim": True},
     ),
+    "rn_ohm": pa.Column(
+        float,
+        required=False,
+        description="resistance of the neutral earthing impedance (Z_N, e.g. a neutral earthing resistor) for short circuit calculation",
+        metadata={"sc": True},
+    ),
     "pt_percent": pa.Column(float, required=False, description="", metadata={"sc": True}),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal_hv": pa.Column(
         pd.StringDtype,
