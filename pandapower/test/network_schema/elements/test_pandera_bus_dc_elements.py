@@ -94,7 +94,7 @@ class TestBusDCOptionalFields:
         create_bus_dc(net, vn_kv=1.0, in_service=True, type="b")
         create_bus_dc(net, vn_kv=1.0, in_service=True, zone="somewhere")
         create_bus_dc(net, vn_kv=1.0, in_service=True, geo="pd.NA")
-        create_bus_dc(net, vn_kv=1.0, in_service=True, max_vm_pu=2.4)
+        create_bus_dc(net, vn_kv=1.0, in_service=True, max_vm_pu=1.4)
         create_bus_dc(net, vn_kv=1.0, in_service=True, min_vm_pu=1.1)
         validate_network(net)
 
