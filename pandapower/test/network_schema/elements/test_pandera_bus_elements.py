@@ -139,6 +139,97 @@ class TestBusOptionalFields:
             validate_network(net)
 
 
+class TestBusGroupDependency:
+    """Tests for group dependency constraints, max_vm_pu, min_vm_pu get created if one is present in create_bus"""
+
+    def test_opf_columns_both_absent_valid(self):
+        """Test: both opf columns absent is valid"""
+        net = pandapowerNet(name="test_opf_columns_absent")
+        create_bus(net, 0.4)
+        validate_network(net)
+
+
+class TestBusCrossFieldConstraints:
+    """Tests for cross-field constraints"""
+
+    def test_min_vm_pu_greater_than_max_vm_pu_rejected(self):
+        """Test: min_vm_pu must be <= max_vm_pu"""
+        net = pandapowerNet(name="test_min_max_constraint")
+        create_bus(net, 0.4, min_vm_pu=1.5, max_vm_pu=1.0)
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_max_vm_pu_valid_upper_bound(self):
+        """Test: max_vm_pu = 2 is valid (boundary)"""
+        net = pandapowerNet(name="test_max_vm_pu_valid")
+        create_bus(net, 0.4, min_vm_pu=0.0, max_vm_pu=2.0)
+        validate_network(net)
+
+    def test_min_vm_pu_valid_zero(self):
+        """Test: min_vm_pu = 0 is valid (boundary)"""
+        net = pandapowerNet(name="test_min_vm_pu_valid")
+        create_bus(net, 0.4, min_vm_pu=0.0, max_vm_pu=1.0)
+        validate_network(net)
+
+    @pytest.mark.parametrize("invalid_value", [2.1, 3.0, 100.0])
+    def test_max_vm_pu_upper_bound(self, invalid_value):
+        """Test: max_vm_pu must be <= 2"""
+        net = pandapowerNet(name="test_max_vm_pu_upper")
+        create_bus(net, 0.4, min_vm_pu=0.0)
+        net.bus["max_vm_pu"] = invalid_value
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
+class TestBusCimUcteFields:
+    """Tests for CIM and UCTE fields"""
+
+    def test_cim_fields_valid(self):
+        """Test: CIM fields with valid string values are accepted"""
+        net = pandapowerNet(name="test_cim_fields")
+        create_bus(net, 0.4)
+        net.bus["origin_id"] = pd.Series(["cim_123"], dtype=pd.StringDtype())
+        net.bus["origin_class"] = pd.Series(["BusbarSection"], dtype=pd.StringDtype())
+        net.bus["origin_profile"] = pd.Series(["CIM"], dtype=pd.StringDtype())
+        net.bus["cim_topnode"] = pd.Series(["top_1"], dtype=pd.StringDtype())
+        net.bus["ConnectivityNodeContainer_id"] = pd.Series(["cnc_1"], dtype=pd.StringDtype())
+        net.bus["Substation_id"] = pd.Series(["sub_1"], dtype=pd.StringDtype())
+        net.bus["description"] = pd.Series(["Test bus"], dtype=pd.StringDtype())
+        net.bus["Busbar_id"] = pd.Series(["bb_1"], dtype=pd.StringDtype())
+        net.bus["Busbar_name"] = pd.Series(["Busbar 1"], dtype=pd.StringDtype())
+        net.bus["GeographicalRegion_id"] = pd.Series(["gr_1"], dtype=pd.StringDtype())
+        net.bus["GeographicalRegion_name"] = pd.Series(["Region 1"], dtype=pd.StringDtype())
+        net.bus["SubGeographicalRegion_id"] = pd.Series(["sgr_1"], dtype=pd.StringDtype())
+        net.bus["SubGeographicalRegion_name"] = pd.Series(["SubRegion 1"], dtype=pd.StringDtype())
+        net.bus["ucte_country"] = pd.Series(["DE"], dtype=pd.StringDtype())
+        validate_network(net)
+
+    def test_cim_fields_nullable(self):
+        """Test: CIM fields can be null"""
+        net = pandapowerNet(name="test_cim_null")
+        create_bus(net, 0.4)
+        net.bus["origin_id"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "field",
+        [
+            "origin_id", "origin_class", "origin_profile", "cim_topnode",
+            "ConnectivityNodeContainer_id", "Substation_id", "description",
+            "Busbar_id", "Busbar_name", "GeographicalRegion_id",
+            "GeographicalRegion_name", "SubGeographicalRegion_id",
+            "SubGeographicalRegion_name", "ucte_country"
+        ],
+    )
+    def test_cim_fields_invalid(self, field):
+        """Test: CIM fields reject float nan"""
+        net = pandapowerNet(name="test_cim_invalid")
+        create_bus(net, 0.4)
+        net.bus[field] = float(np.nan)
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
 class TestBusResults:
     """Tests for bus results after calculations"""
 
