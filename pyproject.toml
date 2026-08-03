@@ -16,7 +16,7 @@ maintainers = [
 description = "An easy to use open source tool for power system modeling, analysis and optimization with a high degree of automation."
 readme = "README.rst"
 license-files = ["LICENSE", "AUTHORS"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -31,7 +31,6 @@ classifiers = [
     # Add the specific Python versions supported here, e.g.:
     #  REMINDER: When removeing or adding support for a Version here, please remember to update ALL github pipelines.
     #  REMINDER: The mypy config also contains the lowest supported python version
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

@@ -42,7 +42,7 @@ jobs:
       # Sets up python3
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       # Installs and upgrades pip, installs other dependencies and installs the package
       - name: Install dependencies
