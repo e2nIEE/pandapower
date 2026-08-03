@@ -88,8 +88,9 @@ def iec_60909_4():
                                          vkr_mv_percent=.5, vk_lv_percent=12, vkr_lv_percent=.5, vk0_hv_percent=12,
                                          vkr0_hv_percent=0.5, vk0_mv_percent=12, vkr0_mv_percent=0.5, vk0_lv_percent=12,
                                          vkr0_lv_percent=0.5, vector_group="Yynd", tap_changer_type="Ratio", tap_max=10,
-                                         tap_min=-10, tap_pos=0, tap_neutral=0, tap_side="hv", tap_step_percent=0.1)
-                                         # reactor is 100 Ohm
+                                         tap_min=-10, tap_pos=0, tap_neutral=0, tap_side="hv", tap_step_percent=0.1,
+                                         # T6 is the only earth of the 10 kV network, through a 100 Ohm reactor
+                                         xn_mv_ohm=100.)
 
     create_motor(net, b7, pn_mech_mw=5.0, cos_phi=0.88, cos_phi_n=0.88, efficiency_n_percent=97.5, vn_kv=10, rx=0.1,
                  lrc_pu=5)
@@ -386,17 +387,23 @@ def test_iec_60909_4_2ph():
     assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-1)
 
 
-@pytest.mark.skip("1ph gen-close sc calculation still under develop")
 def test_iec_60909_4_1ph():
     net = iec_60909_4()
-    calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="1ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
 
     ikss = [24.6526, 15.9722, 10.4106, 9.0498, 17.0452, 0.06337, 0.0633, 0, 0.0001, 0.0001]
     ip = [60.9982, 40.5086, 24.2424, 20.5464, 42.8337, 0.1656, 0.1279, 0.0, 0.00025, 0.00033]
     # No ib for 1ph sc calculation
 
-    assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss),
-                       atol=1e-4)  # assert np.allclose(net.res_bus_sc.ip.values[:8], np.array(ip), rtol=1e-4)
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-4)
+    # ip = kappa * sqrt(2) * ikss, kappa from the positive sequence network; the
+    # reference values are given to four decimals, hence the same atol as for 2ph
+    assert np.allclose(net.res_bus_sc.ip_ka.values[:10], np.array(ip), atol=1e-3)
+    # ith is not part of the reference set, but must at least be finite and,
+    # with m >= 0 and n = 1, never below ikss
+    ith = net.res_bus_sc.ith_ka.values[:10]
+    assert np.all(np.isfinite(ith))
+    assert np.all(ith >= net.res_bus_sc.ikss_ka.values[:10] - 1e-12)
 
 
 def test_detect_power_station_units():
