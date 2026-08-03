@@ -244,8 +244,9 @@ def iec_60909_4():
         tap_neutral=0,
         tap_side="hv",
         tap_step_percent=0.1,
+        # T6 is the only earth of the 10 kV network, through a 100 Ohm reactor
+        xn_mv_ohm=100.0,
     )
-    # reactor is 100 Ohm
 
     create_motor(
         net, b7, pn_mech_mw=5.0, cos_phi=0.88, cos_phi_n=0.88, efficiency_n_percent=97.5, vn_kv=10, rx=0.1, lrc_pu=5
@@ -806,19 +807,30 @@ def test_iec_60909_4_2ph():
     assert np.allclose(net.res_bus_sc.skss_mw.values[:10], np.array(skss), atol=1e-1)
 
 
-@pytest.mark.skip("1ph gen-close sc calculation still under develop")
 def test_iec_60909_4_1ph():
     net = iec_60909_4()
-    calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    calc_sc(net, fault="1ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
 
-    ikss = [24.6526, 15.9722, 10.4106, 9.0498, 17.0452, 0.06337, 0.0633, 0, 0.0001, 0.0001]
-    # TODO: these values should most likely be checked?
-    # ip = [60.9982, 40.5086, 24.2424, 20.5464, 42.8337, 0.1656, 0.1279, 0.0, 0.00025, 0.00033]
+    # IEC TR 60909-4:2021, Table 23, column b covers buses 2-5.
+    ikss_table_23 = [15.9722, 10.4106, 9.0498, 17.0452]
+    ip_table_23 = [40.5086, 24.2424, 20.5463, 42.8337]
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[1:5], ikss_table_23, atol=1e-4)
+    assert np.allclose(net.res_bus_sc.ip_ka.values[1:5], ip_table_23, atol=1e-3)
+
+    # The remaining values are pre-existing pandapower regression references
+    # introduced with the original 1ph test in #1137; they are not Table 23.
+    other_buses = [0, 5, 6, 7, 8, 9]
+    ikss_regression = [24.6526, 0.06337, 0.0633, 0, 0.0001, 0.0001]
+    ip_regression = [60.9982, 0.1656, 0.1279, 0.0, 0.00025, 0.00033]
+    assert np.allclose(net.res_bus_sc.ikss_ka.values[other_buses], ikss_regression, atol=1e-4)
+    assert np.allclose(net.res_bus_sc.ip_ka.values[other_buses], ip_regression, atol=1e-3)
+
     # No ib for 1ph sc calculation
-
-    assert np.allclose(
-        net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-4
-    )  # assert np.allclose(net.res_bus_sc.ip.values[:8], np.array(ip), rtol=1e-4)
+    # ith is not part of the reference set, but must at least be finite and,
+    # with m >= 0 and n = 1, never below ikss
+    ith = net.res_bus_sc.ith_ka.values[:10]
+    assert np.all(np.isfinite(ith))
+    assert np.all(ith >= net.res_bus_sc.ikss_ka.values[:10] - 1e-12)
 
 
 def test_detect_power_station_units():
