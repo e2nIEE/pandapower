@@ -14,8 +14,18 @@ from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import (
-    create_storage, create_shunt, create_pwl_cost, create_poly_cost, create_bus, create_line, create_gen, create_load,
-    create_transformer3w_from_parameters, create_sgen, create_transformer3w
+    create_storage,
+    create_shunt,
+    create_pwl_cost,
+    create_poly_cost,
+    create_bus,
+    create_line,
+    create_gen,
+    create_load,
+    create_transformer3w_from_parameters,
+    create_sgen,
+    create_transformer3w,
+    create_ext_grid,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
@@ -775,7 +785,7 @@ def _create_redispatch_net():
     expensive gen next to the load. A plain power flow dispatches everything on the cheap gen, which
     overloads the line - so redispatch has to shift generation to the expensive gen.
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="_create_redispatch_net")
     b0 = create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)  # slack
     b1 = create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)  # cheap gen
     b2 = create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)  # load + expensive gen

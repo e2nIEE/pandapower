@@ -1,17 +1,20 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 import pytest
 
-import pandapower as pp
 from pandapower.create import (
-    create_empty_network, create_bus, create_ext_grid, create_line_from_parameters,
-    create_load, create_switch, create_gen, create_transformer_from_parameters,
-    create_sgen, create_shunt,
+    create_bus,
+    create_ext_grid,
+    create_line_from_parameters,
+    create_load,
+    create_switch,
+    create_gen,
+    create_sgen,
+    create_shunt,
 )
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.toolbox import compute_switch_flows
 
@@ -21,7 +24,7 @@ def _make_two_bus_coupler_net():
 
     ext_grid (bus 0) --line-- (bus 1) --switch-- (bus 2) --load
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="_make_two_bus_coupler_net")
     b0 = create_bus(net, vn_kv=20.0, name="slack")
     b1 = create_bus(net, vn_kv=20.0, name="bus1")
     b2 = create_bus(net, vn_kv=20.0, name="bus2")
@@ -90,7 +93,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_no_switches(self):
         """Net without switches should return silently."""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_no_switches")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         create_ext_grid(net, b0)
@@ -121,7 +124,7 @@ class TestComputeSwitchFlowsChain:
 
         sw0 must carry the full load; sw1 must also carry the full load.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_three_bus_chain")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -152,7 +155,7 @@ class TestComputeSwitchFlowsChain:
 
         sw0 must carry 3 MW, sw1 must carry 2 MW.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_chain_with_intermediate_load")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -191,7 +194,7 @@ class TestComputeSwitchFlowsBranching:
 
         sw0 carries 1+2+3=6 MW, sw1 carries 2 MW, sw2 carries 3 MW.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_t_junction")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -235,7 +238,7 @@ class TestComputeSwitchFlowsGenAndBranch:
         load consumes 3MW at b2.  Net demand at b2 is 3MW, so the
         switch carries 3MW from b1 to b2.
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_generator_on_fused_bus")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -258,7 +261,7 @@ class TestComputeSwitchFlowsGenAndBranch:
 
         ext_grid--(b0)--line0--(b1)--sw--(b2)--line1--(b3)--load
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_branch_leaving_fused_group")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -286,7 +289,7 @@ class TestComputeSwitchFlowsGenAndBranch:
 
     def test_sgen_and_shunt(self):
         """Ensure static generators and shunts are accounted for."""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_sgen_and_shunt")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -312,7 +315,7 @@ class TestComputeSwitchFlowsCycleDetection:
 
     def test_cycle_raises(self):
         """Two parallel zero-impedance switches between the same buses must raise."""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_cycle_raises")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -331,7 +334,7 @@ class TestComputeSwitchFlowsCycleDetection:
 
     def test_loop_of_three_raises(self):
         """Three buses in a loop: b1--sw--b2--sw--b3--sw--b1."""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_loop_of_three_raises")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -376,7 +379,7 @@ class TestComputeSwitchFlowsValidation:
         Uses z_ohm=0.01 (not smaller, since very low impedance branches can
         cause convergence issues in Newton-Raphson for small test networks).
         """
-        net = create_empty_network()
+        net = pandapowerNet(name="test_cross_validate_with_impedance")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -415,7 +418,7 @@ class TestComputeSwitchFlowsMultipleGroups:
 
     def test_two_independent_groups(self):
         """Two separate fused groups with different loads."""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_two_independent_groups")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)
@@ -468,7 +471,7 @@ class TestComputeSwitchFlowsDcline:
         """
         from pandapower.create import create_dcline
 
-        net = create_empty_network()
+        net = pandapowerNet(name="test_dcline_outflow")
         b0 = create_bus(net, vn_kv=20.0)
         b1 = create_bus(net, vn_kv=20.0)
         b2 = create_bus(net, vn_kv=20.0)

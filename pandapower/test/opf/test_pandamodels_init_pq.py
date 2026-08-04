@@ -2,12 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.create import create_empty_network
+from pandapower.network import pandapowerNet
 from pandapower.converter.pandamodels.to_pm import add_pm_gen_start_values_from_results
 from pandapower.runpm import runpm, runpm_dc_opf, runpm_ac_opf
 
 def test_add_pm_gen_start_values_from_results():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_add_pm_gen_start_values_from_results")
     net.res_ext_grid = pd.DataFrame({"p_mw": [100.0], "q_mvar": [50.0]}, index=[0])
     net.res_gen = pd.DataFrame({"p_mw": [30.0], "q_mvar": [10.0]}, index=[2])
     net.res_sgen = pd.DataFrame({"p_mw": [5.0], "q_mvar": [1.0]}, index=[4])
@@ -39,7 +39,7 @@ def test_runpm_wrappers_pass_init_pq_to_options(monkeypatch, run_function):
     def fake_runpm(net, *args, **kwargs):
         captured_options.append(net._options.copy())
     monkeypatch.setitem(run_function.__globals__, "_runpm", fake_runpm)
-    net = create_empty_network()
+    net = pandapowerNet(name="test_runpm_wrappers_pass_init_pq_to_options")
     run_function(net, init_pq="results")
 
     assert len(captured_options) == 1

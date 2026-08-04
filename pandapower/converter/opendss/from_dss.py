@@ -25,7 +25,16 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-import pandapower as pp
+from pandapower.network import pandapowerNet
+from pandapower.create import (
+    create_bus,
+    create_ext_grid,
+    create_load,
+    create_shunt,
+    create_switch,
+    create_line_from_parameters,
+    create_transformer_from_parameters,
+)
 
 try:
     import opendssdirect as dss
@@ -198,7 +207,7 @@ def from_opendss(path: str, solve: bool=True):
     if solve:
         dss.Solution.Solve()
 
-    net = pp.create_empty_network(name=dss.Circuit.Name())
+    net = pandapowerNet(name=dss.Circuit.Name())
     report = _ImportReport()
 
     bus_map = _add_buses(net, report)
@@ -229,7 +238,7 @@ def _add_buses(net, report):
             report.warn(f"bus {name!r} has no voltage base (kVBase=0); "
                         "set 'VoltageBases' and call 'CalcVoltageBases' in the master")
         report.bus_phases[name.lower()] = len([n for n in dss.Bus.Nodes() if n != 0])
-        bus_map[name.lower()] = pp.create_bus(net, vn_kv=vn_kv, name=name)
+        bus_map[name.lower()] = create_bus(net, vn_kv=vn_kv, name=name)
     return bus_map
 
 
@@ -251,8 +260,7 @@ def _add_source(net, bus_map, report):
     if bus is None:
         report.warn("Vsource bus not found among circuit buses")
         return
-    pp.create_ext_grid(net, bus, vm_pu=dss.Vsources.PU(), va_degree=0.0,
-                       name=dss.Vsources.Name())
+    create_ext_grid(net, bus, vm_pu=dss.Vsources.PU(), va_degree=0.0, name=dss.Vsources.Name())
 
 
 def _add_lines(net, bus_map, report):
@@ -280,7 +288,7 @@ def _add_lines(net, bus_map, report):
         # A switch (or a zero-length jumper) becomes a pandapower bus-bus switch.
         if dss.Lines.IsSwitch() or length_km <= 0.0:
             closed = not dss.CktElement.IsOpen(1, 0)
-            pp.create_switch(net, bus=f, element=t, et="b", closed=closed, name=name)
+            create_switch(net, bus=f, element=t, et="b", closed=closed, name=name)
             report.n_switches += 1
             i = dss.Lines.Next()
             continue
@@ -296,8 +304,11 @@ def _add_lines(net, bus_map, report):
 
         # The OpenDSS LineCode names the physical conductor; carry it through as
         # pandapower's std_type so the conductor identity survives the import.
-        pp.create_line_from_parameters(
-            net, from_bus=f, to_bus=t, length_km=length_km,
+        create_line_from_parameters(
+            net,
+            from_bus=f,
+            to_bus=t,
+            length_km=length_km,
             r_ohm_per_km=r1 / km,
             x_ohm_per_km=x1 / km,
             c_nf_per_km=c1 / km,
@@ -337,9 +348,14 @@ def _add_reactors(net, bus_map, report):
             continue
 
         max_i_ka = dss.CktElement.NormalAmps() / 1000.0
-        pp.create_line_from_parameters(
-            net, from_bus=f, to_bus=t, length_km=1.0,
-            r_ohm_per_km=dss.Reactors.R(), x_ohm_per_km=dss.Reactors.X(), c_nf_per_km=0.0,
+        create_line_from_parameters(
+            net,
+            from_bus=f,
+            to_bus=t,
+            length_km=1.0,
+            r_ohm_per_km=dss.Reactors.R(),
+            x_ohm_per_km=dss.Reactors.X(),
+            c_nf_per_km=0.0,
             max_i_ka=max_i_ka if max_i_ka > 0 else 10.0,
             name=name,
         )
@@ -412,15 +428,20 @@ def _add_one_transformer(net, bus_map, report):
             f"transformer {name!r} imported at solved tap {tuple(round(t, 4) for t in tap)} "
             "(RegControl baked in as a fixed tap)")
 
-    vkr = pct_r[hv_w] + pct_r[lv_w]           # copper/short-circuit R, % (= %loadloss)
-    vk = math.hypot(vkr, xhl)                  # short-circuit voltage: hypot of the R and X parts
-    pp.create_transformer_from_parameters(
-        net, hv_bus=bus_hv, lv_bus=bus_lv,
+    vkr = pct_r[hv_w] + pct_r[lv_w]  # copper/short-circuit R, % (= %loadloss)
+    vk = math.hypot(vkr, xhl)  # short-circuit voltage: hypot of the R and X parts
+    create_transformer_from_parameters(
+        net,
+        hv_bus=bus_hv,
+        lv_bus=bus_lv,
         sn_mva=max(kva) / 1000.0,
-        vn_hv_kv=vn_hv, vn_lv_kv=vn_lv,
-        vk_percent=vk, vkr_percent=vkr,
-        pfe_kw=0.0, i0_percent=0.0,            # core losses dropped in v1
-        shift_degree=0.0,                      # vector-group shift: no effect on balanced |V|
+        vn_hv_kv=vn_hv,
+        vn_lv_kv=vn_lv,
+        vk_percent=vk,
+        vkr_percent=vkr,
+        pfe_kw=0.0,
+        i0_percent=0.0,  # core losses dropped in v1
+        shift_degree=0.0,  # vector-group shift: no effect on balanced |V|
         name=name,
     )
     report.n_transformers += 1
@@ -438,8 +459,7 @@ def _add_loads(net, bus_map, report):
             report.warn(f"load {name!r} references an unknown bus; skipped")
             i = dss.Loads.Next()
             continue
-        pp.create_load(net, bus, p_mw=dss.Loads.kW() / 1000.0,
-                       q_mvar=dss.Loads.kvar() / 1000.0, name=name)
+        create_load(net, bus, p_mw=dss.Loads.kW() / 1000.0, q_mvar=dss.Loads.kvar() / 1000.0, name=name)
         report.n_loads += 1
         i = dss.Loads.Next()
 
@@ -456,7 +476,6 @@ def _add_capacitors(net, bus_map, report):
             continue
         # A shunt capacitor injects reactive power -> negative q_mvar in pandapower's
         # consumer sign convention (positive q_mvar = inductive absorption).
-        pp.create_shunt(net, bus, q_mvar=-dss.Capacitors.kvar() / 1000.0, p_mw=0.0,
-                        name=name)
+        create_shunt(net, bus, q_mvar=-dss.Capacitors.kvar() / 1000.0, p_mw=0.0, name=name)
         report.n_shunts += 1
         i = dss.Capacitors.Next()
