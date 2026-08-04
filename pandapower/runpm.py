@@ -13,15 +13,33 @@ from pandapower.opf.pm_storage import add_storage_opf_settings
 from pandapower.opf.run_pandamodels import _runpm
 
 
-def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles=True,
-          trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
-          check_connectivity=True,
-          correct_pm_network_data=True, silence=True, pm_model="ACPPowerModel", pm_solver="ipopt",
-          pm_mip_solver="highs", pm_nl_solver="ipopt", pm_time_limits=None, pm_log_level=0,
-          delete_buffer_file=True, pm_file_path = None, opf_flow_lim="S", pm_tol=1e-8,
-          pdm_dev_mode=False, init_vm_pu: Literal["flat", "results"] | float = "flat",
-          init_va_degree: Literal["dc", "flat", "results"] | float = "flat",
-          **kwargs):  # pragma: no cover
+def runpm(
+    net: pandapowerNet,
+    julia_file: str | None = None,
+    pp_to_pm_callback=None,
+    calculate_voltage_angles=True,
+    trafo_model: Literal["t", "pi"] = "t",
+    delta=1e-8,
+    trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+    check_connectivity=True,
+    correct_pm_network_data=True,
+    silence=True,
+    pm_model="ACPPowerModel",
+    pm_solver="ipopt",
+    pm_mip_solver="highs",
+    pm_nl_solver="ipopt",
+    pm_time_limits=None,
+    pm_log_level=0,
+    delete_buffer_file=True,
+    pm_file_path=None,
+    opf_flow_lim="S",
+    pm_tol: float = 1e-8,
+    pdm_dev_mode=False,
+    init_vm_pu: Literal["flat", "results"] | float = "flat",
+    init_va_degree: Literal["dc", "flat", "results"] | float = "flat",
+    init_pq: Literal["flat", "results"] = "flat",
+    **kwargs,
+):
     """
     Runs  optimal power flow from PowerModels.jl via PandaModels.jl
 
@@ -59,6 +77,11 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
         net: The pandapower format network
         julia_file (str, None): path to a custom julia optimization file
         pp_to_pm_callback (function, None): callback function to add data to the PowerModels data structure
+        calculate_voltage_angles:
+        trafo_model:
+        delta:
+        trafo3w_losses:
+        check_connectivity:
         correct_pm_network_data (bool, True): checks if network data is correct. If not tries to correct it
         silence (bool, True): Suppresses information and warning messages output by PowerModels
         pm_model (str, "ACPPowerModel"): The PowerModels.jl model to use
@@ -77,13 +100,13 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                     "S" - apparent power flow (limit in MVA),
                     "I" - current magnitude (limit in MVA at 1 p.u. voltage)
 
-        pm_tol (float, 1e-8): default desired convergence tolerance for solver to use.
+        pm_tol: default desired convergence tolerance for solver to use.
         pdm_dev_mode (bool, False): If True, the develop mode of PdM is called.
-        init_vm_pu (str, "flat"): Initialization of bus voltage magnitudes for
+        init_vm_pu: Initialization of bus voltage magnitudes for
             PowerModels. If "results", voltage magnitudes are initialized from net.res_bus.vm_pu.
-        init_va_degree (str, "flat"): Initialization of bus voltage angles for
+        init_va_degree: Initialization of bus voltage angles for
             PowerModels. If "results", voltage angles are initialized from net.res_bus.va_degree.
-        init_pq (str, "flat"): Initialization of active and reactive generator power
+        init_pq: Initialization of active and reactive generator power
             starts for PowerModels. If "results", pg_start and qg_start values are
             added to the PowerModels generator data from pandapower result tables.
     """
