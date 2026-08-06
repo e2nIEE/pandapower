@@ -3,7 +3,6 @@
 
 import copy
 import logging
-from typing import Callable
 
 import numpy as np
 import pandas as pd

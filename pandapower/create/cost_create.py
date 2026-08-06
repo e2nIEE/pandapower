@@ -43,6 +43,7 @@ def create_pwl_cost(
      - Storage
 
     Parameters:
+        net: the pandapower network
         element: ID of the element in the respective element table
         et: element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"
         points: list of lists with [[p1, p2, c1], [p2, p3, c2], …] where c(n) defines the costs between p(n) and p(n+1)
@@ -173,6 +174,7 @@ def create_poly_cost(
      - Storage ("storage")
 
     Parameters:
+        net: the pandapower network
         element: ID of the element in the respective element table
         et: Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] are possible
         cp1_eur_per_mw: Linear costs per MW
@@ -252,6 +254,7 @@ def create_poly_costs(
      - Storage ("storage")
 
     Parameters:
+        net: the pandapower network
         elements: IDs of the elements in the respective element table
         et: Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] are possible
         cp1_eur_per_mw: Linear costs per MW
