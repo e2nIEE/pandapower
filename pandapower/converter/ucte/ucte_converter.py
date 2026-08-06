@@ -274,8 +274,8 @@ class UCTE2pandapower:
 
         if self.clip_small_x_values:
             # apply rule of min. X of 0.05 Ohm from UCTE-DEF
-            lines.loc[(lines.x >= 0.0) & (lines.x < 0.05) , "x"] = +0.05
-            lines.loc[(lines.x > -0.05) & (lines.x < 0.0) , "x"] = -0.05
+            lines.loc[(lines.x >= 0.0) & (lines.x < 0.05), "x"] = +0.05
+            lines.loc[(lines.x > -0.05) & (lines.x < 0.0), "x"] = -0.05
         else:
             # being close to the PF approach
             lines.loc[lines.x == 0, "x"] = 1e-3
@@ -406,8 +406,8 @@ class UCTE2pandapower:
 
         if self.clip_small_x_values:
             # apply rule of min. X of 0.05 Ohm from UCTE-DEF
-            trafos.loc[(trafos.x >= 0.0) & (trafos.x < 0.05) , "x"] = +0.05
-            trafos.loc[(trafos.x > -0.05) & (trafos.x < 0.0) , "x"] = -0.05
+            trafos.loc[(trafos.x >= 0.0) & (trafos.x < 0.05), "x"] = +0.05
+            trafos.loc[(trafos.x > -0.05) & (trafos.x < 0.0), "x"] = -0.05
         else:
             # being close to the PF approach
             trafos.loc[trafos.x == 0, "x"] = 1e-3

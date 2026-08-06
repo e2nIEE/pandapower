@@ -459,14 +459,14 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
 
 
 def get_connected_elements_dict(
-        net: pandapowerNet,
-        buses: Iterable,
-        respect_switches: bool = True,
-        respect_in_service: bool = False,
-        include_empty_lists: bool = False,
-        element_types: Iterable[str] | None = None,
-        **kwargs
-) -> dict[str, Collection]:
+    net: pandapowerNet,
+    buses: Iterable,
+    respect_switches: bool = True,
+    respect_in_service: bool = False,
+    include_empty_lists: bool = False,
+    element_types: Iterable[str] | None = None,
+    **kwargs,
+) -> dict[str, Collection[int]]:
     """
     Returns a dict of lists of connected elements.
 

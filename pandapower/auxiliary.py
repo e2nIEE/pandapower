@@ -13,6 +13,7 @@ from typing import (
     TypeVar,
     overload,
     Final,
+    TYPE_CHECKING,
 )
 
 import numpy as np
@@ -50,8 +51,12 @@ try:
     geopandas_available = True
 except ImportError:
     geopandas_available = False
-    # for typing only
-    GeoSeries = object
+
+
+if TYPE_CHECKING:
+    if not geopandas_available:
+        raise ImportError("GeoPandas required for type checking!")
+    from geopandas import GeoSeries
 
 
 PyPowerNetwork = dict[str, Any]
@@ -151,7 +156,7 @@ class GeoAccessor:
 
     def __init__(self, pandas_obj: "pdt.Series[str]") -> None:
         self._validate(pandas_obj)
-        self._obj = pandas_obj
+        self._obj: "pdt.Series[str]" = pandas_obj
 
     @staticmethod
     def _validate(obj: "pdt.Series[str]") -> None:
@@ -167,7 +172,7 @@ class GeoAccessor:
     def _extract_coords(x: GeoJSON) -> NDArray[np.float64] | list[NDArray[np.float64]]:
         if x["type"] == "Point":
             return np.array(x["coordinates"])
-        return [np.array(y) for y in x["coordinates"]]
+        return [np.array(y, dtype=np.float64) for y in x["coordinates"]]
 
     @property
     def _coords(self):
