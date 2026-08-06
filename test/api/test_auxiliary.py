@@ -7,6 +7,9 @@ import copy
 import geojson
 import numpy as np
 import pandas as pd
+
+from pandapower.control import Characteristic
+from pandapower.control.util.characteristic import SplineCharacteristic, LogSplineCharacteristic
 from math import isclose
 
 from pandapower.file_io import from_json_string, to_json
@@ -18,7 +21,6 @@ from pandapower.networks import example_simple, example_multivoltage, mv_oberrhe
 from pandapower.timeseries import DFData
 from pandapower.toolbox.element_selection import get_gc_objects_dict
 from pandapower.control import (
-    SplineCharacteristic,
     ContinuousTapControl,
     Characteristic,
     ConstControl

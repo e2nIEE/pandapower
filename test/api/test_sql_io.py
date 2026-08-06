@@ -140,6 +140,5 @@ def test_delete():
                 tab = download_sql_table(cursor, f"{schema}.{element}", grid_id=grid_id)
                 assert tab.empty
 
-
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

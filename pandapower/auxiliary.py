@@ -13,6 +13,7 @@ from typing import (
     TypeVar,
     overload,
     Final,
+    TYPE_CHECKING,
 )
 
 import numpy as np
@@ -40,7 +41,9 @@ try:
     lightsim2grid_available = True
 except ImportError:
     lightsim2grid_available = False
+
 import logging
+
 try:
     from geopandas import GeoSeries
     from shapely import from_geojson
@@ -48,8 +51,12 @@ try:
     geopandas_available = True
 except ImportError:
     geopandas_available = False
-    # for typing only
-    GeoSeries = object
+
+
+if TYPE_CHECKING:
+    if not geopandas_available:
+        raise ImportError("GeoPandas required for type checking!")
+    from geopandas import GeoSeries
 
 
 PyPowerNetwork = dict[str, Any]
@@ -149,7 +156,7 @@ class GeoAccessor:
 
     def __init__(self, pandas_obj: "pdt.Series[str]") -> None:
         self._validate(pandas_obj)
-        self._obj = pandas_obj
+        self._obj: "pdt.Series[str]" = pandas_obj
 
     @staticmethod
     def _validate(obj: "pdt.Series[str]") -> None:
@@ -165,7 +172,7 @@ class GeoAccessor:
     def _extract_coords(x: GeoJSON) -> NDArray[np.float64] | list[NDArray[np.float64]]:
         if x["type"] == "Point":
             return np.array(x["coordinates"])
-        return [np.array(y) for y in x["coordinates"]]
+        return [np.array(y, dtype=np.float64) for y in x["coordinates"]]
 
     @property
     def _coords(self):
@@ -1694,7 +1701,7 @@ def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -
 
 def _init_runpp_options(
     net: pandapowerNet,
-    algorithm: Literal["nr", "iwamoto_nr", "bfsw", "gs", "fdxb", "fdbx"],
+    algorithm: Literal["nr", "iwamoto_nr", "bfsw", "gs", "fdxb", "fdbx", "helm"],
     calculate_voltage_angles: Literal["auto"] | bool,
     init: Literal["auto", "dc", "flat", "results"] | float,
     max_iteration: Literal["auto"] | int,
@@ -1775,7 +1782,7 @@ def _init_runpp_options(
                 calculate_voltage_angles = True
 
     default_max_iteration = {"nr": 10, "iwamoto_nr": 10, "bfsw": 100, "gs": 10000, "fdxb": 30,
-                             "fdbx": 30}
+                             "fdbx": 30, "helm": 40}
     with_facts = net.svc.in_service.any() or net.tcsc.in_service.any() or \
                  net.ssc.in_service.any() or net.vsc.in_service.any() or \
                  net.vsc_stacked.in_service.any() or net.vsc_bipolar.in_service.any()
@@ -1829,9 +1836,9 @@ def _init_runpp_options(
             logger.warning("Currently distributed_slack is implemented for 'ext_grid', 'gen' "
                            "and 'xward' only, not for '" + "', '".join(
                 false_slack_weight_elms) + "'.")
-        if algorithm != 'nr':
+        if algorithm != 'nr' and algorithm != 'helm':
             raise NotImplementedError(
-                'Distributed slack is only implemented for Newton Raphson algorithm.')
+                'Distributed slack is only implemented for Newton Raphson algorithm and HELM.')
 
     if tdpf:
         if algorithm != 'nr':

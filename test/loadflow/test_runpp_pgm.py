@@ -14,6 +14,12 @@ from test.consistency_checks import runpp_pgm_with_consistency_checks, runpp_pgm
 
 
 @pytest.mark.parametrize("consistency_fn", [runpp_pgm_with_consistency_checks, runpp_pgm_3ph_with_consistency_checks])
+@pytest.mark.skipif(
+    sys.version_info.minor < 12,
+    reason=(
+        "power-grid-model-io pandapower converter can not be tested due to bug, update python version to fix this issue"
+    ),
+)
 def test_minimal_net_pgm(consistency_fn):
     # tests corner-case when the grid only has 1 bus and an ext-grid
     net = pandapowerNet(name="test_minimal_net_pgm")

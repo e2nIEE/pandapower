@@ -103,12 +103,15 @@ def test_big_gen_network_calc_sc():
         assert np.isclose(net.res_line_sc.ikss_ka.at[0], 0.46221808, atol=1e-3)
         assert np.isclose(net.res_line_sc.ikss_ka.at[1], 1.72233192, atol=1e-3)
 
+
 cases = [
     (10, "min", [72.16878364, 49.868725]),
     (10, "max", [144.337567, 81.818773]),
     (6, "min", [72.168784, 50.761055]),
     (6, "max", [144.337567, 80.016087])
 ]
+
+
 @pytest.mark.parametrize("tolerance, case, values", cases)
 def test_iec60909_on_single_branch(tolerance, case, values):
     net = pandapowerNet(name="test_iec60909_on_single_branch")

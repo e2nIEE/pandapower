@@ -318,7 +318,7 @@ def create_buses_dc(
             geo = _geodata_to_geo_series([geodata], coords, nr_buses_dc)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata, coords, nr_buses_dc)
+            geo = _geodata_to_geo_series(geodata, coords, nr_buses_dc)  # type: ignore
     else:
         geo = _geodata_to_geo_series(geodata, coords, nr_buses_dc)
 

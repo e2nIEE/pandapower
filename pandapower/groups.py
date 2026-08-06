@@ -906,14 +906,14 @@ def return_group_as_net(
 
 
 def elements_connected_to_group(
-        net: pandapowerNet,
-        index: int,
-        element_types: list[str],
-        find_buses_only_from_buses: bool = False,
-        respect_switches: bool = True,
-        respect_in_service: bool = False,
-        include_empty_lists: bool = False
-) -> dict[str, list[int]]:
+    net: pandapowerNet,
+    index: int,
+    element_types: list[str],
+    find_buses_only_from_buses: bool = False,
+    respect_switches: bool = True,
+    respect_in_service: bool = False,
+    include_empty_lists: bool = False,
+) -> dict[str, Collection[int]]:
     """
     Returns a dict of indices of elements that are connected to the group.
 

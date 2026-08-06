@@ -1,7 +1,6 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import copy
 import os
 import re
@@ -43,6 +42,20 @@ from pandapower.auxiliary import _check_if_numba_is_installed
 numba_installed = _check_if_numba_is_installed()
 if numba_installed:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
+
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
+
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
 
 from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
@@ -519,6 +532,40 @@ def test_bsfw_algorithm():
 
     assert np.allclose(vm_nr, vm_alg)
     assert np.allclose(va_nr, va_alg)
+
+
+@pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
+def test_helm_algorithm_simple():
+    import pandapower.networks as nw
+    net = nw.case9()
+
+    runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    runpp(net, algorithm='helm')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg, atol=1e-5)
+    assert np.allclose(va_nr, va_alg, atol=1e-2)
+
+
+@pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
+def test_helm_algorithm_complex():
+    import pandapower.networks as nw
+    net = nw.case118()
+
+    runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    runpp(net, algorithm='helm')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg, atol=1e-5)
+    assert np.allclose(va_nr, va_alg, atol=1e-2)
 
 
 @pytest.mark.xfail(reason="unknown")
