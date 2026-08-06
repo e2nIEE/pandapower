@@ -515,38 +515,39 @@ def test_create_transformers():
         name=["trafo1", "trafo2"],
         test_kwargs="TestKW"
     )
-    res_df = pd.DataFrame({
-        'name': pd.Series(['trafo1', 'trafo2'], dtype=pd.StringDtype()),
-        'std_type': pd.Series(['0.4 MVA 10/0.4 kV', '0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype()),
-        'hv_bus': pd.Series([0, 0], dtype=np.int64),
-        'lv_bus': pd.Series([1, 2], dtype=np.int64),
-        'sn_mva': pd.Series([0.4, 0.4], dtype=np.float64),
-        'vn_hv_kv': pd.Series([10.0, 10.0], dtype=np.float64),
-        'vn_lv_kv': pd.Series([0.4, 0.4], dtype=np.float64),
-        'vk_percent': pd.Series([4.0, 4.0], dtype=np.float64),
-        'vkr_percent': pd.Series([1.325, 1.325], dtype=np.float64),
-        'pfe_kw': pd.Series([0.95, 0.95], dtype=np.float64),
-        'i0_percent': pd.Series([0.2375, 0.2375], dtype=np.float64),
-        'shift_degree': pd.Series([0.0, 0.0], dtype=np.float64),
-        # 'tap_side': ['', ''],
-        # 'tap_neutral': [nan, nan],
-        # 'tap_min': [nan, nan],
-        # 'tap_max': [nan, nan],
-        # 'tap_step_percent': [nan, nan],
-        # 'tap_step_degree': [nan, nan],
-        # 'tap_pos': [nan, nan],
-        # 'tap_changer_type': [pd.NA, pd.NA],
-        # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
-        # 'tap_dependency_table': [False, False],
-        'parallel': pd.Series([1, 1], dtype=np.int64),
-        'df': pd.Series([1.0, 1.0], dtype=np.float64),
-        'in_service': pd.Series([True, True], dtype=bool),
-        # 'oltc': [False, False],
-        'test_kwargs': ['TestKW', 'TestKW'],
-        'vector_group': pd.Series(['Dyn5', 'Dyn5'], dtype=pd.StringDtype()),
-    })
-    for colum in res_df:
-        assert net.trafo[colum].equals(res_df[colum])
+    res_df = pd.DataFrame(
+        {
+            "name": pd.Series(["trafo1", "trafo2"], dtype=pd.StringDtype()),
+            "std_type": pd.Series(["0.4 MVA 10/0.4 kV", "0.4 MVA 10/0.4 kV"], dtype=pd.StringDtype()),
+            "hv_bus": pd.Series([0, 0], dtype=np.int64),
+            "lv_bus": pd.Series([1, 2], dtype=np.int64),
+            "sn_mva": pd.Series([0.4, 0.4], dtype=np.float64),
+            "vn_hv_kv": pd.Series([10.0, 10.0], dtype=np.float64),
+            "vn_lv_kv": pd.Series([0.4, 0.4], dtype=np.float64),
+            "vk_percent": pd.Series([4.0, 4.0], dtype=np.float64),
+            "vkr_percent": pd.Series([1.325, 1.325], dtype=np.float64),
+            "pfe_kw": pd.Series([0.95, 0.95], dtype=np.float64),
+            "i0_percent": pd.Series([0.2375, 0.2375], dtype=np.float64),
+            "shift_degree": pd.Series([150.0, 150.0], dtype=np.float64),
+            "tap_side": pd.Series(["hv", "hv"], dtype=pd.StringDtype()),
+            "tap_neutral": pd.Series([0.0, 0.0], dtype=np.float64),
+            "tap_min": pd.Series([-2.0, -2.0], dtype=np.float64),
+            "tap_max": pd.Series([2.0, 2.0], dtype=np.float64),
+            "tap_step_percent": pd.Series([2.5, 2.5], dtype=np.float64),
+            "tap_step_degree": pd.Series([0.0, 0.0], dtype=np.float64),
+            "tap_pos": pd.Series([0.0, 0.0], dtype=np.float64),
+            "tap_changer_type": pd.Series(["Ratio", "Ratio"], dtype=pd.StringDtype()),
+            "parallel": pd.Series([1, 1], dtype=np.int64),
+            "df": pd.Series([1.0, 1.0], dtype=np.float64),
+            "in_service": pd.Series([True, True], dtype=bool),
+            # 'oltc': [False, False],
+            "test_kwargs": ["TestKW", "TestKW"],
+            "trafo_characteristic_table": [False, False],
+            "vector_group": pd.Series(["Dyn5", "Dyn5"], dtype=pd.StringDtype()),
+        }
+    )
+    for column in res_df:
+        assert net.trafo[column].equals(res_df[column])
     assert dataframes_equal(net.trafo, res_df)
 
 
@@ -563,36 +564,39 @@ def test_create_transformers_for_single():
         test_kwargs="TestKW",
         sn_mva=.4
     )
-    res_df = pd.DataFrame({
-        'name': pd.Series(['trafo1'], dtype=pd.StringDtype()),
-        'std_type': pd.Series(['0.4 MVA 10/0.4 kV'], dtype=pd.StringDtype()),
-        'hv_bus': pd.Series([0], dtype=np.int64),
-        'lv_bus': pd.Series([1], dtype=np.int64),
-        'sn_mva': pd.Series([0.4], dtype=np.float64),
-        'vn_hv_kv': pd.Series([10.0], dtype=np.float64),
-        'vn_lv_kv': pd.Series([0.4], dtype=np.float64),
-        'vk_percent': pd.Series([4.0], dtype=np.float64),
-        'vkr_percent': pd.Series([1.325], dtype=np.float64),
-        'pfe_kw': pd.Series([0.95], dtype=np.float64),
-        'i0_percent': pd.Series([0.2375], dtype=np.float64),
-        'shift_degree': pd.Series([0.0], dtype=np.float64),
-        # 'tap_side': [''],
-        # 'tap_neutral': [nan],
-        # 'tap_min': [nan],
-        # 'tap_max': [nan],
-        # 'tap_step_percent': [nan],
-        # 'tap_step_degree': [nan],
-        # 'tap_pos': [nan],
-        # 'tap_changer_type': [''],
-        # 'id_characteristic_table': pd.Series([pd.NA], dtype=pd.Int64Dtype),
-        # 'tap_dependency_table': [False],
-        'parallel': pd.Series([1], dtype=np.int64),
-        'df': pd.Series([1.0], dtype=np.float64),
-        'in_service': pd.Series([True], dtype=bool),
-        # 'oltc': [False],
-        'test_kwargs': ['TestKW'],
-        'vector_group': pd.Series(['Dyn5'], dtype=pd.StringDtype()),
-    })
+    res_df = pd.DataFrame(
+        {
+            "name": pd.Series(["trafo1"], dtype=pd.StringDtype()),
+            "std_type": pd.Series(["0.4 MVA 10/0.4 kV"], dtype=pd.StringDtype()),
+            "hv_bus": pd.Series([0], dtype=np.int64),
+            "lv_bus": pd.Series([1], dtype=np.int64),
+            "sn_mva": pd.Series([0.4], dtype=np.float64),
+            "vn_hv_kv": pd.Series([10.0], dtype=np.float64),
+            "vn_lv_kv": pd.Series([0.4], dtype=np.float64),
+            "vk_percent": pd.Series([4.0], dtype=np.float64),
+            "vkr_percent": pd.Series([1.325], dtype=np.float64),
+            "pfe_kw": pd.Series([0.95], dtype=np.float64),
+            "i0_percent": pd.Series([0.2375], dtype=np.float64),
+            "shift_degree": pd.Series([150.0], dtype=np.float64),
+            "tap_side": pd.Series(["hv"], dtype=pd.StringDtype()),
+            "tap_neutral": pd.Series([0.0], dtype=np.float64),
+            "tap_min": pd.Series([-2.0], dtype=np.float64),
+            "tap_max": pd.Series([2.0], dtype=np.float64),
+            "tap_step_percent": pd.Series([2.5], dtype=np.float64),
+            "tap_step_degree": pd.Series([0.0], dtype=np.float64),
+            "tap_pos": pd.Series([0.0], dtype=np.float64),
+            "tap_changer_type": pd.Series(["Ratio"], dtype=pd.StringDtype()),
+            "parallel": pd.Series([1], dtype=np.int64),
+            "df": pd.Series([1.0], dtype=np.float64),
+            "in_service": pd.Series([True], dtype=bool),
+            # "oltc": [False],
+            "test_kwargs": ["TestKW"],
+            "trafo_characteristic_table": [False],
+            "vector_group": pd.Series(["Dyn5"], dtype=pd.StringDtype()),
+        }
+    )
+    for column in res_df:
+        assert net.trafo[column].equals(res_df[column])
     assert dataframes_equal(net.trafo, res_df)
 
     validate_network(net)
