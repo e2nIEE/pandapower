@@ -1,2 +1,2 @@
-from pandapower.diagnostic.diagnostic import Diagnostic
-from pandapower.diagnostic.diagnostic_helpers import DiagnosticFunction, diagnostic
+from pandapower.diagnostic.diagnostic import Diagnostic, diagnostic
+from pandapower.diagnostic.diagnostic_helpers import DiagnosticFunction

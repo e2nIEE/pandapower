@@ -13,7 +13,7 @@ import numpy.typing as npt
 from pandapower.network_structure import get_default_value
 from pandapower import pandapowerNet
 from pandapower.pp_types import Int
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _add_to_entries_if_not_nan,
     _check_element,
     _check_multiple_elements,

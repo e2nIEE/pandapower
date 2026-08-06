@@ -6,7 +6,7 @@ import logging
 from pandapower.control.basic_controller import Controller
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 from pandapower.control.util.auxiliary import get_min_max_q_mvar_from_characteristics_object
-from pandapower.create._utils import add_column_to_df
+from pandapower.create.utils import add_column_to_df
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -674,13 +674,17 @@ class BinarySearchControl(Controller):
         add_column_to_df(net, self.output_element, 'min_q_mvar')
         add_column_to_df(net, self.output_element, 'max_q_mvar')
 
-        if ('id_q_capability_characteristic' in net[self.output_element] and not np.all(np.isnan(net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values))):
-            qmin, qmax = get_min_max_q_mvar_from_characteristics_object(net, self.output_element, self.output_element_index)
+        if ('id_q_capability_characteristic' in net[self.output_element] and not np.all(np.isnan(
+                net[self.output_element].loc[self.output_element_index, 'id_q_capability_characteristic'].values))):
+            qmin, qmax = get_min_max_q_mvar_from_characteristics_object(net, self.output_element,
+                                                                        self.output_element_index)
             self.output_min_q_mvar = np.nan_to_num(qmin, nan=-np.inf)
             self.output_max_q_mvar = np.nan_to_num(qmax, nan=np.inf)
         else:
-            self.output_min_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
-            self.output_max_q_mvar = np.nan_to_num(net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
+            self.output_min_q_mvar = np.nan_to_num(
+                net[self.output_element].loc[self.output_element_index, 'min_q_mvar'].values, nan=-np.inf)
+            self.output_max_q_mvar = np.nan_to_num(
+                net[self.output_element].loc[self.output_element_index, 'max_q_mvar'].values, nan=np.inf)
 
         net[self.output_element].loc[self.output_element_index, 'min_q_mvar'] = self.output_min_q_mvar
         net[self.output_element].loc[self.output_element_index, 'max_q_mvar'] = self.output_max_q_mvar

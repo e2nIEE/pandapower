@@ -7,6 +7,7 @@ Change Log
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
+- [CHANGED] moved test files out of package, :code:`pandapower.test` to :code:`test`
 
 [upcoming release] - 2026-..-..
 -------------------------------

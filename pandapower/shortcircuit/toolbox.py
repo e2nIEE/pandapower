@@ -1,26 +1,26 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-from pandapower.auxiliary import _preserve_dtypes
+
+__all__ = ["detect_power_station_unit", "calc_sc_on_line"]
 
 import logging
-
-logger = logging.getLogger(__name__)
 
 import numpy as np
 import pandas as pd
 import networkx as nx
 from copy import deepcopy
 
+from pandapower.auxiliary import _preserve_dtypes
 from pandapower.create import create_bus
+from pandapower.create.utils import _get_index_with_check
 from pandapower.run import rundcpp
 from pandapower.topology.graph_searches import connected_component
 from pandapower.shortcircuit.calc_sc import calc_sc
-from pandapower.create import _get_index_with_check
 from pandapower.topology import create_nxgraph
 from pandapower.pypower.idx_bus import BUS_I
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
 
-__all__ = ["detect_power_station_unit", "calc_sc_on_line"]
+logger = logging.getLogger(__name__)
 
 def detect_power_station_unit(net, mode="auto",
                               max_gen_voltage_kv=80, max_distance_km=0.01):

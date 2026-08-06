@@ -229,6 +229,28 @@ def add_pm_gen_start_values_from_results(net, pm):
     return None
 
 
+def _convert_inf_nan_to_float(obj):
+    """
+    Recursively converts inf, -inf, and nan values to safe floats in nested structures.
+    
+    This is needed because JSON does not support inf/nan values (they serialize as
+    "Infinity", which is non-standard JSON), and Julia's JSON parser will fail on them.
+    
+    Parameters:
+        obj: The object to process (dict, list, or numeric value)
+    """
+    if isinstance(obj, dict):
+        return {k: _convert_inf_nan_to_float(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_inf_nan_to_float(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isnan(obj):
+            return 0.0
+        elif math.isinf(obj):
+            return 1e10
+    return obj
+
+
 def dump_pm_json(pm, buffer_file=None):
     # dump pm dict to buffer_file (*.json)
     if buffer_file is None:
@@ -236,8 +258,9 @@ def dump_pm_json(pm, buffer_file=None):
         temp_name = next(tempfile._get_candidate_names())
         buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
     logger.debug("writing PowerModels data structure to %s" % buffer_file)
+    pm_safe = _convert_inf_nan_to_float(pm)
     with open(buffer_file, 'w') as outfile:
-        json.dump(pm, outfile, indent=4, sort_keys=True, cls=NumpyEncoder)
+        json.dump(pm_safe, outfile, indent=4, sort_keys=True, cls=NumpyEncoder)
     return buffer_file
 
 

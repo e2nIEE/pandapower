@@ -1,3 +1,10 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+"""
+A module containing some default diagnostic functions that will be used when not specified otherwise.
+"""
+
 import copy
 import sys
 from collections import defaultdict
@@ -63,13 +70,14 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
         """
         Parameters:
             net: pandapower network
+
         Keyword Arguments:
             Any: kwargs are passed to
-        
+
         Returns:
             dict that contains all input type restriction violations grouped by element (keys)
             Format: {'element': [element_index, 'element_attribute', attribute_value]}
-            
+
         """
         check_results: dict[str, Any] = {}
 
@@ -78,7 +86,7 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
         # for each attribute according to pandapower data structure documantation
         # (see also type_checks function)
 
-        important_values = {
+        important_values: dict[str, list[tuple[str, str]]] = {
             "bus": [("vn_kv", ">0"), ("in_service", "boolean")],
             "line": [
                 ("from_bus", "positive_integer"),
@@ -184,25 +192,25 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
             "vkr_percent_larger": check_vkr_larger,
         }
 
-        for key in important_values:
+        for key, values in important_values.items():
             if len(net[key]) > 0:
-                for value in important_values[key]:
+                for column, function_name in values:
                     # every element is checked separately, TODO: implement vector based checks
                     for i, element in net[key].iterrows():
-                        check_result = type_checks[value[1]](element, i, value[0])
+                        check_result = type_checks[function_name](element, i, column)
                         if check_result is not None:
                             if key not in check_results:
                                 check_results[key] = []
                             # converts np.nan to str for easier usage of assert in pytest
-                            nan_check = pd.isnull(net[key][value[0]].at[i])
+                            nan_check: bool = pd.isnull(net[key][column].at[i])
                             if nan_check:
-                                check_results[key].append((i, value[0], str(net[key][value[0]].at[i]), value[1]))
+                                check_results[key].append((i, column, str(net[key][column].at[i]), function_name))
                             else:
-                                check_results[key].append((i, value[0], net[key][value[0]].at[i], value[1]))
+                                check_results[key].append((i, column, net[key][column].at[i], function_name))
 
         return check_results if check_results else None
 
-    def report(self, error: Exception | None, results: dict[str, Any] | None):
+    def report(self, error: Exception | None, results: dict[str, Any] | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for invalid values failed due to the following error:")
@@ -242,8 +250,8 @@ class NoExtGrid(DiagnosticFunction[pandapowerNet, bool]):
         if net.ext_grid.in_service.sum() + (net.gen.slack & net.gen.in_service).sum() == 0:
             return True
         return None
-    
-    def report(self, error: Exception | None, results: bool | None):
+
+    def report(self, error: Exception | None, results: bool | None) -> None:
         # error and success checks
         if error is not None:
             self.out.warning("Check for external grid failed due to the following error:")
@@ -337,12 +345,16 @@ class Overload(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, bool] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            for power flow function. If "run" is in kwargs the default call to runpp()
             is replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Return:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -436,12 +448,16 @@ class CheckDCPowerflow(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            for power flow function. If "run" is in kwargs the default call to runpp()
             is replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Return:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", rundcpp), **kwargs)
@@ -487,12 +503,16 @@ class DisableVoltageDependentLoads(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            for power flow function. If "run" is in kwargs the default call to runpp()
             is replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Return:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -539,12 +559,16 @@ class WrongLineCapacitance(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            Args for power flow function. If "run" is in kwargs the default call to runpp()
             is replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Return:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -760,6 +784,168 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
                 f"Too high resistance tested: Power flow did not converge with line.r_ohm_per_km scaled down to {osf_percent}")
 
 
+class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
+    """
+    Checks, if a loadflow calculation converges. If not, checks, if line reactance is too high, by scaling it to 1%.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.reactance_scaling_factor: float | None = None
+
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
+        """
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            Args for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
+
+        Return:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
+        """
+        # get function to run power flow
+        run = partial(kwargs.pop("run", runpp), **kwargs)
+        check_result = None
+        line_reactance = copy.copy(net.line.x_ohm_per_km)
+
+        reactance_scaling_factor = kwargs.pop(
+            "reactance_scaling_factor", default_argument_values["reactance_scaling_factor"]
+        )
+
+        self.reactance_scaling_factor = reactance_scaling_factor
+        try:
+            run(net)
+        except expected_exceptions:
+            check_result = False
+            try:
+                net.line.x_ohm_per_km *= reactance_scaling_factor
+                run(net)
+                check_result = True
+            except expected_exceptions:
+                self.out.debug("Line reactance check failed.")
+
+        except Exception as e:
+            self.out.error(f"Line reactance check failed: {str(e)}")
+            raise e
+
+        # teardown
+        net.line.x_ohm_per_km = line_reactance
+
+        return check_result
+
+    def report(self, error: Exception | None, results: bool | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for convergence error failed due to the following error:")
+            self.out.warning(error)
+            return
+        if results is None:
+            self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+            return
+
+        # message header
+        self.out.compact("line problems:\n")
+        self.out.detailed("Checking for too high line capacitance...\n")
+
+        # message body
+        if self.capacitance_scaling_factor is not None:
+            capacitance_scaling_factor = self.capacitance_scaling_factor
+        else:
+            raise RuntimeError('diagnostic was not executed before calling results?')
+
+        osf_percent = f"{capacitance_scaling_factor * 100} percent."
+
+        if results:
+            self.out.warning(
+                f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+        else:
+            self.out.warning(
+                f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
+
+
+class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
+    """
+    Checks, if a loadflow calculation converges. If not, checks, if line resistance is too high, by scaling it to 1%.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.resistance_scaling_factor: float | None = None
+
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
+        """
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            Args for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
+
+        Return:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
+        """
+        # get function to run power flow
+        run = partial(kwargs.pop("run", runpp), **kwargs)
+        check_result = None
+        line_resistance = copy.copy(net.line.r_ohm_per_km)
+
+        resistance_scaling_factor = kwargs.pop(
+            "resistance_scaling_factor", default_argument_values["resistance_scaling_factor"]
+        )
+
+        self.resistance_scaling_factor = resistance_scaling_factor
+        try:
+            run(net)
+        except expected_exceptions:
+            check_result = False
+            try:
+                net.line.r_ohm_per_km *= resistance_scaling_factor
+                run(net)
+                check_result = True
+            except expected_exceptions:
+                self.out.debug("Line resistance check failed.")
+
+        except Exception as e:
+            self.out.error(f"Line resistance check failed: {str(e)}")
+            raise e
+
+        # teardown
+        net.line.r_ohm_per_km = line_resistance
+
+        return check_result
+
+    def report(self, error: Exception | None, results: bool | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for convergence error failed due to the following error:")
+            self.out.warning(error)
+            return
+        if results is None:
+            self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
+            return
+
+        # message header
+        self.out.compact("line problems:\n")
+        self.out.detailed("Checking for too high line capacitance...\n")
+
+        # message body
+        if self.capacitance_scaling_factor is not None:
+            capacitance_scaling_factor = self.capacitance_scaling_factor
+        else:
+            raise RuntimeError('diagnostic was not executed before calling results?')
+
+        osf_percent = f"{capacitance_scaling_factor * 100} percent."
+
+        if results:
+            self.out.warning(
+                f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
+        else:
+            self.out.warning(
+                f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
+
+
 class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
     """
     Checks, if subnets are converging. This is done using the zone attribute.
@@ -771,12 +957,16 @@ class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, bool] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            Args for power flow function. If "run" is in kwargs the default call to runpp()
             is replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Return:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -836,11 +1026,14 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, bool] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            Args for power flow function. If "run" is in kwargs the default call to runpp()
             is replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
+        Return: dict with the results of the overload check
                   Format: {'load_overload': True/False, 'generation_overload', True/False}
         """
         # get function to run power flow
@@ -934,12 +1127,16 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, float] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            args for power flow function. If "run" is in kwargs the default call to runpp()
             is replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Returns:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -951,7 +1148,10 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
 
         orig_gen = copy.copy(net.gen)
 
-        def _calculate_losses(net):
+        def _calculate_losses(net: pandapowerNet) -> np.floating[Any]:
+            """
+            internal function to calculate losses
+            """
             idx = net.gen.loc[net.gen.slack==True].index
             res = np.linalg.norm(net.res_gen.loc[idx].p_mw + net.res_gen.loc[idx].q_mvar * 1j)
             res += np.linalg.norm(net.res_ext_grid.p_mw + net.res_ext_grid.q_mvar * 1j)
@@ -1025,12 +1225,16 @@ class TestContinuousBusIndices(DiagnosticFunction[pandapowerNet, bool]):
     """
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            Args for power flow function. If "run" is in kwargs the default call to runpp()
             is replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Return:
+            dict with the results of the overload check
+            Format: {'load_overload': True/False, 'generation_overload', True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -1072,9 +1276,12 @@ class WrongSwitchConfiguration(DiagnosticFunction[pandapowerNet, bool]):
     """
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-                       is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
         """
         run = partial(kwargs.pop("run", runpp), **kwargs)
         switch_configuration = copy.deepcopy(net.switch.closed)
@@ -1108,7 +1315,9 @@ class WrongSwitchConfiguration(DiagnosticFunction[pandapowerNet, bool]):
 
         # message body
         if results:
-            self.out.warning("Possibly wrong switch configuration found: power flow converges with all switches closed.")
+            self.out.warning(
+                "Possibly wrong switch configuration found: power flow converges with all switches closed."
+            )
         else:
             self.out.warning("Power flow still does not converge with all switches closed.")
 
@@ -1119,11 +1328,15 @@ class MissingBusIndices(DiagnosticFunction[pandapowerNet, dict]):
     """
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: unused
+        Parameters:
+            net: pandapower network
 
-        :returns: List of tuples each containing missing bus indices.
-                  Format: [(element_index, bus_name (e.g. "from_bus",  bus_index), ...]
+        Keyword Arguments:
+            unused
+
+        Returns:
+             List of tuples each containing missing bus indices.
+             Format: [(element_index, bus_name (e.g. "from_bus",  bus_index), ...]
         """
         check_results = {}
         bus_indices = set(net.bus.index)
@@ -1177,17 +1390,21 @@ class DifferentVoltageLevelsConnected(DiagnosticFunction[pandapowerNet, dict]):
     """
     Checks if there are lines or switches that connect different voltage levels.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.net = None
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs:
+        Parameters:
+            net: pandapower network
 
-        :returns: dict that contains all lines and switches that connect different voltage levels.
-                  Format: {'lines': lines, 'switches': switches}
+        Keyword Arguments:
+            unused
+
+        Return:
+            dict that contains all lines and switches that connect different voltage levels.
+            Format: {'lines': lines, 'switches': switches}
         """
         self.net = net
         check_results = {}
@@ -1250,22 +1467,26 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
     """
     Checks, if there are lines, xwards or impedances with an impedance value close to zero.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.params = {}
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> list[dict] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-                       is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: list that contains the indices of all lines with an impedance value of zero.
+        Keyword Arguments:
+            Args for power flow function. If "run" is in kwargs the default call to runpp()
+            is replaced by the function kwargs["run"]
+
+        Return:
+             list that contains the indices of all lines with an impedance value of zero.
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
-        check_results: list[dict] = []
-        implausible_elements = {}
+        check_results: list[dict[Any, Any]] = []
+        implausible_elements: dict[str, Any] = {}
 
         max_r_ohm = kwargs.pop("max_r_ohm", default_argument_values.get("max_r_ohm", None))
         min_r_ohm = kwargs.pop("min_r_ohm", default_argument_values.get("min_r_ohm", None))
@@ -1284,72 +1505,65 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
             if v is None:
                 raise RuntimeError(f"missing default argument value: '{n}'")
 
-        line = net.line.loc[
-            (
-                (net.line.r_ohm_per_km * net.line.length_km >= max_r_ohm)
-                | (net.line.r_ohm_per_km * net.line.length_km <= min_r_ohm)
-                | (net.line.x_ohm_per_km * net.line.length_km >= max_x_ohm)
-                | (net.line.x_ohm_per_km * net.line.length_km <= min_x_ohm)
-            )
-            & net.line.in_service
-        ].index
+        elements: dict[str, Any] = {
+            "line": net.line.loc[(
+                        (net.line.r_ohm_per_km * net.line.length_km >= max_r_ohm)
+                        | (net.line.r_ohm_per_km * net.line.length_km <= min_r_ohm)
+                        | (net.line.x_ohm_per_km * net.line.length_km >= max_x_ohm)
+                        | (net.line.x_ohm_per_km * net.line.length_km <= min_x_ohm)
+                    ) & net.line.in_service
+                ].index,
+            "xward": net.xward.loc[(
+                    (net.xward.r_ohm.abs() >= max_r_ohm)
+                    | (net.xward.r_ohm.abs() <= min_r_ohm)
+                    | (net.xward.x_ohm.abs() >= max_x_ohm)
+                    | (net.xward.x_ohm.abs() <= min_x_ohm)
+                ) & net.xward.in_service
+            ].index,
+            "impedance": net.impedance.loc[(
+                (np.abs(net.impedance.rft_pu) >= max_r_ohm / zb_f_ohm)
+                | (np.abs(net.impedance.rft_pu) <= min_r_ohm / zb_f_ohm)
+                | (np.abs(net.impedance.xft_pu) >= max_x_ohm / zb_f_ohm)
+                | (np.abs(net.impedance.xft_pu) <= min_x_ohm / zb_f_ohm)
+                | (np.abs(net.impedance.rtf_pu) >= max_r_ohm / zb_t_ohm)
+                | (np.abs(net.impedance.rtf_pu) <= min_r_ohm / zb_t_ohm)
+                | (np.abs(net.impedance.xtf_pu) >= max_x_ohm / zb_t_ohm)
+                | (np.abs(net.impedance.xtf_pu) <= min_x_ohm / zb_t_ohm)
+            ) & net.impedance.in_service].index,
+            "trafo": net.trafo.loc[((
+                (net.trafo.vk_percent / 100 * np.square(net.trafo.vn_hv_kv) / net.trafo.sn_mva >= max_x_ohm)
+                | (net.trafo.vk_percent / 100 * np.square(net.trafo.vn_lv_kv) / net.trafo.sn_mva <= min_x_ohm)
+            ) & net.trafo.in_service)].index,
+            "trafo3w": net.trafo3w.loc[((
+                (net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_hv_mva >= max_x_ohm)
+                | (net.trafo3w.vk_hv_percent
+                   / 100 * np.square(net.trafo3w.vn_mv_kv)
+                   / net.trafo3w.sn_hv_mva <= min_x_ohm)
+                | (net.trafo3w.vk_mv_percent
+                   / 100 * np.square(net.trafo3w.vn_mv_kv)
+                   / net.trafo3w.sn_mv_mva >= max_x_ohm)
+                | (net.trafo3w.vk_mv_percent
+                   / 100 * np.square(net.trafo3w.vn_lv_kv)
+                   / net.trafo3w.sn_mv_mva <= min_x_ohm)
+                | (net.trafo3w.vk_lv_percent
+                   / 100 * np.square(net.trafo3w.vn_hv_kv)
+                   / net.trafo3w.sn_lv_mva >= max_x_ohm)
+                | (net.trafo3w.vk_lv_percent
+                   / 100 * np.square(net.trafo3w.vn_lv_kv)
+                   / net.trafo3w.sn_lv_mva <= min_x_ohm)
+            ) & net.trafo3w.in_service)].index,
+            "vsc": net.vsc.loc[
+                ((net.vsc.r_ohm <= min_r_ohm) | (net.vsc.x_ohm <= min_x_ohm) | (net.vsc.r_dc_ohm <= min_r_ohm))
+                & net.vsc.in_service
+            ].index,
+            "line_dc": net.line_dc.loc[(
+                (net.line_dc.r_ohm_per_km * net.line_dc.length_km) <= min_r_ohm
+            ) & net.line_dc.in_service].index
+        }
 
-        xward = net.xward.loc[(
-                (net.xward.r_ohm.abs() >= max_r_ohm)
-                | (net.xward.r_ohm.abs() <= min_r_ohm)
-                | (net.xward.x_ohm.abs() >= max_x_ohm)
-                | (net.xward.x_ohm.abs() <= min_x_ohm)
-            ) & net.xward.in_service
-        ].index
-
-        impedance = net.impedance.loc[(
-            (np.abs(net.impedance.rft_pu) >= max_r_ohm / zb_f_ohm)
-            | (np.abs(net.impedance.rft_pu) <= min_r_ohm / zb_f_ohm)
-            | (np.abs(net.impedance.xft_pu) >= max_x_ohm / zb_f_ohm)
-            | (np.abs(net.impedance.xft_pu) <= min_x_ohm / zb_f_ohm)
-            | (np.abs(net.impedance.rtf_pu) >= max_r_ohm / zb_t_ohm)
-            | (np.abs(net.impedance.rtf_pu) <= min_r_ohm / zb_t_ohm)
-            | (np.abs(net.impedance.xtf_pu) >= max_x_ohm / zb_t_ohm)
-            | (np.abs(net.impedance.xtf_pu) <= min_x_ohm / zb_t_ohm)
-        ) & net.impedance.in_service].index
-
-        trafo = net.trafo.loc[((
-            (net.trafo.vk_percent / 100 * np.square(net.trafo.vn_hv_kv) / net.trafo.sn_mva >= max_x_ohm)
-            | (net.trafo.vk_percent / 100 * np.square(net.trafo.vn_lv_kv) / net.trafo.sn_mva <= min_x_ohm)
-        ) & net.trafo.in_service)].index
-
-        trafo3w = net.trafo3w.loc[((
-            (net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_hv_mva >= max_x_ohm)
-            | (net.trafo3w.vk_hv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_hv_mva <= min_x_ohm)
-            | (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_mv_kv) / net.trafo3w.sn_mv_mva >= max_x_ohm)
-            | (net.trafo3w.vk_mv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_mv_mva <= min_x_ohm)
-            | (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_hv_kv) / net.trafo3w.sn_lv_mva >= max_x_ohm)
-            | (net.trafo3w.vk_lv_percent / 100 * np.square(net.trafo3w.vn_lv_kv) / net.trafo3w.sn_lv_mva <= min_x_ohm)
-        ) & net.trafo3w.in_service)].index
-
-        vsc = net.vsc.loc[
-            ((net.vsc.r_ohm <= min_r_ohm) | (net.vsc.x_ohm <= min_x_ohm) | (net.vsc.r_dc_ohm <= min_r_ohm))
-            & net.vsc.in_service
-        ].index
-
-        line_dc = net.line_dc.loc[(
-            (net.line_dc.r_ohm_per_km * net.line_dc.length_km) <= min_r_ohm
-        ) & net.line_dc.in_service].index
-
-        if len(line) > 0:
-            implausible_elements["line"] = list(line)
-        if len(xward) > 0:
-            implausible_elements["xward"] = list(xward)
-        if len(impedance) > 0:
-            implausible_elements["impedance"] = list(impedance)
-        if len(trafo) > 0:
-            implausible_elements["trafo"] = list(trafo)
-        if len(trafo3w) > 0:
-            implausible_elements["trafo3w"] = list(trafo3w)
-        if len(vsc) > 0:
-            implausible_elements["vsc"] = list(vsc)
-        if len(line_dc) > 0:
-            implausible_elements["line_dc"] = list(line_dc)
+        for element_name, element_index in elements.items():
+            if len(element_index) > 0:
+                implausible_elements[element_name] = list(element_index)
 
         check_results.append(implausible_elements)
         # checks if loadflow converges when implausible lines or impedances are replaced by switches
@@ -1419,7 +1633,9 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
     def report(self, error: Exception | None, results: list[dict] | None) -> None:
         # error and success checks
         if error is not None:
-            self.out.warning("Check for elements with impedance values close to zero failed due to the following error:")
+            self.out.warning(
+                "Check for elements with impedance values close to zero failed due to the following error:"
+            )
             self.out.warning(error)
             return
         if results is None:
@@ -1474,19 +1690,21 @@ class NominalVoltagesMismatch(DiagnosticFunction[pandapowerNet, dict]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
-        :param pandapowerNet net: pandapower network
+        Parameters:
+            net: pandapower network
 
-        :returns: dict that contains all components whose nominal voltages
-                  differ from the nominal voltages of the buses they're
-                  connected to.
-                  Format:
-                  {trafo': {'hv_bus' : trafos_indices,
-                            'lv_bus' : trafo_indices,
-                            'hv_lv_swapped' : trafo_indices},
-                  trafo3w': {'hv_bus' : trafos3w_indices,
-                             'mv_bus' : trafos3w_indices
-                             'lv_bus' : trafo3w_indices,
-                             'connectors_swapped_3w' : trafo3w_indices}}
+        Return:
+            dict that contains all components whose nominal voltages
+            differ from the nominal voltages of the buses they're
+            connected to.
+            Format:
+            {trafo': {'hv_bus' : trafos_indices,
+                      'lv_bus' : trafo_indices,
+                      'hv_lv_swapped' : trafo_indices},
+            trafo3w': {'hv_bus' : trafos3w_indices,
+                       'mv_bus' : trafos3w_indices
+                       'lv_bus' : trafo3w_indices,
+                       'connectors_swapped_3w' : trafo3w_indices}}
         """
         self.net = net
         results = {}
@@ -1793,15 +2011,12 @@ class WrongReferenceSystem(DiagnosticFunction[pandapowerNet, dict]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
-        
         Parameters:
             net: pandapower network
 
         Returns:
-            check_results: dict that contains the indices of all components where the usage of the wrong reference
-                system was found.
+            dict that contains the indices of all components where the usage of the wrong reference system was found.
                 Format: {'element_type': element_indices}
-
         """
         self.net = net
         check_results = {}
@@ -1837,7 +2052,8 @@ class WrongReferenceSystem(DiagnosticFunction[pandapowerNet, dict]):
         for element_type in results:
             self.out.compact(f"{element_type} {results[element_type]}: wrong reference system.")
             for element in results[element_type]:
-                _element_type: str = element_type[:-1]  # remove s at end (element_type can be 'loads', 'gens' or 'sgens'
+                # remove s at end (element_type can be 'loads', 'gens' or 'sgens'
+                _element_type: str = element_type[:-1]
                 element_name = self.net[_element_type].name.at[element]
                 element_p_mw = self.net[_element_type].p_mw.at[element]
                 self.out.detailed(
@@ -1874,6 +2090,7 @@ class NumbaComparison(DiagnosticFunction[pandapowerNet, dict]):
         """
         Parameters:
             net: pandapower network
+
         Keyword Arguments:
             Any: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
                 is replaced by the function kwargs["run"]
@@ -1884,7 +2101,7 @@ class NumbaComparison(DiagnosticFunction[pandapowerNet, dict]):
         if numba_tolerance is None:
             raise RuntimeError("missing default argument value for 'numba_tolerance'")
         run = partial(kwargs.pop("run", runpp), **kwargs)
-        check_results: dict = {}
+        check_results: dict[Any, Any] = {}
         run(net, numba=True)
         result_numba_true = copy.deepcopy(net)
         run(net, numba=False)
@@ -1948,7 +2165,7 @@ class DeviationFromStdType(DiagnosticFunction[pandapowerNet, dict[str, dict]]):
             All elements, that don't match the values in the standard type library
             Format: (element_type, element_index, parameter)
         """
-        check_results: dict[str, dict] = defaultdict(dict)
+        check_results: dict[str, dict[Any, Any]] = defaultdict(dict)
         for key, std_types in net.std_types.items():
             if key not in net or "std_type" not in net[key]:
                 continue
@@ -2014,13 +2231,11 @@ class ParallelSwitches(DiagnosticFunction[pandapowerNet, list[list]]):
     """
     def diagnostic(self, net: pandapowerNet, **kwargs) -> list[list] | None:
         """
-
         Parameters:
             net: pandapower network
 
         Returns:
             List of lists each containing parallel switches.
-        
         """
         found_parallel_switches = []
         compare_parameters = ["bus", "element", "et"]
@@ -2052,7 +2267,7 @@ class ParallelSwitches(DiagnosticFunction[pandapowerNet, list[list]]):
 
 
 # (name in result_dict, instance of class, list of arguments: None = all kwargs / [] = no arguments)
-default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | None]] = [
+default_diagnostic_functions: list[tuple[str, DiagnosticFunction[Any, Any], list[str] | None]] = [
     ("missing_bus_indices", MissingBusIndices(), []),
     ("disconnected_elements", DisconnectedElements(), []),
     ("different_voltage_levels_connected", DifferentVoltageLevelsConnected(), []),

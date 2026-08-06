@@ -33,8 +33,8 @@ from pandapower.pypower.idx_bus_dc import DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, 
 from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
+from pandapower.create.utils import add_column_to_df
 from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
-from pandapower.create._utils import add_column_to_df
 
 
 
@@ -787,6 +787,7 @@ def _get_trafo_shift(
         For complex tap changers:
         - Performs detailed voltage triangle calculations considering both magnitude and angle changes
     """
+
     def _cos(x: ArrayLike) -> ArrayLike:
         """
         get cosine for x

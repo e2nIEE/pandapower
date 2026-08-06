@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IGNORES: "--ignore=pandapower/test/opf --ignore=pandapower/test/network_schema"
+  IGNORES: "--ignore=test/opf --ignore=test/network_schema"
   TUTORIAL_IGNORES: "--ignore=tutorials/uk_power_networks"
 
 jobs:
@@ -100,7 +100,7 @@ jobs:
           uv pip list
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
+          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} test/network_schema
           cp ./coverage.xml ./coverage-net-schema-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
@@ -145,7 +145,7 @@ jobs:
         # remove it also in pyproject.toml 'requires-python'
     steps:
       - uses: actions/checkout@v6
-      - uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
+      - uses: julia-actions/setup-julia@v3.0.2
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
@@ -164,7 +164,7 @@ jobs:
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          pytest --cov=./ --cov-report=xml pandapower/test/opf
+          pytest --cov=./ --cov-report=xml test/opf
           cp ./coverage.xml ./coverage-opf.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
@@ -359,19 +359,19 @@ jobs:
         DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
         SCHEMA: 'test_schema'
       run: |
-        uv run python -c "import sys; from pandapower.test.api.test_sql_io import POSTGRESQL_AVAILABLE; sys.exit(not POSTGRESQL_AVAILABLE);"
+        uv run python -c "import sys; from test.api.test_sql_io import POSTGRESQL_AVAILABLE; sys.exit(not POSTGRESQL_AVAILABLE);"
     - name: Test pandapower File I/O
       env:
         DSN: 'postgresql://test_user:secret@localhost/sandbox'
         SCHEMA: 'test_schema'
       run: |
-        uv run pytest pandapower/test/api/test_sql_io.py
+        uv run pytest test/api/test_sql_io.py
     - name: Test pandapower File I/O against alternative port
       env:
         DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
         SCHEMA: 'test_schema'
       run: |
-        uv run pytest pandapower/test/api/test_sql_io.py
+        uv run pytest test/api/test_sql_io.py
 
   tutorial_tests:
     needs: build

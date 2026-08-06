@@ -113,9 +113,6 @@ version = {attr = "pandapower._version.__version__"}
 include = [
     "pandapower*",
 ]
-exclude = [
-    "pandapower.test*",
-]
 
 [tool.setuptools.package-data]
 "*" = [
@@ -130,6 +127,7 @@ exclude = [
 [tool.pytest.ini_options]
 addopts = [
     "--strict-markers",
+    "--import-mode=importlib",
     "--maxfail=1",  # stop after the first failure / error / timeout
     "--timeout=60", # "--timeout-method=thread",  # per‑test timeout in seconds (requires pytest-timeout)
 ]
@@ -145,10 +143,6 @@ filterwarnings = [
 #log_file = "./pytest.log"
 #log_file_level = "WARN"
 
-[tool.coverage.run]
-omit = [
-    "pandapower/test/*"
-]
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",

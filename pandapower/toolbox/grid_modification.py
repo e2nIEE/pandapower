@@ -13,7 +13,7 @@ from pandapower.pp_types import StandardTypesDict, StandardTypesDictKeys
 from pandapower.auxiliary import _preserve_dtypes, ensure_iterability, log_to_level
 from pandapower.network import pandapowerNet, plural_s
 from pandapower.std_types import change_std_type
-from pandapower.create._utils import add_column_to_df
+from pandapower.create.utils import add_column_to_df
 from pandapower.create import (
     create_switch, create_line_from_parameters, create_impedance, create_gen, create_ext_grid,
     create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
@@ -1250,7 +1250,7 @@ def replace_line_by_impedance(
             xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
             gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
             bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p if "c0_nf_per_km" in cols else None,
-            name=line_["name"], # TODO: should this be line_.name (line index) or line_["name"]
+            name=line_["name"],  # TODO: should this be line_.name (line index) or line_["name"]
             in_service=line_.in_service))
         i += 1
     _replace_group_member_element_type(net, index, "line", new_index, "impedance",

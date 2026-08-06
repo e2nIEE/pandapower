@@ -2,6 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from math import pi
+import logging
+
 import numpy as np
 import pandas as pd
 from pandapower.network import pandapowerNet
@@ -15,7 +17,6 @@ from pandapower.create import (
 )
 from pandapower.run import runpp
 
-import logging
 logger = logging.getLogger(__name__)
 
 ppc_elms = ["bus", "branch", "gen"]
@@ -28,8 +29,9 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
     Parameters:
         ppc (dict): The pypower case file.
         f_hz (int): The frequency of the network, by default 50
-        validate_conversion (bool): If True, validate_from_ppc is run after conversion. For running the validation, the ppc must already contain the pypower powerflow results or pypower must be installed, by default False
-    
+        validate_conversion (bool): If True, validate_from_ppc is run after conversion. For running the validation, the
+            ppc must already contain the pypower powerflow results or pypower must be installed, by default False
+
     Keyword Arguments:
         validate_from_ppc: if validate_conversion is True
         tap_side:
@@ -41,7 +43,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
 
     Example:
         >>> from pandapower.converter.pypower.from_ppc import from_ppc
-        >>> from pandapower.test.converter.test_from_ppc import get_testgrids
+        >>> from test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
         >>> net = from_ppc(ppc, f_hz=60)
     """
@@ -50,7 +52,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
         logger.info('There are false baseKV given in the pypower case file.')
 
     net = pandapowerNet(name="from_ppc", f_hz=f_hz, sn_mva=ppc["baseMVA"])
-    net._from_ppc_lookups = dict()
+    net._from_ppc_lookups = {}
 
     _from_ppc_bus(net, ppc)
     net._from_ppc_lookups["gen"] = _from_ppc_gen(net, ppc)
@@ -259,7 +261,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         ratio_1[~ratio_is_zero] -= 1
         br_b = ppc['branch'][is_trafo, BR_B]
         if np.any(br_b > 0):
-            logger.warning("some BR_B of transformers in ppc['branch'] are positive, but transformers are inductive, therefore their B should be negative")
+            logger.warning("some BR_B of transformers in ppc['branch'] are positive, but transformers are inductive, "
+                           "therefore their B should be negative")
         i0_percent = np.sqrt(br_b**2 + br_g[is_trafo]**2) * 100 * baseMVA / sn
         # i0_percent = -ppc['branch'][is_trafo, BR_B] * 100 * baseMVA / sn
         is_neg_i0_percent = i0_percent < 0
@@ -270,7 +273,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
                 f'(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) '
                 'is positive.')
 
-        pfe_kw = br_g[is_trafo] * baseMVA * 1e3 
+        pfe_kw = br_g[is_trafo] * baseMVA * 1e3
         # pfe_kw = 0.
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
         vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
@@ -291,7 +294,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     else:
         idx_trafo = []
     # unused data from ppc: rateB, rateC
-    
+
     if np.any(is_impedance):
         fb = net.bus.index[from_bus[is_impedance]]
         tb = net.bus.index[to_bus[is_impedance]]
@@ -314,13 +317,13 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
 
         # divide by 2 because in ppc[branch] it stands for the total Y of the branch,
         # and here we specify the "from" and "to" portions of Y separately
-        idx_impedance = create_impedances(net, from_buses=fb, to_buses=tb, rft_pu=rft_pu, 
+        idx_impedance = create_impedances(net, from_buses=fb, to_buses=tb, rft_pu=rft_pu,
                                           xft_pu=xft_pu, rtf_pu=rft_pu+r_asym_pu, xtf_pu=xft_pu+x_asym_pu,
                                           bf_pu=bf_pu, gf_pu=gf_pu, gt_pu=gf_pu+g_asym_pu,
                                           bt_pu=bf_pu+b_asym_pu, sn_mva=sn_mva)
     else:
         idx_impedance = []
-    
+
     # branch_lookup: which branches are lines, and which ones are transformers
     branch_lookup = pd.DataFrame({"element": [-1] * n_bra, "element_type": [""] * n_bra})
     branch_lookup.loc[is_line, "element"] = idx_line
@@ -392,7 +395,7 @@ def _calc_pp_pwl_points(ppc_pwl_points):
         return arr.tolist()
 
     pts = ppc_pwl_points
-    if not (pts.shape[1] % 2) == 0:
+    if pts.shape[1] % 2 != 0:
         raise ValueError("_calc_pp_pwl_points() expects ppc_pwl_points with shape[1] is "
                          f"multiple of 2. However, ppc_pwl_points.shape[1]={ppc_pwl_points}.")
     c = (pts[:, 3::2] - pts[:, 1:-2:2]) / (pts[:, 2::2] - pts[:, :-2:2])
@@ -543,12 +546,13 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
         Whether the power flow results matches.
 
     Example:
-        >>> import pandapower
-        >>> from pandapower.test.converter.test_from_ppc import get_testgrids
+        >>> from pandapower.run import runpp
+        >>> from pandapower.converter.pypower import validate_from_ppc, from_ppc
+        >>> from test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
-        >>> net = pandapower.converter.from_ppc(ppc, f_hz=50)
-        >>> pandapower.runpp(net)
-        >>> pf_match = pandapower.converter.validate_from_ppc(ppc, net)
+        >>> net = from_ppc(ppc, f_hz=50)
+        >>> runpp(net)
+        >>> pf_match = validate_from_ppc(ppc, net)
     """
     if max_diff_values is None:
         max_diff_values = {
@@ -620,7 +624,7 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
     pp_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(pp_res["gen"][:, -1:], ppc)
 
     # --- log maximal differences the powerflow result comparison
-    diff_res = dict()
+    diff_res = {}
     comp_keys = ["bus", "branch", "gen_p", "gen_q_sum_per_bus"]
     for comp_key in comp_keys:
         diff_res[comp_key] = ppc_res[comp_key] - pp_res[comp_key]

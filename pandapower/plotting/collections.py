@@ -7,15 +7,13 @@ import inspect
 import re
 import sys
 import math
+import logging
+from itertools import combinations
+from typing_extensions import deprecated
 from typing import Callable, TYPE_CHECKING, Optional, Tuple, Literal
 
 import geojson
 import pandas as pd
-
-from itertools import combinations
-from typing_extensions import deprecated
-
-import logging
 import numpy as np
 from pandas import isnull, Series, DataFrame
 
@@ -1106,10 +1104,6 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
     Returns:
         patch collection, line collection
     """
-    from pandapower.plotting.simple_plot import calculate_unique_angles
-
-    # if unique_angles == None:
-    #     unique_angles = calculate_unique_angles(net)
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
     buses = net.load.loc[loads, "bus"].values

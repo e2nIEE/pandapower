@@ -8,7 +8,7 @@ issues leading to errors.
 
 For convienience a function is provided that creates the Diagnostic object and runs the diagnostic.
 
-.. autofunction:: pandapower.diagnostic.diagnostic_helpers.diagnostic
+.. autofunction:: pandapower.diagnostic.diagnostic.diagnostic
 
 Diagnostic Class
 ----------------

@@ -14,7 +14,7 @@ from pandapower import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import BusType, Int
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _add_to_entries_if_not_nan,
     _get_index_with_check,
     _get_multiple_index_with_check,

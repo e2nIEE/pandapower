@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 
 from pandapower.auxiliary import pandapowerNet, soft_dependency_error
-from pandapower.create._utils import add_column_to_df
+from pandapower.create.utils import add_column_to_df
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_components
 
@@ -130,6 +130,7 @@ def _get_switch_mask(net, element, switch_element, open_switches):
     open_elements = net.switch.element.values[open_switches & element_switches]
     open_element_mask = np.isin(net[element].index, open_elements, invert=True)
     return open_element_mask
+
 
 def coords_from_igraph(
         graph: "igraph.Graph",

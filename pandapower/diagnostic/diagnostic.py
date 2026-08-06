@@ -5,9 +5,11 @@ import logging
 from typing import Literal, Any
 from collections.abc import Callable
 
-from pandapower.network import ADict
+from pandapower.network import ADict, pandapowerNet
 from pandapower.diagnostic.diagnostic_functions import default_diagnostic_functions, default_argument_values
-from pandapower.diagnostic.diagnostic_helpers import logger, DiagnosticFunction, NotCompactFilter, NotDetailedFilter, LogCount
+from pandapower.diagnostic.diagnostic_helpers import (
+    logger, DiagnosticFunction, NotCompactFilter, NotDetailedFilter, LogCount
+)
 
 # LOGGER:
 # there is no local logger here because it requires the custom log levels from diagnostic_helpers
@@ -17,7 +19,7 @@ log_format_len = 60
 log_message_sep = f"\n{'':-<{log_format_len}}\n"
 
 
-class Diagnostic:
+class Diagnostic(object):
     """
     A Diagnostic Tool Class for diagnosing and reporting on issues in a ADict subclassed network
 
@@ -35,8 +37,8 @@ class Diagnostic:
         >>> result = diag.diagnose_network(net, report_style="detailed")
 
     """
-    def __init__(self, add_default_functions: bool = True):
-        self._functions: list[tuple[str, DiagnosticFunction, list[str] | None]] = []
+    def __init__(self, add_default_functions: bool = True) -> None:
+        self._functions: list[tuple[str, DiagnosticFunction[Any, Any], list[str] | None]] = []
         self._report_functions: list[Callable] = []
         self.kwargs = {}
         """
@@ -53,8 +55,8 @@ class Diagnostic:
         "Dictionary storing the errors raised by the DiagnosticFunctions"
 
     def register_function(
-            self, diagnostic_function: DiagnosticFunction, argument_names: list[str] | None, name: str | None
-    ):
+            self, diagnostic_function: DiagnosticFunction[Any, Any], argument_names: list[str] | None, name: str | None
+    ) -> None:
         """
         register a diagnostic function to run when running network diagnostics and the associated report function.
 
@@ -63,7 +65,7 @@ class Diagnostic:
             argument_names: the kwargs that should be passed to the diagnostic function. If None is provided all kwargs
                 will be passed.
             name: name to use for results dict and reports, if None will use name of the class
-            
+
         Example:
             >>> from pandapower.diagnostic import Diagnostic
             >>> from pandapower.diagnostic.diagnostic_functions import DeviationFromStdType
@@ -71,7 +73,7 @@ class Diagnostic:
             >>> diag = Diagnostic(add_default_functions=False)
             >>> diag.register_function(DeviationFromStdType(), None)
             >>> diag.register_function(DeviationFromStdType(), None, "dev_from_std_twice")
-        
+
         """
         if name is None:
             name = diagnostic_function.__class__.__name__
@@ -100,13 +102,9 @@ class Diagnostic:
              return_result_dict: returns a dictionary containing all check results
                  True: returns dict with all check results
                  False: no result dict
-             overload_scaling_factor: downscaling factor for loads and generation for overload check
-             lines_min_length_km: minimum length_km allowed for lines
-             lines_min_z_ohm: minimum z_ohm allowed for lines
-             nom_voltage_tolerance: highest allowed relative deviation between nominal voltages and bus voltages
 
         Keyword arguments:
-            any: for the power flow function to use during tests. If "run" is in kwargs the default call to runpp() is
+            the power flow function args to use during tests. If "run" is in kwargs the default call to runpp() is
                 replaced by the function kwargs["run"]
 
         Returns:
@@ -148,25 +146,25 @@ class Diagnostic:
 
         return self.diag_results if return_result_dict else None
 
-    def compact_report(self, warnings_only: bool = False):
+    def compact_report(self, warnings_only: bool = False) -> None:
         """
         Generate the compact diagnostic report.
-        
+
         Parameters:
             warnings_only: If True only warnings are printed
-        
+
         Raises:
             RuntimeError: When called and no diagnostic results are available.
         """
         self.report(warnings_only=warnings_only)
 
-    def detailed_report(self, warnings_only: bool = False):
+    def detailed_report(self, warnings_only: bool = False) -> None:
         """
         Generate the detailed diagnostic report.
-        
+
         Parameters:
             warnings_only: If True only warnings are printed
-        
+
         Raises:
             RuntimeError: When called and no diagnostic results are available.
         """
@@ -175,11 +173,11 @@ class Diagnostic:
     def report(self, compact_report: bool = True, warnings_only: bool = False) -> None:
         """
         Generate a diagnostic report.
-        
+
         Parameters:
             compact_report: diagnostic report should be compact or detailed
             warnings_only: diagnostic report should be only warnings or all info
-        
+
         Raises:
             RuntimeError: When called and no diagnostic results are available.
         """
@@ -215,3 +213,55 @@ class Diagnostic:
         logger.removeFilter(log_counter)
         logger.removeFilter(log_detail_filter)
         logger.setLevel(original_log_level)
+
+def diagnostic(
+        net: pandapowerNet,
+        report_style: Literal['compact', 'detailed'] | None = 'detailed',
+        warnings_only: bool = False,
+        return_result_dict: bool = True,
+        overload_scaling_factor: float = 0.001,
+        lines_min_length_km: float = 0.,
+        lines_min_z_ohm: float = 0.,
+        nom_voltage_tolerance: float = 0.3,
+        **kwargs
+) -> dict[str, Any] | None:
+    """
+    Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
+
+    Parameters:
+        net: A pandapower network
+        report_style: style of the report, that gets ouput in the console
+            'detailed': full report with high level of additional descriptions
+            'compact'  : more compact report, containing essential information only
+            'None'     : no report
+        warnings_only: Filters logging output for warnings
+            True: logging output for errors only
+            False: logging output for all checks, regardless if errors were found or not
+        return_result_dict: returns a dictionary containing all check results
+            True: returns dict with all check results
+            False: no result dict
+        overload_scaling_factor: downscaling factor for loads and generation for overload check
+        lines_min_length_km: minimum length_km allowed for lines
+        lines_min_z_ohm: minimum z_ohm allowed for lines
+        nom_voltage_tolerance: highest allowed relative deviation between nominal voltages and bus voltages
+
+    Keyword Arguments:
+        Keyword arguments for the power flow function to use during tests. If "run" is in kwargs the default call to
+        runpp() is replaced by the function kwargs["run"]
+
+    Returns:
+        dict that contains the indices of all elements where errors were found
+        Format: {'check_name': check_results}
+
+    Example:
+        >>> from pandapower.diagnostic import diagnostic
+        >>> diagnostic(net, report_style='compact', warnings_only=True)
+
+    """
+    from pandapower.diagnostic import Diagnostic
+    d = Diagnostic()
+    kwargs['overload_scaling_factor'] = overload_scaling_factor
+    kwargs['lines_min_length_km'] = lines_min_length_km
+    kwargs['nom_voltage_tolerance'] = nom_voltage_tolerance
+    kwargs['lines_min_z_ohm'] = lines_min_z_ohm
+    return d.diagnose_network(net, report_style, warnings_only, return_result_dict, **kwargs)

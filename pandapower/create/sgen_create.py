@@ -12,7 +12,7 @@ import numpy.typing as npt
 
 from pandapower import pandapowerNet
 from pandapower.pp_types import GeneratorType, Int, UnderOverExcitedType, WyeDeltaType
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _add_to_entries_if_not_nan,
     _check_element,
     _check_multiple_elements,
