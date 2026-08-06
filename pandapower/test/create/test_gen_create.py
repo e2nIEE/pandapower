@@ -4,7 +4,7 @@
 import pytest
 import numpy as np
 
-from pandapower.create import create_bus, create_gen, create_gens
+from pandapower.create import create_bus, create_buses, create_gen, create_gens
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -285,4 +285,45 @@ def test_create_gens_raise_errorexcept():
         )
 
     validate_network(net)
+
+def test_create_gen_uses_bus_voltage_limits_as_defaults():
+    net = pandapowerNet(name="test_create_gen_uses_bus_voltage_limits_as_defaults")
+    bus = create_bus(net, vn_kv=20.0, min_vm_pu=0.95, max_vm_pu=1.05)
+
+    gen = create_gen(net, bus=bus, p_mw=1.0)
+
+    assert np.isclose(net.gen.at[gen, "min_vm_pu"], 0.95)
+    assert np.isclose(net.gen.at[gen, "max_vm_pu"], 1.05)
+
+
+def test_create_gen_keeps_explicit_voltage_limits():
+    net = pandapowerNet(name="test_create_gen_keeps_explicit_voltage_limits")
+    bus = create_bus(net, vn_kv=20.0, min_vm_pu=0.95, max_vm_pu=1.05)
+
+    gen = create_gen(
+        net,
+        bus=bus,
+        p_mw=1.0,
+        min_vm_pu=0.90,
+        max_vm_pu=1.10,
+    )
+
+    assert np.isclose(net.gen.at[gen, "min_vm_pu"], 0.90)
+    assert np.isclose(net.gen.at[gen, "max_vm_pu"], 1.10)
+
+
+def test_create_gens_use_bus_voltage_limits_as_defaults():
+    net = pandapowerNet(name="test_create_gens_use_bus_voltage_limits_as_defaults")
+    buses = create_buses(
+        net,
+        nr_buses=2,
+        vn_kv=20.0,
+        min_vm_pu=[0.95, 0.96],
+        max_vm_pu=[1.05, 1.06],
+    )
+
+    gens = create_gens(net, buses=buses, p_mw=[1.0, 2.0])
+
+    assert np.allclose(net.gen.loc[gens, "min_vm_pu"].values, [0.95, 0.96])
+    assert np.allclose(net.gen.loc[gens, "max_vm_pu"].values, [1.05, 1.06])
 

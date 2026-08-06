@@ -8,6 +8,7 @@ import numpy as np
 from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pypower.idx_brch_sc import K_ST
 from pandapower.results import _copy_results_ppci_to_ppc
@@ -24,11 +25,25 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def calc_sc(net, bus=None,
-            fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
-            ith=False, tk_s=1., kappa_method: Literal["B", "C"] = "C", r_fault_ohm=0., x_fault_ohm=0.,
-            branch_results=False, check_connectivity=True, return_all_currents=False,
-            inverse_y=True, use_pre_fault_voltage=False):
+def calc_sc(
+    net: pandapowerNet,
+    bus=None,
+    fault: Literal["3ph", "2ph", "1ph"] = "3ph",
+    case: Literal["max", "min"] = "max",
+    lv_tol_percent: int = 10,
+    topology: Literal["meshed", "radial", "auto"] = "auto",
+    ip: bool = False,
+    ith: bool = False,
+    tk_s: float = 1.0,
+    kappa_method: Literal["B", "C"] = "C",
+    r_fault_ohm: float = 0.0,
+    x_fault_ohm: float = 0.0,
+    branch_results: bool = False,
+    check_connectivity: bool = True,
+    return_all_currents: bool = False,
+    inverse_y: bool = True,
+    use_pre_fault_voltage: bool = False,
+):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -41,68 +56,49 @@ def calc_sc(net, bus=None,
     The output is stored in the net.res_bus_sc table as a short_circuit current
     for each bus.
 
-    INPUT:
-        **net** (pandapowerNet) pandapower Network
-
-        **bus** (int, list, np.array, None) defines if short-circuit calculations should only be calculated for
-        defined bus
-
-        ***fault** (str, 3ph) type of fault
+    Parameters:
+        net: the pandapower Network
+        bus (int, list, np.array, None): defines if short-circuit calculations should only be calculated for defined bus
+        fault: type of fault
 
             - "3ph" for three-phase
-
             - "2ph" for two-phase (phase-to-phase) short-circuits
-
             - "1ph" for single-phase-to-ground faults
 
-        **case** (str, "max")
+        case:
 
             - "max" for maximal current calculation
-
             - "min" for minimal current calculation
 
-        **lv_tol_percent** (int, 10) voltage tolerance in low voltage grids
+        lv_tol_percent (int, 10): voltage tolerance in low voltage grids
 
             - 6 for 6% voltage tolerance
-
             - 10 for 10% voltage olerance
 
-        **ip** (bool, False) if True, calculate aperiodic short-circuit current
-
-        **ith** (bool, False) if True, calculate equivalent thermical short-circuit current Ith
-
-        **topology** (str, "auto") define option for meshing (only relevant for ip and ith)
+        topology: define option for meshing (only relevant for ip and ith)
 
             - "meshed" - it is assumed all buses are supplied over multiple paths
-
             - "radial" - it is assumed all buses are supplied over exactly one path
-
             - "auto" - topology check for each bus is performed to see if it is supplied over multiple paths
 
-        **tk_s** (float, 1) failure clearing time in seconds (only relevant for ith)
-
-        **r_fault_ohm** (float, 0) fault resistance in Ohm
-
-        **x_fault_ohm** (float, 0) fault reactance in Ohm
-
-        **branch_results** (bool, False) defines if short-circuit results should also be generated for branches
-
-        **return_all_currents** (bool, False) applies only if branch_results=True, if True short-circuit currents for
-        each (branch, bus) tuple is returned otherwise only the max/min is returned
-
-        **inverse_y** (bool, True) defines if complete inverse should be used instead of LU factorization,
-        factorization version is in experiment which should be faster and memory efficienter
-
-        **use_pre_fault_voltage** (bool, False) whether to consider the pre-fault grid state (superposition method,
-        "Type C")
+        ip: if True, calculate aperiodic short-circuit current
+        ith: if True, calculate equivalent thermical short-circuit current Ith
+        tk_s: failure clearing time in seconds (only relevant for ith)
+        r_fault_ohm: fault resistance in Ohm
+        x_fault_ohm: fault reactance in Ohm
+        branch_results: defines if short-circuit results should also be generated for branches
+        return_all_currents: applies only if branch_results=True, if True short-circuit currents for each (branch, bus)
+            tuple is returned otherwise only the max/min is returned
+        inverse_y: defines if complete inverse should be used instead of LU factorization.
+            factorization is experimental. It should be faster and more memory efficient.
+        use_pre_fault_voltage: whether to consider the pre-fault grid state (superposition method, "Type C")
 
 
-    OUTPUT:
+    Returns:
 
-    EXAMPLE:
-        calc_sc(net)
-
-        print(net.res_bus_sc)
+    Example:
+        >>> calc_sc(net)
+        >>> print(net.res_bus_sc)
     """
     if fault not in ["3ph", "2ph", "1ph"]:
         raise NotImplementedError(
@@ -126,6 +122,7 @@ def calc_sc(net, bus=None,
     
     init_vm_pu: Literal["results", "flat"]
     init_va_degree: Literal["results", "flat"]
+    trafo_model: Literal["t", "pi"]
     if use_pre_fault_voltage:
         init_vm_pu = "results"
         init_va_degree = "results"

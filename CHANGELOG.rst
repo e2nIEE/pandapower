@@ -7,9 +7,43 @@ Change Log
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
+- [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] restored ``OpenDSSDirect.py`` to the ``all``/``dev`` extras so the OpenDSS converter is exercised (and its coverage reported) in CI again; it was dropped in #3062 because installing it alongside ``pytest~=9.1`` crashed the pytest process on Windows. Root cause (see `dss-extensions/OpenDSSDirect.py#148 <https://github.com/dss-extensions/OpenDSSDirect.py/issues/148>`_): pytest enables Python's ``faulthandler`` by default, which intercepts a first-chance Windows structured exception that OpenDSSDirect.py's native backend raises -- and normally handles itself -- during import, and misreports it as fatal. Bracketing the import with ``faulthandler.disable()``/``.enable()`` avoids the false crash while leaving ``faulthandler`` protecting the rest of the test run; the converter now runs on Windows instead of merely skipping there.
+- [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
+
+[3.5.4] - 2026-07-08
+-------------------------------
+- [UPDATED] versions of dependent libraries
+- [FIXED] improved from_json even further
+
+[3.5.3] - 2026-07-07
+-------------------------------
+- [FIXED] moved a misleading logger.warning message
+
+[3.5.2] - 2026-07-06
+-------------------------------
+- [REMOVED] direct dependency to helmpy, if you want to use it, you have to install it manually or uncomment the line in pyproject.toml. Otherwise pypi.org rejects the package.
+
+[3.5.1] - 2026-07-06
+-------------------------------
+- [FIXED] upload pipeline
+
+[3.5.0] - 2026-07-06
+-------------------------------
+- [ADDED] toolbox: :code:`compute_switch_flows` computes power flow through zero-impedance bus-bus switches via nodal balance
+- [ADDED] Redispatch optimizer based on a custom formulation in pandamodels.jl, supports cost based and power based redispatch.
+- [ADDED] OpenDSS converter: ``from_opendss`` imports an OpenDSS feeder into a balanced positive-sequence pandapower net (revisits #1442).
+- [FIXED] OPF: fixed generalized cost Hessian evaluation in ``opf_costfcn``.
+- [FIXED] kwargs handling in pandamodels functions
+- [ADDED] added optional init_pq parameter to the PandaModels opf runpm wrappers for active/reactive power starts
+- [ADDED] zigzag earthing transformer vector groups (`ZNyn`, `ZNd`, `ZNy`, `ZN`) in the zero-sequence short-circuit model. Per the YNzn zero-sequence model (IEC / transformer references), the zigzag winding completely decouples the primary and secondary zero sequences, presenting a low-impedance shunt-to-ground at its terminal: the HV-winding leakage portion (`si0_hv_partial`) in series with the neutral earthing impedance `3·(rn_ohm + j·xn_ohm)` at the star point. An earthed-wye secondary (`ZNyn`) gets its own decoupled zero-sequence path to ground (LV leakage portion + zero-sequence magnetising); a delta / unearthed secondary (`ZNd`/`ZNy`) has none. Enables single-phase earth-fault studies on delta-fed systems earthed via a zigzag transformer.
+- [ADDED] `rn_ohm` (resistive neutral earthing impedance) for two-winding transformers; the neutral earthing impedance `(rn_ohm + j*xn_ohm)` is now applied as `3*Z_N` to the zero sequence of all earthed-star vector groups in the short-circuit calculation (previously `xn_ohm` was only considered for power station unit transformers, and only as a reactance). Enables modelling neutral earthing resistors (NER/NGR) for single-phase earth-fault studies.
+- [FIXED] gen for 3ph load flow, so load flow is run without errors.
+- [ADDED] hardening of from_json function with a white list
+- [FIXED] (Log)SplineCharacteristic now have their own de-/serializer
 - [ADDED] HELMpy as an additional solver
 - [CHANGED] sql_io now requires single dsn string for database connection instead of separate host, user, etc. keywords.
 - [FIXED] sql_io not working with version of psycopg installed
@@ -25,6 +59,7 @@ Change Log
 - [ADDED] check to check if vkr_percent values are reasonable (see issue #786).
 - [FIXED] cim2pp shift_lv_degree was translated from wrong entry
 - [FIXED] UnboundLocalError in _from_ppc_branch when creating impedance elements
+- [FIXED] incompatible network versions (i.e. networks with newer format versions than the currently installed pandapower version) are identified in convert_format and raise an error
 - [ADDED] LTDS support
 - [FIXED] ucte2pp: voltage setpoints from gens connected to the same busbar are now averaged
 - [FIXED] ucte2pp: small X values are clipped to 0.05 Ohm (according to UCTE-DEF) to increase convergence
