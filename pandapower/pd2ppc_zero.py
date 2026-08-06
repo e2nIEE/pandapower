@@ -612,6 +612,68 @@ def _add_impedance_sc_impedance_zero(net, ppc):
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values.astype(np.int64)
 
 
+def _split_trafo3w_vector_group(vector_group):
+    """
+    Split the vector group of a three winding transformer into the connection
+    code of its hv, mv and lv winding, e.g. "YNyd" -> ["yn", "y", "d"].
+    """
+    vg = vector_group.lower()
+    windings, ix = [], 0
+    while ix < len(vg):
+        if vg[ix + 1:ix + 2] == "n":
+            windings.append(vg[ix:ix + 2])
+            ix += 2
+        else:
+            windings.append(vg[ix])
+            ix += 1
+    return windings
+
+
+def _get_trafo3w_zn(t3, column):
+    value = t3.get(column, 0.)
+    if value is None:
+        return 0.
+    value = float(value)
+    return 0. if math.isnan(value) else value
+
+
+def _add_trafo3w_neutral_earthing_impedance(net, ppc, r, x, n_t3):
+    """
+    Add the neutral earthing impedance of a three winding transformer to the
+    zero sequence branch of the winding it belongs to. A star point earthed
+    through Z_N appears as 3*Z_N in series with the zero sequence impedance of
+    that winding (IEC 60909-0), the same way net.trafo.xn_ohm / rn_ohm is
+    handled for two winding transformers. The columns are given per winding:
+    xn_hv_ohm / rn_hv_ohm, xn_mv_ohm / rn_mv_ohm, xn_lv_ohm / rn_lv_ohm.
+
+    The branches of the star model are hv_bus -> star point, star point ->
+    mv_bus and star point -> lv_bus. Their impedance is referred to the to
+    side, and the star point is on the hv bus base voltage, so in all three
+    cases that is the base voltage of the winding's own terminal bus.
+    """
+    sides = ("hv", "mv", "lv")
+    columns = [f"{p}n_{side}_ohm" for side in sides for p in ("r", "x")]
+    if not any(col in net.trafo3w.columns for col in columns):
+        return
+    bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    for t3_ix in range(n_t3):
+        t3 = net.trafo3w.iloc[t3_ix, :]
+        windings = _split_trafo3w_vector_group(t3.vector_group)
+        for side_ix, (side, winding) in enumerate(zip(sides, windings)):
+            # only an earthed star point carries a neutral earthing impedance
+            if not winding.endswith("n"):
+                continue
+            zn_ohm = complex(_get_trafo3w_zn(t3, f"rn_{side}_ohm"),
+                             _get_trafo3w_zn(t3, f"xn_{side}_ohm"))
+            if zn_ohm == 0:
+                continue
+            vn_kv = ppc["bus"][bus_lookup[int(t3[f"{side}_bus"])], BASE_KV]
+            zn_pu = 3 * zn_ohm / (vn_kv ** 2 / ppc["baseMVA"])
+            br_ix = t3_ix + side_ix * n_t3
+            r[br_ix] += zn_pu.real
+            x[br_ix] += zn_pu.imag
+
+
 def _add_trafo3w_sc_impedance_zero(net, ppc):
     # TODO Roman: check this/expand this
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
@@ -765,6 +827,8 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[t3_ix] = BIG_NUMBER
         else:
             raise UserWarning(f"{t3.vector_group} not supported yet for trafo3w!")
+
+    _add_trafo3w_neutral_earthing_impedance(net, ppc, r, x, n_t3)
 
     branch[f:t, BR_R] = r
     branch[f:t, BR_X] = x

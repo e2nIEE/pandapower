@@ -592,5 +592,92 @@ def test_zigzag_earthing_transformer(inverse_y):
     assert build("ZNyn", rn_ohm=5.0)[0] < znyn_mv
 
 
+@pytest.mark.parametrize("inverse_y", (True, False))
+@pytest.mark.parametrize("side, vector_group, faulted_bus", [
+    ("hv", "YNyd", 1), ("hv", "YNynd", 1),
+    ("mv", "YNynd", 2), ("mv", "YYnd", 2),
+    ("lv", "Yndyn", 3), ("lv", "Ydyn", 3)])
+def test_trafo3w_neutral_earthing_impedance(side, vector_group, faulted_bus, inverse_y):
+    # Same as test_trafo_neutral_earthing_impedance, for the three winding
+    # transformer: a star point earthed through Z_N adds 3*Z_N to the zero
+    # sequence impedance of that winding. The columns are per winding, since
+    # a trafo3w can have more than one earthed star point.
+    # The hv bus is fed through a delta so that the only zero-sequence earth of
+    # the transformer's terminals is the trafo3w itself -- otherwise the ext_grid
+    # would sit in parallel and the added Z_N would not show up undiluted.
+    # The rated voltages differ from the bus voltages on purpose: Z_N is an
+    # impedance at the terminal bus, so it must be referred with the bus base
+    # voltage and not with the rated voltage of the winding.
+    def build(rn_ohm=0., xn_ohm=0.):
+        net = create_empty_network(sn_mva=1.)
+        b_src = create_bus(net, vn_kv=220.)
+        b_hv = create_bus(net, vn_kv=110.)
+        b_mv = create_bus(net, vn_kv=20.)
+        b_lv = create_bus(net, vn_kv=10.)
+        create_ext_grid(net, b_src, s_sc_max_mva=5000., s_sc_min_mva=5000., rx_max=0.1, rx_min=0.1,
+                        x0x_max=1., x0x_min=1., r0x0_max=0.1, r0x0_min=0.1)
+        create_transformer_from_parameters(
+            net, b_src, b_hv, sn_mva=100., vn_hv_kv=220., vn_lv_kv=110., vk_percent=12., vkr_percent=0.4,
+            pfe_kw=0., i0_percent=0., vector_group="YNd", shift_degree=330., vk0_percent=12.,
+            vkr0_percent=0.4, mag0_percent=100., mag0_rx=0., si0_hv_partial=0.9)
+        create_transformer3w_from_parameters(
+            net, hv_bus=b_hv, mv_bus=b_mv, lv_bus=b_lv, vn_hv_kv=115., vn_mv_kv=21., vn_lv_kv=10.5,
+            sn_hv_mva=40., sn_mv_mva=20., sn_lv_mva=20., vk_hv_percent=10., vk_mv_percent=11.,
+            vk_lv_percent=12., vkr_hv_percent=0.3, vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=0.,
+            i0_percent=0., vk0_hv_percent=10., vk0_mv_percent=11., vk0_lv_percent=12., vkr0_hv_percent=0.3,
+            vkr0_mv_percent=0.31, vkr0_lv_percent=0.32, vector_group=vector_group,
+            **{f"rn_{side}_ohm": rn_ohm, f"xn_{side}_ohm": xn_ohm})
+        calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
+        return net.res_bus_sc.loc[faulted_bus]
+
+    base = build()
+    with_rn = build(rn_ohm=5.)
+    with_xn = build(xn_ohm=7.)
+
+    assert np.isfinite(base.xk0_ohm)
+    assert np.isclose(with_rn.rk0_ohm - base.rk0_ohm, 3 * 5., rtol=0, atol=1e-6)
+    assert np.isclose(with_rn.xk0_ohm, base.xk0_ohm, rtol=0, atol=1e-6)
+    assert np.isclose(with_xn.xk0_ohm - base.xk0_ohm, 3 * 7., rtol=0, atol=1e-6)
+    assert np.isclose(with_xn.rk0_ohm, base.rk0_ohm, rtol=0, atol=1e-6)
+    # the positive sequence impedance is unaffected by neutral earthing
+    assert np.isclose(with_rn.rk_ohm, base.rk_ohm, rtol=0, atol=1e-6)
+    assert np.isclose(with_xn.xk_ohm, base.xk_ohm, rtol=0, atol=1e-6)
+    # and the earth-fault current is correspondingly reduced
+    assert with_rn.ikss_ka < base.ikss_ka
+    assert with_xn.ikss_ka < base.ikss_ka
+
+
+@pytest.mark.parametrize("inverse_y", (True, False))
+def test_1ph_ip_ith(inverse_y):
+    # ip and ith were accepted for fault="1ph" but never calculated, so
+    # res_bus_sc.ip_ka / ith_ka came back all NaN without any warning.
+    net = create_empty_network(sn_mva=1.)
+    b_hv = create_bus(net, vn_kv=110.)
+    b_lv = create_bus(net, vn_kv=20.)
+    create_ext_grid(net, b_hv, s_sc_max_mva=2000., s_sc_min_mva=2000., rx_max=0.1, rx_min=0.1,
+                    x0x_max=1., x0x_min=1., r0x0_max=0.1, r0x0_min=0.1)
+    create_transformer_from_parameters(
+        net, b_hv, b_lv, sn_mva=40., vn_hv_kv=110., vn_lv_kv=20., vk_percent=12., vkr_percent=0.4,
+        pfe_kw=0., i0_percent=0., vector_group="Dyn", shift_degree=330., vk0_percent=12.,
+        vkr0_percent=0.4, mag0_percent=100., mag0_rx=0., si0_hv_partial=0.9)
+    create_line_from_parameters(net, b_lv, create_bus(net, vn_kv=20.), length_km=5., r_ohm_per_km=0.16,
+                                x_ohm_per_km=0.12, c_nf_per_km=0., max_i_ka=0.5, r0_ohm_per_km=0.5,
+                                x0_ohm_per_km=0.5, c0_nf_per_km=0., endtemp_degree=80.)
+
+    calc_sc(net, fault="3ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C", inverse_y=inverse_y)
+    kappa = net.res_bus_sc.ip_ka.values / (np.sqrt(2) * net.res_bus_sc.ikss_ka.values)
+
+    calc_sc(net, fault="1ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C", inverse_y=inverse_y)
+    ikss, ip, ith = (net.res_bus_sc[c].values for c in ("ikss_ka", "ip_ka", "ith_ka"))
+    assert np.all(np.isfinite(ip)) and np.all(np.isfinite(ith))
+    # kappa only depends on the positive sequence R/X, so it is the same as for
+    # the symmetrical fault at the same bus (IEC 60909-0, 4.6.1)
+    assert np.allclose(ip, np.sqrt(2) * kappa * ikss, rtol=0, atol=1e-9)
+    assert np.all(ith >= ikss)
+    # ip and ith stay unset when they are not requested
+    calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
+    assert "ip_ka" not in net.res_bus_sc.columns or np.all(np.isnan(net.res_bus_sc.ip_ka.values))
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

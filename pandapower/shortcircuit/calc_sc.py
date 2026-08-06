@@ -251,6 +251,13 @@ def _calc_sc_1ph(net, bus):
     _calc_rx(net, ppci_0, ppci_bus)
     _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus)
 
+    # kappa is taken from the positive sequence network, as for the symmetrical
+    # fault: ip = kappa * sqrt(2) * ikss (IEC 60909-0, 4.6.1)
+    if net._options["ip"]:
+        _calc_ip(net, ppci)
+    if net._options["ith"]:
+        _calc_ith(net, ppci)
+
     if net._options["branch_results"]:
         if net._options["fault"] == "3ph":
             _calc_branch_currents_complex(net, ppci, ppci_bus)
