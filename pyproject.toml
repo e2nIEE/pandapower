@@ -84,13 +84,12 @@ test = ["pytest~=9.1", "nbmake~=1.5", "pytest-timeout~=2.4", "pytest-split~=0.11
 performance = ["ortools~=9.15", "numba~=0.66", "lightsim2grid~=0.13.0"]
 fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=49.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.1"]
 converter = ["matpowercaseframes~=2.1", "lxml~=6.1"]
-pgm = ["power-grid-model-io~=1.2; python_version <= '3.11'", "power-grid-model-io~=1.3; python_version > '3.11'"]
+pgm = ["power-grid-model-io~=1.2; python_version <= '3.11'", "power-grid-model-io~=1.3.87; python_version > '3.11'"]
 control = ["shapely~=2.1"]
 pandamodels = ["juliacall<=0.9.32"]
 opendss = ["OpenDSSDirect.py~=0.9"]
 tutorials = ["julia", "juliacall<=0.9.32", "seaborn", "jupyter", "notebook"]
-# this needs to be exlcuded otherwise pypi will reject the package.
-# helm = ["helmpy @ git+https://github.com/vogt31337/HELMpy.git"]
+helm = ["fast-helmpy"]
 
 typing = [
     "mypy~=2.1",
@@ -105,8 +104,7 @@ typing = [
     "psycopg~=3.2"
 ]
 
-#all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
-all = ["pandapower[plotting,performance,fileio,converter,pgm,control,opendss]"]
+all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
 dev = ["pandapower[all,docs,test,typing,pandamodels,tutorials]"]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included

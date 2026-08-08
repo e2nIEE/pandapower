@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -452,8 +450,7 @@ def simple_plot(
         plot_sgens (bool, optional): Draw static generator symbols.
             Default is ``False``.
         orientation (float or None, optional): Base orientation angle in
-            radians for sgen, gen, and load symbols.  ``None`` uses the
-            element-specific default.  Default is ``None``.
+            radians for sgen, gen, and load symbols.  ``None`` uses ``np.pi``.  Default is ``None``.
         load_size (float, optional): Relative load symbol size.
             Default is ``1.0``.
         gen_size (float, optional): Relative gen symbol size.
