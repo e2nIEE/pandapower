@@ -1,20 +1,17 @@
 # -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
 import copy
-
 import numpy as np
 import pytest
-
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, LoadflowNotConverged
 from pandapower.create import (create_empty_network, create_bus, create_transformer, create_transformer3w, create_load,
                                create_xward, create_switch, create_ext_grid, create_line_from_parameters, create_bus_dc,
-                               create_vsc, create_line_dc_from_parameters)
+                               create_vsc, create_line_dc_from_parameters, create_gen, create_line)
 from pandapower.networks.power_system_test_cases import case4gs, case118
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, ZeroBusVoltageMagnitude
+from pandapower.pypower.idx_bus import VM
 from pandapower.run import rundcpp, runpp
 from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal
@@ -125,12 +122,12 @@ def test_dc_after_ac():
     rundcpp(net)
     assert not np.isfinite(net.res_load["q_mvar"]).any()
 
-    # then I run an AC powerflow, q_mvar is finite for all, which is again correct
+    #Ran an AC powerflow, q_mvar is finite for all, which is again correct
     runpp(net)
     assert np.isfinite(net.res_load["q_mvar"]).all()
     res_load = 1. * net.res_load["q_mvar"]
 
-    # I run a second DC powerflow after the AC one, results from AC are kept
+    #Ran a second DC powerflow after the AC one, results from AC are kept
     rundcpp(net)
     assert not np.isfinite(net.res_load["q_mvar"]).any()
 
@@ -376,5 +373,42 @@ def test_dc_vsc_oos():
     assert np.allclose(net.res_line_dc.at[dc_line_2, 'loading_percent'], 0)
 
 
+def test_zero_bus_voltage_magnitude_at_gen_raises_clear_error():
+    # Regression test for #2408: a generator bus with an initial voltage magnitude
+    # of 0 used to silently produce NaN (via a 0-division), surfacing only as an
+    # opaque numpy "invalid value encountered in divide" Runtime Warning far from the
+    # actual cause. It should instead raise a clear, actionable pandapower error.
+    net = create_empty_network()
+    b1 = create_bus(net, vn_kv=20.)
+    b2 = create_bus(net, vn_kv=20.)
+    create_ext_grid(net, bus=b1, vm_pu=1.0)
+    create_line(net, from_bus=b1, to_bus=b2, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_gen(net, bus=b2, p_mw=0.5, vm_pu=1.0)
+
+    rundcpp(net)  # populates net._options, needed for _pd2ppc below
+    _, ppci = _pd2ppc(net)
+
+    # simulate an upstream bug/edge case leaving voltage magnitude at 0 for a
+    # bus that carries an in-service generator
+    ppci["bus"][:, VM] = 0.0
+
+    with pytest.raises(ZeroBusVoltageMagnitude):
+        _get_pf_variables_from_ppci(ppci)
+
+
+def test_nonzero_bus_voltage_magnitude_at_gen_unaffected():
+    # Regression guard: normal networks with a proper (non-zero) initial voltage
+    # magnitude at generator buses must be completely unaffected by the fix above.
+    net = case4gs()
+    rundcpp(net)
+    _, ppci = _pd2ppc(net)
+
+    # should not raise, and should behave identically to before the fix
+    result = _get_pf_variables_from_ppci(ppci)
+    V0 = result[-2]
+    assert np.all(np.isfinite(V0))
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
+ 
