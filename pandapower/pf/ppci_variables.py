@@ -1,12 +1,17 @@
-# -*- coding: utf-8 -*-
-# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
-
-from pandapower.pypower.idx_bus import VM, VA
+from pandapower.pypower.idx_bus import BUS_I, VM, VA
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 from pandapower.pypower.idx_brch import branch_cols
 from pandapower.pypower.bustypes import bustypes
-from numpy import flatnonzero as find, pi, exp, int64, hstack, zeros, float64
+from numpy import abs as np_abs, flatnonzero as find, pi, exp, int64, hstack, zeros, float64
+
+
+class ZeroBusVoltageMagnitude(ppException):
+    """
+    Raised when a bus that carries an in-service generator has an initial voltage
+    magnitude of 0. Continuing would silently produce NaN values (via a 0-division)
+    instead of a clear, actionable error.
+    """
+    pass
 
 
 def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
@@ -17,9 +22,6 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
 
     # get data for calc
     bus, gen, vsc = ppci["bus"], ppci["gen"], ppci["vsc"]
-
-    # if ppc["branch"] comes from the pypower -> pandapower converter, it has fewer columns than ppc in pandapower
-    # because it is lacking BR_R_ASYM, BR_X_ASYM, BR_G, BR_G_ASYM, BR_B_ASYM, and it is OK to use 0 as default values
     branch = ppci["branch"]
     br_shape = branch.shape
     if br_shape[1] < branch_cols:
@@ -35,7 +37,18 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     ## initial state
     # V0    = ones(bus.shape[0])            ## flat start
     V0 = bus[:, VM] * exp(1j * pi / 180. * bus[:, VA])
-    V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
+    vm_at_gbus = np_abs(V0[gbus])
+    zero_vm = vm_at_gbus == 0
+    if zero_vm.any():
+        bad_bus_ids = bus[gbus[zero_vm], BUS_I].astype(int64).tolist()
+        raise ZeroBusVoltageMagnitude(
+            "Cannot initialize power flow: voltage magnitude is 0 at bus(es) "
+            f"{bad_bus_ids}, which carry an in-service generator. This usually means "
+            "these buses are isolated/disconnected from the rest of the network, or "
+            "were not assigned a valid initial voltage. Check net.bus.in_service and "
+            "network connectivity for these buses, or try init='flat'."
+        )
+    V0[gbus] = gen[on, VG] / vm_at_gbus * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
     return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], ppci["vsc"], \
