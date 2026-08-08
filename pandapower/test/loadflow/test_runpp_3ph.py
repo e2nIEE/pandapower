@@ -138,6 +138,40 @@ def check_it(net):
     assert np.max(np.abs(line_pp - line_pf)) < 1.1e-4
 
 
+@pytest.mark.parametrize(
+    "dropped_parameters, element",
+    [
+        (["s_sc_max_mva", "rx_max"], "ext_grid"),
+        (["r0x0_max", "x0x_max"], "ext_grid"),
+        (["r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"], "line"),
+    ],
+)
+def test_2bus_network_missing_zero_sequence_parameters(test_net, dropped_parameters, element):
+    # every zero sequence parameter is reported with the same error, see issue #3069
+    add_zero_impedance_parameters(test_net)
+    test_net[element] = test_net[element].drop(columns=dropped_parameters)
+    with pytest.raises(ValueError) as excinfo:
+        runpp_3ph(test_net)
+    for parameter in dropped_parameters:
+        assert f"net.{element}['{parameter}'] = " in str(excinfo.value)
+
+
+def test_2bus_network_undefined_zero_sequence_parameters(test_net):
+    # -o---o
+    #  \---o
+    b = create_bus(test_net, vn_kv=110)
+    second_line = create_line(test_net, from_bus=1, to_bus=b, length_km=50.0, std_type="example_type")
+    add_zero_impedance_parameters(test_net)
+    test_net.line.loc[second_line, "x0_ohm_per_km"] = np.nan
+    with pytest.raises(ValueError, match="undefined values in the column"):
+        runpp_3ph(test_net)
+
+    # values of elements out of service are not used, so they are not required either
+    test_net.line.loc[second_line, "in_service"] = False
+    runpp_3ph(test_net)
+    assert test_net["converged"]
+
+
 def test_2bus_network(test_net):
     # -o---o
     add_zero_impedance_parameters(test_net)
