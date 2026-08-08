@@ -167,7 +167,7 @@ class _RegControlInfo:
 
 def _collect_regcontrols():
     """
-    Read every OpenDSS RegControl, keyed by the (lower-cased) name of the controlled transformer.
+    Read every OpenDSS RegControl, keyed by the lower-cased controlled transformer name.
 
     Called once, before transformers are imported, so a transformer can pick
     its tapped winding using the RegControl that targets it (see
