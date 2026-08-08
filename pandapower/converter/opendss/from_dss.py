@@ -71,6 +71,9 @@ _LINE_UNITS_TO_KM = {
 
 _SQRT3 = math.sqrt(3.0)
 
+# Below this, a solved OpenDSS tap ratio counts as "sitting at neutral".
+_TAP_RATIO_EPS = 1e-9
+
 
 def _kron_positive_sequence(rmat, xmat, n):
     """Positive-sequence (R1, X1) for a matrix-defined (``rmatrix``/``xmatrix``)
@@ -144,7 +147,6 @@ class _ImportReport:
 
 @dataclass
 class _RegControlInfo:
-
     """One OpenDSS ``RegControl``, captured while it was the active element."""
 
     name: str
@@ -164,8 +166,7 @@ class _RegControlInfo:
 
 
 def _collect_regcontrols():
-    """
-    Read every OpenDSS RegControl, keyed by the (lower-cased) name of the transformer it controls.
+    """Read every OpenDSS RegControl, keyed by the (lower-cased) name of the controlled transformer.
 
     Called once, before transformers are imported, so a transformer can pick
     its tapped winding using the RegControl that targets it (see
@@ -197,12 +198,16 @@ def _collect_regcontrols():
 
 def _has_tap_grid(min_tap, max_tap, num_taps):
     """Whether a winding's declared MinTap/MaxTap/NumTaps is usable at all."""
-    return int(round(num_taps)) > 0 and max_tap > min_tap
+    return round(num_taps) > 0 and max_tap > min_tap
+
+
+def _is_off_ratio(ratio):
+    """Whether a winding's solved tap ratio deviates from neutral (1.0)."""
+    return abs(ratio - 1.0) > _TAP_RATIO_EPS
 
 
 def _tap_fields_from_dss(min_tap, max_tap, num_taps, ratio):
-    """
-    Translate an OpenDSS winding's tap range and solved ratio into pandapower tap fields.
+    """Translate an OpenDSS winding's tap range and solved ratio into pandapower tap fields.
 
     Returns (tap_step_percent, tap_min, tap_max, tap_neutral, tap_pos).
 
@@ -221,7 +226,7 @@ def _tap_fields_from_dss(min_tap, max_tap, num_taps, ratio):
     """
     if not _has_tap_grid(min_tap, max_tap, num_taps):
         return None
-    num_taps = int(round(num_taps))
+    num_taps = round(num_taps)
     step_pu = (max_tap - min_tap) / num_taps
     tap_min = -(num_taps // 2)
     tap_max = tap_min + num_taps
@@ -231,10 +236,57 @@ def _tap_fields_from_dss(min_tap, max_tap, num_taps, ratio):
     return step_pu * 100.0, tap_min, tap_max, tap_neutral, tap_pos
 
 
+def _pick_regcontrol(name, report, regcontrols_by_trafo, split_phase):
+    """Return the RegControl that governs a transformer's tap, or None if there is none to use.
+
+    A split-phase transformer is collapsed into a 2-winding equivalent, so a
+    RegControl can no longer be tied to one of its original windings.
+    """
+    regctrls = regcontrols_by_trafo.get(name.lower())
+    if not regctrls or split_phase:
+        return None
+    reg = regctrls[0]
+    if len(regctrls) > 1:
+        report.warn(f"transformer {name!r} has {len(regctrls)} RegControls; only "
+                    f"{reg.name!r} is imported")
+    return reg
+
+
+def _pick_tapped_winding(name, report, reg, hv_w, lv_w, hv_dev, lv_dev, min_tap, max_tap, num_taps):
+    """Return the index of the winding whose tap becomes pandapower's tap changer.
+
+    A RegControl names it outright; failing that it is inferred from which
+    winding solved off ratio.
+    """
+    if reg is not None and reg.tap_winding - 1 not in (hv_w, lv_w):
+        report.warn(f"transformer {name!r}: RegControl {reg.name!r} has an invalid "
+                    f"tap_winding ({reg.tap_winding}); falling back to whichever winding's "
+                    "solved tap deviates from neutral")
+        reg = None
+
+    if reg is not None:
+        return reg.tap_winding - 1
+    if hv_dev and not lv_dev:
+        return hv_w
+    if lv_dev and not hv_dev:
+        return lv_w
+
+    # Both windings are off ratio with no RegControl to say which one is the
+    # "real" tap changer: prefer whichever has a usable OpenDSS tap grid to
+    # represent, defaulting to lv only if both (or neither) do.
+    hv_has_grid = _has_tap_grid(min_tap[hv_w], max_tap[hv_w], num_taps[hv_w])
+    lv_has_grid = _has_tap_grid(min_tap[lv_w], max_tap[lv_w], num_taps[lv_w])
+    tap_w = hv_w if hv_has_grid and not lv_has_grid else lv_w
+    side = "hv" if tap_w == hv_w else "lv"
+    if hv_dev and lv_dev:
+        report.warn(f"transformer {name!r} has a non-unity tap on both windings; combining them "
+                    f"into a single pandapower tap on the {side} side")
+    return tap_w
+
+
 def _pick_tap_fields(name, report, regcontrols_by_trafo, hv_w, lv_w, tap, min_tap, max_tap,
                      num_taps, split_phase):
-    """
-    Pick the transformer's tapped winding and translate its OpenDSS tap range into pandapower tap_* fields.
+    """Pick the tapped winding and translate its OpenDSS tap range into pandapower tap_* fields.
 
     This lets the solved tap become an explicit, movable ``tap_pos`` instead of
     being folded into ``vn_hv_kv``/``vn_lv_kv``.
@@ -254,50 +306,22 @@ def _pick_tap_fields(name, report, regcontrols_by_trafo, hv_w, lv_w, tap, min_ta
       ``vn_<side>_kv`` directly -- the behaviour this feature replaces -- so a
       real ratio is never silently dropped.
     """
-    eps = 1e-9
-    hv_dev = abs(tap[hv_w] - 1.0) > eps
-    lv_dev = abs(tap[lv_w] - 1.0) > eps
+    hv_dev = _is_off_ratio(tap[hv_w])
+    lv_dev = _is_off_ratio(tap[lv_w])
 
-    reg = None
-    regctrls = regcontrols_by_trafo.get(name.lower())
-    if regctrls and not split_phase:
-        reg = regctrls[0]
-        if len(regctrls) > 1:
-            report.warn(f"transformer {name!r} has {len(regctrls)} RegControls; only "
-                        f"{reg.name!r} is imported")
-
+    reg = _pick_regcontrol(name, report, regcontrols_by_trafo, split_phase)
     if reg is None and not hv_dev and not lv_dev:
         return {}, None
 
-    if reg is not None and reg.tap_winding - 1 not in (hv_w, lv_w):
-        report.warn(f"transformer {name!r}: RegControl {reg.name!r} has an invalid "
-                    f"tap_winding ({reg.tap_winding}); falling back to whichever winding's "
-                    "solved tap deviates from neutral")
-        reg = None
-
-    if reg is not None:
-        tap_w = reg.tap_winding - 1
-    elif hv_dev and not lv_dev:
-        tap_w = hv_w
-    elif lv_dev and not hv_dev:
-        tap_w = lv_w
-    else:
-        # Both windings are off ratio with no RegControl to say which one is the
-        # "real" tap changer: prefer whichever has a usable OpenDSS tap grid to
-        # represent, defaulting to lv only if both (or neither) do.
-        tap_w = hv_w if (_has_tap_grid(min_tap[hv_w], max_tap[hv_w], num_taps[hv_w])
-                        and not _has_tap_grid(min_tap[lv_w], max_tap[lv_w], num_taps[lv_w])) \
-            else lv_w
-        if hv_dev and lv_dev:
-            report.warn(f"transformer {name!r} has a non-unity tap on both windings; combining "
-                        f"them into a single pandapower tap on the {'hv' if tap_w == hv_w else 'lv'} side")
+    tap_w = _pick_tapped_winding(name, report, reg, hv_w, lv_w, hv_dev, lv_dev,
+                                 min_tap, max_tap, num_taps)
     other_w = hv_w if tap_w == lv_w else lv_w
     tap_side = "hv" if tap_w == hv_w else "lv"
     factor = tap[tap_w] / tap[other_w]
 
     grid = _tap_fields_from_dss(min_tap[tap_w], max_tap[tap_w], num_taps[tap_w], factor)
     if grid is None:
-        if abs(factor - 1.0) <= eps:
+        if not _is_off_ratio(factor):
             return {}, None
         report.warn(
             f"transformer {name!r} has no usable tap range on the {tap_side} winding "
@@ -312,15 +336,15 @@ def _pick_tap_fields(name, report, regcontrols_by_trafo, hv_w, lv_w, tap, min_ta
             f"-> tap_pos={tap_pos} (tap_min={tap_min}, tap_max={tap_max}, "
             f"tap_step_percent={tap_step_percent:.4f})")
 
-    return dict(
-        tap_side=tap_side,
-        tap_neutral=tap_neutral,
-        tap_min=tap_min,
-        tap_max=tap_max,
-        tap_step_percent=tap_step_percent,
-        tap_pos=tap_pos,
-        tap_changer_type="Ratio",
-    ), None
+    return {
+        "tap_side": tap_side,
+        "tap_neutral": tap_neutral,
+        "tap_min": tap_min,
+        "tap_max": tap_max,
+        "tap_step_percent": tap_step_percent,
+        "tap_pos": tap_pos,
+        "tap_changer_type": "Ratio",
+    }, None
 
 
 def _busname(token):
@@ -663,9 +687,78 @@ def _add_one_transformer(net, bus_map, report, regcontrols_by_trafo, trafo_index
     trafo_index_by_name[name.lower()] = tid
 
 
-def _add_reg_controls(net, report, regcontrols_by_trafo, trafo_index_by_name, import_controllers):
+def _regulates_own_terminal(net, report, reg, controlled_bus):
+    """Whether a RegControl regulates the terminal its own tapped winding sits on.
+
+    ``DiscreteTapControl`` can only regulate that terminal, so anything else
+    (an explicit remote monitored bus, or monitoring one winding while tapping
+    another) is reported and skipped rather than silently regulating the wrong
+    bus.
     """
-    Create a ``DiscreteTapControl`` for each RegControl whose transformer was imported.
+    controlled_bus_name = net.bus.at[controlled_bus, "name"].lower()
+    if reg.monitored_bus and reg.monitored_bus != controlled_bus_name:
+        report.warn(
+            f"RegControl {reg.name!r} monitors bus {reg.monitored_bus!r}, not the tapped "
+            f"winding's own terminal {controlled_bus_name!r}; DiscreteTapControl can only "
+            "regulate its own terminal, so it was not imported as a controller")
+        return False
+    if not reg.monitored_bus and reg.winding != reg.tap_winding:
+        report.warn(
+            f"RegControl {reg.name!r} monitors winding {reg.winding} but taps winding "
+            f"{reg.tap_winding}; this configuration is not supported, so it was not imported "
+            "as a controller")
+        return False
+    return True
+
+
+def _warn_unmodelled_regcontrol_settings(report, reg):
+    """Report the RegControl settings that a steady-state tap controller cannot represent."""
+    notes = []
+    if reg.forward_r or reg.forward_x:
+        notes.append(f"line-drop compensation (R={reg.forward_r}, X={reg.forward_x}) ignored")
+    if reg.is_reversible:
+        notes.append("reverse-mode settings ignored")
+    if reg.delay or reg.tap_delay or reg.is_inverse_time:
+        notes.append("time-delay/inverse-time settings ignored")
+    if notes:
+        report.warn(f"RegControl {reg.name!r}: " + "; ".join(notes) +
+                    " (steady-state power flow has no time/current dimension)")
+
+
+def _add_one_reg_control(net, report, trafo_name, reg, tid):
+    """Create the ``DiscreteTapControl`` for one RegControl; return whether it was created."""
+    row = net.trafo.loc[tid]
+    tap_side = row["tap_side"]
+    if tap_side not in ("hv", "lv"):
+        report.warn(f"RegControl {reg.name!r}: transformer {trafo_name!r} has no usable tap "
+                    "range; not imported as a controller")
+        return False
+
+    controlled_bus = row["hv_bus"] if tap_side == "hv" else row["lv_bus"]
+    if not _regulates_own_terminal(net, report, reg, controlled_bus):
+        return False
+
+    _warn_unmodelled_regcontrol_settings(report, reg)
+
+    # OpenDSS regulates the PT secondary in volts (vreg +/- band/2), referred
+    # to the primary by ptratio; the PT is line-to-neutral, so converting to
+    # a per-unit value against the (line-to-line) bus vn_kv needs the sqrt(3)
+    # -- the classic place to be off by 1.73x if skipped.
+    vn_kv = net.bus.at[controlled_bus, "vn_kv"]
+    vm_center_pu = reg.vreg * reg.ptratio * _SQRT3 / 1000.0 / vn_kv
+    vm_half_band_pu = reg.band / 2.0 * reg.ptratio * _SQRT3 / 1000.0 / vn_kv
+
+    pp.control.DiscreteTapControl(
+        net, element_index=tid,
+        vm_lower_pu=vm_center_pu - vm_half_band_pu,
+        vm_upper_pu=vm_center_pu + vm_half_band_pu,
+        side=tap_side,
+    )
+    return True
+
+
+def _add_reg_controls(net, report, regcontrols_by_trafo, trafo_index_by_name, import_controllers):
+    """Create a ``DiscreteTapControl`` for each RegControl whose transformer was imported.
 
     This makes the tap respond to voltage instead of staying pinned at the
     OpenDSS-solved position. Only called with effect when
@@ -677,61 +770,8 @@ def _add_reg_controls(net, report, regcontrols_by_trafo, trafo_index_by_name, im
         if tid is None:
             report.warn(f"RegControl on transformer {trafo_name!r} references a transformer "
                         "that was not imported; skipped")
-            continue
-
-        if not import_controllers:
-            continue
-
-        reg = regctrls[0]
-        row = net.trafo.loc[tid]
-        tap_side = row["tap_side"]
-        if tap_side not in ("hv", "lv"):
-            report.warn(f"RegControl {reg.name!r}: transformer {trafo_name!r} has no usable tap "
-                        "range; not imported as a controller")
-            continue
-
-        controlled_bus = row["hv_bus"] if tap_side == "hv" else row["lv_bus"]
-        controlled_bus_name = net.bus.at[controlled_bus, "name"].lower()
-        if reg.monitored_bus:
-            if reg.monitored_bus != controlled_bus_name:
-                report.warn(
-                    f"RegControl {reg.name!r} monitors bus {reg.monitored_bus!r}, not the tapped "
-                    f"winding's own terminal {controlled_bus_name!r}; DiscreteTapControl can only "
-                    "regulate its own terminal, so it was not imported as a controller")
-                continue
-        elif reg.winding != reg.tap_winding:
-            report.warn(
-                f"RegControl {reg.name!r} monitors winding {reg.winding} but taps winding "
-                f"{reg.tap_winding}; this configuration is not supported, so it was not imported "
-                "as a controller")
-            continue
-
-        notes = []
-        if reg.forward_r or reg.forward_x:
-            notes.append(f"line-drop compensation (R={reg.forward_r}, X={reg.forward_x}) ignored")
-        if reg.is_reversible:
-            notes.append("reverse-mode settings ignored")
-        if reg.delay or reg.tap_delay or reg.is_inverse_time:
-            notes.append("time-delay/inverse-time settings ignored")
-        if notes:
-            report.warn(f"RegControl {reg.name!r}: " + "; ".join(notes) +
-                        " (steady-state power flow has no time/current dimension)")
-
-        # OpenDSS regulates the PT secondary in volts (vreg +/- band/2), referred
-        # to the primary by ptratio; the PT is line-to-neutral, so converting to
-        # a per-unit value against the (line-to-line) bus vn_kv needs the sqrt(3)
-        # -- the classic place to be off by 1.73x if skipped.
-        vn_kv = net.bus.at[controlled_bus, "vn_kv"]
-        vm_center_pu = reg.vreg * reg.ptratio * _SQRT3 / 1000.0 / vn_kv
-        vm_half_band_pu = reg.band / 2.0 * reg.ptratio * _SQRT3 / 1000.0 / vn_kv
-
-        pp.control.DiscreteTapControl(
-            net, element_index=tid,
-            vm_lower_pu=vm_center_pu - vm_half_band_pu,
-            vm_upper_pu=vm_center_pu + vm_half_band_pu,
-            side=tap_side,
-        )
-        report.n_reg_controls += 1
+        elif import_controllers and _add_one_reg_control(net, report, trafo_name, regctrls[0], tid):
+            report.n_reg_controls += 1
 
 
 def _add_loads(net, bus_map, report):
