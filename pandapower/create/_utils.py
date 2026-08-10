@@ -72,7 +72,7 @@ def add_tag_group_to_df(net: ADict, table_name: str, tag_name: str) -> None:
     net_struct_dict = get_structure_dict(False)
     if table_name not in net_struct_dict:
         raise ValueError(f"Table {table_name} has no definition in network structure.")
-    for col_name in net_struct_dict[table_name].keys():
+    for col_name in net_struct_dict[table_name]:
         col_info = get_column_info(table_name, col_name)
         if col_info is None:
             logger.warning(f"could not get column information for {table_name}.{col_name}")
