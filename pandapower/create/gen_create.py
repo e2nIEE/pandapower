@@ -22,9 +22,21 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
     _set_value_if_not_nan,
+    _not_nan,
 )
 
 logger = logging.getLogger(__name__)
+
+def _get_bus_voltage_limit(net: pandapowerNet, bus: Int, column: str):
+    if column in net.bus.columns and _not_nan(net.bus.at[bus, column]):
+        return net.bus.at[bus, column]
+    return nan
+
+
+def _get_bus_voltage_limits(net: pandapowerNet, buses: Sequence, column: str):
+    if column in net.bus.columns:
+        return net.bus.loc[buses, column].values
+    return nan
 
 
 def create_gen(
@@ -166,8 +178,14 @@ def create_gen(
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "gen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "gen")
     # V limits for OPF if controllable == True
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=get_default_value("gen", "max_vm_pu"))
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=get_default_value("gen", "min_vm_pu"))
+    # V limits for OPF if controllable == True
+    if not _not_nan(max_vm_pu):
+        max_vm_pu = _get_bus_voltage_limit(net, bus, "max_vm_pu")
+    if not _not_nan(min_vm_pu):
+        min_vm_pu = _get_bus_voltage_limit(net, bus, "min_vm_pu")
+
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen")
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen")
 
     # Short circuit calculation variables
     _set_value_if_not_nan(net, index, vn_kv, "vn_kv", "gen")
@@ -304,6 +322,10 @@ def create_gens(
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_q_mvar", max_q_mvar)
+    if not _not_nan(min_vm_pu):
+        min_vm_pu = _get_bus_voltage_limits(net, buses, "min_vm_pu")
+    if not _not_nan(max_vm_pu):
+        max_vm_pu = _get_bus_voltage_limits(net, buses, "max_vm_pu")
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_vm_pu", max_vm_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "vn_kv", vn_kv)

@@ -7,6 +7,7 @@ Change Log
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
+- [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
 
 [upcoming release] - 2026-..-..
 -------------------------------
