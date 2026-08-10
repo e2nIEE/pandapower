@@ -60,6 +60,27 @@ def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
     net[table_name] = net[table_name][struct_columns+custom_columns]
 
 
+def add_tag_group_to_df(net: ADict, table_name: str, tag_name: str) -> None:
+    """
+    A function that adds multiple columns to a dataframe based on the metadata tag in the schema
+
+    Parameters:
+        net: the pandapower Network
+        table_name: the table in the pandapower Network where the columns should be added.
+        tag_name: the metadata tag that should be added
+    """
+    net_struct_dict = get_structure_dict(False)
+    if table_name not in net_struct_dict:
+        raise ValueError(f"Table {table_name} has no definition in network structure.")
+    for col_name in net_struct_dict[table_name].keys():
+        col_info = get_column_info(table_name, col_name)
+        if col_info is None:
+            logger.warning(f"could not get column information for {table_name}.{col_name}")
+
+        if tag_name in col_info["metadata"]:
+            add_column_to_df(net, table_name, col_name)
+
+
 def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int], nr_buses: int) -> list[str]:
     from pandapower.plotting.geo import _is_valid_number
     geo = []
