@@ -25,7 +25,7 @@ from pandapower.run import set_user_pf_options
 from pandapower.std_types import add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, \
     load_std_type
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
-from pandapower.topology import create_nxgraph, calc_distance_to_bus
+from pandapower.topology import create_nxgraph
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object, \
     get_min_max_q_mvar_from_characteristics_object
 from pandapower.control.util.characteristic import SplineCharacteristic
@@ -323,7 +323,7 @@ def from_pf(
                                 include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
                                 calc_branch_impedances=False, branch_impedance_unit='ohm', include_out_of_service=True)
         for n, stactrl in enumerate(dict_net['ElmStactrl'], 1):
-            create_stactrl(net=net, item=stactrl, top=top, top_all=top_all)
+            create_stactrl(net=net, item=stactrl, top=top, top_all=top_all, **dict_net)
         if n > 0: logger.info('imported %d station controllers' % n)
 
     remove_folder_of_std_types(net)
@@ -2199,6 +2199,10 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 try:
                     params.vm_pu = item.GetAttribute('m:u:bus1')
                 except AttributeError:
+                    print("Exception vm_pu not available! Outserv: ")
+                    print(item.GetFullName())
+                    print(item.outserv)
+                    print(pstac.outserv)
                     if not pstac.uset_mode:
                         params.vm_pu = pstac.usetp
                     else:
@@ -2217,7 +2221,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                                               output_element="gen", output_variable="vm_pu",
                                               output_element_index=[next_index],
                                               output_element_in_service=[not item.outserv],
-                                              output_values_distribution=[1],
+                                              distribution_method=[1],
                                               input_element="res_gen", input_variable="q_mvar",
                                               input_inverted=[False], input_element_index=[next_index],
                                               set_point=item.usetp, control_modus = "V_ctrl_Q_droop_local", bus_idx=bus, tol=1e-5)
@@ -2240,7 +2244,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 sg = create_asymmetric_sgen(net, **params)
                 element = "asymmetric_sgen"
                 logger.debug('created asymmetric sgen at index <%d>' % sg)
-            else:  # Case 4: map to symmetric sgen                
+            else:  # Case 4: map to symmetric sgen
                 if pstac is not None and not pstac.outserv and export_ctrl:
                     try:
                         params['q_mvar'] = item.GetAttribute('m:Q:bus1')
@@ -2467,11 +2471,11 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
-                av_mode = 'constq'
+                av_mode = 'constq'#'constq'
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
-                    av_mode = 'constq'
+                    av_mode = 'constq'#'constq'
                 elif i_ctrl == 1:
                     av_mode = 'constq'
                 elif i_ctrl == 2:
@@ -2487,6 +2491,10 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                 try:
                     vm_pu = item.GetAttribute('m:u:bus1')
                 except AttributeError:
+                    print("Exception vm_pu not available! Outserv: ")
+                    print(item.GetFullName())
+                    print(item.outserv)
+                    print(pstac.outserv)
                     if not pstac.uset_mode:
                         vm_pu = pstac.usetp
                     else:
@@ -2609,6 +2617,48 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
             elif i_ctrl == 3:
                 av_mode = 'constq' #tanphi
 
+    logger.debug('av_mode: %s' % av_mode)
+    if av_mode == 'constv':
+        logger.debug('creating asym %s as gen' % item.loc_name)
+        vm_pu = item.usetp
+        if pstac is not None and not pstac.outserv and export_ctrl:
+            try:
+                vm_pu = item.GetAttribute('m:u:bus1')
+            except AttributeError:
+                if not pstac.uset_mode:
+                    vm_pu = pstac.usetp
+                else:
+                    vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
+        #if item.iqtype == 1:
+        #    sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier, vm_pu=vm_pu,
+        #                     min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
+        #                     min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+        #                     name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
+        #else:
+        type = item.typ_id
+        sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier, vm_pu=vm_pu,
+                         min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
+                         min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                         name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
+        element = 'gen'
+    elif av_mode == 'constq':
+        try:
+            q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
+        except AttributeError:
+            q_mvar = item.ng_num * item.qgini * multiplier if item.bustp == 'PQ' else q_res
+        #if item.iqtype == 1:
+        #    type = item.typ_id
+        #    sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
+        #                      min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
+        #                      min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+        #                      name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
+        #else:
+        type = item.typ_id
+        sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
+                          min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
+                          min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
+                          name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
+        element = 'sgen'
 
     logger.debug('av_mode: %s' % av_mode)
     if av_mode == 'constv':
@@ -4055,6 +4105,10 @@ def create_pp_vsc(net, item):
 
 
 def create_stactrl(net, item, top, top_all, **kwargs):
+    if 'bus_dict_Elm_Term' in kwargs:
+        bus_dict_stactrl = kwargs.get('bus_dict_Elm_Term')
+    else:
+        bus_dict_stactrl = None
     stactrl_in_service = True
     logger.info(f"Creating Station Controller {item.loc_name}")
     if item.outserv:
@@ -4153,24 +4207,52 @@ def create_stactrl(net, item, top, top_all, **kwargs):
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")
 
-    gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name, "in_service"].values[0] for s in machines]
+    ###getting distribution mode###
+    gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name].in_service for s in machines]
+    distribution_val = []
+    #if item.imode < 3: #import from pf without calculation
+    #distribution_mode = 'imported' #simpler than handing over the values separately, also station controller handles cases differently
+    if item.imode == 0:
+        distribution_mode = 'rel_P' #according to active power
+        distribution_val = None
+    elif item.imode ==1:
+        distribution_mode = 'rel_rated_S'  #according to maximum rated Power S of output elements
+        distribution_val = None
+        counter = 0
+        for s in machines:
+            if ((gen_types[counter] == 'sgen' or gen_types[counter] == 'gen')
+                    and np.isnan(net.sgen.loc[gen_element_index[counter], 'sn_mva'])):
+                net.sgen.at[gen_element_index[counter], 'sn_mva'] = s.typ_id.sgn #todo import of rated apparent power S, somewhere else?
+            counter += 1
 
-    if item.imode > 2:
-        logger.warning(f"{item}: reactive power distribution {item.imode=} not implemented, using flat distribution")
-        n = len(item.psym) if getattr(item, "psym", None) is not None else 0
-        distribution = [1.0 / n] * n if n > 0 else []
-    else:
+    elif item.imode == 2:
+        distribution_mode = 'set_Q' #Individually set Q distribution values
         i = 0
         distribution = []
         for m in item.psym:
             if m is not None and isinstance(item.cvqq, list):
-                distribution.append(item.cvqq[i] / 100)
+                distribution_val.append(item.cvqq[i] / 100)
             elif m is not None and not isinstance(item.cvqq, list):
-                distribution.append(item.cvqq / 100)
+                distribution_val.append(item.cvqq / 100)
             i = i + 1
-    if sum(distribution) != 1:
-        logger.info(
-            f'{item}: sum of reactive power distribution is unequal to 1 but will be normalized in binary search control.')
+    elif item.imode == 3:
+        distribution_mode = 'max_Q' #maximized reactive power reserve
+        distribution_val = None
+
+    elif item.imode == 4:
+        distribution_mode = 'rel_V_pu' #voltage set point adaptation
+        i = 0
+        for m in item.psym:
+            if m is not None and isinstance(item.cvgen, list) and isinstance(item.cvgenmin, list) and isinstance(item.cvgenmax, list):
+                distribution_val.append([item.cvgen[i], item.cvgenmin[i], item.cvgenmax[i]])
+            elif m is not None and not isinstance(item.cvgen, list) and not isinstance(item.cvgenmin, list) and not isinstance(item.cvgenmax, list):
+                distribution_val = [item.cvgen, item.cvgenmin, item.cvgenmax]
+            i += 1
+    else:
+        raise NotImplementedError(f'Reactive Power Distribution must be between 0 and 4, not {item.imode}')
+
+    if distribution_val is not None and sum(distribution_val)!=1:
+        logger.info(f'{item}: sum of reactive power dstribution is unequal to 1 but will be normalized in binary search control.')
 
     phase = item.i_phase
     if phase != 0:
@@ -4366,7 +4448,8 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                                       output_variable="q_mvar",
                                       output_element_index=gen_element_index,
                                       output_element_in_service=gen_element_in_service,
-                                      output_values_distribution=distribution,
+                                      distribution_method=distribution_mode,
+                                      output_values_distribution=distribution_val,
                                       input_element=res_element_table,
                                       input_variable=variable,
                                       input_inverted=input_inverted,
@@ -4382,22 +4465,23 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
         else:
             BinarySearchControl(net,
-                               name=item.loc_name,
-                               ctrl_in_service=stactrl_in_service,
-                               output_element=gen_element,
-                               output_variable="q_mvar",
-                               output_element_index=gen_element_index,
-                               output_element_in_service=gen_element_in_service,
-                               output_values_distribution=distribution,
-                               input_element="res_bus",
-                               input_variable="vm_pu",
-                               input_inverted=input_inverted,
-                               input_element_index=bus,
-                               set_point=v_setpoint_pu,
-                               control_modus='V_ctrl',
-                               damping_factor=0.9,
-                               tol=1e-6,
-                               machines=[machine_obj.loc_name for machine_obj in item.psym])
+                                name=item.loc_name,
+                                ctrl_in_service=stactrl_in_service,
+                                output_element=gen_element,
+                                output_variable='q_mvar',
+                                output_element_index=gen_element_index,
+                                output_element_in_service=gen_element_in_service,
+                                distribution_method=distribution_mode,
+                                output_values_distribution=distribution_val,
+                                input_element="res_bus",
+                                input_variable="vm_pu",
+                                input_inverted=input_inverted,
+                                input_element_index=bus,
+                                set_point=v_setpoint_pu,
+                                control_modus='V_ctrl',
+                                damping_factor=0.9,
+                                tol=1e-6,
+                                machines=[machine_obj.loc_name for machine_obj in item.psym])
             net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
     elif control_mode == 1:  # Q Control mode
         #if item.iQorient != 0:
@@ -4415,14 +4499,15 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
-                output_values_distribution=distribution,
                 input_element=res_element_table,
+                distribution_method=distribution_mode,
+                output_values_distribution=distribution_val,
+                damping_factor=0.9,
                 input_variable=variable,
                 input_inverted=input_inverted,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
                 control_modus= 'Q_ctrl',
-                damping_factor=0.9,
                 tol=1e-6,
                 machines=[machine_obj.loc_name for machine_obj in item.psym])
         elif item.qu_char == 1:
@@ -4436,15 +4521,16 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
-                output_values_distribution=distribution,
                 input_element=res_element_table,
+                distribution_method=distribution_mode,
+                output_values_distribution=distribution_val,
+                damping_factor=0.9,
                 input_variable=variable,
                 input_inverted=input_inverted,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
                 control_modus='Q_ctrl_V_droop',
                 bus_idx=bus,
-                damping_factor=0.9,
                 tol=1e-6,
                 machines=[machine_obj.loc_name for machine_obj in item.psym]
             )
@@ -4459,7 +4545,8 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 vm_set_lb=item.udeadblow,
                 q_set_mvar_bsc=item.qsetp,
                 controller_idx=bsc.index,
-                control_modus="Q_ctrl_V_droop", machines=[machine_obj.loc_name for machine_obj in item.psym])
+                control_modus ='Q_ctrl_V_droop',
+                machines=[machine_obj.loc_name for machine_obj in item.psym])
         else:
             raise NotImplementedError
     elif control_mode==2:#PF_Control
@@ -4481,15 +4568,18 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 output_element_index=gen_element_index,
                 output_element_in_service=gen_element_in_service,
                 input_element=res_element_table,
-                output_values_distribution=distribution,
+                distribution_method=distribution_mode,
+                output_values_distribution=distribution_val,
                 damping_factor=0.9,
                 input_variable=variable,
                 input_element_index=res_element_index,
                 set_point=item.pfsetp,
-                control_modus=control_modus, tol=1e-6,
-                name = item.loc_name
+                control_modus=control_modus,
+                tol=1e-6,
+                name = item.loc_name,
+                machines=[machine_obj.loc_name for machine_obj in item.psym]
             )
-    elif control_mode== 3:  #tan(phi)_control
+    elif control_mode== 3:#tan(phi)_control
         if item.iQorient != 0:
             if not stactrl_in_service:
                 return
@@ -4501,13 +4591,15 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             output_element_index=gen_element_index,
             output_element_in_service=gen_element_in_service,
             input_element=res_element_table,
-            output_values_distribution=distribution,
+            distribution_method=distribution_mode,
+            output_values_distribution=distribution_val,
             damping_factor=0.9,
             input_variable=variable,
             input_element_index=res_element_index,
             set_point=item.tansetp,
             input_inverted=input_inverted,
-            control_modus='tan_phi_ctrl', tol=1e-6
+            control_modus='tan_phi_ctrl', tol=1e-6,
+            machines=[machine_obj.loc_name for machine_obj in item.psym]
         )
     else:
         raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
