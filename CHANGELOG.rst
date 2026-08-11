@@ -5,6 +5,7 @@ Change Log
 -------------------------------
 - [FIXED] restored ``OpenDSSDirect.py`` to the ``all``/``dev`` extras so the OpenDSS converter is exercised (and its coverage reported) in CI again; it was dropped in #3062 because installing it alongside ``pytest~=9.1`` crashed the pytest process on Windows. Root cause (see `dss-extensions/OpenDSSDirect.py#148 <https://github.com/dss-extensions/OpenDSSDirect.py/issues/148>`_): pytest enables Python's ``faulthandler`` by default, which intercepts a first-chance Windows structured exception that OpenDSSDirect.py's native backend raises -- and normally handles itself -- during import, and misreports it as fatal. Bracketing the import with ``faulthandler.disable()``/``.enable()`` avoids the false crash while leaving ``faulthandler`` protecting the rest of the test run; the converter now runs on Windows instead of merely skipping there.
 - [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
+- [FIXED] fixed tutorial for plotting with pyqt
 
 [3.5.4] - 2026-07-08
 -------------------------------
