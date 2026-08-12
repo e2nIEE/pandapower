@@ -76,8 +76,11 @@ def add_tag_group_to_df(net: ADict, table_name: str, tag_name: str) -> None:
         col_info = get_column_info(table_name, col_name)
         if col_info is None:
             logger.warning(f"could not get column information for {table_name}.{col_name}")
-
-        if tag_name in col_info["metadata"]:
+            continue
+        col_metadata = col_info["metadata"]
+        if col_metadata is None:
+            continue
+        if tag_name in col_metadata:
             add_column_to_df(net, table_name, col_name)
 
 
