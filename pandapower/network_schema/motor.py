@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _motor_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the motor", metadata={"cim": True}
@@ -86,7 +84,6 @@ _motor_columns = {
 }
 motor_schema = pa.DataFrameSchema(
     _motor_columns,
-    checks=create_column_dependency_checks_from_metadata(["sc"], _motor_columns),
     name="motor",
     strict=False,
 )

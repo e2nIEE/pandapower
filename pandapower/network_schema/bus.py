@@ -1,7 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 
 _bus_columns = {
@@ -139,10 +138,7 @@ _bus_columns = {
 bus_schema = pa.DataFrameSchema(
     _bus_columns,
     name="bus",
-    checks=[
-        *create_column_dependency_checks_from_metadata(["opf"], _bus_columns),
-        create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
-    ],
+    checks=[create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu")],
     strict=False,
 )
 

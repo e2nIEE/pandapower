@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _bus_dc_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc bus"),
     "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the dc bus [kV]"),
@@ -39,7 +37,6 @@ _bus_dc_columns = {
 bus_dc_schema = pa.DataFrameSchema(
     _bus_dc_columns,
     name="bus_dc",
-    checks=create_column_dependency_checks_from_metadata(["opf"], _bus_dc_columns),
     strict=False,
 )
 

@@ -1,10 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import (
-    create_column_group_dependency_validation_func,
-    create_column_dependency_checks_from_metadata,
-)
+from pandapower.network_schema.tools.validation.group_dependency import create_column_group_dependency_validation_func
 from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
 
 _trafo3w_columns = {
@@ -351,18 +348,10 @@ trafo3w_checks = [
         create_column_group_dependency_validation_func(tap_columns),
         error=f"trafo3w tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
     ),
+    create_lower_than_column_check(first_element="vkr_hv_percent", second_element="vk_hv_percent"),
+    create_lower_than_column_check(first_element="vkr_mv_percent", second_element="vk_mv_percent"),
+    create_lower_than_column_check(first_element="vkr_lv_percent", second_element="vk_lv_percent"),
 ]
-trafo3w_checks += create_column_dependency_checks_from_metadata(
-    [
-        # "sc",
-        "tdt",
-        "opf",
-    ],
-    _trafo3w_columns,
-)
-trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_hv_percent", second_element="vk_hv_percent"))
-trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_mv_percent", second_element="vk_mv_percent"))
-trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_lv_percent", second_element="vk_lv_percent"))
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,
