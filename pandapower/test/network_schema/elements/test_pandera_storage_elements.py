@@ -137,7 +137,7 @@ class TestStorageOptionalFields:
         create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["max_p_mw"] = 1.0
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "opf")
 
         # Case 2: only controllable
         net = pandapowerNet(name="test_opf_group_partial_missing_invalid1")
@@ -145,7 +145,7 @@ class TestStorageOptionalFields:
         create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["controllable"] = pd.Series([True], dtype="boolean")
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "opf")
 
         # Case 3: only min_q_mvar
         net = pandapowerNet(name="test_opf_group_partial_missing_invalid2")
@@ -153,7 +153,7 @@ class TestStorageOptionalFields:
         create_storage(net, bus=b0, p_mw=-0.2, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
         net.storage["min_q_mvar"] = -0.5
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "opf")
 
     @pytest.mark.parametrize(
         "parameter,valid_value",

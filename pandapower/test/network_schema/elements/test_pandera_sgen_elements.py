@@ -210,7 +210,7 @@ class TestSgenOptionalFields:
         # Set only one OPF column -> should fail
         net.sgen["max_p_mw"] = 100.0
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "opf")
 
     def test_qcc_group_partial_missing_invalid(self):
         # Only id_q_capability_characteristic
@@ -219,7 +219,7 @@ class TestSgenOptionalFields:
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.sgen["id_q_capability_characteristic"] = pd.Series([0], dtype="Int64")
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "qcc")
 
         # Only curve_style
         net = pandapowerNet(name="test_qcc_group_partial_missing_invalid1")
@@ -228,7 +228,7 @@ class TestSgenOptionalFields:
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.sgen["curve_style"] = pd.Series([pd.NA, "straightLineYValues"], dtype="string")
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "qcc")
 
         # Only reactive_capability_curve
         net = pandapowerNet(name="test_qcc_group_partial_missing_invalid2")
@@ -237,7 +237,7 @@ class TestSgenOptionalFields:
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.sgen["reactive_capability_curve"] = pd.Series([pd.NA, pd.NA, True], dtype="boolean")
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "qcc")
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",
