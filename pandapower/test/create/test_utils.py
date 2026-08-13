@@ -18,6 +18,7 @@ class TestAddTagGroupToDF:
         # add remaining sc columns
         add_tag_group_to_df(net, "gen", "sc")
         add_tag_group_to_df(net, "line", "sc")
+        add_tag_group_to_df(net, "motor", "sc")
         add_tag_group_to_df(net, "sgen", "sc")
         add_tag_group_to_df(net, "trafo", "sc")
         add_tag_group_to_df(net, "trafo3w", "sc")
