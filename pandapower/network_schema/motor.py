@@ -44,14 +44,14 @@ _motor_columns = {
         pa.Check.ge(0),
         required=False,
         description="locked rotor current in relation to the rated motor current [pu]",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "rx": pa.Column(
         float,
         pa.Check.ge(0),
         required=False,
         description="R/X ratio of the motor for short-circuit calculation.",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "vn_kv": pa.Column(
         float,
