@@ -13,9 +13,9 @@ _motor_columns = {
     "cos_phi_n": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=1),
-        nullable=True,
+        required=False,
         description="cosine phi at rated power of the motor for short-circuit calculation",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "efficiency_percent": pa.Column(
         float,
@@ -26,9 +26,9 @@ _motor_columns = {
     "efficiency_n_percent": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=100),
-        nullable=True,
+        required=False,
         description="Efficiency in percent at rated power for short-circuit calculation [%]",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "loading_percent": pa.Column(
         float,
@@ -42,30 +42,38 @@ _motor_columns = {
     "lrc_pu": pa.Column(
         float,
         pa.Check.ge(0),
-        nullable=True,
+        required=False,
         description="locked rotor current in relation to the rated motor current [pu]",
         metadata={"sc": True},
     ),
     "rx": pa.Column(
         float,
         pa.Check.ge(0),
-        nullable=True,
+        required=False,
         description="R/X ratio of the motor for short-circuit calculation.",
         metadata={"sc": True},
     ),
     "vn_kv": pa.Column(
         float,
         pa.Check.ge(0),
-        nullable=True,
+        required=False,
         description="Rated voltage of the motor for short-circuit calculation",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "in_service": pa.Column(bool, description="specifies if the motor is in service.", metadata={"default": True}),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,

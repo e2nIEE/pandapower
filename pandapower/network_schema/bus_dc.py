@@ -1,6 +1,8 @@
 import pandas as pd
 import pandera.pandas as pa
 
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
+
 _bus_dc_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc bus"),
     "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the dc bus [kV]"),
@@ -21,6 +23,7 @@ _bus_dc_columns = {
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
     "max_vm_pu": pa.Column(
         float,
+        pa.Check.le(2),
         nullable=True,
         required=False,
         description="Maximum dc bus voltage in p.u. - necessary for OPF",
@@ -28,6 +31,7 @@ _bus_dc_columns = {
     ),
     "min_vm_pu": pa.Column(
         float,
+        pa.Check.ge(0),
         nullable=True,
         required=False,
         description="Minimum dc bus voltage in p.u. - necessary for OPF",
@@ -37,6 +41,7 @@ _bus_dc_columns = {
 bus_dc_schema = pa.DataFrameSchema(
     _bus_dc_columns,
     name="bus_dc",
+    checks=create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
     strict=False,
 )
 

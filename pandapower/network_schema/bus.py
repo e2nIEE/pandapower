@@ -22,7 +22,7 @@ _bus_columns = {
     ),
     "max_vm_pu": pa.Column(
         float,
-        pa.Check.gt(0),
+        pa.Check.le(2),
         nullable=False,
         required=False,
         description="Maximum voltage",
@@ -45,10 +45,18 @@ _bus_columns = {
         metadata={"cim": True},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_profile": pa.Column(
         pd.StringDtype,
