@@ -21,7 +21,7 @@ from pandapower.auxiliary import (
 )
 from pandapower.network import pandapowerNet, ADict
 from pandapower.pp_types import Int
-from pandapower.network_structure import get_structure_dict, get_column_info
+from pandapower.network_structure import get_structure_dict, get_column_info, get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,11 @@ def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
     # Add Optional Column:
     net_struct_dict = get_structure_dict(False)
     dtype = net_struct_dict[table_name][column_name]
-    net[table_name][column_name] = pd.Series(dtype=dtype)
+    default_value = get_default_value(table_name, column_name)
+    if net[table_name].empty:
+        net[table_name][column_name] = pd.Series(dtype=dtype)
+    else:  # only add value if table is not empty otherwise a single entry will be generated
+        net[table_name][column_name] = pd.Series(default_value, dtype=dtype)
     # Ensure column order:
     desired_order = list(net_struct_dict[table_name].keys())
     struct_columns = [col for col in desired_order if col in net[table_name].columns]
@@ -76,8 +80,11 @@ def add_tag_group_to_df(net: ADict, table_name: str, tag_name: str) -> None:
         col_info = get_column_info(table_name, col_name)
         if col_info is None:
             logger.warning(f"could not get column information for {table_name}.{col_name}")
-
-        if tag_name in col_info["metadata"]:
+            continue
+        col_metadata = col_info["metadata"]
+        if col_metadata is None:
+            continue
+        if tag_name in col_metadata:
             add_column_to_df(net, table_name, col_name)
 
 

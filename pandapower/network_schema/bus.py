@@ -1,7 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 
 _bus_columns = {
@@ -23,7 +22,7 @@ _bus_columns = {
     ),
     "max_vm_pu": pa.Column(
         float,
-        pa.Check.gt(0),
+        pa.Check.le(2),
         nullable=False,
         required=False,
         description="Maximum voltage",
@@ -46,10 +45,18 @@ _bus_columns = {
         metadata={"cim": True},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_profile": pa.Column(
         pd.StringDtype,
@@ -139,10 +146,7 @@ _bus_columns = {
 bus_schema = pa.DataFrameSchema(
     _bus_columns,
     name="bus",
-    checks=[
-        *create_column_dependency_checks_from_metadata(["opf"], _bus_columns),
-        create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
-    ],
+    checks=[create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu")],
     strict=False,
 )
 

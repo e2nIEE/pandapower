@@ -7,6 +7,7 @@ import pandera as pa
 import pytest
 
 from pandapower.create import create_bus_dc
+from pandapower.create._utils import add_tag_group_to_df
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
@@ -120,6 +121,12 @@ class TestBusDCOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_optional_values")
         create_bus_dc(net, vn_kv=1.0, in_service=True)
+
+        # for OPF columns, add group dependency so only target parameter triggers failure
+        #  otherwise the "min < max" check will fail.
+        if parameter in ["min_vm_pu", "max_vm_pu"]:
+            add_tag_group_to_df(net, "bus_dc", "opf")
+
         net.bus_dc[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):

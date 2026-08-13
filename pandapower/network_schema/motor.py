@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _motor_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the motor", metadata={"cim": True}
@@ -15,9 +13,9 @@ _motor_columns = {
     "cos_phi_n": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=1),
-        nullable=True,
+        required=False,
         description="cosine phi at rated power of the motor for short-circuit calculation",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "efficiency_percent": pa.Column(
         float,
@@ -28,9 +26,9 @@ _motor_columns = {
     "efficiency_n_percent": pa.Column(
         float,
         pa.Check.between(min_value=0, max_value=100),
-        nullable=True,
+        required=False,
         description="Efficiency in percent at rated power for short-circuit calculation [%]",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "loading_percent": pa.Column(
         float,
@@ -44,30 +42,38 @@ _motor_columns = {
     "lrc_pu": pa.Column(
         float,
         pa.Check.ge(0),
-        nullable=True,
+        required=False,
         description="locked rotor current in relation to the rated motor current [pu]",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "rx": pa.Column(
         float,
         pa.Check.ge(0),
-        nullable=True,
+        required=False,
         description="R/X ratio of the motor for short-circuit calculation.",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "vn_kv": pa.Column(
         float,
         pa.Check.ge(0),
-        nullable=True,
+        required=False,
         description="Rated voltage of the motor for short-circuit calculation",
-        metadata={"sc": True},
+        metadata={"sc": True, "cim": True},
     ),
     "in_service": pa.Column(bool, description="specifies if the motor is in service.", metadata={"default": True}),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,
@@ -86,7 +92,6 @@ _motor_columns = {
 }
 motor_schema = pa.DataFrameSchema(
     _motor_columns,
-    checks=create_column_dependency_checks_from_metadata(["sc"], _motor_columns),
     name="motor",
     strict=False,
 )

@@ -94,8 +94,15 @@ def get_column_info(table: str, column: str) -> dict[str, str | bool | dict] | N
 
 def get_default_value(table: str, column: str) -> Any:
     column_info: dict[str, Any] | None = get_column_info(table, column)
-    if column_info is not None and 'metadata' in column_info and 'default' in column_info['metadata']:
+    if (
+        column_info is not None
+        and "metadata" in column_info
+        and column_info["metadata"] is not None
+        and "default" in column_info["metadata"]
+    ):
         return column_info["metadata"]["default"]
+    if get_structure_dict(False)[table][column] in [float]:  # TODO: get this from the already present column_info?
+        return float("nan")
     return pd.NA
 
 def get_structure_dict(required_only: bool = True, metadata: list | None = None) -> dict:
