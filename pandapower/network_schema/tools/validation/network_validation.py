@@ -1,11 +1,9 @@
-import importlib.util
 import logging
-import os
-from pathlib import Path
 
 import pandera.pandas as pa
 
 from pandapower import pandapowerNet
+from pandapower.network_schema.tools.helper import get_element_schema
 from pandapower.network_schema.tools.validation.bus_index_validation import _bus_index_validation
 
 logger = logging.getLogger()
@@ -57,21 +55,6 @@ def validate_network(net: pandapowerNet, groups_to_validate: str | set[str] | No
         >>> validate_network(net, groups_to_validate="sc")  # Validates + sc group
         >>> validate_network(net, groups_to_validate=["sc", "3ph"])  # Validates + both groups
     """
-
-    def _dynamic_import(element, schema_path):
-        # Dynamic import for schemata from files
-        spec = importlib.util.spec_from_file_location(element, schema_path)
-        if spec is None:
-            logger.warning(f"Schema for {element} not found, no spec")
-            return None
-        schema_module = importlib.util.module_from_spec(spec)
-        loader = spec.loader
-        if loader is None:
-            logger.warning(f"Schema for {element} not found, no loader")
-            return None
-        loader.exec_module(schema_module)
-        return schema_module
-
     # Normalize groups_to_validate to a set
     if groups_to_validate is None:
         groups_set = None
@@ -83,16 +66,7 @@ def validate_network(net: pandapowerNet, groups_to_validate: str | set[str] | No
         groups_set = groups_to_validate
 
     for element in net.keys():
-        schema_path = Path(Path(__file__).parents[2], f"{element}.py")
-
-        if not os.path.exists(schema_path):
-            continue
-
-        schema_module = _dynamic_import(element, schema_path)
-        if schema_module is None:
-            continue
-
-        schema = getattr(schema_module, f"{element}_schema", None)
+        schema = get_element_schema(element)
         if schema is None:
             continue
 
