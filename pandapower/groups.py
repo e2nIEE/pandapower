@@ -3,8 +3,10 @@ Notes:
     Using different reference_columns for the same group and element_type is not supported.
     See check_unique_group_rows()
 """
+
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import logging
 import uuid
