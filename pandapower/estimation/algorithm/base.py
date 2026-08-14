@@ -333,11 +333,15 @@ class AFWLSAlgorithm(BaseAlgorithm):
                 # state vector difference d_E
                 d_E = spsolve(G_m, H.T * (r_inv * r))
 
+                # Scaling of Delta_X to avoid divergence due o ill-conditioning and 
+                # operating conditions far from starting state variables
+                current_error = np.max(np.abs(d_E))
+                if current_error > 0.25:
+                    d_E = d_E*0.25/current_error
+
                 # Update E with d_E
                 E += d_E.ravel()
 
-                # log data 
-                current_error = np.max(np.abs(d_E))
                 if debug_mode:
                     obj_func = (r.T*r_inv*r)[0,0]
                     self.logger.debug("Current delta_x: {:.7f}".format(current_error))
