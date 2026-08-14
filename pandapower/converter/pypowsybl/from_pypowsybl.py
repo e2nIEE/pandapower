@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+
 import logging
 import time
 
@@ -17,24 +23,28 @@ def from_pypowsybl(
     default_shift_degree: float = 0.0,
     default_length_km: float = 1.0,
 ) -> pandapowerNet | tuple[pandapowerNet, pd.DataFrame]:
-    """Converts net data stored as a powsybl XIIDM file to a pandapower net.
-    
-    :param str pypowsybl_file: path to the powsybl .xiidm file which includes the grid data
-    :param bool log_static_comparison: decides whether static transfer comparison tables are printed
-    :param bool log_loadflow_comparison: decides whether powsybl and pandapower AC load-flow results are compared
-    :param bool return_loadflow_table: decides whether the load-flow comparison table is returned together with the pandapower net
-    :param float default_shift_degree: fallback phase-shift angle in degrees
-    :param float default_length_km: fallback line length in kilometres
-    
-    :return: A pandapower net. If return_loadflow_table is True, returns a tuple
-        containing the pandapower net and the load-flow comparison table.
-    :rtype: pandapowerNet or tuple[pandapowerNet, pd.DataFrame]
-    
-    :example:
+    """Convert net data stored as a powsybl XIIDM file to a pandapower net.
+
+    Args:
+        pypowsybl_file: Path to the powsybl ``.xiidm`` file containing the grid data.
+        log_static_comparison: Whether static transfer comparison tables are logged.
+        log_loadflow_comparison: Whether powsybl and pandapower AC load-flow results
+            are compared and logged.
+        return_loadflow_table: Whether the load-flow comparison table is returned
+            together with the pandapower net.
+        default_shift_degree: Fallback phase-shift angle in degrees.
+        default_length_km: Fallback line length in kilometres.
+
+    Returns:
+        The converted pandapower net. If ``return_loadflow_table`` is ``True``,
+        returns a tuple containing the pandapower net and the load-flow comparison
+        table.
+
+    Examples:
         >>> from pandapower.converter.pypowsybl.from_pypowsybl import from_pypowsybl
-        >>>
         >>> net = from_pypowsybl("network.xiidm")
     """
+    
     time_start_converting = time.time()
 
     pypowsybl_converter = PyPowSyBlConverter()
@@ -56,7 +66,6 @@ def from_pypowsybl(
     converting_time = time.time() - time_start_converting
 
     logger.info("Needed time for converting from pypowsybl: %s", converting_time)
-    logger.info("Total Time (from_pypowsybl()): %s", converting_time)
 
     if return_loadflow_table:
         return pp_net, loadflow_table
