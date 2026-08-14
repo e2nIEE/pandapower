@@ -88,6 +88,18 @@ def add_tag_group_to_df(net: ADict, table_name: str, tag_name: str) -> None:
             add_column_to_df(net, table_name, col_name)
 
 
+def add_tag_group(net: pandapowerNet, tag_names: set[str] | str):
+    if isinstance(tag_names, str):
+        tag_names = {
+            tag_names,
+        }
+
+    for element in net:
+        if isinstance(net[element], pd.DataFrame):
+            for tag_name in tag_names:
+                add_tag_group_to_df(net, element, tag_name)
+
+
 def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int], nr_buses: int) -> list[str]:
     from pandapower.plotting.geo import _is_valid_number
     geo = []
