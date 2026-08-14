@@ -14,6 +14,23 @@ pandapower uses PYPOWER to solve the power flow problem:
     :code:`net["_ppc"]`. However all necessary information is written into the pandapower format net, so the pandapower
     user should not usually have to deal with pypower.
 
+Possible Solver Algorithm
+-----------------------------
+
+Pandapower brings a variety of powerflow algorithm, some through the pypower core, other via external libraries:
+
+- "nr" Newton-Raphson (pypower implementation with numba accelerations)
+- "iwamoto_nr" Newton-Raphson with Iwamoto multiplier (maybe slower than NR but more robust)
+- "bfsw" backward/forward sweep (specially suited for radial and weakly-meshed networks)
+- "gs" gauss-seidel (pypower implementation)
+- "fdbx" fast-decoupled (pypower implementation)
+- "fdxb" fast-decoupled (pypower implementation)
+- "helm" holomorphic embedded loadflow method (Copyright (C) 2019 Tulio Molina tuliojose8@gmail.com and Juan José Ortega juanjoseop10@gmail.com)
+
+An algorithm might be better suited for a peculiar use case. The user can select an algorithm via :code:`runpp(algorithm="nr", ...)`
+If the algorithm option is not given, "nr" is selected as a default. Please note, not all features / power system elements
+are equally supported in all solvers. The most feature complete at the moment is "nr".
+
 Accelerating Packages
 -------------------------
 
