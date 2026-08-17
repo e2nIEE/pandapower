@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
-from typing import Literal
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
+from typing import Literal
+import logging
+
 import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet
@@ -16,7 +17,6 @@ from pandapower.plotting.plotly.traces import (
 from pandapower.run import runpp
 from pandapower.plotting.geo import convert_crs
 
-import logging
 logger = logging.getLogger(__name__)
 
 

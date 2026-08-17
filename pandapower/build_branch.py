@@ -15,7 +15,7 @@ import warnings
 from typing import Any, Literal, overload
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 import pandas as pd
 
 from pandapower.auxiliary import get_values, pandapowerNet
@@ -33,6 +33,7 @@ from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_T_BUS, TCSC_X_L, TCSC_X_CVAR, TCSC_SET_P, \
     TCSC_THYRISTOR_FIRING_ANGLE, TCSC_STATUS, TCSC_CONTROLLABLE, tcsc_cols, TCSC_MIN_FIRING_ANGLE, TCSC_MAX_FIRING_ANGLE
 from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
+
 
 def _build_branch_ppc(net: pandapowerNet, ppc: dict, sequence: int = 1) -> None:
     """
@@ -792,7 +793,7 @@ def _get_trafo_shift(
         For complex tap changers:
         - Performs detailed voltage triangle calculations considering both magnitude and angle changes
     """
-    def _cos(x: float) -> float:
+    def _cos(x: ArrayLike) -> ArrayLike:
         """
         get cosine for x
 
@@ -804,7 +805,7 @@ def _get_trafo_shift(
         """
         return np.cos(np.deg2rad(x))
 
-    def _sin(x: float) -> float:
+    def _sin(x: ArrayLike) -> ArrayLike:
         """
         get sine for x
 
@@ -816,7 +817,7 @@ def _get_trafo_shift(
         """
         return np.sin(np.deg2rad(x))
 
-    def _arcsin(x: float) -> float:
+    def _arcsin(x: ArrayLike) -> ArrayLike:
         """
         get arcsine for x
 
@@ -828,7 +829,7 @@ def _get_trafo_shift(
         """
         return np.rad2deg(np.arcsin(x))
 
-    def _arctan(x: float) -> float:
+    def _arctan(x: ArrayLike) -> ArrayLike:
         """
         get arctangent for x
 
@@ -854,14 +855,14 @@ def _get_trafo_shift(
         percent_is_set = np.nan_to_num(tap_step_percent, nan=0) != 0
     else:
         tap_step_percent = float('nan')
-        percent_is_set = False
+        percent_is_set = np.False_
 
     if tap_step_degree is not None:
         tap_step_degree = tap_step_degree[mask]
         degree_is_set = np.nan_to_num(tap_step_degree, nan=0) != 0
     else:
         tap_step_degree = float('nan')
-        degree_is_set = False
+        degree_is_set = np.False_
 
     # ideal tap changer
     if ideal:
